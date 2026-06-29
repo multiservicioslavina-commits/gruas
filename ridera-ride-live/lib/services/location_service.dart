@@ -1,11 +1,8 @@
 import 'dart:async';
-import 'dart:io';
-import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class LocationService {
-  StreamSubscription<Position>? _sub;
   Timer? _pushTimer;
   Position? _last;
   String? _rideId;
@@ -20,47 +17,25 @@ class LocationService {
     return p == LocationPermission.always || p == LocationPermission.whileInUse;
   }
 
-  LocationSettings _buildSettings() {
-    if (Platform.isAndroid) {
-      return AndroidSettings(
-        accuracy: LocationAccuracy.high,
-        distanceFilter: 10,
-        foregroundNotificationConfig: const ForegroundNotificationConfig(
-          notificationTitle: 'RIDERA Ride Live',
-          notificationText: 'Rastreando tu ubicación en la rodada',
-          notificationIcon:
-              AndroidResource(name: 'ic_launcher', defType: 'mipmap'),
-          enableWakeLock: true,
-          setOngoing: true,
-          color: Colors.deepOrange,
-        ),
-      );
-    }
-    return const LocationSettings(
-      accuracy: LocationAccuracy.high,
-      distanceFilter: 10,
-    );
-  }
-
   Future<void> start({required String rideId, required String uid}) async {
     if (!await ensurePermission()) return;
 
     _rideId = rideId;
     _uid = uid;
 
+    await _poll();
+
+    _pushTimer?.cancel();
+    _pushTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
+  }
+
+  Future<void> _poll() async {
     try {
       _last = await Geolocator.getCurrentPosition(
         locationSettings:
             const LocationSettings(accuracy: LocationAccuracy.high),
       );
     } catch (_) {}
-
-    _sub = Geolocator.getPositionStream(
-      locationSettings: _buildSettings(),
-    ).listen((pos) => _last = pos, onError: (_) {});
-
-    _pushTimer?.cancel();
-    _pushTimer = Timer.periodic(const Duration(seconds: 4), (_) => _push());
     await _push();
   }
 
@@ -84,7 +59,5 @@ class LocationService {
   Future<void> stop() async {
     _pushTimer?.cancel();
     _pushTimer = null;
-    await _sub?.cancel();
-    _sub = null;
   }
 }
