@@ -28,16 +28,20 @@ function doPost(e) {
       .setFontColor('#ffffff')
       .setFontWeight('bold');
   } else {
-    // Asegurar que la columna aprobado exista en los headers
+    // Agregar cualquier header nuevo que venga en data y no exista en la hoja
     var headers = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0];
     var headersLower = headers.map(function(h) { return String(h).trim().toLowerCase(); });
-    if (headersLower.indexOf('aprobado') === -1) {
-      var nextCol = sheet.getLastColumn() + 1;
-      sheet.getRange(1, nextCol).setValue('aprobado');
-      sheet.getRange(1, nextCol)
-        .setBackground('#E85D20')
-        .setFontColor('#ffffff')
-        .setFontWeight('bold');
+    var dataKeys = Object.keys(data);
+    for (var ki = 0; ki < dataKeys.length; ki++) {
+      if (headersLower.indexOf(dataKeys[ki].toLowerCase()) === -1) {
+        var nextCol = sheet.getLastColumn() + 1;
+        sheet.getRange(1, nextCol).setValue(dataKeys[ki]);
+        sheet.getRange(1, nextCol)
+          .setBackground('#E85D20')
+          .setFontColor('#ffffff')
+          .setFontWeight('bold');
+        headersLower.push(dataKeys[ki].toLowerCase());
+      }
     }
   }
 

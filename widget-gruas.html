@@ -14,8 +14,9 @@
 .rg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:0 2rem 2rem}
 .rg-card{background:#141414;border:1px solid #1e1e1e;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;display:flex;flex-direction:column}
 .rg-card:hover{border-color:#E85D20;transform:translateY(-2px)}
-.rg-card-top{height:130px;background:#191919;display:flex;align-items:center;justify-content:center;position:relative}
-.rg-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a}
+.rg-card-top{height:130px;background:#191919;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.rg-card-top img.rg-foto{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
+.rg-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a;z-index:1}
 .rg-icon i{font-size:26px;color:#E85D20}
 .rg-badge-ok{position:absolute;top:10px;left:10px;background:#0d2318;color:#4ade80;font-size:11px;padding:4px 9px;border-radius:4px;display:flex;align-items:center;gap:3px}
 .rg-badge-24{position:absolute;top:10px;right:10px;background:#1a1a2a;color:#818cf8;font-size:11px;padding:4px 9px;border-radius:4px}
@@ -44,6 +45,7 @@
 .rg-overlay.open{display:flex}
 .rg-modal{background:#141414;border:1px solid #2a2a2a;border-radius:16px;padding:2rem;max-width:480px;width:90%;position:relative;max-height:90vh;overflow-y:auto}
 .rg-modal-x{position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer}
+.rg-modal-foto{width:100%;max-height:200px;object-fit:cover;border-radius:10px;margin-bottom:14px}
 .rg-modal h3{color:#fff;font-size:20px;margin-bottom:4px}
 .rg-modal-zona{color:#E85D20;font-size:14px;margin-bottom:1.2rem}
 .rg-modal-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:14px;color:#e6e3de}
@@ -84,6 +86,7 @@
 <div class="rg-overlay" id="rg-overlay">
   <div class="rg-modal">
     <button class="rg-modal-x" id="rg-close"><i class="ti ti-x"></i></button>
+    <img class="rg-modal-foto" id="gm-foto" src="" alt="" style="display:none">
     <h3 id="gm-nombre"></h3>
     <div class="rg-modal-zona" id="gm-zona"></div>
     <div class="rg-modal-precio">
@@ -134,9 +137,11 @@
       data-flota="${g.flota||''}" data-experiencia="${g.experiencia||''}"
       data-descripcion="${g.descripcion||''}" data-notas="${g.notas||''}"
       data-precio-desde="${g.precio_desde||''}" data-precio-hasta="${g.precio_hasta||''}"
-      data-direccion="${g.direccion||''}" data-timestamp="${g.timestamp||''}">
+      data-direccion="${g.direccion||''}" data-timestamp="${g.timestamp||''}"
+      data-foto="${g.foto_url||''}" data-logo="${g.logo_url||''}">
       <div class="rg-card-top">
-        <div class="rg-icon"><i class="ti ti-truck"></i></div>
+        ${g.foto_url ? `<img class="rg-foto" src="${g.foto_url}" alt="${g.nombre||''}" onerror="this.remove()">` : ''}
+        ${!g.foto_url ? '<div class="rg-icon"><i class="ti ti-truck"></i></div>' : ''}
         <div class="rg-badge-ok"><i class="ti ti-check"></i> Verificado</div>
         ${es24 ? '<div class="rg-badge-24">24h</div>' : ''}
       </div>
@@ -202,6 +207,14 @@
   }
 
   function modal(d){
+    const fotoEl = document.getElementById('gm-foto');
+    if(d.foto){
+      fotoEl.src = d.foto;
+      fotoEl.alt = d.nombre;
+      fotoEl.style.display = 'block';
+    } else {
+      fotoEl.style.display = 'none';
+    }
     document.getElementById('gm-nombre').textContent       = d.nombre;
     document.getElementById('gm-zona').textContent         = d.zona;
     document.getElementById('gm-precio').textContent       = formatPrecio(d.precioDesde, d.precioHasta);
