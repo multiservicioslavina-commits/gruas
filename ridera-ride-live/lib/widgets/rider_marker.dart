@@ -53,7 +53,7 @@ Marker riderMarker({
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withOpacity(isSos ? 0.4 : 0.2),
+            color: color.withValues(alpha: isSos ? 0.4 : 0.2),
             border: Border.all(color: color, width: isSos ? 4 : (isMe ? 3 : 2)),
           ),
           child: Icon(

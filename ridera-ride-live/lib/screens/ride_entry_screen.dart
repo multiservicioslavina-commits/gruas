@@ -4,7 +4,7 @@ import '../ride_controller.dart';
 import '../services/auth_service.dart';
 import '../services/ride_repository.dart';
 import '../services/session_service.dart';
-import '../main.dart';
+import 'ridera_home_screen.dart';
 
 class RideEntryScreen extends StatefulWidget {
   const RideEntryScreen({super.key});
