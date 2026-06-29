@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../supabase_config.dart';
 
@@ -115,16 +116,21 @@ class LocationService {
     return p == LocationPermission.always || p == LocationPermission.whileInUse;
   }
 
-  /// Arranca el servicio de ubicacion en foreground (sobrevive pantalla bloqueada).
-  Future<void> start({required String rideId, required String uid}) async {
-    if (!await ensurePermission()) return;
+  /// Devuelve true si las notificaciones estan habilitadas (incluye MIUI).
+  Future<bool> ensureNotificationPermission() async {
+    final status = await Permission.notification.status;
+    if (status.isGranted) return true;
+    final result = await Permission.notification.request();
+    if (result.isGranted) return true;
+    // Si MIUI las bloquea, abre ajustes de la app para que el usuario las active.
+    await openAppSettings();
+    return false;
+  }
 
-    try {
-      final np = await FlutterForegroundTask.checkNotificationPermission();
-      if (np != NotificationPermission.granted) {
-        await FlutterForegroundTask.requestNotificationPermission();
-      }
-    } catch (_) {}
+  /// Arranca el servicio de ubicacion en foreground (sobrevive pantalla bloqueada).
+  Future<bool> start({required String rideId, required String uid}) async {
+    if (!await ensurePermission()) return false;
+    if (!await ensureNotificationPermission()) return false;
 
     final refresh =
         Supabase.instance.client.auth.currentSession?.refreshToken ?? '';
@@ -161,6 +167,7 @@ class LocationService {
         callback: startLocationCallback,
       );
     }
+    return true;
   }
 
   Future<void> stop() async {

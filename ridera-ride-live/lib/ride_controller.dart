@@ -100,9 +100,9 @@ class RideController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> startLocation() async {
-    if (rideId == null || myUid == null) return;
-    await _location.start(rideId: rideId!, uid: myUid!);
+  Future<bool> startLocation() async {
+    if (rideId == null || myUid == null) return false;
+    return await _location.start(rideId: rideId!, uid: myUid!);
   }
 
   // ======================= CONTEOS =======================

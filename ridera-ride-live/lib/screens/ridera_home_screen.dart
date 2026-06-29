@@ -101,8 +101,22 @@ class _RideraHomeState extends State<RideraHome> {
           rideId: widget.rideId,
           isLeader: widget.isLeader,
           joinCode: widget.joinCode,
-          onStart: () {
-            try { widget.controller.startLocation(); } catch (_) {}
+          onStart: () async {
+            final ok = await widget.controller.startLocation().catchError((_) => false);
+            if (!mounted) return;
+            if (ok == false) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text(
+                    'Activa las notificaciones de RIDERA en Ajustes y vuelve a presionar ARRANCAR.',
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  backgroundColor: Color(0xFFE85D20),
+                  duration: Duration(seconds: 6),
+                ),
+              );
+              return;
+            }
             setState(() => _started = true);
           },
         ),
