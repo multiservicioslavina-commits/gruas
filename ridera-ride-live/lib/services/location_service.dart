@@ -124,7 +124,7 @@ class LocationService {
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'ridera_ride',
+        channelId: 'ridera_ride_v2',
         channelName: 'Rodada RIDERA',
         channelDescription: 'Comparte tu ubicacion con el convoy',
         channelImportance: NotificationChannelImportance.DEFAULT,
