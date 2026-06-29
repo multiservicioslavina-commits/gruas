@@ -1,0 +1,39 @@
+<div id="rg-test" style="background:#0e0e0e;padding:2rem;border-radius:12px;font-family:sans-serif;">
+  <p style="color:#E85D20;font-size:18px;font-weight:bold;">Directorio de Grúas Ridera</p>
+  <p id="rg-status" style="color:#e6e3de;font-size:14px;">Cargando...</p>
+  <div id="rg-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;margin-top:1rem;"></div>
+</div>
+
+<script>
+(function(){
+  var API = 'https://script.google.com/macros/s/AKfycbxBo_t8mz7yv56ORULMHz5HWf7zxZHVPsGYcLGgjrtmzH52EpxdxOkc1BhP-q99uxb4/exec';
+  var HOJA = 'Grúa';
+
+  fetch(API + '?tipo=' + encodeURIComponent(HOJA))
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var el = document.getElementById('rg-status');
+      var grid = document.getElementById('rg-grid');
+      if(data.status === 'ok'){
+        el.textContent = data.talleres.length + ' gruas encontradas';
+        var html = '';
+        for(var i = 0; i < data.talleres.length; i++){
+          var g = data.talleres[i];
+          html += '<div style="background:#141414;border:1px solid #2a2a2a;border-radius:14px;padding:16px;color:#e6e3de;">';
+          html += '<p style="color:#fff;font-size:16px;font-weight:bold;margin-bottom:8px;">' + (g.nombre || 'Sin nombre') + '</p>';
+          html += '<p style="font-size:13px;color:#E85D20;margin-bottom:4px;">' + (g.ciudad || '') + '</p>';
+          html += '<p style="font-size:13px;margin-bottom:4px;">Tel: ' + (g.telefono || '-') + '</p>';
+          html += '<p style="font-size:13px;margin-bottom:4px;">Servicios: ' + (g.servicios || '-') + '</p>';
+          html += '<p style="font-size:13px;color:#E85D20;">Aprobado: ' + (g.aprobado || 'no') + '</p>';
+          html += '</div>';
+        }
+        grid.innerHTML = html;
+      } else {
+        el.textContent = 'Error: ' + (data.message || 'desconocido');
+      }
+    })
+    .catch(function(err){
+      document.getElementById('rg-status').textContent = 'Error de conexion: ' + err.message;
+    });
+})();
+</script>
