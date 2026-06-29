@@ -32,8 +32,7 @@ class LocationService {
   Future<void> _poll() async {
     try {
       _last = await Geolocator.getCurrentPosition(
-        locationSettings:
-            const LocationSettings(accuracy: LocationAccuracy.high),
+        desiredAccuracy: LocationAccuracy.high,
       );
     } catch (_) {}
     await _push();
