@@ -103,6 +103,12 @@ class RideController extends ChangeNotifier {
   Future<void> startLocation() async {
     if (rideId == null || myUid == null) return;
     await _location.start(rideId: rideId!, uid: myUid!);
+    Timer.periodic(const Duration(seconds: 5), (_) {
+      if (_location.lat != 0 || _location.lon != 0) {
+        myLat = _location.lat;
+        myLon = _location.lon;
+      }
+    });
   }
 
   // ======================= CONTEOS =======================
