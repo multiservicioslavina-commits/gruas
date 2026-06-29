@@ -124,11 +124,11 @@ class LocationService {
 
     FlutterForegroundTask.init(
       androidNotificationOptions: AndroidNotificationOptions(
-        channelId: 'ridera_ride_v2',
-        channelName: 'Rodada RIDERA',
+        channelId: 'ridera_ride_v3',
+        channelName: 'RIDERA Rodada Activa',
         channelDescription: 'Comparte tu ubicacion con el convoy',
-        channelImportance: NotificationChannelImportance.DEFAULT,
-        priority: NotificationPriority.DEFAULT,
+        channelImportance: NotificationChannelImportance.HIGH,
+        priority: NotificationPriority.HIGH,
       ),
       iosNotificationOptions: const IOSNotificationOptions(),
       foregroundTaskOptions: ForegroundTaskOptions(
@@ -142,15 +142,17 @@ class LocationService {
     await FlutterForegroundTask.saveData(
         key: 'ride_data', value: '$rideId|$uid|$refresh');
 
-    if (await FlutterForegroundTask.isRunningService) {
-      await FlutterForegroundTask.restartService();
-    } else {
-      await FlutterForegroundTask.startService(
-        notificationTitle: 'RIDERA - Rodada activa',
-        notificationText: 'Compartiendo tu ubicacion con el convoy',
-        callback: startLocationCallback,
-      );
-    }
+    try {
+      if (await FlutterForegroundTask.isRunningService) {
+        await FlutterForegroundTask.restartService();
+      } else {
+        await FlutterForegroundTask.startService(
+          notificationTitle: 'RIDERA - Rodada activa',
+          notificationText: 'Compartiendo tu ubicacion con el convoy',
+          callback: startLocationCallback,
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> stop() async {

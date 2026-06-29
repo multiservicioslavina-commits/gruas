@@ -101,7 +101,10 @@ class _RideraHomeState extends State<RideraHome> {
           rideId: widget.rideId,
           isLeader: widget.isLeader,
           joinCode: widget.joinCode,
-          onStart: () => setState(() => _started = true),
+          onStart: () {
+            try { widget.controller.startLocation(); } catch (_) {}
+            setState(() => _started = true);
+          },
         ),
       );
     }

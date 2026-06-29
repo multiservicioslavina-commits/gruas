@@ -11,11 +11,11 @@ Future<void> main() async {
 
   FlutterForegroundTask.init(
     androidNotificationOptions: AndroidNotificationOptions(
-      channelId: 'ridera_ride_v2',
-      channelName: 'Rodada RIDERA',
+      channelId: 'ridera_ride_v3',
+      channelName: 'RIDERA Rodada Activa',
       channelDescription: 'Comparte tu ubicacion con el convoy',
-      channelImportance: NotificationChannelImportance.DEFAULT,
-      priority: NotificationPriority.DEFAULT,
+      channelImportance: NotificationChannelImportance.HIGH,
+      priority: NotificationPriority.HIGH,
     ),
     iosNotificationOptions: const IOSNotificationOptions(),
     foregroundTaskOptions: ForegroundTaskOptions(

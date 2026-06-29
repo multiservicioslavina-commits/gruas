@@ -49,8 +49,6 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
       await SessionService()
           .save(joinCode: bound.joinCode, isLeader: bound.isLeader, name: name);
 
-      controller.startLocation();
-
       if (_emPhone.text.trim().isNotEmpty) {
         controller.setEmergencyContact(
             _emName.text.trim(), _emPhone.text.trim());
