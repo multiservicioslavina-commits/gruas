@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
+import 'services/auth_service.dart';
 import 'screens/ride_home_screen.dart';
-import 'screens/auth_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -11,6 +11,9 @@ Future<void> main() async {
     url: kSupabaseUrl,
     anonKey: kSupabaseAnonKey,
   );
+
+  final auth = AuthService();
+  await auth.ensureSignedIn();
 
   runApp(const RideraApp());
 }
@@ -30,9 +33,7 @@ class RideraApp extends StatelessWidget {
           secondary: Color(0xFFE85D20),
         ),
       ),
-      home: Supabase.instance.client.auth.currentUser != null
-          ? const RideHomeScreen()
-          : const AuthScreen(),
+      home: const RideHomeScreen(),
     );
   }
 }
