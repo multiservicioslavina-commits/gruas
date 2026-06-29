@@ -127,7 +127,7 @@ class RideRepository {
       {
         'ride_id': rideId,
         'uid': uid,
-        'rol': 'rider',
+        'rol': 'pendiente',
         'nombre': name,
       },
       onConflict: 'ride_id,uid',
