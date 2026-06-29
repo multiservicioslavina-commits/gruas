@@ -94,7 +94,7 @@ class PreRodadaScreen extends StatelessWidget {
         stream: repo!.membersStream(rideId!),
         builder: (context, snap) {
           final aprobados = snap.data ?? [];
-          final yaAprobado = aprobados.any((r) => r.id == controller.myUid);
+          final yaAprobado = aprobados.any((r) => r.id == controller.myUid && r.role != RiderRole.pendiente);
           if (yaAprobado) {
             return Center(
               child: Column(mainAxisSize: MainAxisSize.min, children: [

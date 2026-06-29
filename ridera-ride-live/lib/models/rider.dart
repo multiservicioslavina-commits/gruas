@@ -1,6 +1,6 @@
 import 'dart:ui';
 
-enum RiderRole { lider, integrante, escoba }
+enum RiderRole { lider, integrante, escoba, pendiente }
 
 enum RiderStatus {
   ok,
@@ -73,7 +73,9 @@ class Rider {
           ? RiderRole.lider
           : m['rol'] == 'escoba'
               ? RiderRole.escoba
-              : RiderRole.integrante,
+              : m['rol'] == 'pendiente'
+                  ? RiderRole.pendiente
+                  : RiderRole.integrante,
       status: RiderStatus.fromCode(statusCode),
       lat: (m['lat'] as num?)?.toDouble(),
       lon: (m['lon'] as num?)?.toDouble(),

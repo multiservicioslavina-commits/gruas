@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../services/location_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../widgets/rider_marker.dart';
@@ -24,7 +23,6 @@ class RideMapScreen extends StatefulWidget {
 
 class _RideMapScreenState extends State<RideMapScreen> {
   final _rideService = RideService();
-  final _locationService = LocationService();
   final _mapCtrl = MapController();
 
   final Map<String, _RiderData> _riders = {};
@@ -37,15 +35,10 @@ class _RideMapScreenState extends State<RideMapScreen> {
   @override
   void initState() {
     super.initState();
-    _startTracking();
     _loadMembers();
     _subscribeRealtime();
     _statusTimer = Timer.periodic(
         const Duration(seconds: 1), (_) => _recalcStatus());
-  }
-
-  Future<void> _startTracking() async {
-    await _locationService.start(rideId: widget.rideId, uid: _uid);
   }
 
   Future<void> _loadMembers() async {
@@ -195,14 +188,12 @@ class _RideMapScreenState extends State<RideMapScreen> {
 
     if (confirm == true) {
       await _rideService.endRide(widget.rideId);
-      await _locationService.stop();
       if (mounted) Navigator.of(context).pop();
     }
   }
 
   Future<void> _leave() async {
     await _rideService.leaveRide(widget.rideId);
-    await _locationService.stop();
     if (mounted) Navigator.of(context).pop();
   }
 
