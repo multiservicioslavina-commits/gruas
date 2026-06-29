@@ -57,12 +57,15 @@ class RideService {
       nombre = _sb.auth.currentUser?.userMetadata?['name'] ?? 'Piloto';
     }
 
-    await _sb.from('members').upsert({
-      'ride_id': ride['id'],
-      'uid': _uid,
-      'rol': 'rider',
-      'nombre': nombre,
-    });
+    await _sb.from('members').upsert(
+      {
+        'ride_id': ride['id'],
+        'uid': _uid,
+        'rol': 'rider',
+        'nombre': nombre,
+      },
+      onConflict: 'ride_id,uid',
+    );
 
     return ride;
   }

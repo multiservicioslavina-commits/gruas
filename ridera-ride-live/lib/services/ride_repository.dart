@@ -123,12 +123,15 @@ class RideRepository {
     required String uid,
     required String name,
   }) async {
-    await _sb.from('members').upsert({
-      'ride_id': rideId,
-      'uid': uid,
-      'rol': 'rider',
-      'nombre': name,
-    });
+    await _sb.from('members').upsert(
+      {
+        'ride_id': rideId,
+        'uid': uid,
+        'rol': 'rider',
+        'nombre': name,
+      },
+      onConflict: 'ride_id,uid',
+    );
   }
 
   Future<void> approve(String rideId, String uid) async {
