@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
 import 'services/auth_service.dart';
@@ -14,6 +15,11 @@ import 'theme.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Stop any leftover foreground service from a previous session
+  try {
+    await FlutterForegroundTask.stopService();
+  } catch (_) {}
 
   await Supabase.initialize(
     url: kSupabaseUrl,

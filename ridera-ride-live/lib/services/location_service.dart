@@ -127,8 +127,8 @@ class LocationService {
         channelId: 'ridera_ride',
         channelName: 'Rodada RIDERA',
         channelDescription: 'Comparte tu ubicacion con el convoy',
-        channelImportance: NotificationChannelImportance.LOW,
-        priority: NotificationPriority.LOW,
+        channelImportance: NotificationChannelImportance.DEFAULT,
+        priority: NotificationPriority.DEFAULT,
       ),
       iosNotificationOptions: const IOSNotificationOptions(),
       foregroundTaskOptions: ForegroundTaskOptions(
@@ -148,9 +148,6 @@ class LocationService {
       await FlutterForegroundTask.startService(
         notificationTitle: 'RIDERA - Rodada activa',
         notificationText: 'Compartiendo tu ubicacion con el convoy',
-        notificationIcon: const NotificationIcon(
-          metaDataName: 'com.ridera.ridelive.notification_icon',
-        ),
         callback: startLocationCallback,
       );
     }
