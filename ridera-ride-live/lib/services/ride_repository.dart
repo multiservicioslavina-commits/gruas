@@ -2,11 +2,11 @@ import 'dart:math';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/rider.dart';
 
-class _RideResult {
+class RideResult {
   final String id;
   final String name;
   final String joinCode;
-  _RideResult(this.id, this.name, this.joinCode);
+  RideResult(this.id, this.name, this.joinCode);
 }
 
 class RideRepository {
@@ -83,7 +83,7 @@ class RideRepository {
     return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
-  Future<_RideResult> createRide({
+  Future<RideResult> createRide({
     required String name,
     required String leaderUid,
     required String leaderName,
@@ -101,10 +101,10 @@ class RideRepository {
       'rol': 'lider',
       'nombre': leaderName,
     });
-    return _RideResult(code, name, code);
+    return RideResult(code, name, code);
   }
 
-  Future<_RideResult?> findByCode(String code) async {
+  Future<RideResult?> findByCode(String code) async {
     try {
       final row = await _sb
           .from('rides')
@@ -112,7 +112,7 @@ class RideRepository {
           .eq('id', code.toUpperCase().trim())
           .eq('estado', 'activa')
           .single();
-      return _RideResult(row['id'], row['nombre'] ?? '', row['id']);
+      return RideResult(row['id'], row['nombre'] ?? '', row['id']);
     } catch (_) {
       return null;
     }
