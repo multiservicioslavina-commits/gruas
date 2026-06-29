@@ -1,0 +1,246 @@
+<!-- RIDERA — Widget Grúas para Elementor HTML Widget -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<style>
+#rg-wrap *{box-sizing:border-box;margin:0;padding:0}
+#rg-wrap{background:#0e0e0e;border-radius:12px;overflow:hidden;font-family:sans-serif}
+.rg-search{padding:1rem 2rem;display:flex;gap:8px;border-bottom:1px solid #181818}
+.rg-search input{flex:1;background:#171717;border:1px solid #2a2a2a;border-radius:8px;padding:12px 16px;font-size:15px;color:#e6e3de;outline:none}
+.rg-search input:focus{border-color:#E85D20}
+.rg-search input::placeholder{color:#666}
+.rg-header{padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.rg-header span{font-size:14px;color:#e6e3de}
+.rg-sort{background:#151515;border:1px solid #252525;border-radius:6px;padding:7px 12px;font-size:13px;color:#e6e3de;outline:none;cursor:pointer}
+.rg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:0 2rem 2rem}
+.rg-card{background:#141414;border:1px solid #1e1e1e;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;display:flex;flex-direction:column}
+.rg-card:hover{border-color:#E85D20;transform:translateY(-2px)}
+.rg-card-top{height:130px;background:#191919;display:flex;align-items:center;justify-content:center;position:relative}
+.rg-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a}
+.rg-icon i{font-size:26px;color:#E85D20}
+.rg-badge-ok{position:absolute;top:10px;left:10px;background:#0d2318;color:#4ade80;font-size:11px;padding:4px 9px;border-radius:4px;display:flex;align-items:center;gap:3px}
+.rg-badge-24{position:absolute;top:10px;right:10px;background:#1a1a2a;color:#818cf8;font-size:11px;padding:4px 9px;border-radius:4px}
+.rg-body{padding:16px 18px;flex:1}
+.rg-name{font-size:16px;font-weight:600;color:#fff;margin-bottom:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rg-zona{font-size:13px;color:#e6e3de;display:flex;align-items:center;gap:5px;margin-bottom:12px}
+.rg-zona i{font-size:14px;color:#E85D20}
+.rg-specs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.rg-spec{display:flex;align-items:center;gap:7px;font-size:13px;color:#e6e3de}
+.rg-spec i{font-size:15px;color:#888;flex-shrink:0}
+.rg-tags{display:flex;flex-wrap:wrap;gap:5px}
+.rg-tag{background:#1a1a1a;color:#e6e3de;font-size:12px;padding:3px 9px;border-radius:4px;border:1px solid #252525}
+.rg-foot{padding:12px 18px;border-top:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between}
+.rg-precio{font-size:12px;color:#E85D20;font-weight:600}
+.rg-btn{background:transparent;border:1px solid #2a2a2a;border-radius:6px;padding:6px 14px;font-size:13px;color:#e6e3de;cursor:pointer;transition:all .2s}
+.rg-btn:hover{border-color:#E85D20;color:#E85D20}
+.rg-cta{background:#111;border:2px dashed #E85D20;border-radius:14px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:1.5rem;transition:background .2s}
+.rg-cta:hover{background:#1a1a1a}
+.rg-cta i{font-size:34px;color:#E85D20}
+.rg-cta-title{font-size:15px;font-weight:600;color:#E85D20}
+.rg-cta-sub{font-size:13px;color:#e6e3de;text-align:center;line-height:1.5}
+.rg-empty{grid-column:1/-1;text-align:center;padding:3rem;color:#e6e3de;font-size:15px}
+.rg-spinner{width:32px;height:32px;border:3px solid #222;border-top-color:#E85D20;border-radius:50%;animation:rgspin .7s linear infinite;margin:0 auto 12px}
+@keyframes rgspin{to{transform:rotate(360deg)}}
+.rg-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;align-items:center;justify-content:center}
+.rg-overlay.open{display:flex}
+.rg-modal{background:#141414;border:1px solid #2a2a2a;border-radius:16px;padding:2rem;max-width:480px;width:90%;position:relative;max-height:90vh;overflow-y:auto}
+.rg-modal-x{position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer}
+.rg-modal h3{color:#fff;font-size:20px;margin-bottom:4px}
+.rg-modal-zona{color:#E85D20;font-size:14px;margin-bottom:1.2rem}
+.rg-modal-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:14px;color:#e6e3de}
+.rg-modal-row i{color:#E85D20;font-size:17px;flex-shrink:0;margin-top:1px}
+.rg-modal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:1.2rem}
+.rg-modal-precio{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.rg-modal-precio span{font-size:13px;color:#e6e3de}
+.rg-modal-precio strong{color:#E85D20;font-size:15px}
+
+@media (max-width:600px){
+  .rg-search{padding:1rem 1.1rem}
+  .rg-header{padding:1rem 1.1rem}
+  .rg-grid{grid-template-columns:1fr;gap:16px;padding:0 1.1rem 1.5rem}
+  .rg-card-top{height:150px}
+  .rg-icon{width:64px;height:64px}
+  .rg-icon i{font-size:30px}
+  .rg-name{font-size:17px}
+  .rg-modal{padding:1.5rem}
+}
+</style>
+
+<div id="rg-wrap">
+  <div class="rg-search">
+    <input id="rg-input" type="text" placeholder="Buscar por nombre, ciudad o servicio...">
+  </div>
+  <div class="rg-header">
+    <span id="rg-count">Cargando...</span>
+    <select class="rg-sort" id="rg-sort">
+      <option value="reciente">Más recientes</option>
+      <option value="az">A–Z</option>
+    </select>
+  </div>
+  <div class="rg-grid" id="rg-grid">
+    <div class="rg-empty"><div class="rg-spinner"></div>Cargando grúas...</div>
+  </div>
+</div>
+
+<div class="rg-overlay" id="rg-overlay">
+  <div class="rg-modal">
+    <button class="rg-modal-x" id="rg-close"><i class="ti ti-x"></i></button>
+    <h3 id="gm-nombre"></h3>
+    <div class="rg-modal-zona" id="gm-zona"></div>
+    <div class="rg-modal-precio">
+      <span>Precio servicio</span>
+      <strong id="gm-precio"></strong>
+    </div>
+    <div class="rg-modal-row"><i class="ti ti-map-pin"></i><span id="gm-direccion"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-phone"></i><span id="gm-tel"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-brand-whatsapp"></i><span id="gm-whatsapp"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-brand-instagram"></i><span id="gm-ig"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-clock"></i><span id="gm-disponibilidad"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-map-2"></i><span id="gm-cobertura"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-clock-hour-3"></i><span id="gm-tiempo"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-truck"></i><span id="gm-servicios"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-motorbike"></i><span id="gm-acepta"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-users"></i><span id="gm-flota"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-star"></i><span id="gm-experiencia"></span></div>
+    <div class="rg-modal-row"><i class="ti ti-notes"></i><span id="gm-descripcion"></span></div>
+    <div class="rg-modal-tags" id="gm-tags"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const API  = 'https://script.google.com/macros/s/AKfycbxBo_t8mz7yv56ORULMHz5HWf7zxZHVPsGYcLGgjrtmzH52EpxdxOkc1BhP-q99uxb4/exec';
+  const HOJA = String.fromCharCode(71,114,250,97);
+
+  function formatPrecio(desde, hasta){
+    const f = n => n ? '$'+parseInt(n).toLocaleString('es-CO') : null;
+    const d = f(desde), h = f(hasta);
+    if(d && h) return d+' – '+h;
+    if(d) return 'Desde '+d;
+    if(h) return 'Hasta '+h;
+    return 'Consultar';
+  }
+
+  function card(g){
+    const zona = [g.ciudad, g.departamentos].filter(Boolean).join(', ');
+    const es24 = (g.disponibilidad||'').toLowerCase().includes('24');
+    const acepta = (g.acepta||'').split(',').map(s=>s.trim()).filter(Boolean);
+    return `
+    <div class="rg-card"
+      data-nombre="${g.nombre||''}" data-zona="${zona}"
+      data-tel="${g.telefono||''}" data-whatsapp="${g.whatsapp||''}"
+      data-ig="${g.instagram||''}" data-servicios="${g.servicios||''}"
+      data-cobertura="${g.cobertura||''}" data-disponibilidad="${g.disponibilidad||''}"
+      data-tiempo="${g.tiempo_llegada||''}" data-acepta="${g.acepta||''}"
+      data-flota="${g.flota||''}" data-experiencia="${g.experiencia||''}"
+      data-descripcion="${g.descripcion||''}" data-notas="${g.notas||''}"
+      data-precio-desde="${g.precio_desde||''}" data-precio-hasta="${g.precio_hasta||''}"
+      data-direccion="${g.direccion||''}" data-timestamp="${g.timestamp||''}">
+      <div class="rg-card-top">
+        <div class="rg-icon"><i class="ti ti-truck"></i></div>
+        <div class="rg-badge-ok"><i class="ti ti-check"></i> Verificado</div>
+        ${es24 ? '<div class="rg-badge-24">24h</div>' : ''}
+      </div>
+      <div class="rg-body">
+        <div class="rg-name">${g.nombre||'Sin nombre'}</div>
+        <div class="rg-zona"><i class="ti ti-map-pin"></i> ${zona||'–'}</div>
+        <div class="rg-specs">
+          <div class="rg-spec"><i class="ti ti-clock-hour-3"></i> ${g.tiempo_llegada||'Consultar'}</div>
+          <div class="rg-spec"><i class="ti ti-map-2"></i> ${(g.cobertura||'–').substring(0,35)}</div>
+        </div>
+        <div class="rg-tags">
+          ${acepta.slice(0,3).map(a=>`<span class="rg-tag">${a}</span>`).join('')}
+        </div>
+      </div>
+      <div class="rg-foot">
+        <span class="rg-precio">${formatPrecio(g.precio_desde, g.precio_hasta)}</span>
+        <button class="rg-btn">Ver más</button>
+      </div>
+    </div>`;
+  }
+
+  function cta(){
+    return `<div class="rg-cta" onclick="window.location.href='https://ridera.com.co/registrar-grua/'">
+      <i class="ti ti-plus"></i>
+      <div class="rg-cta-title">Registrar mi grúa</div>
+      <div class="rg-cta-sub">¿Tenés un servicio de grúas para motos?<br>Aparecé gratis en el directorio</div>
+    </div>`;
+  }
+
+  let todos=[], busq='', orden='reciente';
+
+  function visibles(){
+    let l=[...todos];
+    if(busq){
+      const q=busq.toLowerCase();
+      l=l.filter(g=>
+        (g.nombre||'').toLowerCase().includes(q)||
+        (g.ciudad||'').toLowerCase().includes(q)||
+        (g.cobertura||'').toLowerCase().includes(q)||
+        (g.servicios||'').toLowerCase().includes(q)||
+        (g.acepta||'').toLowerCase().includes(q)
+      );
+    }
+    if(orden==='az') l.sort((a,b)=>(a.nombre||'').localeCompare(b.nombre||''));
+    else l.reverse();
+    return l;
+  }
+
+  function render(){
+    const grid=document.getElementById('rg-grid');
+    const lista=visibles();
+    document.getElementById('rg-count').textContent=
+      lista.length+' grúa'+(lista.length!==1?'s':'')+' encontrada'+(lista.length!==1?'s':'');
+    if(lista.length===0){
+      grid.innerHTML='<div class="rg-empty">No hay grúas aprobadas aún.</div>'+cta();
+      return;
+    }
+    grid.innerHTML=lista.map(card).join('')+cta();
+    grid.querySelectorAll('.rg-card').forEach(c=>{
+      c.addEventListener('click',()=>modal(c.dataset));
+      c.querySelector('.rg-btn').addEventListener('click',ev=>{ev.stopPropagation();modal(c.dataset);});
+    });
+  }
+
+  function modal(d){
+    document.getElementById('gm-nombre').textContent       = d.nombre;
+    document.getElementById('gm-zona').textContent         = d.zona;
+    document.getElementById('gm-precio').textContent       = formatPrecio(d.precioDesde, d.precioHasta);
+    document.getElementById('gm-direccion').textContent    = d.direccion||'–';
+    document.getElementById('gm-tel').textContent          = d.tel||'–';
+    document.getElementById('gm-whatsapp').textContent     = d.whatsapp||'–';
+    document.getElementById('gm-ig').textContent           = d.ig||'–';
+    document.getElementById('gm-disponibilidad').textContent = d.disponibilidad||'–';
+    document.getElementById('gm-cobertura').textContent    = d.cobertura||'–';
+    document.getElementById('gm-tiempo').textContent       = d.tiempo||'–';
+    document.getElementById('gm-servicios').textContent    = d.servicios||'–';
+    document.getElementById('gm-acepta').textContent       = d.acepta||'–';
+    document.getElementById('gm-flota').textContent        = d.flota||'–';
+    document.getElementById('gm-experiencia').textContent  = d.experiencia||'–';
+    document.getElementById('gm-descripcion').textContent  = d.descripcion||'–';
+    const notas=(d.notas||'').split(',').map(s=>s.trim()).filter(Boolean);
+    document.getElementById('gm-tags').innerHTML=notas.map(n=>`<span class="rg-tag">${n}</span>`).join('');
+    document.getElementById('rg-overlay').classList.add('open');
+  }
+
+  document.getElementById('rg-close').onclick=()=>document.getElementById('rg-overlay').classList.remove('open');
+  document.getElementById('rg-overlay').onclick=e=>{if(e.target===e.currentTarget)e.target.classList.remove('open');};
+  document.getElementById('rg-input').addEventListener('input',e=>{busq=e.target.value;render();});
+  document.getElementById('rg-sort').addEventListener('change',e=>{orden=e.target.value;render();});
+
+  fetch(`${API}?tipo=${encodeURIComponent(HOJA)}`)
+    .then(r=>r.json())
+    .then(data=>{
+      if(data.status==='ok'){
+        todos=data.talleres;
+        render();
+      } else {
+        document.getElementById('rg-grid').innerHTML=
+          `<div class="rg-empty" style="color:#E85D20">${data.message}</div>`;
+      }
+    })
+    .catch(()=>{
+      document.getElementById('rg-grid').innerHTML=
+        '<div class="rg-empty" style="color:#E85D20">No se pudo conectar.</div>';
+    });
+})();
+</script>
