@@ -1,8 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
 import 'services/auth_service.dart';
 import 'services/ride_repository.dart';
+import 'services/safety_service.dart';
 import 'ride_controller.dart';
 import 'screens/ride_home_screen.dart';
 import 'screens/pre_rodada_screen.dart';
@@ -66,6 +68,62 @@ class RideraHome extends StatefulWidget {
 
 class _RideraHomeState extends State<RideraHome> {
   bool _started = false;
+  StreamSubscription<void>? _crashSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _crashSub = widget.controller.crashSuspected.listen((_) => _onCrash());
+  }
+
+  @override
+  void dispose() {
+    _crashSub?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _onCrash() async {
+    if (!mounted) return;
+    final c = widget.controller;
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: RColors.asphalt3,
+        title: const Row(children: [
+          Icon(Icons.warning_amber, color: RColors.sos, size: 28),
+          SizedBox(width: 8),
+          Text('¿Caída detectada?', style: TextStyle(color: RColors.sos)),
+        ]),
+        content: const Text(
+          'Se detectó un impacto fuerte. Si no cancelas en 15 segundos se enviará SOS automáticamente.',
+          style: TextStyle(color: RColors.ink),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Estoy bien', style: TextStyle(color: RColors.ok)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('ENVIAR SOS', style: TextStyle(color: RColors.sos, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true || confirm == null) {
+      await c.confirmCrashSos();
+      if (c.emergencyPhone.isNotEmpty) {
+        SafetyService.openSmsToContact(
+          contactPhone: c.emergencyPhone,
+          riderName: c.rideName,
+          lat: c.myLat,
+          lon: c.myLon,
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
