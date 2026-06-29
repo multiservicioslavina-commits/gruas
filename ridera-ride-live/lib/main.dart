@@ -16,9 +16,28 @@ import 'theme.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Stop any leftover foreground service from a previous session
+  // Initialize foreground task with valid notification config,
+  // then stop any leftover service from a previous session.
+  FlutterForegroundTask.init(
+    androidNotificationOptions: AndroidNotificationOptions(
+      channelId: 'ridera_ride_v2',
+      channelName: 'Rodada RIDERA',
+      channelDescription: 'Comparte tu ubicacion con el convoy',
+      channelImportance: NotificationChannelImportance.DEFAULT,
+      priority: NotificationPriority.DEFAULT,
+    ),
+    iosNotificationOptions: const IOSNotificationOptions(),
+    foregroundTaskOptions: ForegroundTaskOptions(
+      eventAction: ForegroundTaskEventAction.nothing(),
+      autoRunOnBoot: false,
+      allowWakeLock: false,
+      allowWifiLock: false,
+    ),
+  );
   try {
-    await FlutterForegroundTask.stopService();
+    if (await FlutterForegroundTask.isRunningService) {
+      await FlutterForegroundTask.stopService();
+    }
   } catch (_) {}
 
   await Supabase.initialize(
