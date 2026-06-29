@@ -44,17 +44,24 @@ class RideService {
         .eq('estado', 'activa')
         .single();
 
-    final rider = await _sb
-        .from('riders')
-        .select('nombre')
-        .eq('id', _uid)
-        .single();
+    // Get rider name: try riders table first, fallback to auth metadata
+    String nombre = '';
+    try {
+      final rider = await _sb
+          .from('riders')
+          .select('nombre')
+          .eq('id', _uid)
+          .single();
+      nombre = rider['nombre'] ?? '';
+    } catch (_) {
+      nombre = _sb.auth.currentUser?.userMetadata?['name'] ?? 'Piloto';
+    }
 
     await _sb.from('members').upsert({
       'ride_id': ride['id'],
       'uid': _uid,
       'rol': 'rider',
-      'nombre': rider['nombre'] ?? '',
+      'nombre': nombre,
     });
 
     return ride;

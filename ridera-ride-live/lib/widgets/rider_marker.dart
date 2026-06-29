@@ -7,6 +7,8 @@ Color statusColor(RideStatus s) => switch (s) {
       RideStatus.enMarcha => const Color(0xFF4ade80),
       RideStatus.detenido => const Color(0xFFfbbf24),
       RideStatus.perdido => const Color(0xFFef4444),
+      RideStatus.sos => const Color(0xFFef4444),
+      RideStatus.falla => const Color(0xFFf97316),
     };
 
 Marker riderMarker({
@@ -18,7 +20,8 @@ Marker riderMarker({
   required bool isLider,
 }) {
   final color = statusColor(status);
-  final size = isMe ? 48.0 : 40.0;
+  final isSos = status == RideStatus.sos;
+  final size = isSos ? 52.0 : (isMe ? 48.0 : 40.0);
 
   return Marker(
     point: position,
@@ -30,15 +33,15 @@ Marker riderMarker({
         Container(
           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
           decoration: BoxDecoration(
-            color: const Color(0xFF141414),
+            color: isSos ? const Color(0xFF3b1111) : const Color(0xFF141414),
             borderRadius: BorderRadius.circular(4),
-            border: Border.all(color: color, width: 0.5),
+            border: Border.all(color: color, width: isSos ? 1.5 : 0.5),
           ),
           child: Text(
-            '${isLider ? "⭐ " : ""}$nombre',
+            '${isSos ? "⚠ " : ""}${isLider ? "⭐ " : ""}$nombre',
             style: TextStyle(
               color: color,
-              fontSize: 10,
+              fontSize: isSos ? 11 : 10,
               fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
@@ -50,11 +53,15 @@ Marker riderMarker({
           height: size,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: color.withOpacity(0.2),
-            border: Border.all(color: color, width: isMe ? 3 : 2),
+            color: color.withOpacity(isSos ? 0.4 : 0.2),
+            border: Border.all(color: color, width: isSos ? 4 : (isMe ? 3 : 2)),
           ),
           child: Icon(
-            isLider ? Icons.star : Icons.sports_motorsports,
+            isSos
+                ? Icons.sos
+                : isLider
+                    ? Icons.star
+                    : Icons.sports_motorsports,
             color: color,
             size: isMe ? 24 : 20,
           ),

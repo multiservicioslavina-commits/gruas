@@ -27,7 +27,7 @@ class _RideMapScreenState extends State<RideMapScreen> {
   final _locationService = LocationService();
   final _mapCtrl = MapController();
 
-  Map<String, _RiderData> _riders = {};
+  final Map<String, _RiderData> _riders = {};
   RealtimeChannel? _channel;
   Timer? _statusTimer;
   bool _centered = true;
@@ -79,6 +79,7 @@ class _RideMapScreenState extends State<RideMapScreen> {
       final newStatus = memberStatus(
         lastSeen: r.lastSeen,
         speedKmh: r.speedKmh,
+        statusCode: r.statusCode,
       );
       if (r.status != newStatus) {
         r.status = newStatus;
@@ -108,6 +109,63 @@ class _RideMapScreenState extends State<RideMapScreen> {
         maxZoom: 17,
       ),
     );
+  }
+
+  Future<void> _sendSos() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a1a),
+        title: const Row(
+          children: [
+            Icon(Icons.warning_amber, color: Color(0xFFef4444), size: 28),
+            SizedBox(width: 8),
+            Text('SOS', style: TextStyle(color: Color(0xFFef4444))),
+          ],
+        ),
+        content: const Text(
+            '¿Enviar alerta de emergencia a todo el convoy?',
+            style: TextStyle(color: Color(0xFFe6e3de))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar',
+                style: TextStyle(color: Color(0xFFe6e3de))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('ENVIAR SOS',
+                style: TextStyle(
+                    color: Color(0xFFef4444), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      try {
+        await Supabase.instance.client
+            .from('members')
+            .update({'status_code': 3})
+            .eq('ride_id', widget.rideId)
+            .eq('uid', _uid);
+      } catch (_) {}
+    }
+  }
+
+  Future<void> _resolveSos() async {
+    try {
+      await Supabase.instance.client
+          .from('members')
+          .update({'status_code': 0})
+          .eq('ride_id', widget.rideId)
+          .eq('status_code', 3);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('SOS resuelto')),
+        );
+      }
+    } catch (_) {}
   }
 
   Future<void> _endRide() async {
@@ -148,6 +206,9 @@ class _RideMapScreenState extends State<RideMapScreen> {
     if (mounted) Navigator.of(context).pop();
   }
 
+  bool get _hasSos =>
+      _riders.values.any((r) => r.status == RideStatus.sos);
+
   @override
   void dispose() {
     _channel?.unsubscribe();
@@ -172,20 +233,33 @@ class _RideMapScreenState extends State<RideMapScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFF0e0e0e),
       appBar: AppBar(
-        backgroundColor: const Color(0xFF141414),
+        backgroundColor:
+            _hasSos ? const Color(0xFF3b1111) : const Color(0xFF141414),
         foregroundColor: Colors.white,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Rodada en vivo', style: TextStyle(fontSize: 16)),
+            Text(
+              _hasSos ? '⚠ SOS ACTIVO' : 'Rodada en vivo',
+              style: TextStyle(
+                fontSize: 16,
+                color: _hasSos ? const Color(0xFFef4444) : Colors.white,
+              ),
+            ),
             Text(
               'Código: ${widget.rideId}  ·  ${_riders.length} pilotos',
-              style: const TextStyle(
-                  fontSize: 12, color: Color(0xFFe6e3de)),
+              style:
+                  const TextStyle(fontSize: 12, color: Color(0xFFe6e3de)),
             ),
           ],
         ),
         actions: [
+          if (_hasSos && widget.isLider)
+            IconButton(
+              icon: const Icon(Icons.check_circle, color: Color(0xFF4ade80)),
+              tooltip: 'Resolver SOS',
+              onPressed: _resolveSos,
+            ),
           IconButton(
             icon: const Icon(Icons.my_location),
             onPressed: () {
@@ -237,6 +311,11 @@ class _RideMapScreenState extends State<RideMapScreen> {
           ),
         ],
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _sendSos,
+        backgroundColor: const Color(0xFFef4444),
+        child: const Icon(Icons.sos, color: Colors.white, size: 28),
+      ),
     );
   }
 }
@@ -251,6 +330,7 @@ class _RiderData {
   final double? lon;
   final double speedKmh;
   final DateTime lastSeen;
+  final int statusCode;
   RideStatus status;
 
   _RiderData({
@@ -261,6 +341,7 @@ class _RiderData {
     required this.lon,
     required this.speedKmh,
     required this.lastSeen,
+    required this.statusCode,
     required this.status,
   });
 
@@ -269,6 +350,7 @@ class _RiderData {
         ? DateTime.parse(m['last_seen']).toUtc()
         : DateTime.now().toUtc();
     final spd = (m['speed_kmh'] as num?)?.toDouble() ?? 0;
+    final sc = (m['status_code'] as num?)?.toInt() ?? 0;
     return _RiderData(
       uid: m['uid'] ?? '',
       nombre: m['nombre'] ?? '',
@@ -277,7 +359,8 @@ class _RiderData {
       lon: (m['lon'] as num?)?.toDouble(),
       speedKmh: spd,
       lastSeen: ls,
-      status: memberStatus(lastSeen: ls, speedKmh: spd),
+      statusCode: sc,
+      status: memberStatus(lastSeen: ls, speedKmh: spd, statusCode: sc),
     );
   }
 }
@@ -294,12 +377,16 @@ class _RiderListPanel extends StatelessWidget {
         RideStatus.enMarcha => const Color(0xFF4ade80),
         RideStatus.detenido => const Color(0xFFfbbf24),
         RideStatus.perdido => const Color(0xFFef4444),
+        RideStatus.sos => const Color(0xFFef4444),
+        RideStatus.falla => const Color(0xFFf97316),
       };
 
   String _statusLabel(RideStatus s) => switch (s) {
         RideStatus.enMarcha => 'En marcha',
         RideStatus.detenido => 'Detenido',
         RideStatus.perdido => 'Perdido',
+        RideStatus.sos => '⚠ SOS',
+        RideStatus.falla => 'Falla',
       };
 
   @override
