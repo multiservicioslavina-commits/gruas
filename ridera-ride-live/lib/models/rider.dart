@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 enum RiderRole { lider, integrante, escoba }
 
 enum RiderStatus {
@@ -11,6 +13,22 @@ enum RiderStatus {
 
   factory RiderStatus.fromCode(int c) =>
       c >= 0 && c < values.length ? values[c] : ok;
+
+  Color get color => switch (this) {
+        ok => const Color(0xFF4ade80),
+        rezagado => const Color(0xFFfbbf24),
+        falla => const Color(0xFFf97316),
+        sos => const Color(0xFFef4444),
+        offline => const Color(0xFF555555),
+      };
+
+  String get label => switch (this) {
+        ok => 'OK',
+        rezagado => 'Rezagado',
+        falla => 'Falla',
+        sos => 'SOS',
+        offline => 'Sin señal',
+      };
 }
 
 enum LinkType { directo, mesh, offline }
