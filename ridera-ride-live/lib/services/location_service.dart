@@ -25,6 +25,7 @@ class LocationService {
         'uid': uid,
         'accessToken': accessToken,
       });
+      await _channel.invokeMethod('setRideActive', {'active': true});
       return true;
     } catch (_) {
       return false;
@@ -33,6 +34,7 @@ class LocationService {
 
   Future<void> stop() async {
     try {
+      await _channel.invokeMethod('setRideActive', {'active': false});
       await _channel.invokeMethod('stop');
     } catch (_) {}
   }

@@ -8,6 +8,8 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
+    private var rideActive = false
+
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
         // Instalar DESPUES de Flutter para sobreescribir su handler
@@ -20,6 +22,16 @@ class MainActivity : FlutterActivity() {
             } else {
                 prev?.uncaughtException(thread, throwable)
             }
+        }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        if (rideActive) {
+            // Durante rodada activa: minimizar en vez de salir
+            moveTaskToBack(true)
+        } else {
+            super.onBackPressed()
         }
     }
 
@@ -46,7 +58,12 @@ class MainActivity : FlutterActivity() {
                         result.success(true)
                     }
                     "stop" -> {
+                        rideActive = false
                         stopService(Intent(this, GpsService::class.java))
+                        result.success(true)
+                    }
+                    "setRideActive" -> {
+                        rideActive = call.argument<Boolean>("active") ?: false
                         result.success(true)
                     }
                     else -> result.notImplemented()
