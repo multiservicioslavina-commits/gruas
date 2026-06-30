@@ -93,10 +93,9 @@ class _RideraHomeState extends State<RideraHome> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: !_started,
-      onPopInvokedWithResult: (didPop, _) {
-        // Durante rodada activa el botón de atrás no hace nada.
-        // Para salir usar el ícono de salir en el AppBar.
+      canPop: false,
+      onPopInvokedWithResult: (_, __) {
+        // Botón de atrás bloqueado — usar ícono de salir en el AppBar.
       },
       child: _buildBody(context),
     );
