@@ -16,6 +16,7 @@
     <application
         android:label="RIDERA"
         android:name=".MainApplication"
+        android:enableOnBackInvokedCallback="true"
         >
         <activity
             android:name=".MainActivity"
