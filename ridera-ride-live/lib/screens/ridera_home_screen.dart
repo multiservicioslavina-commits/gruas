@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../ride_controller.dart';
 import '../services/ride_repository.dart';
 import '../services/safety_service.dart';
@@ -90,45 +91,20 @@ class _RideraHomeState extends State<RideraHome> {
     }
   }
 
-  Future<bool> _confirmExit() async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: RColors.asphalt3,
-        title: const Text('¿Salir de la rodada?',
-            style: TextStyle(color: RColors.ink)),
-        content: Text(
-          widget.isLeader
-              ? 'Si sales, perderás la pantalla de control. La rodada sigue activa para los demás; puedes volver entrando con el mismo código.'
-              : 'Si sales, dejarás de ver el mapa en vivo. Para volver, deberás unirte de nuevo con el código de la rodada.',
-          style: const TextStyle(color: RColors.ink),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Quedarme',
-                style: TextStyle(color: RColors.ok)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Salir',
-                style: TextStyle(color: RColors.sos)),
-          ),
-        ],
-      ),
-    );
-    return confirm ?? false;
-  }
-
   @override
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, _) async {
         if (didPop) return;
-        if (await _confirmExit() && mounted) {
+        if (!_started) {
+          // Antes de arrancar la rodada: permite salir normalmente
           Navigator.of(context).pop();
+          return;
         }
+        // Durante la rodada: minimizar app al fondo, no salir
+        await SystemChannels.platform
+            .invokeMethod<void>('SystemNavigator.pop');
       },
       child: _buildBody(context),
     );
