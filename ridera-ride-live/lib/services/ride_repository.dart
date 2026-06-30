@@ -20,7 +20,10 @@ class RideRepository {
         .from('members')
         .stream(primaryKey: ['id'])
         .eq('ride_id', rideId)
-        .map((rows) => rows.map((r) => Rider.fromSupabase(r)).toList());
+        .map((rows) => rows
+            .where((r) => r['rol'] != 'pendiente')
+            .map((r) => Rider.fromSupabase(r))
+            .toList());
   }
 
   Future<void> updateTelemetry({
