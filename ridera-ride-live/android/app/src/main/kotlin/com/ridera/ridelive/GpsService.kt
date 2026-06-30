@@ -1,12 +1,17 @@
 package com.ridera.ridelive
 
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.*
+import android.os.Build
 import android.util.Log
+import androidx.core.app.NotificationCompat
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -18,6 +23,9 @@ class GpsService : Service() {
     companion object {
         const val SUPABASE_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co"
         const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI"
+
+        const val NOTIF_CHANNEL_ID = "ridera_gps"
+        const val NOTIF_ID = 1001
 
         // Persiste los datos entre reinicios del servicio (START_STICKY con intent null)
         var savedRideId: String = ""
@@ -56,10 +64,38 @@ class GpsService : Service() {
             uid = savedUid
             accessToken = savedAccessToken
         }
+        startForegroundSafely()
         acquireWakeLock()
         startGps()
         handler.postDelayed(heartbeat, 1000)
         return START_STICKY
+    }
+
+    private fun startForegroundSafely() {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val mgr = getSystemService(NotificationManager::class.java)
+                val channel = NotificationChannel(
+                    NOTIF_CHANNEL_ID, "RIDERA GPS", NotificationManager.IMPORTANCE_LOW
+                ).apply { description = "Seguimiento GPS de la rodada en curso" }
+                mgr.createNotificationChannel(channel)
+            }
+            val tapIntent = packageManager.getLaunchIntentForPackage(packageName)
+            val pendingIntent = PendingIntent.getActivity(
+                this, 0, tapIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            val notification = NotificationCompat.Builder(this, NOTIF_CHANNEL_ID)
+                .setContentTitle("RIDERA")
+                .setContentText("Compartiendo ubicación en la rodada")
+                .setSmallIcon(android.R.drawable.ic_menu_mylocation)
+                .setOngoing(true)
+                .setContentIntent(pendingIntent)
+                .build()
+            startForeground(NOTIF_ID, notification)
+        } catch (_: Exception) {
+            // Si el sistema rechaza el foreground service, seguimos solo con WakeLock
+        }
     }
 
     private fun acquireWakeLock() {
