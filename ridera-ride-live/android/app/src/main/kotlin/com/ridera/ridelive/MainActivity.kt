@@ -26,11 +26,7 @@ class MainActivity : FlutterActivity() {
                             putExtra("uid", uid)
                             putExtra("accessToken", accessToken)
                         }
-                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            startForegroundService(intent)
-                        } else {
-                            startService(intent)
-                        }
+                        startService(intent)
                         result.success(true)
                     }
                     "stop" -> {
