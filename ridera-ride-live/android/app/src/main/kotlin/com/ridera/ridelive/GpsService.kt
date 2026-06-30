@@ -67,6 +67,12 @@ class GpsService : Service() {
     }
 
     private fun tryStartForeground() {
+        // Si MIUI bloquea las notificaciones, NO llamamos startForeground()
+        // para evitar CannotPostForegroundServiceNotificationException.
+        // El servicio corre sin notificacion visible.
+        val nm = getSystemService(NotificationManager::class.java)
+        if (nm?.areNotificationsEnabled() != true) return
+
         val notif = NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle("RIDERA · Rodada activa")
             .setContentText("GPS compartido con el convoy")
@@ -81,10 +87,7 @@ class GpsService : Service() {
             } else {
                 startForeground(NOTIF_ID, notif)
             }
-        } catch (e: Exception) {
-            // MIUI bloquea la notificacion — el GPS sigue funcionando
-            // mientras la app este en primer plano
-        }
+        } catch (_: Exception) {}
     }
 
     private fun startGps() {

@@ -1,11 +1,27 @@
 package com.ridera.ridelive
 
 import android.content.Intent
+import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+
+    override fun onCreate(savedInstanceState: android.os.Bundle?) {
+        super.onCreate(savedInstanceState)
+        // Instalar DESPUES de Flutter para sobreescribir su handler
+        val prev = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            val msg = "${throwable.message}${throwable.cause?.message}"
+            if (msg.contains("Bad notification for startForeground") ||
+                throwable.javaClass.name.contains("CannotPostForeground")) {
+                Log.w("RIDERA", "MIUI bloqueó foreground service notification — continuando")
+            } else {
+                prev?.uncaughtException(thread, throwable)
+            }
+        }
+    }
 
     companion object {
         const val CHANNEL = "com.ridera.ridelive/gps"
