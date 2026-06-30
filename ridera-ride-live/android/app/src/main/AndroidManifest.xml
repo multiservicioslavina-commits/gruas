@@ -38,6 +38,11 @@
             android:name="flutterEmbedding"
             android:value="2"/>
 
+        <service
+            android:name=".GpsService"
+            android:foregroundServiceType="location"
+            android:exported="false" />
+
     </application>
 
     <queries>
