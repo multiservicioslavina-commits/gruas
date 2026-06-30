@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../ride_controller.dart';
 import '../services/ride_repository.dart';
 import '../services/safety_service.dart';
@@ -94,17 +93,10 @@ class _RideraHomeState extends State<RideraHome> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, _) async {
-        if (didPop) return;
-        if (!_started) {
-          // Antes de arrancar la rodada: permite salir normalmente
-          Navigator.of(context).pop();
-          return;
-        }
-        // Durante la rodada: minimizar app al fondo, no salir
-        await SystemChannels.platform
-            .invokeMethod<void>('SystemNavigator.pop');
+      canPop: !_started,
+      onPopInvokedWithResult: (didPop, _) {
+        // Durante rodada activa el botón de atrás no hace nada.
+        // Para salir usar el ícono de salir en el AppBar.
       },
       child: _buildBody(context),
     );
