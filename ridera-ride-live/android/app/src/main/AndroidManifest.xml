@@ -13,7 +13,7 @@
 
     <application
         android:label="RIDERA"
-        android:name="${applicationName}"
+        android:name=".MainApplication"
         >
         <activity
             android:name=".MainActivity"

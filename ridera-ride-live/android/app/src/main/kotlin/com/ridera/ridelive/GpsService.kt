@@ -6,6 +6,7 @@ import android.location.Location
 import android.location.LocationListener
 import android.location.LocationManager
 import android.os.*
+import android.util.Log
 import java.net.HttpURLConnection
 import java.net.URL
 import java.text.SimpleDateFormat
@@ -17,6 +18,11 @@ class GpsService : Service() {
     companion object {
         const val SUPABASE_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co"
         const val ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI"
+
+        // Persiste los datos entre reinicios del servicio (START_STICKY con intent null)
+        var savedRideId: String = ""
+        var savedUid: String = ""
+        var savedAccessToken: String = ""
     }
 
     private var locationManager: LocationManager? = null
@@ -25,6 +31,7 @@ class GpsService : Service() {
     private var uid: String = ""
     private var accessToken: String = ""
     private val handler = Handler(Looper.getMainLooper())
+    private var wakeLock: PowerManager.WakeLock? = null
 
     private val locationListener = LocationListener { loc -> lastLocation = loc }
 
@@ -36,12 +43,31 @@ class GpsService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        rideId = intent?.getStringExtra("rideId") ?: ""
-        uid = intent?.getStringExtra("uid") ?: ""
-        accessToken = intent?.getStringExtra("accessToken") ?: ""
+        if (intent != null) {
+            rideId = intent.getStringExtra("rideId") ?: ""
+            uid = intent.getStringExtra("uid") ?: ""
+            accessToken = intent.getStringExtra("accessToken") ?: ""
+            savedRideId = rideId
+            savedUid = uid
+            savedAccessToken = accessToken
+        } else {
+            // Reinicio por START_STICKY — restaurar datos guardados
+            rideId = savedRideId
+            uid = savedUid
+            accessToken = savedAccessToken
+        }
+        acquireWakeLock()
         startGps()
         handler.postDelayed(heartbeat, 1000)
         return START_STICKY
+    }
+
+    private fun acquireWakeLock() {
+        if (wakeLock?.isHeld == true) return
+        val pm = getSystemService(POWER_SERVICE) as PowerManager
+        wakeLock = pm.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK, "ridera:gps")
+            .also { it.acquire(4 * 60 * 60 * 1000L) } // máx 4 horas
+        Log.d("RIDERA", "WakeLock adquirido — GPS activo con pantalla bloqueada")
     }
 
     private fun startGps() {
@@ -87,6 +113,7 @@ class GpsService : Service() {
     override fun onDestroy() {
         handler.removeCallbacks(heartbeat)
         locationManager?.removeUpdates(locationListener)
+        if (wakeLock?.isHeld == true) wakeLock?.release()
         super.onDestroy()
     }
 
