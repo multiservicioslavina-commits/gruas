@@ -193,8 +193,35 @@ class _RideMapScreenState extends State<RideMapScreen> {
   }
 
   Future<void> _leave() async {
-    await _rideService.leaveRide(widget.rideId);
-    if (mounted) Navigator.of(context).pop();
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a1a),
+        title: const Text('¿Salir de la rodada?',
+            style: TextStyle(color: Colors.white)),
+        content: const Text(
+            'Dejarás de ver el mapa en vivo. Para volver deberás unirte de nuevo con el código de la rodada.',
+            style: TextStyle(color: Color(0xFFe6e3de))),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Quedarme',
+                style: TextStyle(color: Color(0xFFe6e3de))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Salir',
+                style: TextStyle(
+                    color: Color(0xFFef4444), fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _rideService.leaveRide(widget.rideId);
+      if (mounted) Navigator.of(context).pop();
+    }
   }
 
   bool get _hasSos =>
