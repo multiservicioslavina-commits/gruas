@@ -105,6 +105,11 @@ class _RideraHomeState extends State<RideraHome> {
     if (!_started) {
       return Scaffold(
         backgroundColor: RColors.asphalt,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: RColors.asphalt,
+          elevation: 0,
+        ),
         body: PreRodadaScreen(
           controller: widget.controller,
           repo: widget.repo,
@@ -136,6 +141,11 @@ class _RideraHomeState extends State<RideraHome> {
     if (widget.isLeader) {
       return Scaffold(
         backgroundColor: RColors.asphalt,
+        appBar: AppBar(
+          automaticallyImplyLeading: false,
+          backgroundColor: RColors.asphalt,
+          elevation: 0,
+        ),
         body: LeaderPanelScreen(controller: widget.controller),
         floatingActionButton: FloatingActionButton(
           onPressed: () {

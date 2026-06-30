@@ -248,9 +248,12 @@ class _RideMapScreenState extends State<RideMapScreen> {
             ))
         .toList();
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      child: Scaffold(
       backgroundColor: const Color(0xFF0e0e0e),
       appBar: AppBar(
+        automaticallyImplyLeading: false,
         backgroundColor:
             _hasSos ? const Color(0xFF3b1111) : const Color(0xFF141414),
         foregroundColor: Colors.white,
@@ -334,6 +337,7 @@ class _RideMapScreenState extends State<RideMapScreen> {
         backgroundColor: const Color(0xFFef4444),
         child: const Icon(Icons.sos, color: Colors.white, size: 28),
       ),
+    ),
     );
   }
 }
