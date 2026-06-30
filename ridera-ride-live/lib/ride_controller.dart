@@ -105,6 +105,17 @@ class RideController extends ChangeNotifier {
     return await _location.start(rideId: rideId!, uid: myUid!);
   }
 
+  Stream<List<Rider>>? get pendingStream =>
+      isLive ? _repo!.pendingStream(rideId!) : null;
+
+  Future<void> approvePending(String uid) async {
+    if (isLive) await _repo!.approve(rideId!, uid);
+  }
+
+  Future<void> rejectPending(String uid) async {
+    if (isLive) await _repo!.remove(rideId!, uid);
+  }
+
   // ======================= CONTEOS =======================
 
   int get directo => riders

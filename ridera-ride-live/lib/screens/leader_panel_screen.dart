@@ -86,6 +86,7 @@ class _LeaderPanelScreenState extends State<LeaderPanelScreen> {
                       ),
                     ]),
                     _meshHealth(),
+                    _pendingSection(),
                     _list(),
                     if (!c.isLive) _simControls(),
                   ],
@@ -176,6 +177,63 @@ class _LeaderPanelScreenState extends State<LeaderPanelScreen> {
           ]),
         ),
       );
+
+  Widget _pendingSection() {
+    final stream = c.pendingStream;
+    if (stream == null) return const SizedBox.shrink();
+    return StreamBuilder<List<Rider>>(
+      stream: stream,
+      builder: (context, snap) {
+        final pending = snap.data ?? [];
+        if (pending.isEmpty) return const SizedBox.shrink();
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 14, 16, 6),
+              child: Row(children: [
+                const Icon(Icons.person_add_rounded, color: RColors.warn, size: 14),
+                const SizedBox(width: 6),
+                Text('${pending.length} SOLICITANDO INGRESO',
+                    style: const TextStyle(
+                        color: RColors.warn, fontSize: 10, letterSpacing: 2, fontWeight: FontWeight.w700)),
+              ]),
+            ),
+            ...pending.map((r) => Container(
+                  margin: const EdgeInsets.fromLTRB(12, 0, 12, 6),
+                  padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+                  decoration: BoxDecoration(
+                    color: RColors.asphalt2,
+                    border: Border.all(color: RColors.warn.withValues(alpha: 0.4)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(children: [
+                    CircleAvatar(
+                        backgroundColor: RColors.asphalt3,
+                        radius: 16,
+                        child: Text(r.name.isNotEmpty ? r.name[0] : '?',
+                            style: const TextStyle(color: RColors.ink))),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Text(r.name,
+                            style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14))),
+                    IconButton(
+                      onPressed: () { c.rejectPending(r.id); _toast('Solicitud rechazada'); },
+                      icon: const Icon(Icons.close_rounded, color: RColors.inkDim),
+                      tooltip: 'Rechazar',
+                    ),
+                    IconButton(
+                      onPressed: () { c.approvePending(r.id); _toast('Integrante aprobado', color: RColors.ok); },
+                      icon: const Icon(Icons.check_circle_rounded, color: RColors.ok),
+                      tooltip: 'Aprobar',
+                    ),
+                  ]),
+                )),
+          ],
+        );
+      },
+    );
+  }
 
   Widget _list() {
     return Column(
