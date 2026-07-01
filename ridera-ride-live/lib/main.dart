@@ -4,6 +4,7 @@ import 'supabase_config.dart';
 import 'theme.dart';
 import 'screens/login_screen.dart';
 import 'screens/ride_home_screen.dart';
+import 'screens/splash_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +23,7 @@ class RideraApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'RIDERA Ride Live',
+      title: 'RIDERA AVENTURA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: RColors.asphalt,
@@ -31,7 +32,7 @@ class RideraApp extends StatelessWidget {
           secondary: RColors.brand,
         ),
       ),
-      home: const _AuthGate(),
+      home: const SplashScreen(),
     );
   }
 }
