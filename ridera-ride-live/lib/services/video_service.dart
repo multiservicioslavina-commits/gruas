@@ -46,7 +46,7 @@ class VideoService {
       },
       'start': 0,
       'length': 3,
-      'position': 'bottomCenter',
+      'position': 'bottom',
       'offset': {'y': 0.15},
       'transition': {'in': 'fadeIn', 'out': 'fadeOut'},
     });
@@ -74,9 +74,9 @@ class VideoService {
         },
         'start': 3,
         'length': 4,
-        'position': 'bottomCenter',
+        'position': 'bottom',
         'offset': {'y': 0.1},
-        'transition': {'in': 'slideInBottom', 'out': 'fadeOut'},
+        'transition': {'in': 'slideUp', 'out': 'fadeOut'},
       });
     }
 
