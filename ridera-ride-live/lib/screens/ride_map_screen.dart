@@ -265,7 +265,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     );
 
     if (confirm == true) {
-      await _rideService.endRide(widget.rideId);
+      try { await _rideService.endRide(widget.rideId); } catch (_) {}
       if (mounted) _goToSummary();
     }
   }
@@ -297,7 +297,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     );
 
     if (confirm == true) {
-      await _rideService.leaveRide(widget.rideId);
+      try { await _rideService.leaveRide(widget.rideId); } catch (_) {}
       if (mounted) _goToSummary();
     }
   }
