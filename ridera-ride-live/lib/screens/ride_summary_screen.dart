@@ -192,6 +192,9 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
                   _stat(Icons.camera_alt_outlined, '$_photoCount', 'Fotos'),
                 ]),
 
+                const SizedBox(height: 28),
+                _videoButton(),
+
                 if (_photoUrls.isNotEmpty) ...[
                   const SizedBox(height: 28),
                   const Text('FOTOS DE LA RODADA',
@@ -224,8 +227,6 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
                   ),
                 ],
 
-                const SizedBox(height: 28),
-                _videoButton(),
                 const SizedBox(height: 32),
               ],
             ),

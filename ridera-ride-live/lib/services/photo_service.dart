@@ -29,7 +29,7 @@ class PhotoService {
       path,
       File(file.path),
       fileOptions: const FileOptions(contentType: 'image/jpeg'),
-    );
+    ).timeout(const Duration(seconds: 30));
 
     final url = _db.storage.from('ride-photos').getPublicUrl(path);
 
