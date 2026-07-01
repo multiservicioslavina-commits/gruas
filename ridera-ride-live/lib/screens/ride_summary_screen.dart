@@ -1,6 +1,9 @@
+import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../services/video_service.dart';
 import '../theme.dart';
 
 class RideSummaryScreen extends StatefulWidget {
@@ -26,6 +29,13 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   double _maxSpeedKmh = 0;
   int _photoCount = 0;
   List<String> _photoUrls = [];
+  List<Map<String, double>> _routePoints = [];
+
+  final _videoService = VideoService();
+  String _videoStatus = 'idle'; // idle | rendering | done | error
+  String? _videoUrl;
+  String? _renderId;
+  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -64,12 +74,21 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           .eq('uid', uid)
           .order('created_at');
 
+      // Puntos de ruta para el mapa del video
+      final routePts = points
+          .map<Map<String, double>>((p) => {
+                'lat': (p['lat'] as num).toDouble(),
+                'lon': (p['lon'] as num).toDouble(),
+              })
+          .toList();
+
       if (mounted) {
         setState(() {
           _distanceKm = dist;
           _maxSpeedKmh = maxSpd;
           _photoCount = photos.length;
           _photoUrls = photos.map<String>((p) => p['url'] as String).toList();
+          _routePoints = routePts;
           _loading = false;
         });
       }
@@ -86,6 +105,42 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         cos(lat1 * pi / 180) * cos(lat2 * pi / 180) *
         sin(dLon / 2) * sin(dLon / 2);
     return r * 2 * asin(sqrt(a));
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _generateVideo() async {
+    setState(() => _videoStatus = 'rendering');
+    try {
+      final id = await _videoService.requestRender(
+        rideName: widget.rideName,
+        elapsed: _hms(widget.elapsed),
+        distanceKm: _distanceKm.toStringAsFixed(1),
+        maxSpeedKmh: _maxSpeedKmh.toStringAsFixed(0),
+        photoUrls: _photoUrls,
+        routePoints: _routePoints,
+      );
+      _renderId = id;
+      // Polling cada 5 segundos hasta que esté listo
+      _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+        try {
+          final url = await _videoService.checkRender(_renderId!);
+          if (url != null && mounted) {
+            _pollTimer?.cancel();
+            setState(() { _videoStatus = 'done'; _videoUrl = url; });
+          }
+        } catch (_) {
+          _pollTimer?.cancel();
+          if (mounted) setState(() => _videoStatus = 'error');
+        }
+      });
+    } catch (e) {
+      if (mounted) setState(() => _videoStatus = 'error');
+    }
   }
 
   String _hms(Duration d) {
@@ -169,10 +224,99 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
                   ),
                 ],
 
+                const SizedBox(height: 28),
+                _videoButton(),
                 const SizedBox(height: 32),
               ],
             ),
     );
+  }
+
+  Widget _videoButton() {
+    switch (_videoStatus) {
+      case 'idle':
+        return SizedBox(
+          width: double.infinity,
+          child: FilledButton.icon(
+            onPressed: _generateVideo,
+            icon: const Icon(Icons.videocam_rounded),
+            label: const Text('GENERAR VIDEO DE LA RODADA',
+                style: TextStyle(fontSize: 14, letterSpacing: 1.5)),
+            style: FilledButton.styleFrom(
+              backgroundColor: RColors.brand,
+              minimumSize: const Size(0, 56),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            ),
+          ),
+        );
+      case 'rendering':
+        return Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            color: RColors.asphalt2,
+            border: Border.all(color: RColors.line),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+            SizedBox(width: 20, height: 20,
+                child: CircularProgressIndicator(color: RColors.brand, strokeWidth: 2)),
+            SizedBox(width: 14),
+            Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
+          ]),
+        );
+      case 'done':
+        return Column(children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF0d2b1a),
+              border: Border.all(color: RColors.ok),
+              borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(children: [
+              const Icon(Icons.check_circle, color: RColors.ok),
+              const SizedBox(width: 10),
+              const Expanded(child: Text('¡Video listo!',
+                  style: TextStyle(color: RColors.ok, fontWeight: FontWeight.w700))),
+            ]),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => launchUrl(Uri.parse(_videoUrl!),
+                  mode: LaunchMode.externalApplication),
+              icon: const Icon(Icons.download_rounded),
+              label: const Text('DESCARGAR VIDEO',
+                  style: TextStyle(fontSize: 14, letterSpacing: 1.5)),
+              style: FilledButton.styleFrom(
+                backgroundColor: RColors.ok,
+                minimumSize: const Size(0, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
+            ),
+          ),
+        ]);
+      default:
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2b0d0d),
+            border: Border.all(color: RColors.sos),
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: Row(children: [
+            const Icon(Icons.error_outline, color: RColors.sos),
+            const SizedBox(width: 10),
+            const Expanded(child: Text('Error generando el video. Intenta de nuevo.',
+                style: TextStyle(color: RColors.sos))),
+            TextButton(
+              onPressed: () => setState(() => _videoStatus = 'idle'),
+              child: const Text('Reintentar', style: TextStyle(color: RColors.brand)),
+            ),
+          ]),
+        );
+    }
   }
 
   Widget _stat(IconData icon, String value, String label) => Expanded(
