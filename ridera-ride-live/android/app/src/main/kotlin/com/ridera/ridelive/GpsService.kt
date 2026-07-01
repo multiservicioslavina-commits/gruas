@@ -120,15 +120,18 @@ class GpsService : Service() {
         } catch (_: SecurityException) {}
     }
 
+    private var pointCounter = 0
+
     private fun pushToSupabase() {
         val loc = lastLocation ?: return
         if (rideId.isEmpty() || uid.isEmpty()) return
         val now = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US)
             .apply { timeZone = TimeZone.getTimeZone("UTC") }.format(Date())
         val speedKmh = (loc.speed * 3.6).coerceIn(0.0, 300.0)
-        val body = """{"lat":${loc.latitude},"lon":${loc.longitude},"speed_kmh":$speedKmh,"last_seen":"$now"}"""
+        val memberBody = """{"lat":${loc.latitude},"lon":${loc.longitude},"speed_kmh":$speedKmh,"last_seen":"$now"}"""
         thread {
             try {
+                // Actualizar posición en members (cada 4s)
                 val conn = URL("$SUPABASE_URL/rest/v1/members?ride_id=eq.$rideId&uid=eq.$uid")
                     .openConnection() as HttpURLConnection
                 conn.requestMethod = "PATCH"
@@ -139,10 +142,32 @@ class GpsService : Service() {
                 conn.doOutput = true
                 conn.connectTimeout = 5000
                 conn.readTimeout = 5000
-                conn.outputStream.use { it.write(body.toByteArray()) }
+                conn.outputStream.use { it.write(memberBody.toByteArray()) }
                 conn.responseCode
                 conn.disconnect()
             } catch (_: Exception) {}
+        }
+        // Insertar punto de trazado cada ~20s (cada 5 heartbeats de 4s)
+        pointCounter++
+        if (pointCounter % 5 == 0) {
+            val pointBody = """{"ride_id":"$rideId","uid":"$uid","lat":${loc.latitude},"lon":${loc.longitude},"speed_kmh":$speedKmh,"recorded_at":"$now"}"""
+            thread {
+                try {
+                    val conn = URL("$SUPABASE_URL/rest/v1/route_points")
+                        .openConnection() as HttpURLConnection
+                    conn.requestMethod = "POST"
+                    conn.setRequestProperty("apikey", ANON_KEY)
+                    conn.setRequestProperty("Authorization", "Bearer ${accessToken.ifEmpty { ANON_KEY }}")
+                    conn.setRequestProperty("Content-Type", "application/json")
+                    conn.setRequestProperty("Prefer", "return=minimal")
+                    conn.doOutput = true
+                    conn.connectTimeout = 5000
+                    conn.readTimeout = 5000
+                    conn.outputStream.use { it.write(pointBody.toByteArray()) }
+                    conn.responseCode
+                    conn.disconnect()
+                } catch (_: Exception) {}
+            }
         }
     }
 

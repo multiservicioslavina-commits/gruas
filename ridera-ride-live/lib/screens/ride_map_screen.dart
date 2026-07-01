@@ -67,6 +67,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _loadMembers();
+    _loadRoutePoints();
     _subscribeRealtime();
     _statusTimer = Timer.periodic(
         const Duration(seconds: 1), (_) => _recalcStatus());
@@ -83,6 +84,27 @@ class _RideMapScreenState extends State<RideMapScreen>
       _subscribeRealtime();
       _loadMembers();
     }
+  }
+
+  Future<void> _loadRoutePoints() async {
+    try {
+      final rows = await Supabase.instance.client
+          .from('route_points')
+          .select('uid, lat, lon')
+          .eq('ride_id', widget.rideId)
+          .order('recorded_at');
+      if (!mounted) return;
+      setState(() {
+        for (final r in rows) {
+          final uid = r['uid'] as String;
+          final lat = (r['lat'] as num).toDouble();
+          final lon = (r['lon'] as num).toDouble();
+          final list = _traces.putIfAbsent(uid, () => []);
+          final pt = LatLng(lat, lon);
+          if (list.isEmpty || list.last != pt) list.add(pt);
+        }
+      });
+    } catch (_) {}
   }
 
   Future<void> _loadMembers() async {
