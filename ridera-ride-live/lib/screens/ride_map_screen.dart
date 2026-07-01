@@ -21,13 +21,15 @@ class RideMapScreen extends StatefulWidget {
   State<RideMapScreen> createState() => _RideMapScreenState();
 }
 
-class _RideMapScreenState extends State<RideMapScreen> {
+class _RideMapScreenState extends State<RideMapScreen>
+    with WidgetsBindingObserver {
   final _rideService = RideService();
   final _mapCtrl = MapController();
 
   final Map<String, _RiderData> _riders = {};
   RealtimeChannel? _channel;
   Timer? _statusTimer;
+  Timer? _refreshTimer;
   bool _centered = true;
 
   String get _uid => Supabase.instance.client.auth.currentUser!.id;
@@ -35,10 +37,24 @@ class _RideMapScreenState extends State<RideMapScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadMembers();
     _subscribeRealtime();
     _statusTimer = Timer.periodic(
         const Duration(seconds: 1), (_) => _recalcStatus());
+    // Recarga completa desde DB cada 30s como respaldo si el WebSocket cae
+    _refreshTimer = Timer.periodic(
+        const Duration(seconds: 30), (_) => _loadMembers());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      // App vuelve al frente — reconectar Realtime y recargar datos
+      _channel?.unsubscribe();
+      _subscribeRealtime();
+      _loadMembers();
+    }
   }
 
   Future<void> _loadMembers() async {
@@ -229,8 +245,10 @@ class _RideMapScreenState extends State<RideMapScreen> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _channel?.unsubscribe();
     _statusTimer?.cancel();
+    _refreshTimer?.cancel();
     super.dispose();
   }
 
