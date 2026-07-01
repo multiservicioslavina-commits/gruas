@@ -7,16 +7,21 @@ import '../services/photo_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../widgets/rider_marker.dart';
+import 'ride_summary_screen.dart';
 
 class RideMapScreen extends StatefulWidget {
   const RideMapScreen({
     super.key,
     required this.rideId,
     required this.isLider,
+    this.rideName = 'Rodada',
+    this.startedAt,
   });
 
   final String rideId;
   final bool isLider;
+  final String rideName;
+  final DateTime? startedAt;
 
   @override
   State<RideMapScreen> createState() => _RideMapScreenState();
@@ -261,7 +266,7 @@ class _RideMapScreenState extends State<RideMapScreen>
 
     if (confirm == true) {
       await _rideService.endRide(widget.rideId);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) _goToSummary();
     }
   }
 
@@ -293,8 +298,23 @@ class _RideMapScreenState extends State<RideMapScreen>
 
     if (confirm == true) {
       await _rideService.leaveRide(widget.rideId);
-      if (mounted) Navigator.of(context).pop();
+      if (mounted) _goToSummary();
     }
+  }
+
+  void _goToSummary() {
+    final elapsed = widget.startedAt != null
+        ? DateTime.now().difference(widget.startedAt!)
+        : Duration.zero;
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) => RideSummaryScreen(
+          rideId: widget.rideId,
+          rideName: widget.rideName,
+          elapsed: elapsed,
+        ),
+      ),
+    );
   }
 
   Future<void> _takePhoto() async {

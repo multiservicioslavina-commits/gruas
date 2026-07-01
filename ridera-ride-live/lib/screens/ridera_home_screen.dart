@@ -30,6 +30,7 @@ class RideraHome extends StatefulWidget {
 
 class _RideraHomeState extends State<RideraHome> {
   bool _started = false;
+  DateTime? _startedAt;
   StreamSubscription<void>? _crashSub;
 
   @override
@@ -132,7 +133,7 @@ class _RideraHomeState extends State<RideraHome> {
               );
               return;
             }
-            setState(() => _started = true);
+            setState(() { _started = true; _startedAt = DateTime.now(); });
           },
         ),
       );
@@ -153,6 +154,8 @@ class _RideraHomeState extends State<RideraHome> {
               builder: (_) => RideMapScreen(
                 rideId: widget.rideId,
                 isLider: true,
+                rideName: widget.controller.rideName,
+                startedAt: _startedAt,
               ),
             ));
           },
@@ -165,6 +168,8 @@ class _RideraHomeState extends State<RideraHome> {
     return RideMapScreen(
       rideId: widget.rideId,
       isLider: false,
+      rideName: widget.controller.rideName,
+      startedAt: _startedAt,
     );
   }
 }
