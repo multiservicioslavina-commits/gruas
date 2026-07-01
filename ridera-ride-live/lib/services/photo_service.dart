@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:gal/gal.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -17,6 +18,9 @@ class PhotoService {
       maxWidth: 1920,
     );
     if (file == null) return null;
+
+    // Guardar en galería del teléfono
+    await Gal.putImage(file.path, album: 'RIDERA');
 
     final uid = _db.auth.currentUser!.id;
     final path = '$rideId/$uid/${DateTime.now().millisecondsSinceEpoch}.jpg';
