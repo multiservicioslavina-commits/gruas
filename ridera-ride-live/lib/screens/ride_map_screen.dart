@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/photo_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../widgets/rider_marker.dart';
@@ -47,7 +48,9 @@ extension _MapTypeExt on _MapType {
 class _RideMapScreenState extends State<RideMapScreen>
     with WidgetsBindingObserver {
   final _rideService = RideService();
+  final _photoService = PhotoService();
   final _mapCtrl = MapController();
+  bool _uploadingPhoto = false;
 
   final Map<String, _RiderData> _riders = {};
   final Map<String, List<LatLng>> _traces = {};
@@ -272,6 +275,39 @@ class _RideMapScreenState extends State<RideMapScreen>
     }
   }
 
+  Future<void> _takePhoto() async {
+    if (_uploadingPhoto) return;
+    setState(() => _uploadingPhoto = true);
+    try {
+      final me = _riders[_uid];
+      final url = await _photoService.captureAndUpload(
+        rideId: widget.rideId,
+        lat: me?.lat,
+        lon: me?.lon,
+      );
+      if (url != null && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Foto guardada en la rodada'),
+            backgroundColor: Color(0xFF1a1a1a),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Error al guardar la foto'),
+            backgroundColor: Color(0xFF3b1111),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploadingPhoto = false);
+    }
+  }
+
   bool get _hasSos =>
       _riders.values.any((r) => r.status == RideStatus.sos);
 
@@ -401,10 +437,27 @@ class _RideMapScreenState extends State<RideMapScreen>
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _sendSos,
-        backgroundColor: const Color(0xFFef4444),
-        child: const Icon(Icons.sos, color: Colors.white, size: 28),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          FloatingActionButton(
+            heroTag: 'camera',
+            onPressed: _uploadingPhoto ? null : _takePhoto,
+            backgroundColor: const Color(0xFF1a1a1a),
+            child: _uploadingPhoto
+                ? const SizedBox(
+                    width: 22, height: 22,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                : const Icon(Icons.camera_alt, color: Colors.white),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton(
+            heroTag: 'sos',
+            onPressed: _sendSos,
+            backgroundColor: const Color(0xFFef4444),
+            child: const Icon(Icons.sos, color: Colors.white, size: 28),
+          ),
+        ],
       ),
     ),
     );
