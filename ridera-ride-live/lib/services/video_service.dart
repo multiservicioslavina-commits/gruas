@@ -31,7 +31,7 @@ class VideoService {
       'start': 0,
       'length': 3,
       'position': 'center',
-      'transition': {'in': 'fadeIn', 'out': 'fadeOut'},
+      'transition': {'in': 'fade', 'out': 'fade'},
     });
 
     // ── 2. Logo RIDERA ─────────────────────────────────────────────────
@@ -48,7 +48,7 @@ class VideoService {
       'length': 3,
       'position': 'bottom',
       'offset': {'y': 0.15},
-      'transition': {'in': 'fadeIn', 'out': 'fadeOut'},
+      'transition': {'in': 'fade', 'out': 'fade'},
     });
 
     // ── 3. Mapa estático con trazado (Mapbox Static API) ───────────────
@@ -59,7 +59,7 @@ class VideoService {
         'start': 3,
         'length': 4,
         'effect': 'zoomIn',
-        'transition': {'in': 'fadeIn', 'out': 'fadeOut'},
+        'transition': {'in': 'fade', 'out': 'fade'},
       });
       // Overlay de datos sobre el mapa
       clips.add({
@@ -76,7 +76,7 @@ class VideoService {
         'length': 4,
         'position': 'bottom',
         'offset': {'y': 0.1},
-        'transition': {'in': 'slideUp', 'out': 'fadeOut'},
+        'transition': {'in': 'slideUp', 'out': 'fade'},
       });
     }
 
@@ -88,7 +88,7 @@ class VideoService {
         'start': t,
         'length': 3,
         'effect': 'slideLeft',
-        'transition': {'in': 'fadeIn', 'out': 'fadeOut'},
+        'transition': {'in': 'fade', 'out': 'fade'},
       });
       t += 3;
     }
@@ -106,7 +106,7 @@ class VideoService {
       'start': t,
       'length': 3,
       'position': 'center',
-      'transition': {'in': 'fadeIn'},
+      'transition': {'in': 'fade'},
     });
 
     final totalLength = t + 3;
