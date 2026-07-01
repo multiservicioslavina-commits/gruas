@@ -71,7 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 8),
                 const Text('RIDERA', style: TextStyle(
                   color: RColors.brand, fontSize: 30, fontWeight: FontWeight.w900, letterSpacing: 4)),
-                const Text('RIDE LIVE', style: TextStyle(
+                const Text('AVENTURA', style: TextStyle(
                   color: Colors.white, fontSize: 13, fontWeight: FontWeight.w300, letterSpacing: 8)),
                 const SizedBox(height: 40),
                 _field(_email, 'Correo electrónico', icon: Icons.email_outlined,

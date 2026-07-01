@@ -38,7 +38,7 @@ class VideoService {
     clips.add({
       'asset': {
         'type': 'html',
-        'html': '<p>🏍 RIDERA RIDE LIVE</p>',
+        'html': '<p>🏍 RIDERA AVENTURA</p>',
         'css':
             'p { font-family: Arial, sans-serif; font-size: 28px; color: #ffffff; text-align: center; letter-spacing: 8px; font-weight: 300; }',
         'width': 1080,
@@ -97,7 +97,7 @@ class VideoService {
     clips.add({
       'asset': {
         'type': 'html',
-        'html': '<p>🏍 RIDERA RIDE LIVE</p>',
+        'html': '<p>🏍 RIDERA AVENTURA</p>',
         'css':
             'p { font-family: Arial Black, sans-serif; font-size: 48px; color: #E85D20; text-align: center; font-weight: 900; letter-spacing: 6px; }',
         'width': 1080,

@@ -52,7 +52,7 @@ class RideHomeScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const Text(
-                'RIDE LIVE',
+                'AVENTURA',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 16,
