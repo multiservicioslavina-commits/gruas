@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import '../services/auth_service.dart';
 import '../theme.dart';
 import 'ride_entry_screen.dart';
+import 'profile_screen.dart';
 
 class RideHomeScreen extends StatelessWidget {
   const RideHomeScreen({super.key});
@@ -9,6 +11,26 @@ class RideHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: RColors.asphalt,
+      appBar: AppBar(
+        backgroundColor: RColors.asphalt,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.person_outline, color: RColors.inkDim),
+            tooltip: 'Mi perfil',
+            onPressed: () => Navigator.push(context,
+                MaterialPageRoute(builder: (_) => const ProfileScreen())),
+          ),
+          IconButton(
+            icon: const Icon(Icons.logout, color: RColors.inkDim),
+            tooltip: 'Cerrar sesión',
+            onPressed: () async {
+              await AuthService().signOut();
+            },
+          ),
+        ],
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),

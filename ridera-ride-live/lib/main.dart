@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'supabase_config.dart';
-import 'services/auth_service.dart';
-import 'screens/ride_home_screen.dart';
 import 'theme.dart';
+import 'screens/login_screen.dart';
+import 'screens/ride_home_screen.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -12,9 +12,6 @@ Future<void> main() async {
     url: kSupabaseUrl,
     anonKey: kSupabaseAnonKey,
   );
-
-  final auth = AuthService();
-  await auth.ensureSignedIn();
 
   runApp(const RideraApp());
 }
@@ -34,7 +31,30 @@ class RideraApp extends StatelessWidget {
           secondary: RColors.brand,
         ),
       ),
-      home: const RideHomeScreen(),
+      home: const _AuthGate(),
     );
+  }
+}
+
+class _AuthGate extends StatefulWidget {
+  const _AuthGate();
+  @override
+  State<_AuthGate> createState() => _AuthGateState();
+}
+
+class _AuthGateState extends State<_AuthGate> {
+  @override
+  void initState() {
+    super.initState();
+    Supabase.instance.client.auth.onAuthStateChange.listen((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final user = Supabase.instance.client.auth.currentUser;
+    final isRealUser = user != null && user.isAnonymous != true;
+    return isRealUser ? const RideHomeScreen() : const LoginScreen();
   }
 }
