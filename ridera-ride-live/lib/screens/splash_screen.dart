@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -13,16 +14,24 @@ class SplashScreen extends StatefulWidget {
 
 class _SplashScreenState extends State<SplashScreen> {
   late VideoPlayerController _controller;
+  Timer? _fallback;
+  bool _navigated = false;
 
   @override
   void initState() {
     super.initState();
+    // Fallback: si el video no termina en 8s, navegar igual
+    _fallback = Timer(const Duration(seconds: 8), _goNext);
+
     _controller = VideoPlayerController.asset('assets/videos/splash.mp4')
       ..initialize().then((_) {
         if (mounted) {
           setState(() {});
           _controller.play();
         }
+      }).catchError((_) {
+        // Si no carga el video, ir directo
+        _goNext();
       });
     _controller.addListener(_onVideoEnd);
   }
@@ -31,12 +40,14 @@ class _SplashScreenState extends State<SplashScreen> {
     if (_controller.value.isInitialized &&
         !_controller.value.isPlaying &&
         _controller.value.position >= _controller.value.duration) {
-      _goToLogin();
+      _goNext();
     }
   }
 
-  void _goToLogin() {
-    if (!mounted) return;
+  void _goNext() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
+    _fallback?.cancel();
     _controller.removeListener(_onVideoEnd);
     final user = Supabase.instance.client.auth.currentUser;
     final isLoggedIn = user != null && user.isAnonymous != true;
@@ -53,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   void dispose() {
+    _fallback?.cancel();
     _controller.removeListener(_onVideoEnd);
     _controller.dispose();
     super.dispose();
