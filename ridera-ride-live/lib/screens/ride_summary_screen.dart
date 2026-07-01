@@ -35,6 +35,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   String _videoStatus = 'idle'; // idle | rendering | done | error
   String? _videoUrl;
   String? _renderId;
+  String? _videoError;
   Timer? _pollTimer;
 
   @override
@@ -139,7 +140,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         }
       });
     } catch (e) {
-      if (mounted) setState(() => _videoStatus = 'error');
+      if (mounted) setState(() { _videoStatus = 'error'; _videoError = e.toString(); });
     }
   }
 
@@ -309,8 +310,9 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           child: Row(children: [
             const Icon(Icons.error_outline, color: RColors.sos),
             const SizedBox(width: 10),
-            const Expanded(child: Text('Error generando el video. Intenta de nuevo.',
-                style: TextStyle(color: RColors.sos))),
+            Expanded(child: Text(
+                _videoError ?? 'Error generando el video. Intenta de nuevo.',
+                style: const TextStyle(color: RColors.sos, fontSize: 11))),
             TextButton(
               onPressed: () => setState(() => _videoStatus = 'idle'),
               child: const Text('Reintentar', style: TextStyle(color: RColors.brand)),
