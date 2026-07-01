@@ -21,6 +21,29 @@ class RideMapScreen extends StatefulWidget {
   State<RideMapScreen> createState() => _RideMapScreenState();
 }
 
+enum _MapType { calles, satelite, relieve, oscuro }
+
+extension _MapTypeExt on _MapType {
+  String get label => switch (this) {
+    _MapType.calles   => 'Calles',
+    _MapType.satelite => 'Satélite',
+    _MapType.relieve  => 'Relieve',
+    _MapType.oscuro   => 'Oscuro',
+  };
+  IconData get icon => switch (this) {
+    _MapType.calles   => Icons.map_outlined,
+    _MapType.satelite => Icons.satellite_alt,
+    _MapType.relieve  => Icons.terrain,
+    _MapType.oscuro   => Icons.nights_stay_outlined,
+  };
+  String get url => switch (this) {
+    _MapType.calles   => 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    _MapType.satelite => 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    _MapType.relieve  => 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+    _MapType.oscuro   => 'https://cartodb-basemaps-a.global.ssl.fastly.net/dark_all/{z}/{x}/{y}.png',
+  };
+}
+
 class _RideMapScreenState extends State<RideMapScreen>
     with WidgetsBindingObserver {
   final _rideService = RideService();
@@ -31,6 +54,7 @@ class _RideMapScreenState extends State<RideMapScreen>
   Timer? _statusTimer;
   Timer? _refreshTimer;
   bool _centered = true;
+  _MapType _mapType = _MapType.calles;
 
   String get _uid => Supabase.instance.client.auth.currentUser!.id;
 
@@ -332,12 +356,19 @@ class _RideMapScreenState extends State<RideMapScreen>
             ),
             children: [
               TileLayer(
-                urlTemplate:
-                    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                urlTemplate: _mapType.url,
                 userAgentPackageName: 'co.ridera.ridelive',
               ),
               MarkerLayer(markers: markers),
             ],
+          ),
+          Positioned(
+            top: 12,
+            left: 12,
+            child: _MapTypePicker(
+              selected: _mapType,
+              onSelect: (t) => setState(() => _mapType = t),
+            ),
           ),
           Positioned(
             bottom: 0,
@@ -356,6 +387,93 @@ class _RideMapScreenState extends State<RideMapScreen>
         child: const Icon(Icons.sos, color: Colors.white, size: 28),
       ),
     ),
+    );
+  }
+}
+
+// ─── Map type picker ────────────────────────────────────────────────
+
+class _MapTypePicker extends StatefulWidget {
+  const _MapTypePicker({required this.selected, required this.onSelect});
+  final _MapType selected;
+  final ValueChanged<_MapType> onSelect;
+  @override
+  State<_MapTypePicker> createState() => _MapTypePickerState();
+}
+
+class _MapTypePickerState extends State<_MapTypePicker> {
+  bool _open = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Botón principal
+        GestureDetector(
+          onTap: () => setState(() => _open = !_open),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF141414).withValues(alpha: 0.92),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: const Color(0xFF2a2a2a)),
+            ),
+            child: Row(mainAxisSize: MainAxisSize.min, children: [
+              Icon(widget.selected.icon, size: 16, color: const Color(0xFFE85D20)),
+              const SizedBox(width: 6),
+              Text(widget.selected.label,
+                  style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600)),
+              const SizedBox(width: 4),
+              Icon(_open ? Icons.expand_less : Icons.expand_more,
+                  size: 16, color: Colors.white54),
+            ]),
+          ),
+        ),
+        // Panel desplegable
+        if (_open) ...[
+          const SizedBox(height: 6),
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF141414).withValues(alpha: 0.95),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF2a2a2a)),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: _MapType.values.map((t) {
+                final sel = t == widget.selected;
+                return GestureDetector(
+                  onTap: () {
+                    widget.onSelect(t);
+                    setState(() => _open = false);
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: sel ? const Color(0xFFE85D20).withValues(alpha: 0.15) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Row(mainAxisSize: MainAxisSize.min, children: [
+                      Icon(t.icon, size: 16,
+                          color: sel ? const Color(0xFFE85D20) : Colors.white60),
+                      const SizedBox(width: 10),
+                      Text(t.label, style: TextStyle(
+                          color: sel ? const Color(0xFFE85D20) : Colors.white,
+                          fontSize: 13,
+                          fontWeight: sel ? FontWeight.w700 : FontWeight.normal)),
+                      if (sel) ...[
+                        const SizedBox(width: 8),
+                        const Icon(Icons.check, size: 14, color: Color(0xFFE85D20)),
+                      ],
+                    ]),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ],
     );
   }
 }
