@@ -50,6 +50,7 @@ class _RideMapScreenState extends State<RideMapScreen>
   final _mapCtrl = MapController();
 
   final Map<String, _RiderData> _riders = {};
+  final Map<String, List<LatLng>> _traces = {};
   RealtimeChannel? _channel;
   Timer? _statusTimer;
   Timer? _refreshTimer;
@@ -98,8 +99,15 @@ class _RideMapScreenState extends State<RideMapScreen>
       widget.rideId,
       (record) {
         if (record.isEmpty) return;
+        final data = _RiderData.fromMap(record);
+        final uid = record['uid'] as String? ?? '';
         setState(() {
-          _riders[record['uid']] = _RiderData.fromMap(record);
+          _riders[uid] = data;
+          if (data.lat != null && data.lon != null) {
+            final pt = LatLng(data.lat!, data.lon!);
+            final list = _traces.putIfAbsent(uid, () => []);
+            if (list.isEmpty || list.last != pt) list.add(pt);
+          }
         });
         if (_centered) _fitBounds();
       },
@@ -358,6 +366,18 @@ class _RideMapScreenState extends State<RideMapScreen>
               TileLayer(
                 urlTemplate: _mapType.url,
                 userAgentPackageName: 'co.ridera.ridelive',
+              ),
+              PolylineLayer(
+                polylines: _traces.entries.map((e) {
+                  final isLider = _riders[e.key]?.rol == 'lider';
+                  return Polyline(
+                    points: e.value,
+                    color: isLider
+                        ? const Color(0xFFE85D20)
+                        : const Color(0xFF6B9FD4),
+                    strokeWidth: isLider ? 3.5 : 2.0,
+                  );
+                }).toList(),
               ),
               MarkerLayer(markers: markers),
             ],
