@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../ride_controller.dart';
 import '../models/rider.dart';
 import '../theme.dart';
-import '../widgets/mesh_map.dart';
 import '../widgets/street_map.dart';
 
 class LeaderPanelScreen extends StatefulWidget {
@@ -52,17 +51,14 @@ class _LeaderPanelScreenState extends State<LeaderPanelScreen> {
                   padding: EdgeInsets.zero,
                   children: [
                     Stack(children: [
-                      _streetMap
-                          ? StreetMap(
-                              controller: c,
-                              selectedId: _selected,
-                              onTapNode: (id) => setState(() => _selected = _selected == id ? null : id),
-                            )
-                          : MeshMap(
-                              controller: c,
-                              selectedId: _selected,
-                              onTapNode: (id) => setState(() => _selected = _selected == id ? null : id),
-                            ),
+                      StreetMap(
+                        controller: c,
+                        selectedId: _selected,
+                        onTapNode: (id) => setState(() => _selected = _selected == id ? null : id),
+                        tileUrl: _streetMap
+                            ? 'https://tile.openstreetmap.org/{z}/{x}/{y}.png'
+                            : 'https://tile.opentopomap.org/{z}/{x}/{y}.png',
+                      ),
                       Positioned(top: 8, left: 12, child: _chip(_streetMap ? 'Mapa en vivo · Calles' : 'Malla en vivo · Relieve')),
                       Positioned(top: 8, right: 12, child: _chip('Sondeo ${c.pollLabel}', mono: true)),
                       Positioned(

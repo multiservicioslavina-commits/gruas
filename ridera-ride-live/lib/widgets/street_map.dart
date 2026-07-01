@@ -10,12 +10,14 @@ class StreetMap extends StatelessWidget {
   final RideController controller;
   final String? selectedId;
   final void Function(String id) onTapNode;
+  final String tileUrl;
 
   const StreetMap({
     super.key,
     required this.controller,
     this.selectedId,
     required this.onTapNode,
+    this.tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
   });
 
   @override
@@ -55,7 +57,7 @@ class StreetMap extends StatelessWidget {
           ),
           children: [
             TileLayer(
-              urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+              urlTemplate: tileUrl,
               userAgentPackageName: 'co.ridera.ridelive',
             ),
             MarkerLayer(markers: markers),
