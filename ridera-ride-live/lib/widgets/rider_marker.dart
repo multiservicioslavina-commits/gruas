@@ -25,8 +25,8 @@ Marker riderMarker({
 
   return Marker(
     point: position,
-    width: size + 60,
-    height: size + 20,
+    width: size + 70,
+    height: size + 36,
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [

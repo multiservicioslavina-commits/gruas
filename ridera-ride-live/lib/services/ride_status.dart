@@ -10,7 +10,7 @@ RideStatus memberStatus({
   if (statusCode == 2) return RideStatus.falla;
 
   final secs = DateTime.now().toUtc().difference(lastSeen.toUtc()).inSeconds;
-  if (secs > 15) return RideStatus.perdido;
+  if (secs > 30) return RideStatus.perdido;
   if (speedKmh < 3) return RideStatus.detenido;
   return RideStatus.enMarcha;
 }
