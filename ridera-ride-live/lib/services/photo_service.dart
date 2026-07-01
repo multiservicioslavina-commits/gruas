@@ -14,8 +14,8 @@ class PhotoService {
   }) async {
     final file = await _picker.pickImage(
       source: ImageSource.camera,
-      imageQuality: 80,
-      maxWidth: 1920,
+      imageQuality: 60,
+      maxWidth: 1080,
     );
     if (file == null) return null;
 
