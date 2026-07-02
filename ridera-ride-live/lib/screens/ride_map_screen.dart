@@ -363,8 +363,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
+  Widget _buildMap() {
     final markers = _riders.values
         .where((r) => r.lat != null && r.lon != null)
         .map((r) => riderMarker(
@@ -376,133 +375,229 @@ class _RideMapScreenState extends State<RideMapScreen>
               isLider: r.rol == 'lider',
             ))
         .toList();
+    return FlutterMap(
+      mapController: _mapCtrl,
+      options: MapOptions(
+        initialCenter: const LatLng(6.25, -75.57),
+        initialZoom: 12,
+        onPositionChanged: (_, hasGesture) {
+          if (hasGesture) _centered = false;
+        },
+      ),
+      children: [
+        TileLayer(
+          urlTemplate: _mapType.url,
+          userAgentPackageName: 'co.ridera.ridelive',
+        ),
+        PolylineLayer(
+          polylines: _traces.entries.map((e) {
+            final isLider = _riders[e.key]?.rol == 'lider';
+            return Polyline(
+              points: e.value,
+              color: isLider
+                  ? const Color(0xFFE85D20)
+                  : const Color(0xFF6B9FD4),
+              strokeWidth: isLider ? 3.5 : 2.0,
+            );
+          }).toList(),
+        ),
+        MarkerLayer(markers: markers),
+      ],
+    );
+  }
 
+  @override
+  Widget build(BuildContext context) {
+    final isLandscape =
+        MediaQuery.of(context).orientation == Orientation.landscape;
+
+    final appBar = AppBar(
+      automaticallyImplyLeading: false,
+      backgroundColor:
+          _hasSos ? const Color(0xFF3b1111) : const Color(0xFF141414),
+      foregroundColor: Colors.white,
+      title: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _hasSos ? '⚠ SOS ACTIVO' : 'Rodada en vivo',
+            style: TextStyle(
+              fontSize: 16,
+              color: _hasSos ? const Color(0xFFef4444) : Colors.white,
+            ),
+          ),
+          Text(
+            'Código: ${widget.rideId}  ·  ${_riders.length} pilotos',
+            style: const TextStyle(fontSize: 12, color: Color(0xFFe6e3de)),
+          ),
+        ],
+      ),
+      actions: [
+        if (_hasSos && widget.isLider)
+          IconButton(
+            icon: const Icon(Icons.check_circle, color: Color(0xFF4ade80)),
+            tooltip: 'Resolver SOS',
+            onPressed: _resolveSos,
+          ),
+        IconButton(
+          icon: const Icon(Icons.my_location),
+          onPressed: () {
+            _centered = true;
+            _fitBounds();
+          },
+        ),
+        if (widget.isLider)
+          IconButton(
+            icon: const Icon(Icons.stop_circle_outlined,
+                color: Color(0xFFE85D20)),
+            onPressed: _endRide,
+          )
+        else
+          IconButton(
+            icon: const Icon(Icons.exit_to_app),
+            onPressed: _leave,
+          ),
+      ],
+    );
+
+    if (isLandscape) {
+      // ── Layout horizontal: mapa a la izquierda, riders a la derecha ──
+      return PopScope(
+        canPop: false,
+        child: Scaffold(
+          backgroundColor: const Color(0xFF0e0e0e),
+          appBar: appBar,
+          body: Row(
+            children: [
+              // Mapa (60% del ancho)
+              Expanded(
+                flex: 6,
+                child: Stack(
+                  children: [
+                    _buildMap(),
+                    Positioned(
+                      top: 10,
+                      left: 10,
+                      child: _MapTypePicker(
+                        selected: _mapType,
+                        onSelect: (t) => setState(() => _mapType = t),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Panel derecho (40% del ancho)
+              Container(
+                width: 220,
+                color: const Color(0xFF141414),
+                child: Column(
+                  children: [
+                    // Lista de riders
+                    Expanded(
+                      child: _RiderListPanelVertical(
+                        riders: _riders.values.toList(),
+                        myUid: _uid,
+                      ),
+                    ),
+                    // Botones cámara y SOS
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      decoration: const BoxDecoration(
+                        border: Border(
+                            top: BorderSide(color: Color(0xFF2a2a2a))),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _ActionBtn(
+                            heroTag: 'camera_l',
+                            onPressed: _uploadingPhoto ? null : _takePhoto,
+                            backgroundColor: const Color(0xFF1a1a1a),
+                            child: _uploadingPhoto
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                        color: Colors.white, strokeWidth: 2))
+                                : const Icon(Icons.camera_alt,
+                                    color: Colors.white),
+                          ),
+                          _ActionBtn(
+                            heroTag: 'sos_l',
+                            onPressed: _sendSos,
+                            backgroundColor: const Color(0xFFef4444),
+                            child: const Text('SOS',
+                                style: TextStyle(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 13)),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    // ── Layout vertical (portrait): mapa full + panel riders abajo ────
     return PopScope(
       canPop: false,
       child: Scaffold(
-      backgroundColor: const Color(0xFF0e0e0e),
-      appBar: AppBar(
-        automaticallyImplyLeading: false,
-        backgroundColor:
-            _hasSos ? const Color(0xFF3b1111) : const Color(0xFF141414),
-        foregroundColor: Colors.white,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: const Color(0xFF0e0e0e),
+        appBar: appBar,
+        body: Stack(
           children: [
-            Text(
-              _hasSos ? '⚠ SOS ACTIVO' : 'Rodada en vivo',
-              style: TextStyle(
-                fontSize: 16,
-                color: _hasSos ? const Color(0xFFef4444) : Colors.white,
+            _buildMap(),
+            Positioned(
+              top: 12,
+              left: 12,
+              child: _MapTypePicker(
+                selected: _mapType,
+                onSelect: (t) => setState(() => _mapType = t),
               ),
             ),
-            Text(
-              'Código: ${widget.rideId}  ·  ${_riders.length} pilotos',
-              style:
-                  const TextStyle(fontSize: 12, color: Color(0xFFe6e3de)),
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: _RiderListPanel(
+                riders: _riders.values.toList(),
+                myUid: _uid,
+              ),
             ),
           ],
         ),
-        actions: [
-          if (_hasSos && widget.isLider)
-            IconButton(
-              icon: const Icon(Icons.check_circle, color: Color(0xFF4ade80)),
-              tooltip: 'Resolver SOS',
-              onPressed: _resolveSos,
+        floatingActionButton: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FloatingActionButton(
+              heroTag: 'camera',
+              onPressed: _uploadingPhoto ? null : _takePhoto,
+              backgroundColor: const Color(0xFF1a1a1a),
+              child: _uploadingPhoto
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                          color: Colors.white, strokeWidth: 2))
+                  : const Icon(Icons.camera_alt, color: Colors.white),
             ),
-          IconButton(
-            icon: const Icon(Icons.my_location),
-            onPressed: () {
-              _centered = true;
-              _fitBounds();
-            },
-          ),
-          if (widget.isLider)
-            IconButton(
-              icon: const Icon(Icons.stop_circle_outlined,
-                  color: Color(0xFFE85D20)),
-              onPressed: _endRide,
-            )
-          else
-            IconButton(
-              icon: const Icon(Icons.exit_to_app),
-              onPressed: _leave,
+            const SizedBox(height: 12),
+            FloatingActionButton(
+              heroTag: 'sos',
+              onPressed: _sendSos,
+              backgroundColor: const Color(0xFFef4444),
+              child: const Icon(Icons.sos, color: Colors.white, size: 28),
             ),
-        ],
+          ],
+        ),
       ),
-      body: Stack(
-        children: [
-          FlutterMap(
-            mapController: _mapCtrl,
-            options: MapOptions(
-              initialCenter: const LatLng(6.25, -75.57),
-              initialZoom: 12,
-              onPositionChanged: (_, hasGesture) {
-                if (hasGesture) _centered = false;
-              },
-            ),
-            children: [
-              TileLayer(
-                urlTemplate: _mapType.url,
-                userAgentPackageName: 'co.ridera.ridelive',
-              ),
-              PolylineLayer(
-                polylines: _traces.entries.map((e) {
-                  final isLider = _riders[e.key]?.rol == 'lider';
-                  return Polyline(
-                    points: e.value,
-                    color: isLider
-                        ? const Color(0xFFE85D20)
-                        : const Color(0xFF6B9FD4),
-                    strokeWidth: isLider ? 3.5 : 2.0,
-                  );
-                }).toList(),
-              ),
-              MarkerLayer(markers: markers),
-            ],
-          ),
-          Positioned(
-            top: 12,
-            left: 12,
-            child: _MapTypePicker(
-              selected: _mapType,
-              onSelect: (t) => setState(() => _mapType = t),
-            ),
-          ),
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: _RiderListPanel(
-              riders: _riders.values.toList(),
-              myUid: _uid,
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FloatingActionButton(
-            heroTag: 'camera',
-            onPressed: _uploadingPhoto ? null : _takePhoto,
-            backgroundColor: const Color(0xFF1a1a1a),
-            child: _uploadingPhoto
-                ? const SizedBox(
-                    width: 22, height: 22,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                : const Icon(Icons.camera_alt, color: Colors.white),
-          ),
-          const SizedBox(height: 12),
-          FloatingActionButton(
-            heroTag: 'sos',
-            onPressed: _sendSos,
-            backgroundColor: const Color(0xFFef4444),
-            child: const Icon(Icons.sos, color: Colors.white, size: 28),
-          ),
-        ],
-      ),
-    ),
     );
   }
 }
@@ -639,7 +734,110 @@ class _RiderData {
   }
 }
 
-// ─── Bottom panel ───────────────────────────────────────────────────
+// ─── Botón de acción compacto (landscape) ───────────────────────────
+
+class _ActionBtn extends StatelessWidget {
+  const _ActionBtn({
+    required this.heroTag,
+    required this.onPressed,
+    required this.backgroundColor,
+    required this.child,
+  });
+  final String heroTag;
+  final VoidCallback? onPressed;
+  final Color backgroundColor;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return FloatingActionButton(
+      heroTag: heroTag,
+      mini: true,
+      onPressed: onPressed,
+      backgroundColor: backgroundColor,
+      child: child,
+    );
+  }
+}
+
+// ─── Panel lateral de riders (landscape) ────────────────────────────
+
+class _RiderListPanelVertical extends StatelessWidget {
+  const _RiderListPanelVertical({required this.riders, required this.myUid});
+
+  final List<_RiderData> riders;
+  final String myUid;
+
+  Color _statusColor(RideStatus s) => switch (s) {
+        RideStatus.enMarcha => const Color(0xFF4ade80),
+        RideStatus.detenido => const Color(0xFFfbbf24),
+        RideStatus.perdido => const Color(0xFFef4444),
+        RideStatus.sos => const Color(0xFFef4444),
+        RideStatus.falla => const Color(0xFFf97316),
+      };
+
+  String _statusLabel(RideStatus s) => switch (s) {
+        RideStatus.enMarcha => 'En marcha',
+        RideStatus.detenido => 'Detenido',
+        RideStatus.perdido => 'Perdido',
+        RideStatus.sos => '⚠ SOS',
+        RideStatus.falla => 'Falla',
+      };
+
+  @override
+  Widget build(BuildContext context) {
+    if (riders.isEmpty) {
+      return const Center(
+        child: Text('Sin pilotos',
+            style: TextStyle(color: Color(0xFF555555), fontSize: 12)),
+      );
+    }
+    return ListView.separated(
+      padding: const EdgeInsets.all(10),
+      itemCount: riders.length,
+      separatorBuilder: (_, __) =>
+          const Divider(color: Color(0xFF2a2a2a), height: 1),
+      itemBuilder: (_, i) {
+        final r = riders[i];
+        final isMe = r.uid == myUid;
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 5,
+                backgroundColor: _statusColor(r.status),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '${r.nombre}${isMe ? " (tú)" : ""}${r.rol == "lider" ? " ⭐" : ""}',
+                      style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    Text(
+                      '${_statusLabel(r.status)} · ${r.speedKmh.toStringAsFixed(0)} km/h',
+                      style: TextStyle(
+                          color: _statusColor(r.status), fontSize: 10),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+// ─── Bottom panel (portrait) ─────────────────────────────────────────
 
 class _RiderListPanel extends StatelessWidget {
   const _RiderListPanel({required this.riders, required this.myUid});
