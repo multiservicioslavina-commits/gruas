@@ -1,1 +1,3 @@
-/grua/*  /grua.html?slug=:splat  200
+/grua/*       /grua.html?slug=:splat  200
+/mi-cuenta    /mi-cuenta.html        301
+/login        /login-gruero.html     301
