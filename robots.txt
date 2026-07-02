@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /login-gruero.html
+Disallow: /mi-cuenta.html
+
+Sitemap: https://gruas.ridera.com.co/sitemap.xml

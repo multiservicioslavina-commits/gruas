@@ -1,6 +1,7 @@
 <?php
 /**
  * Hook WordPress: al aprobar (publish) un gruero, envía datos a Google Sheets con aprobado=SI
+ * y llama a la edge function `aprobar-gruero` que crea la cuenta en Supabase Auth.
  * Pegar en functions.php del tema hijo o en un plugin personalizado.
  */
 add_action('transition_post_status', function($nuevo, $anterior, $post) {
@@ -28,23 +29,32 @@ add_action('transition_post_status', function($nuevo, $anterior, $post) {
         ]
     );
 
-    // Sincronizar aprobación en Supabase
-    $supabase_url = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/rest/v1/grueros';
+    // Llamar a la edge function aprobar-gruero:
+    // crea usuario en Supabase Auth, genera slug, envía email de bienvenida
     $supabase_key = defined('SUPABASE_SERVICE_KEY') ? SUPABASE_SERVICE_KEY : '';
 
     if ($supabase_key) {
-        wp_remote_request(
-            $supabase_url . '?nombre=eq.' . urlencode($post->post_title),
+        $email = '';
+        // Buscar campo email entre los meta del CPT
+        foreach (['email', 'correo', 'email_gruero', 'correo_gruero'] as $campo) {
+            if (!empty($meta[$campo][0])) {
+                $email = $meta[$campo][0];
+                break;
+            }
+        }
+
+        wp_remote_post(
+            'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aprobar-gruero',
             [
-                'method'  => 'PATCH',
-                'body'    => json_encode(['aprobado' => 'SI']),
+                'body'    => json_encode([
+                    'nombre' => $post->post_title,
+                    'email'  => $email,
+                ]),
                 'headers' => [
                     'Content-Type'  => 'application/json',
-                    'apikey'        => $supabase_key,
                     'Authorization' => 'Bearer ' . $supabase_key,
-                    'Prefer'        => 'return=minimal',
                 ],
-                'timeout' => 15,
+                'timeout' => 20,
             ]
         );
     }

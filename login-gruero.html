@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesión — Ridera Grúas</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0e0e0e;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+    .logo svg { width: 48px; height: 48px; }
+    .logo h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: #E85D20;
+      margin-top: 0.5rem;
+    }
+    .logo p { color: #888; font-size: 0.9rem; margin-top: 0.25rem; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      color: #aaa;
+      margin-bottom: 0.4rem;
+      margin-top: 1.2rem;
+    }
+    input[type="email"], input[type="password"] {
+      width: 100%;
+      background: #111;
+      border: 1px solid #333;
+      border-radius: 8px;
+      color: #f0f0f0;
+      font-size: 1rem;
+      padding: 0.75rem 1rem;
+      transition: border-color 0.2s;
+      outline: none;
+    }
+    input:focus { border-color: #E85D20; }
+    .btn {
+      display: block;
+      width: 100%;
+      margin-top: 1.75rem;
+      padding: 0.85rem;
+      background: #E85D20;
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:hover { background: #cf4f18; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error {
+      display: none;
+      background: #3a1212;
+      border: 1px solid #6b1e1e;
+      color: #f87171;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      font-size: 0.875rem;
+      margin-top: 1rem;
+    }
+    .forgot {
+      text-align: center;
+      margin-top: 1.25rem;
+      font-size: 0.85rem;
+    }
+    .forgot a { color: #E85D20; text-decoration: none; }
+    .forgot a:hover { text-decoration: underline; }
+    .spinner {
+      display: inline-block;
+      width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      vertical-align: middle;
+      margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="10" fill="#E85D20"/>
+        <path d="M10 34 L20 18 L30 28 L36 20 L42 26" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="24" cy="36" r="4" fill="#fff"/>
+      </svg>
+      <h1>Ridera Grúas</h1>
+      <p>Portal del gruero</p>
+    </div>
+
+    <form id="loginForm" novalidate>
+      <label for="email">Correo electrónico</label>
+      <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" required>
+
+      <label for="password">Contraseña</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+
+      <div class="error" id="errorMsg"></div>
+
+      <button type="submit" class="btn" id="submitBtn">Iniciar sesión</button>
+    </form>
+
+    <div class="forgot">
+      <a href="#" id="forgotLink">¿Olvidé mi contraseña?</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Ya hay sesión activa → ir directo al dashboard
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) location.replace('/mi-cuenta.html');
+    });
+
+    const form    = document.getElementById('loginForm');
+    const emailEl = document.getElementById('email');
+    const passEl  = document.getElementById('password');
+    const btn     = document.getElementById('submitBtn');
+    const errEl   = document.getElementById('errorMsg');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      errEl.style.display = 'none';
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>Entrando…';
+
+      const { error } = await sb.auth.signInWithPassword({
+        email: emailEl.value.trim(),
+        password: passEl.value,
+      });
+
+      if (error) {
+        errEl.textContent = error.status === 400
+          ? 'Correo o contraseña incorrectos.'
+          : 'Error al iniciar sesión. Intenta de nuevo.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Iniciar sesión';
+      } else {
+        location.replace('/mi-cuenta.html');
+      }
+    });
+
+    document.getElementById('forgotLink').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = emailEl.value.trim();
+      if (!email) {
+        errEl.textContent = 'Escribe tu correo primero.';
+        errEl.style.display = 'block';
+        return;
+      }
+      btn.disabled = true;
+      await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html',
+      });
+      errEl.style.cssText = 'display:block;background:#0e2a1a;border-color:#1a5c36;color:#4ade80;';
+      errEl.textContent = 'Revisa tu correo — te enviamos un enlace para restablecer tu contraseña.';
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>
