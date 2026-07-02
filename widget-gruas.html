@@ -111,8 +111,8 @@
 
 <script>
 (function(){
-  const API  = 'https://script.google.com/macros/s/AKfycbxBo_t8mz7yv56ORULMHz5HWf7zxZHVPsGYcLGgjrtmzH52EpxdxOkc1BhP-q99uxb4/exec';
-  const HOJA = String.fromCharCode(71,114,250,97);
+  const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  const SB_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
 
   function formatPrecio(desde, hasta){
     const f = n => n ? '$'+parseInt(n).toLocaleString('es-CO') : null;
@@ -240,16 +240,39 @@
   document.getElementById('rg-input').addEventListener('input',e=>{busq=e.target.value;render();});
   document.getElementById('rg-sort').addEventListener('change',e=>{orden=e.target.value;render();});
 
-  fetch(`${API}?tipo=${encodeURIComponent(HOJA)}`)
+  fetch(`${SB_URL}/rest/v1/grueros?aprobado=eq.SI&select=*&order=created_at.desc`, {
+    headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY }
+  })
     .then(r=>r.json())
-    .then(data=>{
-      if(data.status==='ok'){
-        todos=data.talleres;
-        render();
-      } else {
-        document.getElementById('rg-grid').innerHTML=
-          `<div class="rg-empty" style="color:#E85D20">${data.message}</div>`;
-      }
+    .then(rows=>{
+      todos = rows.map(g => {
+        const d = g.datos || {};
+        const munis = Array.isArray(g.municipios) ? g.municipios.join(', ') : (g.municipios || '');
+        return {
+          nombre: g.nombre || '',
+          ciudad: g.ciudad || '',
+          departamentos: munis,
+          telefono: g.telefono || '',
+          whatsapp: g.telefono || '',
+          instagram: d.instagram || '',
+          servicios: d.servicios || '',
+          cobertura: munis || g.ciudad || '',
+          disponibilidad: g.disponible ? '24 horas' : 'Bajo pedido',
+          tiempo_llegada: d.tiempo_llegada || '',
+          acepta: d.acepta || '',
+          flota: d.flota || '',
+          experiencia: d.experiencia || '',
+          descripcion: d.descripcion || '',
+          notas: d.notas || '',
+          precio_desde: d.precio_desde || '',
+          precio_hasta: d.precio_hasta || '',
+          direccion: g.ciudad || '',
+          timestamp: g.created_at || '',
+          foto_url: g.foto_url || '',
+          logo_url: '',
+        };
+      });
+      render();
     })
     .catch(()=>{
       document.getElementById('rg-grid').innerHTML=
