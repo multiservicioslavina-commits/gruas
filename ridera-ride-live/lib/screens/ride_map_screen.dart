@@ -88,11 +88,11 @@ class _RideMapScreenState extends State<RideMapScreen>
       _channel?.unsubscribe();
       _subscribeRealtime();
       _loadMembers();
-      _loadRoutePoints(); // recarga puntos guardados mientras la pantalla estuvo apagada
+      _loadRoutePoints(clearFirst: true); // recarga limpia para no duplicar puntos
     }
   }
 
-  Future<void> _loadRoutePoints() async {
+  Future<void> _loadRoutePoints({bool clearFirst = false}) async {
     try {
       final rows = await Supabase.instance.client
           .from('route_points')
@@ -101,13 +101,20 @@ class _RideMapScreenState extends State<RideMapScreen>
           .order('recorded_at');
       if (!mounted) return;
       setState(() {
+        // En resume se limpia para evitar duplicar puntos históricos
+        if (clearFirst) _traces.clear();
         for (final r in rows) {
           final uid = r['uid'] as String;
           final lat = (r['lat'] as num).toDouble();
           final lon = (r['lon'] as num).toDouble();
           final list = _traces.putIfAbsent(uid, () => []);
           final pt = LatLng(lat, lon);
-          if (list.isEmpty || list.last != pt) list.add(pt);
+          // Comparar valores porque LatLng no implementa ==
+          if (list.isEmpty ||
+              list.last.latitude != pt.latitude ||
+              list.last.longitude != pt.longitude) {
+            list.add(pt);
+          }
         }
       });
     } catch (_) {}

@@ -175,21 +175,27 @@ class VideoService {
 
   /// Mapa centrado en la ubicación de una foto con el trazado y un pin de cámara.
   String _buildPhotoMapUrl(double lat, double lon, List<Map<String, double>> route) {
-    final coords = route.map((p) => '[${p['lon']},${p['lat']}]').join(',');
-    final path = 'path-4+E85D20-0.9([$coords])';
-    final pin = 'pin-s-camera+ffffff($lon,$lat)';
+    final routeCoords = route.map((p) => '[${p['lon']},${p['lat']}]').join(',');
+    final geojson = '{"type":"FeatureCollection","features":['
+        '{"type":"Feature","properties":{"stroke":"#E85D20","stroke-width":3,"stroke-opacity":0.9},'
+        '"geometry":{"type":"LineString","coordinates":[$routeCoords]}},'
+        '{"type":"Feature","properties":{"marker-color":"#ffffff","marker-size":"small","marker-symbol":"camera"},'
+        '"geometry":{"type":"Point","coordinates":[$lon,$lat]}}'
+        ']}';
+    final encoded = Uri.encodeComponent(geojson);
     return 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/'
-        '$path,$pin/$lon,$lat,14,0/800x800?access_token=$kMapboxToken';
+        'geojson($encoded)/$lon,$lat,14,0/800x800?access_token=$kMapboxToken';
   }
 
-  /// Mapa con vista general de toda la ruta.
+  /// Mapa con vista general de toda la ruta — auto ajusta cámara al trazado.
   String _buildOverviewMapUrl(List<Map<String, double>> route) {
-    final coords = route.map((p) => '[${p['lon']},${p['lat']}]').join(',');
-    final path = 'path-4+E85D20-0.8([$coords])';
-    final lat = route.map((p) => p['lat']!).reduce((a, b) => a + b) / route.length;
-    final lon = route.map((p) => p['lon']!).reduce((a, b) => a + b) / route.length;
+    final routeCoords = route.map((p) => '[${p['lon']},${p['lat']}]').join(',');
+    final geojson = '{"type":"Feature","properties":{"stroke":"#E85D20","stroke-width":4,"stroke-opacity":0.8},'
+        '"geometry":{"type":"LineString","coordinates":[$routeCoords]}}';
+    final encoded = Uri.encodeComponent(geojson);
+    // "auto" hace que Mapbox encuadre automáticamente toda la ruta
     return 'https://api.mapbox.com/styles/v1/mapbox/dark-v11/static/'
-        '$path/$lon,$lat,13,0/1080x1080?access_token=$kMapboxToken';
+        'geojson($encoded)/auto/1080x1080?access_token=$kMapboxToken';
   }
 
   /// Reduce la lista de puntos a max [maxPts] puntos conservando inicio y fin.
