@@ -38,4 +38,26 @@ class LocationService {
       await _channel.invokeMethod('stop');
     } catch (_) {}
   }
+
+  /// true = está optimizada (la app puede ser matada)
+  Future<bool> isBatteryOptimized() async {
+    try {
+      return await _channel.invokeMethod<bool>('isBatteryOptimized') ?? false;
+    } catch (_) { return false; }
+  }
+
+  /// Muestra el diálogo del sistema pidiendo ignorar optimización de batería
+  Future<void> requestIgnoreBatteryOptimization() async {
+    try {
+      await _channel.invokeMethod('requestIgnoreBatteryOptimization');
+    } catch (_) {}
+  }
+
+  /// Abre la pantalla de autoarranque del fabricante (Xiaomi, Huawei, etc.)
+  /// Retorna true si logró abrirla.
+  Future<bool> openAutoStartSettings() async {
+    try {
+      return await _channel.invokeMethod<bool>('openAutoStartSettings') ?? false;
+    } catch (_) { return false; }
+  }
 }

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../services/location_service.dart';
 import '../services/photo_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
@@ -54,6 +55,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     with WidgetsBindingObserver {
   final _rideService = RideService();
   final _photoService = PhotoService();
+  final _locationService = LocationService();
   final _mapCtrl = MapController();
   bool _uploadingPhoto = false;
 
@@ -79,6 +81,66 @@ class _RideMapScreenState extends State<RideMapScreen>
     // Recarga completa desde DB cada 30s como respaldo si el WebSocket cae
     _refreshTimer = Timer.periodic(
         const Duration(seconds: 30), (_) => _loadMembers());
+    // Preguntar por permiso de batería después de que la UI cargue
+    WidgetsBinding.instance.addPostFrameCallback((_) => _checkBatteryOptimization());
+  }
+
+  Future<void> _checkBatteryOptimization() async {
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+    final optimized = await _locationService.isBatteryOptimized();
+    if (!optimized || !mounted) return;
+
+    // Diálogo simple, un solo botón grande "PERMITIR"
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a1a),
+        title: const Row(children: [
+          Icon(Icons.battery_alert, color: Color(0xFFE85D20), size: 28),
+          SizedBox(width: 8),
+          Expanded(child: Text('Mantener GPS activo',
+              style: TextStyle(color: Colors.white, fontSize: 17))),
+        ]),
+        content: const Text(
+            'Para que tu ubicación siga compartiéndose con el celular bloqueado, toca PERMITIR en la siguiente pantalla.',
+            style: TextStyle(color: Color(0xFFe6e3de), fontSize: 14)),
+        actions: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFE85D20),
+                minimumSize: const Size(0, 52),
+              ),
+              onPressed: () async {
+                Navigator.pop(context);
+                await _locationService.requestIgnoreBatteryOptimization();
+                await Future.delayed(const Duration(seconds: 1));
+                if (!mounted) return;
+                // Después de batería, ofrecer autoarranque (importante en Xiaomi/Huawei)
+                final opened = await _locationService.openAutoStartSettings();
+                if (opened && mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Activa "Autoarranque" para RIDERA AVENTURA'),
+                      backgroundColor: Color(0xFF1a1a1a),
+                      duration: Duration(seconds: 4),
+                    ),
+                  );
+                }
+              },
+              child: const Text('PERMITIR',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: 1.5)),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
