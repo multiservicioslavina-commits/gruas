@@ -129,11 +129,23 @@ function render(data){
   if(sol.es_mio){
     stopPoll();
     if(estado === 'finalizada'){
-      const cal = sol.calificacion ? `El cliente calificó: ${'⭐'.repeat(sol.calificacion)}` : 'Esperando que el cliente califique…';
-      c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
-        <span class="badge done">● Finalizado</span>${stepper('finalizada')}
-        ${clienteCard(sol)}
-        <div class="note">${cal}</div>`;
+      if(sol.calificacion){
+        const stars = '⭐'.repeat(sol.calificacion);
+        c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
+          <span class="badge done">● Finalizado</span>${stepper('finalizada')}
+          ${clienteCard(sol)}
+          <div class="note">El cliente calificó: ${stars}</div>`;
+      } else {
+        c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
+          <span class="badge done">● Finalizado</span>${stepper('finalizada')}
+          ${clienteCard(sol)}
+          <div class="note" id="calNota">Esperando que el cliente califique…</div>
+          <button class="btn btn-ghost" style="margin-top:10px" onclick="checkCal()">🔄 Actualizar calificación</button>`;
+        pollTimer = setInterval(async ()=>{
+          const d = await api('info');
+          if(d && d.sol && d.sol.calificacion){ stopPoll(); render(d); }
+        }, 12000);
+      }
       return;
     }
     let acciones = '';
@@ -195,6 +207,11 @@ async function doRechazar(){
 async function doCancelar(){
   if(!confirm('¿Seguro que quieres cancelar? El servicio quedará libre para otro gruero.')) return;
   const data = await api('cancelar'); toast('Servicio liberado'); render(data);
+}
+async function checkCal(){
+  const d = await api('info');
+  if(d && d.sol && d.sol.calificacion){ stopPoll(); render(d); }
+  else { toast('El cliente aún no ha calificado'); }
 }
 
 function startPoll(){ stopPoll(); pollTimer=setInterval(async ()=>{ const d=await api('info'); if(d&&d.sol&&d.sol.estado!=='pendiente') render(d); },5000); }
