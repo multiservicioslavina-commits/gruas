@@ -217,7 +217,7 @@
     }
     document.getElementById('gm-nombre').textContent       = d.nombre;
     document.getElementById('gm-zona').textContent         = d.zona;
-    document.getElementById('gm-precio').textContent       = formatPrecio(d.precioDesde, d.precioHasta);
+    document.getElementById('gm-precio').textContent       = formatPrecio(d['precio-desde'], d['precio-hasta']);
     document.getElementById('gm-direccion').textContent    = d.direccion||'–';
     document.getElementById('gm-tel').textContent          = d.tel||'–';
     document.getElementById('gm-whatsapp').textContent     = d.whatsapp||'–';
@@ -268,8 +268,8 @@
           precio_hasta: d.precio_hasta || '',
           direccion: g.ciudad || '',
           timestamp: g.created_at || '',
-          foto_url: g.foto_url || '',
-          logo_url: '',
+          foto_url: d.foto_url || '',
+          logo_url: d.logo_url || '',
         };
       });
       render();

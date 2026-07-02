@@ -372,8 +372,9 @@
 
       // Avatar
       const avatarEl = document.getElementById('avatarEl');
-      if (perfil.foto_url) {
-        avatarEl.innerHTML = `<img class="avatar" src="${perfil.foto_url}" alt="">`;
+      const fotoUrl = (perfil.datos && perfil.datos.foto_url) || perfil.foto_url || '';
+      if (fotoUrl) {
+        avatarEl.innerHTML = `<img class="avatar" src="${fotoUrl}" alt="">`;
       } else {
         const initial = (perfil.nombre || '?')[0].toUpperCase();
         avatarEl.innerHTML = `<div class="avatar-placeholder">${initial}</div>`;
@@ -403,7 +404,7 @@
       document.getElementById('fMunicipios').value = Array.isArray(perfil.municipios)
         ? perfil.municipios.join(', ') : (perfil.municipios || '');
       document.getElementById('fDescripcion').value = (perfil.datos && perfil.datos.descripcion) || '';
-      document.getElementById('fFoto').value        = perfil.foto_url || '';
+      document.getElementById('fFoto').value        = (perfil.datos && perfil.datos.foto_url) || '';
     }
 
     function updateDispBadge(disponible) {
@@ -426,13 +427,13 @@
       tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Cargando…</td></tr>';
       const data = await apiFetch(`/mis-servicios?limit=${PER_PAGE}&offset=${page * PER_PAGE}`);
 
-      if (!data || data.error || !data.solicitudes) {
+      if (!data || data.error || !data.servicios) {
         tbody.innerHTML = `<tr class="empty-row"><td colspan="5">${data?.error || 'Error cargando servicios'}</td></tr>`;
         return;
       }
 
       totalRows = data.total || 0;
-      const rows = data.solicitudes;
+      const rows = data.servicios;
 
       document.getElementById('prevBtn').disabled = page === 0;
       document.getElementById('nextBtn').disabled = (page + 1) * PER_PAGE >= totalRows;
@@ -444,10 +445,10 @@
 
       tbody.innerHTML = rows.map(s => {
         const fecha = s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—';
-        const cliente = s.nombre_cliente || '—';
-        const ruta = [s.direccion_origen, s.direccion_destino].filter(Boolean).join(' → ') || '—';
+        const cliente = s.cliente_nombre || '—';
+        const ruta = s.ubicacion || s.municipio || '—';
         const estado = s.estado || '—';
-        const cal = s.calificacion_gruero ? '⭐ ' + s.calificacion_gruero : '—';
+        const cal = s.calificacion ? '⭐ ' + s.calificacion : '—';
         return `<tr>
           <td>${fecha}</td>
           <td>${cliente}</td>
@@ -464,7 +465,7 @@
       const nuevoVal = !perfil.disponible;
       const res = await apiFetch('/mi-perfil', {
         method: 'PATCH',
-        body: JSON.stringify({ action: 'toggle_disponible' }),
+        body: JSON.stringify({ disponible: nuevoVal }),
       });
       if (!res.error) {
         perfil.disponible = nuevoVal;
@@ -482,6 +483,7 @@
       const municipiosRaw = document.getElementById('fMunicipios').value;
       const municipios = municipiosRaw.split(',').map(s => s.trim()).filter(Boolean);
 
+      const fotoVal = document.getElementById('fFoto').value.trim();
       const res = await apiFetch('/mi-perfil', {
         method: 'PATCH',
         body: JSON.stringify({
@@ -490,8 +492,11 @@
           telefono:  document.getElementById('fTelefono').value.trim(),
           email:     document.getElementById('fEmail').value.trim(),
           municipios,
-          foto_url:  document.getElementById('fFoto').value.trim(),
-          datos: { descripcion: document.getElementById('fDescripcion').value.trim() },
+          datos: {
+            ...(perfil.datos || {}),
+            descripcion: document.getElementById('fDescripcion').value.trim(),
+            ...(fotoVal ? { foto_url: fotoVal } : {}),
+          },
         }),
       });
 
