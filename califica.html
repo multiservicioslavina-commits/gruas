@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ridera · Califica tu servicio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d; --surface:#16171b; --surface-2:#1e2026; --line:#2a2c33;
+  --orange:#E85D20; --orange-2:#ff7a3c; --text:#f3f3f3; --muted:#9a9ca3; --green:#25D366; --gold:#ffc83d;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+.hazard{height:7px;background:repeating-linear-gradient(45deg,var(--orange) 0 14px,#0d0d0d 14px 28px)}
+.top{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:.5px solid var(--line)}
+.top .logo{width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:900;font-size:20px;color:#fff}
+.top b{font-family:'Barlow Condensed';font-weight:800;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+.wrap{flex:1;max-width:460px;width:100%;margin:0 auto;padding:28px 18px 40px;text-align:center}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
+h1{font-family:'Barlow Condensed';font-weight:800;font-size:32px;text-transform:uppercase;line-height:1;margin-bottom:10px}
+.sub{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:26px}
+.stars{display:flex;justify-content:center;gap:8px;margin-bottom:8px}
+.star{font-size:44px;cursor:pointer;filter:grayscale(1) opacity(.4);transition:transform .1s,filter .15s;user-select:none}
+.star.on{filter:none;transform:scale(1.05)}
+.star:active{transform:scale(.9)}
+.rate-lbl{height:20px;color:var(--gold);font-weight:600;font-size:14px;margin-bottom:20px}
+textarea{width:100%;background:var(--surface-2);border:.5px solid var(--line);border-radius:12px;color:#fff;font-family:inherit;font-size:15px;padding:13px 14px;min-height:90px;resize:vertical;margin-bottom:16px}
+textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;border-radius:13px;padding:16px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;background:var(--orange);color:#fff;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:default}
+.big-msg{padding:40px 10px}
+.big-msg .ic{font-size:56px;margin-bottom:14px}
+.big-msg h2{font-family:'Barlow Condensed';font-weight:800;font-size:28px;text-transform:uppercase;margin-bottom:8px}
+.big-msg p{color:var(--muted);font-size:14px;line-height:1.6}
+.loading{color:var(--muted);padding:50px 0;font-size:14px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
+@keyframes s{to{transform:rotate(360deg)}}
+.hide{display:none!important}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="top"><div class="logo">R</div><b>Ridera</b></div>
+
+<div class="wrap">
+  <div id="loading" class="loading"><span class="spin"></span> Cargando…</div>
+  <div id="content" class="hide"></div>
+</div>
+
+<script>
+const FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aceptar-solicitud';
+const qs = new URLSearchParams(location.search);
+let S = qs.get('s') || qs.get('t') || '';
+if (S.includes('~')) S = S.split('~')[0];
+let rating = 0;
+
+const LBLS = ['','Muy malo','Malo','Regular','Bueno','¡Excelente!'];
+
+function renderForm(){
+  document.getElementById('loading').classList.add('hide');
+  const c = document.getElementById('content'); c.classList.remove('hide');
+  c.innerHTML = `
+    <div class="eyebrow">Servicio finalizado</div>
+    <h1>¿Cómo te<br>atendieron?</h1>
+    <p class="sub">Tu opinión nos ayuda a mejorar el servicio de Ridera.</p>
+    <div class="stars" id="stars">
+      ${[1,2,3,4,5].map(i=>`<span class="star" data-v="${i}" onclick="setStar(${i})">⭐</span>`).join('')}
+    </div>
+    <div class="rate-lbl" id="rateLbl"></div>
+    <textarea id="comentario" placeholder="¿Quieres contarnos algo más? (opcional)"></textarea>
+    <button class="btn" id="sendBtn" onclick="enviar()" disabled>Enviar calificación</button>`;
+}
+function setStar(v){
+  rating = v;
+  document.querySelectorAll('#stars .star').forEach(s=>{ s.classList.toggle('on', Number(s.dataset.v)<=v); });
+  document.getElementById('rateLbl').textContent = LBLS[v];
+  document.getElementById('sendBtn').disabled = false;
+}
+async function enviar(){
+  const b=document.getElementById('sendBtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Enviando…';
+  const comentario = document.getElementById('comentario').value.trim();
+  try{
+    const r = await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'calificar',s:S,calificacion:rating,comentario})});
+    const d = await r.json();
+    if(d.ok) gracias(); else { b.disabled=false; b.textContent='Enviar calificación'; alert(d.error||'No se pudo enviar'); }
+  }catch(e){ b.disabled=false; b.textContent='Enviar calificación'; alert('Error de conexión'); }
+}
+function gracias(){
+  document.getElementById('content').innerHTML = `<div class="big-msg"><div class="ic">🙏</div><h2>¡Gracias!</h2><p>Tu calificación de ${'⭐'.repeat(rating)} quedó registrada.<br>Gracias por usar Ridera.</p></div>`;
+}
+(function init(){ if(!S){ document.getElementById('loading').classList.add('hide'); document.getElementById('content').classList.remove('hide'); document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Enlace inválido</h2><p>No pudimos identificar tu servicio.</p></div>`; return; } renderForm(); })();
+</script>
+</body>
+</html>

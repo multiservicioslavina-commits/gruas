@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ridera · Solicitud de grúa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d; --surface:#16171b; --surface-2:#1e2026; --line:#2a2c33;
+  --orange:#E85D20; --orange-2:#ff7a3c; --text:#f3f3f3; --muted:#9a9ca3;
+  --green:#25D366; --green-2:#1faa52; --danger:#e23b3b; --amber:#f59e0b; --blue:#3b82f6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+.hazard{height:7px;background:repeating-linear-gradient(45deg,var(--orange) 0 14px,#0d0d0d 14px 28px)}
+.top{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:.5px solid var(--line)}
+.top .logo{width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:900;font-size:20px;color:#fff}
+.top b{font-family:'Barlow Condensed';font-weight:800;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+.wrap{flex:1;max-width:480px;width:100%;margin:0 auto;padding:20px 18px 40px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:6px}
+h1{font-family:'Barlow Condensed';font-weight:800;font-size:30px;text-transform:uppercase;line-height:1;margin-bottom:18px}
+.badge{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:6px 13px;border-radius:99px;margin-bottom:18px}
+.badge.pend{background:rgba(245,158,11,.12);color:var(--amber);border:.5px solid rgba(245,158,11,.4)}
+.badge.mine{background:rgba(37,211,102,.12);color:var(--green);border:.5px solid rgba(37,211,102,.4)}
+.badge.taken{background:rgba(226,59,59,.12);color:#ff7a7a;border:.5px solid rgba(226,59,59,.4)}
+.badge.done{background:rgba(59,130,246,.12);color:#7fb0ff;border:.5px solid rgba(59,130,246,.4)}
+.card{background:var(--surface);border:.5px solid var(--line);border-radius:16px;padding:18px;margin-bottom:14px}
+.row{display:flex;flex-direction:column;gap:2px;padding:10px 0;border-bottom:.5px solid var(--line)}
+.row:last-child{border-bottom:none}
+.row .k{font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.row .v{font-size:16px;font-weight:600}
+.maplink{display:inline-flex;align-items:center;gap:6px;color:var(--orange);text-decoration:none;font-size:14px;font-weight:600;margin-top:4px}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;border-radius:13px;padding:16px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:transform .06s,filter .15s;margin-top:10px;color:#06210f}
+.btn:active{transform:scale(.98)}
+.btn-accept{background:var(--green)}
+.btn-accept:hover{filter:brightness(1.08)}
+.btn-wa{background:var(--green)}
+.btn-llegue{background:var(--amber);color:#241a00}
+.btn-final{background:var(--blue);color:#02122e}
+.btn-call{background:var(--surface-2);color:#fff;border:1px solid var(--line)}
+.btn-ghost{background:var(--surface-2);color:var(--muted);border:1px solid var(--line)}
+.btn-danger{background:transparent;color:#ff7a7a;border:1px solid rgba(226,59,59,.5)}
+.btn:disabled{opacity:.5;cursor:default}
+.note{font-size:13px;color:var(--muted);line-height:1.6;margin-top:10px;text-align:center}
+.big-msg{text-align:center;padding:30px 10px}
+.big-msg .ic{font-size:52px;margin-bottom:14px}
+.big-msg h2{font-family:'Barlow Condensed';font-weight:800;font-size:26px;text-transform:uppercase;margin-bottom:8px}
+.big-msg p{color:var(--muted);font-size:14px;line-height:1.6}
+.loading{text-align:center;color:var(--muted);padding:50px 0;font-size:14px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--surface-2);border:.5px solid var(--line);border-radius:12px;padding:13px 20px;font-size:14px;opacity:0;transition:.25s;pointer-events:none;z-index:50;max-width:90%}
+.toast.show{opacity:1}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
+@keyframes s{to{transform:rotate(360deg)}}
+.hide{display:none!important}
+/* Stepper */
+.steps{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px;padding:0 4px}
+.step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
+.step .dot{width:26px;height:26px;border-radius:50%;background:var(--surface-2);border:1.5px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);z-index:2}
+.step .lbl{font-size:10px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:600}
+.step:not(:last-child)::after{content:'';position:absolute;top:13px;left:50%;width:100%;height:2px;background:var(--line);z-index:1}
+.step.done .dot{background:var(--green);border-color:var(--green);color:#06210f}
+.step.done .lbl{color:var(--text)}
+.step.active .dot{background:var(--orange);border-color:var(--orange);color:#fff}
+.step.active .lbl{color:var(--orange)}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="top"><div class="logo">R</div><b>Ridera</b></div>
+
+<div class="wrap">
+  <div id="loading" class="loading"><span class="spin"></span> Cargando solicitud…</div>
+  <div id="content" class="hide"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aceptar-solicitud';
+const qs = new URLSearchParams(location.search);
+let S = qs.get('s'), G = qs.get('g');
+const T = qs.get('t');
+if (T && T.includes('~')) { const p = T.split('~'); S = S || p[0]; G = G || p[1]; }
+let pollTimer = null;
+
+function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.className='toast',2400); }
+function esc(x){ return (x==null?'':String(x)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function waNum(raw){ let d=(raw||'').replace(/\D/g,''); if(d.length===10) d='57'+d; return d; }
+async function api(action, extra){ const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,s:S,g:G,...(extra||{})})}); return r.json(); }
+function mapHtml(ubic){ const q=encodeURIComponent(ubic||''); return `<a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${q}">📍 Ver ubicación en el mapa</a>`; }
+
+function clienteCard(sol){
+  const wa = waNum(sol.cliente_telefono);
+  return `
+    <div class="card">
+      <div class="row"><span class="k">Cliente</span><span class="v">${esc(sol.cliente_nombre||'—')}</span></div>
+      <div class="row"><span class="k">Ubicación</span><span class="v">${esc(sol.ubicacion||'—')}</span>${mapHtml(sol.ubicacion)}</div>
+      ${sol.cliente_telefono?`<div class="row"><span class="k">Teléfono</span><span class="v">${esc(sol.cliente_telefono)}</span></div>`:''}
+    </div>
+    ${wa?`<a class="btn btn-wa" target="_blank" href="https://wa.me/${wa}">💬 Escribir por WhatsApp</a>`:''}
+    ${sol.cliente_telefono?`<a class="btn btn-call" href="tel:+${wa}">📞 Llamar al cliente</a>`:''}`;
+}
+function stepper(estado){
+  const idx = {asignada:0, llego:1, finalizada:2}[estado] ?? 0;
+  const mk=(i,lbl)=>`<div class="step ${i<idx?'done':(i===idx?'active':'')}"><div class="dot">${i<idx?'✓':(i+1)}</div><div class="lbl">${lbl}</div></div>`;
+  return `<div class="steps">${mk(0,'En camino')}${mk(1,'Llegó')}${mk(2,'Finalizó')}</div>`;
+}
+
+function render(data){
+  document.getElementById('loading').classList.add('hide');
+  const c = document.getElementById('content'); c.classList.remove('hide');
+  if(!data || !data.ok || !data.sol){
+    c.innerHTML = `<div class="big-msg"><div class="ic">⚠️</div><h2>Solicitud no encontrada</h2><p>Es posible que el enlace no sea válido o haya expirado.</p></div>`;
+    stopPoll(); return;
+  }
+  const sol = data.sol; const estado = sol.estado;
+
+  // Tomada/gestionada por OTRO gruero
+  if(!sol.es_mio && estado !== 'pendiente'){
+    stopPoll();
+    c.innerHTML = `<div class="big-msg"><div class="ic">🛑</div><h2>Servicio ya tomado</h2><p>Este servicio ya fue aceptado por <b>${esc(data.asignado_nombre||'otro gruero')}</b>.<br>¡Gracias por tu disposición!</p></div>`;
+    return;
+  }
+
+  // MÍO (asignada / llego / finalizada)
+  if(sol.es_mio){
+    stopPoll();
+    if(estado === 'finalizada'){
+      const cal = sol.calificacion ? `El cliente calificó: ${'⭐'.repeat(sol.calificacion)}` : 'Esperando que el cliente califique…';
+      c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
+        <span class="badge done">● Finalizado</span>${stepper('finalizada')}
+        ${clienteCard(sol)}
+        <div class="note">${cal}</div>`;
+      return;
+    }
+    let acciones = '';
+    if(estado === 'asignada'){
+      acciones = `<button class="btn btn-llegue" id="actBtn" onclick="doPaso('llegue',this)">📍 Ya llegué al sitio</button>`;
+    } else if(estado === 'llego'){
+      acciones = `<button class="btn btn-final" id="actBtn" onclick="doPaso('finalizar',this)">✅ Finalizar servicio</button>`;
+    }
+    c.innerHTML = `
+      <div class="eyebrow">Tienes este servicio</div>
+      <h1>Vas tú 🛵</h1>
+      <span class="badge mine">✓ Asignado a ti</span>
+      ${stepper(estado)}
+      ${clienteCard(sol)}
+      ${acciones}
+      <button class="btn btn-danger" onclick="doCancelar()">✖ Cancelar (no puedo seguir)</button>
+      <div class="note">${estado==='asignada'?'Cuando llegues al sitio, toca “Ya llegué”.':'Al terminar, toca “Finalizar servicio”.'}</div>`;
+    return;
+  }
+
+  // PENDIENTE (disponible)
+  if(estado === 'pendiente'){
+    c.innerHTML = `
+      <div class="eyebrow">Nueva solicitud de grúa</div>
+      <h1>¿La tomas?</h1>
+      <span class="badge pend">● Disponible ahora</span>
+      <div class="card">
+        <div class="row"><span class="k">Cliente</span><span class="v">${esc(sol.cliente_nombre||'—')}</span></div>
+        <div class="row"><span class="k">Ubicación</span><span class="v">${esc(sol.ubicacion||'—')}</span>${mapHtml(sol.ubicacion)}</div>
+      </div>
+      <button class="btn btn-accept" id="acceptBtn" onclick="doAceptar()">✓ Aceptar servicio</button>
+      <button class="btn btn-ghost" onclick="doRechazar()">No puedo tomarlo</button>
+      <div class="note">El teléfono del cliente aparece cuando aceptas. El primero que acepta se lo queda.</div>`;
+    startPoll(); return;
+  }
+
+  stopPoll();
+  c.innerHTML = `<div class="big-msg"><div class="ic">✅</div><h2>Servicio ${esc(estado)}</h2><p>Esta solicitud ya no está activa.</p></div>`;
+}
+
+async function doAceptar(){
+  const b=document.getElementById('acceptBtn'); if(b){ b.disabled=true; b.innerHTML='<span class="spin"></span> Aceptando…'; }
+  stopPoll();
+  const data = await api('aceptar');
+  if(data.resultado==='ya_tomado') toast('Otro gruero lo tomó primero');
+  else if(data.resultado==='aceptaste') toast('¡Servicio aceptado! 🎉');
+  render(data);
+}
+async function doPaso(accion, btn){
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> …'; }
+  const data = await api(accion);
+  if(data.ok){ toast(accion==='llegue'?'Llegada marcada ✓':'Servicio finalizado ✓'); render(data); }
+  else { toast(data.error||'Error'); if(btn){ btn.disabled=false; } }
+}
+async function doRechazar(){
+  stopPoll(); await api('rechazar');
+  document.getElementById('content').innerHTML = `<div class="big-msg"><div class="ic">👍</div><h2>Entendido</h2><p>Avisaste que no puedes tomar este servicio. Gracias.</p></div>`;
+}
+async function doCancelar(){
+  if(!confirm('¿Seguro que quieres cancelar? El servicio quedará libre para otro gruero.')) return;
+  const data = await api('cancelar'); toast('Servicio liberado'); render(data);
+}
+
+function startPoll(){ stopPoll(); pollTimer=setInterval(async ()=>{ const d=await api('info'); if(d&&d.sol&&d.sol.estado!=='pendiente') render(d); },5000); }
+function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
+
+(async function init(){ if(!S){ render({ok:false}); return; } const data=await api('info'); render(data); })();
+</script>
+</body>
+</html>

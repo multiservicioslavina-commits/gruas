@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ridera · Registra tu moto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d; --surface:#16171b; --surface-2:#1e2026; --line:#2a2c33;
+  --orange:#E85D20; --orange-2:#ff7a3c; --text:#f3f3f3; --muted:#9a9ca3; --green:#25D366; --dim:#5b5e66;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100dvh}
+.hazard{height:7px;background:repeating-linear-gradient(45deg,var(--orange) 0 14px,#0d0d0d 14px 28px)}
+.top{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:.5px solid var(--line);position:sticky;top:0;background:rgba(13,13,13,.96);backdrop-filter:blur(12px);z-index:10}
+.top .logo{width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:900;font-size:20px;color:#fff}
+.top b{font-family:'Barlow Condensed';font-weight:800;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+.wrap{max-width:520px;width:100%;margin:0 auto;padding:24px 18px 60px}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
+h1{font-family:'Barlow Condensed';font-weight:800;font-size:34px;text-transform:uppercase;line-height:.95;margin-bottom:12px}
+h1 em{color:var(--orange);font-style:normal}
+.intro{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:26px}
+.sec{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:24px 0 12px;padding-bottom:7px;border-bottom:.5px solid var(--line)}
+.grp{margin-bottom:13px}
+.grp label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px}
+.grp .req{color:var(--orange)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+input,select{width:100%;background:var(--surface-2);border:.5px solid var(--line);border-radius:10px;color:#fff;font-family:inherit;font-size:15px;padding:13px 14px;appearance:none;-webkit-appearance:none}
+input::placeholder{color:var(--dim)}
+input:focus,select:focus{outline:none;border-color:rgba(232,93,32,.55)}
+input[type=date]{color-scheme:dark}
+.hint{font-size:11px;color:var(--dim);margin-top:5px}
+.field-error{border-color:rgba(226,59,59,.7)!important;background:rgba(226,59,59,.06)!important}
+.check{display:flex;gap:11px;align-items:flex-start;background:var(--surface);border:.5px solid var(--line);border-radius:12px;padding:14px;margin-top:8px;cursor:pointer}
+.check input{width:22px;height:22px;flex-shrink:0;margin-top:1px;accent-color:var(--orange)}
+.check span{font-size:13px;color:var(--text);line-height:1.5}
+.check a{color:var(--orange)}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;border-radius:13px;padding:17px;font-family:'Barlow Condensed';font-weight:700;font-size:20px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;background:var(--orange);color:#fff;margin-top:22px;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:default}
+.status{font-size:13px;text-align:center;margin-top:12px;min-height:18px;color:#ff7a7a}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
+@keyframes s{to{transform:rotate(360deg)}}
+.ok{text-align:center;padding:50px 12px}
+.ok .ic{font-size:58px;margin-bottom:16px}
+.ok h2{font-family:'Barlow Condensed';font-weight:800;font-size:30px;text-transform:uppercase;margin-bottom:10px}
+.ok p{color:var(--muted);font-size:14px;line-height:1.6}
+.hide{display:none!important}
+@media(max-width:430px){.row2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="top"><div class="logo">R</div><b>Ridera</b></div>
+
+<div class="wrap">
+  <div id="form">
+    <div class="eyebrow">Mantén tu moto al día</div>
+    <h1>Registra<br>tu <em>moto.</em></h1>
+    <p class="intro">Te avisamos antes de que se venza tu SOAT, tecnomecánica y mantenimiento. Gratis, para que nunca te coja por sorpresa. 🛵</p>
+
+    <div class="sec">01 · Tus datos</div>
+    <div class="grp"><label>Nombre <span class="req">*</span></label><input type="text" id="m-nombre" placeholder="Tu nombre"></div>
+    <div class="row2">
+      <div class="grp"><label>WhatsApp <span class="req">*</span></label><input type="tel" id="m-wa" placeholder="+57 300 000 0000"></div>
+      <div class="grp"><label>Correo</label><input type="email" id="m-email" placeholder="correo@ejemplo.com"></div>
+    </div>
+
+    <div class="sec">02 · Tu moto</div>
+    <div class="row2">
+      <div class="grp"><label>Placa</label><input type="text" id="m-placa" placeholder="ABC12D" style="text-transform:uppercase"></div>
+      <div class="grp"><label>Marca</label><input type="text" id="m-marca" placeholder="Yamaha, Honda…"></div>
+    </div>
+    <div class="row2">
+      <div class="grp"><label>Línea / Modelo</label><input type="text" id="m-linea" placeholder="MT-03, NKD…"></div>
+      <div class="grp"><label>Año</label><input type="number" id="m-anio" placeholder="2022"></div>
+    </div>
+    <div class="grp"><label>Cilindraje</label><input type="text" id="m-cil" placeholder="125, 250, 321…"></div>
+
+    <div class="sec">03 · Vencimientos (lo importante)</div>
+    <div class="row2">
+      <div class="grp"><label>Vence el SOAT</label><input type="date" id="m-soat"></div>
+      <div class="grp"><label>Vence la tecnomecánica</label><input type="date" id="m-tecno"></div>
+    </div>
+    <p class="hint">Si no recuerdas la fecha exacta, déjala vacía y la actualizas después.</p>
+
+    <div class="sec">04 · Mantenimiento</div>
+    <div class="row2">
+      <div class="grp"><label>Último cambio de aceite</label><input type="date" id="m-mant"></div>
+      <div class="grp"><label>Kilometraje actual</label><input type="number" id="m-km" placeholder="12500"></div>
+    </div>
+
+    <div class="sec">05 · Propietario (si es distinto a ti)</div>
+    <div class="grp"><label>Nombre del dueño de la matrícula</label><input type="text" id="m-prop" placeholder="Déjalo vacío si la moto es tuya"></div>
+
+    <label class="check" id="acceptaBox">
+      <input type="checkbox" id="m-acepta">
+      <span>Autorizo a Ridera a guardar mis datos y enviarme recordatorios de vencimientos, mantenimiento y promociones por WhatsApp y correo. Puedo pedir que me borren o que dejen de escribirme cuando quiera.</span>
+    </label>
+
+    <button class="btn" id="btn" onclick="enviar()">🛵 Registrar mi moto</button>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div id="done" class="ok hide">
+    <div class="ic">✅</div>
+    <h2>¡Moto registrada!</h2>
+    <p>Listo. Desde ahora Ridera te avisará antes de que se venza algo.<br>Maneja tranquilo. 🛵</p>
+  </div>
+</div>
+
+<script>
+const FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/registrar-moto';
+const qs = new URLSearchParams(location.search);
+const origen = qs.get('c') || '';
+const val = id => (document.getElementById(id).value || '').trim();
+
+function enviar(){
+  const status = document.getElementById('status');
+  const btn = document.getElementById('btn');
+  // Validación
+  let err = false;
+  [['m-nombre'],['m-wa']].forEach(([id])=>{ const el=document.getElementById(id); el.classList.remove('field-error'); if(!el.value.trim()){ el.classList.add('field-error'); err=true; } });
+  if(err){ status.textContent='Completa tu nombre y WhatsApp.'; document.querySelector('.field-error').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  if(!document.getElementById('m-acepta').checked){ status.textContent='Marca la autorización para continuar.'; document.getElementById('acceptaBox').scrollIntoView({behavior:'smooth',block:'center'}); return; }
+
+  const data = {
+    contacto_nombre: val('m-nombre'),
+    contacto_whatsapp: val('m-wa'),
+    contacto_email: val('m-email'),
+    placa: val('m-placa'),
+    marca: val('m-marca'),
+    linea: val('m-linea'),
+    anio: val('m-anio'),
+    cilindraje: val('m-cil'),
+    soat_vence: val('m-soat'),
+    tecno_vence: val('m-tecno'),
+    ultimo_mantenimiento: val('m-mant'),
+    km_actual: val('m-km'),
+    propietario_nombre: val('m-prop'),
+    acepta_comunicaciones: true,
+    origen,
+  };
+
+  btn.disabled = true; btn.innerHTML = '<span class="spin"></span> Registrando…'; status.textContent='';
+  fetch(FN_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) })
+    .then(r=>r.json())
+    .then(d=>{
+      if(d.ok){ document.getElementById('form').classList.add('hide'); document.getElementById('done').classList.remove('hide'); window.scrollTo({top:0,behavior:'smooth'}); }
+      else { btn.disabled=false; btn.innerHTML='🛵 Registrar mi moto'; status.textContent = d.error || 'No se pudo registrar. Intenta de nuevo.'; }
+    })
+    .catch(()=>{ btn.disabled=false; btn.innerHTML='🛵 Registrar mi moto'; status.textContent='Error de conexión. Intenta de nuevo.'; });
+}
+</script>
+</body>
+</html>
