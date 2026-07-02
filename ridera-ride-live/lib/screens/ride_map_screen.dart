@@ -88,6 +88,7 @@ class _RideMapScreenState extends State<RideMapScreen>
       _channel?.unsubscribe();
       _subscribeRealtime();
       _loadMembers();
+      _loadRoutePoints(); // recarga puntos guardados mientras la pantalla estuvo apagada
     }
   }
 

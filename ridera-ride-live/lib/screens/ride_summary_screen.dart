@@ -29,6 +29,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   double _maxSpeedKmh = 0;
   int _photoCount = 0;
   List<String> _photoUrls = [];
+  List<Map<String, dynamic>> _photos = []; // {url, lat, lon}
   List<Map<String, double>> _routePoints = [];
 
   final _videoService = VideoService();
@@ -67,13 +68,13 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         if (spd > maxSpd) maxSpd = spd;
       }
 
-      // Cargar fotos propias de la rodada
+      // Cargar fotos propias de la rodada (con coordenadas para el video)
       final photos = await _db
           .from('ride_photos')
-          .select('url')
+          .select('url, lat, lon')
           .eq('ride_id', widget.rideId)
           .eq('uid', uid)
-          .order('created_at');
+          .order('created_at'); // ascendente = orden cronológico
 
       // Puntos de ruta para el mapa del video
       final routePts = points
@@ -89,6 +90,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           _maxSpeedKmh = maxSpd;
           _photoCount = photos.length;
           _photoUrls = photos.map<String>((p) => p['url'] as String).toList();
+          _photos = List<Map<String, dynamic>>.from(photos);
           _routePoints = routePts;
           _loading = false;
         });
@@ -122,7 +124,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         elapsed: _hms(widget.elapsed),
         distanceKm: _distanceKm.toStringAsFixed(1),
         maxSpeedKmh: _maxSpeedKmh.toStringAsFixed(0),
-        photoUrls: _photoUrls,
+        photos: _photos,
         routePoints: _routePoints,
       );
       _renderId = id;
