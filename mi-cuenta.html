@@ -933,7 +933,7 @@
       }
       const bar = document.getElementById('solicitudBar');
       document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
-      document.getElementById('solLink').href = `/aceptar?s=${sol.id}`;
+      document.getElementById('solLink').href = `/aceptar?s=${sol.id}&g=${perfil.id}`;
       bar.classList.add('show');
       setTimeout(() => bar.classList.remove('show'), 30000);
     }
@@ -952,7 +952,7 @@
           if (munis.length && !munis.includes(solMuni)) return;
           const bar = document.getElementById('solicitudBar');
           document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
-          document.getElementById('solLink').href = `/aceptar?s=${sol.id}`;
+          document.getElementById('solLink').href = `/aceptar?s=${sol.id}&g=${perfil.id}`;
           bar.classList.add('show');
           // Auto-hide after 30s
           setTimeout(() => bar.classList.remove('show'), 30000);
