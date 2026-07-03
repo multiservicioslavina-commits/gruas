@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel admin — Ridera Grúas</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
+      --or: #E85D20; --text: #f0f0f0; --mu: #888;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LOGIN */
+    #loginWrap {
+      min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem;
+    }
+    .login-card {
+      background: var(--s); border: 1px solid var(--line); border-radius: 12px;
+      padding: 2.5rem 2rem; width: 100%; max-width: 360px;
+    }
+    .login-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--or); margin-bottom: 0.25rem; }
+    .login-card p { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.75rem; }
+    label { display: block; font-size: 0.8rem; color: var(--mu); margin-bottom: 0.35rem; margin-top: 1rem; }
+    input[type="password"], input[type="text"] {
+      width: 100%; background: #111; border: 1px solid var(--line); border-radius: 8px;
+      color: var(--text); font-size: 1rem; padding: 0.7rem 0.9rem; outline: none;
+      transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--or); }
+    .btn {
+      display: block; width: 100%; margin-top: 1.5rem; padding: 0.8rem;
+      background: var(--or); color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:hover { background: #cf4f18; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+    /* PANEL */
+    #panel { display: none; }
+    nav {
+      background: var(--s); border-bottom: 1px solid var(--line);
+      padding: 0 1.5rem; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .nav-brand { font-weight: 700; color: var(--or); font-size: 1.05rem; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-sm {
+      padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600;
+      border: 1px solid var(--line); border-radius: 6px; background: transparent;
+      color: var(--mu); cursor: pointer; transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-sm:hover { border-color: var(--or); color: var(--or); }
+    .btn-sm.danger:hover { border-color: #f87171; color: #f87171; }
+
+    .container { max-width: 960px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    /* STATS ROW */
+    .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat {
+      background: var(--s); border: 1px solid var(--line); border-radius: 10px;
+      padding: 1rem 1.25rem; min-width: 130px;
+    }
+    .stat .num { font-size: 1.75rem; font-weight: 700; color: var(--or); }
+    .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-btn {
+      padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 20px;
+      border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn.active { background: var(--or); border-color: var(--or); color: #fff; }
+    .search-input {
+      padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line);
+      background: #111; color: var(--text); outline: none; width: 200px;
+    }
+    .search-input:focus { border-color: var(--or); }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th {
+      text-align: left; padding: 0.6rem 0.75rem; color: var(--mu);
+      font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+      border-bottom: 1px solid var(--line);
+    }
+    tbody tr { border-bottom: 1px solid var(--line); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 0.85rem 0.75rem; vertical-align: middle; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px;
+    }
+    .badge-on  { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
+    .badge-off { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-on  { background: #4ade80; }
+    .dot-off { background: #f87171; }
+    .toggle-btn {
+      font-size: 0.75rem; padding: 0.3rem 0.7rem; border-radius: 6px; border: 1px solid var(--line);
+      background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s;
+    }
+    .toggle-btn:hover { border-color: var(--or); color: var(--or); }
+    .toggle-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .tel { font-size: 0.8rem; color: var(--mu); }
+    .empty-row td { color: var(--mu); text-align: center; padding: 3rem; }
+
+    /* LOADING SPINNER */
+    .spin {
+      display: inline-block; width: 20px; height: 20px;
+      border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--or);
+      border-radius: 50%; animation: rot 0.7s linear infinite; vertical-align: middle;
+    }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* MODAL */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex;
+      align-items: center; justify-content: center; z-index: 100; padding: 1rem;
+    }
+    .modal { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; width: 100%; max-width: 360px; }
+    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .btn-cancel {
+      padding: 0.6rem 1.2rem; border: 1px solid var(--line); border-radius: 8px;
+      background: transparent; color: var(--mu); font-size: 0.9rem; cursor: pointer;
+    }
+    .btn-ok {
+      padding: 0.6rem 1.2rem; background: var(--or); color: #fff; font-size: 0.9rem;
+      font-weight: 600; border: none; border-radius: 8px; cursor: pointer;
+    }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <h1>Ridera Grúas</h1>
+    <p>Panel de administración</p>
+    <label for="pwdInput">Clave de acceso</label>
+    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password">
+    <div class="err" id="loginErr">Clave incorrecta.</div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <nav>
+    <span class="nav-brand">Ridera Grúas · Admin</span>
+    <div class="nav-right">
+      <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
+      <button class="btn-sm danger" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-title">Grueros registrados</div>
+    <div class="page-sub" id="lastUpdated">Cargando…</div>
+
+    <div class="stats" id="statsRow"></div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+      <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
+      <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre o ciudad…" oninput="renderTable()">
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre</th>
+            <th>Ciudad</th>
+            <th>Teléfono</th>
+            <th>Estado</th>
+            <th>Registrado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay hide" id="pwdModal">
+  <div class="modal">
+    <h2>Cambiar clave admin</h2>
+    <label>Nueva clave</label>
+    <input type="password" id="newPwd" placeholder="Mínimo 4 caracteres" style="margin-top:0.4rem">
+    <div class="err" id="pwdErr" style="display:none"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hidePwdModal()">Cancelar</button>
+      <button class="btn-ok" onclick="doChangePwd()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FN = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
+let adminKey = '';
+let allGrueros = [];
+let currentFilter = 'all';
+
+async function callAdmin(body) {
+  const res = await fetch(FN, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: adminKey, ...body }),
+  });
+  return res.json();
+}
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginErr');
+  const pwd = document.getElementById('pwdInput').value.trim();
+  if (!pwd) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  errEl.style.display = 'none';
+  adminKey = pwd;
+  const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allGrueros = data.grueros || [];
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+    renderStats();
+    renderTable();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+  } else {
+    errEl.style.display = 'block';
+    adminKey = '';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+function logout() {
+  adminKey = '';
+  allGrueros = [];
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('panel').style.display = 'none';
+  document.getElementById('pwdInput').value = '';
+}
+
+function renderStats() {
+  const total = allGrueros.length;
+  const on = allGrueros.filter(g => g.disponible).length;
+  const ciudades = new Set(allGrueros.map(g => g.ciudad).filter(Boolean)).size;
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Grueros totales</div></div>
+    <div class="stat"><div class="num">${on}</div><div class="lbl">Disponibles ahora</div></div>
+    <div class="stat"><div class="num">${total - on}</div><div class="lbl">No disponibles</div></div>
+    <div class="stat"><div class="num">${ciudades}</div><div class="lbl">Ciudades</div></div>
+  `;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b === btn));
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let rows = allGrueros;
+  if (currentFilter === 'on') rows = rows.filter(g => g.disponible);
+  if (currentFilter === 'off') rows = rows.filter(g => !g.disponible);
+  if (q) rows = rows.filter(g =>
+    (g.nombre||'').toLowerCase().includes(q) ||
+    (g.ciudad||'').toLowerCase().includes(q) ||
+    (g.telefono||'').includes(q)
+  );
+
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">No hay grueros que coincidan.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(g => {
+    const fecha = g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '—';
+    const disp = g.disponible;
+    return `<tr>
+      <td><strong>${esc(g.nombre||'—')}</strong><br><span class="tel">${esc(g.email||'')}</span></td>
+      <td>${esc(g.ciudad||'—')}</td>
+      <td class="tel">${esc(g.telefono||'—')}</td>
+      <td>
+        <span class="badge ${disp?'badge-on':'badge-off'}">
+          <span class="dot ${disp?'dot-on':'dot-off'}"></span>
+          ${disp?'Disponible':'No disponible'}
+        </span>
+      </td>
+      <td class="tel">${fecha}</td>
+      <td>
+        <button class="toggle-btn" onclick="toggleDisp('${g.id}', ${!disp}, this)">
+          ${disp ? 'Desactivar' : 'Activar'}
+        </button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function toggleDisp(id, nuevoVal, btn) {
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'set', id, disponible: nuevoVal }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    const g = allGrueros.find(x => x.id === id);
+    if (g) g.disponible = nuevoVal;
+    renderStats();
+    renderTable();
+  } else {
+    btn.disabled = false;
+    alert('No se pudo cambiar el estado.');
+  }
+}
+
+function showChangePwd() {
+  document.getElementById('newPwd').value = '';
+  document.getElementById('pwdErr').style.display = 'none';
+  document.getElementById('pwdModal').classList.remove('hide');
+}
+function hidePwdModal() { document.getElementById('pwdModal').classList.add('hide'); }
+
+async function doChangePwd() {
+  const nueva = document.getElementById('newPwd').value.trim();
+  const errEl = document.getElementById('pwdErr');
+  if (nueva.length < 4) { errEl.textContent = 'Mínimo 4 caracteres.'; errEl.style.display = 'block'; return; }
+  const data = await callAdmin({ action: 'change_password', new: nueva }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    adminKey = nueva;
+    hidePwdModal();
+  } else {
+    errEl.textContent = data.error || 'Error al cambiar la clave.';
+    errEl.style.display = 'block';
+  }
+}
+
+function esc(x) {
+  return (x == null ? '' : String(x)).replace(/[&<>"]/g, c =>
+    ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])
+  );
+}
+</script>
+</body>
+</html>
