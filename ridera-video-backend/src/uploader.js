@@ -1,15 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { readFile } from 'fs/promises';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-
-if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
-  console.warn('WARNING: SUPABASE_URL o SUPABASE_SERVICE_KEY no configurados');
-}
-
-const supabase = createClient(SUPABASE_URL || '', SUPABASE_SERVICE_KEY || '');
 const BUCKET = 'ride-videos';
+
+let _client;
+function client() {
+  if (_client) return _client;
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) {
+    throw new Error(
+      `SUPABASE_URL o SUPABASE_SERVICE_KEY no configurados. ` +
+      `URL="${url ? 'set' : 'MISSING'}" KEY="${key ? 'set' : 'MISSING'}"`
+    );
+  }
+  _client = createClient(url, key);
+  return _client;
+}
 
 /**
  * Sube el mp4 a Supabase Storage y devuelve la URL pública.
@@ -17,6 +24,7 @@ const BUCKET = 'ride-videos';
 export async function uploadVideo(rideId, localPath) {
   const buffer = await readFile(localPath);
   const path = `${rideId}/${Date.now()}.mp4`;
+  const supabase = client();
   const { error } = await supabase.storage
     .from(BUCKET)
     .upload(path, buffer, {

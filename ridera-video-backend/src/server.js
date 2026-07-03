@@ -9,7 +9,15 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'ridera-video-backend' });
+  res.json({
+    ok: true,
+    service: 'ridera-video-backend',
+    env: {
+      MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ? 'set' : 'MISSING',
+      SUPABASE_URL: process.env.SUPABASE_URL ? 'set' : 'MISSING',
+      SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'MISSING',
+    },
+  });
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
