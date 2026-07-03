@@ -41,7 +41,31 @@ class GpsService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var wakeLock: PowerManager.WakeLock? = null
 
-    private val locationListener = LocationListener { loc -> lastLocation = loc }
+    // Filtro anti-zigzag: descarta puntos con mala precisión, saltos imposibles, o velocidad negativa
+    private val locationListener = LocationListener { loc ->
+        // 1. Descartar si precisión > 30m (típico de NETWORK provider o GPS mal fijado)
+        if (loc.hasAccuracy() && loc.accuracy > 30f) return@LocationListener
+
+        // 2. Descartar si viene de NETWORK cuando ya tenemos GPS reciente (< 15s)
+        val prev = lastLocation
+        if (loc.provider == LocationManager.NETWORK_PROVIDER &&
+            prev?.provider == LocationManager.GPS_PROVIDER &&
+            (System.currentTimeMillis() - prev.time) < 15000L) {
+            return@LocationListener
+        }
+
+        // 3. Descartar saltos imposibles (más de 300 km/h entre puntos)
+        if (prev != null) {
+            val dtSec = (loc.time - prev.time) / 1000.0
+            if (dtSec > 0) {
+                val distM = loc.distanceTo(prev)
+                val speedKmh = (distM / dtSec) * 3.6
+                if (speedKmh > 300.0) return@LocationListener
+            }
+        }
+
+        lastLocation = loc
+    }
 
     private val heartbeat = object : Runnable {
         override fun run() {
@@ -109,12 +133,15 @@ class GpsService : Service() {
     private fun startGps() {
         try {
             locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
+            // GPS puro: 1s / 3m — máxima precisión para moto en carretera
             locationManager?.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 2000L, 5f, locationListener, Looper.getMainLooper()
+                LocationManager.GPS_PROVIDER, 1000L, 3f, locationListener, Looper.getMainLooper()
             )
+            // NETWORK solo si NO hay GPS, y con menos frecuencia. El filtro del listener
+            // igualmente lo descarta cuando llega un GPS reciente.
             if (locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true) {
                 locationManager?.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, 2000L, 5f, locationListener, Looper.getMainLooper()
+                    LocationManager.NETWORK_PROVIDER, 10000L, 20f, locationListener, Looper.getMainLooper()
                 )
             }
         } catch (_: SecurityException) {}
