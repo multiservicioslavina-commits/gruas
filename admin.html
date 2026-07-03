@@ -100,6 +100,12 @@
     .btn-wa-dispatch:hover { background: rgba(37,211,102,.25); }
     .gd-empty { font-size: 0.8rem; color: var(--mu); padding: 0.5rem 0; }
     .dispatch-empty { color: var(--mu); font-size: 0.85rem; padding: 1.5rem; text-align: center; background: var(--s); border-radius: 10px; border: 1px solid var(--line); }
+    .pend-card.alerta { border-color: rgba(248,113,113,.5); background: #1a0d0d; }
+    .alerta-badge { display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(248,113,113,.12);color:#f87171;margin-bottom:0.4rem; }
+    .pend-gruero { font-size:0.78rem;color:#f87171;margin-bottom:0.6rem; }
+    .btn-dispatch.danger { border-color:rgba(248,113,113,.5);color:#f87171; }
+    .btn-dispatch.danger:hover { background:rgba(248,113,113,.1); }
+    .dispatch-section-title { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin:1rem 0 0.5rem; }
 
     /* FILTERS */
     .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
@@ -362,7 +368,42 @@ async function loadPendingDispatch() {
     grid.innerHTML = '<div class="dispatch-empty">✅ Sin solicitudes pendientes</div>';
     return;
   }
-  grid.innerHTML = data.solicitudes.map(s => `
+
+  const pendientes = data.solicitudes.filter(s => s.estado === 'pendiente');
+  const alertas    = data.solicitudes.filter(s => s.estado === 'asignada');
+
+  let html = '';
+
+  if (alertas.length) {
+    html += `<div class="dispatch-section-title" style="grid-column:1/-1">⚠️ Gruero aceptó pero no ha marcado llegada (${alertas.length})</div>`;
+    html += alertas.map(s => {
+      const aceptoHace = s.asignada_at ? relTime(s.asignada_at) : '—';
+      return `
+      <div class="pend-card alerta" id="pc-${s.id}">
+        <div class="alerta-badge">⚠️ Sin llegada</div>
+        <div class="pend-header">
+          <span class="pend-name">${esc(s.cliente_nombre||'Cliente')}</span>
+          <span class="pend-time">${relTime(s.created_at)}</span>
+        </div>
+        ${s.municipio ? `<span class="pend-muni">📍 ${esc(s.municipio)}</span>` : ''}
+        <div class="pend-ubic">${esc(s.ubicacion||'Sin ubicación')}</div>
+        ${s.gruero_nombre ? `<div class="pend-gruero">👤 ${esc(s.gruero_nombre)} aceptó ${aceptoHace}</div>` : ''}
+        <div class="pend-actions">
+          <button class="btn-dispatch danger" onclick="cancelarDespacho('${s.id}')">
+            🔄 Cancelar y re-despachar
+          </button>
+          <a class="btn-dispatch" style="text-decoration:none" href="/aceptar?s=${s.id}" target="_blank">
+            🔗 Ver
+          </a>
+        </div>
+        <div id="gd-${s.id}" class="gruero-dispatch-list" style="display:none"></div>
+      </div>`;
+    }).join('');
+  }
+
+  if (pendientes.length) {
+    if (alertas.length) html += `<div class="dispatch-section-title" style="grid-column:1/-1">📡 Esperando gruero (${pendientes.length})</div>`;
+    html += pendientes.map(s => `
     <div class="pend-card" id="pc-${s.id}">
       <div class="pend-header">
         <span class="pend-name">${esc(s.cliente_nombre||'Cliente')}</span>
@@ -380,9 +421,24 @@ async function loadPendingDispatch() {
       </div>
       <div id="gd-${s.id}" class="gruero-dispatch-list" style="display:none"></div>
     </div>`).join('');
+  }
 
+  grid.innerHTML = html;
   clearTimeout(dispatchTimer);
   dispatchTimer = setTimeout(loadPendingDispatch, 30000);
+}
+
+async function cancelarDespacho(solId) {
+  if (!confirm('¿Cancelar este servicio y regresarlo a la cola para re-despachar?')) return;
+  const card = document.getElementById('pc-' + solId);
+  if (card) card.style.opacity = '0.5';
+  const data = await callAdmin({ action: 'cancel_dispatch', id: solId }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    loadPendingDispatch();
+  } else {
+    if (card) card.style.opacity = '1';
+    alert('Error: ' + (data.error || 'No se pudo cancelar'));
+  }
 }
 
 async function toggleDespacho(solId, municipio) {
