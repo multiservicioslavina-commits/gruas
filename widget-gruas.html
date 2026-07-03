@@ -123,6 +123,15 @@
       .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'gruero';
   }
 
+  const MUNIS_DISPLAY = {
+    medellin:'Medellín', bello:'Bello', itagui:'Itagüí', envigado:'Envigado',
+    sabaneta:'Sabaneta', la_estrella:'La Estrella', caldas:'Caldas',
+    copacabana:'Copacabana', girardota:'Girardota', barbosa:'Barbosa'
+  };
+  function displayMuni(k){
+    return MUNIS_DISPLAY[k] || k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+  }
+
   function formatPrecio(desde, hasta){
     const f = n => n ? '$'+parseInt(n).toLocaleString('es-CO') : null;
     const d = f(desde), h = f(hasta);
@@ -258,7 +267,10 @@
     .then(rows=>{
       todos = rows.map(g => {
         const d = g.datos || {};
-        const munis = Array.isArray(g.municipios) ? g.municipios.join(', ') : (g.municipios || '');
+        const ciudadSlug = toSlug(g.ciudad || '');
+        const muniKeys = Array.isArray(g.municipios) ? g.municipios : [];
+        const munisFiltrados = muniKeys.filter(k => k !== ciudadSlug);
+        const munis = munisFiltrados.map(displayMuni).join(', ');
         return {
           nombre: g.nombre || '',
           ciudad: g.ciudad || '',
