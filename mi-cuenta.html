@@ -128,6 +128,25 @@
     .ci.ok  { background: rgba(74,222,128,0.1);  color: #86efac; border: 1px solid rgba(74,222,128,0.2); }
     .ci.mis { background: rgba(248,113,113,0.08); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2); }
 
+    /* PHOTO UPLOAD */
+    .photo-upload-wrap { display: flex; align-items: center; gap: 1rem; }
+    .foto-preview {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--muted); overflow: hidden; flex-shrink: 0;
+    }
+    .foto-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .btn-upload {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 0.5rem 0.9rem;
+      border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: border-color 0.2s;
+    }
+    .btn-upload:hover { border-color: var(--accent); }
+    .upload-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
+    #uploadProgress { font-size: 0.8rem; color: var(--accent); display: none; margin-top: 0.3rem; }
+
     /* STATS */
     .stats-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -337,8 +356,17 @@
             <textarea id="fDescripcion" placeholder="Cuéntale al cliente qué te hace diferente…"></textarea>
           </div>
           <div class="form-group full">
-            <label>URL de foto de perfil</label>
-            <input type="text" id="fFoto" placeholder="https://...">
+            <label>Foto de perfil</label>
+            <div class="photo-upload-wrap">
+              <div class="foto-preview" id="fotoPreview">📷</div>
+              <div>
+                <label class="btn-upload" for="fFotoFile">📁 Subir foto</label>
+                <input type="file" id="fFotoFile" accept="image/*" style="display:none">
+                <div id="uploadProgress">Subiendo imagen…</div>
+                <div class="upload-hint">JPG, PNG o WebP · máx. 5 MB</div>
+              </div>
+            </div>
+            <input type="hidden" id="fFoto">
           </div>
         </div>
         <button class="btn-save" id="saveBtn">Guardar cambios</button>
@@ -520,7 +548,14 @@
       document.getElementById('fMunicipios').value = Array.isArray(perfil.municipios)
         ? perfil.municipios.join(', ') : (perfil.municipios || '');
       document.getElementById('fDescripcion').value = (perfil.datos && perfil.datos.descripcion) || '';
-      document.getElementById('fFoto').value        = (perfil.datos && perfil.datos.foto_url) || '';
+      const fotoUrlVal = (perfil.datos && perfil.datos.foto_url) || '';
+      document.getElementById('fFoto').value = fotoUrlVal;
+      const fotoPreviewEl = document.getElementById('fotoPreview');
+      if (fotoUrlVal) {
+        fotoPreviewEl.innerHTML = `<img src="${fotoUrlVal}" alt="">`;
+      } else {
+        fotoPreviewEl.textContent = '📷';
+      }
 
       // Servicios y precios
       const d = perfil.datos || {};
@@ -650,6 +685,32 @@
         updateDispBadge(nuevoVal);
       }
       this.disabled = false;
+    });
+
+    document.getElementById('fFotoFile').addEventListener('change', async function() {
+      const file = this.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La foto no puede superar 5 MB');
+        this.value = '';
+        return;
+      }
+      const prog = document.getElementById('uploadProgress');
+      prog.style.display = 'block';
+      const { data: { session } } = await sb.auth.getSession();
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const path = `fotos/${session.user.id}.${ext}`;
+      const { data, error } = await sb.storage.from('grueros').upload(path, file, { upsert: true, contentType: file.type });
+      prog.style.display = 'none';
+      if (error) {
+        alert('Error al subir foto: ' + error.message);
+        return;
+      }
+      const { data: { publicUrl } } = sb.storage.from('grueros').getPublicUrl(data.path);
+      document.getElementById('fFoto').value = publicUrl;
+      document.getElementById('fotoPreview').innerHTML = `<img src="${publicUrl}?t=${Date.now()}" alt="">`;
+      // also update header avatar immediately
+      document.getElementById('avatarEl').innerHTML = `<img class="avatar" src="${publicUrl}?t=${Date.now()}" alt="">`;
     });
 
     document.getElementById('saveBtn').addEventListener('click', async function() {
