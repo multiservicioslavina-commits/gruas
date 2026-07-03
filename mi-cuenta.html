@@ -218,6 +218,23 @@
       font-size: 0.85rem;
     }
     .pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* CHECK CHIPS */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .chip-label {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.85rem; color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 99px; padding: 6px 14px;
+      cursor: pointer; transition: all 0.18s; user-select: none;
+    }
+    .chip-label input { display: none; }
+    .chip-label.checked {
+      background: rgba(232,93,32,0.12);
+      border-color: rgba(232,93,32,0.4);
+      color: var(--text);
+    }
+    .chips-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; display: block; }
   </style>
 </head>
 <body>
@@ -303,6 +320,53 @@
         </div>
         <button class="btn-save" id="saveBtn">Guardar cambios</button>
         <div class="save-msg" id="saveMsg"></div>
+      </div>
+
+      <!-- SERVICIOS Y PRECIOS -->
+      <div class="section">
+        <h3>Servicios y precios</h3>
+        <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Servicios que ofreces</span>
+          <div class="chip-group" id="chipServicios">
+            <label class="chip-label"><input type="checkbox" value="Grúa plataforma"> 🚛 Grúa plataforma</label>
+            <label class="chip-label"><input type="checkbox" value="Asistencia en ruta"> 🔧 Asistencia en ruta</label>
+            <label class="chip-label"><input type="checkbox" value="Cambio de llanta"> 🔄 Cambio de llanta</label>
+            <label class="chip-label"><input type="checkbox" value="Gasolina de emergencia"> ⛽ Gasolina emergencia</label>
+            <label class="chip-label"><input type="checkbox" value="Batería/Arranque"> 🔋 Batería / Arranque</label>
+            <label class="chip-label"><input type="checkbox" value="Traslado largo"> 🗺️ Traslado largo</label>
+            <label class="chip-label"><input type="checkbox" value="Custodia"> 🔒 Custodia moto</label>
+          </div>
+        </div>
+        <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Tipos de moto que acepta</span>
+          <div class="chip-group" id="chipAcepta">
+            <label class="chip-label"><input type="checkbox" value="Cualquier moto"> Cualquier moto</label>
+            <label class="chip-label"><input type="checkbox" value="Motos grandes 500cc+"> 500cc+</label>
+            <label class="chip-label"><input type="checkbox" value="Adventure / Doble propósito"> Adventure</label>
+            <label class="chip-label"><input type="checkbox" value="Motos +300kg"> +300kg</label>
+            <label class="chip-label"><input type="checkbox" value="Sidecar / trike"> Sidecar / trike</label>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Precio desde (COP)</label>
+            <input type="number" id="fPrecioDesde" placeholder="Ej. 50000" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label>Precio hasta (COP)</label>
+            <input type="number" id="fPrecioHasta" placeholder="Ej. 150000" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label>Flota</label>
+            <input type="text" id="fFlota" placeholder="Ej. 2 grúas propias">
+          </div>
+          <div class="form-group">
+            <label>Experiencia</label>
+            <input type="text" id="fExperiencia" placeholder="Ej. 5 años">
+          </div>
+        </div>
+        <button class="btn-save" id="saveSrvBtn">Guardar servicios</button>
+        <div class="save-msg" id="saveSrvMsg"></div>
       </div>
 
       <!-- CAMBIAR CONTRASEÑA -->
@@ -422,6 +486,32 @@
         ? perfil.municipios.join(', ') : (perfil.municipios || '');
       document.getElementById('fDescripcion').value = (perfil.datos && perfil.datos.descripcion) || '';
       document.getElementById('fFoto').value        = (perfil.datos && perfil.datos.foto_url) || '';
+
+      // Servicios y precios
+      const d = perfil.datos || {};
+      const srvArr = Array.isArray(d.servicios ?? perfil.servicios)
+        ? (d.servicios ?? perfil.servicios) : [];
+      const aceptaArr = Array.isArray(d.acepta ?? perfil.acepta)
+        ? (d.acepta ?? perfil.acepta) : [];
+      setChips('chipServicios', srvArr);
+      setChips('chipAcepta', aceptaArr);
+      document.getElementById('fPrecioDesde').value = d.precio_desde || '';
+      document.getElementById('fPrecioHasta').value = d.precio_hasta || '';
+      document.getElementById('fFlota').value       = d.flota || perfil.flota || '';
+      document.getElementById('fExperiencia').value = d.experiencia || perfil.experiencia || '';
+    }
+
+    function setChips(groupId, selected) {
+      document.querySelectorAll(`#${groupId} .chip-label`).forEach(lbl => {
+        const inp = lbl.querySelector('input');
+        const on = selected.includes(inp.value);
+        inp.checked = on;
+        lbl.classList.toggle('checked', on);
+      });
+    }
+
+    function getChips(groupId) {
+      return [...document.querySelectorAll(`#${groupId} input:checked`)].map(i => i.value);
     }
 
     function updateDispBadge(disponible) {
@@ -538,6 +628,49 @@
 
       this.disabled = false;
       this.textContent = 'Guardar cambios';
+    });
+
+    // Chip toggle
+    document.querySelectorAll('.chip-label').forEach(lbl => {
+      lbl.addEventListener('click', () => {
+        setTimeout(() => {
+          const inp = lbl.querySelector('input');
+          lbl.classList.toggle('checked', inp.checked);
+        }, 0);
+      });
+    });
+
+    document.getElementById('saveSrvBtn').addEventListener('click', async function() {
+      const msg = document.getElementById('saveSrvMsg');
+      msg.textContent = '';
+      this.disabled = true;
+      this.textContent = 'Guardando…';
+
+      const res = await apiFetch('/mi-perfil', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          datos: {
+            ...(perfil.datos || {}),
+            servicios:    getChips('chipServicios'),
+            acepta:       getChips('chipAcepta'),
+            precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
+            precio_hasta: Number(document.getElementById('fPrecioHasta').value) || null,
+            flota:        document.getElementById('fFlota').value.trim() || null,
+            experiencia:  document.getElementById('fExperiencia').value.trim() || null,
+          },
+        }),
+      });
+
+      if (res.error) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Error: ' + res.error;
+      } else {
+        msg.className = 'save-msg ok';
+        msg.textContent = '✓ Servicios actualizados.';
+        if (res.gruero) perfil = { ...perfil, ...res.gruero };
+      }
+      this.disabled = false;
+      this.textContent = 'Guardar servicios';
     });
 
     document.getElementById('pwdBtn').addEventListener('click', async function() {
