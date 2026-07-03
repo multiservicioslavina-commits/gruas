@@ -18,7 +18,7 @@ ENV PORT=3000
 
 WORKDIR /app
 COPY package.json ./
-RUN npm install --omit=dev
+RUN npm install --omit=dev --legacy-peer-deps
 COPY src ./src
 
 EXPOSE 3000
