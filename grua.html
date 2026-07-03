@@ -120,13 +120,37 @@
       margin-top: 0.5rem; margin-left: 0.5rem;
     }
 
+    /* NAV SHARE */
+    nav { display: flex; align-items: center; justify-content: space-between; }
+    .btn-share {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: transparent; border: 1px solid var(--border);
+      color: var(--muted); font-size: 0.8rem; font-weight: 600;
+      padding: 0.4rem 0.85rem; border-radius: 20px; cursor: pointer;
+      transition: border-color 0.2s, color 0.2s;
+    }
+    .btn-share:hover { border-color: var(--accent); color: var(--accent); }
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: #1e1e1e; border: 1px solid var(--border);
+      color: var(--text); font-size: 0.85rem; padding: 0.6rem 1.2rem;
+      border-radius: 99px; opacity: 0; transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none; z-index: 999; white-space: nowrap;
+    }
+    #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
     /* SCHEMA added by JS */
   </style>
 </head>
 <body>
   <nav>
     <a class="nav-brand" href="https://gruas.ridera.com.co/">Ridera Grúas</a>
+    <button class="btn-share" id="shareBtn" style="display:none" onclick="compartir()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+      Compartir
+    </button>
   </nav>
+  <div id="toast">✓ Enlace copiado</div>
 
   <div id="loading">
     <div class="spinner"></div>
@@ -228,6 +252,8 @@
       // Page meta
       const pageTitle  = `${nombre} — Grúa para motos en ${ciudad} | Ridera`;
       const pageDesc   = desc || `Servicio de grúa para motos en ${ciudad}. Disponible ${disp ? 'ahora' : 'bajo pedido'}.`;
+      _shareTitle = pageTitle;
+      _shareText  = `Encontré este servicio de grúa para motos en Ridera: ${nombre} — ${ciudad}`;
       document.title                                              = pageTitle;
       document.getElementById('pageDesc').content                = pageDesc;
       document.getElementById('ogTitle').content                 = pageTitle;
@@ -323,7 +349,22 @@
         document.getElementById('descSection').style.display = 'block';
       }
 
+      document.getElementById('shareBtn').style.display = 'inline-flex';
       show('profile');
+    }
+
+    let _shareTitle = '', _shareText = '';
+    function compartir() {
+      const url = location.href;
+      if (navigator.share) {
+        navigator.share({ title: _shareTitle, text: _shareText, url }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(url).then(() => {
+          const t = document.getElementById('toast');
+          t.classList.add('show');
+          setTimeout(() => t.classList.remove('show'), 2200);
+        });
+      }
     }
 
     load();
