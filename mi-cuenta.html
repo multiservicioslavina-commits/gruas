@@ -112,6 +112,22 @@
     .public-link { font-size: 0.8rem; color: var(--accent); text-decoration: none; }
     .public-link:hover { text-decoration: underline; }
 
+    /* PROFILE COMPLETENESS */
+    .complete-bar {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.9rem 1.1rem;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .complete-bar-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+    .complete-bar-label strong { color: var(--text); }
+    .bar-track { flex: 1; min-width: 120px; height: 6px; background: #2a2a2a; border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; background: var(--accent); }
+    .bar-fill.done { background: #4ade80; }
+    .complete-items { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ci { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 20px; }
+    .ci.ok  { background: rgba(74,222,128,0.1);  color: #86efac; border: 1px solid rgba(74,222,128,0.2); }
+    .ci.mis { background: rgba(248,113,113,0.08); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2); }
+
     /* STATS */
     .stats-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -283,6 +299,13 @@
           <div class="num" id="statCal">—</div>
           <div class="lbl">Calificación ⭐</div>
         </div>
+      </div>
+
+      <!-- COMPLETENESS -->
+      <div class="complete-bar" id="completenessBar" style="display:none">
+        <div class="complete-bar-label"><strong id="completePct">0%</strong> perfil completo</div>
+        <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+        <div class="complete-items" id="completeItems"></div>
       </div>
 
       <!-- PERFIL EDITABLE -->
@@ -519,6 +542,31 @@
       document.getElementById('fFlota').value         = d.flota || perfil.flota || '';
       document.getElementById('fExperiencia').value   = d.experiencia || perfil.experiencia || '';
       document.getElementById('fTiempoLlegada').value = d.tiempo_llegada || '';
+
+      renderCompleteness(perfil);
+    }
+
+    function renderCompleteness(p) {
+      const d = p.datos || {};
+      const checks = [
+        ['Foto',        !!(d.foto_url || p.foto_url)],
+        ['Descripción', !!d.descripcion],
+        ['Servicios',   !!(Array.isArray(d.servicios) ? d.servicios.length : d.servicios)],
+        ['Precios',     !!(d.precio_desde || d.precio_hasta)],
+        ['Tiempo',      !!d.tiempo_llegada],
+        ['Flota',       !!d.flota],
+        ['Municipios',  !!(Array.isArray(p.municipios) ? p.municipios.length : p.municipios)],
+      ];
+      const done = checks.filter(([, ok]) => ok).length;
+      const pct = Math.round((done / checks.length) * 100);
+      document.getElementById('completePct').textContent = pct + '%';
+      const fill = document.getElementById('barFill');
+      fill.style.width = pct + '%';
+      fill.className = 'bar-fill' + (pct === 100 ? ' done' : '');
+      document.getElementById('completeItems').innerHTML = checks
+        .map(([l, ok]) => `<span class="ci ${ok ? 'ok' : 'mis'}">${ok ? '✓' : '✗'} ${l}</span>`)
+        .join('');
+      document.getElementById('completenessBar').style.display = 'flex';
     }
 
     function setChips(groupId, selected) {
@@ -646,6 +694,7 @@
             link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
             link.style.display = 'inline';
           }
+          renderCompleteness(perfil);
         }
       }
 
@@ -697,7 +746,7 @@
       } else {
         msg.className = 'save-msg ok';
         msg.textContent = '✓ Servicios actualizados.';
-        if (res.gruero) perfil = { ...perfil, ...res.gruero };
+        if (res.gruero) { perfil = { ...perfil, ...res.gruero }; renderCompleteness(perfil); }
       }
       this.disabled = false;
       this.textContent = 'Guardar servicios';
