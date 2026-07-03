@@ -154,6 +154,7 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
     <div class="ic">📍</div>
     <h3>Tu gruero ya llegó</h3>
     <p>Está en tu ubicación esperándote. ¡Sal a recibirlo!</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--mu)">¿No lo encuentras? Contáctalo con los botones de abajo.</p>
   </div>
 
   <!-- Calificar CTA -->
@@ -251,7 +252,7 @@ function applyEstado(estado){
   const s = estado;
   show('secBuscando', s==='pendiente');
   show('secGruero', s!=='pendiente');
-  show('secActions', s==='asignada');
+  show('secActions', s==='asignada' || s==='llego');
   show('eta', s==='asignada');
   show('secLlego', s==='llego');
   show('secCal', s==='finalizada');
@@ -311,7 +312,10 @@ async function init(){
   sol = data;
   applyEstado(data.estado);
   if(data.gruero_asignado) await loadGruero(data.gruero_asignado);
-  if(data.gruero_lat&&data.gruero_lng) moveGrueroMarker(data.gruero_lat, data.gruero_lng);
+  if(data.gruero_lat&&data.gruero_lng){
+    moveGrueroMarker(data.gruero_lat, data.gruero_lng);
+    if(grueroMarker) grueroMarker.openPopup();
+  }
 
   // Center map on municipio if no GPS yet
   if(!data.gruero_lat&&data.municipio&&MUNIS[data.municipio]){
