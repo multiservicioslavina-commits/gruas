@@ -516,6 +516,7 @@
     const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
     const FN_BASE = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1';
+    const VAPID_PUBLIC = 'BD79jKyJXIrR2Atkaju5ZepZDXAJIqjK_B3WEzoJmOk-4yGrro_z-PrZ-bTTuxjoUJZwmFD695fLe4azUFpi3RA';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let perfil = null;
@@ -937,6 +938,39 @@
         .subscribe();
     }
 
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    async function subscribePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+          });
+        }
+        const j = sub.toJSON();
+        if (!perfil?.id || !j.endpoint) return;
+        await sb.from('push_subscriptions').upsert({
+          gruero_id: perfil.id,
+          endpoint:  j.endpoint,
+          p256dh:    j.keys.p256dh,
+          auth:      j.keys.auth
+        }, { onConflict: 'gruero_id,endpoint' });
+      } catch (e) {
+        // push blocked or not supported — non-fatal
+      }
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
@@ -947,6 +981,7 @@
       document.getElementById('app').style.display = 'block';
       await Promise.all([loadPerfil(), loadServicios()]);
       startRealtime();
+      subscribePush();
     }
 
     init();
