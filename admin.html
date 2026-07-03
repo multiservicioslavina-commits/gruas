@@ -274,7 +274,6 @@
 
 <script>
 const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
-const FN_APROBAR = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aprobar-gruero';
 
 let adminKey = '';
 let allGrueros = [];
@@ -522,8 +521,11 @@ function renderTable() {
     const apro    = g.aprobado === 'SI';
     const disp    = g.disponible;
     const slug    = g.slug ? `<br><a class="slug-link" href="https://gruas.ridera.com.co/grua?slug=${esc(g.slug)}" target="_blank">/${esc(g.slug)}</a>` : '';
+    const authBadge = g.auth_id
+      ? `<span style="font-size:0.68rem;background:#0e2a1a;color:#4ade80;border:1px solid #1a5c36;padding:1px 6px;border-radius:20px;margin-left:4px">🔑 cuenta</span>`
+      : `<span style="font-size:0.68rem;background:#1a1a2a;color:#888;border:1px solid #2a2a3a;padding:1px 6px;border-radius:20px;margin-left:4px">sin cuenta</span>`;
     return `<tr>
-      <td><strong>${esc(g.nombre||'—')}</strong>${slug}<br><span class="tel">${esc(g.email||'')}</span></td>
+      <td><strong>${esc(g.nombre||'—')}</strong>${authBadge}${slug}<br><span class="tel">${esc(g.email||'')}</span></td>
       <td>${esc(g.ciudad||'—')}</td>
       <td class="tel">${esc(g.telefono||'—')}</td>
       <td><span class="badge ${apro?'badge-apro':'badge-pend'}">${apro?'✓ Aprobado':'Pendiente'}</span></td>
@@ -546,19 +548,24 @@ function renderTable() {
 }
 
 async function doAprobar(id, nombre, email, btn) {
-  if (!confirm(`¿Aprobar a "${nombre}"?\nSe creará su cuenta Auth y se le enviará un correo para establecer contraseña.`)) return;
+  const tieneEmail = email && email.includes('@');
+  const msg = tieneEmail
+    ? `¿Aprobar a "${nombre}"?\nSe creará su cuenta y se enviará el correo de bienvenida a ${email}.`
+    : `¿Aprobar a "${nombre}"?\n⚠️ No tiene correo registrado — no se creará cuenta de acceso.`;
+  if (!confirm(msg)) return;
   btn.disabled = true;
   btn.textContent = '…';
-  const res = await fetch(FN_APROBAR, {
-    method: 'POST', headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ nombre, email }),
-  }).then(r => r.json()).catch(() => ({ ok: false }));
+  const res = await callAdmin({ action: 'approve', id }).catch(() => ({ ok: false }));
 
   if (res.ok) {
     const g = allGrueros.find(x => x.id === id);
-    if (g) { g.aprobado = 'SI'; g.slug = res.slug || g.slug; }
+    if (g) { g.aprobado = 'SI'; g.auth_id = res.auth_created ? '(nuevo)' : g.auth_id; g.slug = res.slug || g.slug; }
     renderStats();
     renderTable();
+    const nota = res.auth_created
+      ? `✅ Aprobado. Cuenta creada, email de invitación enviado a ${email}.`
+      : `✅ Aprobado${tieneEmail ? ' (cuenta ya existía o hubo error de email)' : ' (sin correo, sin cuenta)'}. Slug: ${res.slug || '—'}`;
+    alert(nota);
   } else {
     btn.disabled = false;
     btn.textContent = '✓ Aprobar';
