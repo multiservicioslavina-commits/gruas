@@ -887,9 +887,13 @@
     document.getElementById('prevBtn').addEventListener('click', () => { page--; loadServicios(); });
     document.getElementById('nextBtn').addEventListener('click', () => { page++; loadServicios(); });
 
-    // When the user arrives via a password-recovery email link, highlight the password section
+    // Detect invite or password-recovery link in the URL hash
+    const _hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const _isInvite = _hp.get('type') === 'invite';
+
+    // Handle both invite links and password-recovery links from email
     sb.auth.onAuthStateChange((event) => {
-      if (event === 'PASSWORD_RECOVERY') {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && _isInvite)) {
         document.getElementById('loading').style.display = 'none';
         document.getElementById('app').style.display = 'block';
         loadPerfil().then(() => {
@@ -901,7 +905,9 @@
           }
           const msg = document.getElementById('pwdMsg');
           msg.className = 'save-msg ok';
-          msg.textContent = 'Ingresa tu nueva contraseña y guarda los cambios.';
+          msg.textContent = _isInvite
+            ? '¡Bienvenido a Ridera! Establece tu contraseña para proteger tu cuenta.'
+            : 'Ingresa tu nueva contraseña y guarda los cambios.';
         });
       }
     });
