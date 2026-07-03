@@ -47,7 +47,35 @@
     .stat { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; min-width: 120px; }
     .stat .num { font-size: 1.75rem; font-weight: 700; color: var(--or); }
     .stat .num.warn { color: #f59e0b; }
+    .stat .num.green { color: #4ade80; }
+    .stat .num.blue { color: #60a5fa; }
     .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
+    .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+    .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
+
+    /* SOLICITUDES */
+    .sol-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .sol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .sol-card { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; }
+    .sol-card .sc-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mu); margin-bottom: 0.5rem; }
+    .sol-card .sc-val { font-size: 1.5rem; font-weight: 700; }
+    .muni-list { list-style: none; }
+    .muni-list li { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+    .muni-list li:last-child { border-bottom: none; }
+    .muni-cnt { color: var(--or); font-weight: 700; }
+    .recientes-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .rec-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: var(--s2); border-radius: 8px; font-size: 0.82rem; }
+    .rec-estado { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 20px; white-space: nowrap; }
+    .re-pend { background: rgba(245,158,11,.12); color: #f59e0b; }
+    .re-asig { background: rgba(37,211,102,.1); color: #4ade80; }
+    .re-llego { background: rgba(96,165,250,.1); color: #60a5fa; }
+    .re-fin  { background: rgba(156,163,175,.08); color: #9ca3af; }
+    .rec-muni { color: var(--mu); flex: 1; }
+    .rec-cal { color: #facc15; font-weight: 600; white-space: nowrap; }
+    .rec-time { color: var(--mu); white-space: nowrap; }
 
     /* FILTERS */
     .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
@@ -125,9 +153,17 @@
   </nav>
 
   <div class="container">
-    <div class="page-title">Grueros registrados</div>
+    <div class="page-title">Panel de administración</div>
     <div class="page-sub" id="lastUpdated">Cargando…</div>
 
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('grueros',this)">Grueros</button>
+      <button class="tab-btn" onclick="showTab('solicitudes',this)">Solicitudes</button>
+    </div>
+
+    <!-- GRUEROS TAB -->
+    <div id="tabGrueros">
     <div class="stats" id="statsRow"></div>
 
     <div class="filters">
@@ -155,6 +191,36 @@
         <tbody id="tbody"></tbody>
       </table>
     </div>
+    </div><!-- /tabGrueros -->
+
+    <!-- SOLICITUDES TAB -->
+    <div id="tabSolicitudes" style="display:none">
+      <div class="sol-stats" id="solStats">
+        <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
+        <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
+        <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
+        <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
+        <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
+        <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
+      </div>
+
+      <div class="sol-grid">
+        <div class="sol-card">
+          <div class="sc-label">Por estado</div>
+          <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        </div>
+        <div class="sol-card">
+          <div class="sc-label">Top municipios</div>
+          <ul class="muni-list" id="muniList"></ul>
+        </div>
+      </div>
+
+      <div class="sol-card" style="margin-bottom:1.5rem">
+        <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
+        <div class="recientes-list" id="recientesList"></div>
+      </div>
+    </div><!-- /tabSolicitudes -->
+
   </div>
 </div>
 
@@ -183,6 +249,62 @@ let currentFilter = 'all';
 function esc(x) {
   return (x == null ? '' : String(x)).replace(/[&<>"]/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+let solStatsLoaded = false;
+
+function showTab(tab, btn) {
+  document.getElementById('tabGrueros').style.display    = tab === 'grueros'     ? 'block' : 'none';
+  document.getElementById('tabSolicitudes').style.display = tab === 'solicitudes' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
+}
+
+async function loadSolicitudesStats() {
+  const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  solStatsLoaded = true;
+
+  document.getElementById('sTotal').textContent   = data.total ?? '—';
+  document.getElementById('sHoy').textContent     = data.hoy ?? '—';
+  document.getElementById('sSemana').textContent  = data.semana ?? '—';
+  document.getElementById('sMes').textContent     = data.mes ?? '—';
+  document.getElementById('sCal').textContent     = data.avgCal != null ? `⭐ ${data.avgCal}` : '—';
+  document.getElementById('sResp').textContent    = data.avgRespuestaMin != null ? `${data.avgRespuestaMin} min` : '—';
+
+  // By estado
+  const estadoLabels = { pendiente:'Pendiente', asignada:'En camino', llego:'Llegó', finalizada:'Finalizada' };
+  const estadoColors = { pendiente:'#f59e0b', asignada:'#4ade80', llego:'#60a5fa', finalizada:'#9ca3af' };
+  const be = data.byEstado || {};
+  document.getElementById('byEstadoList').innerHTML = Object.entries(estadoLabels).map(([k, lbl]) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid #2a2a2a">
+       <span style="font-size:0.82rem;color:#ccc">${lbl}</span>
+       <span style="font-weight:700;color:${estadoColors[k]}">${be[k] || 0}</span>
+     </div>`
+  ).join('');
+
+  // Top municipios
+  document.getElementById('muniList').innerHTML = (data.topMunicipios || []).map(m =>
+    `<li><span>${esc(m.municipio)}</span><span class="muni-cnt">${m.total}</span></li>`
+  ).join('') || '<li style="color:#888">Sin datos</li>';
+
+  // Recientes
+  const timelbl = d => {
+    const diff = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (diff < 60) return `${diff}m`;
+    if (diff < 1440) return `${Math.round(diff/60)}h`;
+    return `${Math.round(diff/1440)}d`;
+  };
+  const clsEstado = { pendiente:'re-pend', asignada:'re-asig', llego:'re-llego', finalizada:'re-fin' };
+  document.getElementById('recientesList').innerHTML = (data.recientes || []).map(s =>
+    `<div class="rec-row">
+       <span class="rec-estado ${clsEstado[s.estado]||'re-fin'}">${estadoLabels[s.estado]||s.estado}</span>
+       <span class="rec-muni">${esc(s.municipio||'—')}</span>
+       ${s.calificacion ? `<span class="rec-cal">${'⭐'.repeat(s.calificacion)}</span>` : ''}
+       <span class="rec-time">${timelbl(s.created_at)}</span>
+     </div>`
+  ).join('') || '<p style="color:#888;font-size:0.85rem">Sin solicitudes recientes.</p>';
 }
 
 async function callAdmin(body) {
