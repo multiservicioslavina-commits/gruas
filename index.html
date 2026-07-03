@@ -92,6 +92,7 @@
   .success h2{font-family:'Bebas Neue';font-weight:400;font-size:36px;letter-spacing:.5px;margin-bottom:8px}
   .success p{color:#d6d6d6;font-size:15px;line-height:1.5;max-width:34ch;margin:0 auto 8px}
   .success .small{color:var(--muted);font-size:13px}
+  .success .track-btn{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border-radius:12px;padding:14px 22px;font-weight:700;font-size:15px;text-decoration:none;margin:12px auto;}
 
   footer{text-align:center;padding:24px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:1.5px;text-transform:uppercase;font-size:12px;border-top:1px solid var(--line)}
   .hide{display:none!important}
@@ -208,6 +209,7 @@
         </div>
         <h2>¡Solicitud enviada!</h2>
         <p>Ya avisamos a los grueros disponibles. Uno te escribirá al WhatsApp muy pronto.</p>
+        <a class="track-btn" id="trackLink" href="#" style="display:none">📍 Ver seguimiento en vivo</a>
         <p class="small">Mantén tu teléfono a la mano. 🏍️</p>
       </div>
     </div>
@@ -308,14 +310,19 @@
     const btn=$("#enviarBtn");
     btn.disabled=true; btn.innerHTML='<span class="spin"></span> Enviando…';
     try{
-      const { error } = await sb.from("solicitudes").insert({
+      const { data: ins, error } = await sb.from("solicitudes").insert({
         cliente_nombre: nombre,
         cliente_telefono: tel,
         ubicacion: ubic,
         municipio: $("#municipio").value || null,
         estado: "pendiente"
-      });
+      }).select('id').single();
       if(error) throw error;
+      if(ins?.id){
+        const tl = document.getElementById('trackLink');
+        tl.href = `/seguimiento?s=${ins.id}`;
+        tl.style.display = 'inline-flex';
+      }
       $("#formBody").style.display="none";
       $("#success").style.display="block";
       $("#success").scrollIntoView({behavior:"smooth",block:"center"});

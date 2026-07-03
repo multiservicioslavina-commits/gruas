@@ -85,6 +85,7 @@ let S = qs.get('s'), G = qs.get('g');
 const T = qs.get('t');
 if (T && T.includes('~')) { const p = T.split('~'); S = S || p[0]; G = G || p[1]; }
 let pollTimer = null;
+let gpsWatch = null;
 
 function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg; t.className='toast show'; setTimeout(()=>t.className='toast',2400); }
 function esc(x){ return (x==null?'':String(x)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
@@ -128,6 +129,7 @@ function render(data){
   // MÍO (asignada / llego / finalizada)
   if(sol.es_mio){
     stopPoll();
+    if(estado === 'finalizada' || estado === 'llego'){ stopGPS(); }
     if(estado === 'finalizada'){
       if(sol.calificacion){
         const stars = '⭐'.repeat(sol.calificacion);
@@ -155,14 +157,15 @@ function render(data){
       acciones = `<button class="btn btn-final" id="actBtn" onclick="doPaso('finalizar',this)">✅ Finalizar servicio</button>`;
     }
     c.innerHTML = `
-      <div class="eyebrow">Tienes este servicio</div>
+      <div class=”eyebrow”>Tienes este servicio</div>
       <h1>Vas tú 🛵</h1>
-      <span class="badge mine">✓ Asignado a ti</span>
+      <span class=”badge mine”>✓ Asignado a ti</span>
       ${stepper(estado)}
       ${clienteCard(sol)}
       ${acciones}
-      <button class="btn btn-danger" onclick="doCancelar()">✖ Cancelar (no puedo seguir)</button>
-      <div class="note">${estado==='asignada'?'Cuando llegues al sitio, toca “Ya llegué”.':'Al terminar, toca “Finalizar servicio”.'}</div>`;
+      <button class=”btn btn-danger” onclick=”doCancelar()”>✖ Cancelar (no puedo seguir)</button>
+      <div class=”note”>${estado==='asignada'?'Cuando llegues al sitio, toca “Ya llegué”.':'Al terminar, toca “Finalizar servicio”.'}</div>`;
+    if(estado === 'asignada') startGPS();
     return;
   }
 
@@ -212,6 +215,19 @@ async function checkCal(){
   const d = await api('info');
   if(d && d.sol && d.sol.calificacion){ stopPoll(); render(d); }
   else { toast('El cliente aún no ha calificado'); }
+}
+function startGPS(){
+  if(!navigator.geolocation || gpsWatch !== null) return;
+  let lastLat = null, lastLng = null;
+  gpsWatch = navigator.geolocation.watchPosition(pos => {
+    const {latitude: lat, longitude: lng} = pos.coords;
+    const moved = !lastLat || Math.abs(lat - lastLat) > 0.0001 || Math.abs(lng - lastLng) > 0.0001;
+    if(moved){ lastLat = lat; lastLng = lng; api('ubicacion', {lat, lng}); }
+  }, err => console.warn('GPS:', err.message),
+  {enableHighAccuracy: true, maximumAge: 30000, timeout: 20000});
+}
+function stopGPS(){
+  if(gpsWatch !== null){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; }
 }
 
 function startPoll(){ stopPoll(); pollTimer=setInterval(async ()=>{ const d=await api('info'); if(d&&d.sol&&d.sol.estado!=='pendiente') render(d); },5000); }
