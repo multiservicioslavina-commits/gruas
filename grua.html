@@ -103,6 +103,13 @@
     .info-item .lbl { font-size: 0.75rem; color: var(--muted); margin-bottom: 0.2rem; }
     .info-item .val { font-size: 0.95rem; }
     .desc-text { color: #ccc; line-height: 1.6; font-size: 0.95rem; }
+    .badge-cal {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-size: 0.8rem; font-weight: 600;
+      padding: 0.3rem 0.75rem; border-radius: 20px;
+      background: #1a1400; color: #facc15; border: 1px solid #4a3800;
+      margin-top: 0.5rem; margin-left: 0.5rem;
+    }
 
     /* SCHEMA added by JS */
   </style>
@@ -180,7 +187,7 @@
       }
 
       if (data.error || !data.gruero) { show('notFound'); return; }
-      render(data.gruero);
+      render(data.gruero, data.stats || {});
     }
 
     function show(id) {
@@ -189,7 +196,7 @@
       document.getElementById('profile').style.display  = id === 'profile'  ? 'block' : 'none';
     }
 
-    function render(g) {
+    function render(g, stats) {
       const nombre   = fmt(g.nombre) || 'Gruero Ridera';
       const ciudad   = fmt(g.ciudad) || 'Colombia';
       const d        = g.datos || {};
@@ -241,9 +248,14 @@
       document.getElementById('hSubtitle').textContent = ciudad + (municipios ? ` · ${municipios}` : '');
 
       const dispEl = document.getElementById('hDisp');
-      dispEl.innerHTML = disp
+      let dispHtml = disp
         ? `<span class="badge-disp badge-on"><span class="dot dot-on"></span>Disponible ahora</span>`
         : `<span class="badge-disp badge-off"><span class="dot dot-off"></span>No disponible en este momento</span>`;
+      if (stats.calificacion_promedio) {
+        const n = stats.total_calificaciones || '';
+        dispHtml += `<span class="badge-cal">⭐ ${stats.calificacion_promedio}${n ? ` · ${n} reseñ${n === 1 ? 'a' : 'as'}` : ''}</span>`;
+      }
+      dispEl.innerHTML = dispHtml;
 
       // CTA WhatsApp
       if (tel) {
@@ -265,7 +277,9 @@
         ['Precio hasta', d.precio_hasta ? `$${Number(d.precio_hasta).toLocaleString('es-CO')}` : null],
         ['Flota',        fmt(d.flota ?? g.flota)],
         ['Experiencia',  fmt(d.experiencia ?? g.experiencia)],
-        ['Acepta',       fmt(d.acepta ?? g.acepta)],
+        ['Acepta',       (() => { const a = d.acepta ?? g.acepta; return Array.isArray(a) ? a.join(', ') : fmt(a); })()],
+        ['Horario',      fmt(d.disponibilidad)],
+        ['Total servicios', stats.total_servicios > 0 ? String(stats.total_servicios) : null],
       ].filter(([, v]) => v);
 
       document.getElementById('infoGrid').innerHTML = fields.map(([l, v]) =>

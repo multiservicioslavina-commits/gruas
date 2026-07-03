@@ -326,6 +326,14 @@
       <div class="section">
         <h3>Servicios y precios</h3>
         <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Horario de atención</span>
+          <div class="chip-group" id="chipHorario">
+            <label class="chip-label"><input type="radio" name="horario" value="24/7"> 🟢 24/7</label>
+            <label class="chip-label"><input type="radio" name="horario" value="Horario hábil"> Horario hábil</label>
+            <label class="chip-label"><input type="radio" name="horario" value="Fines de semana"> Fines de semana</label>
+          </div>
+        </div>
+        <div class="form-group full" style="margin-bottom:1rem">
           <span class="chips-label">Servicios que ofreces</span>
           <div class="chip-group" id="chipServicios">
             <label class="chip-label"><input type="checkbox" value="Grúa plataforma"> 🚛 Grúa plataforma</label>
@@ -493,6 +501,13 @@
         ? (d.servicios ?? perfil.servicios) : [];
       const aceptaArr = Array.isArray(d.acepta ?? perfil.acepta)
         ? (d.acepta ?? perfil.acepta) : [];
+      // Horario radio
+      const horario = d.disponibilidad || '';
+      document.querySelectorAll('#chipHorario input').forEach(inp => {
+        const on = inp.value === horario;
+        inp.checked = on;
+        inp.closest('.chip-label').classList.toggle('checked', on);
+      });
       setChips('chipServicios', srvArr);
       setChips('chipAcepta', aceptaArr);
       document.getElementById('fPrecioDesde').value = d.precio_desde || '';
@@ -630,11 +645,16 @@
       this.textContent = 'Guardar cambios';
     });
 
-    // Chip toggle
+    // Chip toggle (handles both checkboxes and radios)
     document.querySelectorAll('.chip-label').forEach(lbl => {
       lbl.addEventListener('click', () => {
         setTimeout(() => {
           const inp = lbl.querySelector('input');
+          if (inp.type === 'radio') {
+            document.querySelectorAll(`input[name="${inp.name}"]`).forEach(r => {
+              r.closest('.chip-label').classList.remove('checked');
+            });
+          }
           lbl.classList.toggle('checked', inp.checked);
         }, 0);
       });
@@ -651,6 +671,7 @@
         body: JSON.stringify({
           datos: {
             ...(perfil.datos || {}),
+            disponibilidad: document.querySelector('#chipHorario input:checked')?.value || null,
             servicios:    getChips('chipServicios'),
             acepta:       getChips('chipAcepta'),
             precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
