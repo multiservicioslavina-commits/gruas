@@ -927,8 +927,8 @@
       const sol = data[0];
       // Filtrar por municipio si el gruero tiene lista definida
       if (munis.length) {
-        const solMuni = (sol.municipio || '').toLowerCase().replace(/ /g, '_');
-        const mine = munis.some(m => m.toLowerCase().replace(/ /g, '_') === solMuni);
+        const solMuni = normMuni(sol.municipio);
+        const mine = munis.some(m => normMuni(m) === solMuni);
         if (!mine) return;
       }
       const bar = document.getElementById('solicitudBar');
@@ -940,7 +940,7 @@
 
     function startRealtime() {
       const munis = Array.isArray(perfil?.municipios)
-        ? perfil.municipios.map(m => m.trim().toLowerCase().replace(/ /g, '_'))
+        ? perfil.municipios.map(m => normMuni(m))
         : [];
 
       sb.channel('nuevas-solicitudes')
@@ -948,11 +948,11 @@
           const sol = payload.new;
           if (sol.estado !== 'pendiente') return;
           // Show if gruero covers that municipio (or no municipio filter set)
-          const solMuni = (sol.municipio || '').toLowerCase().replace(/ /g, '_');
+          const solMuni = normMuni(sol.municipio);
           if (munis.length && !munis.includes(solMuni)) return;
           const bar = document.getElementById('solicitudBar');
           document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
-          document.getElementById('solLink').href = `/aceptar.html?id=${sol.id}`;
+          document.getElementById('solLink').href = `/aceptar?s=${sol.id}`;
           bar.classList.add('show');
           // Auto-hide after 30s
           setTimeout(() => bar.classList.remove('show'), 30000);
@@ -963,6 +963,11 @@
           loadServicios();
         })
         .subscribe();
+    }
+
+    function normMuni(s) {
+      return (s || '').toLowerCase().normalize('NFD')
+        .replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_');
     }
 
     function urlBase64ToUint8Array(base64String) {
