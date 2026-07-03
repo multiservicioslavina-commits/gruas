@@ -128,6 +128,32 @@
     .ci.ok  { background: rgba(74,222,128,0.1);  color: #86efac; border: 1px solid rgba(74,222,128,0.2); }
     .ci.mis { background: rgba(248,113,113,0.08); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2); }
 
+    /* NEW SERVICE NOTIFICATION BAR */
+    #solicitudBar {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      background: #1a1200;
+      border-bottom: 1px solid rgba(245,158,11,.35);
+      padding: 0.7rem 1.25rem;
+      font-size: 0.88rem;
+      position: sticky;
+      top: 60px;
+      z-index: 9;
+    }
+    #solicitudBar.show { display: flex; }
+    .sol-pulse { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; animation: solPulse 1.4s infinite; }
+    @keyframes solPulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)}60%{box-shadow:0 0 0 7px rgba(245,158,11,0)} }
+    .sol-text { flex: 1; color: #fbbf24; font-weight: 600; }
+    .sol-text span { color: #fff; }
+    .sol-link {
+      background: #f59e0b; color: #1a0e00;
+      text-decoration: none; font-weight: 700;
+      padding: 0.35rem 0.85rem; border-radius: 6px;
+      font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;
+    }
+    .sol-close { background: none; border: none; color: #fbbf24; font-size: 1.1rem; cursor: pointer; padding: 0 0.25rem; flex-shrink: 0; }
+
     /* PHOTO UPLOAD */
     .photo-upload-wrap { display: flex; align-items: center; gap: 1rem; }
     .foto-preview {
@@ -286,6 +312,14 @@
         <button class="btn-logout" id="logoutBtn">Cerrar sesión</button>
       </div>
     </nav>
+
+    <!-- REAL-TIME NEW SERVICE ALERT -->
+    <div id="solicitudBar">
+      <div class="sol-pulse"></div>
+      <div class="sol-text">🚨 Nueva solicitud en <span id="solMunicipio">tu zona</span></div>
+      <a class="sol-link" id="solLink" href="#" target="_blank">Ver solicitud →</a>
+      <button class="sol-close" id="solClose" title="Cerrar">✕</button>
+    </div>
 
     <div class="container">
       <!-- HEADER -->
@@ -871,6 +905,38 @@
       }
     });
 
+    // Nueva solicitud — cerrar barra
+    document.getElementById('solClose').addEventListener('click', () => {
+      document.getElementById('solicitudBar').classList.remove('show');
+    });
+
+    function startRealtime() {
+      const munis = Array.isArray(perfil?.municipios)
+        ? perfil.municipios.map(m => m.trim().toLowerCase().replace(/ /g, '_'))
+        : [];
+
+      sb.channel('nuevas-solicitudes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitudes' }, payload => {
+          const sol = payload.new;
+          if (sol.estado !== 'pendiente') return;
+          // Show if gruero covers that municipio (or no municipio filter set)
+          const solMuni = (sol.municipio || '').toLowerCase().replace(/ /g, '_');
+          if (munis.length && !munis.includes(solMuni)) return;
+          const bar = document.getElementById('solicitudBar');
+          document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
+          document.getElementById('solLink').href = `/aceptar.html?id=${sol.id}`;
+          bar.classList.add('show');
+          // Auto-hide after 30s
+          setTimeout(() => bar.classList.remove('show'), 30000);
+        })
+        // Also refresh stats when a service assigned to us is updated
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'solicitudes',
+          filter: `gruero_asignado=eq.${perfil?.id}` }, () => {
+          loadServicios();
+        })
+        .subscribe();
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
@@ -880,6 +946,7 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       await Promise.all([loadPerfil(), loadServicios()]);
+      startRealtime();
     }
 
     init();
