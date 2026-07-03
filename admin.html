@@ -77,6 +77,30 @@
     .rec-cal { color: #facc15; font-weight: 600; white-space: nowrap; }
     .rec-time { color: var(--mu); white-space: nowrap; }
 
+    /* DISPATCH */
+    .dispatch-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .dispatch-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); }
+    .dispatch-refresh { font-size: 0.75rem; color: var(--mu); cursor: pointer; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.6rem; }
+    .dispatch-refresh:hover { border-color: var(--or); color: var(--or); }
+    .pending-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .pend-card { background: var(--s); border: 1px solid rgba(245,158,11,.35); border-radius: 10px; padding: 1rem; }
+    .pend-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .pend-name { font-weight: 700; font-size: 0.9rem; }
+    .pend-time { font-size: 0.72rem; color: #f59e0b; white-space: nowrap; }
+    .pend-muni { display: inline-block; font-size: 0.72rem; font-weight: 700; background: rgba(245,158,11,.1); color: #f59e0b; border-radius: 20px; padding: 0.15rem 0.5rem; margin-bottom: 0.4rem; }
+    .pend-ubic { font-size: 0.78rem; color: var(--mu); margin-bottom: 0.7rem; max-height: 2.5em; overflow: hidden; text-overflow: ellipsis; }
+    .pend-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .btn-dispatch { font-size: 0.75rem; padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid rgba(245,158,11,.5); background: transparent; color: #f59e0b; cursor: pointer; transition: all .15s; }
+    .btn-dispatch:hover { background: rgba(245,158,11,.1); }
+    .gruero-dispatch-list { margin-top: 0.75rem; border-top: 1px solid var(--line); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .gd-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.6rem; background: var(--s2); border-radius: 8px; }
+    .gd-name { font-size: 0.82rem; font-weight: 600; }
+    .gd-city { font-size: 0.72rem; color: var(--mu); }
+    .btn-wa-dispatch { font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; border: none; background: rgba(37,211,102,.15); color: #4ade80; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+    .btn-wa-dispatch:hover { background: rgba(37,211,102,.25); }
+    .gd-empty { font-size: 0.8rem; color: var(--mu); padding: 0.5rem 0; }
+    .dispatch-empty { color: var(--mu); font-size: 0.85rem; padding: 1.5rem; text-align: center; background: var(--s); border-radius: 10px; border: 1px solid var(--line); }
+
     /* FILTERS */
     .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
     .filter-btn { padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 20px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; }
@@ -195,6 +219,16 @@
 
     <!-- SOLICITUDES TAB -->
     <div id="tabSolicitudes" style="display:none">
+
+      <!-- DESPACHO EN VIVO -->
+      <div class="dispatch-bar">
+        <span class="dispatch-title">📡 Despacho en vivo</span>
+        <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+      </div>
+      <div id="pendingGrid" class="pending-grid">
+        <div class="dispatch-empty">Cargando solicitudes pendientes…</div>
+      </div>
+
       <div class="sol-stats" id="solStats">
         <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
         <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
@@ -259,6 +293,7 @@ function showTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
+  if (tab === 'solicitudes') loadPendingDispatch();
 }
 
 async function loadSolicitudesStats() {
@@ -305,6 +340,79 @@ async function loadSolicitudesStats() {
        <span class="rec-time">${timelbl(s.created_at)}</span>
      </div>`
   ).join('') || '<p style="color:#888;font-size:0.85rem">Sin solicitudes recientes.</p>';
+}
+
+// ── Live dispatch ────────────────────────────────────────────────────
+let dispatchTimer = null;
+
+function relTime(iso) {
+  const diff = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `hace ${diff}s`;
+  if (diff < 3600) return `hace ${Math.round(diff/60)} min`;
+  return `hace ${Math.round(diff/3600)} h`;
+}
+
+async function loadPendingDispatch() {
+  const grid = document.getElementById('pendingGrid');
+  const data = await callAdmin({ action: 'pending_dispatch' }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.solicitudes) {
+    grid.innerHTML = '<div class="dispatch-empty">No se pudo cargar el despacho.</div>';
+    return;
+  }
+  if (!data.solicitudes.length) {
+    grid.innerHTML = '<div class="dispatch-empty">✅ Sin solicitudes pendientes</div>';
+    return;
+  }
+  grid.innerHTML = data.solicitudes.map(s => `
+    <div class="pend-card" id="pc-${s.id}">
+      <div class="pend-header">
+        <span class="pend-name">${esc(s.cliente_nombre||'Cliente')}</span>
+        <span class="pend-time">${relTime(s.created_at)}</span>
+      </div>
+      ${s.municipio ? `<span class="pend-muni">📍 ${esc(s.municipio)}</span>` : ''}
+      <div class="pend-ubic">${esc(s.ubicacion||'Sin ubicación')}</div>
+      <div class="pend-actions">
+        <button class="btn-dispatch" onclick="toggleDespacho('${s.id}','${esc(s.municipio||'')}')">
+          👥 Ver grueros disponibles
+        </button>
+        <a class="btn-dispatch" style="text-decoration:none" href="/aceptar?s=${s.id}" target="_blank">
+          🔗 Ver solicitud
+        </a>
+      </div>
+      <div id="gd-${s.id}" class="gruero-dispatch-list" style="display:none"></div>
+    </div>`).join('');
+
+  clearTimeout(dispatchTimer);
+  dispatchTimer = setTimeout(loadPendingDispatch, 30000);
+}
+
+async function toggleDespacho(solId, municipio) {
+  const el = document.getElementById('gd-' + solId);
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span class="gd-empty">Buscando grueros…</span>';
+
+  const data = await callAdmin({ action: 'despacho_grueros', municipio }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.grueros || !data.grueros.length) {
+    el.innerHTML = '<span class="gd-empty">Sin grueros disponibles en este municipio.</span>';
+    return;
+  }
+
+  const BASE = 'https://gruas.ridera.com.co';
+  el.innerHTML = data.grueros.map(g => {
+    const phone = (g.telefono || '').replace(/\D/g,'');
+    const wa = phone.length === 10 ? '57' + phone : phone;
+    const link = `${BASE}/aceptar?s=${solId}&g=${g.id}`;
+    const msg = encodeURIComponent(`Hola ${g.nombre}, hay una solicitud de grúa esperando. Entra aquí para aceptarla: ${link}`);
+    return `<div class="gd-row">
+      <div>
+        <div class="gd-name">${esc(g.nombre)}</div>
+        <div class="gd-city">${esc(g.datos?.ciudad || g.datos?.municipios?.[0] || '—')}</div>
+      </div>
+      ${wa ? `<a class="btn-wa-dispatch" href="https://wa.me/${wa}?text=${msg}" target="_blank">💬 WhatsApp</a>` : '<span class="gd-empty">Sin tel</span>'}
+    </div>`;
+  }).join('');
 }
 
 async function callAdmin(body) {
