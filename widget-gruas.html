@@ -16,7 +16,7 @@
 .rg-card:hover{border-color:#E85D20;transform:translateY(-2px)}
 .rg-card-top{height:130px;background:#191919;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
 .rg-card-top img.rg-foto{width:100%;height:100%;object-fit:cover;position:absolute;inset:0}
-.rg-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a;z-index:1}
+.rg-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a;z-index:1;overflow:hidden}
 .rg-icon i{font-size:26px;color:#E85D20}
 .rg-badge-ok{position:absolute;top:10px;left:10px;background:#0d2318;color:#4ade80;font-size:11px;padding:4px 9px;border-radius:4px;display:flex;align-items:center;gap:3px}
 .rg-badge-24{position:absolute;top:10px;right:10px;background:#1a1a2a;color:#818cf8;font-size:11px;padding:4px 9px;border-radius:4px}
@@ -54,6 +54,8 @@
 .rg-modal-precio{background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
 .rg-modal-precio span{font-size:13px;color:#e6e3de}
 .rg-modal-precio strong{color:#E85D20;font-size:15px}
+.rg-modal-perfil{display:block;width:100%;background:#E85D20;color:#fff;text-align:center;padding:11px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;margin-bottom:14px;transition:background .2s}
+.rg-modal-perfil:hover{background:#cf4f18;color:#fff}
 
 @media (max-width:600px){
   .rg-search{padding:1rem 1.1rem}
@@ -89,6 +91,7 @@
     <img class="rg-modal-foto" id="gm-foto" src="" alt="" style="display:none">
     <h3 id="gm-nombre"></h3>
     <div class="rg-modal-zona" id="gm-zona"></div>
+    <a class="rg-modal-perfil" id="gm-perfil" href="#" target="_blank">🏍️ Ver perfil en Ridera →</a>
     <div class="rg-modal-precio">
       <span>Precio servicio</span>
       <strong id="gm-precio"></strong>
@@ -114,6 +117,12 @@
   const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
   const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
 
+  function toSlug(s){
+    return (s||'').trim().toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g,'')
+      .replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'').slice(0,50)||'gruero';
+  }
+
   function formatPrecio(desde, hasta){
     const f = n => n ? '$'+parseInt(n).toLocaleString('es-CO') : null;
     const d = f(desde), h = f(hasta);
@@ -138,7 +147,7 @@
       data-descripcion="${g.descripcion||''}" data-notas="${g.notas||''}"
       data-precio-desde="${g.precio_desde||''}" data-precio-hasta="${g.precio_hasta||''}"
       data-direccion="${g.direccion||''}" data-timestamp="${g.timestamp||''}"
-      data-foto="${g.foto_url||''}" data-logo="${g.logo_url||''}">
+      data-foto="${g.foto_url||''}" data-logo="${g.logo_url||''}" data-slug="${g.slug||''}">
       <div class="rg-card-top">
         ${g.foto_url ? `<img class="rg-foto" src="${g.foto_url}" alt="${g.nombre||''}" onerror="this.remove()">` : ''}
         ${!g.foto_url ? '<div class="rg-icon"><i class="ti ti-truck"></i></div>' : ''}
@@ -164,7 +173,7 @@
   }
 
   function cta(){
-    return `<div class="rg-cta" onclick="window.location.href='https://ridera.com.co/registrar-grua/'">
+    return `<div class="rg-cta" onclick="window.location.href='https://gruas.ridera.com.co/registro'">
       <i class="ti ti-plus"></i>
       <div class="rg-cta-title">Registrar mi grúa</div>
       <div class="rg-cta-sub">¿Tenés un servicio de grúas para motos?<br>Aparecé gratis en el directorio</div>
@@ -217,7 +226,9 @@
     }
     document.getElementById('gm-nombre').textContent       = d.nombre;
     document.getElementById('gm-zona').textContent         = d.zona;
-    document.getElementById('gm-precio').textContent       = formatPrecio(d['precio-desde'], d['precio-hasta']);
+    const slug = d.slug || toSlug(d.nombre);
+    document.getElementById('gm-perfil').href = `https://gruas.ridera.com.co/grua/${slug}`;
+    document.getElementById('gm-precio').textContent       = formatPrecio(d.precioDesde, d.precioHasta);
     document.getElementById('gm-direccion').textContent    = d.direccion||'–';
     document.getElementById('gm-tel').textContent          = d.tel||'–';
     document.getElementById('gm-whatsapp').textContent     = d.whatsapp||'–';
