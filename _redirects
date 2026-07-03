@@ -1,3 +1,4 @@
+/grueros      /grueros.html           200
 /seguimiento  /seguimiento.html       200
 /grua/*       /grua.html?slug=:splat  200
 /califica     /califica.html         200
