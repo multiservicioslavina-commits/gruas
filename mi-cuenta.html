@@ -372,6 +372,10 @@
             <label>Experiencia</label>
             <input type="text" id="fExperiencia" placeholder="Ej. 5 años">
           </div>
+          <div class="form-group">
+            <label>Tiempo de llegada estimado</label>
+            <input type="text" id="fTiempoLlegada" placeholder="Ej. 20-30 minutos">
+          </div>
         </div>
         <button class="btn-save" id="saveSrvBtn">Guardar servicios</button>
         <div class="save-msg" id="saveSrvMsg"></div>
@@ -512,8 +516,9 @@
       setChips('chipAcepta', aceptaArr);
       document.getElementById('fPrecioDesde').value = d.precio_desde || '';
       document.getElementById('fPrecioHasta').value = d.precio_hasta || '';
-      document.getElementById('fFlota').value       = d.flota || perfil.flota || '';
-      document.getElementById('fExperiencia').value = d.experiencia || perfil.experiencia || '';
+      document.getElementById('fFlota').value         = d.flota || perfil.flota || '';
+      document.getElementById('fExperiencia').value   = d.experiencia || perfil.experiencia || '';
+      document.getElementById('fTiempoLlegada').value = d.tiempo_llegada || '';
     }
 
     function setChips(groupId, selected) {
@@ -676,8 +681,9 @@
             acepta:       getChips('chipAcepta'),
             precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
             precio_hasta: Number(document.getElementById('fPrecioHasta').value) || null,
-            flota:        document.getElementById('fFlota').value.trim() || null,
-            experiencia:  document.getElementById('fExperiencia').value.trim() || null,
+            flota:          document.getElementById('fFlota').value.trim() || null,
+            experiencia:    document.getElementById('fExperiencia').value.trim() || null,
+            tiempo_llegada: document.getElementById('fTiempoLlegada').value.trim() || null,
           },
         }),
       });

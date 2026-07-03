@@ -275,6 +275,7 @@
         ['Servicios',    Array.isArray(srv) ? srv.join(', ') : fmt(srv)],
         ['Precio desde', d.precio_desde ? `$${Number(d.precio_desde).toLocaleString('es-CO')}` : null],
         ['Precio hasta', d.precio_hasta ? `$${Number(d.precio_hasta).toLocaleString('es-CO')}` : null],
+        ['Tiempo de llegada', fmt(d.tiempo_llegada)],
         ['Flota',        fmt(d.flota ?? g.flota)],
         ['Experiencia',  fmt(d.experiencia ?? g.experiencia)],
         ['Acepta',       (() => { const a = d.acepta ?? g.acepta; return Array.isArray(a) ? a.join(', ') : fmt(a); })()],
