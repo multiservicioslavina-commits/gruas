@@ -126,12 +126,33 @@ class RideRepository {
     required String uid,
     required String name,
   }) async {
+    // Si ya existe como rider/lider (aunque haya salido), NO lo bajamos a
+    // "pendiente" — solo limpiamos finished_at para que vuelva a la rodada.
+    final existing = await _sb
+        .from('members')
+        .select('rol')
+        .eq('ride_id', rideId)
+        .eq('uid', uid)
+        .maybeSingle();
+
+    if (existing != null && existing['rol'] != 'pendiente') {
+      // Rejoin: mantener rol, borrar marca de salida
+      await _sb
+          .from('members')
+          .update({'finished_at': null, 'nombre': name})
+          .eq('ride_id', rideId)
+          .eq('uid', uid);
+      return;
+    }
+
+    // Primera vez o antes rechazado → entra como pendiente
     await _sb.from('members').upsert(
       {
         'ride_id': rideId,
         'uid': uid,
         'rol': 'pendiente',
         'nombre': name,
+        'finished_at': null,
       },
       onConflict: 'ride_id,uid',
     );

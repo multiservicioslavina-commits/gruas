@@ -57,15 +57,33 @@ class RideService {
       nombre = _sb.auth.currentUser?.userMetadata?['name'] ?? 'Piloto';
     }
 
-    await _sb.from('members').upsert(
-      {
-        'ride_id': ride['id'],
-        'uid': _uid,
-        'rol': 'rider',
-        'nombre': nombre,
-      },
-      onConflict: 'ride_id,uid',
-    );
+    // Si ya estuvo como rider/lider (salió por error), lo devolvemos con el
+    // mismo rol y limpiamos finished_at para no perder ruta ni fotos.
+    final existing = await _sb
+        .from('members')
+        .select('rol')
+        .eq('ride_id', ride['id'])
+        .eq('uid', _uid)
+        .maybeSingle();
+
+    if (existing != null && existing['rol'] != 'pendiente') {
+      await _sb
+          .from('members')
+          .update({'finished_at': null, 'nombre': nombre})
+          .eq('ride_id', ride['id'])
+          .eq('uid', _uid);
+    } else {
+      await _sb.from('members').upsert(
+        {
+          'ride_id': ride['id'],
+          'uid': _uid,
+          'rol': 'rider',
+          'nombre': nombre,
+          'finished_at': null,
+        },
+        onConflict: 'ride_id,uid',
+      );
+    }
 
     return ride;
   }
