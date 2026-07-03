@@ -575,13 +575,16 @@
         const cliente = s.cliente_nombre || '—';
         const ruta = s.ubicacion || s.municipio || '—';
         const estado = s.estado || '—';
-        const cal = s.calificacion ? '⭐ ' + s.calificacion : '—';
+        const calStars = s.calificacion ? '⭐ ' + s.calificacion : '—';
+        const comentario = s.comentario_cliente
+          ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:3px;font-style:italic;max-width:140px;white-space:normal">"${s.comentario_cliente.slice(0, 80)}${s.comentario_cliente.length > 80 ? '…' : ''}"</div>`
+          : '';
         return `<tr>
           <td>${fecha}</td>
           <td>${cliente}</td>
           <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ruta}</td>
           <td><span class="estado-badge estado-${estado}">${estado.replace('_', ' ')}</span></td>
-          <td>${cal}</td>
+          <td>${calStars}${comentario}</td>
         </tr>`;
       }).join('');
     }
