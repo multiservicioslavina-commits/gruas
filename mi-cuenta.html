@@ -112,6 +112,67 @@
     .public-link { font-size: 0.8rem; color: var(--accent); text-decoration: none; }
     .public-link:hover { text-decoration: underline; }
 
+    /* PROFILE COMPLETENESS */
+    .complete-bar {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 10px; padding: 0.9rem 1.1rem;
+      margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;
+    }
+    .complete-bar-label { font-size: 0.82rem; color: var(--muted); white-space: nowrap; }
+    .complete-bar-label strong { color: var(--text); }
+    .bar-track { flex: 1; min-width: 120px; height: 6px; background: #2a2a2a; border-radius: 99px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; background: var(--accent); }
+    .bar-fill.done { background: #4ade80; }
+    .complete-items { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .ci { font-size: 0.72rem; padding: 0.15rem 0.5rem; border-radius: 20px; }
+    .ci.ok  { background: rgba(74,222,128,0.1);  color: #86efac; border: 1px solid rgba(74,222,128,0.2); }
+    .ci.mis { background: rgba(248,113,113,0.08); color: #fca5a5; border: 1px solid rgba(248,113,113,0.2); }
+
+    /* NEW SERVICE NOTIFICATION BAR */
+    #solicitudBar {
+      display: none;
+      align-items: center;
+      gap: 0.75rem;
+      background: #1a1200;
+      border-bottom: 1px solid rgba(245,158,11,.35);
+      padding: 0.7rem 1.25rem;
+      font-size: 0.88rem;
+      position: sticky;
+      top: 60px;
+      z-index: 9;
+    }
+    #solicitudBar.show { display: flex; }
+    .sol-pulse { width: 10px; height: 10px; border-radius: 50%; background: #f59e0b; flex-shrink: 0; animation: solPulse 1.4s infinite; }
+    @keyframes solPulse { 0%,100%{box-shadow:0 0 0 0 rgba(245,158,11,.5)}60%{box-shadow:0 0 0 7px rgba(245,158,11,0)} }
+    .sol-text { flex: 1; color: #fbbf24; font-weight: 600; }
+    .sol-text span { color: #fff; }
+    .sol-link {
+      background: #f59e0b; color: #1a0e00;
+      text-decoration: none; font-weight: 700;
+      padding: 0.35rem 0.85rem; border-radius: 6px;
+      font-size: 0.8rem; white-space: nowrap; flex-shrink: 0;
+    }
+    .sol-close { background: none; border: none; color: #fbbf24; font-size: 1.1rem; cursor: pointer; padding: 0 0.25rem; flex-shrink: 0; }
+
+    /* PHOTO UPLOAD */
+    .photo-upload-wrap { display: flex; align-items: center; gap: 1rem; }
+    .foto-preview {
+      width: 72px; height: 72px; border-radius: 50%;
+      background: var(--surface2); border: 2px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; color: var(--muted); overflow: hidden; flex-shrink: 0;
+    }
+    .foto-preview img { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; }
+    .btn-upload {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--surface2); border: 1px solid var(--border);
+      color: var(--text); padding: 0.5rem 0.9rem;
+      border-radius: 8px; font-size: 0.85rem; cursor: pointer; transition: border-color 0.2s;
+    }
+    .btn-upload:hover { border-color: var(--accent); }
+    .upload-hint { font-size: 0.72rem; color: var(--muted); margin-top: 0.3rem; }
+    #uploadProgress { font-size: 0.8rem; color: var(--accent); display: none; margin-top: 0.3rem; }
+
     /* STATS */
     .stats-grid {
       display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
@@ -218,6 +279,23 @@
       font-size: 0.85rem;
     }
     .pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    /* CHECK CHIPS */
+    .chip-group { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 6px; }
+    .chip-label {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 0.85rem; color: var(--muted);
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 99px; padding: 6px 14px;
+      cursor: pointer; transition: all 0.18s; user-select: none;
+    }
+    .chip-label input { display: none; }
+    .chip-label.checked {
+      background: rgba(232,93,32,0.12);
+      border-color: rgba(232,93,32,0.4);
+      color: var(--text);
+    }
+    .chips-label { font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; display: block; }
   </style>
 </head>
 <body>
@@ -234,6 +312,14 @@
         <button class="btn-logout" id="logoutBtn">Cerrar sesión</button>
       </div>
     </nav>
+
+    <!-- REAL-TIME NEW SERVICE ALERT -->
+    <div id="solicitudBar">
+      <div class="sol-pulse"></div>
+      <div class="sol-text">🚨 Nueva solicitud en <span id="solMunicipio">tu zona</span></div>
+      <a class="sol-link" id="solLink" href="#" target="_blank">Ver solicitud →</a>
+      <button class="sol-close" id="solClose" title="Cerrar">✕</button>
+    </div>
 
     <div class="container">
       <!-- HEADER -->
@@ -268,6 +354,13 @@
         </div>
       </div>
 
+      <!-- COMPLETENESS -->
+      <div class="complete-bar" id="completenessBar" style="display:none">
+        <div class="complete-bar-label"><strong id="completePct">0%</strong> perfil completo</div>
+        <div class="bar-track"><div class="bar-fill" id="barFill" style="width:0%"></div></div>
+        <div class="complete-items" id="completeItems"></div>
+      </div>
+
       <!-- PERFIL EDITABLE -->
       <div class="section">
         <h3>Mi perfil</h3>
@@ -297,12 +390,97 @@
             <textarea id="fDescripcion" placeholder="Cuéntale al cliente qué te hace diferente…"></textarea>
           </div>
           <div class="form-group full">
-            <label>URL de foto de perfil</label>
-            <input type="text" id="fFoto" placeholder="https://...">
+            <label>Foto de perfil</label>
+            <div class="photo-upload-wrap">
+              <div class="foto-preview" id="fotoPreview">📷</div>
+              <div>
+                <label class="btn-upload" for="fFotoFile">📁 Subir foto</label>
+                <input type="file" id="fFotoFile" accept="image/*" style="display:none">
+                <div id="uploadProgress">Subiendo imagen…</div>
+                <div class="upload-hint">JPG, PNG o WebP · máx. 5 MB</div>
+              </div>
+            </div>
+            <input type="hidden" id="fFoto">
           </div>
         </div>
         <button class="btn-save" id="saveBtn">Guardar cambios</button>
         <div class="save-msg" id="saveMsg"></div>
+      </div>
+
+      <!-- SERVICIOS Y PRECIOS -->
+      <div class="section">
+        <h3>Servicios y precios</h3>
+        <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Horario de atención</span>
+          <div class="chip-group" id="chipHorario">
+            <label class="chip-label"><input type="radio" name="horario" value="24/7"> 🟢 24/7</label>
+            <label class="chip-label"><input type="radio" name="horario" value="Horario hábil"> Horario hábil</label>
+            <label class="chip-label"><input type="radio" name="horario" value="Fines de semana"> Fines de semana</label>
+          </div>
+        </div>
+        <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Servicios que ofreces</span>
+          <div class="chip-group" id="chipServicios">
+            <label class="chip-label"><input type="checkbox" value="Grúa plataforma"> 🚛 Grúa plataforma</label>
+            <label class="chip-label"><input type="checkbox" value="Asistencia en ruta"> 🔧 Asistencia en ruta</label>
+            <label class="chip-label"><input type="checkbox" value="Cambio de llanta"> 🔄 Cambio de llanta</label>
+            <label class="chip-label"><input type="checkbox" value="Gasolina de emergencia"> ⛽ Gasolina emergencia</label>
+            <label class="chip-label"><input type="checkbox" value="Batería/Arranque"> 🔋 Batería / Arranque</label>
+            <label class="chip-label"><input type="checkbox" value="Traslado largo"> 🗺️ Traslado largo</label>
+            <label class="chip-label"><input type="checkbox" value="Custodia"> 🔒 Custodia moto</label>
+          </div>
+        </div>
+        <div class="form-group full" style="margin-bottom:1rem">
+          <span class="chips-label">Tipos de moto que acepta</span>
+          <div class="chip-group" id="chipAcepta">
+            <label class="chip-label"><input type="checkbox" value="Cualquier moto"> Cualquier moto</label>
+            <label class="chip-label"><input type="checkbox" value="Motos grandes 500cc+"> 500cc+</label>
+            <label class="chip-label"><input type="checkbox" value="Adventure / Doble propósito"> Adventure</label>
+            <label class="chip-label"><input type="checkbox" value="Motos +300kg"> +300kg</label>
+            <label class="chip-label"><input type="checkbox" value="Sidecar / trike"> Sidecar / trike</label>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Precio desde (COP)</label>
+            <input type="number" id="fPrecioDesde" placeholder="Ej. 50000" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label>Precio hasta (COP)</label>
+            <input type="number" id="fPrecioHasta" placeholder="Ej. 150000" min="0" step="1000">
+          </div>
+          <div class="form-group">
+            <label>Flota</label>
+            <input type="text" id="fFlota" placeholder="Ej. 2 grúas propias">
+          </div>
+          <div class="form-group">
+            <label>Experiencia</label>
+            <input type="text" id="fExperiencia" placeholder="Ej. 5 años">
+          </div>
+          <div class="form-group">
+            <label>Tiempo de llegada estimado</label>
+            <input type="text" id="fTiempoLlegada" placeholder="Ej. 20-30 minutos">
+          </div>
+        </div>
+        <button class="btn-save" id="saveSrvBtn">Guardar servicios</button>
+        <div class="save-msg" id="saveSrvMsg"></div>
+      </div>
+
+      <!-- CAMBIAR CONTRASEÑA -->
+      <div class="section" id="secSeguridad">
+        <h3>Seguridad</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nueva contraseña</label>
+            <input type="password" id="fPwd1" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="fPwd2" placeholder="Repite la contraseña" autocomplete="new-password">
+          </div>
+        </div>
+        <button class="btn-save" id="pwdBtn">Cambiar contraseña</button>
+        <div class="save-msg" id="pwdMsg"></div>
       </div>
 
       <!-- HISTORIAL -->
@@ -338,6 +516,7 @@
     const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
     const FN_BASE = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1';
+    const VAPID_PUBLIC = 'BD79jKyJXIrR2Atkaju5ZepZDXAJIqjK_B3WEzoJmOk-4yGrro_z-PrZ-bTTuxjoUJZwmFD695fLe4azUFpi3RA';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     let perfil = null;
@@ -404,7 +583,73 @@
       document.getElementById('fMunicipios').value = Array.isArray(perfil.municipios)
         ? perfil.municipios.join(', ') : (perfil.municipios || '');
       document.getElementById('fDescripcion').value = (perfil.datos && perfil.datos.descripcion) || '';
-      document.getElementById('fFoto').value        = (perfil.datos && perfil.datos.foto_url) || '';
+      const fotoUrlVal = (perfil.datos && perfil.datos.foto_url) || '';
+      document.getElementById('fFoto').value = fotoUrlVal;
+      const fotoPreviewEl = document.getElementById('fotoPreview');
+      if (fotoUrlVal) {
+        fotoPreviewEl.innerHTML = `<img src="${fotoUrlVal}" alt="">`;
+      } else {
+        fotoPreviewEl.textContent = '📷';
+      }
+
+      // Servicios y precios
+      const d = perfil.datos || {};
+      const srvArr = Array.isArray(d.servicios ?? perfil.servicios)
+        ? (d.servicios ?? perfil.servicios) : [];
+      const aceptaArr = Array.isArray(d.acepta ?? perfil.acepta)
+        ? (d.acepta ?? perfil.acepta) : [];
+      // Horario radio
+      const horario = d.disponibilidad || '';
+      document.querySelectorAll('#chipHorario input').forEach(inp => {
+        const on = inp.value === horario;
+        inp.checked = on;
+        inp.closest('.chip-label').classList.toggle('checked', on);
+      });
+      setChips('chipServicios', srvArr);
+      setChips('chipAcepta', aceptaArr);
+      document.getElementById('fPrecioDesde').value = d.precio_desde || '';
+      document.getElementById('fPrecioHasta').value = d.precio_hasta || '';
+      document.getElementById('fFlota').value         = d.flota || perfil.flota || '';
+      document.getElementById('fExperiencia').value   = d.experiencia || perfil.experiencia || '';
+      document.getElementById('fTiempoLlegada').value = d.tiempo_llegada || '';
+
+      renderCompleteness(perfil);
+    }
+
+    function renderCompleteness(p) {
+      const d = p.datos || {};
+      const checks = [
+        ['Foto',        !!(d.foto_url || p.foto_url)],
+        ['Descripción', !!d.descripcion],
+        ['Servicios',   !!(Array.isArray(d.servicios) ? d.servicios.length : d.servicios)],
+        ['Precios',     !!(d.precio_desde || d.precio_hasta)],
+        ['Tiempo',      !!d.tiempo_llegada],
+        ['Flota',       !!d.flota],
+        ['Municipios',  !!(Array.isArray(p.municipios) ? p.municipios.length : p.municipios)],
+      ];
+      const done = checks.filter(([, ok]) => ok).length;
+      const pct = Math.round((done / checks.length) * 100);
+      document.getElementById('completePct').textContent = pct + '%';
+      const fill = document.getElementById('barFill');
+      fill.style.width = pct + '%';
+      fill.className = 'bar-fill' + (pct === 100 ? ' done' : '');
+      document.getElementById('completeItems').innerHTML = checks
+        .map(([l, ok]) => `<span class="ci ${ok ? 'ok' : 'mis'}">${ok ? '✓' : '✗'} ${l}</span>`)
+        .join('');
+      document.getElementById('completenessBar').style.display = 'flex';
+    }
+
+    function setChips(groupId, selected) {
+      document.querySelectorAll(`#${groupId} .chip-label`).forEach(lbl => {
+        const inp = lbl.querySelector('input');
+        const on = selected.includes(inp.value);
+        inp.checked = on;
+        lbl.classList.toggle('checked', on);
+      });
+    }
+
+    function getChips(groupId) {
+      return [...document.querySelectorAll(`#${groupId} input:checked`)].map(i => i.value);
     }
 
     function updateDispBadge(disponible) {
@@ -448,13 +693,16 @@
         const cliente = s.cliente_nombre || '—';
         const ruta = s.ubicacion || s.municipio || '—';
         const estado = s.estado || '—';
-        const cal = s.calificacion ? '⭐ ' + s.calificacion : '—';
+        const calStars = s.calificacion ? '⭐ ' + s.calificacion : '—';
+        const comentario = s.comentario_cliente
+          ? `<div style="font-size:0.72rem;color:var(--muted);margin-top:3px;font-style:italic;max-width:140px;white-space:normal">"${s.comentario_cliente.slice(0, 80)}${s.comentario_cliente.length > 80 ? '…' : ''}"</div>`
+          : '';
         return `<tr>
           <td>${fecha}</td>
           <td>${cliente}</td>
           <td style="max-width:220px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${ruta}</td>
           <td><span class="estado-badge estado-${estado}">${estado.replace('_', ' ')}</span></td>
-          <td>${cal}</td>
+          <td>${calStars}${comentario}</td>
         </tr>`;
       }).join('');
     }
@@ -472,6 +720,32 @@
         updateDispBadge(nuevoVal);
       }
       this.disabled = false;
+    });
+
+    document.getElementById('fFotoFile').addEventListener('change', async function() {
+      const file = this.files[0];
+      if (!file) return;
+      if (file.size > 5 * 1024 * 1024) {
+        alert('La foto no puede superar 5 MB');
+        this.value = '';
+        return;
+      }
+      const prog = document.getElementById('uploadProgress');
+      prog.style.display = 'block';
+      const { data: { session } } = await sb.auth.getSession();
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const path = `fotos/${session.user.id}.${ext}`;
+      const { data, error } = await sb.storage.from('grueros').upload(path, file, { upsert: true, contentType: file.type });
+      prog.style.display = 'none';
+      if (error) {
+        alert('Error al subir foto: ' + error.message);
+        return;
+      }
+      const { data: { publicUrl } } = sb.storage.from('grueros').getPublicUrl(data.path);
+      document.getElementById('fFoto').value = publicUrl;
+      document.getElementById('fotoPreview').innerHTML = `<img src="${publicUrl}?t=${Date.now()}" alt="">`;
+      // also update header avatar immediately
+      document.getElementById('avatarEl').innerHTML = `<img class="avatar" src="${publicUrl}?t=${Date.now()}" alt="">`;
     });
 
     document.getElementById('saveBtn').addEventListener('click', async function() {
@@ -506,18 +780,103 @@
       } else {
         msg.className = 'save-msg ok';
         msg.textContent = '✓ Cambios guardados correctamente.';
-        perfil = res.gruero || perfil;
-        if (perfil.nombre) document.getElementById('hdrNombre').textContent = perfil.nombre;
-        if (perfil.ciudad) document.getElementById('hdrCiudad').textContent = perfil.ciudad;
-        if (perfil.slug) {
-          const link = document.getElementById('publicLink');
-          link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
-          link.style.display = 'inline';
+        if (res.gruero) {
+          perfil = { ...perfil, ...res.gruero };
+          document.getElementById('hdrNombre').textContent = perfil.nombre || '';
+          document.getElementById('hdrCiudad').textContent = perfil.ciudad || '';
+          document.getElementById('navName').textContent   = perfil.nombre || '';
+          if (perfil.slug) {
+            const link = document.getElementById('publicLink');
+            link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
+            link.style.display = 'inline';
+          }
+          renderCompleteness(perfil);
         }
       }
 
       this.disabled = false;
       this.textContent = 'Guardar cambios';
+    });
+
+    // Chip toggle (handles both checkboxes and radios)
+    document.querySelectorAll('.chip-label').forEach(lbl => {
+      lbl.addEventListener('click', () => {
+        setTimeout(() => {
+          const inp = lbl.querySelector('input');
+          if (inp.type === 'radio') {
+            document.querySelectorAll(`input[name="${inp.name}"]`).forEach(r => {
+              r.closest('.chip-label').classList.remove('checked');
+            });
+          }
+          lbl.classList.toggle('checked', inp.checked);
+        }, 0);
+      });
+    });
+
+    document.getElementById('saveSrvBtn').addEventListener('click', async function() {
+      const msg = document.getElementById('saveSrvMsg');
+      msg.textContent = '';
+      this.disabled = true;
+      this.textContent = 'Guardando…';
+
+      const res = await apiFetch('/mi-perfil', {
+        method: 'PATCH',
+        body: JSON.stringify({
+          datos: {
+            ...(perfil.datos || {}),
+            disponibilidad: document.querySelector('#chipHorario input:checked')?.value || null,
+            servicios:    getChips('chipServicios'),
+            acepta:       getChips('chipAcepta'),
+            precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
+            precio_hasta: Number(document.getElementById('fPrecioHasta').value) || null,
+            flota:          document.getElementById('fFlota').value.trim() || null,
+            experiencia:    document.getElementById('fExperiencia').value.trim() || null,
+            tiempo_llegada: document.getElementById('fTiempoLlegada').value.trim() || null,
+          },
+        }),
+      });
+
+      if (res.error) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Error: ' + res.error;
+      } else {
+        msg.className = 'save-msg ok';
+        msg.textContent = '✓ Servicios actualizados.';
+        if (res.gruero) { perfil = { ...perfil, ...res.gruero }; renderCompleteness(perfil); }
+      }
+      this.disabled = false;
+      this.textContent = 'Guardar servicios';
+    });
+
+    document.getElementById('pwdBtn').addEventListener('click', async function() {
+      const msg  = document.getElementById('pwdMsg');
+      const pwd1 = document.getElementById('fPwd1').value;
+      const pwd2 = document.getElementById('fPwd2').value;
+      msg.textContent = '';
+      if (pwd1.length < 8) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        return;
+      }
+      if (pwd1 !== pwd2) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+      this.disabled = true;
+      this.textContent = 'Guardando…';
+      const { error } = await sb.auth.updateUser({ password: pwd1 });
+      if (error) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Error: ' + error.message;
+      } else {
+        msg.className = 'save-msg ok';
+        msg.textContent = '✓ Contraseña actualizada correctamente.';
+        document.getElementById('fPwd1').value = '';
+        document.getElementById('fPwd2').value = '';
+      }
+      this.disabled = false;
+      this.textContent = 'Cambiar contraseña';
     });
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -528,6 +887,128 @@
     document.getElementById('prevBtn').addEventListener('click', () => { page--; loadServicios(); });
     document.getElementById('nextBtn').addEventListener('click', () => { page++; loadServicios(); });
 
+    // Detect invite or password-recovery link in the URL hash
+    const _hp = new URLSearchParams(window.location.hash.replace(/^#/, ''));
+    const _isInvite = _hp.get('type') === 'invite';
+
+    // Handle both invite links and password-recovery links from email
+    sb.auth.onAuthStateChange((event) => {
+      if (event === 'PASSWORD_RECOVERY' || (event === 'SIGNED_IN' && _isInvite)) {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        loadPerfil().then(() => {
+          const sec = document.getElementById('secSeguridad');
+          if (sec) {
+            sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            sec.style.outline = '2px solid #E85D20';
+            setTimeout(() => { sec.style.outline = ''; }, 3000);
+          }
+          const msg = document.getElementById('pwdMsg');
+          msg.className = 'save-msg ok';
+          msg.textContent = _isInvite
+            ? '¡Bienvenido a Ridera! Establece tu contraseña para proteger tu cuenta.'
+            : 'Ingresa tu nueva contraseña y guarda los cambios.';
+        });
+      }
+    });
+
+    // Nueva solicitud — cerrar barra
+    document.getElementById('solClose').addEventListener('click', () => {
+      document.getElementById('solicitudBar').classList.remove('show');
+    });
+
+    async function checkPendingSolicitudes() {
+      if (!perfil) return;
+      const munis = Array.isArray(perfil.municipios) ? perfil.municipios : [];
+      // Solicitudes pendientes de los últimos 10 minutos
+      const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      let q = sb.from('solicitudes')
+        .select('id,municipio,ubicacion,created_at')
+        .eq('estado', 'pendiente')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const { data } = await q;
+      if (!data?.length) return;
+      const sol = data[0];
+      // Filtrar por municipio si el gruero tiene lista definida
+      if (munis.length) {
+        const solMuni = normMuni(sol.municipio);
+        const mine = munis.some(m => normMuni(m) === solMuni);
+        if (!mine) return;
+      }
+      const bar = document.getElementById('solicitudBar');
+      document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
+      document.getElementById('solLink').href = `/aceptar?s=${sol.id}&g=${perfil.id}`;
+      bar.classList.add('show');
+      setTimeout(() => bar.classList.remove('show'), 30000);
+    }
+
+    function startRealtime() {
+      const munis = Array.isArray(perfil?.municipios)
+        ? perfil.municipios.map(m => normMuni(m))
+        : [];
+
+      sb.channel('nuevas-solicitudes')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'solicitudes' }, payload => {
+          const sol = payload.new;
+          if (sol.estado !== 'pendiente') return;
+          // Show if gruero covers that municipio (or no municipio filter set)
+          const solMuni = normMuni(sol.municipio);
+          if (munis.length && !munis.includes(solMuni)) return;
+          const bar = document.getElementById('solicitudBar');
+          document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
+          document.getElementById('solLink').href = `/aceptar?s=${sol.id}&g=${perfil.id}`;
+          bar.classList.add('show');
+          // Auto-hide after 30s
+          setTimeout(() => bar.classList.remove('show'), 30000);
+        })
+        // Also refresh stats when a service assigned to us is updated
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'solicitudes',
+          filter: `gruero_asignado=eq.${perfil?.id}` }, () => {
+          loadServicios();
+        })
+        .subscribe();
+    }
+
+    function normMuni(s) {
+      return (s || '').toLowerCase().normalize('NFD')
+        .replace(/[̀-ͯ]/g, '').replace(/\s+/g, '_');
+    }
+
+    function urlBase64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(base64);
+      return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+    }
+
+    async function subscribePush() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      try {
+        const reg = await navigator.serviceWorker.ready;
+        const perm = await Notification.requestPermission();
+        if (perm !== 'granted') return;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC)
+          });
+        }
+        const j = sub.toJSON();
+        if (!perfil?.id || !j.endpoint) return;
+        await sb.from('push_subscriptions').upsert({
+          gruero_id: perfil.id,
+          endpoint:  j.endpoint,
+          p256dh:    j.keys.p256dh,
+          auth:      j.keys.auth
+        }, { onConflict: 'gruero_id,endpoint' });
+      } catch (e) {
+        // push blocked or not supported — non-fatal
+      }
+    }
+
     async function init() {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
@@ -537,6 +1018,9 @@
       document.getElementById('loading').style.display = 'none';
       document.getElementById('app').style.display = 'block';
       await Promise.all([loadPerfil(), loadServicios()]);
+      startRealtime();
+      checkPendingSolicitudes();
+      subscribePush();
     }
 
     init();

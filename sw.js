@@ -1,5 +1,5 @@
 // Ridera Grúas - Service Worker
-const CACHE = 'ridera-v1';
+const CACHE = 'ridera-v2';
 const ASSETS = ['/', '/index.html', '/manifest.json',
   '/icon-192.png', '/icon-512.png', '/icon-maskable-512.png', '/apple-touch-icon.png'];
 
@@ -33,4 +33,35 @@ self.addEventListener('fetch', (e) => {
     caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
     return res;
   }).catch(() => hit)));
+});
+
+self.addEventListener('push', (event) => {
+  let data = {};
+  try { data = event.data?.json() ?? {}; } catch(e) {}
+  const title = data.title || '🏍️ Ridera Grúas';
+  const options = {
+    body: data.body || 'Nueva solicitud de grúa disponible',
+    icon: '/apple-touch-icon.png',
+    badge: '/apple-touch-icon.png',
+    tag: data.sol_id || 'ridera-push',
+    renotify: true,
+    requireInteraction: true,
+    data: { url: data.url || '/mi-cuenta.html' }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || '/mi-cuenta.html';
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+      const existing = list.find((c) => c.url.includes(self.location.origin));
+      if (existing) {
+        existing.focus();
+        return existing.navigate(url);
+      }
+      return clients.openWindow(url);
+    })
+  );
 });

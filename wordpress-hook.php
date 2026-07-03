@@ -34,22 +34,17 @@ add_action('transition_post_status', function($nuevo, $anterior, $post) {
     $supabase_key = defined('SUPABASE_SERVICE_KEY') ? SUPABASE_SERVICE_KEY : '';
 
     if ($supabase_key) {
-        $email = '';
-        // Buscar campo email entre los meta del CPT
-        foreach (['email', 'correo', 'email_gruero', 'correo_gruero'] as $campo) {
-            if (!empty($meta[$campo][0])) {
-                $email = $meta[$campo][0];
-                break;
-            }
+        // Collect all public meta fields (skip internal WordPress _ prefixed ones)
+        $meta_flat = ['nombre' => $post->post_title];
+        foreach ($meta as $key => $val) {
+            if (strpos($key, '_') === 0) continue;
+            $meta_flat[$key] = $val[0];
         }
 
         wp_remote_post(
             'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aprobar-gruero',
             [
-                'body'    => json_encode([
-                    'nombre' => $post->post_title,
-                    'email'  => $email,
-                ]),
+                'body'    => json_encode($meta_flat),
                 'headers' => [
                     'Content-Type'  => 'application/json',
                     'Authorization' => 'Bearer ' . $supabase_key,

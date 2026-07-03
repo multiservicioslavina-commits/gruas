@@ -96,6 +96,18 @@
     }
     .forgot a { color: #E85D20; text-decoration: none; }
     .forgot a:hover { text-decoration: underline; }
+    .info-banner {
+      display: none;
+      background: #0a1e2e;
+      border: 1px solid #1a4a6e;
+      color: #7fc8f8;
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+      font-size: 0.875rem;
+      line-height: 1.5;
+      margin-bottom: 1.5rem;
+      text-align: center;
+    }
     .spinner {
       display: inline-block;
       width: 16px; height: 16px;
@@ -121,6 +133,11 @@
       <p>Portal del gruero</p>
     </div>
 
+    <div class="info-banner" id="infoBanner">
+      ✅ <strong>Solicitud enviada.</strong><br>
+      Revisamos tu perfil en menos de 48 horas. Cuando te aprobemos, recibirás un <strong>correo con tu enlace de acceso</strong> para entrar aquí.
+    </div>
+
     <form id="loginForm" novalidate>
       <label for="email">Correo electrónico</label>
       <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" required>
@@ -144,6 +161,11 @@
     const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    // Mostrar banner si viene del registro
+    if (new URLSearchParams(location.search).get('nuevo') === '1') {
+      document.getElementById('infoBanner').style.display = 'block';
+    }
 
     // Ya hay sesión activa → ir directo al dashboard
     sb.auth.getSession().then(({ data: { session } }) => {

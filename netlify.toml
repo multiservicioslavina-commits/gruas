@@ -1,3 +1,6 @@
 [[edge_functions]]
   path = "/sitemap.xml"
   function = "sitemap"
+
+[functions."mensajes-delay"]
+  schedule = "*/5 * * * *"

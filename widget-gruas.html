@@ -112,7 +112,7 @@
 <script>
 (function(){
   const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
-  const SB_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
 
   function formatPrecio(desde, hasta){
     const f = n => n ? '$'+parseInt(n).toLocaleString('es-CO') : null;
@@ -255,11 +255,11 @@
           telefono: g.telefono || '',
           whatsapp: g.telefono || '',
           instagram: d.instagram || '',
-          servicios: d.servicios || '',
+          servicios: Array.isArray(d.servicios) ? d.servicios.join(', ') : (d.servicios || ''),
           cobertura: munis || g.ciudad || '',
           disponibilidad: g.disponible ? '24 horas' : 'Bajo pedido',
           tiempo_llegada: d.tiempo_llegada || '',
-          acepta: d.acepta || '',
+          acepta: Array.isArray(d.acepta) ? d.acepta.join(', ') : (d.acepta || ''),
           flota: d.flota || '',
           experiencia: d.experiencia || '',
           descripcion: d.descripcion || '',

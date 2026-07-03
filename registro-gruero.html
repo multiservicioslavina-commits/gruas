@@ -117,7 +117,7 @@ input[type=file]::file-selector-button{background:var(--carbon4);color:#fff;bord
        Cuando te aprobemos, <strong style="color:#fff">recibirás un correo</strong> con el enlace para
        crear tu contraseña y entrar a tu portal de gruero.</p>
     <div class="countdown" id="countdown-txt"></div>
-    <a class="btn-portal" href="https://gruas.ridera.com.co/login-gruero.html" id="btn-portal">
+    <a class="btn-portal" href="https://gruas.ridera.com.co/login-gruero.html?nuevo=1" id="btn-portal">
       🔐 Ir al portal de grueros
     </a>
     <button class="btn-nuevo" onclick="resetForm()">+ Registrar otra grúa</button>
@@ -438,7 +438,7 @@ function showSuccess(){
   txt.textContent=`Redirigiendo al portal en ${s} segundos…`;
   countdown=setInterval(()=>{
     s--;
-    if(s<=0){clearInterval(countdown);window.location.href='https://gruas.ridera.com.co/login-gruero.html';}
+    if(s<=0){clearInterval(countdown);window.location.href='https://gruas.ridera.com.co/login-gruero.html?nuevo=1';}
     else{txt.textContent=`Redirigiendo al portal en ${s} segundos…`;}
   },1000);
 }
