@@ -498,6 +498,7 @@
           ubicacion:        ubic,
           municipio:        _grueroMunicipio || null,
           estado:           'pendiente',
+          gruero_asignado:  _grueroId || null,
         }).select('id').single();
 
         if (error) throw error;
