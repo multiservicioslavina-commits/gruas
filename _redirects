@@ -1,5 +1,7 @@
 /seguimiento  /seguimiento.html       200
 /grua/*       /grua.html?slug=:splat  200
+/califica     /califica.html         200
+/aceptar      /aceptar.html          200
 /mi-cuenta    /mi-cuenta.html        301
 /login        /login-gruero.html     301
 /registro     /registro-gruero.html  301

@@ -138,10 +138,17 @@ function render(data){
           ${clienteCard(sol)}
           <div class="note">El cliente calificó: ${stars}</div>`;
       } else {
+        const _wa = waNum(sol.cliente_telefono);
+        const _calUrl = `https://gruas.ridera.com.co/califica?s=${encodeURIComponent(sol.id)}`;
+        const _waText = encodeURIComponent(`¡Gracias por usar Ridera! Por favor califica tu servicio de grúa aquí: ${_calUrl}`);
+        const _shareBtn = _wa
+          ? `<a class="btn btn-wa" target="_blank" href="https://wa.me/${_wa}?text=${_waText}" style="margin-top:12px">⭐ Enviar enlace de calificación</a>`
+          : ``;
         c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
           <span class="badge done">● Finalizado</span>${stepper('finalizada')}
           ${clienteCard(sol)}
-          <div class="note" id="calNota">Esperando que el cliente califique…</div>
+          ${_shareBtn}
+          <div class="note" id="calNota" style="margin-top:12px">Esperando que el cliente califique…</div>
           <button class="btn btn-ghost" style="margin-top:10px" onclick="checkCal()">🔄 Actualizar calificación</button>`;
         pollTimer = setInterval(async ()=>{
           const d = await api('info');
