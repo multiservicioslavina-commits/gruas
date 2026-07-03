@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -37,9 +36,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   final _rideService = RideService();
   String _videoStatus = 'idle'; // idle | rendering | done | error
   String? _videoUrl;
-  String? _renderId;
   String? _videoError;
-  Timer? _pollTimer;
 
   @override
   void initState() {
@@ -121,16 +118,11 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     return r * 2 * asin(sqrt(a));
   }
 
-  @override
-  void dispose() {
-    _pollTimer?.cancel();
-    super.dispose();
-  }
-
   Future<void> _generateVideo() async {
-    setState(() => _videoStatus = 'rendering');
+    setState(() { _videoStatus = 'rendering'; _videoError = null; });
     try {
-      final id = await _videoService.requestRender(
+      final url = await _videoService.renderVideo(
+        rideId: widget.rideId,
         rideName: widget.rideName,
         elapsed: _hms(widget.elapsed),
         distanceKm: _distanceKm.toStringAsFixed(1),
@@ -138,22 +130,9 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         photos: _photos,
         routePoints: _routePoints,
       );
-      _renderId = id;
-      // Polling cada 5 segundos hasta que esté listo
-      _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-        try {
-          final url = await _videoService.checkRender(_renderId!);
-          if (url != null && mounted) {
-            _pollTimer?.cancel();
-            setState(() { _videoStatus = 'done'; _videoUrl = url; });
-            // Guardar URL del video en el historial
-            try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
-          }
-        } catch (_) {
-          _pollTimer?.cancel();
-          if (mounted) setState(() => _videoStatus = 'error');
-        }
-      });
+      if (!mounted) return;
+      setState(() { _videoStatus = 'done'; _videoUrl = url; });
+      try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
     } catch (e) {
       if (mounted) setState(() { _videoStatus = 'error'; _videoError = e.toString(); });
     }
@@ -278,7 +257,10 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             SizedBox(width: 20, height: 20,
                 child: CircularProgressIndicator(color: RColors.brand, strokeWidth: 2)),
             SizedBox(width: 14),
-            Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
+            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
+              Text('Puede tardar 1–2 minutos', style: TextStyle(color: RColors.inkDim, fontSize: 12)),
+            ]),
           ]),
         );
       case 'done':

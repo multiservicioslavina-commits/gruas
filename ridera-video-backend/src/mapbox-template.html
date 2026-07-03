@@ -1,0 +1,293 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>RIDERA render</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+<style>
+  html, body { margin: 0; padding: 0; width: 1080px; height: 1080px; background: #0e0e0e; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+  #map { position: absolute; inset: 0; width: 1080px; height: 1080px; }
+  .layer { position: absolute; inset: 0; pointer-events: none; }
+  .center { display: flex; align-items: center; justify-content: center; text-align: center; }
+  .fadein { opacity: 0; transition: opacity 800ms ease; }
+  .fadein.show { opacity: 1; }
+  .card { background: rgba(0,0,0,0.55); padding: 26px 40px; border-radius: 40px; color: #fff; font-weight: 700; font-size: 34px; }
+  #introTitle { font-size: 96px; font-weight: 900; color: #E85D20; letter-spacing: 4px; text-shadow: 0 0 40px rgba(232,93,32,0.6); }
+  #introSub { font-size: 32px; letter-spacing: 12px; color: #fff; font-weight: 300; margin-top: 20px; }
+  #stats { position: absolute; left: 0; right: 0; bottom: 80px; display: flex; justify-content: center; gap: 24px; }
+  #stats .stat { background: rgba(0,0,0,0.6); padding: 16px 26px; border-radius: 22px; color: #fff; }
+  #stats .val { font-size: 34px; font-weight: 800; color: #E85D20; }
+  #stats .lbl { font-size: 14px; letter-spacing: 3px; color: #ccc; text-transform: uppercase; }
+  #photoFrame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 500ms ease; }
+  #photoFrame img { max-width: 88%; max-height: 82%; border-radius: 24px; box-shadow: 0 0 60px rgba(0,0,0,0.7); border: 3px solid #E85D20; }
+  #photoLabel { position: absolute; bottom: 60px; background: #E85D20; color: #fff; padding: 12px 26px; border-radius: 30px; font-weight: 800; font-size: 20px; letter-spacing: 2px; }
+  #outroLogo { font-size: 78px; font-weight: 900; color: #E85D20; letter-spacing: 6px; text-shadow: 0 0 40px rgba(232,93,32,0.6); }
+  #hudDist { position: absolute; top: 40px; right: 40px; background: rgba(232,93,32,0.9); color: #fff; padding: 12px 22px; border-radius: 26px; font-size: 26px; font-weight: 800; opacity: 0; transition: opacity 400ms ease; }
+</style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="intro" class="layer center fadein show" style="flex-direction:column;">
+    <div id="introTitle">RIDERA</div>
+    <div id="introSub">AVENTURA</div>
+    <div id="introRideName" style="margin-top:40px; font-size:42px; font-weight:700; color:#fff; max-width:900px;"></div>
+  </div>
+  <div id="hudDist"></div>
+  <div id="stats" class="fadein"></div>
+  <div id="photoFrame"><img id="photoImg" src="" /><div id="photoLabel"></div></div>
+  <div id="outro" class="layer center fadein" style="flex-direction:column;">
+    <div id="outroLogo">🏍 RIDERA AVENTURA</div>
+    <div style="margin-top:30px; font-size:28px; color:#fff; letter-spacing:4px;">GRACIAS POR RODAR</div>
+  </div>
+
+<script>
+  const DATA = __RIDE_DATA__;
+  mapboxgl.accessToken = '__MAPBOX_TOKEN__';
+
+  // Duración de cada sección (segundos)
+  const T_INTRO = 3;
+  const T_ROUTE = 15;
+  const T_PHOTO = 3;
+  const T_STATS = 4;
+  const T_OUTRO = 3;
+  const photoCount = Math.min(DATA.photos.length, 6);
+  const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
+  window.__totalSeconds = totalSeconds;
+
+  // Convertir routePoints a [lon, lat]
+  const coords = DATA.routePoints.map(p => [p.lon, p.lat]);
+  // Calcular centro y bounds
+  const bounds = coords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/dark-v11',
+    center: coords[0],
+    zoom: 14,
+    pitch: 60,
+    bearing: 0,
+    antialias: true,
+    fadeDuration: 0,
+    interactive: false,
+    preserveDrawingBuffer: true,
+  });
+
+  function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function show(id) { document.getElementById(id).classList.add('show'); }
+  function hide(id) { document.getElementById(id).classList.remove('show'); }
+
+  function setStats() {
+    document.getElementById('stats').innerHTML = `
+      <div class="stat"><div class="val">${DATA.distanceKm} km</div><div class="lbl">DISTANCIA</div></div>
+      <div class="stat"><div class="val">${DATA.elapsed}</div><div class="lbl">TIEMPO</div></div>
+      <div class="stat"><div class="val">${DATA.maxSpeedKmh} km/h</div><div class="lbl">VEL MÁX</div></div>`;
+  }
+
+  map.on('load', async () => {
+    document.getElementById('introRideName').textContent = DATA.rideName;
+
+    // Terreno 3D
+    map.addSource('mapbox-dem', {
+      type: 'raster-dem',
+      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512,
+      maxzoom: 14,
+    });
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
+    map.setFog({
+      color: 'rgb(20,20,25)',
+      'high-color': 'rgb(100,80,60)',
+      'horizon-blend': 0.15,
+      'space-color': 'rgb(10,10,10)',
+      'star-intensity': 0.35,
+    });
+
+    // Fuente ruta completa (tenue)
+    map.addSource('route-full', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } },
+    });
+    // Fuente ruta recorrida (brillante, se anima)
+    map.addSource('route-live', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [coords[0]] } },
+    });
+
+    map.addLayer({
+      id: 'route-full-layer',
+      type: 'line',
+      source: 'route-full',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#888', 'line-width': 4, 'line-opacity': 0.35 },
+    });
+    map.addLayer({
+      id: 'route-live-layer',
+      type: 'line',
+      source: 'route-live',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#E85D20', 'line-width': 7, 'line-opacity': 0.95 },
+    });
+
+    // Pin naranja pulsante (posición actual)
+    map.addSource('pin', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } },
+    });
+    map.addLayer({
+      id: 'pin-halo',
+      type: 'circle',
+      source: 'pin',
+      paint: {
+        'circle-radius': 20,
+        'circle-color': '#E85D20',
+        'circle-opacity': 0.35,
+      },
+    });
+    map.addLayer({
+      id: 'pin-dot',
+      type: 'circle',
+      source: 'pin',
+      paint: {
+        'circle-radius': 9,
+        'circle-color': '#fff',
+        'circle-stroke-width': 3,
+        'circle-stroke-color': '#E85D20',
+      },
+    });
+
+    // Cargar imágenes de fotos (pre-cargar para que aparezcan al instante)
+    await Promise.all(DATA.photos.map((p, i) => new Promise((r) => {
+      const im = new Image();
+      im.crossOrigin = 'anonymous';
+      im.onload = im.onerror = () => r();
+      im.src = p.url;
+      p._img = im;
+    })));
+
+    window.__ready = true;
+    window.__onReady && window.__onReady();
+  });
+
+  function haversine(a, b) {
+    const R = 6371;
+    const dLat = (b[1]-a[1])*Math.PI/180;
+    const dLon = (b[0]-a[0])*Math.PI/180;
+    const s = Math.sin(dLat/2)**2 + Math.cos(a[1]*Math.PI/180)*Math.cos(b[1]*Math.PI/180)*Math.sin(dLon/2)**2;
+    return R * 2 * Math.asin(Math.sqrt(s));
+  }
+
+  // Animación principal
+  window.__play = async () => {
+    // ── 1. Intro (3s) ─────────────────────────────────────
+    setStats();
+    show('intro');
+    await sleep(T_INTRO * 1000);
+    hide('intro');
+    await sleep(400);
+
+    // ── 2. Ruta creciendo con cámara siguiendo (15s) ──────
+    map.fitBounds(bounds, { padding: 120, pitch: 55, duration: 800, bearing: 0 });
+    await sleep(900);
+
+    const startTime = performance.now();
+    const durMs = T_ROUTE * 1000;
+    const hud = document.getElementById('hudDist');
+    hud.style.opacity = 1;
+
+    let accumKm = 0;
+    let prev = coords[0];
+
+    return new Promise((resolveAnim) => {
+      function step(now) {
+        const t = Math.min(1, (now - startTime) / durMs);
+        // easing: aceleración progresiva
+        const eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
+        const idxFloat = eased * (coords.length - 1);
+        const idx = Math.floor(idxFloat);
+        const frac = idxFloat - idx;
+        const a = coords[idx];
+        const b = coords[Math.min(idx+1, coords.length-1)];
+        const cur = [a[0] + (b[0]-a[0])*frac, a[1] + (b[1]-a[1])*frac];
+
+        // Actualizar polyline recorrida
+        const partial = coords.slice(0, idx+1);
+        partial.push(cur);
+        map.getSource('route-live').setData({
+          type: 'Feature', geometry: { type: 'LineString', coordinates: partial },
+        });
+        map.getSource('pin').setData({
+          type: 'Feature', geometry: { type: 'Point', coordinates: cur },
+        });
+
+        // Distancia acumulada estimada (interpolación lineal)
+        const totalKm = parseFloat(DATA.distanceKm) || 0;
+        hud.textContent = `📍 ${fmt(totalKm * eased)} km`;
+
+        // Cámara: seguir el pin con bearing hacia adelante
+        const ahead = coords[Math.min(idx+2, coords.length-1)];
+        const bearing = Math.atan2(ahead[0]-cur[0], ahead[1]-cur[1]) * 180 / Math.PI;
+        // Zoom más cerca cuando anima, más abierto al final
+        const zoom = 15 - 1.5 * eased;
+        map.easeTo({
+          center: cur,
+          bearing: bearing,
+          pitch: 68,
+          zoom: zoom,
+          duration: 50,
+          easing: (x) => x,
+        });
+
+        if (t < 1) requestAnimationFrame(step);
+        else {
+          hud.style.opacity = 0;
+          resolveAnim();
+        }
+      }
+      requestAnimationFrame(step);
+    }).then(async () => {
+      await sleep(400);
+
+      // ── 3. Fotos con contexto de dónde fueron tomadas ─────
+      for (let i = 0; i < photoCount; i++) {
+        const photo = DATA.photos[i];
+        // Cámara vuela al punto de la foto
+        if (photo.lat && photo.lon) {
+          map.easeTo({
+            center: [photo.lon, photo.lat],
+            zoom: 16.5,
+            pitch: 72,
+            bearing: (Math.random() - 0.5) * 60,
+            duration: 900,
+          });
+          await sleep(1000);
+        }
+        // Mostrar foto
+        const frame = document.getElementById('photoFrame');
+        const img = document.getElementById('photoImg');
+        const lbl = document.getElementById('photoLabel');
+        img.src = photo.url;
+        lbl.textContent = `📷 FOTO ${i+1} DE ${photoCount}`;
+        frame.style.opacity = 1;
+        await sleep((T_PHOTO - 0.4) * 1000);
+        frame.style.opacity = 0;
+        await sleep(400);
+      }
+
+      // ── 4. Stats — vista general con métricas (4s) ────────
+      map.fitBounds(bounds, { padding: 100, pitch: 30, duration: 1000, bearing: 0 });
+      await sleep(400);
+      show('stats');
+      await sleep(T_STATS * 1000);
+      hide('stats');
+      await sleep(400);
+
+      // ── 5. Outro (3s) ─────────────────────────────────────
+      show('outro');
+      await sleep(T_OUTRO * 1000);
+    });
+  };
+</script>
+</body>
+</html>
