@@ -513,6 +513,19 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>if('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js');</script>
   <script>
+    const MUNIS_DISPLAY = {
+      medellin:'Medellín', bello:'Bello', itagui:'Itagüí', envigado:'Envigado',
+      sabaneta:'Sabaneta', la_estrella:'La Estrella', caldas:'Caldas',
+      copacabana:'Copacabana', girardota:'Girardota', barbosa:'Barbosa',
+      rionegro:'Rionegro', guarne:'Guarne', marinilla:'Marinilla',
+    };
+    function toSlugMuni(s) {
+      return s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'')
+        .replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').replace(/__+/g,'_').replace(/^_|_$/g,'');
+    }
+    function displayMuni(k) {
+      return MUNIS_DISPLAY[k] || k.replace(/_/g,' ').replace(/\b\w/g,c=>c.toUpperCase());
+    }
     const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
     const FN_BASE = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1';
@@ -581,7 +594,7 @@
       document.getElementById('fTelefono').value   = perfil.telefono || '';
       document.getElementById('fEmail').value      = perfil.email || '';
       document.getElementById('fMunicipios').value = Array.isArray(perfil.municipios)
-        ? perfil.municipios.join(', ') : (perfil.municipios || '');
+        ? perfil.municipios.map(displayMuni).join(', ') : (perfil.municipios || '');
       document.getElementById('fDescripcion').value = (perfil.datos && perfil.datos.descripcion) || '';
       const fotoUrlVal = (perfil.datos && perfil.datos.foto_url) || '';
       document.getElementById('fFoto').value = fotoUrlVal;
@@ -755,7 +768,7 @@
       this.textContent = 'Guardando…';
 
       const municipiosRaw = document.getElementById('fMunicipios').value;
-      const municipios = municipiosRaw.split(',').map(s => s.trim()).filter(Boolean);
+      const municipios = municipiosRaw.split(',').map(s => toSlugMuni(s)).filter(Boolean);
 
       const fotoVal = document.getElementById('fFoto').value.trim();
       const res = await apiFetch('/mi-perfil', {

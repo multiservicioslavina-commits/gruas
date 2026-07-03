@@ -40,6 +40,12 @@ textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
 @keyframes s{to{transform:rotate(360deg)}}
 .hide{display:none!important}
+.app-cta{background:var(--surface-2);border:.5px solid var(--line);border-radius:16px;padding:22px 20px;margin-top:24px;text-align:center}
+.app-cta-title{font-family:'Barlow Condensed';font-weight:800;font-size:22px;text-transform:uppercase;margin-bottom:8px}
+.app-cta-sub{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px}
+.app-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.app-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;background:var(--orange);color:#fff;text-decoration:none;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:.03em;text-transform:uppercase;transition:filter .15s}
+.app-btn:hover{filter:brightness(1.1)}
 </style>
 </head>
 <body>
@@ -90,7 +96,26 @@ async function enviar(){
   }catch(e){ b.disabled=false; b.textContent='Enviar calificación'; alert('Error de conexión'); }
 }
 function gracias(){
-  document.getElementById('content').innerHTML = `<div class="big-msg"><div class="ic">🙏</div><h2>¡Gracias!</h2><p>Tu calificación de ${'⭐'.repeat(rating)} quedó registrada.<br>Gracias por usar Ridera.</p></div>`;
+  document.getElementById('content').innerHTML = `
+    <div class="big-msg">
+      <div class="ic">🙏</div>
+      <h2>¡Gracias!</h2>
+      <p>Tu calificación de ${'⭐'.repeat(rating)} quedó registrada.<br>Gracias por usar Ridera.</p>
+    </div>
+    <div class="app-cta">
+      <div class="app-cta-title">¿Ya tienes la app de Ridera?</div>
+      <p class="app-cta-sub">Pide tu grúa en segundos, sigue el camino en tiempo real y guarda tu historial de servicios.</p>
+      <div class="app-btns">
+        <a class="app-btn" href="https://play.google.com/store/apps/details?id=com.ridera.app" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.76c.37.2.8.2 1.17 0l11.08-6.4-2.35-2.36-9.9 8.76zm14.41-8.32L4.35 8.56 3.18.24C3 .13 2.8.07 2.6.07 2.1.07 1.7.47 1.7 1v22c0 .53.4.93.9.93.2 0 .4-.06.58-.17l1.17-.67 13.24-7.65zm-2.24-8.88L4.35 1.56l2.09 2.09 10.71 6.18-1.8 1.73zm3.03 1.75l-1.7-.98-2.06 1.98 2.06 2.06 1.72-1c.55-.32.9-.9.9-1.54 0-.64-.35-1.22-.92-1.52z"/></svg>
+          Google Play
+        </a>
+        <a class="app-btn" href="https://apps.apple.com/app/ridera/id000000000" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          App Store
+        </a>
+      </div>
+    </div>`;
 }
 (function init(){ if(!S){ document.getElementById('loading').classList.add('hide'); document.getElementById('content').classList.remove('hide'); document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Enlace inválido</h2><p>No pudimos identificar tu servicio.</p></div>`; return; } renderForm(); })();
 </script>
