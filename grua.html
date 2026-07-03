@@ -120,6 +120,54 @@
       margin-top: 0.5rem; margin-left: 0.5rem;
     }
 
+    /* REQUEST SHEET */
+    .sheet-overlay { position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:100;opacity:0;pointer-events:none;transition:opacity .25s; }
+    .sheet-overlay.open { opacity:1;pointer-events:auto; }
+    .sheet {
+      position:fixed;bottom:0;left:0;right:0;
+      background:#16171b;border-radius:20px 20px 0 0;border:1px solid #2a2c33;
+      padding:20px 20px 40px;max-width:520px;margin:0 auto;
+      transform:translateY(100%);transition:transform .3s ease;
+      z-index:101;max-height:90vh;overflow-y:auto;
+    }
+    .sheet.open { transform:translateY(0); }
+    .sheet-handle { width:36px;height:4px;background:#2e2e2e;border-radius:2px;margin:0 auto 18px; }
+    .sheet-head { display:flex;align-items:center;justify-content:space-between;margin-bottom:18px; }
+    .sheet-title { font-size:1.1rem;font-weight:700; }
+    .sheet-close { background:none;border:none;color:#888;font-size:1.4rem;cursor:pointer;line-height:1;padding:0 4px; }
+    .sf-group { margin-bottom:13px; }
+    .sf-lbl { font-size:0.8rem;color:#888;margin-bottom:5px;display:block; }
+    .sf-inp { width:100%;background:#1e2026;border:1px solid #2a2c33;color:#f0f0f0;font-size:1rem;padding:12px 14px;border-radius:10px;font-family:inherit; }
+    .sf-inp:focus { outline:none;border-color:rgba(232,93,32,.5); }
+    .sf-gps { display:inline-flex;align-items:center;gap:6px;background:transparent;border:1px solid #2a2c33;color:#888;font-size:0.78rem;padding:7px 12px;border-radius:8px;cursor:pointer;margin-top:7px;transition:border-color .2s,color .2s; }
+    .sf-gps:hover { border-color:var(--accent);color:var(--accent); }
+    .sf-err { color:#f87171;font-size:0.8rem;margin-top:8px;display:none; }
+    .btn-primary {
+      display:block;width:100%;background:var(--accent);color:#fff;
+      border:none;border-radius:10px;padding:14px;
+      font-size:1rem;font-weight:700;cursor:pointer;
+      margin-top:8px;transition:filter .15s;
+    }
+    .btn-primary:hover { filter:brightness(1.08); }
+    .btn-primary:disabled { opacity:.5;cursor:default;filter:none; }
+    .track-box {
+      display:block;text-align:center;padding:13px;
+      background:#1e2026;border:1px solid #2a2c33;
+      border-radius:10px;color:var(--accent);font-weight:600;
+      text-decoration:none;margin:14px 0 12px;font-size:0.88rem;word-break:break-all;
+    }
+    .track-box:hover { border-color:var(--accent); }
+    /* CTA rework */
+    .cta-card p { margin-bottom:0.75rem; }
+    .btn-cta-primary {
+      display:block;width:100%;background:#fff;color:var(--accent);
+      font-size:1rem;font-weight:700;padding:0.85rem 1.5rem;
+      border-radius:8px;border:none;cursor:pointer;transition:background .2s;
+    }
+    .btn-cta-primary:hover { background:rgba(255,255,255,.88); }
+    .cta-wa-link { display:block;text-align:center;margin-top:10px;color:rgba(255,255,255,.6);font-size:0.85rem;text-decoration:none; }
+    .cta-wa-link:hover { color:#fff; }
+
     /* NAV SHARE */
     nav { display: flex; align-items: center; justify-content: space-between; }
     .btn-share {
@@ -178,10 +226,8 @@
       <!-- CTA -->
       <div class="cta-card" id="ctaCard">
         <p>¿Necesitas una grúa para tu moto ahora mismo?</p>
-        <a class="btn-wa" id="ctaWa" href="#">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.117 1.528 5.847L.057 23.571l5.869-1.519A11.938 11.938 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.956 0-3.792-.5-5.394-1.378l-.387-.229-3.484.904.93-3.395-.249-.401A9.938 9.938 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-          Solicitar grúa por WhatsApp
-        </a>
+        <button class="btn-cta-primary" onclick="openSheet()">📋 Solicitar grúa — con seguimiento en tiempo real</button>
+        <a class="cta-wa-link" id="ctaWa" href="#">o contactar directo por WhatsApp →</a>
       </div>
 
       <!-- SERVICIOS CHIPS -->
@@ -207,7 +253,49 @@
     </div>
   </div>
 
+  <!-- REQUEST SHEET -->
+  <div class="sheet-overlay" id="sheetOverlay" onclick="closeSheet()"></div>
+  <div class="sheet" id="requestSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">Solicitar grúa</div>
+      <button class="sheet-close" onclick="closeSheet()">✕</button>
+    </div>
+    <div id="sheetForm">
+      <div class="sf-group">
+        <label class="sf-lbl">Tu nombre *</label>
+        <input class="sf-inp" id="sfNombre" type="text" placeholder="Nombre completo" autocomplete="name">
+      </div>
+      <div class="sf-group">
+        <label class="sf-lbl">WhatsApp *</label>
+        <input class="sf-inp" id="sfTel" type="tel" placeholder="300 000 0000" autocomplete="tel">
+      </div>
+      <div class="sf-group">
+        <label class="sf-lbl">¿Dónde estás? *</label>
+        <input class="sf-inp" id="sfUbic" type="text" placeholder="Dirección o punto de referencia">
+        <button class="sf-gps" type="button" id="sfGpsBtn" onclick="getGPS()">📍 Usar mi ubicación GPS</button>
+      </div>
+      <div class="sf-err" id="sfErr"></div>
+      <button class="btn-primary" id="sfSubmit" onclick="submitRequest()">Enviar solicitud</button>
+      <p style="font-size:0.76rem;color:#555;text-align:center;margin-top:10px">El gruero recibirá tu solicitud y te contactará por WhatsApp.</p>
+    </div>
+    <div id="sheetSuccess" style="display:none;text-align:center;padding:8px 0 4px">
+      <div style="font-size:46px;margin-bottom:10px">✅</div>
+      <h3 style="margin-bottom:6px">¡Solicitud enviada!</h3>
+      <p style="color:#888;font-size:0.88rem;margin-bottom:2px">Sigue el estado de tu grúa en tiempo real:</p>
+      <a class="track-box" id="sfTrackLink" href="#" target="_blank">Ver mi seguimiento →</a>
+      <a class="btn-wa" id="sfWaNotify" href="#" target="_blank" style="display:inline-flex;width:100%;justify-content:center">
+        💬 Avisar al gruero por WhatsApp
+      </a>
+      <p style="font-size:0.76rem;color:#555;margin-top:12px">Si no responde en 2 min, busca otro gruero disponible.</p>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
   <script>
+    const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+    const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+    const sb = supabase.createClient(SB_URL, SB_KEY);
     const FN_BASE = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1';
 
     function getSlug() {
@@ -302,13 +390,20 @@
       }
       dispEl.innerHTML = dispHtml;
 
-      // CTA WhatsApp
+      // Store gruero data for request form
+      _grueroId        = g.id || null;
+      _grueroNombre    = nombre;
+      _grueroTel       = tel;
+      _grueroMunicipio = Array.isArray(g.municipios) ? g.municipios[0] : (g.municipios || g.ciudad || '');
+
+      // CTA
       if (tel) {
         const waNum = tel.replace(/\D/g, '');
         const waMsg = encodeURIComponent(`Hola ${nombre}, los encontré en Ridera y quiero solicitar una grúa para mi moto.`);
         document.getElementById('ctaWa').href = `https://wa.me/57${waNum}?text=${waMsg}`;
       } else {
-        document.getElementById('ctaCard').style.display = 'none';
+        // No phone — hide WhatsApp link, keep in-app form
+        document.getElementById('ctaWa').style.display = 'none';
       }
 
       // Servicios chips
@@ -351,6 +446,78 @@
 
       document.getElementById('shareBtn').style.display = 'inline-flex';
       show('profile');
+    }
+
+    // Gruero data for request form
+    let _grueroId = null, _grueroNombre = '', _grueroTel = '', _grueroMunicipio = '';
+
+    function openSheet() {
+      document.getElementById('sheetOverlay').classList.add('open');
+      document.getElementById('requestSheet').classList.add('open');
+      document.getElementById('sfNombre').focus();
+    }
+    function closeSheet() {
+      document.getElementById('sheetOverlay').classList.remove('open');
+      document.getElementById('requestSheet').classList.remove('open');
+    }
+
+    function getGPS() {
+      const btn = document.getElementById('sfGpsBtn');
+      if (!navigator.geolocation) { alert('Tu dispositivo no permite GPS. Escribe la dirección.'); return; }
+      btn.textContent = '📍 Obteniendo…';
+      navigator.geolocation.getCurrentPosition(pos => {
+        const { latitude: la, longitude: lo } = pos.coords;
+        const link = `https://maps.google.com/?q=${la.toFixed(6)},${lo.toFixed(6)}`;
+        const u = document.getElementById('sfUbic');
+        u.value = (u.value.trim() ? u.value.trim() + '  ·  ' : '') + link;
+        btn.textContent = '📍 GPS añadido';
+      }, () => {
+        btn.textContent = '📍 Usar mi ubicación GPS';
+        alert('No pudimos obtener tu ubicación. Escribe la dirección.');
+      }, { enableHighAccuracy: true, timeout: 10000 });
+    }
+
+    async function submitRequest() {
+      const nombre = document.getElementById('sfNombre').value.trim();
+      const tel    = document.getElementById('sfTel').value.trim();
+      const ubic   = document.getElementById('sfUbic').value.trim();
+      const errEl  = document.getElementById('sfErr');
+      errEl.style.display = 'none';
+
+      if (!nombre) { errEl.textContent = 'Escribe tu nombre.'; errEl.style.display = 'block'; return; }
+      if (tel.replace(/\D/g,'').length < 7) { errEl.textContent = 'Escribe un WhatsApp válido.'; errEl.style.display = 'block'; return; }
+      if (!ubic) { errEl.textContent = 'Escribe o usa GPS para tu ubicación.'; errEl.style.display = 'block'; return; }
+
+      const btn = document.getElementById('sfSubmit');
+      btn.disabled = true; btn.textContent = 'Enviando…';
+
+      try {
+        const { data: ins, error } = await sb.from('solicitudes').insert({
+          cliente_nombre:   nombre,
+          cliente_telefono: tel,
+          ubicacion:        ubic,
+          municipio:        _grueroMunicipio || null,
+          estado:           'pendiente',
+        }).select('id').single();
+
+        if (error) throw error;
+
+        const trackUrl  = `https://gruas.ridera.com.co/seguimiento?s=${ins.id}`;
+        const waNum     = _grueroTel.replace(/\D/g, '');
+        const waNumFull = waNum.length === 10 ? '57' + waNum : waNum;
+        const waMsg     = encodeURIComponent(`Hola ${_grueroNombre}, acabo de solicitar una grúa en Ridera. Aquí mi seguimiento en tiempo real: ${trackUrl}`);
+
+        document.getElementById('sfTrackLink').href        = trackUrl;
+        document.getElementById('sfTrackLink').textContent = trackUrl;
+        document.getElementById('sfWaNotify').href         = `https://wa.me/${waNumFull}?text=${waMsg}`;
+
+        document.getElementById('sheetForm').style.display    = 'none';
+        document.getElementById('sheetSuccess').style.display = 'block';
+      } catch(e) {
+        errEl.textContent = 'No se pudo enviar: ' + (e.message || 'intenta de nuevo');
+        errEl.style.display = 'block';
+        btn.disabled = false; btn.textContent = 'Enviar solicitud';
+      }
     }
 
     let _shareTitle = '', _shareText = '';
