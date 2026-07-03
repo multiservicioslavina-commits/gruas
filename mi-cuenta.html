@@ -506,13 +506,16 @@
       } else {
         msg.className = 'save-msg ok';
         msg.textContent = '✓ Cambios guardados correctamente.';
-        perfil = res.gruero || perfil;
-        if (perfil.nombre) document.getElementById('hdrNombre').textContent = perfil.nombre;
-        if (perfil.ciudad) document.getElementById('hdrCiudad').textContent = perfil.ciudad;
-        if (perfil.slug) {
-          const link = document.getElementById('publicLink');
-          link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
-          link.style.display = 'inline';
+        if (res.gruero) {
+          perfil = { ...perfil, ...res.gruero };
+          document.getElementById('hdrNombre').textContent = perfil.nombre || '';
+          document.getElementById('hdrCiudad').textContent = perfil.ciudad || '';
+          document.getElementById('navName').textContent   = perfil.nombre || '';
+          if (perfil.slug) {
+            const link = document.getElementById('publicLink');
+            link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
+            link.style.display = 'inline';
+          }
         }
       }
 

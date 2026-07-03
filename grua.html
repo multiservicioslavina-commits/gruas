@@ -192,10 +192,11 @@
     function render(g) {
       const nombre   = fmt(g.nombre) || 'Gruero Ridera';
       const ciudad   = fmt(g.ciudad) || 'Colombia';
-      const desc     = fmt(g.datos?.descripcion) || '';
-      const tel      = fmt(g.telefono) || fmt(g.whatsapp) || '';
+      const d        = g.datos || {};
+      const desc     = fmt(d.descripcion) || '';
+      const tel      = fmt(g.telefono) || fmt(d.whatsapp) || '';
       const disp     = g.disponible;
-      const foto     = fmt(g.foto_url);
+      const foto     = fmt(d.foto_url) || fmt(g.foto_url) || '';
       const municipios = Array.isArray(g.municipios) ? g.municipios.join(', ') : fmt(g.municipios) || '';
 
       // Page meta
@@ -254,16 +255,17 @@
       }
 
       // Info grid
+      const srv = d.servicios ?? g.servicios;
       const fields = [
         ['Ciudad',       ciudad],
         ['Municipios',   municipios],
         ['Teléfono',     tel],
-        ['Servicios',    Array.isArray(g.servicios) ? g.servicios.join(', ') : fmt(g.servicios)],
-        ['Precio desde', g.precio_desde ? `$${Number(g.precio_desde).toLocaleString('es-CO')}` : null],
-        ['Precio hasta', g.precio_hasta ? `$${Number(g.precio_hasta).toLocaleString('es-CO')}` : null],
-        ['Flota',        fmt(g.flota)],
-        ['Experiencia',  fmt(g.experiencia)],
-        ['Acepta',       fmt(g.acepta)],
+        ['Servicios',    Array.isArray(srv) ? srv.join(', ') : fmt(srv)],
+        ['Precio desde', d.precio_desde ? `$${Number(d.precio_desde).toLocaleString('es-CO')}` : null],
+        ['Precio hasta', d.precio_hasta ? `$${Number(d.precio_hasta).toLocaleString('es-CO')}` : null],
+        ['Flota',        fmt(d.flota ?? g.flota)],
+        ['Experiencia',  fmt(d.experiencia ?? g.experiencia)],
+        ['Acepta',       fmt(d.acepta ?? g.acepta)],
       ].filter(([, v]) => v);
 
       document.getElementById('infoGrid').innerHTML = fields.map(([l, v]) =>
