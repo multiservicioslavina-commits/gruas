@@ -911,6 +911,33 @@
       document.getElementById('solicitudBar').classList.remove('show');
     });
 
+    async function checkPendingSolicitudes() {
+      if (!perfil) return;
+      const munis = Array.isArray(perfil.municipios) ? perfil.municipios : [];
+      // Solicitudes pendientes de los últimos 10 minutos
+      const since = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+      let q = sb.from('solicitudes')
+        .select('id,municipio,ubicacion,created_at')
+        .eq('estado', 'pendiente')
+        .gte('created_at', since)
+        .order('created_at', { ascending: false })
+        .limit(1);
+      const { data } = await q;
+      if (!data?.length) return;
+      const sol = data[0];
+      // Filtrar por municipio si el gruero tiene lista definida
+      if (munis.length) {
+        const solMuni = (sol.municipio || '').toLowerCase().replace(/ /g, '_');
+        const mine = munis.some(m => m.toLowerCase().replace(/ /g, '_') === solMuni);
+        if (!mine) return;
+      }
+      const bar = document.getElementById('solicitudBar');
+      document.getElementById('solMunicipio').textContent = sol.municipio || 'tu zona';
+      document.getElementById('solLink').href = `/aceptar?s=${sol.id}`;
+      bar.classList.add('show');
+      setTimeout(() => bar.classList.remove('show'), 30000);
+    }
+
     function startRealtime() {
       const munis = Array.isArray(perfil?.municipios)
         ? perfil.municipios.map(m => m.trim().toLowerCase().replace(/ /g, '_'))
@@ -981,6 +1008,7 @@
       document.getElementById('app').style.display = 'block';
       await Promise.all([loadPerfil(), loadServicios()]);
       startRealtime();
+      checkPendingSolicitudes();
       subscribePush();
     }
 
