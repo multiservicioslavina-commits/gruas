@@ -226,12 +226,19 @@
   let sb=null;
   try{ sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY); }catch(e){}
 
-  // Número real de grúas disponibles
+  // Estadísticas públicas en vivo (grueros activos + tiempo promedio)
   (async ()=>{
     try{
-      const { count } = await sb.from("grueros").select("*",{count:"exact",head:true}).eq("disponible",true);
-      $("#activas").textContent = (count ?? 0);
-    }catch(e){ $("#activas").textContent = "—"; }
+      const r = await fetch("https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/stats-publicos");
+      const d = await r.json();
+      if(d.ok){
+        $("#activas").textContent = d.activas ?? 0;
+        if(d.avg_min != null){
+          const tiempoEl = document.querySelector('.stat:nth-child(2) .n');
+          if(tiempoEl) tiempoEl.innerHTML = `~${d.avg_min}<span style="font-size:18px"> min</span>`;
+        }
+      }
+    }catch(e){ /* mantiene los valores por defecto */ }
   })();
 
   // Compartir Ridera (menú nativo o copiar enlace)
