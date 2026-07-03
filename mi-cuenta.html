@@ -305,6 +305,23 @@
         <div class="save-msg" id="saveMsg"></div>
       </div>
 
+      <!-- CAMBIAR CONTRASEÑA -->
+      <div class="section">
+        <h3>Seguridad</h3>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nueva contraseña</label>
+            <input type="password" id="fPwd1" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña</label>
+            <input type="password" id="fPwd2" placeholder="Repite la contraseña" autocomplete="new-password">
+          </div>
+        </div>
+        <button class="btn-save" id="pwdBtn">Cambiar contraseña</button>
+        <div class="save-msg" id="pwdMsg"></div>
+      </div>
+
       <!-- HISTORIAL -->
       <div class="section">
         <h3>Mis servicios</h3>
@@ -521,6 +538,37 @@
 
       this.disabled = false;
       this.textContent = 'Guardar cambios';
+    });
+
+    document.getElementById('pwdBtn').addEventListener('click', async function() {
+      const msg  = document.getElementById('pwdMsg');
+      const pwd1 = document.getElementById('fPwd1').value;
+      const pwd2 = document.getElementById('fPwd2').value;
+      msg.textContent = '';
+      if (pwd1.length < 8) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'La contraseña debe tener al menos 8 caracteres.';
+        return;
+      }
+      if (pwd1 !== pwd2) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Las contraseñas no coinciden.';
+        return;
+      }
+      this.disabled = true;
+      this.textContent = 'Guardando…';
+      const { error } = await sb.auth.updateUser({ password: pwd1 });
+      if (error) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Error: ' + error.message;
+      } else {
+        msg.className = 'save-msg ok';
+        msg.textContent = '✓ Contraseña actualizada correctamente.';
+        document.getElementById('fPwd1').value = '';
+        document.getElementById('fPwd2').value = '';
+      }
+      this.disabled = false;
+      this.textContent = 'Cambiar contraseña';
     });
 
     document.getElementById('logoutBtn').addEventListener('click', async () => {
