@@ -1,7 +1,8 @@
 <?php
 /**
- * Hook WordPress: al aprobar (publish) un gruero, envía datos a Google Sheets con aprobado=SI
- * y llama a la edge function `aprobar-gruero` que crea la cuenta en Supabase Auth.
+ * Hook WordPress: al publicar (aprobar) un CPT 'gruas',
+ * llama a registrar-gruero con action=aprobar para crear la cuenta
+ * en Supabase Auth y enviarle el email de bienvenida al gruero.
  * Pegar en functions.php del tema hijo o en un plugin personalizado.
  */
 add_action('transition_post_status', function($nuevo, $anterior, $post) {
@@ -9,48 +10,37 @@ add_action('transition_post_status', function($nuevo, $anterior, $post) {
     if ($nuevo !== 'publish' || $anterior === 'publish') return;
 
     $meta = get_post_meta($post->ID);
-    $data = [
-        'tipo'     => 'Grúa',
-        'nombre'   => $post->post_title,
-        'aprobado' => 'SI',
-    ];
+
+    // Recoger todos los campos del CPT (ignorar meta internos de WordPress)
+    $meta_flat = ['nombre' => $post->post_title];
     foreach ($meta as $key => $val) {
-        if (strpos($key, '_') === 0) continue; // Saltar meta internos de WordPress
-        $data[$key] = $val[0];
+        if (strpos($key, '_') === 0) continue;
+        $meta_flat[$key] = $val[0];
     }
 
-    // Enviar a Google Sheets
+    // Email del gruero (buscar en campos comunes del CPT)
+    $email = $meta_flat['email'] ?? $meta_flat['correo'] ?? $meta_flat['correo_electronico'] ?? '';
+
+    // Payload para registrar-gruero con acción de aprobación
+    $payload = array_merge($meta_flat, [
+        'action'    => 'aprobar',
+        'nombre'    => $post->post_title,
+        'email'     => $email,
+        'gruero_id' => isset($meta_flat['supabase_id']) ? (int)$meta_flat['supabase_id'] : null,
+    ]);
+
+    // Headers — no requiere token (verify_jwt=false), pero se envía si está definido
+    $headers = ['Content-Type' => 'application/json'];
+    if (defined('SUPABASE_SERVICE_KEY') && SUPABASE_SERVICE_KEY) {
+        $headers['Authorization'] = 'Bearer ' . SUPABASE_SERVICE_KEY;
+    }
+
     wp_remote_post(
-        'https://script.google.com/macros/s/AKfycbxBo_t8mz7yv56ORULMHz5HWf7zxZHVPsGYcLGgjrtmzH52EpxdxOkc1BhP-q99uxb4/exec',
+        'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/registrar-gruero',
         [
-            'body'    => json_encode($data),
-            'headers' => ['Content-Type' => 'application/json'],
-            'timeout' => 15,
+            'body'    => json_encode($payload),
+            'headers' => $headers,
+            'timeout' => 20,
         ]
     );
-
-    // Llamar a la edge function aprobar-gruero:
-    // crea usuario en Supabase Auth, genera slug, envía email de bienvenida
-    $supabase_key = defined('SUPABASE_SERVICE_KEY') ? SUPABASE_SERVICE_KEY : '';
-
-    if ($supabase_key) {
-        // Collect all public meta fields (skip internal WordPress _ prefixed ones)
-        $meta_flat = ['nombre' => $post->post_title];
-        foreach ($meta as $key => $val) {
-            if (strpos($key, '_') === 0) continue;
-            $meta_flat[$key] = $val[0];
-        }
-
-        wp_remote_post(
-            'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aprobar-gruero',
-            [
-                'body'    => json_encode($meta_flat),
-                'headers' => [
-                    'Content-Type'  => 'application/json',
-                    'Authorization' => 'Bearer ' . $supabase_key,
-                ],
-                'timeout' => 20,
-            ]
-        );
-    }
 }, 10, 3);
