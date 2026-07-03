@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
+import 'my_history_screen.dart';
 import 'ride_entry_screen.dart';
 import 'profile_screen.dart';
 
@@ -77,6 +78,17 @@ class RideHomeScreen extends StatelessWidget {
                   MaterialPageRoute(builder: (_) => const RideEntryScreen()),
                 ),
               ),
+              const SizedBox(height: 14),
+              _BigButton(
+                icon: Icons.history,
+                label: 'Mis rodadas',
+                sub: 'Historial, resúmenes y videos',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyHistoryScreen()),
+                ),
+                dark: true,
+              ),
             ],
           ),
         ),
@@ -91,23 +103,31 @@ class _BigButton extends StatelessWidget {
     required this.label,
     required this.sub,
     required this.onTap,
+    this.dark = false,
   });
 
   final IconData icon;
   final String label;
   final String sub;
   final VoidCallback onTap;
+  final bool dark;
 
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: RColors.brand,
+      color: dark ? RColors.asphalt2 : RColors.brand,
       borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(16),
         child: Container(
           padding: const EdgeInsets.all(20),
+          decoration: dark
+              ? BoxDecoration(
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: RColors.line),
+                )
+              : null,
           child: Row(
             children: [
               Icon(icon, size: 32, color: Colors.white),

@@ -3,6 +3,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/ride_service.dart';
 import '../services/video_service.dart';
 import '../theme.dart';
 
@@ -33,6 +34,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   List<Map<String, double>> _routePoints = [];
 
   final _videoService = VideoService();
+  final _rideService = RideService();
   String _videoStatus = 'idle'; // idle | rendering | done | error
   String? _videoUrl;
   String? _renderId;
@@ -94,6 +96,15 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           _routePoints = routePts;
           _loading = false;
         });
+        // Guardar el resumen en la fila del member para el historial
+        try {
+          await _rideService.saveRideSummary(
+            rideId: widget.rideId,
+            distanceKm: dist,
+            durationSeconds: widget.elapsed.inSeconds,
+            maxSpeedKmh: maxSpd,
+          );
+        } catch (_) {}
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -135,6 +146,8 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           if (url != null && mounted) {
             _pollTimer?.cancel();
             setState(() { _videoStatus = 'done'; _videoUrl = url; });
+            // Guardar URL del video en el historial
+            try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
           }
         } catch (_) {
           _pollTimer?.cancel();

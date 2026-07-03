@@ -70,10 +70,11 @@ class RideService {
     return ride;
   }
 
+  /// Sale de la rodada pero conserva la fila del member para el historial personal.
   Future<void> leaveRide(String rideId) async {
     await _sb
         .from('members')
-        .delete()
+        .update({'finished_at': DateTime.now().toUtc().toIso8601String()})
         .eq('ride_id', rideId)
         .eq('uid', _uid);
   }
@@ -84,6 +85,50 @@ class RideService {
         .update({'estado': 'finalizada'})
         .eq('id', rideId)
         .eq('lider_id', _uid);
+    // Marca la rodada como finalizada también en members del líder
+    await _sb
+        .from('members')
+        .update({'finished_at': DateTime.now().toUtc().toIso8601String()})
+        .eq('ride_id', rideId)
+        .eq('uid', _uid);
+  }
+
+  /// Guarda el resumen calculado (distancia, tiempo, vel máx) en members.
+  Future<void> saveRideSummary({
+    required String rideId,
+    required double distanceKm,
+    required int durationSeconds,
+    required double maxSpeedKmh,
+  }) async {
+    await _sb.from('members').update({
+      'distance_km': distanceKm,
+      'duration_seconds': durationSeconds,
+      'max_speed_kmh': maxSpeedKmh,
+      'finished_at': DateTime.now().toUtc().toIso8601String(),
+    }).eq('ride_id', rideId).eq('uid', _uid);
+  }
+
+  /// Guarda la URL del video generado en el resumen de esta rodada.
+  Future<void> saveRideVideo(String rideId, String videoUrl) async {
+    await _sb
+        .from('members')
+        .update({'video_url': videoUrl})
+        .eq('ride_id', rideId)
+        .eq('uid', _uid);
+  }
+
+  /// Devuelve el historial de rodadas del usuario actual (más recientes primero).
+  /// Incluye datos de la tabla rides (nombre, fecha) y del resumen personal.
+  Future<List<Map<String, dynamic>>> getMyHistory() async {
+    final data = await _sb
+        .from('members')
+        .select('ride_id, rol, distance_km, duration_seconds, max_speed_kmh, '
+            'video_url, finished_at, joined_at, '
+            'rides(id, nombre, created_at, estado)')
+        .eq('uid', _uid)
+        .not('finished_at', 'is', null)
+        .order('finished_at', ascending: false);
+    return List<Map<String, dynamic>>.from(data);
   }
 
   Future<List<Map<String, dynamic>>> getMembers(String rideId) async {
