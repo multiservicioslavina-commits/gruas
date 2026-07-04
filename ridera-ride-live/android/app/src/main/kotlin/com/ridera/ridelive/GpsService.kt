@@ -43,8 +43,9 @@ class GpsService : Service() {
 
     // Filtro anti-zigzag: descarta puntos con mala precisión, saltos imposibles, o velocidad negativa
     private val locationListener = LocationListener { loc ->
-        // 1. Descartar si precisión > 30m (típico de NETWORK provider o GPS mal fijado)
-        if (loc.hasAccuracy() && loc.accuracy > 30f) return@LocationListener
+        // 1. Descartar si precisión > 100m (adentro/mala señal). Antes era 30m
+        //    pero eso rechazaba TODO punto en interior. 100m es más tolerante.
+        if (loc.hasAccuracy() && loc.accuracy > 100f) return@LocationListener
 
         // 2. Descartar si viene de NETWORK cuando ya tenemos GPS reciente (< 15s)
         val prev = lastLocation
@@ -65,6 +66,18 @@ class GpsService : Service() {
         }
 
         lastLocation = loc
+
+        // 4. Broadcast al mesh BLE (independiente de Supabase — funciona sin internet).
+        //    Si el mesh no está corriendo, este llamado es no-op silencioso.
+        try {
+            val speedKmh = (loc.speed * 3.6).coerceIn(0.0, 300.0).toInt()
+            BleMeshService.instance?.broadcastPosition(
+                lat = loc.latitude,
+                lon = loc.longitude,
+                speedKmh = speedKmh,
+                statusCode = 0,
+            )
+        } catch (_: Exception) {}
     }
 
     private val heartbeat = object : Runnable {

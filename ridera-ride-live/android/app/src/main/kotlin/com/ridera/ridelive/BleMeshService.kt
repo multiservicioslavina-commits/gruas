@@ -46,6 +46,11 @@ class BleMeshService(private val ctx: Context) {
         // Sin peers → escaneo continuo (para no perderse en el ciclo).
         const val SCAN_ACTIVE_MS = 15_000L
         const val SCAN_REST_MS = 5_000L
+
+        /** Instancia global accesible desde otros servicios (ej: GpsService). */
+        @Volatile
+        var instance: BleMeshService? = null
+            private set
     }
 
     interface Listener {
@@ -94,6 +99,7 @@ class BleMeshService(private val ctx: Context) {
         this.myName = name
         this.listener = listener
         running = true
+        instance = this
 
         val manager = ctx.getSystemService(Context.BLUETOOTH_SERVICE) as? BluetoothManager
         adapter = manager?.adapter
@@ -121,6 +127,7 @@ class BleMeshService(private val ctx: Context) {
 
     fun stop() {
         running = false
+        instance = null
         scanCycleRunnable?.let { mainHandler.removeCallbacks(it) }
         scanCycleRunnable = null
         try { advertiser?.stopAdvertising(advertiseCallback) } catch (_: Exception) {}
