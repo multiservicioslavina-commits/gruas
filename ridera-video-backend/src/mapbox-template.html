@@ -6,8 +6,8 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; width: 1080px; height: 1080px; background: #0e0e0e; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
-  #map { position: absolute; inset: 0; width: 1080px; height: 1080px; }
+  html, body { margin: 0; padding: 0; width: 720px; height: 720px; background: #0e0e0e; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+  #map { position: absolute; inset: 0; width: 720px; height: 720px; }
   .layer { position: absolute; inset: 0; pointer-events: none; }
   .center { display: flex; align-items: center; justify-content: center; text-align: center; }
   .fadein { opacity: 0; transition: opacity 800ms ease; }
@@ -166,8 +166,11 @@
       p._img = im;
     })));
 
-    window.__ready = true;
-    window.__onReady && window.__onReady();
+    // Esperar a que los tiles del mapa estén pintados (idle = mapa visible, no gris)
+    map.once('idle', () => {
+      window.__ready = true;
+      window.__onReady && window.__onReady();
+    });
   });
 
   function haversine(a, b) {
