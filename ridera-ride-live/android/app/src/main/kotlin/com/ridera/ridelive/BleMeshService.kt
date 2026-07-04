@@ -42,9 +42,10 @@ class BleMeshService(private val ctx: Context) {
         const val MSG_TYPE_POSITION: Byte = 0x01
         const val PAYLOAD_SIZE = 33
 
-        // Duty cycling para batería: cuánto escaneamos y cuánto descansamos.
-        const val SCAN_ACTIVE_MS = 6_000L
-        const val SCAN_REST_MS = 24_000L
+        // Duty cycling para batería: solo cuando YA hay peers conectados.
+        // Sin peers → escaneo continuo (para no perderse en el ciclo).
+        const val SCAN_ACTIVE_MS = 15_000L
+        const val SCAN_REST_MS = 5_000L
     }
 
     interface Listener {
@@ -68,6 +69,10 @@ class BleMeshService(private val ctx: Context) {
 
     // Peers que se conectaron a nosotros como server (ellos → nosotros)
     private val incomingPeers = ConcurrentHashMap<String, BluetoothDevice>() // addr -> device
+
+    // Set consolidado de peers únicos (por MAC address) — evita contar doble
+    // el mismo peer cuando se conecta bidireccional.
+    private val uniquePeers = java.util.Collections.synchronizedSet(HashSet<String>())
 
     // Cache de msgIds para dedup mesh flood
     private val seenMessages = object : LinkedHashMap<Int, Long>(200, 0.75f, true) {
@@ -127,6 +132,7 @@ class BleMeshService(private val ctx: Context) {
         outgoingPeers.clear()
         outgoingCharCache.clear()
         incomingPeers.clear()
+        uniquePeers.clear()
         gattServer = null
         listener = null
     }
@@ -139,7 +145,7 @@ class BleMeshService(private val ctx: Context) {
         sendToAllPeers(payload)
     }
 
-    fun directPeers(): Int = outgoingPeers.size + incomingPeers.size
+    fun directPeers(): Int = uniquePeers.size
 
     // ─── GATT Server (recibir mensajes) ───────────────────────────────
 
@@ -163,12 +169,12 @@ class BleMeshService(private val ctx: Context) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     incomingPeers[device.address] = device
-                    listener?.onPeerConnected(device.address)
+                    notifyPeerAdded(device.address)
                     Log.d(TAG, "incoming connected: ${device.address}")
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
                     incomingPeers.remove(device.address)
-                    listener?.onPeerDisconnected(device.address)
+                    notifyPeerRemoved(device.address)
                 }
             }
         }
@@ -317,9 +323,25 @@ class BleMeshService(private val ctx: Context) {
             val gatt = device.connectGatt(ctx, false, gattClientCallback,
                 BluetoothDevice.TRANSPORT_LE)
             outgoingPeers[device.address] = gatt
-            listener?.onPeerConnected(device.address)
+            notifyPeerAdded(device.address)
         } catch (se: SecurityException) {
             emitStatus("connect_perm", "Sin permiso BLUETOOTH_CONNECT")
+        }
+    }
+
+    /** Notifica al listener SOLO la primera vez que este peer aparece. */
+    private fun notifyPeerAdded(address: String) {
+        val isNew = uniquePeers.add(address)
+        if (isNew) listener?.onPeerConnected(address)
+    }
+
+    /** Notifica al listener SOLO cuando el peer se pierde por ambos lados. */
+    private fun notifyPeerRemoved(address: String) {
+        val stillConnected = outgoingPeers.containsKey(address) ||
+                             incomingPeers.containsKey(address)
+        if (!stillConnected) {
+            uniquePeers.remove(address)
+            listener?.onPeerDisconnected(address)
         }
     }
 
@@ -334,7 +356,7 @@ class BleMeshService(private val ctx: Context) {
                     outgoingPeers.remove(addr)
                     outgoingCharCache.remove(addr)
                     try { gatt.close() } catch (_: Exception) {}
-                    listener?.onPeerDisconnected(addr)
+                    notifyPeerRemoved(addr)
                 }
             }
         }
