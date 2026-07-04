@@ -114,6 +114,17 @@
     .filter-btn.warn-active { background: #f59e0b; border-color: #f59e0b; color: #000; }
     .search-input { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; width: 200px; }
     .search-input:focus { border-color: var(--or); }
+    .btn-export { font-size: 0.78rem; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all .15s; margin-left: auto; }
+    .btn-export:hover { border-color: #4ade80; color: #4ade80; }
+    .btn-export:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* GRUERO HISTORIAL */
+    .gh-bar { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0 0.75rem; flex-wrap: wrap; }
+    .gh-bar label { font-size: 0.8rem; color: var(--mu); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .gh-select { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; flex: 1; min-width: 200px; max-width: 320px; }
+    .gh-select:focus { border-color: var(--or); }
+    #grueroHistorial { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 0.5rem; }
+    .gh-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); margin-bottom: 0.75rem; }
 
     /* TABLE */
     .table-wrap { overflow-x: auto; }
@@ -203,6 +214,7 @@
       <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
       <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
       <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad…" oninput="renderTable()">
+      <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
     </div>
 
     <div class="table-wrap">
@@ -229,7 +241,10 @@
       <!-- DESPACHO EN VIVO -->
       <div class="dispatch-bar">
         <span class="dispatch-title">📡 Despacho en vivo</span>
-        <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
+          <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+        </div>
       </div>
       <div id="pendingGrid" class="pending-grid">
         <div class="dispatch-empty">Cargando solicitudes pendientes…</div>
@@ -259,6 +274,20 @@
         <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
         <div class="recientes-list" id="recientesList"></div>
       </div>
+
+      <!-- HISTORIAL POR GRUERO -->
+      <div class="gh-bar">
+        <label>Historial por gruero:</label>
+        <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
+          <option value="">— Seleccionar gruero —</option>
+        </select>
+      </div>
+      <div id="grueroHistorial" style="display:none">
+        <div class="gh-section-title">Servicios del gruero</div>
+        <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
+        <div class="table-wrap" id="ghTableWrap"></div>
+      </div>
+
     </div><!-- /tabSolicitudes -->
 
   </div>
@@ -298,7 +327,7 @@ function showTab(tab, btn) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   if (btn) btn.classList.add('active');
   if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
-  if (tab === 'solicitudes') loadPendingDispatch();
+  if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
 }
 
 async function loadSolicitudesStats() {
@@ -655,6 +684,109 @@ async function doDelete(id, nombre, btn) {
     btn.disabled = false;
     alert('No se pudo eliminar.');
   }
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────
+function exportGruerosCSV() {
+  const headers = ['Nombre','Ciudad','Teléfono','Email','Aprobado','Disponible','Registrado','Slug'];
+  const csv = [headers, ...allGrueros.map(g => [
+    g.nombre||'', g.ciudad||'', g.telefono||'', g.email||'',
+    g.aprobado==='SI'?'Sí':'No', g.disponible?'Sí':'No',
+    g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '',
+    g.slug||''
+  ])].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿'+csv, `grueros-ridera-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+async function exportSolicitudesCSV() {
+  const btn = document.getElementById('btnExportSols');
+  if (btn) { btn.disabled = true; btn.textContent = 'Exportando…'; }
+  const data = await callAdmin({ action: 'export_solicitudes' }).catch(() => ({ ok: false }));
+  if (btn) { btn.disabled = false; btn.textContent = '↓ Exportar CSV'; }
+  if (!data.ok) { alert('Error al exportar'); return; }
+  const headers = ['ID','Estado','Cliente','Teléfono','Gruero','Municipio','Ubicación','Calificación','Comentario','Creado','Asignado','Llegó','Finalizado'];
+  const csv = [headers, ...(data.solicitudes||[]).map(s => [
+    s.id, s.estado, s.cliente_nombre||'', s.cliente_telefono||'',
+    s.gruero_nombre||'', s.municipio||'', s.ubicacion||'',
+    s.calificacion||'', s.comentario_cliente||'',
+    s.created_at   ? new Date(s.created_at).toLocaleString('es-CO')   : '',
+    s.asignada_at  ? new Date(s.asignada_at).toLocaleString('es-CO')  : '',
+    s.llego_at     ? new Date(s.llego_at).toLocaleString('es-CO')     : '',
+    s.finalizada_at? new Date(s.finalizada_at).toLocaleString('es-CO'): '',
+  ])].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿'+csv, `solicitudes-ridera-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+function downloadCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Historial por gruero ─────────────────────────────────────────────
+function populateGrueroSelect() {
+  const sel = document.getElementById('grueroSelect');
+  if (!sel || sel.dataset.loaded === 'true') return;
+  const aprobados = allGrueros.filter(g => g.aprobado === 'SI')
+    .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+  sel.innerHTML = '<option value="">— Ver historial de gruero —</option>' +
+    aprobados.map(g => `<option value="${esc(g.id)}">${esc(g.nombre)} ${g.ciudad?'('+esc(g.ciudad)+')':''}</option>`).join('');
+  sel.dataset.loaded = 'true';
+}
+
+async function loadGrueroHistorial() {
+  const gruero_id = document.getElementById('grueroSelect').value;
+  const wrap = document.getElementById('grueroHistorial');
+  if (!gruero_id) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando…</div>';
+  document.getElementById('ghTableWrap').innerHTML = '';
+
+  const data = await callAdmin({ action: 'historial_gruero', gruero_id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('ghStats').innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar historial</p>';
+    return;
+  }
+
+  const s = data.stats || {};
+  document.getElementById('ghStats').innerHTML = `
+    <div class="stat"><div class="num">${s.total||0}</div><div class="lbl">Total servicios</div></div>
+    <div class="stat"><div class="num">${s.mes||0}</div><div class="lbl">Este mes</div></div>
+    <div class="stat"><div class="num ${s.avgCal?'green':''}">${s.avgCal?'⭐ '+s.avgCal:'—'}</div><div class="lbl">Calificación</div></div>
+    <div class="stat"><div class="num">${s.finalizadas||0}</div><div class="lbl">Completados</div></div>
+  `;
+
+  const sols = data.solicitudes || [];
+  if (!sols.length) {
+    document.getElementById('ghTableWrap').innerHTML = '<p style="color:#888;font-size:0.85rem;padding:0.5rem 0">Sin servicios registrados.</p>';
+    return;
+  }
+
+  const estadoLabels = { pendiente:'Pendiente', asignada:'En camino', llego:'Llegó', finalizada:'Finalizada', cancelada:'Cancelado' };
+  const clsEstado    = { pendiente:'re-pend', asignada:'re-asig', llego:'re-llego', finalizada:'re-fin', cancelada:'re-pend' };
+  const timelbl = d => {
+    const diff = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (diff < 60) return `${diff}m`; if (diff < 1440) return `${Math.round(diff/60)}h`; return `${Math.round(diff/1440)}d`;
+  };
+
+  document.getElementById('ghTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Estado</th><th>Cliente</th><th>Municipio</th><th>Calificación</th><th>Fecha</th>
+      </tr></thead>
+      <tbody>
+        ${sols.map(s => `<tr>
+          <td><span class="rec-estado ${clsEstado[s.estado]||'re-fin'}">${estadoLabels[s.estado]||s.estado}</span></td>
+          <td style="font-size:0.85rem">${esc(s.cliente_nombre||'—')}</td>
+          <td style="font-size:0.82rem;color:var(--mu)">${esc(s.municipio||'—')}</td>
+          <td>${s.calificacion?'⭐'.repeat(s.calificacion):'—'}</td>
+          <td style="font-size:0.78rem;color:var(--mu)">${s.created_at?timelbl(s.created_at):''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
 }
 
 function showChangePwd() {

@@ -90,6 +90,16 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
 .cal-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;background:var(--or);color:#fff;font-family:'Barlow Condensed';font-size:19px;font-weight:700;letter-spacing:.04em;border:none;border-radius:14px;cursor:pointer;text-decoration:none;box-shadow:0 8px 24px -8px var(--or);margin-bottom:10px}
 .cal-cta:active{transform:scale(.98)}
 
+/* CANCELAR */
+.chip.canc{background:rgba(248,113,113,.1);color:#f87171;border-color:rgba(248,113,113,.3)}
+.btn-cancelar{background:transparent;border:1px solid rgba(248,113,113,.45);color:#f87171;font-size:13px;font-weight:600;padding:9px 24px;border-radius:10px;cursor:pointer;transition:.15s}
+.btn-cancelar:hover{background:rgba(248,113,113,.08)}
+.btn-cancelar:disabled{opacity:.5;cursor:not-allowed}
+.cancelled-aviso{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px}
+.cancelled-aviso .ic{font-size:28px;margin-bottom:6px}
+.cancelled-aviso h3{font-family:'Barlow Condensed';font-size:18px;font-weight:700;color:#f87171;margin-bottom:4px}
+.cancelled-aviso p{font-size:13px;color:var(--mu);line-height:1.5}
+
 /* NOTA */
 .nota{font-size:13px;color:var(--mu);text-align:center;line-height:1.55;margin-top:8px}
 
@@ -169,6 +179,20 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
   <!-- Calificar CTA -->
   <a class="cal-cta hide" id="secCal" href="#">⭐ Calificar el servicio</a>
 
+  <!-- Cancelado -->
+  <div class="cancelled-aviso hide" id="secCancelada">
+    <div class="ic">❌</div>
+    <h3>Servicio cancelado</h3>
+    <p>Tu solicitud fue cancelada.</p>
+    <a href="/" style="display:inline-block;margin-top:10px;color:var(--or);font-size:13px;font-weight:700">Solicitar nueva grúa →</a>
+  </div>
+
+  <!-- Cancelar (solo pendiente/asignada) -->
+  <div class="hide" id="secCancelar" style="text-align:center;padding:10px 0 4px">
+    <button class="btn-cancelar" id="btnCancelar" onclick="doCancelClient()">Cancelar servicio</button>
+    <p style="font-size:11px;color:var(--mu);margin-top:5px;line-height:1.4">Solo si ya no necesitas el servicio</p>
+  </div>
+
   <!-- Nota -->
   <p class="nota" id="nota">Esta página se actualiza en tiempo real.</p>
 </div>
@@ -241,6 +265,7 @@ function applyEstado(estado){
     asignada:['asig','🛵 En camino'],
     llego:['llego','📍 Llegó al sitio'],
     finalizada:['done','✅ Servicio listo'],
+    cancelada:['canc','❌ Cancelado'],
   };
   const [cls,lbl] = configs[estado]||['pend','—'];
   chip.className = 'chip '+cls;
@@ -260,17 +285,20 @@ function applyEstado(estado){
   const show = (id,v) => document.getElementById(id).classList.toggle('hide',!v);
   const s = estado;
   show('secBuscando', s==='pendiente');
-  show('secGruero', s!=='pendiente');
+  show('secGruero', s!=='pendiente' && s!=='cancelada');
   show('secActions', s==='asignada' || s==='llego');
   show('eta', s==='asignada');
   show('secLlego', s==='llego');
   show('secCal', s==='finalizada');
+  show('secCancelada', s==='cancelada');
+  show('secCancelar', s==='pendiente' || s==='asignada');
 
   const notas = {
     pendiente:'Avisamos a todos los grueros. Uno tomará tu servicio en breve.',
     asignada:'Tu gruero está en camino. Actualización en tiempo real.',
     llego:'Sal a recibirlo — está esperándote en tu ubicación.',
     finalizada:'Califica el servicio para ayudar a la comunidad motera.',
+    cancelada:'Tu solicitud fue cancelada. Crea una nueva si aún necesitas el servicio.',
   };
   document.getElementById('nota').textContent = notas[s]||'';
 }
@@ -388,6 +416,29 @@ async function init(){
     if(data.estado==='finalizada') clearInterval(pollTimer);
   }
   pollTimer = setInterval(pollLocation, 10000);
+}
+
+async function doCancelClient() {
+  if (!confirm('¿Cancelar el servicio? Solo hazlo si ya no necesitas la grúa.')) return;
+  const btn = document.getElementById('btnCancelar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cancelando…'; }
+  try {
+    const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aceptar-solicitud', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ s: sid, action: 'cancelar_cliente' }),
+    });
+    const data = await res.json();
+    if (data.ok || data.resultado === 'ya_cancelada') {
+      applyEstado('cancelada');
+      clearInterval(pollTimer);
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = 'Cancelar servicio'; }
+      alert(data.error || 'No se pudo cancelar. Intenta de nuevo.');
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Cancelar servicio'; }
+    alert('Error de conexión. Intenta de nuevo.');
+  }
 }
 
 window.addEventListener('resize',()=>setTimeout(()=>map.invalidateSize(),200));
