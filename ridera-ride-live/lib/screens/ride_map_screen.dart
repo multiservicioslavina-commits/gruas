@@ -96,6 +96,7 @@ class _RideMapScreenState extends State<RideMapScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _ensureGpsRunning();
     _loadMembers();
     _loadRoutePoints();
     _loadPlannedRoute();
@@ -109,6 +110,14 @@ class _RideMapScreenState extends State<RideMapScreen>
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkBatteryOptimization());
     _startMesh();
     _startCrashDetector();
+  }
+
+  /// Arranca el GpsService nativo si aún no está corriendo — no depende del
+  /// botón "ARRANCAR RODADA" de la pantalla previa. Al abrir el mapa, GPS activo.
+  Future<void> _ensureGpsRunning() async {
+    try {
+      await _locationService.start(rideId: widget.rideId, uid: _uid);
+    } catch (_) {}
   }
 
   Future<void> _startCrashDetector() async {
