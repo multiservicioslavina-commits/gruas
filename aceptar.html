@@ -152,13 +152,13 @@ function render(data){
         const _calUrl = `https://gruas.ridera.com.co/califica?s=${encodeURIComponent(sol.id)}`;
         const _waText = encodeURIComponent(`¡Gracias por usar Ridera! Por favor califica tu servicio de grúa aquí: ${_calUrl}`);
         const _shareBtn = _wa
-          ? `<a class="btn btn-wa" target="_blank" href="https://wa.me/${_wa}?text=${_waText}" style="margin-top:12px">⭐ Enviar enlace de calificación</a>`
+          ? `<p style="font-size:13px;color:#888;margin-top:16px;text-align:center">¿El cliente no recibió el link? <a href="https://wa.me/${_wa}?text=${_waText}" target="_blank" style="color:#25D366">Enviar manualmente por WhatsApp</a></p>`
           : ``;
         c.innerHTML = `<div class="eyebrow">Servicio cerrado</div><h1>¡Finalizado! ✅</h1>
           <span class="badge done">● Finalizado</span>${stepper('finalizada')}
           ${clienteCard(sol)}
+          <div class="note" id="calNota" style="margin-top:12px">El cliente recibió el link de calificación por WhatsApp.</div>
           ${_shareBtn}
-          <div class="note" id="calNota" style="margin-top:12px">Esperando que el cliente califique…</div>
           <button class="btn btn-ghost" style="margin-top:10px" onclick="checkCal()">🔄 Actualizar calificación</button>`;
         pollTimer = setInterval(async ()=>{
           const d = await api('info');
@@ -215,9 +215,10 @@ async function doAceptar(){
   stopPoll();
   const data = await api('aceptar');
   if(data.resultado==='ya_ocupado'){
-    toast(data.error||'Ya tienes un servicio activo. Finaliza ese primero.');
-    if(b){ b.disabled=false; b.innerHTML='✓ Aceptar servicio'; }
-    startPoll(); return;
+    const c2=document.getElementById('content');
+    const lnk=(data.activa_id&&G)?`<a class="btn btn-accept" style="text-decoration:none;margin-top:16px" href="/aceptar?s=${encodeURIComponent(data.activa_id)}&g=${encodeURIComponent(G)}">➡ Ir al servicio activo</a>`:'';
+    c2.innerHTML=`<div class="big-msg"><div class="ic">🔒</div><h2>Ya tienes un servicio activo</h2><p>Finaliza el servicio en curso antes de tomar uno nuevo.</p>${lnk}</div>`;
+    return;
   }
   if(data.resultado==='ya_tomado') toast('Otro gruero lo tomó primero');
   else if(data.resultado==='aceptaste') toast('¡Servicio aceptado! 🎉');
