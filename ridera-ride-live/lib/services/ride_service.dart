@@ -172,8 +172,21 @@ class RideService {
             column: 'ride_id',
             value: rideId,
           ),
-          callback: (payload) => onUpdate(payload.newRecord),
+          // Blindado: si el callback lanza excepción no queremos que crashee la app
+          callback: (payload) {
+            try {
+              onUpdate(payload.newRecord);
+            } catch (_) {}
+          },
         )
-        .subscribe();
+        .subscribe(
+          (status, error) {
+            // Loggear pero NO crashear ante desconexiones (modo avión, red débil)
+            if (error != null) {
+              // ignore: avoid_print
+              print('Realtime status $status error: $error');
+            }
+          },
+        );
   }
 }
