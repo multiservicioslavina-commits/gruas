@@ -70,6 +70,7 @@ class _RideMapScreenState extends State<RideMapScreen>
   String _emergencyPhone = '';
   bool _crashDialogShowing = false;
   Timer? _meshBroadcastTimer;
+  Timer? _meshKeepAlive;
   StreamSubscription<MeshPeerMessage>? _meshSub;
   StreamSubscription<MeshConnectionEvent>? _meshConnSub;
   int _meshDirectPeers = 0;
@@ -226,6 +227,25 @@ class _RideMapScreenState extends State<RideMapScreen>
         speedKmh: me.speedKmh.round(),
         statusCode: me.statusCode,
       );
+    });
+    // Keep-alive: si el mesh se queda sin peers directos por >30s, reinicia
+    // el descubrimiento (útil cuando el modo avión rompe BLE/WiFi Direct).
+    _meshKeepAlive?.cancel();
+    _meshKeepAlive = Timer.periodic(const Duration(seconds: 30), (_) async {
+      if (!mounted) return;
+      if (_meshDirectPeers == 0) {
+        await _mesh.stop();
+        await Future.delayed(const Duration(seconds: 1));
+        final ok2 = await _mesh.start(uid: _uid, name: name);
+        if (ok2) {
+          _meshSub?.cancel();
+          _meshConnSub?.cancel();
+          _meshSub = _mesh.onPeer.listen(_onMeshPeerMessage);
+          _meshConnSub = _mesh.onConnection.listen((e) {
+            if (mounted) setState(() => _meshDirectPeers = _mesh.directPeers);
+          });
+        }
+      }
     });
   }
 
@@ -641,6 +661,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     _statusTimer?.cancel();
     _refreshTimer?.cancel();
     _meshBroadcastTimer?.cancel();
+    _meshKeepAlive?.cancel();
     _meshSub?.cancel();
     _meshConnSub?.cancel();
     _mesh.stop();
