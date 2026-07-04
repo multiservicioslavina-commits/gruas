@@ -5,11 +5,13 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../services/crash_detector.dart';
 import '../services/location_service.dart';
 import '../services/mesh_service.dart';
 import '../services/photo_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
+import '../services/safety_service.dart';
 import '../widgets/rider_marker.dart';
 import 'ride_summary_screen.dart';
 
@@ -60,7 +62,12 @@ class _RideMapScreenState extends State<RideMapScreen>
   final _photoService = PhotoService();
   final _locationService = LocationService();
   final _mesh = MeshService();
+  final _crashDetector = CrashDetector();
   final _mapCtrl = MapController();
+
+  String _emergencyName = '';
+  String _emergencyPhone = '';
+  bool _crashDialogShowing = false;
   Timer? _meshBroadcastTimer;
   StreamSubscription<MeshPeerMessage>? _meshSub;
   StreamSubscription<MeshConnectionEvent>? _meshConnSub;
@@ -100,6 +107,85 @@ class _RideMapScreenState extends State<RideMapScreen>
     // Preguntar por permiso de batería después de que la UI cargue
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkBatteryOptimization());
     _startMesh();
+    _startCrashDetector();
+  }
+
+  Future<void> _startCrashDetector() async {
+    // Cargar contacto de emergencia del miembro actual desde la DB
+    try {
+      final row = await Supabase.instance.client
+          .from('members')
+          .select('emergency_name, emergency_phone')
+          .eq('ride_id', widget.rideId)
+          .eq('uid', _uid)
+          .maybeSingle();
+      if (row != null) {
+        _emergencyName = (row['emergency_name'] as String?) ?? '';
+        _emergencyPhone = (row['emergency_phone'] as String?) ?? '';
+      }
+    } catch (_) {}
+
+    // Solo detectar caídas si hay un contacto configurado
+    if (_emergencyPhone.trim().isEmpty) return;
+
+    _crashDetector.start(() {
+      if (!mounted || _crashDialogShowing) return;
+      _showCrashCountdown();
+    });
+  }
+
+  Future<void> _showCrashCountdown() async {
+    _crashDialogShowing = true;
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const _CrashCountdownDialog(),
+    );
+    _crashDialogShowing = false;
+
+    if (result == true) {
+      // Timer expiró sin cancelación → asumir caída real
+      await _triggerCrashSos();
+    }
+  }
+
+  Future<void> _triggerCrashSos() async {
+    final me = _riders[_uid];
+    final lat = me?.lat ?? 0.0;
+    final lon = me?.lon ?? 0.0;
+    final riderName = me?.nombre ?? 'Piloto RIDERA';
+
+    // 1. Marcar SOS en la rodada (todos los otros riders lo verán en su mapa)
+    try {
+      await Supabase.instance.client
+          .from('members')
+          .update({'status_code': 3})
+          .eq('ride_id', widget.rideId)
+          .eq('uid', _uid);
+    } catch (_) {}
+
+    // 2. Enviar SMS al contacto de emergencia
+    final smsOk = await SafetyService.sendSosAuto(
+      contactPhone: _emergencyPhone,
+      riderName: riderName,
+      lat: lat,
+      lon: lon,
+    );
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          smsOk
+              ? '🚨 SOS enviado al contacto de emergencia por SMS'
+              : '🚨 SOS activo. No se pudo enviar SMS — verifica permiso de SMS.',
+        ),
+        backgroundColor: smsOk
+            ? const Color(0xFFef4444)
+            : const Color(0xFFf97316),
+        duration: const Duration(seconds: 6),
+      ),
+    );
   }
 
   Future<void> _startMesh() async {
@@ -532,6 +618,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     _meshSub?.cancel();
     _meshConnSub?.cancel();
     _mesh.stop();
+    _crashDetector.stop();
     super.dispose();
   }
 
@@ -1261,4 +1348,119 @@ double _haversineMeters(double lat1, double lon1, double lat2, double lon2) {
           math.sin(dLon / 2) *
           math.sin(dLon / 2);
   return 2 * r * math.asin(math.sqrt(a));
+}
+
+// ─── Diálogo de countdown por caída detectada ─────────────
+
+class _CrashCountdownDialog extends StatefulWidget {
+  const _CrashCountdownDialog();
+  @override
+  State<_CrashCountdownDialog> createState() => _CrashCountdownDialogState();
+}
+
+class _CrashCountdownDialogState extends State<_CrashCountdownDialog>
+    with SingleTickerProviderStateMixin {
+  static const _totalSeconds = 15;
+  late int _remaining;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _remaining = _totalSeconds;
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      if (!mounted) return;
+      setState(() => _remaining--);
+      if (_remaining <= 0) {
+        _timer?.cancel();
+        Navigator.of(context).pop(true); // envió SOS
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = _remaining / _totalSeconds;
+    return PopScope(
+      canPop: false,
+      child: Dialog(
+        backgroundColor: const Color(0xFF2b0d0d),
+        insetPadding: const EdgeInsets.all(20),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFef4444), width: 2),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.warning_rounded,
+                  color: Color(0xFFef4444), size: 64),
+              const SizedBox(height: 12),
+              const Text(
+                '¡Detectamos una caída!',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Enviaremos SOS a tu contacto de emergencia\nen $_remaining segundos.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFFe6e3de), fontSize: 15),
+              ),
+              const SizedBox(height: 20),
+              // Barra de progreso
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: progress,
+                  minHeight: 10,
+                  backgroundColor: Colors.black26,
+                  color: const Color(0xFFef4444),
+                ),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: const Color(0xFF4ade80),
+                    minimumSize: const Size(0, 60),
+                  ),
+                  child: const Text(
+                    'ESTOY BIEN — CANCELAR',
+                    style: TextStyle(
+                        color: Colors.black,
+                        fontWeight: FontWeight.w900,
+                        fontSize: 16,
+                        letterSpacing: 1.5),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text(
+                  'ENVIAR SOS AHORA',
+                  style: TextStyle(
+                      color: Color(0xFFef4444),
+                      fontWeight: FontWeight.w700),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

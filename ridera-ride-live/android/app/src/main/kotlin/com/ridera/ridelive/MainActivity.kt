@@ -6,6 +6,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.PowerManager
 import android.provider.Settings
+import android.telephony.SmsManager
 import android.util.Log
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -85,6 +86,11 @@ class MainActivity : FlutterActivity() {
                         // true si logró abrir la pantalla específica del fabricante
                         result.success(openAutoStartSettings())
                     }
+                    "sendSms" -> {
+                        val phone = call.argument<String>("phone") ?: ""
+                        val message = call.argument<String>("message") ?: ""
+                        result.success(sendSmsDirect(phone, message))
+                    }
                     else -> result.notImplemented()
                 }
             }
@@ -162,6 +168,30 @@ class MainActivity : FlutterActivity() {
             try {
                 startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS))
             } catch (_: Exception) {}
+        }
+    }
+
+    /** Envía SMS directo con SmsManager. Requiere permiso SEND_SMS. */
+    private fun sendSmsDirect(phone: String, message: String): Boolean {
+        if (phone.isBlank() || message.isBlank()) return false
+        return try {
+            val sms = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                getSystemService(SmsManager::class.java)
+            } else {
+                @Suppress("DEPRECATION")
+                SmsManager.getDefault()
+            }
+            val parts = sms.divideMessage(message)
+            if (parts.size > 1) {
+                sms.sendMultipartTextMessage(phone, null, parts, null, null)
+            } else {
+                sms.sendTextMessage(phone, null, message, null, null)
+            }
+            Log.d("RIDERA", "SMS enviado a $phone (${parts.size} parts)")
+            true
+        } catch (e: Exception) {
+            Log.e("RIDERA", "SMS falló: ${e.message}")
+            false
         }
     }
 
