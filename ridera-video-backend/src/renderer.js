@@ -75,7 +75,7 @@ export async function renderRideVideo({
     console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`);
   });
 
-  await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 });
+  await page.setViewport({ width: 720, height: 720, deviceScaleFactor: 1 });
   await page.setContent(html, { waitUntil: 'networkidle0', timeout: 90000 });
   T('page setContent', tPage);
 
@@ -97,12 +97,12 @@ export async function renderRideVideo({
   const outputPath = join(tmpdir(), `ride_${rideId}_${Date.now()}.mp4`);
   const tRec = Date.now();
   const recorder = new PuppeteerScreenRecorder(page, {
-    fps: 30,
-    videoFrame: { width: 1080, height: 1080 },
-    videoCrf: 22,
+    fps: 24,
+    videoFrame: { width: 720, height: 720 },
+    videoCrf: 28,
     videoCodec: 'libx264',
-    videoPreset: 'medium',
-    videoBitrate: 3500,
+    videoPreset: 'ultrafast',
+    videoBitrate: 1500,
     aspectRatio: '1:1',
   });
   await recorder.start(outputPath);
