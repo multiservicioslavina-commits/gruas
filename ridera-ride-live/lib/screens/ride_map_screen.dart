@@ -103,8 +103,10 @@ class _RideMapScreenState extends State<RideMapScreen>
     _loadRoutePoints();
     _loadPlannedRoute();
     _subscribeRealtime();
+    // Recalcular status cada 2s (era cada 1s — muy caro). Solo dispara
+    // setState si algún rider cambió de estado (dentro de _recalcStatus).
     _statusTimer = Timer.periodic(
-        const Duration(seconds: 1), (_) => _recalcStatus());
+        const Duration(seconds: 2), (_) => _recalcStatus());
     // Recarga completa desde DB cada 30s como respaldo si el WebSocket cae
     _refreshTimer = Timer.periodic(
         const Duration(seconds: 30), (_) => _loadMembers());
@@ -218,36 +220,9 @@ class _RideMapScreenState extends State<RideMapScreen>
     _meshConnSub = _mesh.onConnection.listen((e) {
       if (mounted) setState(() => _meshDirectPeers = _mesh.directPeers);
     });
-    // Broadcast propio periódico al mesh cada 4s
-    _meshBroadcastTimer = Timer.periodic(const Duration(seconds: 4), (_) {
-      final me = _riders[_uid];
-      if (me?.lat == null || me?.lon == null) return;
-      _mesh.broadcast(
-        lat: me!.lat!,
-        lon: me.lon!,
-        speedKmh: me.speedKmh.round(),
-        statusCode: me.statusCode,
-      );
-    });
-    // Keep-alive: si el mesh se queda sin peers directos por >30s, reinicia
-    // el descubrimiento (útil cuando el modo avión rompe BLE/WiFi Direct).
-    _meshKeepAlive?.cancel();
-    _meshKeepAlive = Timer.periodic(const Duration(seconds: 30), (_) async {
-      if (!mounted) return;
-      if (_meshDirectPeers == 0) {
-        await _mesh.stop();
-        await Future.delayed(const Duration(seconds: 1));
-        final ok2 = await _mesh.start(uid: _uid, name: name);
-        if (ok2) {
-          _meshSub?.cancel();
-          _meshConnSub?.cancel();
-          _meshSub = _mesh.onPeer.listen(_onMeshPeerMessage);
-          _meshConnSub = _mesh.onConnection.listen((e) {
-            if (mounted) setState(() => _meshDirectPeers = _mesh.directPeers);
-          });
-        }
-      }
-    });
+    // NOTA: NO iniciamos _meshBroadcastTimer aquí — el broadcast lo hace
+    // directamente el GpsService nativo cada vez que recibe posición GPS.
+    // Eso funciona incluso sin Supabase (sin internet), y no depende de esta pantalla.
   }
 
   void _onMeshPeerMessage(MeshPeerMessage m) {
@@ -343,11 +318,14 @@ class _RideMapScreenState extends State<RideMapScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App vuelve al frente — reconectar Realtime y recargar datos
+      // App vuelve al frente — verifica que TODO esté vivo (Android puede haber
+      // matado el GPS service o desconectado el WebSocket en background).
+      _ensureGpsRunning();
       _channel?.unsubscribe();
+      _channel = null;
       _subscribeRealtime();
       _loadMembers();
-      _loadRoutePoints(clearFirst: true); // recarga limpia para no duplicar puntos
+      _loadRoutePoints(clearFirst: true);
     }
   }
 
@@ -422,7 +400,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     _channel = _rideService.subscribeMembersRealtime(
       widget.rideId,
       (record) {
-        if (record.isEmpty) return;
+        if (record.isEmpty || !mounted) return;
         final data = _RiderData.fromMap(record);
         final uid = record['uid'] as String? ?? '';
         setState(() {
@@ -430,7 +408,12 @@ class _RideMapScreenState extends State<RideMapScreen>
           if (data.lat != null && data.lon != null) {
             final pt = LatLng(data.lat!, data.lon!);
             final list = _traces.putIfAbsent(uid, () => []);
-            if (list.isEmpty || list.last != pt) list.add(pt);
+            // FIX: LatLng no implementa ==, hay que comparar por valor.
+            // Antes: list.last != pt → siempre true → duplicaba cada punto.
+            final isDuplicate = list.isNotEmpty &&
+                list.last.latitude == pt.latitude &&
+                list.last.longitude == pt.longitude;
+            if (!isDuplicate) list.add(pt);
           }
         });
         if (_centered) _fitBounds();
@@ -662,7 +645,6 @@ class _RideMapScreenState extends State<RideMapScreen>
     _statusTimer?.cancel();
     _refreshTimer?.cancel();
     _meshBroadcastTimer?.cancel();
-    _meshKeepAlive?.cancel();
     _meshSub?.cancel();
     _meshConnSub?.cancel();
     _mesh.stop();
