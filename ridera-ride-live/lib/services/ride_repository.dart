@@ -90,14 +90,40 @@ class RideRepository {
     required String name,
     required String leaderUid,
     required String leaderName,
+    Map<String, dynamic>? plannedRouteGeoJson,
+    List<Map<String, dynamic>>? plannedSteps,
+    String? originName,
+    String? destinationName,
+    double? originLat,
+    double? originLon,
+    double? destinationLat,
+    double? destinationLon,
+    double? plannedDistanceKm,
+    int? plannedDurationMin,
+    String? driveFolderUrl,
   }) async {
     final code = _generateCode();
-    await _sb.from('rides').insert({
+    final rideRow = <String, dynamic>{
       'id': code,
       'nombre': name,
       'lider_id': leaderUid,
       'estado': 'activa',
-    });
+    };
+    if (plannedRouteGeoJson != null) rideRow['planned_route'] = plannedRouteGeoJson;
+    if (plannedSteps != null) rideRow['planned_steps'] = plannedSteps;
+    if (originName != null) rideRow['origin_name'] = originName;
+    if (destinationName != null) rideRow['destination_name'] = destinationName;
+    if (originLat != null) rideRow['origin_lat'] = originLat;
+    if (originLon != null) rideRow['origin_lon'] = originLon;
+    if (destinationLat != null) rideRow['destination_lat'] = destinationLat;
+    if (destinationLon != null) rideRow['destination_lon'] = destinationLon;
+    if (plannedDistanceKm != null) rideRow['planned_distance_km'] = plannedDistanceKm;
+    if (plannedDurationMin != null) rideRow['planned_duration_min'] = plannedDurationMin;
+    if (driveFolderUrl != null && driveFolderUrl.isNotEmpty) {
+      rideRow['drive_folder_url'] = driveFolderUrl;
+    }
+
+    await _sb.from('rides').insert(rideRow);
     await _sb.from('members').insert({
       'ride_id': code,
       'uid': leaderUid,

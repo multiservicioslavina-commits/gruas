@@ -1,8 +1,10 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/location_service.dart';
 import '../services/mesh_service.dart';
 import '../services/photo_service.dart';
@@ -73,6 +75,13 @@ class _RideMapScreenState extends State<RideMapScreen>
   bool _centered = true;
   _MapType _mapType = _MapType.calles;
 
+  // Ruta planeada por el líder (opcional)
+  List<LatLng>? _plannedPolyline;
+  List<Map<String, dynamic>>? _plannedSteps;
+  String? _originName;
+  String? _destinationName;
+  String? _driveFolderUrl;
+
   String get _uid => Supabase.instance.client.auth.currentUser!.id;
 
   @override
@@ -81,6 +90,7 @@ class _RideMapScreenState extends State<RideMapScreen>
     WidgetsBinding.instance.addObserver(this);
     _loadMembers();
     _loadRoutePoints();
+    _loadPlannedRoute();
     _subscribeRealtime();
     _statusTimer = Timer.periodic(
         const Duration(seconds: 1), (_) => _recalcStatus());
@@ -241,6 +251,33 @@ class _RideMapScreenState extends State<RideMapScreen>
           }
         }
       });
+    } catch (_) {}
+  }
+
+  Future<void> _loadPlannedRoute() async {
+    try {
+      final row = await Supabase.instance.client
+          .from('rides')
+          .select('planned_route, planned_steps, origin_name, destination_name, drive_folder_url')
+          .eq('id', widget.rideId)
+          .maybeSingle();
+      if (row == null || !mounted) return;
+      final geo = row['planned_route'] as Map<String, dynamic>?;
+      if (geo != null && geo['coordinates'] is List) {
+        final coords = (geo['coordinates'] as List).cast<List>();
+        final pts = coords
+            .map((c) => LatLng((c[1] as num).toDouble(), (c[0] as num).toDouble()))
+            .toList();
+        setState(() {
+          _plannedPolyline = pts;
+          _plannedSteps = (row['planned_steps'] as List?)
+              ?.map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
+          _originName = row['origin_name'] as String?;
+          _destinationName = row['destination_name'] as String?;
+          _driveFolderUrl = row['drive_folder_url'] as String?;
+        });
+      }
     } catch (_) {}
   }
 
@@ -524,6 +561,19 @@ class _RideMapScreenState extends State<RideMapScreen>
           urlTemplate: _mapType.url,
           userAgentPackageName: 'co.ridera.ridelive',
         ),
+        // Ruta planeada por el líder (azul, debajo del trazado real)
+        if (_plannedPolyline != null && _plannedPolyline!.isNotEmpty)
+          PolylineLayer(
+            polylines: [
+              Polyline(
+                points: _plannedPolyline!,
+                color: const Color(0xFF3B82F6).withValues(alpha: 0.85),
+                strokeWidth: 5,
+                borderColor: const Color(0xFF1e40af),
+                borderStrokeWidth: 1,
+              ),
+            ],
+          ),
         PolylineLayer(
           polylines: _traces.entries.map((e) {
             final isLider = _riders[e.key]?.rol == 'lider';
@@ -595,6 +645,13 @@ class _RideMapScreenState extends State<RideMapScreen>
             icon: const Icon(Icons.check_circle, color: Color(0xFF4ade80)),
             tooltip: 'Resolver SOS',
             onPressed: _resolveSos,
+          ),
+        if (_driveFolderUrl != null && _driveFolderUrl!.isNotEmpty)
+          IconButton(
+            icon: const Icon(Icons.folder_shared, color: Color(0xFF60A5FA)),
+            tooltip: 'Álbum grupal',
+            onPressed: () => launchUrl(Uri.parse(_driveFolderUrl!),
+                mode: LaunchMode.externalApplication),
           ),
         IconButton(
           icon: const Icon(Icons.my_location),
@@ -719,6 +776,20 @@ class _RideMapScreenState extends State<RideMapScreen>
                 onSelect: (t) => setState(() => _mapType = t),
               ),
             ),
+            if (_plannedSteps != null && _plannedSteps!.isNotEmpty)
+              Positioned(
+                top: 12,
+                right: 12,
+                left: 160,
+                child: _NavBanner(
+                  steps: _plannedSteps!,
+                  currentLat: _riders[_uid]?.lat,
+                  currentLon: _riders[_uid]?.lon,
+                  originName: _originName,
+                  destinationName: _destinationName,
+                  driveUrl: _driveFolderUrl,
+                ),
+              ),
             Positioned(
               bottom: 0,
               left: 0,
@@ -1055,4 +1126,139 @@ class _RiderListPanel extends StatelessWidget {
       ),
     );
   }
+}
+
+// ─── Banner de navegación turn-by-turn ─────────────────────
+
+class _NavBanner extends StatelessWidget {
+  const _NavBanner({
+    required this.steps,
+    required this.currentLat,
+    required this.currentLon,
+    required this.originName,
+    required this.destinationName,
+    required this.driveUrl,
+  });
+
+  final List<Map<String, dynamic>> steps;
+  final double? currentLat;
+  final double? currentLon;
+  final String? originName;
+  final String? destinationName;
+  final String? driveUrl;
+
+  // Encuentra el step más cercano al piloto que aún no ha pasado.
+  Map<String, dynamic>? _nextStep() {
+    if (currentLat == null || currentLon == null) return steps.first;
+    Map<String, dynamic>? best;
+    double bestDist = double.infinity;
+    for (final s in steps) {
+      final lat = (s['lat'] as num?)?.toDouble();
+      final lon = (s['lon'] as num?)?.toDouble();
+      if (lat == null || lon == null) continue;
+      final d = _haversineMeters(currentLat!, currentLon!, lat, lon);
+      if (d < bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+    return best;
+  }
+
+  double _distanceToNext() {
+    final s = _nextStep();
+    if (s == null || currentLat == null || currentLon == null) return 0;
+    return _haversineMeters(
+      currentLat!, currentLon!,
+      (s['lat'] as num).toDouble(),
+      (s['lon'] as num).toDouble(),
+    );
+  }
+
+  IconData _iconForModifier(String modifier) {
+    switch (modifier) {
+      case 'left':
+      case 'sharp left':
+        return Icons.turn_left;
+      case 'slight left':
+        return Icons.turn_slight_left;
+      case 'right':
+      case 'sharp right':
+        return Icons.turn_right;
+      case 'slight right':
+        return Icons.turn_slight_right;
+      case 'straight':
+        return Icons.straight;
+      case 'uturn':
+        return Icons.u_turn_left;
+      default:
+        return Icons.navigation;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final step = _nextStep();
+    if (step == null) return const SizedBox.shrink();
+    final instruction = (step['instruction'] as String?) ?? '';
+    final modifier = (step['modifier'] as String?) ?? '';
+    final distM = _distanceToNext();
+    final distText = distM > 1000
+        ? '${(distM / 1000).toStringAsFixed(1)} km'
+        : '${distM.round()} m';
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFF141414).withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF3B82F6).withValues(alpha: 0.5)),
+      ),
+      child: Row(children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: const Color(0xFF3B82F6),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(_iconForModifier(modifier),
+              color: Colors.white, size: 22),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(distText,
+                  style: const TextStyle(
+                      color: Color(0xFF60A5FA),
+                      fontWeight: FontWeight.w900,
+                      fontSize: 15,
+                      letterSpacing: 0.5)),
+              const SizedBox(height: 1),
+              Text(
+                instruction.isEmpty ? 'Siga la ruta' : instruction,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                    color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+              ),
+            ],
+          ),
+        ),
+      ]),
+    );
+  }
+}
+
+double _haversineMeters(double lat1, double lon1, double lat2, double lon2) {
+  const r = 6371000.0;
+  final dLat = (lat2 - lat1) * math.pi / 180;
+  final dLon = (lon2 - lon1) * math.pi / 180;
+  final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+      math.cos(lat1 * math.pi / 180) *
+          math.cos(lat2 * math.pi / 180) *
+          math.sin(dLon / 2) *
+          math.sin(dLon / 2);
+  return 2 * r * math.asin(math.sqrt(a));
 }
