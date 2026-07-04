@@ -60,6 +60,7 @@ export async function renderRideVideo({
       '--font-render-hinting=none',
     ],
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    protocolTimeout: 10 * 60 * 1000,
   });
 
   T('browser boot', tBrowser);
