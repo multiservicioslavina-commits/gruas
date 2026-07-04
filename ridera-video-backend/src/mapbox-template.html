@@ -166,10 +166,16 @@
       p._img = im;
     })));
 
-    // Esperar a que los tiles del mapa estén pintados (idle = mapa visible, no gris)
+    // Esperar a que los tiles estén pintados.
+    // idle = motor quieto, pero swiftshader necesita un repaint explícito
+    // y 2s extra para que los tiles raster queden en el framebuffer.
     map.once('idle', () => {
-      window.__ready = true;
-      window.__onReady && window.__onReady();
+      map.triggerRepaint();
+      setTimeout(() => {
+        map.triggerRepaint();
+        window.__ready = true;
+        window.__onReady && window.__onReady();
+      }, 2000);
     });
   });
 
