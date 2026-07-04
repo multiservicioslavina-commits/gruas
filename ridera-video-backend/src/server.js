@@ -22,8 +22,32 @@ app.get('/', (_req, res) => {
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
 
+// Cola FIFO — Railway no aguanta 2 Chromiums a la vez, así que serializamos.
+let renderChain = Promise.resolve();
+function serialize(fn) {
+  const next = renderChain.then(fn, fn);
+  renderChain = next.catch(() => {});
+  return next;
+}
+
 app.post('/render', async (req, res) => {
   const started = Date.now();
+  const queuedAt = Date.now();
+  try {
+    await serialize(async () => {
+      const waited = Date.now() - queuedAt;
+      if (waited > 500) console.log(`[queue] esperó ${(waited/1000).toFixed(1)}s`);
+      return handleRender(req, res, started);
+    });
+  } catch (err) {
+    if (!res.headersSent) {
+      console.error('Render error:', err);
+      res.status(500).json({ error: err.message || String(err) });
+    }
+  }
+});
+
+async function handleRender(req, res, started) {
   try {
     const {
       rideId,
@@ -61,9 +85,11 @@ app.post('/render', async (req, res) => {
     res.json({ url });
   } catch (err) {
     console.error('Render error:', err);
-    res.status(500).json({ error: err.message || String(err) });
+    if (!res.headersSent) {
+      res.status(500).json({ error: err.message || String(err) });
+    }
   }
-});
+}
 
 app.listen(PORT, () => {
   console.log(`ridera-video-backend listening on :${PORT}`);
