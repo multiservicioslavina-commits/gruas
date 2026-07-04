@@ -55,6 +55,16 @@ h1{font-family:'Barlow Condensed';font-weight:800;font-size:30px;text-transform:
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
 @keyframes s{to{transform:rotate(360deg)}}
 .hide{display:none!important}
+.gps-bar{display:flex;align-items:center;gap:9px;padding:11px 14px;border-radius:11px;font-size:13px;font-weight:600;margin-top:8px}
+.gps-bar.ok{background:rgba(37,211,102,.1);border:.5px solid rgba(37,211,102,.35);color:#4ade80}
+.gps-bar.err{background:rgba(226,59,59,.1);border:.5px solid rgba(226,59,59,.35);color:#ff7a7a;flex-wrap:wrap;gap:7px}
+.gps-bar.wait{background:rgba(245,158,11,.08);border:.5px solid rgba(245,158,11,.3);color:var(--amber)}
+.gps-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.gps-dot.ok{background:#4ade80;animation:gpspulse 2s infinite}
+.gps-dot.err{background:#ff7a7a}
+.gps-dot.wait{background:var(--amber)}
+@keyframes gpspulse{0%,100%{opacity:1}50%{opacity:.4}}
+.gps-retry{background:rgba(255,255,255,.1);border:.5px solid rgba(255,255,255,.3);color:inherit;padding:4px 10px;border-radius:7px;font-size:12px;cursor:pointer;font-weight:700}
 /* Stepper */
 .steps{display:flex;align-items:center;justify-content:space-between;margin:6px 0 16px;padding:0 4px}
 .step{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;position:relative}
@@ -159,7 +169,9 @@ function render(data){
     }
     let acciones = '';
     if(estado === 'asignada'){
-      acciones = `<button class="btn btn-llegue" id="actBtn" onclick="doPaso('llegue',this)">📍 Ya llegué al sitio</button>`;
+      acciones = `
+        <button class="btn btn-llegue" id="actBtn" onclick="doPaso('llegue',this)">📍 Ya llegué al sitio</button>
+        <div id="gpsBar" class="gps-bar wait"><span class="gps-dot wait"></span>Activando GPS…</div>`;
     } else if(estado === 'llego'){
       acciones = `<button class="btn btn-final" id="actBtn" onclick="doPaso('finalizar',this)">✅ Finalizar servicio</button>`;
     }
@@ -223,15 +235,37 @@ async function checkCal(){
   if(d && d.sol && d.sol.calificacion){ stopPoll(); render(d); }
   else { toast('El cliente aún no ha calificado'); }
 }
+function setGpsBar(type, msg, showRetry){
+  const el = document.getElementById('gpsBar');
+  if(!el) return;
+  el.className = 'gps-bar ' + type;
+  const dotCls = type;
+  const retry = showRetry ? `<button class="gps-retry" onclick="retryGPS()">Reintentar</button>` : '';
+  el.innerHTML = `<span class="gps-dot ${dotCls}"></span><span style="flex:1">${msg}</span>${retry}`;
+}
+function retryGPS(){ gpsWatch = null; startGPS(); }
 function startGPS(){
-  if(!navigator.geolocation || gpsWatch !== null) return;
+  if(!navigator.geolocation){
+    setGpsBar('err','GPS no disponible en este dispositivo.',false);
+    return;
+  }
+  if(gpsWatch !== null) return;
+  setGpsBar('wait','Esperando permiso de GPS…',false);
   let lastLat = null, lastLng = null;
   gpsWatch = navigator.geolocation.watchPosition(pos => {
     const {latitude: lat, longitude: lng} = pos.coords;
     const moved = !lastLat || Math.abs(lat - lastLat) > 0.0001 || Math.abs(lng - lastLng) > 0.0001;
     if(moved){ lastLat = lat; lastLng = lng; api('ubicacion', {lat, lng}); }
-  }, err => console.warn('GPS:', err.message),
-  {enableHighAccuracy: true, maximumAge: 30000, timeout: 20000});
+    setGpsBar('ok','📡 GPS activo — compartiendo ubicación al cliente',false);
+  }, err => {
+    const msgs = {
+      1: 'GPS denegado. Abre este enlace en Chrome o Safari (no desde WhatsApp).',
+      2: 'GPS no disponible. Activa la ubicación del dispositivo.',
+      3: 'GPS tardó demasiado. Intenta de nuevo.',
+    };
+    setGpsBar('err', msgs[err.code] || 'Error de GPS. Intenta de nuevo.', true);
+    gpsWatch = null;
+  }, {enableHighAccuracy: true, maximumAge: 15000, timeout: 20000});
 }
 function stopGPS(){
   if(gpsWatch !== null){ navigator.geolocation.clearWatch(gpsWatch); gpsWatch = null; }

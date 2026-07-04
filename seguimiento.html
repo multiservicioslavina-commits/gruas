@@ -191,7 +191,7 @@ const MUNIS = {
 };
 const MDE = [6.2518, -75.5636];
 
-let map, grueroMarker, sol = null;
+let map, grueroMarker, sol = null, pollTimer = null;
 
 // Init map
 map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
@@ -360,7 +360,7 @@ async function init(){
 
   document.getElementById('secCal').href = `/califica.html?t=${sid}`;
 
-  // Realtime subscription
+  // Realtime subscription (updates instantly when available)
   sb.channel('seguimiento-'+sid)
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'solicitudes',filter:`id=eq.${sid}`},payload=>{
       const upd = payload.new;
@@ -369,8 +369,25 @@ async function init(){
       applyEstado(upd.estado||prev.estado);
       if(upd.gruero_asignado&&upd.gruero_asignado!==prev.gruero_asignado) loadGruero(upd.gruero_asignado);
       if(upd.gruero_lat&&upd.gruero_lng) moveGrueroMarker(upd.gruero_lat,upd.gruero_lng);
+      if(upd.estado==='finalizada') clearInterval(pollTimer);
     })
     .subscribe();
+
+  // Polling fallback (cada 10 s) — por si Realtime no llega o el WebSocket falla
+  async function pollLocation() {
+    if(!sid) return;
+    const {data} = await sb.from('solicitudes')
+      .select('id,estado,gruero_asignado,gruero_lat,gruero_lng,calificacion')
+      .eq('id',sid).single().catch(()=>({data:null}));
+    if(!data) return;
+    const prev = sol;
+    sol = {...sol,...data};
+    if(data.estado !== prev?.estado) applyEstado(data.estado);
+    if(data.gruero_asignado&&data.gruero_asignado!==prev?.gruero_asignado) loadGruero(data.gruero_asignado);
+    if(data.gruero_lat&&data.gruero_lng) moveGrueroMarker(data.gruero_lat,data.gruero_lng);
+    if(data.estado==='finalizada') clearInterval(pollTimer);
+  }
+  pollTimer = setInterval(pollLocation, 10000);
 }
 
 window.addEventListener('resize',()=>setTimeout(()=>map.invalidateSize(),200));
