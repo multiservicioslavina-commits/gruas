@@ -43,6 +43,9 @@ export async function renderRideVideo({
         .replace(/</g, '\\u003c')
     );
 
+  const T = (label, from) =>
+    console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
+  const tBrowser = Date.now();
   const browser = await puppeteer.launch({
     headless: 'new',
     args: [
@@ -58,10 +61,14 @@ export async function renderRideVideo({
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
   });
 
+  T('browser boot', tBrowser);
+  const tPage = Date.now();
   const page = await browser.newPage();
   await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 });
-  await page.setContent(html, { waitUntil: 'networkidle0', timeout: 60000 });
+  await page.setContent(html, { waitUntil: 'networkidle0', timeout: 90000 });
+  T('page setContent', tPage);
 
+  const tReady = Date.now();
   // Esperar a que la escena reporte que está lista y calcular duración total
   const durationSec = await page.evaluate(
     () =>
@@ -70,9 +77,11 @@ export async function renderRideVideo({
         window.__onReady = () => resolve(window.__totalSeconds || 30);
       })
   );
-  console.log(`  duración calculada: ${durationSec}s`);
+  T('scene ready', tReady);
+  console.log(`  [${rideId}] duración calculada: ${durationSec}s`);
 
   const outputPath = join(tmpdir(), `ride_${rideId}_${Date.now()}.mp4`);
+  const tRec = Date.now();
   const recorder = new PuppeteerScreenRecorder(page, {
     fps: 30,
     videoFrame: { width: 1080, height: 1080 },
@@ -90,6 +99,7 @@ export async function renderRideVideo({
   await new Promise((r) => setTimeout(r, (durationSec + 1) * 1000));
 
   await recorder.stop();
+  T('recording', tRec);
   await browser.close();
   return outputPath;
 }

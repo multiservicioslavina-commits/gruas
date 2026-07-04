@@ -43,7 +43,7 @@ class VideoService {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(const Duration(minutes: 3));
+        .timeout(const Duration(minutes: 8));
 
     if (res.statusCode != 200) {
       throw Exception('Backend ${res.statusCode}: ${res.body}');
