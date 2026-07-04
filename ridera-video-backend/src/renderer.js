@@ -64,17 +64,29 @@ export async function renderRideVideo({
   T('browser boot', tBrowser);
   const tPage = Date.now();
   const page = await browser.newPage();
+
+  // Log console del navegador headless al server (para debug)
+  page.on('console', (msg) => {
+    console.log(`  [${rideId}] BROWSER ${msg.type()}: ${msg.text()}`);
+  });
+  page.on('pageerror', (err) => {
+    console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`);
+  });
+
   await page.setViewport({ width: 1080, height: 1080, deviceScaleFactor: 1 });
   await page.setContent(html, { waitUntil: 'networkidle0', timeout: 90000 });
   T('page setContent', tPage);
 
   const tReady = Date.now();
-  // Esperar a que la escena reporte que está lista y calcular duración total
+  // Esperar a que la escena reporte que está lista — CON TIMEOUT DEFENSIVO de 45s.
+  // Si Mapbox GL falla (swiftshader/WebGL en Railway), seguimos igual con lo que haya.
   const durationSec = await page.evaluate(
     () =>
       new Promise((resolve) => {
         if (window.__ready) return resolve(window.__totalSeconds || 30);
         window.__onReady = () => resolve(window.__totalSeconds || 30);
+        // Timeout defensivo — evita que se cuelgue eterno si el mapa no carga
+        setTimeout(() => resolve(window.__totalSeconds || 30), 45000);
       })
   );
   T('scene ready', tReady);
