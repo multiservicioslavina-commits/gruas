@@ -37,13 +37,11 @@ class _RideraHomeState extends State<RideraHome> {
   void initState() {
     super.initState();
     _crashSub = widget.controller.crashSuspected.listen((_) => _onCrash());
-    // Auto-arrancar GPS al entrar — no depende del botón ARRANCAR/VER PANEL.
-    // Si falla (permisos, GPS off), el usuario podrá reintentarlo con el botón.
+    // Auto-arrancar solo el GPS (para no perder posición mientras esperan
+    // en pre-rodada), PERO la pantalla se queda en PRE-RODADA hasta que
+    // el líder toque "COMENZAR RODADA".
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      final ok = await widget.controller.startLocation().catchError((_) => false);
-      if (ok == true && mounted && !_started) {
-        setState(() { _started = true; _startedAt = DateTime.now(); });
-      }
+      await widget.controller.startLocation().catchError((_) => false);
     });
   }
 
