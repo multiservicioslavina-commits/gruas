@@ -15,7 +15,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 
     private var rideActive = false
-    private var mesh: NearbyMeshService? = null
+    private var mesh: BleMeshService? = null
     private var meshChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
@@ -102,8 +102,8 @@ class MainActivity : FlutterActivity() {
                 "start" -> {
                     val uid = call.argument<String>("uid") ?: ""
                     val name = call.argument<String>("name") ?: "Piloto"
-                    if (mesh == null) mesh = NearbyMeshService(this)
-                    mesh!!.start(uid, name, object : NearbyMeshService.Listener {
+                    if (mesh == null) mesh = BleMeshService(this)
+                    mesh!!.start(uid, name, object : BleMeshService.Listener {
                         override fun onPeerMessage(
                             uid: String, lat: Double, lon: Double,
                             speedKmh: Int, statusCode: Int, hops: Int,
@@ -129,6 +129,12 @@ class MainActivity : FlutterActivity() {
                             runOnUiThread {
                                 meshChannel?.invokeMethod("onPeerDisconnected",
                                     mapOf("endpointId" to endpointId))
+                            }
+                        }
+                        override fun onStatus(kind: String, message: String) {
+                            runOnUiThread {
+                                meshChannel?.invokeMethod("onStatus",
+                                    mapOf("kind" to kind, "message" to message))
                             }
                         }
                     })

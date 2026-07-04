@@ -13,6 +13,7 @@ import '../services/push_dispatcher.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../services/safety_service.dart';
+import 'mesh_diagnostic_screen.dart';
 import '../widgets/rider_marker.dart';
 import 'ride_summary_screen.dart';
 
@@ -787,6 +788,13 @@ class _RideMapScreenState extends State<RideMapScreen>
             onPressed: () => launchUrl(Uri.parse(_driveFolderUrl!),
                 mode: LaunchMode.externalApplication),
           ),
+        IconButton(
+          icon: const Icon(Icons.bluetooth_searching,
+              color: Color(0xFF3B82F6)),
+          tooltip: 'Diagnóstico Mesh',
+          onPressed: () => Navigator.push(context,
+              MaterialPageRoute(builder: (_) => const MeshDiagnosticScreen())),
+        ),
         IconButton(
           icon: const Icon(Icons.my_location),
           onPressed: () {

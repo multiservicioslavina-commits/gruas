@@ -41,7 +41,5 @@ flutter {
     source = "../.."
 }
 
-dependencies {
-    // Nearby Connections — mesh Bluetooth para posiciones sin señal celular
-    implementation("com.google.android.gms:play-services-nearby:19.3.0")
-}
+// Mesh BLE puro (BleMeshService.kt) — no requiere dependencias externas,
+// usa las APIs nativas de Android bluetooth.le desde API 21+.
