@@ -214,6 +214,11 @@ async function doAceptar(){
   const b=document.getElementById('acceptBtn'); if(b){ b.disabled=true; b.innerHTML='<span class="spin"></span> Aceptando…'; }
   stopPoll();
   const data = await api('aceptar');
+  if(data.resultado==='ya_ocupado'){
+    toast(data.error||'Ya tienes un servicio activo. Finaliza ese primero.');
+    if(b){ b.disabled=false; b.innerHTML='✓ Aceptar servicio'; }
+    startPoll(); return;
+  }
   if(data.resultado==='ya_tomado') toast('Otro gruero lo tomó primero');
   else if(data.resultado==='aceptaste') toast('¡Servicio aceptado! 🎉');
   render(data);
