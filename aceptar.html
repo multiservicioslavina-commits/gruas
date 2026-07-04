@@ -169,7 +169,9 @@ function render(data){
     }
     let acciones = '';
     if(estado === 'asignada'){
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(sol.ubicacion||'')}`;
       acciones = `
+        <a class="btn btn-wa" target="_blank" href="${mapsUrl}" style="text-decoration:none">🗺️ Cómo llegar</a>
         <button class="btn btn-llegue" id="actBtn" onclick="doPaso('llegue',this)">📍 Ya llegué al sitio</button>
         <div id="gpsBar" class="gps-bar wait"><span class="gps-dot wait"></span>Activando GPS…</div>`;
     } else if(estado === 'llego'){
