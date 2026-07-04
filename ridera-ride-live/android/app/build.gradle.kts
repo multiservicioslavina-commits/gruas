@@ -40,3 +40,8 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // Nearby Connections — mesh Bluetooth para posiciones sin señal celular
+    implementation("com.google.android.gms:play-services-nearby:19.3.0")
+}

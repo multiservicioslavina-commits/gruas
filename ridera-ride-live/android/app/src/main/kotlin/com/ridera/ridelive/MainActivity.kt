@@ -14,6 +14,8 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
 
     private var rideActive = false
+    private var mesh: NearbyMeshService? = null
+    private var meshChannel: MethodChannel? = null
 
     override fun onCreate(savedInstanceState: android.os.Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,6 +43,7 @@ class MainActivity : FlutterActivity() {
 
     companion object {
         const val CHANNEL = "com.ridera.ridelive/gps"
+        const val MESH_CHANNEL = "com.ridera.ridelive/mesh"
     }
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -85,6 +88,61 @@ class MainActivity : FlutterActivity() {
                     else -> result.notImplemented()
                 }
             }
+
+        // ── Canal MESH ────────────────────────────────────────────────
+        meshChannel = MethodChannel(flutterEngine.dartExecutor.binaryMessenger, MESH_CHANNEL)
+        meshChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "start" -> {
+                    val uid = call.argument<String>("uid") ?: ""
+                    val name = call.argument<String>("name") ?: "Piloto"
+                    if (mesh == null) mesh = NearbyMeshService(this)
+                    mesh!!.start(uid, name, object : NearbyMeshService.Listener {
+                        override fun onPeerMessage(
+                            uid: String, lat: Double, lon: Double,
+                            speedKmh: Int, statusCode: Int, hops: Int,
+                        ) {
+                            runOnUiThread {
+                                meshChannel?.invokeMethod("onPeerMessage", mapOf(
+                                    "uid" to uid,
+                                    "lat" to lat,
+                                    "lon" to lon,
+                                    "speed_kmh" to speedKmh,
+                                    "status_code" to statusCode,
+                                    "hops" to hops,
+                                ))
+                            }
+                        }
+                        override fun onPeerConnected(endpointId: String) {
+                            runOnUiThread {
+                                meshChannel?.invokeMethod("onPeerConnected",
+                                    mapOf("endpointId" to endpointId))
+                            }
+                        }
+                        override fun onPeerDisconnected(endpointId: String) {
+                            runOnUiThread {
+                                meshChannel?.invokeMethod("onPeerDisconnected",
+                                    mapOf("endpointId" to endpointId))
+                            }
+                        }
+                    })
+                    result.success(true)
+                }
+                "stop" -> {
+                    mesh?.stop()
+                    result.success(true)
+                }
+                "broadcastPosition" -> {
+                    val lat = call.argument<Double>("lat") ?: 0.0
+                    val lon = call.argument<Double>("lon") ?: 0.0
+                    val speed = call.argument<Int>("speed_kmh") ?: 0
+                    val status = call.argument<Int>("status_code") ?: 0
+                    mesh?.broadcastPosition(lat, lon, speed, status)
+                    result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
     }
 
     private fun isBatteryOptimized(): Boolean {

@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../services/location_service.dart';
+import '../services/mesh_service.dart';
 import '../services/photo_service.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
@@ -56,7 +57,12 @@ class _RideMapScreenState extends State<RideMapScreen>
   final _rideService = RideService();
   final _photoService = PhotoService();
   final _locationService = LocationService();
+  final _mesh = MeshService();
   final _mapCtrl = MapController();
+  Timer? _meshBroadcastTimer;
+  StreamSubscription<MeshPeerMessage>? _meshSub;
+  StreamSubscription<MeshConnectionEvent>? _meshConnSub;
+  int _meshDirectPeers = 0;
   bool _uploadingPhoto = false;
 
   final Map<String, _RiderData> _riders = {};
@@ -83,6 +89,62 @@ class _RideMapScreenState extends State<RideMapScreen>
         const Duration(seconds: 30), (_) => _loadMembers());
     // Preguntar por permiso de batería después de que la UI cargue
     WidgetsBinding.instance.addPostFrameCallback((_) => _checkBatteryOptimization());
+    _startMesh();
+  }
+
+  Future<void> _startMesh() async {
+    // Nombre para anunciarse en el mesh (visible en el peer descubrimiento)
+    final myMember = _riders[_uid];
+    final name = myMember?.nombre ?? 'Piloto';
+    final ok = await _mesh.start(uid: _uid, name: name);
+    if (!ok) return;
+    _meshSub = _mesh.onPeer.listen(_onMeshPeerMessage);
+    _meshConnSub = _mesh.onConnection.listen((e) {
+      if (mounted) setState(() => _meshDirectPeers = _mesh.directPeers);
+    });
+    // Broadcast propio periódico al mesh cada 4s
+    _meshBroadcastTimer = Timer.periodic(const Duration(seconds: 4), (_) {
+      final me = _riders[_uid];
+      if (me?.lat == null || me?.lon == null) return;
+      _mesh.broadcast(
+        lat: me!.lat!,
+        lon: me.lon!,
+        speedKmh: me.speedKmh.round(),
+        statusCode: me.statusCode,
+      );
+    });
+  }
+
+  void _onMeshPeerMessage(MeshPeerMessage m) {
+    if (!mounted) return;
+    // Solo mostrar peers cuya última señal viene por mesh; si Supabase ya lo trae
+    // más reciente, la lógica de tiempo pondría "en marcha" naturalmente.
+    setState(() {
+      final existing = _riders[m.uid];
+      final updated = _RiderData(
+        uid: m.uid,
+        nombre: existing?.nombre ?? 'Mesh · ${m.uid.substring(0, 6)}',
+        rol: existing?.rol ?? 'rider',
+        lat: m.lat,
+        lon: m.lon,
+        speedKmh: m.speedKmh.toDouble(),
+        lastSeen: DateTime.now().toUtc(),
+        statusCode: m.statusCode,
+        status: memberStatus(
+          lastSeen: DateTime.now().toUtc(),
+          speedKmh: m.speedKmh.toDouble(),
+          statusCode: m.statusCode,
+        ),
+      );
+      _riders[m.uid] = updated;
+      final list = _traces.putIfAbsent(m.uid, () => []);
+      final pt = LatLng(m.lat, m.lon);
+      if (list.isEmpty ||
+          list.last.latitude != pt.latitude ||
+          list.last.longitude != pt.longitude) {
+        list.add(pt);
+      }
+    });
   }
 
   Future<void> _checkBatteryOptimization() async {
@@ -429,6 +491,10 @@ class _RideMapScreenState extends State<RideMapScreen>
     _channel?.unsubscribe();
     _statusTimer?.cancel();
     _refreshTimer?.cancel();
+    _meshBroadcastTimer?.cancel();
+    _meshSub?.cancel();
+    _meshConnSub?.cancel();
+    _mesh.stop();
     super.dispose();
   }
 
@@ -495,10 +561,32 @@ class _RideMapScreenState extends State<RideMapScreen>
               color: _hasSos ? const Color(0xFFef4444) : Colors.white,
             ),
           ),
-          Text(
-            'Código: ${widget.rideId}  ·  ${_riders.length} pilotos',
-            style: const TextStyle(fontSize: 12, color: Color(0xFFe6e3de)),
-          ),
+          Row(children: [
+            Text(
+              'Código: ${widget.rideId}  ·  ${_riders.length} pilotos',
+              style: const TextStyle(fontSize: 12, color: Color(0xFFe6e3de)),
+            ),
+            if (_meshDirectPeers > 0) ...[
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1e40af),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(mainAxisSize: MainAxisSize.min, children: [
+                  const Icon(Icons.bluetooth, size: 10, color: Colors.white),
+                  const SizedBox(width: 3),
+                  Text('MESH · $_meshDirectPeers',
+                      style: const TextStyle(
+                          fontSize: 10,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.5)),
+                ]),
+              ),
+            ],
+          ]),
         ],
       ),
       actions: [
