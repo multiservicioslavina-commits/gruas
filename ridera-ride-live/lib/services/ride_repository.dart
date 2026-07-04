@@ -182,6 +182,23 @@ class RideRepository {
       },
       onConflict: 'ride_id,uid',
     );
+
+    // Notif push al líder: nueva solicitud
+    try {
+      final ride = await _sb
+          .from('rides')
+          .select('lider_id, nombre')
+          .eq('id', rideId)
+          .maybeSingle();
+      if (ride != null) {
+        await _sb.functions.invoke('send-push', body: {
+          'to_uids': [ride['lider_id']],
+          'title': 'Nueva solicitud en la rodada',
+          'body': '$name quiere unirse a ${ride['nombre'] ?? "tu rodada"}.',
+          'data': {'type': 'join_request', 'ride_id': rideId, 'uid': uid},
+        });
+      }
+    } catch (_) {}
   }
 
   Future<void> approve(String rideId, String uid) async {
@@ -190,6 +207,20 @@ class RideRepository {
         .update({'rol': 'rider'})
         .eq('ride_id', rideId)
         .eq('uid', uid);
+    // Notif al piloto: fue aprobado
+    try {
+      final ride = await _sb
+          .from('rides')
+          .select('nombre')
+          .eq('id', rideId)
+          .maybeSingle();
+      await _sb.functions.invoke('send-push', body: {
+        'to_uids': [uid],
+        'title': '✅ Estás en la rodada',
+        'body': 'El líder te aprobó en ${ride?['nombre'] ?? "la rodada"}.',
+        'data': {'type': 'approved', 'ride_id': rideId},
+      });
+    } catch (_) {}
   }
 
   Stream<List<Rider>> pendingStream(String rideId) {

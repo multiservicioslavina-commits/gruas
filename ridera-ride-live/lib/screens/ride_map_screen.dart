@@ -9,6 +9,7 @@ import '../services/crash_detector.dart';
 import '../services/location_service.dart';
 import '../services/mesh_service.dart';
 import '../services/photo_service.dart';
+import '../services/push_dispatcher.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../services/safety_service.dart';
@@ -164,7 +165,15 @@ class _RideMapScreenState extends State<RideMapScreen>
           .eq('uid', _uid);
     } catch (_) {}
 
-    // 2. Enviar SMS al contacto de emergencia
+    // 2. Push notification a TODOS los miembros de la rodada
+    PushDispatcher.sendToRide(
+      rideId: widget.rideId,
+      title: '🚨 SOS en la rodada',
+      body: '$riderName puede haber tenido una caída. Toca para ver el mapa.',
+      data: {'type': 'sos', 'ride_id': widget.rideId, 'from_uid': _uid},
+    );
+
+    // 3. Enviar SMS al contacto de emergencia
     final smsOk = await SafetyService.sendSosAuto(
       contactPhone: _emergencyPhone,
       riderName: riderName,
@@ -476,6 +485,14 @@ class _RideMapScreenState extends State<RideMapScreen>
             .eq('ride_id', widget.rideId)
             .eq('uid', _uid);
       } catch (_) {}
+      // Notif push a los demás miembros de la rodada
+      final me = _riders[_uid];
+      PushDispatcher.sendToRide(
+        rideId: widget.rideId,
+        title: '🚨 SOS en la rodada',
+        body: '${me?.nombre ?? "Un piloto"} activó SOS. Toca para ver el mapa.',
+        data: {'type': 'sos', 'ride_id': widget.rideId, 'from_uid': _uid},
+      );
     }
   }
 
