@@ -512,6 +512,13 @@
         document.getElementById('sfTrackLink').textContent = trackUrl;
         document.getElementById('sfWaNotify').href         = `https://wa.me/${waNumFull}?text=${waMsg}`;
 
+        // Confirmación WhatsApp al cliente (fire-and-forget)
+        fetch(`${FN_BASE}/enviar-confirmacion`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-webhook-secret': 'rid3ra_whk_9f2a7c1e8b' },
+          body: JSON.stringify({ record: { id: ins.id, cliente_nombre: nombre, cliente_telefono: tel, ubicacion: ubic } }),
+        }).catch(() => {});
+
         document.getElementById('sheetForm').style.display    = 'none';
         document.getElementById('sheetSuccess').style.display = 'block';
       } catch(e) {
