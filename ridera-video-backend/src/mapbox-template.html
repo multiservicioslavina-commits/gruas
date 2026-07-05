@@ -10,112 +10,97 @@
   html, body { width: 720px; height: 720px; background: #000; font-family: 'Arial Black', Arial, sans-serif; overflow: hidden; }
   #map { position: absolute; inset: 0; width: 720px; height: 720px; }
 
-  /* Overlay de gradiente para dar profundidad */
   #vignette {
     position: absolute; inset: 0; pointer-events: none;
-    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.45) 100%);
   }
 
-  /* HUD superior: nombre de la rodada */
+  /* HUD superior */
   #rideNameBar {
     position: absolute; top: 0; left: 0; right: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
-    padding: 22px 28px 30px;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, transparent 100%);
+    padding: 20px 28px 28px;
     opacity: 0; transition: opacity 600ms ease;
   }
   #rideNameBar.show { opacity: 1; }
-  #rideNameText {
-    font-size: 22px; font-weight: 900; color: #fff;
-    letter-spacing: 3px; text-transform: uppercase;
-    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
-  }
-  #rideBrand {
-    font-size: 13px; color: #E85D20; letter-spacing: 6px;
-    font-weight: 700; margin-bottom: 4px;
-  }
+  #rideNameText { font-size: 20px; font-weight: 900; color: #fff; letter-spacing: 3px; text-transform: uppercase; text-shadow: 0 2px 8px rgba(0,0,0,0.8); }
+  #rideBrand { font-size: 12px; color: #E85D20; letter-spacing: 6px; font-weight: 700; margin-bottom: 4px; }
 
-  /* HUD inferior: distancia en tiempo real */
+  /* HUD inferior distancia */
   #hudBar {
     position: absolute; bottom: 0; left: 0; right: 0;
     background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
-    padding: 30px 28px 22px;
+    padding: 28px 28px 20px;
     display: flex; align-items: flex-end; justify-content: space-between;
     opacity: 0; transition: opacity 600ms ease;
   }
   #hudBar.show { opacity: 1; }
-  #hudKm { font-size: 44px; font-weight: 900; color: #E85D20; text-shadow: 0 0 20px rgba(232,93,32,0.6); }
-  #hudKmLabel { font-size: 12px; color: #ccc; letter-spacing: 3px; margin-top: -4px; }
-  #hudSpeed { font-size: 28px; font-weight: 700; color: #fff; text-align: right; }
+  #hudKm { font-size: 42px; font-weight: 900; color: #E85D20; text-shadow: 0 0 20px rgba(232,93,32,0.6); }
+  #hudKmLabel { font-size: 11px; color: #ccc; letter-spacing: 3px; margin-top: -4px; }
+  #hudSpeed { font-size: 26px; font-weight: 700; color: #fff; text-align: right; }
   #hudSpeedLabel { font-size: 11px; color: #aaa; letter-spacing: 3px; text-align: right; }
 
-  /* Pantalla de intro */
+  /* INTRO */
   #intro {
     position: absolute; inset: 0;
-    background: rgba(0,0,0,0.0);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     opacity: 0; transition: opacity 700ms ease;
   }
   #intro.show { opacity: 1; }
-  #introLogo { font-size: 72px; font-weight: 900; color: #E85D20; letter-spacing: 6px; text-shadow: 0 0 50px rgba(232,93,32,0.8); }
-  #introSub { font-size: 20px; letter-spacing: 14px; color: #fff; font-weight: 300; margin-top: 8px; }
-  #introName { font-size: 28px; font-weight: 700; color: #fff; margin-top: 32px; letter-spacing: 2px; text-align: center; max-width: 640px; }
-  #introLine { width: 80px; height: 3px; background: #E85D20; margin: 20px auto; }
+  #introLogo { font-size: 68px; font-weight: 900; color: #E85D20; letter-spacing: 6px; text-shadow: 0 0 50px rgba(232,93,32,0.8); }
+  #introSub { font-size: 18px; letter-spacing: 14px; color: #fff; font-weight: 300; margin-top: 6px; }
+  #introName { font-size: 26px; font-weight: 700; color: #fff; margin-top: 30px; letter-spacing: 2px; text-align: center; max-width: 640px; }
+  #introLine { width: 70px; height: 3px; background: #E85D20; margin: 18px auto; }
 
-  /* Panel de stats */
+  /* STATS */
   #statsPanel {
     position: absolute; inset: 0;
     background: rgba(0,0,0,0.6);
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
-    opacity: 0; transition: opacity 700ms ease;
-    gap: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 700ms ease; gap: 0;
   }
   #statsPanel.show { opacity: 1; }
-  #statsTitle { font-size: 14px; letter-spacing: 8px; color: #E85D20; font-weight: 700; margin-bottom: 28px; }
-  .stat-row { display: flex; gap: 20px; }
-  .stat-box {
-    background: rgba(255,255,255,0.08); border: 1px solid rgba(232,93,32,0.4);
-    border-radius: 16px; padding: 20px 32px; text-align: center; min-width: 140px;
-  }
-  .stat-val { font-size: 38px; font-weight: 900; color: #E85D20; }
-  .stat-lbl { font-size: 11px; letter-spacing: 4px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
+  #statsTitle { font-size: 13px; letter-spacing: 8px; color: #E85D20; font-weight: 700; margin-bottom: 28px; }
+  .stat-row { display: flex; gap: 18px; }
+  .stat-box { background: rgba(255,255,255,0.08); border: 1px solid rgba(232,93,32,0.4); border-radius: 16px; padding: 18px 28px; text-align: center; min-width: 130px; }
+  .stat-val { font-size: 36px; font-weight: 900; color: #E85D20; }
+  .stat-lbl { font-size: 10px; letter-spacing: 4px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
 
-  /* Foto */
-  #photoOverlay {
-    position: absolute; inset: 0;
-    background: rgba(0,0,0,0.5);
-    display: flex; align-items: center; justify-content: center;
-    opacity: 0; transition: opacity 500ms ease;
+  /* TARJETA DE FOTO — sube desde abajo, deja el mapa visible arriba */
+  #photoCard {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 260px;
+    background: linear-gradient(to top, rgba(0,0,0,0.97) 70%, rgba(0,0,0,0.75) 100%);
+    display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+    transform: translateY(100%); transition: transform 450ms cubic-bezier(0.34,1.1,0.64,1);
+    border-top: 2px solid rgba(232,93,32,0.6);
   }
-  #photoOverlay.show { opacity: 1; }
-  #photoWrap { position: relative; }
-  #photoImg {
-    max-width: 580px; max-height: 520px;
-    border-radius: 16px;
-    border: 3px solid #E85D20;
-    box-shadow: 0 0 80px rgba(232,93,32,0.5), 0 20px 60px rgba(0,0,0,0.8);
-    display: block;
+  #photoCard.show { transform: translateY(0); }
+  #photoThumb {
+    width: 210px; height: 228px; object-fit: cover;
+    border-radius: 14px; border: 2px solid #E85D20;
+    box-shadow: 0 0 30px rgba(232,93,32,0.5), 0 8px 30px rgba(0,0,0,0.7);
+    flex-shrink: 0;
   }
-  #photoLabel {
-    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
-    background: #E85D20; color: #fff; padding: 8px 22px;
-    border-radius: 20px; font-size: 13px; font-weight: 800; letter-spacing: 2px;
-    white-space: nowrap;
+  #photoInfo { display: flex; flex-direction: column; gap: 10px; }
+  #photoCounter { font-size: 11px; letter-spacing: 4px; color: #E85D20; font-weight: 700; }
+  #photoLocationLabel {
+    font-size: 13px; color: #fff; font-weight: 600; line-height: 1.4;
+    display: flex; align-items: center; gap: 8px;
   }
+  #photoLocationLabel span { font-size: 18px; }
+  #photoMapHint { font-size: 11px; color: #888; letter-spacing: 1px; margin-top: 4px; }
 
-  /* Outro */
+  /* OUTRO */
   #outro {
     position: absolute; inset: 0;
-    display: flex; flex-direction: column;
-    align-items: center; justify-content: center;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
     opacity: 0; transition: opacity 700ms ease;
   }
   #outro.show { opacity: 1; }
-  #outroLogo { font-size: 58px; font-weight: 900; color: #E85D20; letter-spacing: 5px; text-shadow: 0 0 40px rgba(232,93,32,0.7); }
-  #outroSub { font-size: 16px; letter-spacing: 10px; color: #fff; margin-top: 12px; }
-  #outroLine { width: 60px; height: 3px; background: #E85D20; margin: 18px auto; }
-  #outroTagline { font-size: 13px; color: #888; letter-spacing: 4px; }
+  #outroLogo { font-size: 54px; font-weight: 900; color: #E85D20; letter-spacing: 5px; text-shadow: 0 0 40px rgba(232,93,32,0.7); }
+  #outroSub { font-size: 15px; letter-spacing: 10px; color: #fff; margin-top: 10px; }
+  #outroLine { width: 55px; height: 3px; background: #E85D20; margin: 16px auto; }
+  #outroTagline { font-size: 12px; color: #888; letter-spacing: 4px; }
 </style>
 </head>
 <body>
@@ -154,10 +139,13 @@
     </div>
   </div>
 
-  <div id="photoOverlay">
-    <div id="photoWrap">
-      <img id="photoImg" src="" crossorigin="anonymous" />
-      <div id="photoLabel"></div>
+  <!-- Tarjeta de foto: mapa visible arriba, foto + info abajo -->
+  <div id="photoCard">
+    <img id="photoThumb" src="" crossorigin="anonymous" />
+    <div id="photoInfo">
+      <div id="photoCounter">📷 FOTO 1 DE 1</div>
+      <div id="photoLocationLabel"><span>📍</span><span id="photoLocationText">Ubicación en el mapa ↑</span></div>
+      <div id="photoMapHint">El punto naranja muestra dónde fue tomada</div>
     </div>
   </div>
 
@@ -172,12 +160,13 @@
   const DATA = __RIDE_DATA__;
   mapboxgl.accessToken = '__MAPBOX_TOKEN__';
 
-  const T_INTRO  = 3;
-  const T_ROUTE  = 18;
-  const T_PHOTO  = 3.5;
-  const T_STATS  = 5;
-  const T_OUTRO  = 3;
-  const photoCount = Math.min((DATA.photos || []).length, 6);
+  const T_INTRO  = 2.5;
+  const T_ROUTE  = 11;
+  const T_PHOTO  = 3.2;
+  const T_STATS  = 4;
+  const T_OUTRO  = 2.5;
+  const photos = (DATA.photos || []).slice(0, 6);
+  const photoCount = photos.length;
   const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
   window.__totalSeconds = totalSeconds;
 
@@ -186,22 +175,19 @@
     (b, c) => b.extend(c),
     new mapboxgl.LngLatBounds(coords[0], coords[0])
   );
-
-  // Centro de la ruta para la intro
   const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
   const centerLat = (bounds.getSouth() + bounds.getNorth()) / 2;
+
+  // Fotos con GPS válido
+  const photosWithGps = photos.filter(p => p.lat && p.lon);
 
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/satellite-streets-v12',
     center: [centerLng, centerLat],
-    zoom: 12,
-    pitch: 60,
-    bearing: 20,
-    antialias: true,
-    fadeDuration: 0,
-    interactive: false,
-    preserveDrawingBuffer: true,
+    zoom: 12, pitch: 60, bearing: 20,
+    antialias: true, fadeDuration: 0,
+    interactive: false, preserveDrawingBuffer: true,
   });
 
   const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -214,64 +200,88 @@
 
     // Terreno 3D
     map.addSource('mapbox-dem', {
-      type: 'raster-dem',
-      url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
       tileSize: 512, maxzoom: 14,
     });
     map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.8 });
 
-    // Ruta completa (gris tenue de fondo)
+    // Ruta completa (fondo tenue)
     map.addSource('route-full', {
       type: 'geojson',
       data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } },
     });
-    // Ruta animada (naranja brillante)
+    // Ruta animada
     map.addSource('route-live', {
       type: 'geojson',
       data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [coords[0], coords[0]] } },
     });
-    // Pin
+    // Pin de posición
     map.addSource('pin', {
       type: 'geojson',
       data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } },
     });
-
-    map.addLayer({
-      id: 'route-full-layer', type: 'line', source: 'route-full',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-opacity': 0.25 },
+    // Marcadores de fotos en el mapa (puntos de cámara)
+    map.addSource('photo-pins', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: photosWithGps.map((p, i) => ({
+          type: 'Feature',
+          properties: { index: i },
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        })),
+      },
     });
-    // Sombra naranja gruesa
-    map.addLayer({
-      id: 'route-live-glow', type: 'line', source: 'route-live',
+    // Marcador de foto activa (se mueve a la foto actual)
+    map.addSource('photo-active', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+
+    map.addLayer({ id: 'route-full-layer', type: 'line', source: 'route-full',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-opacity': 0.2 },
+    });
+    map.addLayer({ id: 'route-live-glow', type: 'line', source: 'route-live',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#E85D20', 'line-width': 18, 'line-opacity': 0.3, 'line-blur': 6 },
     });
-    // Línea naranja principal
-    map.addLayer({
-      id: 'route-live-layer', type: 'line', source: 'route-live',
+    map.addLayer({ id: 'route-live-layer', type: 'line', source: 'route-live',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
       paint: { 'line-color': '#FF6B1A', 'line-width': 7, 'line-opacity': 1 },
     });
-    map.addLayer({
-      id: 'pin-halo', type: 'circle', source: 'pin',
-      paint: { 'circle-radius': 22, 'circle-color': '#E85D20', 'circle-opacity': 0.4 },
+    map.addLayer({ id: 'pin-halo', type: 'circle', source: 'pin',
+      paint: { 'circle-radius': 20, 'circle-color': '#E85D20', 'circle-opacity': 0.35 },
     });
-    map.addLayer({
-      id: 'pin-dot', type: 'circle', source: 'pin',
-      paint: {
-        'circle-radius': 10, 'circle-color': '#fff',
-        'circle-stroke-width': 3, 'circle-stroke-color': '#E85D20',
-      },
+    map.addLayer({ id: 'pin-dot', type: 'circle', source: 'pin',
+      paint: { 'circle-radius': 9, 'circle-color': '#fff',
+        'circle-stroke-width': 3, 'circle-stroke-color': '#E85D20' },
+    });
+
+    // Puntos de cámara en la ruta (pequeños, blancos)
+    map.addLayer({ id: 'photo-pins-halo', type: 'circle', source: 'photo-pins',
+      paint: { 'circle-radius': 14, 'circle-color': '#fff', 'circle-opacity': 0.15 },
+    });
+    map.addLayer({ id: 'photo-pins-dot', type: 'circle', source: 'photo-pins',
+      paint: { 'circle-radius': 7, 'circle-color': '#fff',
+        'circle-stroke-width': 2, 'circle-stroke-color': '#E85D20', 'circle-opacity': 0.9 },
+    });
+
+    // Marcador activo de foto (grande, naranja pulsante durante la foto)
+    map.addLayer({ id: 'photo-active-ring', type: 'circle', source: 'photo-active',
+      paint: { 'circle-radius': 28, 'circle-color': '#E85D20', 'circle-opacity': 0.5 },
+    });
+    map.addLayer({ id: 'photo-active-dot', type: 'circle', source: 'photo-active',
+      paint: { 'circle-radius': 12, 'circle-color': '#E85D20',
+        'circle-stroke-width': 3, 'circle-stroke-color': '#fff' },
     });
 
     // Precargar fotos
-    await Promise.all((DATA.photos || []).slice(0, 6).map(p => new Promise(r => {
+    await Promise.all(photos.map(p => new Promise(r => {
       const im = new Image(); im.crossOrigin = 'anonymous';
       im.onload = im.onerror = () => r(); im.src = p.url;
     })));
 
-    // Esperar tiles satelitales + repaint
     map.once('idle', () => {
       map.triggerRepaint();
       setTimeout(() => {
@@ -283,22 +293,19 @@
   });
 
   window.__play = async () => {
-    // ─── 1. INTRO (3s) ───────────────────────────────────────
+    // ─── 1. INTRO (2.5s) ─────────────────────────────────────
     show('intro');
-    // Cámara orbita lentamente durante el intro
     map.easeTo({ bearing: 40, zoom: 13, pitch: 65, duration: T_INTRO * 1000, easing: x => x });
     await sleep(T_INTRO * 1000);
     hide('intro');
-    await sleep(500);
+    await sleep(400);
 
-    // ─── 2. RUTA ANIMADA (18s) ────────────────────────────────
-    // Mostrar HUD y nombre
+    // ─── 2. RUTA ANIMADA (11s) ───────────────────────────────
     show('rideNameBar');
     show('hudBar');
 
-    // Vuelo de entrada dramático: zoom in desde alto
-    map.fitBounds(bounds, { padding: 100, pitch: 70, bearing: -10, duration: 1200, maxZoom: 15 });
-    await sleep(1300);
+    map.fitBounds(bounds, { padding: 80, pitch: 70, bearing: -10, duration: 1000, maxZoom: 15 });
+    await sleep(1100);
 
     const totalKm = parseFloat(DATA.distanceKm) || 0;
     const startT = performance.now();
@@ -307,7 +314,6 @@
     await new Promise(resolve => {
       function step(now) {
         const t = Math.min(1, (now - startT) / durMs);
-        // easing suave
         const eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
         const idxF = eased * (coords.length - 1);
         const idx  = Math.floor(idxF);
@@ -316,19 +322,16 @@
         const b = coords[Math.min(idx+1, coords.length-1)];
         const cur = [a[0]+(b[0]-a[0])*frac, a[1]+(b[1]-a[1])*frac];
 
-        // Actualizar ruta y pin
         const partial = [...coords.slice(0, idx+1), cur];
         map.getSource('route-live').setData({ type:'Feature', geometry:{ type:'LineString', coordinates: partial } });
         map.getSource('pin').setData({ type:'Feature', geometry:{ type:'Point', coordinates: cur } });
 
-        // HUD distancia
         document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
         document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-        // Cámara sigue el pin con bearing dinámico
         const ahead = coords[Math.min(idx+2, coords.length-1)];
         const bearing = Math.atan2(ahead[0]-cur[0], ahead[1]-cur[1]) * 180 / Math.PI;
-        const zoom = 15.5 - eased * 1.5; // zoom out gradual
+        const zoom = 15.5 - eased * 1.5;
         map.easeTo({ center: cur, bearing, pitch: 68, zoom, duration: 80, easing: x=>x });
 
         if (t < 1) requestAnimationFrame(step);
@@ -339,38 +342,56 @@
 
     hide('hudBar');
     hide('rideNameBar');
-    await sleep(400);
+    await sleep(300);
 
-    // ─── 3. FOTOS (3.5s cada una) ────────────────────────────
+    // ─── 3. FOTOS — tarjeta inferior + marcador en mapa ──────
     for (let i = 0; i < photoCount; i++) {
-      const photo = (DATA.photos || [])[i];
-      // Cámara vuela al punto GPS de la foto
-      if (photo && photo.lat && photo.lon) {
-        map.easeTo({ center:[photo.lon, photo.lat], zoom:17, pitch:75, bearing:(Math.random()-0.5)*90, duration:900 });
-        await sleep(1000);
+      const photo = photos[i];
+      const hasGps = photo && photo.lat && photo.lon;
+
+      // Volar al punto de la foto en el mapa (visible sobre la tarjeta)
+      if (hasGps) {
+        // Activar marcador naranja grande en esa posición
+        map.getSource('photo-active').setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [photo.lon, photo.lat] } }],
+        });
+        // Cámara vuela a la ubicación de la foto con la tarjeta visible abajo (460px del mapa)
+        map.easeTo({ center: [photo.lon, photo.lat], zoom: 16.5, pitch: 55, bearing: (Math.random()-0.5)*60, duration: 800 });
+        await sleep(850);
+      } else {
+        // Sin GPS: mostrar ruta completa
+        map.fitBounds(bounds, { padding: 60, pitch: 40, duration: 700 });
+        await sleep(750);
       }
-      const img = document.getElementById('photoImg');
-      img.src = photo?.url || '';
-      document.getElementById('photoLabel').textContent = `📷 FOTO ${i+1} DE ${photoCount}`;
-      show('photoOverlay');
-      await sleep((T_PHOTO - 0.5) * 1000);
-      hide('photoOverlay');
-      await sleep(500);
+
+      // Mostrar tarjeta de foto
+      document.getElementById('photoThumb').src = photo?.url || '';
+      document.getElementById('photoCounter').textContent = `📷 FOTO ${i+1} DE ${photoCount}`;
+      document.getElementById('photoLocationText').textContent = hasGps
+        ? 'Ubicación en el mapa ↑'
+        : 'Sin datos de ubicación';
+      show('photoCard');
+
+      await sleep((T_PHOTO - 0.4) * 1000);
+      hide('photoCard');
+      // Limpiar marcador activo
+      map.getSource('photo-active').setData({ type: 'FeatureCollection', features: [] });
+      await sleep(400);
     }
 
-    // ─── 4. STATS (5s) ───────────────────────────────────────
-    map.fitBounds(bounds, { padding: 80, pitch: 45, bearing: 0, duration: 1200 });
-    await sleep(600);
+    // ─── 4. STATS (4s) ───────────────────────────────────────
+    map.fitBounds(bounds, { padding: 80, pitch: 45, bearing: 0, duration: 1000 });
+    await sleep(500);
     document.getElementById('sv-dist').textContent = (DATA.distanceKm || '0') + ' km';
     document.getElementById('sv-time').textContent = DATA.elapsed || '00:00';
     document.getElementById('sv-spd').textContent  = (DATA.maxSpeedKmh || '0') + ' km/h';
     show('statsPanel');
     await sleep(T_STATS * 1000);
     hide('statsPanel');
-    await sleep(400);
+    await sleep(300);
 
-    // ─── 5. OUTRO (3s) ───────────────────────────────────────
-    // Cámara zoom out dramático
+    // ─── 5. OUTRO (2.5s) ─────────────────────────────────────
     map.easeTo({ zoom: 10, pitch: 30, bearing: 60, duration: T_OUTRO * 1000, easing: x=>x });
     show('outro');
     await sleep(T_OUTRO * 1000);
