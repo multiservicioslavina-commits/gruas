@@ -31,7 +31,6 @@ class _MyHistoryScreenState extends State<MyHistoryScreen> {
     }
   }
 
-  // Totales acumulados para el header
   double get _totalKm => _rides.fold(0, (s, r) =>
       s + ((r['distance_km'] as num?)?.toDouble() ?? 0));
   int get _totalSeconds => _rides.fold(0, (s, r) =>
@@ -46,6 +45,34 @@ class _MyHistoryScreenState extends State<MyHistoryScreen> {
     final m = (seconds % 3600) ~/ 60;
     if (h == 0) return '${m}min';
     return '${h}h ${m}m';
+  }
+
+  Future<void> _deleteRide(String rideId) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: RColors.asphalt2,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('Eliminar rodada',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+        content: const Text(
+            '¿Eliminar esta rodada de tu diario?\nNo se borrará para los demás participantes.',
+            style: TextStyle(color: RColors.inkDim, height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancelar', style: TextStyle(color: RColors.inkDim)),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Eliminar', style: TextStyle(color: RColors.sos)),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
+    await _rideService.hideRideFromHistory(rideId);
+    setState(() => _rides.removeWhere((r) => r['ride_id'] == rideId));
   }
 
   @override
@@ -70,6 +97,7 @@ class _MyHistoryScreenState extends State<MyHistoryScreen> {
                               data: _rides[i],
                               index: _rides.length - i,
                               rideService: _rideService,
+                              onDelete: () => _deleteRide(_rides[i]['ride_id'] as String),
                             ),
                           ),
                           childCount: _rides.length,
@@ -207,10 +235,12 @@ class _DiaryEntry extends StatefulWidget {
     required this.data,
     required this.index,
     required this.rideService,
+    required this.onDelete,
   });
   final Map<String, dynamic> data;
   final int index;
   final RideService rideService;
+  final VoidCallback onDelete;
 
   @override
   State<_DiaryEntry> createState() => _DiaryEntryState();
@@ -219,11 +249,13 @@ class _DiaryEntry extends StatefulWidget {
 class _DiaryEntryState extends State<_DiaryEntry> {
   List<String> _photos = [];
   bool _photosLoaded = false;
+  String? _note;
 
   @override
   void initState() {
     super.initState();
     _loadPhotos();
+    _note = widget.data['notes'] as String?;
   }
 
   Future<void> _loadPhotos() async {
@@ -234,6 +266,88 @@ class _DiaryEntryState extends State<_DiaryEntry> {
     } catch (_) {
       if (mounted) setState(() => _photosLoaded = true);
     }
+  }
+
+  Future<void> _openNoteSheet() async {
+    final rideId = widget.data['ride_id'] as String;
+    final controller = TextEditingController(text: _note ?? '');
+    final saved = await showModalBottomSheet<String>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: RColors.asphalt2,
+      shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+            left: 20, right: 20, top: 20,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + 24),
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          Container(
+            width: 40, height: 4,
+            decoration: BoxDecoration(
+                color: RColors.line, borderRadius: BorderRadius.circular(2)),
+          ),
+          const SizedBox(height: 20),
+          const Row(children: [
+            Icon(Icons.edit_note_rounded, color: RColors.brand, size: 22),
+            SizedBox(width: 10),
+            Text('Mi nota de esta rodada',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w800)),
+          ]),
+          const SizedBox(height: 16),
+          TextField(
+            controller: controller,
+            autofocus: true,
+            maxLines: 6,
+            maxLength: 500,
+            style: const TextStyle(color: Colors.white, height: 1.5),
+            decoration: InputDecoration(
+              hintText: 'Escribe lo mejor de esta aventura… el paisaje, los compañeros, el camino…',
+              hintStyle: TextStyle(color: RColors.inkDim.withValues(alpha: 0.7), fontSize: 13),
+              filled: true,
+              fillColor: RColors.asphalt3,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: RColors.line),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: BorderSide(color: RColors.line),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(14),
+                borderSide: const BorderSide(color: RColors.brand),
+              ),
+              counterStyle: const TextStyle(color: RColors.inkDim, fontSize: 11),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              onPressed: () => Navigator.pop(ctx, controller.text),
+              style: FilledButton.styleFrom(
+                backgroundColor: RColors.brand,
+                minimumSize: const Size(0, 50),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14)),
+              ),
+              child: const Text('GUARDAR NOTA',
+                  style: TextStyle(fontSize: 14, letterSpacing: 1.5,
+                      fontWeight: FontWeight.w800)),
+            ),
+          ),
+        ]),
+      ),
+    );
+    if (saved == null) return;
+    try {
+      await widget.rideService.saveRideNote(rideId, saved);
+      if (mounted) setState(() => _note = saved.trim().isEmpty ? null : saved.trim());
+    } catch (_) {}
   }
 
   String _fechaCompleta(String? iso) {
@@ -298,17 +412,31 @@ class _DiaryEntryState extends State<_DiaryEntry> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Fecha estilo diario
+                  // Fecha + botón eliminar
                   Row(children: [
                     const Icon(Icons.calendar_today_outlined,
                         size: 12, color: RColors.brand),
                     const SizedBox(width: 6),
-                    Text(_fechaCompleta(createdAt),
-                        style: const TextStyle(
-                            color: RColors.brand,
-                            fontSize: 11,
-                            letterSpacing: 1,
-                            fontWeight: FontWeight.w600)),
+                    Expanded(
+                      child: Text(_fechaCompleta(createdAt),
+                          style: const TextStyle(
+                              color: RColors.brand,
+                              fontSize: 11,
+                              letterSpacing: 1,
+                              fontWeight: FontWeight.w600)),
+                    ),
+                    GestureDetector(
+                      onTap: widget.onDelete,
+                      child: Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: RColors.sos.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.delete_outline_rounded,
+                            size: 16, color: RColors.sos),
+                      ),
+                    ),
                   ]),
                   const SizedBox(height: 8),
 
@@ -336,6 +464,43 @@ class _DiaryEntryState extends State<_DiaryEntry> {
                     _photoStrip(),
                   ],
 
+                  // Nota personal (si existe)
+                  if (_note != null && _note!.isNotEmpty) ...[
+                    const SizedBox(height: 14),
+                    GestureDetector(
+                      onTap: _openNoteSheet,
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: RColors.brand.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                              color: RColors.brand.withValues(alpha: 0.25)),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Icon(Icons.format_quote_rounded,
+                                color: RColors.brand, size: 18),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(_note!,
+                                  style: const TextStyle(
+                                      color: RColors.ink,
+                                      fontSize: 13,
+                                      fontStyle: FontStyle.italic,
+                                      height: 1.5)),
+                            ),
+                            const SizedBox(width: 8),
+                            const Icon(Icons.edit_rounded,
+                                color: RColors.brand, size: 14),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+
                   // Botones de acción
                   const SizedBox(height: 16),
                   Row(children: [
@@ -357,8 +522,18 @@ class _DiaryEntryState extends State<_DiaryEntry> {
                         filled: false,
                       ),
                     ),
+                    const SizedBox(width: 8),
+                    // Nota
+                    _iconBtn(
+                      icon: (_note != null && _note!.isNotEmpty)
+                          ? Icons.edit_note_rounded
+                          : Icons.note_add_outlined,
+                      tooltip: 'Mi nota',
+                      onTap: _openNoteSheet,
+                      active: _note != null && _note!.isNotEmpty,
+                    ),
                     if (hasVideo) ...[
-                      const SizedBox(width: 10),
+                      const SizedBox(width: 8),
                       Expanded(
                         child: _actionBtn(
                           icon: Icons.play_circle_filled,
@@ -394,7 +569,6 @@ class _DiaryEntryState extends State<_DiaryEntry> {
       child: Stack(
         fit: StackFit.expand,
         children: [
-          // Foto o gradiente
           if (photoUrl != null)
             Image.network(
               photoUrl,
@@ -404,7 +578,6 @@ class _DiaryEntryState extends State<_DiaryEntry> {
           else
             _gradientBg(colorPair),
 
-          // Overlay oscuro
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -418,7 +591,6 @@ class _DiaryEntryState extends State<_DiaryEntry> {
             ),
           ),
 
-          // Número de entrada
           Positioned(
             top: 14,
             left: 16,
@@ -438,7 +610,6 @@ class _DiaryEntryState extends State<_DiaryEntry> {
             ),
           ),
 
-          // Badge líder
           if (rol == 'lider')
             Positioned(
               top: 14,
@@ -458,7 +629,6 @@ class _DiaryEntryState extends State<_DiaryEntry> {
               ),
             ),
 
-          // Icono de moto si no hay foto
           if (photoUrl == null)
             const Center(
               child: Icon(Icons.motorcycle, size: 56,
@@ -505,7 +675,7 @@ class _DiaryEntryState extends State<_DiaryEntry> {
         height: 56,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
-          itemCount: _photos.length - 1, // la primera ya es el hero
+          itemCount: _photos.length - 1,
           separatorBuilder: (_, __) => const SizedBox(width: 6),
           itemBuilder: (_, i) => ClipRRect(
             borderRadius: BorderRadius.circular(8),
@@ -553,6 +723,31 @@ class _DiaryEntryState extends State<_DiaryEntry> {
                     fontSize: 13,
                     fontWeight: FontWeight.w700)),
           ]),
+        ),
+      );
+
+  Widget _iconBtn({
+    required IconData icon,
+    required String tooltip,
+    required VoidCallback onTap,
+    required bool active,
+  }) =>
+      GestureDetector(
+        onTap: onTap,
+        child: Container(
+          width: 44,
+          height: 44,
+          decoration: BoxDecoration(
+            color: active
+                ? RColors.brand.withValues(alpha: 0.15)
+                : Colors.transparent,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+                color: active ? RColors.brand : RColors.line),
+          ),
+          child: Icon(icon,
+              size: 20,
+              color: active ? RColors.brand : RColors.inkDim),
         ),
       );
 }

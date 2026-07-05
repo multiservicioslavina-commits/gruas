@@ -141,12 +141,31 @@ class RideService {
     final data = await _sb
         .from('members')
         .select('ride_id, rol, distance_km, duration_seconds, max_speed_kmh, '
-            'video_url, finished_at, joined_at, '
+            'video_url, finished_at, joined_at, notes, hidden, '
             'rides(id, nombre, created_at, estado)')
         .eq('uid', _uid)
         .not('finished_at', 'is', null)
+        .eq('hidden', false)
         .order('finished_at', ascending: false);
     return List<Map<String, dynamic>>.from(data);
+  }
+
+  /// Oculta una rodada del historial personal (soft delete).
+  Future<void> hideRideFromHistory(String rideId) async {
+    await _sb
+        .from('members')
+        .update({'hidden': true})
+        .eq('ride_id', rideId)
+        .eq('uid', _uid);
+  }
+
+  /// Guarda o actualiza la nota personal del piloto para una rodada.
+  Future<void> saveRideNote(String rideId, String note) async {
+    await _sb
+        .from('members')
+        .update({'notes': note.trim().isEmpty ? null : note.trim()})
+        .eq('ride_id', rideId)
+        .eq('uid', _uid);
   }
 
   /// Fotos de una rodada para el diario personal.
