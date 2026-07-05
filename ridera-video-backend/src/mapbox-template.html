@@ -6,296 +6,374 @@
 <link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet" />
 <script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
 <style>
-  html, body { margin: 0; padding: 0; width: 720px; height: 720px; background: #0e0e0e; font-family: system-ui, Arial, sans-serif; overflow: hidden; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 720px; height: 720px; background: #000; font-family: 'Arial Black', Arial, sans-serif; overflow: hidden; }
   #map { position: absolute; inset: 0; width: 720px; height: 720px; }
-  .layer { position: absolute; inset: 0; pointer-events: none; }
-  .center { display: flex; align-items: center; justify-content: center; text-align: center; }
-  .fadein { opacity: 0; transition: opacity 800ms ease; }
-  .fadein.show { opacity: 1; }
-  .card { background: rgba(0,0,0,0.55); padding: 26px 40px; border-radius: 40px; color: #fff; font-weight: 700; font-size: 34px; }
-  #introTitle { font-size: 96px; font-weight: 900; color: #E85D20; letter-spacing: 4px; text-shadow: 0 0 40px rgba(232,93,32,0.6); }
-  #introSub { font-size: 32px; letter-spacing: 12px; color: #fff; font-weight: 300; margin-top: 20px; }
-  #stats { position: absolute; left: 0; right: 0; bottom: 80px; display: flex; justify-content: center; gap: 24px; }
-  #stats .stat { background: rgba(0,0,0,0.6); padding: 16px 26px; border-radius: 22px; color: #fff; }
-  #stats .val { font-size: 34px; font-weight: 800; color: #E85D20; }
-  #stats .lbl { font-size: 14px; letter-spacing: 3px; color: #ccc; text-transform: uppercase; }
-  #photoFrame { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 500ms ease; }
-  #photoFrame img { max-width: 88%; max-height: 82%; border-radius: 24px; box-shadow: 0 0 60px rgba(0,0,0,0.7); border: 3px solid #E85D20; }
-  #photoLabel { position: absolute; bottom: 60px; background: #E85D20; color: #fff; padding: 12px 26px; border-radius: 30px; font-weight: 800; font-size: 20px; letter-spacing: 2px; }
-  #outroLogo { font-size: 78px; font-weight: 900; color: #E85D20; letter-spacing: 6px; text-shadow: 0 0 40px rgba(232,93,32,0.6); }
-  #hudDist { position: absolute; top: 40px; right: 40px; background: rgba(232,93,32,0.9); color: #fff; padding: 12px 22px; border-radius: 26px; font-size: 26px; font-weight: 800; opacity: 0; transition: opacity 400ms ease; }
+
+  /* Overlay de gradiente para dar profundidad */
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(0,0,0,0.5) 100%);
+  }
+
+  /* HUD superior: nombre de la rodada */
+  #rideNameBar {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.75) 0%, transparent 100%);
+    padding: 22px 28px 30px;
+    opacity: 0; transition: opacity 600ms ease;
+  }
+  #rideNameBar.show { opacity: 1; }
+  #rideNameText {
+    font-size: 22px; font-weight: 900; color: #fff;
+    letter-spacing: 3px; text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.8);
+  }
+  #rideBrand {
+    font-size: 13px; color: #E85D20; letter-spacing: 6px;
+    font-weight: 700; margin-bottom: 4px;
+  }
+
+  /* HUD inferior: distancia en tiempo real */
+  #hudBar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.8) 0%, transparent 100%);
+    padding: 30px 28px 22px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    opacity: 0; transition: opacity 600ms ease;
+  }
+  #hudBar.show { opacity: 1; }
+  #hudKm { font-size: 44px; font-weight: 900; color: #E85D20; text-shadow: 0 0 20px rgba(232,93,32,0.6); }
+  #hudKmLabel { font-size: 12px; color: #ccc; letter-spacing: 3px; margin-top: -4px; }
+  #hudSpeed { font-size: 28px; font-weight: 700; color: #fff; text-align: right; }
+  #hudSpeedLabel { font-size: 11px; color: #aaa; letter-spacing: 3px; text-align: right; }
+
+  /* Pantalla de intro */
+  #intro {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.0);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 700ms ease;
+  }
+  #intro.show { opacity: 1; }
+  #introLogo { font-size: 72px; font-weight: 900; color: #E85D20; letter-spacing: 6px; text-shadow: 0 0 50px rgba(232,93,32,0.8); }
+  #introSub { font-size: 20px; letter-spacing: 14px; color: #fff; font-weight: 300; margin-top: 8px; }
+  #introName { font-size: 28px; font-weight: 700; color: #fff; margin-top: 32px; letter-spacing: 2px; text-align: center; max-width: 640px; }
+  #introLine { width: 80px; height: 3px; background: #E85D20; margin: 20px auto; }
+
+  /* Panel de stats */
+  #statsPanel {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.6);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 700ms ease;
+    gap: 0;
+  }
+  #statsPanel.show { opacity: 1; }
+  #statsTitle { font-size: 14px; letter-spacing: 8px; color: #E85D20; font-weight: 700; margin-bottom: 28px; }
+  .stat-row { display: flex; gap: 20px; }
+  .stat-box {
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(232,93,32,0.4);
+    border-radius: 16px; padding: 20px 32px; text-align: center; min-width: 140px;
+  }
+  .stat-val { font-size: 38px; font-weight: 900; color: #E85D20; }
+  .stat-lbl { font-size: 11px; letter-spacing: 4px; color: #aaa; text-transform: uppercase; margin-top: 4px; }
+
+  /* Foto */
+  #photoOverlay {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: flex; align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 500ms ease;
+  }
+  #photoOverlay.show { opacity: 1; }
+  #photoWrap { position: relative; }
+  #photoImg {
+    max-width: 580px; max-height: 520px;
+    border-radius: 16px;
+    border: 3px solid #E85D20;
+    box-shadow: 0 0 80px rgba(232,93,32,0.5), 0 20px 60px rgba(0,0,0,0.8);
+    display: block;
+  }
+  #photoLabel {
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    background: #E85D20; color: #fff; padding: 8px 22px;
+    border-radius: 20px; font-size: 13px; font-weight: 800; letter-spacing: 2px;
+    white-space: nowrap;
+  }
+
+  /* Outro */
+  #outro {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    opacity: 0; transition: opacity 700ms ease;
+  }
+  #outro.show { opacity: 1; }
+  #outroLogo { font-size: 58px; font-weight: 900; color: #E85D20; letter-spacing: 5px; text-shadow: 0 0 40px rgba(232,93,32,0.7); }
+  #outroSub { font-size: 16px; letter-spacing: 10px; color: #fff; margin-top: 12px; }
+  #outroLine { width: 60px; height: 3px; background: #E85D20; margin: 18px auto; }
+  #outroTagline { font-size: 13px; color: #888; letter-spacing: 4px; }
 </style>
 </head>
 <body>
   <div id="map"></div>
-  <div id="intro" class="layer center fadein show" style="flex-direction:column;">
-    <div id="introTitle">RIDERA</div>
-    <div id="introSub">AVENTURA</div>
-    <div id="introRideName" style="margin-top:40px; font-size:42px; font-weight:700; color:#fff; max-width:900px;"></div>
+  <div id="vignette"></div>
+
+  <div id="rideNameBar">
+    <div id="rideBrand">🏍 RIDERA AVENTURA</div>
+    <div id="rideNameText"></div>
   </div>
-  <div id="hudDist"></div>
-  <div id="stats" class="fadein"></div>
-  <div id="photoFrame"><img id="photoImg" src="" /><div id="photoLabel"></div></div>
-  <div id="outro" class="layer center fadein" style="flex-direction:column;">
-    <div id="outroLogo">🏍 RIDERA AVENTURA</div>
-    <div style="margin-top:30px; font-size:28px; color:#fff; letter-spacing:4px;">GRACIAS POR RODAR</div>
+
+  <div id="hudBar">
+    <div>
+      <div id="hudKm">0.0</div>
+      <div id="hudKmLabel">KM RECORRIDOS</div>
+    </div>
+    <div style="text-align:right">
+      <div id="hudSpeed">0</div>
+      <div id="hudSpeedLabel">KM/H PROMEDIO</div>
+    </div>
+  </div>
+
+  <div id="intro" class="show">
+    <div id="introLogo">RIDERA</div>
+    <div id="introSub">AVENTURA</div>
+    <div id="introLine"></div>
+    <div id="introName"></div>
+  </div>
+
+  <div id="statsPanel">
+    <div id="statsTitle">RESUMEN DE LA RODADA</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" id="sv-dist">—</div><div class="stat-lbl">Distancia</div></div>
+      <div class="stat-box"><div class="stat-val" id="sv-time">—</div><div class="stat-lbl">Tiempo</div></div>
+      <div class="stat-box"><div class="stat-val" id="sv-spd">—</div><div class="stat-lbl">Vel. Máx</div></div>
+    </div>
+  </div>
+
+  <div id="photoOverlay">
+    <div id="photoWrap">
+      <img id="photoImg" src="" crossorigin="anonymous" />
+      <div id="photoLabel"></div>
+    </div>
+  </div>
+
+  <div id="outro">
+    <div id="outroLogo">RIDERA</div>
+    <div id="outroLine"></div>
+    <div id="outroSub">AVENTURA</div>
+    <div id="outroTagline">GRACIAS POR RODAR</div>
   </div>
 
 <script>
   const DATA = __RIDE_DATA__;
   mapboxgl.accessToken = '__MAPBOX_TOKEN__';
 
-  // Duración de cada sección (segundos)
-  const T_INTRO = 3;
-  const T_ROUTE = 15;
-  const T_PHOTO = 3;
-  const T_STATS = 4;
-  const T_OUTRO = 3;
-  const photoCount = Math.min(DATA.photos.length, 6);
+  const T_INTRO  = 3;
+  const T_ROUTE  = 18;
+  const T_PHOTO  = 3.5;
+  const T_STATS  = 5;
+  const T_OUTRO  = 3;
+  const photoCount = Math.min((DATA.photos || []).length, 6);
   const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
   window.__totalSeconds = totalSeconds;
 
-  // Convertir routePoints a [lon, lat]
   const coords = DATA.routePoints.map(p => [p.lon, p.lat]);
-  // Calcular centro y bounds
-  const bounds = coords.reduce((b, c) => b.extend(c), new mapboxgl.LngLatBounds(coords[0], coords[0]));
+  const bounds = coords.reduce(
+    (b, c) => b.extend(c),
+    new mapboxgl.LngLatBounds(coords[0], coords[0])
+  );
+
+  // Centro de la ruta para la intro
+  const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+  const centerLat = (bounds.getSouth() + bounds.getNorth()) / 2;
 
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/dark-v11',
-    center: coords[0],
-    zoom: 14,
+    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    center: [centerLng, centerLat],
+    zoom: 12,
     pitch: 60,
-    bearing: 0,
+    bearing: 20,
     antialias: true,
     fadeDuration: 0,
     interactive: false,
     preserveDrawingBuffer: true,
   });
 
-  function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
-  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-  function show(id) { document.getElementById(id).classList.add('show'); }
-  function hide(id) { document.getElementById(id).classList.remove('show'); }
-
-  function setStats() {
-    document.getElementById('stats').innerHTML = `
-      <div class="stat"><div class="val">${DATA.distanceKm} km</div><div class="lbl">DISTANCIA</div></div>
-      <div class="stat"><div class="val">${DATA.elapsed}</div><div class="lbl">TIEMPO</div></div>
-      <div class="stat"><div class="val">${DATA.maxSpeedKmh} km/h</div><div class="lbl">VEL MÁX</div></div>`;
-  }
+  const sleep = ms => new Promise(r => setTimeout(r, ms));
+  const show  = id => document.getElementById(id).classList.add('show');
+  const hide  = id => document.getElementById(id).classList.remove('show');
 
   map.on('load', async () => {
-    document.getElementById('introRideName').textContent = DATA.rideName;
+    document.getElementById('introName').textContent = DATA.rideName || '';
+    document.getElementById('rideNameText').textContent = DATA.rideName || '';
 
     // Terreno 3D
     map.addSource('mapbox-dem', {
       type: 'raster-dem',
       url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
-      tileSize: 512,
-      maxzoom: 14,
+      tileSize: 512, maxzoom: 14,
     });
-    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.5 });
-    map.setFog({
-      color: 'rgb(20,20,25)',
-      'high-color': 'rgb(100,80,60)',
-      'horizon-blend': 0.15,
-      'space-color': 'rgb(10,10,10)',
-      'star-intensity': 0.35,
-    });
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.8 });
 
-    // Fuente ruta completa (tenue)
+    // Ruta completa (gris tenue de fondo)
     map.addSource('route-full', {
       type: 'geojson',
       data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } },
     });
-    // Fuente ruta recorrida (brillante, se anima)
+    // Ruta animada (naranja brillante)
     map.addSource('route-live', {
       type: 'geojson',
-      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [coords[0]] } },
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [coords[0], coords[0]] } },
     });
-
-    map.addLayer({
-      id: 'route-full-layer',
-      type: 'line',
-      source: 'route-full',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#888', 'line-width': 4, 'line-opacity': 0.35 },
-    });
-    map.addLayer({
-      id: 'route-live-layer',
-      type: 'line',
-      source: 'route-live',
-      layout: { 'line-cap': 'round', 'line-join': 'round' },
-      paint: { 'line-color': '#E85D20', 'line-width': 7, 'line-opacity': 0.95 },
-    });
-
-    // Pin naranja pulsante (posición actual)
+    // Pin
     map.addSource('pin', {
       type: 'geojson',
       data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } },
     });
+
     map.addLayer({
-      id: 'pin-halo',
-      type: 'circle',
-      source: 'pin',
-      paint: {
-        'circle-radius': 20,
-        'circle-color': '#E85D20',
-        'circle-opacity': 0.35,
-      },
+      id: 'route-full-layer', type: 'line', source: 'route-full',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 3, 'line-opacity': 0.25 },
+    });
+    // Sombra naranja gruesa
+    map.addLayer({
+      id: 'route-live-glow', type: 'line', source: 'route-live',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#E85D20', 'line-width': 18, 'line-opacity': 0.3, 'line-blur': 6 },
+    });
+    // Línea naranja principal
+    map.addLayer({
+      id: 'route-live-layer', type: 'line', source: 'route-live',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#FF6B1A', 'line-width': 7, 'line-opacity': 1 },
     });
     map.addLayer({
-      id: 'pin-dot',
-      type: 'circle',
-      source: 'pin',
+      id: 'pin-halo', type: 'circle', source: 'pin',
+      paint: { 'circle-radius': 22, 'circle-color': '#E85D20', 'circle-opacity': 0.4 },
+    });
+    map.addLayer({
+      id: 'pin-dot', type: 'circle', source: 'pin',
       paint: {
-        'circle-radius': 9,
-        'circle-color': '#fff',
-        'circle-stroke-width': 3,
-        'circle-stroke-color': '#E85D20',
+        'circle-radius': 10, 'circle-color': '#fff',
+        'circle-stroke-width': 3, 'circle-stroke-color': '#E85D20',
       },
     });
 
-    // Cargar imágenes de fotos (pre-cargar para que aparezcan al instante)
-    await Promise.all(DATA.photos.map((p, i) => new Promise((r) => {
-      const im = new Image();
-      im.crossOrigin = 'anonymous';
-      im.onload = im.onerror = () => r();
-      im.src = p.url;
-      p._img = im;
+    // Precargar fotos
+    await Promise.all((DATA.photos || []).slice(0, 6).map(p => new Promise(r => {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = im.onerror = () => r(); im.src = p.url;
     })));
 
-    // Esperar a que los tiles estén pintados.
-    // idle = motor quieto, pero swiftshader necesita un repaint explícito
-    // y 2s extra para que los tiles raster queden en el framebuffer.
+    // Esperar tiles satelitales + repaint
     map.once('idle', () => {
       map.triggerRepaint();
       setTimeout(() => {
         map.triggerRepaint();
         window.__ready = true;
         window.__onReady && window.__onReady();
-      }, 2000);
+      }, 2500);
     });
   });
 
-  function haversine(a, b) {
-    const R = 6371;
-    const dLat = (b[1]-a[1])*Math.PI/180;
-    const dLon = (b[0]-a[0])*Math.PI/180;
-    const s = Math.sin(dLat/2)**2 + Math.cos(a[1]*Math.PI/180)*Math.cos(b[1]*Math.PI/180)*Math.sin(dLon/2)**2;
-    return R * 2 * Math.asin(Math.sqrt(s));
-  }
-
-  // Animación principal
   window.__play = async () => {
-    // ── 1. Intro (3s) ─────────────────────────────────────
-    setStats();
+    // ─── 1. INTRO (3s) ───────────────────────────────────────
     show('intro');
+    // Cámara orbita lentamente durante el intro
+    map.easeTo({ bearing: 40, zoom: 13, pitch: 65, duration: T_INTRO * 1000, easing: x => x });
     await sleep(T_INTRO * 1000);
     hide('intro');
-    await sleep(400);
+    await sleep(500);
 
-    // ── 2. Ruta creciendo con cámara siguiendo (15s) ──────
-    map.fitBounds(bounds, { padding: 120, pitch: 55, duration: 800, bearing: 0 });
-    await sleep(900);
+    // ─── 2. RUTA ANIMADA (18s) ────────────────────────────────
+    // Mostrar HUD y nombre
+    show('rideNameBar');
+    show('hudBar');
 
-    const startTime = performance.now();
+    // Vuelo de entrada dramático: zoom in desde alto
+    map.fitBounds(bounds, { padding: 100, pitch: 70, bearing: -10, duration: 1200, maxZoom: 15 });
+    await sleep(1300);
+
+    const totalKm = parseFloat(DATA.distanceKm) || 0;
+    const startT = performance.now();
     const durMs = T_ROUTE * 1000;
-    const hud = document.getElementById('hudDist');
-    hud.style.opacity = 1;
 
-    let accumKm = 0;
-    let prev = coords[0];
-
-    return new Promise((resolveAnim) => {
+    await new Promise(resolve => {
       function step(now) {
-        const t = Math.min(1, (now - startTime) / durMs);
-        // easing: aceleración progresiva
-        const eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2, 2)/2;
-        const idxFloat = eased * (coords.length - 1);
-        const idx = Math.floor(idxFloat);
-        const frac = idxFloat - idx;
+        const t = Math.min(1, (now - startT) / durMs);
+        // easing suave
+        const eased = t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t+2,2)/2;
+        const idxF = eased * (coords.length - 1);
+        const idx  = Math.floor(idxF);
+        const frac = idxF - idx;
         const a = coords[idx];
         const b = coords[Math.min(idx+1, coords.length-1)];
-        const cur = [a[0] + (b[0]-a[0])*frac, a[1] + (b[1]-a[1])*frac];
+        const cur = [a[0]+(b[0]-a[0])*frac, a[1]+(b[1]-a[1])*frac];
 
-        // Actualizar polyline recorrida
-        const partial = coords.slice(0, idx+1);
-        partial.push(cur);
-        map.getSource('route-live').setData({
-          type: 'Feature', geometry: { type: 'LineString', coordinates: partial },
-        });
-        map.getSource('pin').setData({
-          type: 'Feature', geometry: { type: 'Point', coordinates: cur },
-        });
+        // Actualizar ruta y pin
+        const partial = [...coords.slice(0, idx+1), cur];
+        map.getSource('route-live').setData({ type:'Feature', geometry:{ type:'LineString', coordinates: partial } });
+        map.getSource('pin').setData({ type:'Feature', geometry:{ type:'Point', coordinates: cur } });
 
-        // Distancia acumulada estimada (interpolación lineal)
-        const totalKm = parseFloat(DATA.distanceKm) || 0;
-        hud.textContent = `📍 ${fmt(totalKm * eased)} km`;
+        // HUD distancia
+        document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
+        document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-        // Cámara: seguir el pin con bearing hacia adelante
+        // Cámara sigue el pin con bearing dinámico
         const ahead = coords[Math.min(idx+2, coords.length-1)];
         const bearing = Math.atan2(ahead[0]-cur[0], ahead[1]-cur[1]) * 180 / Math.PI;
-        // Zoom más cerca cuando anima, más abierto al final
-        const zoom = 15 - 1.5 * eased;
-        map.easeTo({
-          center: cur,
-          bearing: bearing,
-          pitch: 68,
-          zoom: zoom,
-          duration: 50,
-          easing: (x) => x,
-        });
+        const zoom = 15.5 - eased * 1.5; // zoom out gradual
+        map.easeTo({ center: cur, bearing, pitch: 68, zoom, duration: 80, easing: x=>x });
 
         if (t < 1) requestAnimationFrame(step);
-        else {
-          hud.style.opacity = 0;
-          resolveAnim();
-        }
+        else resolve();
       }
       requestAnimationFrame(step);
-    }).then(async () => {
-      await sleep(400);
-
-      // ── 3. Fotos con contexto de dónde fueron tomadas ─────
-      for (let i = 0; i < photoCount; i++) {
-        const photo = DATA.photos[i];
-        // Cámara vuela al punto de la foto
-        if (photo.lat && photo.lon) {
-          map.easeTo({
-            center: [photo.lon, photo.lat],
-            zoom: 16.5,
-            pitch: 72,
-            bearing: (Math.random() - 0.5) * 60,
-            duration: 900,
-          });
-          await sleep(1000);
-        }
-        // Mostrar foto
-        const frame = document.getElementById('photoFrame');
-        const img = document.getElementById('photoImg');
-        const lbl = document.getElementById('photoLabel');
-        img.src = photo.url;
-        lbl.textContent = `📷 FOTO ${i+1} DE ${photoCount}`;
-        frame.style.opacity = 1;
-        await sleep((T_PHOTO - 0.4) * 1000);
-        frame.style.opacity = 0;
-        await sleep(400);
-      }
-
-      // ── 4. Stats — vista general con métricas (4s) ────────
-      map.fitBounds(bounds, { padding: 100, pitch: 30, duration: 1000, bearing: 0 });
-      await sleep(400);
-      show('stats');
-      await sleep(T_STATS * 1000);
-      hide('stats');
-      await sleep(400);
-
-      // ── 5. Outro (3s) ─────────────────────────────────────
-      show('outro');
-      await sleep(T_OUTRO * 1000);
     });
+
+    hide('hudBar');
+    hide('rideNameBar');
+    await sleep(400);
+
+    // ─── 3. FOTOS (3.5s cada una) ────────────────────────────
+    for (let i = 0; i < photoCount; i++) {
+      const photo = (DATA.photos || [])[i];
+      // Cámara vuela al punto GPS de la foto
+      if (photo && photo.lat && photo.lon) {
+        map.easeTo({ center:[photo.lon, photo.lat], zoom:17, pitch:75, bearing:(Math.random()-0.5)*90, duration:900 });
+        await sleep(1000);
+      }
+      const img = document.getElementById('photoImg');
+      img.src = photo?.url || '';
+      document.getElementById('photoLabel').textContent = `📷 FOTO ${i+1} DE ${photoCount}`;
+      show('photoOverlay');
+      await sleep((T_PHOTO - 0.5) * 1000);
+      hide('photoOverlay');
+      await sleep(500);
+    }
+
+    // ─── 4. STATS (5s) ───────────────────────────────────────
+    map.fitBounds(bounds, { padding: 80, pitch: 45, bearing: 0, duration: 1200 });
+    await sleep(600);
+    document.getElementById('sv-dist').textContent = (DATA.distanceKm || '0') + ' km';
+    document.getElementById('sv-time').textContent = DATA.elapsed || '00:00';
+    document.getElementById('sv-spd').textContent  = (DATA.maxSpeedKmh || '0') + ' km/h';
+    show('statsPanel');
+    await sleep(T_STATS * 1000);
+    hide('statsPanel');
+    await sleep(400);
+
+    // ─── 5. OUTRO (3s) ───────────────────────────────────────
+    // Cámara zoom out dramático
+    map.easeTo({ zoom: 10, pitch: 30, bearing: 60, duration: T_OUTRO * 1000, easing: x=>x });
+    show('outro');
+    await sleep(T_OUTRO * 1000);
   };
 </script>
 </body>
