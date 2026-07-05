@@ -149,6 +149,20 @@ class RideService {
     return List<Map<String, dynamic>>.from(data);
   }
 
+  /// Fotos de una rodada para el diario personal.
+  Future<List<String>> getRidePhotoUrls(String rideId) async {
+    final data = await _sb
+        .from('ride_photos')
+        .select('url')
+        .eq('ride_id', rideId)
+        .eq('uid', _uid)
+        .order('created_at')
+        .limit(6);
+    return List<Map<String, dynamic>>.from(data)
+        .map((p) => p['url'] as String)
+        .toList();
+  }
+
   Future<List<Map<String, dynamic>>> getMembers(String rideId) async {
     final data = await _sb
         .from('members')
