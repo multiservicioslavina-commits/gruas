@@ -38,7 +38,9 @@ class GpsService : Service() {
     private var rideId: String = ""
     private var uid: String = ""
     private var accessToken: String = ""
-    private val handler = Handler(Looper.getMainLooper())
+    // HandlerThread propio: aislado del MainLooper para que MIUI/Doze no lo congele
+    private val gpsThread = HandlerThread("ridera-gps").also { it.start() }
+    private val handler = Handler(gpsThread.looper)
     private var wakeLock: PowerManager.WakeLock? = null
 
     // Filtro anti-zigzag: descarta puntos con mala precisión, saltos imposibles, o velocidad negativa
@@ -130,8 +132,8 @@ class GpsService : Service() {
                 .setContentIntent(pendingIntent)
                 .build()
             startForeground(NOTIF_ID, notification)
-        } catch (_: Exception) {
-            // Si el sistema rechaza el foreground service, seguimos solo con WakeLock
+        } catch (e: Exception) {
+            Log.e("RIDERA", "startForeground FALLÓ — MIUI puede matar el servicio: ${e.message}")
         }
     }
 
@@ -148,13 +150,13 @@ class GpsService : Service() {
             locationManager = getSystemService(LOCATION_SERVICE) as LocationManager
             // GPS puro: 1s / 3m — máxima precisión para moto en carretera
             locationManager?.requestLocationUpdates(
-                LocationManager.GPS_PROVIDER, 1000L, 3f, locationListener, Looper.getMainLooper()
+                LocationManager.GPS_PROVIDER, 1000L, 3f, locationListener, gpsThread.looper
             )
             // NETWORK solo si NO hay GPS, y con menos frecuencia. El filtro del listener
             // igualmente lo descarta cuando llega un GPS reciente.
             if (locationManager?.isProviderEnabled(LocationManager.NETWORK_PROVIDER) == true) {
                 locationManager?.requestLocationUpdates(
-                    LocationManager.NETWORK_PROVIDER, 10000L, 20f, locationListener, Looper.getMainLooper()
+                    LocationManager.NETWORK_PROVIDER, 10000L, 20f, locationListener, gpsThread.looper
                 )
             }
         } catch (_: SecurityException) {}
@@ -215,6 +217,7 @@ class GpsService : Service() {
         handler.removeCallbacks(heartbeat)
         locationManager?.removeUpdates(locationListener)
         if (wakeLock?.isHeld == true) wakeLock?.release()
+        gpsThread.quitSafely()
         super.onDestroy()
     }
 
