@@ -1,3 +1,4 @@
+import './env-fix.js';
 import puppeteer from 'puppeteer';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -13,6 +14,7 @@ const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
 if (!MAPBOX_TOKEN) {
   console.warn('WARNING: MAPBOX_TOKEN no configurado');
 }
+
 
 const FPS    = 24;
 const WIDTH  = 1080;
@@ -99,7 +101,10 @@ export async function renderRideVideo({
       '--font-render-hinting=none',
       `--window-size=${WIDTH},${HEIGHT}`,
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    // SIN executablePath: Puppeteer usa SIEMPRE su Chrome for Testing
+    // emparejado (PUPPETEER_CACHE_DIR). No se obedece la env var
+    // PUPPETEER_EXECUTABLE_PATH porque una variable vieja en Railway
+    // apuntando al chromium de Debian reintroduciría el crash de launch.
     protocolTimeout: 15 * 60 * 1000,
     // Chromium necesita directorios escribibles — sin HOME válido crashea
     env: {

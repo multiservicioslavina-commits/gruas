@@ -1,5 +1,8 @@
+import './env-fix.js';
 import express from 'express';
 import { randomUUID } from 'crypto';
+import { existsSync } from 'fs';
+import puppeteer from 'puppeteer';
 import { renderRideVideo } from './renderer.js';
 import { uploadVideo } from './uploader.js';
 import { unlink } from 'fs/promises';
@@ -9,8 +12,27 @@ app.use(express.json({ limit: '10mb' }));
 
 const PORT = process.env.PORT || 3000;
 
+// Autodiagnóstico: qué Chrome resuelve Puppeteer y si el binario existe
+let chromeInfo = 'no resuelto';
+try {
+  const p = puppeteer.executablePath();
+  chromeInfo = `${p} (${existsSync(p) ? 'existe' : 'NO EXISTE'})`;
+} catch (e) {
+  chromeInfo = `error: ${e.message.split('\n')[0]}`;
+}
+
 app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'ridera-video-backend', version: '2026-07-06-async1' });
+  res.json({
+    ok: true,
+    service: 'ridera-video-backend',
+    version: '2026-07-06-async2',
+    chrome: chromeInfo,
+    env: {
+      MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ? 'set' : 'FALTA',
+      SUPABASE_URL: process.env.SUPABASE_URL ? 'set' : 'FALTA',
+      SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? 'set' : 'FALTA',
+    },
+  });
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
