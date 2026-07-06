@@ -9,7 +9,7 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'ridera-video-backend', version: '2026-07-06-diag1' });
+  res.json({ ok: true, service: 'ridera-video-backend', version: '2026-07-06-cft127' });
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
