@@ -8,13 +8,26 @@ if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
   console.warn('WARNING: SUPABASE_URL o SUPABASE_SERVICE_KEY no configurados');
 }
 
-const supabase = createClient(SUPABASE_URL || '', SUPABASE_SERVICE_KEY || '');
 const BUCKET = 'ride-videos';
+
+// Cliente perezoso: si se crea al importar y faltan las env vars, el
+// servidor entero muere al arrancar. Así el error sale solo al subir.
+let supabase = null;
+function getClient() {
+  if (!supabase) {
+    if (!SUPABASE_URL || !SUPABASE_SERVICE_KEY) {
+      throw new Error('SUPABASE_URL / SUPABASE_SERVICE_KEY no configurados');
+    }
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+  }
+  return supabase;
+}
 
 /**
  * Sube el mp4 a Supabase Storage y devuelve la URL pública.
  */
 export async function uploadVideo(rideId, localPath) {
+  const supabase = getClient();
   const buffer = await readFile(localPath);
   const path = `${rideId}/${Date.now()}.mp4`;
   const { error } = await supabase.storage

@@ -54,6 +54,7 @@ export async function renderRideVideo({
   maxSpeedKmh,
   routePoints,
   photos,
+  onProgress,
 }) {
   const T = (label, from) =>
     console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
@@ -143,6 +144,18 @@ export async function renderRideVideo({
     })
   );
   T('scene ready', tReady);
+
+  // Si el script del template murió (token Mapbox inválido, CDN caído),
+  // fallar YA con un error claro en vez de capturar frames de nada
+  const sceneOk = await page.evaluate(
+    () => typeof window.__seekTo === 'function' && window.__ready === true
+  );
+  if (!sceneOk) {
+    await browser.close();
+    throw new Error(
+      'La escena Mapbox no cargó (revisar MAPBOX_TOKEN y acceso a api.mapbox.com — ver logs BROWSER)'
+    );
+  }
   console.log(`  [${rideId}] duración: ${totalSeconds}s, frames: ${Math.ceil(totalSeconds * FPS)}`);
 
   // ── Captura frame a frame ──────────────────────────────────────────────
@@ -164,7 +177,9 @@ export async function renderRideVideo({
     });
 
     if (f % 48 === 0) {
-      const pct = ((f / totalFrames) * 100).toFixed(0);
+      const pct = Math.round((f / totalFrames) * 100);
+      // 5-95%: la captura es el grueso del trabajo (encode+upload al final)
+      onProgress && onProgress(Math.min(95, 5 + Math.round(pct * 0.9)));
       console.log(`  [${rideId}] frames: ${f}/${totalFrames} (${pct}%) — ${((Date.now()-tCapture)/1000).toFixed(1)}s`);
     }
   }

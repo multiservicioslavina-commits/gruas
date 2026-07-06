@@ -271,6 +271,9 @@
     interactive: false, preserveDrawingBuffer: true,
   });
 
+  // Errores del mapa (token inválido, teselas) → visibles en logs del server
+  map.on('error', e => console.error('MAPBOX ERROR:', e?.error?.message || e));
+
   map.on('load', async () => {
     document.getElementById('introName').textContent  = DATA.rideName || '';
     document.getElementById('rideNameText').textContent = DATA.rideName || '';
