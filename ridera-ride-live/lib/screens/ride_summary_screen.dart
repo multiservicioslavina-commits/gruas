@@ -130,9 +130,11 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         photos: _photos,
         routePoints: _routePoints,
       );
+      // Guardar la URL SIEMPRE, aunque el usuario ya haya salido de la
+      // pantalla — el render tarda minutos y el video no puede perderse
+      try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
       if (!mounted) return;
       setState(() { _videoStatus = 'done'; _videoUrl = url; });
-      try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
     } catch (e) {
       if (mounted) setState(() { _videoStatus = 'error'; _videoError = e.toString(); });
     }

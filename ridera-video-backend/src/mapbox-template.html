@@ -119,7 +119,7 @@
     </div>
     <div style="text-align:right">
       <div id="hudSpeed">0</div>
-      <div id="hudSpeedLabel">KM/H PROMEDIO</div>
+      <div id="hudSpeedLabel">KM/H MÁXIMA</div>
     </div>
   </div>
 
@@ -258,7 +258,9 @@
 
   // ── Estado del mapa ────────────────────────────────────────────────────
   let mapReady = false;
-  let currentBearing = 30;
+  // Bearing inicial = dirección real del arranque de la ruta, para que
+  // la chase cam no dé un bandazo buscando el rumbo en el primer segundo
+  let currentBearing = bearingAlong(0);
   let smCamPos = null;   // posición de cámara suavizada [lng, lat]
   let smCamAlt = null;   // altitud suavizada (m)
 
