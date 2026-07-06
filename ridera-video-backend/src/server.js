@@ -9,7 +9,7 @@ app.use(express.json({ limit: '10mb' }));
 const PORT = process.env.PORT || 3000;
 
 app.get('/', (_req, res) => {
-  res.json({ ok: true, service: 'ridera-video-backend' });
+  res.json({ ok: true, service: 'ridera-video-backend', version: '2026-07-06-diag1' });
 });
 
 app.get('/health', (_req, res) => res.json({ ok: true }));
@@ -53,7 +53,11 @@ app.post('/render', async (req, res) => {
     res.json({ url });
   } catch (err) {
     console.error('Render error:', err);
-    res.status(500).json({ error: err.message || String(err) });
+    // La línea fatal de Chromium está al FINAL del mensaje — devolver
+    // la cola, no el inicio (el inicio es ruido de dbus)
+    const msg = err.message || String(err);
+    const tail = msg.length > 700 ? '…' + msg.slice(-700) : msg;
+    res.status(500).json({ error: tail });
   }
 });
 

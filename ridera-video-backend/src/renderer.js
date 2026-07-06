@@ -86,6 +86,8 @@ export async function renderRideVideo({
       '--disable-dev-shm-usage',
       '--no-zygote',
       '--disable-crash-reporter',
+      '--disable-crashpad',
+      '--disable-breakpad',
       '--disable-extensions',
       '--mute-audio',
       '--use-gl=angle',
@@ -98,6 +100,14 @@ export async function renderRideVideo({
     ],
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     protocolTimeout: 15 * 60 * 1000,
+    // Chromium necesita directorios escribibles — sin HOME válido crashea
+    env: {
+      ...process.env,
+      HOME: '/tmp',
+      XDG_CONFIG_HOME: '/tmp/.chromium',
+      XDG_CACHE_HOME: '/tmp/.chromium',
+    },
+    dumpio: true, // stderr completo de Chromium a los logs de Railway
   };
 
   const tBrowser = Date.now();

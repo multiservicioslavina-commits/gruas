@@ -28,4 +28,4 @@ COPY src ./src
 EXPOSE 3000
 # Arrancar el bus del sistema antes de node — sin él Chromium muere con
 # "Failed to connect to socket /run/dbus/system_bus_socket"
-CMD ["/bin/sh", "-c", "(dbus-daemon --system --fork 2>/dev/null || true); exec node src/server.js"]
+CMD ["/bin/sh", "-c", "mkdir -p /run/dbus /tmp/.chromium && (dbus-daemon --system --fork 2>/dev/null || true); exec node src/server.js"]
