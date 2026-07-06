@@ -112,7 +112,12 @@ export async function renderRideVideo({
   };
 
   const tBrowser = Date.now();
-  let browser;
+  let browser = null;
+  // try/finally: si CUALQUIER paso falla, el navegador se cierra y los
+  // frames se borran — un Chromium zombi por job fallido agota la
+  // memoria de Railway y tumba los renders siguientes.
+  try {
+
   // El primer launch a veces falla en contenedores fríos — reintentar
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -151,7 +156,6 @@ export async function renderRideVideo({
     () => typeof window.__seekTo === 'function' && window.__ready === true
   );
   if (!sceneOk) {
-    await browser.close();
     throw new Error(
       'La escena Mapbox no cargó (revisar MAPBOX_TOKEN y acceso a api.mapbox.com — ver logs BROWSER)'
     );
@@ -185,15 +189,19 @@ export async function renderRideVideo({
   }
   T('frame capture', tCapture);
 
+  // Cerrar el navegador ANTES de ffmpeg para liberar memoria
   await browser.close();
+  browser = null;
 
   // ── Ensamblar con FFmpeg ───────────────────────────────────────────────
   const tFfmpeg = Date.now();
   await ffmpegEncode(framesDir, outputPath);
   T('ffmpeg encode', tFfmpeg);
 
-  // Limpiar frames temporales
-  rm(framesDir, { recursive: true, force: true }).catch(() => {});
-
   return outputPath;
+
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+    rm(framesDir, { recursive: true, force: true }).catch(() => {});
+  }
 }
