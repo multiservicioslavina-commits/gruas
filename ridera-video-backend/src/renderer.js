@@ -14,7 +14,7 @@ if (!MAPBOX_TOKEN) {
   console.warn('WARNING: MAPBOX_TOKEN no configurado');
 }
 
-const FPS    = 30;
+const FPS    = 24;
 const WIDTH  = 1080;
 const HEIGHT = 1080;
 
@@ -23,7 +23,7 @@ function ffmpegEncode(framesDir, outputPath) {
     const args = [
       '-y',
       '-framerate', String(FPS),
-      '-i', join(framesDir, 'frame_%06d.png'),
+      '-i', join(framesDir, 'frame_%06d.jpg'),
       '-c:v', 'libx264',
       '-preset', 'medium',
       '-crf', '20',
@@ -78,13 +78,16 @@ export async function renderRideVideo({
   const outputPath = join(tmpdir(), `ride_${rideId}_${Date.now()}.mp4`);
   await mkdir(framesDir, { recursive: true });
 
-  const tBrowser = Date.now();
-  const browser = await puppeteer.launch({
+  const launchOpts = {
     headless: 'new',
     args: [
       '--no-sandbox',
       '--disable-setuid-sandbox',
       '--disable-dev-shm-usage',
+      '--no-zygote',
+      '--disable-crash-reporter',
+      '--disable-extensions',
+      '--mute-audio',
       '--use-gl=angle',
       '--use-angle=swiftshader',
       '--enable-unsafe-swiftshader',
@@ -95,7 +98,21 @@ export async function renderRideVideo({
     ],
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
     protocolTimeout: 15 * 60 * 1000,
-  });
+  };
+
+  const tBrowser = Date.now();
+  let browser;
+  // El primer launch a veces falla en contenedores fríos — reintentar
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    try {
+      browser = await puppeteer.launch(launchOpts);
+      break;
+    } catch (err) {
+      console.error(`  [${rideId}] launch intento ${attempt}/3 falló: ${err.message.split('\n')[0]}`);
+      if (attempt === 3) throw err;
+      await new Promise(r => setTimeout(r, 2000 * attempt));
+    }
+  }
   T('browser boot', tBrowser);
 
   const page = await browser.newPage();
@@ -128,13 +145,15 @@ export async function renderRideVideo({
     await page.evaluate(t => window.__seekTo(t), t);
 
     const frameNum = String(f).padStart(6, '0');
+    // JPEG q90: ~10x más liviano y rápido que PNG, sin pérdida visible
     await page.screenshot({
-      path: join(framesDir, `frame_${frameNum}.png`),
-      type: 'png',
+      path: join(framesDir, `frame_${frameNum}.jpg`),
+      type: 'jpeg',
+      quality: 90,
       clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
     });
 
-    if (f % 30 === 0) {
+    if (f % 48 === 0) {
       const pct = ((f / totalFrames) * 100).toFixed(0);
       console.log(`  [${rideId}] frames: ${f}/${totalFrames} (${pct}%) — ${((Date.now()-tCapture)/1000).toFixed(1)}s`);
     }
