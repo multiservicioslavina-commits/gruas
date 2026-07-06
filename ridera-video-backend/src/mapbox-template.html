@@ -186,29 +186,81 @@
   const setOp = (id, v) => { document.getElementById(id).style.opacity = v; };
   const setTr = (id, v) => { document.getElementById(id).style.transform = v; };
 
-  // ── Bearing desde dirección de movimiento ─────────────────────────────
-  function routeBearing(idx) {
-    const a = coords[Math.max(0, idx - 1)];
-    const b = coords[Math.min(coords.length - 1, idx + 1)];
-    const dx = b[0] - a[0];
-    const dy = b[1] - a[1];
-    return Math.atan2(dx, dy) * 180 / Math.PI;
+  // ── Geodesia (sin dependencias): distancias y puntos sobre la ruta ────
+  const R_EARTH = 6371000;
+  const rad = d => d * Math.PI / 180;
+  const deg = r => r * 180 / Math.PI;
+
+  function haversine(a, b) {
+    const dLat = rad(b[1] - a[1]);
+    const dLng = rad(b[0] - a[0]);
+    const s = Math.sin(dLat/2)**2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLng/2)**2;
+    return 2 * R_EARTH * Math.asin(Math.sqrt(s));
   }
 
-  // ── Interpolación suave de cámara (slerp-like sobre bearing) ──────────
+  // Punto destino desde origen con bearing (grados) y distancia (m)
+  function destination(origin, bearingDeg, distM) {
+    const br = rad(bearingDeg);
+    const lat1 = rad(origin[1]), lng1 = rad(origin[0]);
+    const dr = distM / R_EARTH;
+    const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dr) + Math.cos(lat1)*Math.sin(dr)*Math.cos(br));
+    const lng2 = lng1 + Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(lat1), Math.cos(dr) - Math.sin(lat1)*Math.sin(lat2));
+    return [deg(lng2), deg(lat2)];
+  }
+
+  // Distancias acumuladas a lo largo de la ruta
+  const cumDist = [0];
+  for (let i = 1; i < coords.length; i++) {
+    cumDist.push(cumDist[i-1] + haversine(coords[i-1], coords[i]));
+  }
+  const totalDist = cumDist[cumDist.length - 1];
+
+  // Punto interpolado a `dist` metros del inicio de la ruta
+  function pointAlong(dist) {
+    dist = Math.max(0, Math.min(totalDist, dist));
+    let lo = 0, hi = cumDist.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumDist[mid] < dist) lo = mid + 1; else hi = mid;
+    }
+    const i = Math.max(1, lo);
+    const seg = cumDist[i] - cumDist[i-1] || 1;
+    const f = (dist - cumDist[i-1]) / seg;
+    const a = coords[i-1], b = coords[i];
+    return [a[0] + (b[0]-a[0]) * f, a[1] + (b[1]-a[1]) * f];
+  }
+
+  // Bearing (grados) de la dirección de la ruta en `dist` metros
+  function bearingAlong(dist) {
+    const a = pointAlong(Math.max(0, dist - 40));
+    const b = pointAlong(Math.min(totalDist, dist + 40));
+    const y = Math.sin(rad(b[0]-a[0])) * Math.cos(rad(b[1]));
+    const x = Math.cos(rad(a[1]))*Math.sin(rad(b[1])) - Math.sin(rad(a[1]))*Math.cos(rad(b[1]))*Math.cos(rad(b[0]-a[0]));
+    return deg(Math.atan2(y, x));
+  }
+
   function lerpBearing(a, b, t) {
     let d = ((b - a) % 360 + 540) % 360 - 180;
     return a + d * t;
   }
+  function lerp(a, b, t) { return a + (b - a) * t; }
   function easeInOut(t) {
     return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
   }
   function easeIn(t) { return t * t; }
   function easeOut(t) { return 1 - (1 - t) * (1 - t); }
 
+  // ── Parámetros de la chase cam (estilo Relive) ─────────────────────────
+  // La cámara vuela DETRÁS del piloto mirándolo, a altitud real sobre el
+  // terreno — no encima de él. Escala con el tamaño de la ruta.
+  const CAM_BACK   = Math.min(1500, Math.max(350, totalDist * 0.045)); // m detrás
+  const CAM_HEIGHT = Math.min(1200, Math.max(280, totalDist * 0.035)); // m sobre terreno
+
   // ── Estado del mapa ────────────────────────────────────────────────────
   let mapReady = false;
   let currentBearing = 30;
+  let smCamPos = null;   // posición de cámara suavizada [lng, lat]
+  let smCamAlt = null;   // altitud suavizada (m)
 
   const map = new mapboxgl.Map({
     container: 'map',
@@ -229,6 +281,16 @@
       tileSize: 512, maxzoom: 14,
     });
     map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.5 });
+
+    // Atmósfera: bruma en el horizonte + cielo — da profundidad al relieve
+    map.setFog({
+      range: [0.5, 10],
+      color: 'rgba(220, 225, 235, 0.85)',
+      'high-color': '#245bde',
+      'horizon-blend': 0.08,
+      'space-color': '#0b1026',
+      'star-intensity': 0.15,
+    });
 
     // Capas de ruta
     map.addSource('route-full', {
@@ -337,36 +399,57 @@
 
       const p = (t - T_INTRO) / T_ROUTE;
       const eased = easeInOut(p);
-      const idxF = eased * (coords.length - 1);
-      const idx  = Math.floor(idxF);
-      const frac = idxF - idx;
-      const a = coords[idx];
-      const b = coords[Math.min(idx + 1, coords.length - 1)];
-      const cur = [a[0] + (b[0]-a[0]) * frac, a[1] + (b[1]-a[1]) * frac];
 
-      // Ruta parcial dibujada
-      const partial = [...coords.slice(0, idx + 1), cur];
+      // Progreso por DISTANCIA real (no por índice de puntos GPS) —
+      // avance constante aunque los puntos estén espaciados irregular.
+      const riderDist = eased * totalDist;
+      const rider = pointAlong(riderDist);
+
+      // Ruta parcial dibujada (por distancia)
+      let cutIdx = 0;
+      while (cutIdx < cumDist.length - 1 && cumDist[cutIdx + 1] <= riderDist) cutIdx++;
+      const partial = [...coords.slice(0, cutIdx + 1), rider];
       map.getSource('route-live').setData({ type:'Feature', geometry:{ type:'LineString', coordinates: partial }});
-      map.getSource('pin').setData({ type:'Feature', geometry:{ type:'Point', coordinates: cur }});
+      map.getSource('pin').setData({ type:'Feature', geometry:{ type:'Point', coordinates: rider }});
 
       // KM y speed en HUD
       document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
       document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-      // Cámara: sigue la ruta con pitch alto y bearing calculado
-      const rawBearing = routeBearing(idx);
-      // Suavizar el bearing: interpolar desde el bearing anterior con inercia
-      const smoothBearing = lerpBearing(currentBearing, rawBearing, 0.12);
+      // ── CHASE CAM estilo Relive (FreeCamera API) ──────────────────────
+      // Cámara DETRÁS del piloto, a altitud real, mirándolo.
+      const dirBearing = bearingAlong(riderDist);
+      const smoothBearing = lerpBearing(currentBearing, dirBearing, 0.10);
       currentBearing = smoothBearing;
 
-      // Zoom: empieza amplio, se acerca a mitad, vuelve al final
-      const zoomCurve = p < 0.5 ? easeIn(p * 2) : easeOut((1 - p) * 2);
-      const zoom = 12.5 + zoomCurve * 3.0;
+      // Posición: CAM_BACK metros detrás del piloto en dirección opuesta
+      // al movimiento (extrapola geográficamente si aún no hay ruta detrás)
+      const camBehindDist = riderDist - CAM_BACK;
+      const camLngLat = camBehindDist >= 0
+        ? pointAlong(camBehindDist)
+        : destination(coords[0], smoothBearing + 180, CAM_BACK - riderDist);
 
-      // Pitch: sube dramáticamente al inicio de la ruta
-      const pitch = 65 + easeIn(Math.min(p * 4, 1)) * 10;
+      // Altitud: terreno bajo la cámara + altura de vuelo (con boost inicial
+      // y final para abrir el plano)
+      const openShot = p < 0.12 ? (1 - p / 0.12) : p > 0.88 ? (p - 0.88) / 0.12 : 0;
+      const terrainElev = map.queryTerrainElevation(camLngLat) || 0;
+      const targetAlt = terrainElev + CAM_HEIGHT * (1 + openShot * 1.6);
 
-      map.jumpTo({ center: cur, zoom, bearing: smoothBearing, pitch });
+      // Suavizado de posición y altitud (inercia de cámara)
+      if (!smCamPos) { smCamPos = camLngLat; smCamAlt = targetAlt; }
+      smCamPos = [lerp(smCamPos[0], camLngLat[0], 0.12), lerp(smCamPos[1], camLngLat[1], 0.12)];
+      smCamAlt = lerp(smCamAlt, targetAlt, 0.08);
+
+      // Nunca por debajo del terreno + margen
+      const floorAlt = (map.queryTerrainElevation(smCamPos) || 0) + 120;
+      const finalAlt = Math.max(smCamAlt, floorAlt);
+
+      const camera = map.getFreeCameraOptions();
+      camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
+        { lng: smCamPos[0], lat: smCamPos[1] }, finalAlt
+      );
+      camera.lookAtPoint({ lng: rider[0], lat: rider[1] });
+      map.setFreeCameraOptions(camera);
 
     // ── FOTOS [T_INTRO+T_ROUTE, T_INTRO+T_ROUTE+photoCount*T_PHOTO) ───
     } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO) {
