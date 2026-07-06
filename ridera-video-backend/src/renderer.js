@@ -1,3 +1,4 @@
+import './env-fix.js';
 import puppeteer from 'puppeteer';
 import { tmpdir } from 'os';
 import { join } from 'path';
@@ -13,6 +14,7 @@ const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
 if (!MAPBOX_TOKEN) {
   console.warn('WARNING: MAPBOX_TOKEN no configurado');
 }
+
 
 const FPS    = 24;
 const WIDTH  = 1080;
@@ -54,6 +56,7 @@ export async function renderRideVideo({
   maxSpeedKmh,
   routePoints,
   photos,
+  onProgress,
 }) {
   const T = (label, from) =>
     console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
@@ -86,22 +89,40 @@ export async function renderRideVideo({
       '--disable-dev-shm-usage',
       '--no-zygote',
       '--disable-crash-reporter',
+      '--disable-crashpad',
+      '--disable-breakpad',
       '--disable-extensions',
       '--mute-audio',
-      '--use-gl=angle',
-      '--use-angle=swiftshader',
+      // NO usar --use-gl=angle/--use-angle=swiftshader: en Chrome 127
+      // deshabilitan WebGL (verificado). Sin ellos Chrome cae solo a
+      // SwiftShader y WebGL funciona.
       '--enable-unsafe-swiftshader',
-      '--enable-webgl',
       '--ignore-gpu-blocklist',
       '--font-render-hinting=none',
       `--window-size=${WIDTH},${HEIGHT}`,
     ],
-    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
+    // SIN executablePath: Puppeteer usa SIEMPRE su Chrome for Testing
+    // emparejado (PUPPETEER_CACHE_DIR). No se obedece la env var
+    // PUPPETEER_EXECUTABLE_PATH porque una variable vieja en Railway
+    // apuntando al chromium de Debian reintroduciría el crash de launch.
     protocolTimeout: 15 * 60 * 1000,
+    // Chromium necesita directorios escribibles — sin HOME válido crashea
+    env: {
+      ...process.env,
+      HOME: '/tmp',
+      XDG_CONFIG_HOME: '/tmp/.chromium',
+      XDG_CACHE_HOME: '/tmp/.chromium',
+    },
+    dumpio: true, // stderr completo de Chromium a los logs de Railway
   };
 
   const tBrowser = Date.now();
-  let browser;
+  let browser = null;
+  // try/finally: si CUALQUIER paso falla, el navegador se cierra y los
+  // frames se borran — un Chromium zombi por job fallido agota la
+  // memoria de Railway y tumba los renders siguientes.
+  try {
+
   // El primer launch a veces falla en contenedores fríos — reintentar
   for (let attempt = 1; attempt <= 3; attempt++) {
     try {
@@ -133,6 +154,17 @@ export async function renderRideVideo({
     })
   );
   T('scene ready', tReady);
+
+  // Si el script del template murió (token Mapbox inválido, CDN caído),
+  // fallar YA con un error claro en vez de capturar frames de nada
+  const sceneOk = await page.evaluate(
+    () => typeof window.__seekTo === 'function' && window.__ready === true
+  );
+  if (!sceneOk) {
+    throw new Error(
+      'La escena Mapbox no cargó (revisar MAPBOX_TOKEN y acceso a api.mapbox.com — ver logs BROWSER)'
+    );
+  }
   console.log(`  [${rideId}] duración: ${totalSeconds}s, frames: ${Math.ceil(totalSeconds * FPS)}`);
 
   // ── Captura frame a frame ──────────────────────────────────────────────
@@ -154,21 +186,27 @@ export async function renderRideVideo({
     });
 
     if (f % 48 === 0) {
-      const pct = ((f / totalFrames) * 100).toFixed(0);
+      const pct = Math.round((f / totalFrames) * 100);
+      // 5-95%: la captura es el grueso del trabajo (encode+upload al final)
+      onProgress && onProgress(Math.min(95, 5 + Math.round(pct * 0.9)));
       console.log(`  [${rideId}] frames: ${f}/${totalFrames} (${pct}%) — ${((Date.now()-tCapture)/1000).toFixed(1)}s`);
     }
   }
   T('frame capture', tCapture);
 
+  // Cerrar el navegador ANTES de ffmpeg para liberar memoria
   await browser.close();
+  browser = null;
 
   // ── Ensamblar con FFmpeg ───────────────────────────────────────────────
   const tFfmpeg = Date.now();
   await ffmpegEncode(framesDir, outputPath);
   T('ffmpeg encode', tFfmpeg);
 
-  // Limpiar frames temporales
-  rm(framesDir, { recursive: true, force: true }).catch(() => {});
-
   return outputPath;
+
+  } finally {
+    if (browser) await browser.close().catch(() => {});
+    rm(framesDir, { recursive: true, force: true }).catch(() => {});
+  }
 }

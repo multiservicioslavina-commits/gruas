@@ -12,6 +12,7 @@
     "node": ">=20"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.45.4",
     "express": "^4.21.0",
     "puppeteer": "^22.15.0"
   }
