@@ -18,8 +18,7 @@ ENV PORT=3000
 
 WORKDIR /app
 COPY package.json ./
-# --legacy-peer-deps: puppeteer-screen-recorder@3.x tiene peer-dep viejo de puppeteer 19
-RUN npm install --omit=dev --legacy-peer-deps
+RUN npm install --omit=dev
 COPY src ./src
 
 EXPOSE 3000

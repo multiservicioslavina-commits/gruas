@@ -1,22 +1,50 @@
 import puppeteer from 'puppeteer';
-import { PuppeteerScreenRecorder } from 'puppeteer-screen-recorder';
 import { tmpdir } from 'os';
 import { join } from 'path';
-import { readFile } from 'fs/promises';
+import { readFile, mkdir, rm } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
+import { spawn } from 'child_process';
 
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname  = dirname(__filename);
 
 const MAPBOX_TOKEN = process.env.MAPBOX_TOKEN;
 if (!MAPBOX_TOKEN) {
   console.warn('WARNING: MAPBOX_TOKEN no configurado');
 }
 
+const FPS    = 30;
+const WIDTH  = 1080;
+const HEIGHT = 1080;
+
+function ffmpegEncode(framesDir, outputPath) {
+  return new Promise((resolve, reject) => {
+    const args = [
+      '-y',
+      '-framerate', String(FPS),
+      '-i', join(framesDir, 'frame_%06d.png'),
+      '-c:v', 'libx264',
+      '-preset', 'medium',
+      '-crf', '20',
+      '-pix_fmt', 'yuv420p',
+      '-vf', `scale=${WIDTH}:${HEIGHT}`,
+      '-movflags', '+faststart',
+      outputPath,
+    ];
+    const ff = spawn('ffmpeg', args, { stdio: ['ignore', 'pipe', 'pipe'] });
+    let stderr = '';
+    ff.stderr.on('data', d => { stderr += d.toString(); });
+    ff.on('close', code => {
+      if (code === 0) resolve();
+      else reject(new Error(`ffmpeg exited ${code}: ${stderr.slice(-800)}`));
+    });
+  });
+}
+
 /**
- * Renderiza un video estilo Relive del recorrido.
- * Retorna el path local del .mp4 generado.
+ * Renderiza un video de resumen de ruta con relieve 3D.
+ * Estrategia: seekTo(t) frame a frame → screenshot PNG → FFmpeg → MP4 1080p.
  */
 export async function renderRideVideo({
   rideId,
@@ -27,6 +55,9 @@ export async function renderRideVideo({
   routePoints,
   photos,
 }) {
+  const T = (label, from) =>
+    console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
+
   const templatePath = join(__dirname, 'mapbox-template.html');
   const html = (await readFile(templatePath, 'utf8'))
     .replace('__MAPBOX_TOKEN__', MAPBOX_TOKEN || '')
@@ -39,12 +70,14 @@ export async function renderRideVideo({
         maxSpeedKmh,
         routePoints,
         photos: (photos || []).slice(0, 8),
-      })
-        .replace(/</g, '\\u003c')
+      }).replace(/</g, '\\u003c')
     );
 
-  const T = (label, from) =>
-    console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
+  // Carpeta temporal de frames
+  const framesDir  = join(tmpdir(), `frames_${rideId}_${Date.now()}`);
+  const outputPath = join(tmpdir(), `ride_${rideId}_${Date.now()}.mp4`);
+  await mkdir(framesDir, { recursive: true });
+
   const tBrowser = Date.now();
   const browser = await puppeteer.launch({
     headless: 'new',
@@ -58,62 +91,65 @@ export async function renderRideVideo({
       '--enable-webgl',
       '--ignore-gpu-blocklist',
       '--font-render-hinting=none',
+      `--window-size=${WIDTH},${HEIGHT}`,
     ],
     executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || undefined,
-    protocolTimeout: 10 * 60 * 1000,
+    protocolTimeout: 15 * 60 * 1000,
   });
-
   T('browser boot', tBrowser);
-  const tPage = Date.now();
+
   const page = await browser.newPage();
+  page.on('console', msg => console.log(`  [${rideId}] BROWSER ${msg.type()}: ${msg.text()}`));
+  page.on('pageerror', err => console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`));
 
-  // Log console del navegador headless al server (para debug)
-  page.on('console', (msg) => {
-    console.log(`  [${rideId}] BROWSER ${msg.type()}: ${msg.text()}`);
-  });
-  page.on('pageerror', (err) => {
-    console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`);
-  });
-
-  await page.setViewport({ width: 720, height: 720, deviceScaleFactor: 1 });
+  await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
   await page.setContent(html, { waitUntil: 'networkidle0', timeout: 90000 });
-  T('page setContent', tPage);
+  T('page load', tBrowser);
 
+  // Esperar que el mapa y el terreno estén listos
   const tReady = Date.now();
-  // Esperar a que la escena reporte que está lista — CON TIMEOUT DEFENSIVO de 45s.
-  // Si Mapbox GL falla (swiftshader/WebGL en Railway), seguimos igual con lo que haya.
-  const durationSec = await page.evaluate(
-    () =>
-      new Promise((resolve) => {
-        if (window.__ready) return resolve(window.__totalSeconds || 30);
-        window.__onReady = () => resolve(window.__totalSeconds || 30);
-        // Timeout defensivo — evita que se cuelgue eterno si el mapa no carga
-        setTimeout(() => resolve(window.__totalSeconds || 30), 45000);
-      })
+  const totalSeconds = await page.evaluate(() =>
+    new Promise(resolve => {
+      if (window.__ready) return resolve(window.__totalSeconds || 30);
+      window.__onReady = () => resolve(window.__totalSeconds || 30);
+      setTimeout(() => resolve(window.__totalSeconds || 30), 50000);
+    })
   );
   T('scene ready', tReady);
-  console.log(`  [${rideId}] duración calculada: ${durationSec}s`);
+  console.log(`  [${rideId}] duración: ${totalSeconds}s, frames: ${Math.ceil(totalSeconds * FPS)}`);
 
-  const outputPath = join(tmpdir(), `ride_${rideId}_${Date.now()}.mp4`);
-  const tRec = Date.now();
-  const recorder = new PuppeteerScreenRecorder(page, {
-    fps: 24,
-    videoFrame: { width: 720, height: 720 },
-    videoCrf: 28,
-    videoCodec: 'libx264',
-    videoPreset: 'ultrafast',
-    videoBitrate: 1500,
-    aspectRatio: '1:1',
-  });
-  await recorder.start(outputPath);
+  // ── Captura frame a frame ──────────────────────────────────────────────
+  const tCapture = Date.now();
+  const totalFrames = Math.ceil(totalSeconds * FPS);
 
-  // Disparar la animación
-  await page.evaluate(() => window.__play && window.__play());
-  // Esperar duración + margen
-  await new Promise((r) => setTimeout(r, (durationSec + 1) * 1000));
+  for (let f = 0; f < totalFrames; f++) {
+    const t = f / FPS;
+    // Seek al segundo exacto y esperar idle del mapa
+    await page.evaluate(t => window.__seekTo(t), t);
 
-  await recorder.stop();
-  T('recording', tRec);
+    const frameNum = String(f).padStart(6, '0');
+    await page.screenshot({
+      path: join(framesDir, `frame_${frameNum}.png`),
+      type: 'png',
+      clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
+    });
+
+    if (f % 30 === 0) {
+      const pct = ((f / totalFrames) * 100).toFixed(0);
+      console.log(`  [${rideId}] frames: ${f}/${totalFrames} (${pct}%) — ${((Date.now()-tCapture)/1000).toFixed(1)}s`);
+    }
+  }
+  T('frame capture', tCapture);
+
   await browser.close();
+
+  // ── Ensamblar con FFmpeg ───────────────────────────────────────────────
+  const tFfmpeg = Date.now();
+  await ffmpegEncode(framesDir, outputPath);
+  T('ffmpeg encode', tFfmpeg);
+
+  // Limpiar frames temporales
+  rm(framesDir, { recursive: true, force: true }).catch(() => {});
+
   return outputPath;
 }
