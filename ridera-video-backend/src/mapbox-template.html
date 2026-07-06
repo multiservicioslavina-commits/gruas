@@ -208,11 +208,7 @@
 
   // ── Estado del mapa ────────────────────────────────────────────────────
   let mapReady = false;
-  let routeAnimPct = 0;
   let currentBearing = 30;
-  let currentPitch = 65;
-  let currentZoom = 13;
-  let currentCenter = [centerLng, centerLat];
 
   const map = new mapboxgl.Map({
     container: 'map',
@@ -222,12 +218,6 @@
     antialias: true, fadeDuration: 0,
     interactive: false, preserveDrawingBuffer: true,
   });
-
-  // ── Estado por sección, actualizable en seekTo ─────────────────────────
-  // __seekTo(t) lleva el video al segundo t de forma INMEDIATA (sin animación)
-  // Se usa desde el renderer para capturar frames.
-
-  let _sectionStates = null; // calculado after load
 
   map.on('load', async () => {
     document.getElementById('introName').textContent  = DATA.rideName || '';
@@ -450,11 +440,13 @@
       map.jumpTo({ center: bCenter, zoom: 9.5 + easeIn(p) * 1.5, pitch: 30 - easeIn(p) * 15, bearing: 60 + p * 20 });
     }
 
-    // Forzar re-render del mapa y esperar que esté idle
+    // Forzar re-render y esperar a que las teselas estén cargadas.
+    // jumpTo siempre dispara 'idle' cuando termina de cargar; el timeout
+    // largo es solo red de seguridad para que nunca se cuelgue.
     map.triggerRepaint();
     await new Promise(resolve => {
       map.once('idle', resolve);
-      setTimeout(resolve, 200);
+      setTimeout(resolve, 5000);
     });
   };
 </script>
