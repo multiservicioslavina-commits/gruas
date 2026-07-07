@@ -25,7 +25,7 @@ app.get('/', (_req, res) => {
   res.json({
     ok: true,
     service: 'ridera-video-backend',
-    version: '2026-07-07-cinematic1',
+    version: '2026-07-07-sellos',
     chrome: chromeInfo,
     env: {
       MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ? 'set' : 'FALTA',

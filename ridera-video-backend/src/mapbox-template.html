@@ -90,6 +90,21 @@
   #photoLocationLabel span { font-size: 22px; }
   #photoMapHint { font-size: 13px; color: #888; letter-spacing: 1px; margin-top: 4px; }
 
+  /* SELLO DE MUNICIPIO — estampa de pasaporte al pasar por un pueblo */
+  #stampChip {
+    position: absolute; top: 200px; left: 36px;
+    background: rgba(10, 8, 6, 0.82);
+    border: 3px dashed #E8B84B;
+    border-radius: 14px;
+    padding: 14px 22px;
+    transform: rotate(-4deg) scale(0);
+    opacity: 0;
+    box-shadow: 0 0 40px rgba(232, 184, 75, 0.35), 0 8px 30px rgba(0,0,0,0.6);
+  }
+  #stampTitle { font-size: 11px; letter-spacing: 5px; color: #E8B84B; font-weight: 700; }
+  #stampName  { font-size: 30px; font-weight: 900; color: #fff; letter-spacing: 2px; text-transform: uppercase; margin: 2px 0; }
+  #stampPts   { font-size: 14px; color: #E8B84B; font-weight: 700; letter-spacing: 2px; }
+
   /* OUTRO */
   #outro {
     position: absolute; inset: 0;
@@ -146,6 +161,12 @@
       <div id="photoLocationLabel"><span>📍</span><span id="photoLocationText">Ubicación en el mapa ↑</span></div>
       <div id="photoMapHint">El punto naranja muestra dónde fue tomada</div>
     </div>
+  </div>
+
+  <div id="stampChip">
+    <div id="stampTitle">🏍 SELLO PASAPORTE RIDERA</div>
+    <div id="stampName"></div>
+    <div id="stampPts"></div>
   </div>
 
   <div id="outro">
@@ -256,6 +277,31 @@
   const CAM_BACK   = Math.min(1500, Math.max(350, totalDist * 0.045)); // m detrás
   const CAM_HEIGHT = Math.min(1200, Math.max(280, totalDist * 0.035)); // m sobre terreno
 
+  // ── Sellos de municipios (pasaporte Ridera) ────────────────────────────
+  // Municipios a ≤3km de la ruta, con el instante t en que el piloto pasa.
+  function invEaseInOut(f) {
+    return f < 0.5 ? Math.sqrt(f / 2) : 1 - Math.sqrt((1 - f) / 2);
+  }
+  const STAMP_SHOW = 2.8; // segundos visible cada sello
+  const stamps = (DATA.municipios || [])
+    .map(mu => {
+      let best = Infinity, bestDist = 0;
+      for (let i = 0; i < coords.length; i++) {
+        const d = haversine(coords[i], [mu.lon, mu.lat]);
+        if (d < best) { best = d; bestDist = cumDist[i]; }
+      }
+      const f = totalDist > 0 ? bestDist / totalDist : 0;
+      return { ...mu, offRoute: best, t: T_INTRO + invEaseInOut(f) * T_ROUTE };
+    })
+    .filter(s => s.offRoute <= 3000)
+    .sort((a, b) => a.t - b.t);
+  // Evitar solapes: si dos sellos quedan a <STAMP_SHOW, correr el segundo
+  for (let i = 1; i < stamps.length; i++) {
+    if (stamps[i].t < stamps[i-1].t + STAMP_SHOW + 0.4) {
+      stamps[i].t = stamps[i-1].t + STAMP_SHOW + 0.4;
+    }
+  }
+
   // ── Estado del mapa ────────────────────────────────────────────────────
   let mapReady = false;
   // Bearing inicial = dirección real del arranque de la ruta, para que
@@ -329,6 +375,20 @@
     map.addSource('photo-active', {
       type: 'geojson', data: { type: 'FeatureCollection', features: [] },
     });
+    // Municipios con sello en la zona (marcadores dorados)
+    map.addSource('stamps', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: stamps.map(s => ({
+          type: 'Feature', properties: { nombre: s.nombre },
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+        })),
+      },
+    });
+    map.addSource('stamp-active', {
+      type: 'geojson', data: { type: 'FeatureCollection', features: [] },
+    });
 
     map.addLayer({ id: 'route-full-layer', type: 'line', source: 'route-full',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -356,6 +416,22 @@
       paint: { 'circle-radius': 8, 'circle-color': '#fff',
         'circle-stroke-width': 2.5, 'circle-stroke-color': '#E85D20', 'circle-opacity': 0.85 },
     });
+    // Marcadores dorados de municipios con sello
+    map.addLayer({ id: 'stamps-halo', type: 'circle', source: 'stamps',
+      paint: { 'circle-radius': 16, 'circle-color': '#E8B84B', 'circle-opacity': 0.2 },
+    });
+    map.addLayer({ id: 'stamps-dot', type: 'circle', source: 'stamps',
+      paint: { 'circle-radius': 7, 'circle-color': '#E8B84B',
+        'circle-stroke-width': 2, 'circle-stroke-color': '#fff', 'circle-opacity': 0.95 },
+    });
+    map.addLayer({ id: 'stamp-active-ring', type: 'circle', source: 'stamp-active',
+      paint: { 'circle-radius': 32, 'circle-color': '#E8B84B', 'circle-opacity': 0.45 },
+    });
+    map.addLayer({ id: 'stamp-active-dot', type: 'circle', source: 'stamp-active',
+      paint: { 'circle-radius': 13, 'circle-color': '#E8B84B',
+        'circle-stroke-width': 4, 'circle-stroke-color': '#fff' },
+    });
+
     map.addLayer({ id: 'photo-active-ring', type: 'circle', source: 'photo-active',
       paint: { 'circle-radius': 36, 'circle-color': '#E85D20', 'circle-opacity': 0.45 },
     });
@@ -388,6 +464,11 @@
     t = Math.max(0, Math.min(totalSeconds, t));
 
     const totalKm = parseFloat(DATA.distanceKm) || 0;
+
+    // Reset del sello: solo la sección de ruta lo puede mostrar
+    const stampChipEl = document.getElementById('stampChip');
+    stampChipEl.style.opacity = 0;
+    stampChipEl.style.transform = 'rotate(-4deg) scale(0)';
 
     // ── INTRO [0, T_INTRO) ─────────────────────────────────────────────
     if (t < T_INTRO) {
@@ -461,6 +542,42 @@
       );
       camera.lookAtPoint({ lng: rider[0], lat: rider[1] });
       map.setFreeCameraOptions(camera);
+
+      // ── SELLO DE MUNICIPIO: estampa al pasar por cada pueblo ─────────
+      const stamp = stamps.find(s => t >= s.t && t < s.t + STAMP_SHOW);
+      const chip = document.getElementById('stampChip');
+      if (stamp) {
+        const sp = (t - stamp.t) / STAMP_SHOW;
+        // Pop de entrada (rebote), estable, fade de salida
+        let scale, op;
+        if (sp < 0.15) {
+          const k = sp / 0.15;
+          scale = 0.4 + easeOut(k) * 0.72;  // llega a 1.12
+          op = k;
+        } else if (sp < 0.28) {
+          scale = 1.12 - ((sp - 0.15) / 0.13) * 0.12; // asienta a 1.0
+          op = 1;
+        } else if (sp > 0.85) {
+          const k = (sp - 0.85) / 0.15;
+          scale = 1; op = 1 - k;
+        } else {
+          scale = 1; op = 1;
+        }
+        chip.style.transform = `rotate(-4deg) scale(${scale})`;
+        chip.style.opacity = op;
+        document.getElementById('stampName').textContent = stamp.nombre;
+        document.getElementById('stampPts').textContent =
+          `${stamp.subregion || ''} · +${stamp.puntos_sello || 0} PTS`;
+        map.getSource('stamp-active').setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {},
+            geometry: { type: 'Point', coordinates: [stamp.lon, stamp.lat] } }],
+        });
+      } else {
+        chip.style.opacity = 0;
+        chip.style.transform = 'rotate(-4deg) scale(0)';
+        map.getSource('stamp-active').setData({ type: 'FeatureCollection', features: [] });
+      }
 
     // ── FOTOS [T_INTRO+T_ROUTE, T_INTRO+T_ROUTE+photoCount*T_PHOTO) ───
     } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO) {
