@@ -20,17 +20,31 @@ const FPS    = 24;
 const WIDTH  = 1080;
 const HEIGHT = 1080;
 
-function ffmpegEncode(framesDir, outputPath) {
+// Pista musical opcional: si existe assets/music.mp3 (o MUSIC_PATH),
+// se mezcla con fade-out al final — el video mudo no emociona a nadie.
+import { existsSync } from 'fs';
+const MUSIC_PATH = process.env.MUSIC_PATH || join(dirname(fileURLToPath(import.meta.url)), '..', 'assets', 'music.mp3');
+
+function ffmpegEncode(framesDir, outputPath, durationSec) {
+  const hasMusic = existsSync(MUSIC_PATH);
   return new Promise((resolve, reject) => {
     const args = [
       '-y',
       '-framerate', String(FPS),
       '-i', join(framesDir, 'frame_%06d.jpg'),
+      ...(hasMusic ? ['-stream_loop', '-1', '-i', MUSIC_PATH] : []),
       '-c:v', 'libx264',
       '-preset', 'medium',
       '-crf', '20',
       '-pix_fmt', 'yuv420p',
       '-vf', `scale=${WIDTH}:${HEIGHT}`,
+      ...(hasMusic
+        ? [
+            '-c:a', 'aac', '-b:a', '128k',
+            '-af', `afade=t=out:st=${Math.max(0, durationSec - 2.5)}:d=2.5`,
+            '-shortest',
+          ]
+        : []),
       '-movflags', '+faststart',
       outputPath,
     ];
@@ -200,7 +214,7 @@ export async function renderRideVideo({
 
   // ── Ensamblar con FFmpeg ───────────────────────────────────────────────
   const tFfmpeg = Date.now();
-  await ffmpegEncode(framesDir, outputPath);
+  await ffmpegEncode(framesDir, outputPath, totalSeconds);
   T('ffmpeg encode', tFfmpeg);
 
   return outputPath;

@@ -33,6 +33,7 @@ RUN npm install --omit=dev
 RUN PUPPETEER_SKIP_DOWNLOAD= PUPPETEER_SKIP_CHROMIUM_DOWNLOAD= \
     npx puppeteer browsers install chrome
 COPY src ./src
+COPY assets ./assets
 
 EXPOSE 3000
 CMD ["/bin/sh", "-c", "mkdir -p /run/dbus /tmp/.chromium && (dbus-daemon --system --fork 2>/dev/null || true); exec node src/server.js"]

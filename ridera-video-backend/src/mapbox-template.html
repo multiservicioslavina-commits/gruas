@@ -264,9 +264,12 @@
   let smCamPos = null;   // posición de cámara suavizada [lng, lat]
   let smCamAlt = null;   // altitud suavizada (m)
 
+  // Standard Satellite: satélite + iluminación 3D real (sol, sombras,
+  // cielo). lightPreset 'dusk' = hora dorada — el look cinematográfico.
   const map = new mapboxgl.Map({
     container: 'map',
-    style: 'mapbox://styles/mapbox/satellite-streets-v12',
+    style: 'mapbox://styles/mapbox/standard-satellite',
+    config: { basemap: { lightPreset: 'dusk' } },
     center: [centerLng, centerLat],
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
@@ -287,15 +290,18 @@
     });
     map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.5 });
 
-    // Atmósfera: bruma en el horizonte + cielo — da profundidad al relieve
-    map.setFog({
-      range: [0.5, 10],
-      color: 'rgba(220, 225, 235, 0.85)',
-      'high-color': '#245bde',
-      'horizon-blend': 0.08,
-      'space-color': '#0b1026',
-      'star-intensity': 0.15,
-    });
+    // El estilo Standard trae su propia atmósfera/cielo según lightPreset;
+    // si por algo no la aplica, este fog es el respaldo (no debe romper).
+    try {
+      map.setFog({
+        range: [0.5, 10],
+        color: 'rgba(230, 200, 170, 0.75)',
+        'high-color': '#3a5bbf',
+        'horizon-blend': 0.08,
+        'space-color': '#0b1026',
+        'star-intensity': 0.2,
+      });
+    } catch (e) { console.log('fog no aplicado:', e.message); }
 
     // Capas de ruta
     map.addSource('route-full', {
