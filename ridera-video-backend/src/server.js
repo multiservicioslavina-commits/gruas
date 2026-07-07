@@ -25,7 +25,7 @@ app.get('/', (_req, res) => {
   res.json({
     ok: true,
     service: 'ridera-video-backend',
-    version: '2026-07-06-fetch-upload',
+    version: '2026-07-07-dedup',
     chrome: chromeInfo,
     env: {
       MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ? 'set' : 'FALTA',
@@ -75,8 +75,18 @@ app.post('/render', (req, res) => {
     });
   }
 
+  // Dedup: si la misma rodada ya tiene un render en cola o en curso
+  // (ej. "Reintentar" repetido), devolver ese jobId en vez de duplicar
+  // 30 minutos de trabajo del servidor.
+  for (const [id, job] of jobs) {
+    if (job.rideId === rideId && (job.state === 'queued' || job.state === 'rendering')) {
+      console.log(`[${rideId}] dedup: reutilizando job ${id} (${job.state})`);
+      return res.status(202).json({ jobId: id });
+    }
+  }
+
   const jobId = randomUUID();
-  jobs.set(jobId, { state: 'queued', progress: 0, createdAt: Date.now() });
+  jobs.set(jobId, { state: 'queued', progress: 0, createdAt: Date.now(), rideId });
   console.log(`[${rideId}] job ${jobId} encolado — ${routePoints.length} puntos, ${(photos || []).length} fotos`);
 
   enqueue(async () => {
