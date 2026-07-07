@@ -90,6 +90,28 @@
   #photoLocationLabel span { font-size: 22px; }
   #photoMapHint { font-size: 13px; color: #888; letter-spacing: 1px; margin-top: 4px; }
 
+  /* INICIO / FINAL — insignias ancladas al mapa */
+  .geoBadge {
+    position: absolute; transform: translate(-50%, -130%);
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 15px; font-weight: 900; letter-spacing: 2px;
+    color: #fff; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .geoBadge::after {
+    content: ''; position: absolute; left: 50%; bottom: -7px;
+    transform: translateX(-50%);
+    border: 7px solid transparent; border-bottom: none;
+  }
+  #startBadge { background: #1DA84C; }
+  #startBadge::after { border-top-color: #1DA84C; }
+  #endBadge { background: #C0272D; }
+  #endBadge::after { border-top-color: #C0272D; }
+
+  /* Subtítulo desde→hasta en la intro */
+  #introRoute { font-size: 17px; color: #E8B84B; letter-spacing: 3px; font-weight: 700; margin-top: 10px; }
+
   /* SELLO DE MUNICIPIO — estampa de pasaporte al pasar por un pueblo */
   #stampChip {
     position: absolute; top: 200px; left: 36px;
@@ -143,7 +165,11 @@
     <div id="introSub">AVENTURA</div>
     <div id="introLine"></div>
     <div id="introName"></div>
+    <div id="introRoute"></div>
   </div>
+
+  <div id="startBadge" class="geoBadge">🏁 INICIO</div>
+  <div id="endBadge" class="geoBadge">🏁 FINAL</div>
 
   <div id="statsPanel">
     <div id="statsTitle">RESUMEN DE LA RODADA</div>
@@ -274,8 +300,27 @@
   // ── Parámetros de la chase cam (estilo Relive) ─────────────────────────
   // La cámara vuela DETRÁS del piloto mirándolo, a altitud real sobre el
   // terreno — no encima de él. Escala con el tamaño de la ruta.
-  const CAM_BACK   = Math.min(1500, Math.max(350, totalDist * 0.045)); // m detrás
-  const CAM_HEIGHT = Math.min(1200, Math.max(280, totalDist * 0.035)); // m sobre terreno
+  const CAM_BACK   = Math.min(1200, Math.max(240, totalDist * 0.04));  // m detrás
+  const CAM_HEIGHT = Math.min(850,  Math.max(150, totalDist * 0.028)); // m sobre terreno
+
+  // Zoom que encuadra la ruta completa (para intro y contexto)
+  const spanDeg = Math.max(
+    bounds.getEast() - bounds.getWest(),
+    (bounds.getNorth() - bounds.getSouth()) * 1.2
+  );
+  const fitZoom = Math.max(8, Math.min(14, Math.log2(360 / (spanDeg * 1.6))));
+
+  // Desde / Hasta: municipio más cercano al inicio y al final de la ruta
+  function nearestMuni(pt) {
+    let best = null, bd = Infinity;
+    for (const mu of (DATA.municipios || [])) {
+      const d = haversine(pt, [mu.lon, mu.lat]);
+      if (d < bd) { bd = d; best = mu; }
+    }
+    return bd <= 12000 ? best.nombre : null; // ≤12km para tener sentido
+  }
+  const desdeName = nearestMuni(coords[0]);
+  const hastaName = nearestMuni(coords[coords.length - 1]);
 
   // ── Sellos de municipios (pasaporte Ridera) ────────────────────────────
   // Municipios a ≤3km de la ruta, con el instante t en que el piloto pasa.
@@ -315,7 +360,7 @@
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/standard-satellite',
-    config: { basemap: { lightPreset: 'dusk' } },
+    config: { basemap: { lightPreset: 'dawn' } },
     center: [centerLng, centerLat],
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
@@ -328,13 +373,19 @@
   map.on('load', async () => {
     document.getElementById('introName').textContent  = DATA.rideName || '';
     document.getElementById('rideNameText').textContent = DATA.rideName || '';
+    if (desdeName || hastaName) {
+      document.getElementById('introRoute').textContent =
+        `${desdeName || 'Salida'}  →  ${hastaName || 'Llegada'}`;
+    }
 
     // Terreno 3D con exageración alta
     map.addSource('mapbox-dem', {
       type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
       tileSize: 512, maxzoom: 14,
     });
-    map.setTerrain({ source: 'mapbox-dem', exaggeration: 2.5 });
+    // 1.6: relieve notorio sin deformar — 2.5 volvía irreal el terreno
+    // en rutas cortas/urbanas ("mapa flotando en el aire")
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.6 });
 
     // El estilo Standard trae su propia atmósfera/cielo según lightPreset;
     // si por algo no la aplica, este fog es el respaldo (no debe romper).
@@ -389,6 +440,19 @@
     map.addSource('stamp-active', {
       type: 'geojson', data: { type: 'FeatureCollection', features: [] },
     });
+    // Puntos de INICIO (verde) y FINAL (rojo) — siempre visibles
+    map.addSource('endpoints', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { kind: 'start' },
+            geometry: { type: 'Point', coordinates: coords[0] } },
+          { type: 'Feature', properties: { kind: 'end' },
+            geometry: { type: 'Point', coordinates: coords[coords.length - 1] } },
+        ],
+      },
+    });
 
     map.addLayer({ id: 'route-full-layer', type: 'line', source: 'route-full',
       layout: { 'line-cap': 'round', 'line-join': 'round' },
@@ -416,6 +480,17 @@
       paint: { 'circle-radius': 8, 'circle-color': '#fff',
         'circle-stroke-width': 2.5, 'circle-stroke-color': '#E85D20', 'circle-opacity': 0.85 },
     });
+    map.addLayer({ id: 'endpoints-halo', type: 'circle', source: 'endpoints',
+      paint: { 'circle-radius': 18,
+        'circle-color': ['match', ['get','kind'], 'start', '#1DA84C', '#C0272D'],
+        'circle-opacity': 0.3 },
+    });
+    map.addLayer({ id: 'endpoints-dot', type: 'circle', source: 'endpoints',
+      paint: { 'circle-radius': 9,
+        'circle-color': ['match', ['get','kind'], 'start', '#1DA84C', '#C0272D'],
+        'circle-stroke-width': 3, 'circle-stroke-color': '#fff' },
+    });
+
     // Marcadores dorados de municipios con sello
     map.addLayer({ id: 'stamps-halo', type: 'circle', source: 'stamps',
       paint: { 'circle-radius': 16, 'circle-color': '#E8B84B', 'circle-opacity': 0.2 },
@@ -470,6 +545,21 @@
     stampChipEl.style.opacity = 0;
     stampChipEl.style.transform = 'rotate(-4deg) scale(0)';
 
+    // Insignias INICIO/FINAL ancladas al mapa (se posicionan tras mover cámara)
+    function placeBadges(show) {
+      const sb = document.getElementById('startBadge');
+      const eb = document.getElementById('endBadge');
+      if (!show) { sb.style.display = 'none'; eb.style.display = 'none'; return; }
+      const sp = map.project(coords[0]);
+      const ep = map.project(coords[coords.length - 1]);
+      const inView = p => p.x > -80 && p.x < 1160 && p.y > -40 && p.y < 1120;
+      sb.style.display = inView(sp) ? 'block' : 'none';
+      sb.style.left = sp.x + 'px'; sb.style.top = sp.y + 'px';
+      eb.style.display = inView(ep) ? 'block' : 'none';
+      eb.style.left = ep.x + 'px'; eb.style.top = ep.y + 'px';
+    }
+    let badgesOn = false;
+
     // ── INTRO [0, T_INTRO) ─────────────────────────────────────────────
     if (t < T_INTRO) {
       const p = t / T_INTRO;
@@ -477,11 +567,13 @@
       hide('rideNameBar'); hide('hudBar'); hide('statsPanel'); hide('outro');
       setTr('photoCard', 'translateY(100%)');
 
-      // Cámara: zoom in lento desde el centro de la ruta
-      const zoom = 11 + easeIn(p) * 2.5;
-      const bearing = 30 + easeIn(p) * 15;
-      const pitch = 55 + easeIn(p) * 15;
+      // Contexto de región: se ve la RUTA COMPLETA con inicio/final
+      // marcados, y la cámara se acerca lentamente
+      const zoom = (fitZoom - 0.8) + easeIn(p) * 1.4;
+      const bearing = 15 + easeIn(p) * 15;
+      const pitch = 35 + easeIn(p) * 20;
       map.jumpTo({ center: [centerLng, centerLat], zoom, bearing, pitch });
+      badgesOn = true;
 
     // ── RUTA [T_INTRO, T_INTRO+T_ROUTE) ───────────────────────────────
     } else if (t < T_INTRO + T_ROUTE) {
@@ -542,6 +634,7 @@
       );
       camera.lookAtPoint({ lng: rider[0], lat: rider[1] });
       map.setFreeCameraOptions(camera);
+      badgesOn = true;
 
       // ── SELLO DE MUNICIPIO: estampa al pasar por cada pueblo ─────────
       const stamp = stamps.find(s => t >= s.t && t < s.t + STAMP_SHOW);
@@ -589,6 +682,11 @@
       const photoP   = (photoT % T_PHOTO) / T_PHOTO;
       const photo = photos[photoIdx];
       const hasGps = photo && photo.lat && photo.lon;
+      // Sin GPS: anclar la foto a un punto proporcional de la ruta —
+      // SIEMPRE hay referencia en el mapa, nunca una vista sin contexto
+      const anchor = hasGps
+        ? [photo.lon, photo.lat]
+        : pointAlong(totalDist * (photoIdx + 1) / (photoCount + 1));
 
       // Tarjeta: slide in en primer 20%, permanece, slide out en último 15%
       let cardY;
@@ -603,23 +701,20 @@
 
       document.getElementById('photoThumb').src = photo?.url || '';
       document.getElementById('photoCounter').textContent = `📷 FOTO ${photoIdx + 1} DE ${photoCount}`;
-      document.getElementById('photoLocationText').textContent = hasGps ? 'Ubicación en el mapa ↑' : 'Sin datos de ubicación';
+      document.getElementById('photoLocationText').textContent = hasGps
+        ? 'Ubicación exacta en el mapa ↑'
+        : 'Punto del recorrido en el mapa ↑';
 
-      if (hasGps) {
-        map.getSource('photo-active').setData({
-          type:'FeatureCollection', features:[{
-            type:'Feature', properties:{},
-            geometry:{ type:'Point', coordinates:[photo.lon, photo.lat]}
-          }]
-        });
-        // Cámara vuela al punto de la foto — perspectiva baja mirando el terreno
-        const bearing = ((photoIdx * 67) + 20) % 360;
-        map.jumpTo({ center: [photo.lon, photo.lat], zoom: 16.5, pitch: 72, bearing });
-      } else {
-        map.getSource('photo-active').setData({ type:'FeatureCollection', features:[] });
-        const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
-        map.jumpTo({ center: bCenter, zoom: 12, pitch: 45, bearing: photoIdx * 45 % 360 });
-      }
+      // El marcador naranja SIEMPRE señala el punto (exacto o del recorrido)
+      map.getSource('photo-active').setData({
+        type:'FeatureCollection', features:[{
+          type:'Feature', properties:{},
+          geometry:{ type:'Point', coordinates: anchor }
+        }]
+      });
+      const bearing = ((photoIdx * 67) + 20) % 360;
+      map.jumpTo({ center: anchor, zoom: hasGps ? 15.5 : 14, pitch: 58, bearing });
+      badgesOn = true;
 
     // ── STATS [T_INTRO+T_ROUTE+photos*T_PHOTO, +T_STATS) ─────────────
     } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO + T_STATS) {
@@ -635,7 +730,8 @@
       const p = (t - T_INTRO - T_ROUTE - photoCount * T_PHOTO) / T_STATS;
       const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
       const pitch = 45 - easeIn(p) * 15;
-      map.jumpTo({ center: bCenter, zoom: 11.5, pitch, bearing: easeIn(p) * 30 });
+      map.jumpTo({ center: bCenter, zoom: fitZoom, pitch, bearing: easeIn(p) * 30 });
+      badgesOn = true;
 
     // ── OUTRO [últimos T_OUTRO segundos] ──────────────────────────────
     } else {
@@ -648,8 +744,11 @@
       setOp('outro', op);
 
       const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
-      map.jumpTo({ center: bCenter, zoom: 9.5 + easeIn(p) * 1.5, pitch: 30 - easeIn(p) * 15, bearing: 60 + p * 20 });
+      map.jumpTo({ center: bCenter, zoom: fitZoom - 1 + easeIn(p), pitch: 30 - easeIn(p) * 15, bearing: 60 + p * 20 });
     }
+
+    // Posicionar insignias INICIO/FINAL con la cámara ya movida
+    placeBadges(badgesOn);
 
     // Forzar re-render y esperar a que las teselas estén cargadas.
     // jumpTo siempre dispara 'idle' cuando termina de cargar; el timeout
