@@ -261,7 +261,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             SizedBox(width: 14),
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
               Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
-              Text('Puede tardar 1–2 minutos', style: TextStyle(color: RColors.inkDim, fontSize: 12)),
+              Text('Video 1080p con relieve 3D — tarda varios minutos.\nPuedes salir: quedará en Mis rodadas.', style: TextStyle(color: RColors.inkDim, fontSize: 12)),
             ]),
           ]),
         );
