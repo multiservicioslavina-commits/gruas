@@ -9,11 +9,13 @@ class DirectionsService {
   /// Autocompletar direcciones. Retorna hasta [limit] resultados cercanos a [proximity].
   Future<List<GeocodeResult>> geocode(String query,
       {LatLng? proximity, int limit = 5, String country = 'co'}) async {
-    if (query.trim().isEmpty) return [];
+    if (query.trim().length < 2) return [];
     final q = Uri.encodeComponent(query.trim());
-    final prox = proximity != null ? '&proximity=${proximity.lon},${proximity.lat}' : '';
+    final prox = proximity ?? const LatLng(6.25, -75.57);
     final url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
-        '$q.json?access_token=$kMapboxToken&country=$country&limit=$limit&language=es$prox';
+        '$q.json?access_token=$kMapboxToken&country=$country&limit=$limit&language=es'
+        '&proximity=${prox.lon},${prox.lat}'
+        '&types=place,locality,neighborhood,address,poi';
     final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) return [];
     final data = jsonDecode(res.body) as Map<String, dynamic>;

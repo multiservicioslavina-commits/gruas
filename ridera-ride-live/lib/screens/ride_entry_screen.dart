@@ -19,9 +19,6 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
   final _code = TextEditingController();
   final _auth = AuthService();
   final _repo = RideRepository();
-  final _emName = TextEditingController();
-  final _emPhone = TextEditingController();
-  final _driveUrl = TextEditingController();
   bool _busy = false;
   String? _error;
   PlannedRouteResult? _plannedRoute;
@@ -51,11 +48,6 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
 
       await SessionService()
           .save(joinCode: bound.joinCode, isLeader: bound.isLeader, name: name);
-
-      if (_emPhone.text.trim().isNotEmpty) {
-        controller.setEmergencyContact(
-            _emName.text.trim(), _emPhone.text.trim());
-      }
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(
@@ -89,7 +81,7 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
       destinationLon: planned?.destinationLon,
       plannedDistanceKm: planned?.route.distanceKm,
       plannedDurationMin: planned?.route.durationMin,
-      driveFolderUrl: _driveUrl.text.trim(),
+      driveFolderUrl: '',
     );
     return _Bound(ride.id, ride.name, ride.joinCode, true);
   }
@@ -126,27 +118,6 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
                 controller: _name,
                 textCapitalization: TextCapitalization.words,
                 decoration: _dec('Ej: Carlos «Mono»')),
-            const SizedBox(height: 16),
-            const Text('Contacto de emergencia (opcional)',
-                style: TextStyle(color: RColors.inkDim, fontSize: 13)),
-            const SizedBox(height: 6),
-            Row(children: [
-              Expanded(
-                  child: TextField(
-                      controller: _emName,
-                      textCapitalization: TextCapitalization.words,
-                      decoration: _dec('Nombre'))),
-              const SizedBox(width: 10),
-              Expanded(
-                  child: TextField(
-                      controller: _emPhone,
-                      keyboardType: TextInputType.phone,
-                      decoration: _dec('Celular'))),
-            ]),
-            const SizedBox(height: 6),
-            const Text(
-                'Le avisaremos con tu ubicación si se detecta una caída.',
-                style: TextStyle(color: RColors.inkFaint, fontSize: 11)),
             const SizedBox(height: 22),
             _card(
               title: 'Crear rodada',
@@ -211,21 +182,6 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
                         color: RColors.inkDim,
                       ),
                     ]),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                // Álbum grupal Drive (opcional)
-                TextField(
-                  controller: _driveUrl,
-                  keyboardType: TextInputType.url,
-                  decoration: _dec('Álbum grupal Drive (opcional)'),
-                ),
-                const SizedBox(height: 6),
-                const Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Pega el link de una carpeta Drive para que todos suban las fotos.',
-                    style: TextStyle(color: RColors.inkFaint, fontSize: 11),
                   ),
                 ),
                 const SizedBox(height: 12),

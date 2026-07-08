@@ -37,19 +37,11 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         backgroundColor: RColors.asphalt,
         foregroundColor: Colors.white,
         title: const Text('Planear ruta'),
-        actions: [
-          if (_route != null)
-            TextButton.icon(
-              onPressed: _save,
-              icon: const Icon(Icons.check, color: RColors.brand),
-              label: const Text('GUARDAR',
-                  style: TextStyle(color: RColors.brand, fontWeight: FontWeight.w800)),
-            ),
-        ],
+        actions: const [],
       ),
       body: Column(
         children: [
-          // ─── Lista de waypoints ─────────────────────────────────
+          // ─── Lista de waypoints ─────────────────────────────────────
           Container(
             color: RColors.asphalt2,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -135,6 +127,25 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               ],
             ),
           ),
+
+          // ─── Botón confirmar ruta ──────────────────────────────
+          if (_route != null)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+              color: RColors.asphalt,
+              child: FilledButton.icon(
+                onPressed: _save,
+                icon: const Icon(Icons.check_circle),
+                label: const Text('CONFIRMAR RUTA',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: RColors.brand,
+                  minimumSize: const Size(0, 56),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
         ],
       ),
     );
