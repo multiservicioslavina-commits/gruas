@@ -308,7 +308,8 @@
         const {latitude:la,longitude:lo}=pos.coords;
         const link=`https://maps.google.com/?q=${la.toFixed(6)},${lo.toFixed(6)}`;
         const t=$("#ubic");
-        t.value = (t.value.trim()? t.value.trim()+"  ·  " : "") + link;
+        const prevText=t.value.replace(/\s*·?\s*https:\/\/maps\.google\.com\/\?q=[-\d.,]+/g,'').trim();
+        t.value = (prevText ? prevText+"  ·  " : "") + link;
         $("#locOk").style.display="flex";
         const muni = detectarMunicipio(la, lo);
         if(muni){ $("#municipio").value = muni; $("#muniAuto").style.display="flex"; }
