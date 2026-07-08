@@ -25,7 +25,7 @@ app.get('/', (_req, res) => {
   res.json({
     ok: true,
     service: 'ridera-video-backend',
-    version: '2026-07-07-narrativa',
+    version: '2026-07-08-timeout-fix',
     chrome: chromeInfo,
     env: {
       MAPBOX_TOKEN: process.env.MAPBOX_TOKEN ? 'set' : 'FALTA',
@@ -94,8 +94,9 @@ app.post('/render', (req, res) => {
     if (!job) return;
     job.state = 'rendering';
     const started = Date.now();
+    const RENDER_TIMEOUT = 25 * 60 * 1000; // 25 min máximo
     try {
-      const localPath = await renderRideVideo({
+      const renderPromise = renderRideVideo({
         rideId,
         rideName: rideName || 'Rodada',
         elapsed: elapsed || '00:00:00',
@@ -105,6 +106,10 @@ app.post('/render', (req, res) => {
         photos: photos || [],
         onProgress: (pct) => { job.progress = pct; },
       });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Render superó el límite de 25 minutos')), RENDER_TIMEOUT)
+      );
+      const localPath = await Promise.race([renderPromise, timeoutPromise]);
       console.log(`[${rideId}] video local: ${localPath}`);
       const url = await uploadVideo(rideId, localPath);
       console.log(`[${rideId}] subido: ${url} (total ${((Date.now() - started) / 1000).toFixed(0)}s)`);
@@ -133,6 +138,22 @@ app.get('/status/:jobId', (req, res) => {
     url: job.url || null,
     error: job.error || null,
   });
+});
+
+// Diagnóstico: ver estado de todos los jobs activos
+app.get('/jobs', (_req, res) => {
+  const list = [];
+  for (const [id, job] of jobs) {
+    list.push({
+      id: id.slice(0, 8),
+      rideId: job.rideId,
+      state: job.state,
+      progress: job.progress,
+      age: Math.round((Date.now() - job.createdAt) / 1000) + 's',
+      error: job.error ? job.error.slice(0, 100) : null,
+    });
+  }
+  res.json({ jobs: list, count: list.length });
 });
 
 app.listen(PORT, () => {

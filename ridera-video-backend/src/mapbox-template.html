@@ -756,7 +756,7 @@
     map.triggerRepaint();
     await new Promise(resolve => {
       map.once('idle', resolve);
-      setTimeout(resolve, 5000);
+      setTimeout(resolve, 2000);
     });
   };
 </script>
