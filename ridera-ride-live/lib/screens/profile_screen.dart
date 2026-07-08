@@ -23,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   final _marca     = TextEditingController();
   final _modelo    = TextEditingController();
   final _cc        = TextEditingController();
+  final _placa     = TextEditingController();
   DateTime? _soatVence;
   DateTime? _tecnoVence;
 
@@ -43,6 +44,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _marca.text    = d['moto_marca'] ?? '';
       _modelo.text   = d['moto_modelo'] ?? '';
       _cc.text       = (d['moto_cc'] ?? '').toString();
+      _placa.text    = d['placa'] ?? '';
       _soatVence     = d['soat_vence'] != null ? DateTime.tryParse(d['soat_vence']) : null;
       _tecnoVence    = d['tecno_vence'] != null ? DateTime.tryParse(d['tecno_vence']) : null;
     }
@@ -60,6 +62,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'moto_marca':  _marca.text.trim(),
         'moto_modelo': _modelo.text.trim(),
         'moto_cc':     int.tryParse(_cc.text.trim()),
+        'placa':       _placa.text.trim().toUpperCase(),
         'soat_vence':  _soatVence?.toIso8601String().split('T').first,
         'tecno_vence': _tecnoVence?.toIso8601String().split('T').first,
       });
@@ -142,6 +145,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _gap(),
                 _row('Cilindraje (cc)', _cc,     Icons.speed,            editing: _editing,
                     type: const TextInputType.numberWithOptions(decimal: false)),
+                _gap(),
+                _row('Placa',          _placa,  Icons.confirmation_number_outlined, editing: _editing),
 
                 const SizedBox(height: 24),
                 _section('DOCUMENTOS'),
