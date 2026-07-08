@@ -119,6 +119,7 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
 .g-pin{width:44px;height:44px;position:relative}
 .g-pin-bg{width:44px;height:44px;background:var(--or);border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45)}
 .g-pin-ic{transform:rotate(45deg);font-size:19px;line-height:1;margin-top:2px}
+.c-pin{font-size:22px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
 </style>
 </head>
 <body>
@@ -237,6 +238,32 @@ try {
   });
 } catch(e) {}
 
+let clienteIcon = null;
+try {
+  clienteIcon = L.divIcon({
+    html:`<div class="c-pin">📍</div>`,
+    className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
+  });
+} catch(e) {}
+
+function extractClientCoords(ubic){
+  const m=(ubic||'').match(/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
+  return m?[parseFloat(m[1]),parseFloat(m[2])]:null;
+}
+
+let clienteMarker = null;
+function setClienteMarker(coords){
+  if(!coords||!map) return;
+  try {
+    if(clienteMarker){
+      clienteMarker.setLatLng(coords);
+    } else {
+      clienteMarker = L.marker(coords,{icon:clienteIcon})
+        .addTo(map).bindPopup('Tu ubicación 📍',{closeButton:false});
+    }
+  } catch(e) {}
+}
+
 function waNum(raw){let d=(raw||'').replace(/\D/g,'');if(d.length===10)d='57'+d;return d;}
 
 function haversineKm(la1,lo1,la2,lo2){
@@ -257,10 +284,11 @@ function moveGrueroMarker(lat, lng){
     map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
   } catch(e) { return; }
 
-  // ETA approximation
+  // ETA approximation — usa GPS del cliente si está disponible, sino centro del municipio
+  const clientCoords = extractClientCoords(sol?.ubicacion);
   const muni = sol?.municipio;
-  const center = (muni && MUNIS[muni]) || MDE;
-  const km = haversineKm(lat,lng,center[0],center[1]);
+  const dest = clientCoords || (muni && MUNIS[muni]) || MDE;
+  const km = haversineKm(lat, lng, dest[0], dest[1]);
   const min = Math.round((km/35)*60); // 35 km/h promedio Medellín
   document.getElementById('etaTxt').textContent = min<=1 ? 'Llegando ahora mismo' : `~${min} min estimado`;
 }
@@ -395,14 +423,30 @@ async function init(){
   sol = data;
   applyEstado(data.estado);
   if(data.gruero_asignado) await loadGruero(data.gruero_asignado);
+
+  // Mostrar ubicación del cliente si compartió GPS
+  const cCoords = extractClientCoords(data.ubicacion);
+  if(cCoords) setClienteMarker(cCoords);
+
   if(data.gruero_lat&&data.gruero_lng){
     moveGrueroMarker(data.gruero_lat, data.gruero_lng);
     if(grueroMarker&&map) try{ grueroMarker.openPopup(); }catch(e){}
-  }
-
-  // Center map on municipio if no GPS yet
-  if(!data.gruero_lat&&data.municipio&&MUNIS[data.municipio]&&map){
-    map.setView(MUNIS[data.municipio],13);
+    // Ajustar vista para mostrar ambos si hay dos marcadores
+    if(clienteMarker&&map){
+      try{
+        map.fitBounds(
+          L.latLngBounds(grueroMarker.getLatLng(), clienteMarker.getLatLng()),
+          {padding:[44,44], maxZoom:16}
+        );
+      }catch(e){}
+    }
+  } else if(!data.gruero_lat&&map){
+    // Sin GPS del gruero: centrar en cliente o municipio
+    if(cCoords){
+      map.setView(cCoords, 15);
+    } else if(data.municipio&&MUNIS[data.municipio]){
+      map.setView(MUNIS[data.municipio],13);
+    }
   }
 
   document.getElementById('secCal').href = `/califica.html?t=${sid}`;
