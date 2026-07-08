@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../rita_config.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
 import 'my_history_screen.dart';
@@ -87,6 +89,19 @@ class RideHomeScreen extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => const MyHistoryScreen()),
                 ),
+                dark: true,
+              ),
+              const SizedBox(height: 14),
+              _BigButton(
+                icon: Icons.smart_toy_outlined,
+                label: 'Pregúntale a Rita',
+                sub: 'Tu asistente de rutas y aventuras',
+                onTap: () {
+                  final uri = Uri.parse(
+                    'https://wa.me/$kRitaWhatsAppNumber?text=${Uri.encodeComponent(kRitaGreeting)}',
+                  );
+                  launchUrl(uri, mode: LaunchMode.externalApplication);
+                },
                 dark: true,
               ),
             ],

@@ -9,3 +9,4 @@ build/
 # Secrets — never commit these
 lib/video_config.dart
 lib/notif_config.dart
+lib/rita_config.dart
