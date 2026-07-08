@@ -83,6 +83,18 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
               })
           .toList();
 
+      // Verificar si ya existe un video generado para esta rodada
+      String? existingVideo;
+      try {
+        final memberRow = await _db
+            .from('members')
+            .select('video_url')
+            .eq('ride_id', widget.rideId)
+            .eq('uid', uid)
+            .maybeSingle();
+        existingVideo = memberRow?['video_url'] as String?;
+      } catch (_) {}
+
       if (mounted) {
         setState(() {
           _distanceKm = dist;
@@ -92,6 +104,10 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           _photos = List<Map<String, dynamic>>.from(photos);
           _routePoints = routePts;
           _loading = false;
+          if (existingVideo != null && existingVideo.isNotEmpty) {
+            _videoStatus = 'done';
+            _videoUrl = existingVideo;
+          }
         });
         // Guardar el resumen en la fila del member para el historial
         try {
