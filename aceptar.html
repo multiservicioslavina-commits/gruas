@@ -101,7 +101,8 @@ function toast(msg){ const t=document.getElementById('toast'); t.textContent=msg
 function esc(x){ return (x==null?'':String(x)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function waNum(raw){ let d=(raw||'').replace(/\D/g,''); if(d.length===10) d='57'+d; return d; }
 async function api(action, extra){ const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action,s:S,g:G,...(extra||{})})}); return r.json(); }
-function mapHtml(ubic){ const q=encodeURIComponent(ubic||''); return `<a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${q}">📍 Ver ubicación en el mapa</a>`; }
+function extractCoords(ubic){ const m=(ubic||'').match(/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/); return m?`${m[1]},${m[2]}`:null; }
+function mapHtml(ubic){ const coords=extractCoords(ubic); const q=encodeURIComponent(coords||ubic||''); return `<a class="maplink" target="_blank" href="https://www.google.com/maps/search/?api=1&query=${q}">📍 Ver ubicación en el mapa</a>`; }
 
 function clienteCard(sol){
   const wa = waNum(sol.cliente_telefono);
@@ -169,7 +170,8 @@ function render(data){
     }
     let acciones = '';
     if(estado === 'asignada'){
-      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(sol.ubicacion||'')}`;
+      const dest = extractCoords(sol.ubicacion) || sol.ubicacion || '';
+      const mapsUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}`;
       acciones = `
         <a class="btn btn-wa" target="_blank" href="${mapsUrl}" style="text-decoration:none">🗺️ Cómo llegar</a>
         <button class="btn btn-llegue" id="actBtn" onclick="doPaso('llegue',this)">📍 Ya llegué al sitio</button>

@@ -198,11 +198,12 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
 </div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPeE=" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="window._sbFailed=true"></script>
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
-const sb = supabase.createClient(SB_URL, SB_KEY);
+let sb = null;
+try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { window._sbFailed = true; }
 
 const sid = new URLSearchParams(location.search).get('s');
 
@@ -215,22 +216,26 @@ const MUNIS = {
 };
 const MDE = [6.2518, -75.5636];
 
-let map, grueroMarker, sol = null, pollTimer = null;
+let map = null, grueroMarker = null, sol = null, pollTimer = null;
 
 // Init map
-map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-  attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
-  maxZoom:19
-}).addTo(map);
+try {
+  map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
+    maxZoom:19
+  }).addTo(map);
+} catch(e) {
+  document.getElementById('map').style.background='#111';
+}
 
-const grueroIcon = L.divIcon({
-  html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
-  className:'',
-  iconSize:[44,44],
-  iconAnchor:[22,44],
-  popupAnchor:[0,-44],
-});
+let grueroIcon = null;
+try {
+  grueroIcon = L.divIcon({
+    html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
+    className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
+  });
+} catch(e) {}
 
 function waNum(raw){let d=(raw||'').replace(/\D/g,'');if(d.length===10)d='57'+d;return d;}
 
@@ -241,14 +246,16 @@ function haversineKm(la1,lo1,la2,lo2){
 }
 
 function moveGrueroMarker(lat, lng){
-  if(!lat||!lng) return;
-  if(grueroMarker){
-    grueroMarker.setLatLng([lat,lng]);
-  } else {
-    grueroMarker = L.marker([lat,lng],{icon:grueroIcon}).addTo(map)
-      .bindPopup('Tu gruero está aquí 🛵',{closeButton:false});
-  }
-  map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
+  if(!lat||!lng||!map) return;
+  try {
+    if(grueroMarker){
+      grueroMarker.setLatLng([lat,lng]);
+    } else {
+      grueroMarker = L.marker([lat,lng],{icon:grueroIcon}).addTo(map)
+        .bindPopup('Tu gruero está aquí 🛵',{closeButton:false});
+    }
+    map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
+  } catch(e) { return; }
 
   // ETA approximation
   const muni = sol?.municipio;
@@ -356,15 +363,27 @@ async function loadGruero(gid){
 }
 
 async function init(){
+  if(window._sbFailed || !sb){
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('nota').textContent='Error cargando seguimiento. Por favor recarga la página.';
+    return;
+  }
   if(!sid){
     document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
     document.getElementById('loader').classList.add('hide');
     return;
   }
 
-  const {data, error} = await sb.from('solicitudes')
-    .select('id,estado,ubicacion,municipio,gruero_asignado,gruero_lat,gruero_lng,calificacion,asignada_at,llego_at,finalizada_at')
-    .eq('id',sid).single();
+  let data, error;
+  try {
+    ({data, error} = await sb.from('solicitudes')
+      .select('id,estado,ubicacion,municipio,gruero_asignado,gruero_lat,gruero_lng,calificacion,asignada_at,llego_at,finalizada_at')
+      .eq('id',sid).single());
+  } catch(e) {
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('nota').textContent='Error de conexión. Por favor recarga la página.';
+    return;
+  }
 
   document.getElementById('loader').classList.add('hide');
 
@@ -378,11 +397,11 @@ async function init(){
   if(data.gruero_asignado) await loadGruero(data.gruero_asignado);
   if(data.gruero_lat&&data.gruero_lng){
     moveGrueroMarker(data.gruero_lat, data.gruero_lng);
-    if(grueroMarker) grueroMarker.openPopup();
+    if(grueroMarker&&map) try{ grueroMarker.openPopup(); }catch(e){}
   }
 
   // Center map on municipio if no GPS yet
-  if(!data.gruero_lat&&data.municipio&&MUNIS[data.municipio]){
+  if(!data.gruero_lat&&data.municipio&&MUNIS[data.municipio]&&map){
     map.setView(MUNIS[data.municipio],13);
   }
 
@@ -441,8 +460,8 @@ async function doCancelClient() {
   }
 }
 
-window.addEventListener('resize',()=>setTimeout(()=>map.invalidateSize(),200));
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden) map.invalidateSize(); });
+window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.invalidateSize(),200); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&map) map.invalidateSize(); });
 
 init();
 </script>
