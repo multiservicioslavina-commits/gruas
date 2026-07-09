@@ -1,0 +1,764 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8" />
+<title>RIDERA render</title>
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.css" rel="stylesheet" />
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.7.0/mapbox-gl.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1080px; background: #000; font-family: 'Arial Black', Arial, sans-serif; overflow: hidden; }
+  #map { position: absolute; inset: 0; width: 1080px; height: 1080px; }
+
+  #vignette {
+    position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.55) 100%);
+  }
+
+  /* HUD superior */
+  #rideNameBar {
+    position: absolute; top: 0; left: 0; right: 0;
+    background: linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, transparent 100%);
+    padding: 30px 40px 40px;
+    opacity: 0;
+  }
+  #rideNameBar.show { opacity: 1; }
+  #rideNameText { font-size: 28px; font-weight: 900; color: #fff; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 2px 12px rgba(0,0,0,0.9); }
+  #rideBrand { font-size: 14px; color: #E85D20; letter-spacing: 8px; font-weight: 700; margin-bottom: 6px; }
+
+  /* HUD inferior distancia */
+  #hudBar {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%);
+    padding: 40px 40px 30px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    opacity: 0;
+  }
+  #hudBar.show { opacity: 1; }
+  #hudKm { font-size: 64px; font-weight: 900; color: #E85D20; text-shadow: 0 0 30px rgba(232,93,32,0.7); line-height: 1; }
+  #hudKmLabel { font-size: 13px; color: #ccc; letter-spacing: 4px; margin-top: -2px; }
+  #hudSpeed { font-size: 38px; font-weight: 700; color: #fff; text-align: right; line-height: 1; }
+  #hudSpeedLabel { font-size: 13px; color: #aaa; letter-spacing: 4px; text-align: right; }
+
+  /* INTRO */
+  #intro {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0;
+  }
+  #intro.show { opacity: 1; }
+  #introLogo { font-size: 96px; font-weight: 900; color: #E85D20; letter-spacing: 8px; text-shadow: 0 0 80px rgba(232,93,32,0.9); }
+  #introSub { font-size: 24px; letter-spacing: 18px; color: #fff; font-weight: 300; margin-top: 8px; }
+  #introName { font-size: 34px; font-weight: 700; color: #fff; margin-top: 40px; letter-spacing: 2px; text-align: center; max-width: 900px; line-height: 1.3; }
+  #introLine { width: 90px; height: 4px; background: #E85D20; margin: 24px auto; }
+
+  /* STATS */
+  #statsPanel {
+    position: absolute; inset: 0;
+    background: rgba(0,0,0,0.65);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0; gap: 0;
+  }
+  #statsPanel.show { opacity: 1; }
+  #statsTitle { font-size: 15px; letter-spacing: 10px; color: #E85D20; font-weight: 700; margin-bottom: 36px; }
+  .stat-row { display: flex; gap: 24px; }
+  .stat-box { background: rgba(255,255,255,0.07); border: 1px solid rgba(232,93,32,0.5); border-radius: 20px; padding: 26px 40px; text-align: center; min-width: 180px; }
+  .stat-val { font-size: 52px; font-weight: 900; color: #E85D20; }
+  .stat-lbl { font-size: 12px; letter-spacing: 5px; color: #aaa; text-transform: uppercase; margin-top: 6px; }
+
+  /* TARJETA DE FOTO */
+  #photoCard {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 340px;
+    background: linear-gradient(to top, rgba(0,0,0,0.97) 70%, rgba(0,0,0,0.8) 100%);
+    display: flex; align-items: center; gap: 24px; padding: 20px 28px;
+    transform: translateY(100%);
+    border-top: 2px solid rgba(232,93,32,0.7);
+  }
+  #photoCard.show { transform: translateY(0); }
+  #photoThumb {
+    width: 280px; height: 296px; object-fit: cover;
+    border-radius: 18px; border: 2px solid #E85D20;
+    box-shadow: 0 0 40px rgba(232,93,32,0.6), 0 10px 40px rgba(0,0,0,0.8);
+    flex-shrink: 0;
+  }
+  #photoInfo { display: flex; flex-direction: column; gap: 14px; }
+  #photoCounter { font-size: 13px; letter-spacing: 5px; color: #E85D20; font-weight: 700; }
+  #photoLocationLabel {
+    font-size: 16px; color: #fff; font-weight: 600; line-height: 1.4;
+    display: flex; align-items: center; gap: 10px;
+  }
+  #photoLocationLabel span { font-size: 22px; }
+  #photoMapHint { font-size: 13px; color: #888; letter-spacing: 1px; margin-top: 4px; }
+
+  /* INICIO / FINAL — insignias ancladas al mapa */
+  .geoBadge {
+    position: absolute; transform: translate(-50%, -130%);
+    padding: 6px 14px; border-radius: 20px;
+    font-size: 15px; font-weight: 900; letter-spacing: 2px;
+    color: #fff; white-space: nowrap;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.6);
+    display: none;
+  }
+  .geoBadge::after {
+    content: ''; position: absolute; left: 50%; bottom: -7px;
+    transform: translateX(-50%);
+    border: 7px solid transparent; border-bottom: none;
+  }
+  #startBadge { background: #1DA84C; }
+  #startBadge::after { border-top-color: #1DA84C; }
+  #endBadge { background: #C0272D; }
+  #endBadge::after { border-top-color: #C0272D; }
+
+  /* Subtítulo desde→hasta en la intro */
+  #introRoute { font-size: 17px; color: #E8B84B; letter-spacing: 3px; font-weight: 700; margin-top: 10px; }
+
+  /* SELLO DE MUNICIPIO — estampa de pasaporte al pasar por un pueblo */
+  #stampChip {
+    position: absolute; top: 200px; left: 36px;
+    background: rgba(10, 8, 6, 0.82);
+    border: 3px dashed #E8B84B;
+    border-radius: 14px;
+    padding: 14px 22px;
+    transform: rotate(-4deg) scale(0);
+    opacity: 0;
+    box-shadow: 0 0 40px rgba(232, 184, 75, 0.35), 0 8px 30px rgba(0,0,0,0.6);
+  }
+  #stampTitle { font-size: 11px; letter-spacing: 5px; color: #E8B84B; font-weight: 700; }
+  #stampName  { font-size: 30px; font-weight: 900; color: #fff; letter-spacing: 2px; text-transform: uppercase; margin: 2px 0; }
+  #stampPts   { font-size: 14px; color: #E8B84B; font-weight: 700; letter-spacing: 2px; }
+
+  /* OUTRO */
+  #outro {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    opacity: 0;
+  }
+  #outro.show { opacity: 1; }
+  #outroLogo { font-size: 76px; font-weight: 900; color: #E85D20; letter-spacing: 7px; text-shadow: 0 0 60px rgba(232,93,32,0.8); }
+  #outroSub { font-size: 20px; letter-spacing: 14px; color: #fff; margin-top: 12px; }
+  #outroLine { width: 70px; height: 4px; background: #E85D20; margin: 20px auto; }
+  #outroTagline { font-size: 14px; color: #888; letter-spacing: 5px; }
+</style>
+</head>
+<body>
+  <div id="map"></div>
+  <div id="vignette"></div>
+
+  <div id="rideNameBar">
+    <div id="rideBrand">🏍 RIDERA AVENTURA</div>
+    <div id="rideNameText"></div>
+  </div>
+
+  <div id="hudBar">
+    <div>
+      <div id="hudKm">0.0</div>
+      <div id="hudKmLabel">KM RECORRIDOS</div>
+    </div>
+    <div style="text-align:right">
+      <div id="hudSpeed">0</div>
+      <div id="hudSpeedLabel">KM/H MÁXIMA</div>
+    </div>
+  </div>
+
+  <div id="intro" class="show">
+    <div id="introLogo">RIDERA</div>
+    <div id="introSub">AVENTURA</div>
+    <div id="introLine"></div>
+    <div id="introName"></div>
+    <div id="introRoute"></div>
+  </div>
+
+  <div id="startBadge" class="geoBadge">🏁 INICIO</div>
+  <div id="endBadge" class="geoBadge">🏁 FINAL</div>
+
+  <div id="statsPanel">
+    <div id="statsTitle">RESUMEN DE LA RODADA</div>
+    <div class="stat-row">
+      <div class="stat-box"><div class="stat-val" id="sv-dist">—</div><div class="stat-lbl">Distancia</div></div>
+      <div class="stat-box"><div class="stat-val" id="sv-time">—</div><div class="stat-lbl">Tiempo</div></div>
+      <div class="stat-box"><div class="stat-val" id="sv-spd">—</div><div class="stat-lbl">Vel. Máx</div></div>
+    </div>
+  </div>
+
+  <div id="photoCard">
+    <img id="photoThumb" src="" crossorigin="anonymous" />
+    <div id="photoInfo">
+      <div id="photoCounter">📷 FOTO 1 DE 1</div>
+      <div id="photoLocationLabel"><span>📍</span><span id="photoLocationText">Ubicación en el mapa ↑</span></div>
+      <div id="photoMapHint">El punto naranja muestra dónde fue tomada</div>
+    </div>
+  </div>
+
+  <div id="stampChip">
+    <div id="stampTitle">🏍 SELLO PASAPORTE RIDERA</div>
+    <div id="stampName"></div>
+    <div id="stampPts"></div>
+  </div>
+
+  <div id="outro">
+    <div id="outroLogo">RIDERA</div>
+    <div id="outroLine"></div>
+    <div id="outroSub">AVENTURA</div>
+    <div id="outroTagline">GRACIAS POR RODAR</div>
+  </div>
+
+<script>
+  const DATA = __RIDE_DATA__;
+  mapboxgl.accessToken = '__MAPBOX_TOKEN__';
+
+  // ── Tiempos de secciones (segundos) ──────────────────────────────────
+  const T_INTRO  = 3.0;
+  const T_ROUTE  = 14.0;
+  const T_PHOTO  = 3.5;
+  const T_STATS  = 4.5;
+  const T_OUTRO  = 3.0;
+
+  const photos    = (DATA.photos || []).slice(0, 6);
+  const photoCount = photos.length;
+  const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
+  window.__totalSeconds = totalSeconds;
+
+  const coords = DATA.routePoints.map(p => [p.lon, p.lat]);
+  const bounds = coords.reduce(
+    (b, c) => b.extend(c),
+    new mapboxgl.LngLatBounds(coords[0], coords[0])
+  );
+  const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
+  const centerLat = (bounds.getSouth() + bounds.getNorth()) / 2;
+  const photosWithGps = photos.filter(p => p.lat && p.lon);
+
+  // ── Helpers de UI ─────────────────────────────────────────────────────
+  const show  = id => document.getElementById(id).classList.add('show');
+  const hide  = id => document.getElementById(id).classList.remove('show');
+  const setOp = (id, v) => { document.getElementById(id).style.opacity = v; };
+  const setTr = (id, v) => { document.getElementById(id).style.transform = v; };
+
+  // ── Geodesia (sin dependencias): distancias y puntos sobre la ruta ────
+  const R_EARTH = 6371000;
+  const rad = d => d * Math.PI / 180;
+  const deg = r => r * 180 / Math.PI;
+
+  function haversine(a, b) {
+    const dLat = rad(b[1] - a[1]);
+    const dLng = rad(b[0] - a[0]);
+    const s = Math.sin(dLat/2)**2 + Math.cos(rad(a[1])) * Math.cos(rad(b[1])) * Math.sin(dLng/2)**2;
+    return 2 * R_EARTH * Math.asin(Math.sqrt(s));
+  }
+
+  // Punto destino desde origen con bearing (grados) y distancia (m)
+  function destination(origin, bearingDeg, distM) {
+    const br = rad(bearingDeg);
+    const lat1 = rad(origin[1]), lng1 = rad(origin[0]);
+    const dr = distM / R_EARTH;
+    const lat2 = Math.asin(Math.sin(lat1)*Math.cos(dr) + Math.cos(lat1)*Math.sin(dr)*Math.cos(br));
+    const lng2 = lng1 + Math.atan2(Math.sin(br)*Math.sin(dr)*Math.cos(lat1), Math.cos(dr) - Math.sin(lat1)*Math.sin(lat2));
+    return [deg(lng2), deg(lat2)];
+  }
+
+  // Distancias acumuladas a lo largo de la ruta
+  const cumDist = [0];
+  for (let i = 1; i < coords.length; i++) {
+    cumDist.push(cumDist[i-1] + haversine(coords[i-1], coords[i]));
+  }
+  const totalDist = cumDist[cumDist.length - 1];
+
+  // Punto interpolado a `dist` metros del inicio de la ruta
+  function pointAlong(dist) {
+    dist = Math.max(0, Math.min(totalDist, dist));
+    let lo = 0, hi = cumDist.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumDist[mid] < dist) lo = mid + 1; else hi = mid;
+    }
+    const i = Math.max(1, lo);
+    const seg = cumDist[i] - cumDist[i-1] || 1;
+    const f = (dist - cumDist[i-1]) / seg;
+    const a = coords[i-1], b = coords[i];
+    return [a[0] + (b[0]-a[0]) * f, a[1] + (b[1]-a[1]) * f];
+  }
+
+  // Bearing (grados) de la dirección de la ruta en `dist` metros
+  function bearingAlong(dist) {
+    const a = pointAlong(Math.max(0, dist - 40));
+    const b = pointAlong(Math.min(totalDist, dist + 40));
+    const y = Math.sin(rad(b[0]-a[0])) * Math.cos(rad(b[1]));
+    const x = Math.cos(rad(a[1]))*Math.sin(rad(b[1])) - Math.sin(rad(a[1]))*Math.cos(rad(b[1]))*Math.cos(rad(b[0]-a[0]));
+    return deg(Math.atan2(y, x));
+  }
+
+  function lerpBearing(a, b, t) {
+    let d = ((b - a) % 360 + 540) % 360 - 180;
+    return a + d * t;
+  }
+  function lerp(a, b, t) { return a + (b - a) * t; }
+  function easeInOut(t) {
+    return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
+  }
+  function easeIn(t) { return t * t; }
+  function easeOut(t) { return 1 - (1 - t) * (1 - t); }
+
+  // ── Parámetros de la chase cam (estilo Relive) ─────────────────────────
+  // La cámara vuela DETRÁS del piloto mirándolo, a altitud real sobre el
+  // terreno — no encima de él. Escala con el tamaño de la ruta.
+  const CAM_BACK   = Math.min(1200, Math.max(240, totalDist * 0.04));  // m detrás
+  const CAM_HEIGHT = Math.min(850,  Math.max(150, totalDist * 0.028)); // m sobre terreno
+
+  // Zoom que encuadra la ruta completa (para intro y contexto)
+  const spanDeg = Math.max(
+    bounds.getEast() - bounds.getWest(),
+    (bounds.getNorth() - bounds.getSouth()) * 1.2
+  );
+  const fitZoom = Math.max(8, Math.min(14, Math.log2(360 / (spanDeg * 1.6))));
+
+  // Desde / Hasta: municipio más cercano al inicio y al final de la ruta
+  function nearestMuni(pt) {
+    let best = null, bd = Infinity;
+    for (const mu of (DATA.municipios || [])) {
+      const d = haversine(pt, [mu.lon, mu.lat]);
+      if (d < bd) { bd = d; best = mu; }
+    }
+    return bd <= 12000 ? best.nombre : null; // ≤12km para tener sentido
+  }
+  const desdeName = nearestMuni(coords[0]);
+  const hastaName = nearestMuni(coords[coords.length - 1]);
+
+  // ── Sellos de municipios (pasaporte Ridera) ────────────────────────────
+  // Municipios a ≤3km de la ruta, con el instante t en que el piloto pasa.
+  function invEaseInOut(f) {
+    return f < 0.5 ? Math.sqrt(f / 2) : 1 - Math.sqrt((1 - f) / 2);
+  }
+  const STAMP_SHOW = 2.8; // segundos visible cada sello
+  const stamps = (DATA.municipios || [])
+    .map(mu => {
+      let best = Infinity, bestDist = 0;
+      for (let i = 0; i < coords.length; i++) {
+        const d = haversine(coords[i], [mu.lon, mu.lat]);
+        if (d < best) { best = d; bestDist = cumDist[i]; }
+      }
+      const f = totalDist > 0 ? bestDist / totalDist : 0;
+      return { ...mu, offRoute: best, t: T_INTRO + invEaseInOut(f) * T_ROUTE };
+    })
+    .filter(s => s.offRoute <= 3000)
+    .sort((a, b) => a.t - b.t);
+  // Evitar solapes: si dos sellos quedan a <STAMP_SHOW, correr el segundo
+  for (let i = 1; i < stamps.length; i++) {
+    if (stamps[i].t < stamps[i-1].t + STAMP_SHOW + 0.4) {
+      stamps[i].t = stamps[i-1].t + STAMP_SHOW + 0.4;
+    }
+  }
+
+  // ── Estado del mapa ────────────────────────────────────────────────────
+  let mapReady = false;
+  // Bearing inicial = dirección real del arranque de la ruta, para que
+  // la chase cam no dé un bandazo buscando el rumbo en el primer segundo
+  let currentBearing = bearingAlong(0);
+  let smCamPos = null;   // posición de cámara suavizada [lng, lat]
+  let smCamAlt = null;   // altitud suavizada (m)
+
+  // Standard Satellite: satélite + iluminación 3D real (sol, sombras,
+  // cielo). lightPreset 'dusk' = hora dorada — el look cinematográfico.
+  const map = new mapboxgl.Map({
+    container: 'map',
+    style: 'mapbox://styles/mapbox/standard-satellite',
+    config: { basemap: { lightPreset: 'dawn' } },
+    center: [centerLng, centerLat],
+    zoom: 12, pitch: 60, bearing: 30,
+    antialias: true, fadeDuration: 0,
+    interactive: false, preserveDrawingBuffer: true,
+  });
+
+  // Errores del mapa (token inválido, teselas) → visibles en logs del server
+  map.on('error', e => console.error('MAPBOX ERROR:', e?.error?.message || e));
+
+  map.on('load', async () => {
+    document.getElementById('introName').textContent  = DATA.rideName || '';
+    document.getElementById('rideNameText').textContent = DATA.rideName || '';
+    if (desdeName || hastaName) {
+      document.getElementById('introRoute').textContent =
+        `${desdeName || 'Salida'}  →  ${hastaName || 'Llegada'}`;
+    }
+
+    // Terreno 3D con exageración alta
+    map.addSource('mapbox-dem', {
+      type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
+      tileSize: 512, maxzoom: 14,
+    });
+    // 1.6: relieve notorio sin deformar — 2.5 volvía irreal el terreno
+    // en rutas cortas/urbanas ("mapa flotando en el aire")
+    map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.6 });
+
+    // El estilo Standard trae su propia atmósfera/cielo según lightPreset;
+    // si por algo no la aplica, este fog es el respaldo (no debe romper).
+    try {
+      map.setFog({
+        range: [0.5, 10],
+        color: 'rgba(230, 200, 170, 0.75)',
+        'high-color': '#3a5bbf',
+        'horizon-blend': 0.08,
+        'space-color': '#0b1026',
+        'star-intensity': 0.2,
+      });
+    } catch (e) { console.log('fog no aplicado:', e.message); }
+
+    // Capas de ruta
+    map.addSource('route-full', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: coords } },
+    });
+    map.addSource('route-live', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [coords[0], coords[0]] } },
+    });
+    map.addSource('pin', {
+      type: 'geojson',
+      data: { type: 'Feature', geometry: { type: 'Point', coordinates: coords[0] } },
+    });
+    map.addSource('photo-pins', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: photosWithGps.map((p, i) => ({
+          type: 'Feature', properties: { index: i },
+          geometry: { type: 'Point', coordinates: [p.lon, p.lat] },
+        })),
+      },
+    });
+    map.addSource('photo-active', {
+      type: 'geojson', data: { type: 'FeatureCollection', features: [] },
+    });
+    // Municipios con sello en la zona (marcadores dorados)
+    map.addSource('stamps', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: stamps.map(s => ({
+          type: 'Feature', properties: { nombre: s.nombre },
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+        })),
+      },
+    });
+    map.addSource('stamp-active', {
+      type: 'geojson', data: { type: 'FeatureCollection', features: [] },
+    });
+    // Puntos de INICIO (verde) y FINAL (rojo) — siempre visibles
+    map.addSource('endpoints', {
+      type: 'geojson',
+      data: {
+        type: 'FeatureCollection',
+        features: [
+          { type: 'Feature', properties: { kind: 'start' },
+            geometry: { type: 'Point', coordinates: coords[0] } },
+          { type: 'Feature', properties: { kind: 'end' },
+            geometry: { type: 'Point', coordinates: coords[coords.length - 1] } },
+        ],
+      },
+    });
+
+    map.addLayer({ id: 'route-full-layer', type: 'line', source: 'route-full',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#ffffff', 'line-width': 4, 'line-opacity': 0.18 },
+    });
+    map.addLayer({ id: 'route-live-glow', type: 'line', source: 'route-live',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#E85D20', 'line-width': 24, 'line-opacity': 0.28, 'line-blur': 8 },
+    });
+    map.addLayer({ id: 'route-live-layer', type: 'line', source: 'route-live',
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#FF6B1A', 'line-width': 8, 'line-opacity': 1 },
+    });
+    map.addLayer({ id: 'pin-halo', type: 'circle', source: 'pin',
+      paint: { 'circle-radius': 28, 'circle-color': '#E85D20', 'circle-opacity': 0.3 },
+    });
+    map.addLayer({ id: 'pin-dot', type: 'circle', source: 'pin',
+      paint: { 'circle-radius': 12, 'circle-color': '#fff',
+        'circle-stroke-width': 4, 'circle-stroke-color': '#E85D20' },
+    });
+    map.addLayer({ id: 'photo-pins-halo', type: 'circle', source: 'photo-pins',
+      paint: { 'circle-radius': 18, 'circle-color': '#fff', 'circle-opacity': 0.12 },
+    });
+    map.addLayer({ id: 'photo-pins-dot', type: 'circle', source: 'photo-pins',
+      paint: { 'circle-radius': 8, 'circle-color': '#fff',
+        'circle-stroke-width': 2.5, 'circle-stroke-color': '#E85D20', 'circle-opacity': 0.85 },
+    });
+    map.addLayer({ id: 'endpoints-halo', type: 'circle', source: 'endpoints',
+      paint: { 'circle-radius': 18,
+        'circle-color': ['match', ['get','kind'], 'start', '#1DA84C', '#C0272D'],
+        'circle-opacity': 0.3 },
+    });
+    map.addLayer({ id: 'endpoints-dot', type: 'circle', source: 'endpoints',
+      paint: { 'circle-radius': 9,
+        'circle-color': ['match', ['get','kind'], 'start', '#1DA84C', '#C0272D'],
+        'circle-stroke-width': 3, 'circle-stroke-color': '#fff' },
+    });
+
+    // Marcadores dorados de municipios con sello
+    map.addLayer({ id: 'stamps-halo', type: 'circle', source: 'stamps',
+      paint: { 'circle-radius': 16, 'circle-color': '#E8B84B', 'circle-opacity': 0.2 },
+    });
+    map.addLayer({ id: 'stamps-dot', type: 'circle', source: 'stamps',
+      paint: { 'circle-radius': 7, 'circle-color': '#E8B84B',
+        'circle-stroke-width': 2, 'circle-stroke-color': '#fff', 'circle-opacity': 0.95 },
+    });
+    map.addLayer({ id: 'stamp-active-ring', type: 'circle', source: 'stamp-active',
+      paint: { 'circle-radius': 32, 'circle-color': '#E8B84B', 'circle-opacity': 0.45 },
+    });
+    map.addLayer({ id: 'stamp-active-dot', type: 'circle', source: 'stamp-active',
+      paint: { 'circle-radius': 13, 'circle-color': '#E8B84B',
+        'circle-stroke-width': 4, 'circle-stroke-color': '#fff' },
+    });
+
+    map.addLayer({ id: 'photo-active-ring', type: 'circle', source: 'photo-active',
+      paint: { 'circle-radius': 36, 'circle-color': '#E85D20', 'circle-opacity': 0.45 },
+    });
+    map.addLayer({ id: 'photo-active-dot', type: 'circle', source: 'photo-active',
+      paint: { 'circle-radius': 16, 'circle-color': '#E85D20',
+        'circle-stroke-width': 4, 'circle-stroke-color': '#fff' },
+    });
+
+    // Precarga fotos
+    await Promise.all(photos.map(p => new Promise(r => {
+      const im = new Image(); im.crossOrigin = 'anonymous';
+      im.onload = im.onerror = () => r(); im.src = p.url;
+    })));
+
+    map.once('idle', () => {
+      map.triggerRepaint();
+      setTimeout(() => {
+        map.triggerRepaint();
+        mapReady = true;
+        window.__ready = true;
+        window.__onReady && window.__onReady();
+      }, 3000);
+    });
+  });
+
+  // ── seekTo(t): lleva el estado de la escena al segundo t ─────────────
+  // Retorna Promise que resuelve cuando el mapa ha renderizado el frame.
+  window.__seekTo = async function(t) {
+    if (!mapReady) return;
+    t = Math.max(0, Math.min(totalSeconds, t));
+
+    const totalKm = parseFloat(DATA.distanceKm) || 0;
+
+    // Reset del sello: solo la sección de ruta lo puede mostrar
+    const stampChipEl = document.getElementById('stampChip');
+    stampChipEl.style.opacity = 0;
+    stampChipEl.style.transform = 'rotate(-4deg) scale(0)';
+
+    // Insignias INICIO/FINAL ancladas al mapa (se posicionan tras mover cámara)
+    function placeBadges(show) {
+      const sb = document.getElementById('startBadge');
+      const eb = document.getElementById('endBadge');
+      if (!show) { sb.style.display = 'none'; eb.style.display = 'none'; return; }
+      const sp = map.project(coords[0]);
+      const ep = map.project(coords[coords.length - 1]);
+      const inView = p => p.x > -80 && p.x < 1160 && p.y > -40 && p.y < 1120;
+      sb.style.display = inView(sp) ? 'block' : 'none';
+      sb.style.left = sp.x + 'px'; sb.style.top = sp.y + 'px';
+      eb.style.display = inView(ep) ? 'block' : 'none';
+      eb.style.left = ep.x + 'px'; eb.style.top = ep.y + 'px';
+    }
+    let badgesOn = false;
+
+    // ── INTRO [0, T_INTRO) ─────────────────────────────────────────────
+    if (t < T_INTRO) {
+      const p = t / T_INTRO;
+      setOp('intro', Math.min(1, p < 0.1 ? p * 10 : p > 0.85 ? (1-p)*(1/0.15) : 1));
+      hide('rideNameBar'); hide('hudBar'); hide('statsPanel'); hide('outro');
+      setTr('photoCard', 'translateY(100%)');
+
+      // Contexto de región: se ve la RUTA COMPLETA con inicio/final
+      // marcados, y la cámara se acerca lentamente
+      const zoom = (fitZoom - 0.8) + easeIn(p) * 1.4;
+      const bearing = 15 + easeIn(p) * 15;
+      const pitch = 35 + easeIn(p) * 20;
+      map.jumpTo({ center: [centerLng, centerLat], zoom, bearing, pitch });
+      badgesOn = true;
+
+    // ── RUTA [T_INTRO, T_INTRO+T_ROUTE) ───────────────────────────────
+    } else if (t < T_INTRO + T_ROUTE) {
+      hide('intro'); hide('statsPanel'); hide('outro');
+      setTr('photoCard', 'translateY(100%)');
+      show('rideNameBar'); show('hudBar');
+
+      const p = (t - T_INTRO) / T_ROUTE;
+      const eased = easeInOut(p);
+
+      // Progreso por DISTANCIA real (no por índice de puntos GPS) —
+      // avance constante aunque los puntos estén espaciados irregular.
+      const riderDist = eased * totalDist;
+      const rider = pointAlong(riderDist);
+
+      // Ruta parcial dibujada (por distancia)
+      let cutIdx = 0;
+      while (cutIdx < cumDist.length - 1 && cumDist[cutIdx + 1] <= riderDist) cutIdx++;
+      const partial = [...coords.slice(0, cutIdx + 1), rider];
+      map.getSource('route-live').setData({ type:'Feature', geometry:{ type:'LineString', coordinates: partial }});
+      map.getSource('pin').setData({ type:'Feature', geometry:{ type:'Point', coordinates: rider }});
+
+      // KM y speed en HUD
+      document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
+      document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
+
+      // ── CHASE CAM estilo Relive (FreeCamera API) ──────────────────────
+      // Cámara DETRÁS del piloto, a altitud real, mirándolo.
+      const dirBearing = bearingAlong(riderDist);
+      const smoothBearing = lerpBearing(currentBearing, dirBearing, 0.10);
+      currentBearing = smoothBearing;
+
+      // Posición: CAM_BACK metros detrás del piloto en dirección opuesta
+      // al movimiento (extrapola geográficamente si aún no hay ruta detrás)
+      const camBehindDist = riderDist - CAM_BACK;
+      const camLngLat = camBehindDist >= 0
+        ? pointAlong(camBehindDist)
+        : destination(coords[0], smoothBearing + 180, CAM_BACK - riderDist);
+
+      // Altitud: terreno bajo la cámara + altura de vuelo (con boost inicial
+      // y final para abrir el plano)
+      const openShot = p < 0.12 ? (1 - p / 0.12) : p > 0.88 ? (p - 0.88) / 0.12 : 0;
+      const terrainElev = map.queryTerrainElevation(camLngLat) || 0;
+      const targetAlt = terrainElev + CAM_HEIGHT * (1 + openShot * 1.6);
+
+      // Suavizado de posición y altitud (inercia de cámara)
+      if (!smCamPos) { smCamPos = camLngLat; smCamAlt = targetAlt; }
+      smCamPos = [lerp(smCamPos[0], camLngLat[0], 0.12), lerp(smCamPos[1], camLngLat[1], 0.12)];
+      smCamAlt = lerp(smCamAlt, targetAlt, 0.08);
+
+      // Nunca por debajo del terreno + margen
+      const floorAlt = (map.queryTerrainElevation(smCamPos) || 0) + 120;
+      const finalAlt = Math.max(smCamAlt, floorAlt);
+
+      const camera = map.getFreeCameraOptions();
+      camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
+        { lng: smCamPos[0], lat: smCamPos[1] }, finalAlt
+      );
+      camera.lookAtPoint({ lng: rider[0], lat: rider[1] });
+      map.setFreeCameraOptions(camera);
+      badgesOn = true;
+
+      // ── SELLO DE MUNICIPIO: estampa al pasar por cada pueblo ─────────
+      const stamp = stamps.find(s => t >= s.t && t < s.t + STAMP_SHOW);
+      const chip = document.getElementById('stampChip');
+      if (stamp) {
+        const sp = (t - stamp.t) / STAMP_SHOW;
+        // Pop de entrada (rebote), estable, fade de salida
+        let scale, op;
+        if (sp < 0.15) {
+          const k = sp / 0.15;
+          scale = 0.4 + easeOut(k) * 0.72;  // llega a 1.12
+          op = k;
+        } else if (sp < 0.28) {
+          scale = 1.12 - ((sp - 0.15) / 0.13) * 0.12; // asienta a 1.0
+          op = 1;
+        } else if (sp > 0.85) {
+          const k = (sp - 0.85) / 0.15;
+          scale = 1; op = 1 - k;
+        } else {
+          scale = 1; op = 1;
+        }
+        chip.style.transform = `rotate(-4deg) scale(${scale})`;
+        chip.style.opacity = op;
+        document.getElementById('stampName').textContent = stamp.nombre;
+        document.getElementById('stampPts').textContent =
+          `${stamp.subregion || ''} · +${stamp.puntos_sello || 0} PTS`;
+        map.getSource('stamp-active').setData({
+          type: 'FeatureCollection',
+          features: [{ type: 'Feature', properties: {},
+            geometry: { type: 'Point', coordinates: [stamp.lon, stamp.lat] } }],
+        });
+      } else {
+        chip.style.opacity = 0;
+        chip.style.transform = 'rotate(-4deg) scale(0)';
+        map.getSource('stamp-active').setData({ type: 'FeatureCollection', features: [] });
+      }
+
+    // ── FOTOS [T_INTRO+T_ROUTE, T_INTRO+T_ROUTE+photoCount*T_PHOTO) ───
+    } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO) {
+      hide('intro'); hide('statsPanel'); hide('outro');
+      hide('rideNameBar'); hide('hudBar');
+
+      const photoT = t - T_INTRO - T_ROUTE;
+      const photoIdx = Math.floor(photoT / T_PHOTO);
+      const photoP   = (photoT % T_PHOTO) / T_PHOTO;
+      const photo = photos[photoIdx];
+      const hasGps = photo && photo.lat && photo.lon;
+      // Sin GPS: anclar la foto a un punto proporcional de la ruta —
+      // SIEMPRE hay referencia en el mapa, nunca una vista sin contexto
+      const anchor = hasGps
+        ? [photo.lon, photo.lat]
+        : pointAlong(totalDist * (photoIdx + 1) / (photoCount + 1));
+
+      // Tarjeta: slide in en primer 20%, permanece, slide out en último 15%
+      let cardY;
+      if (photoP < 0.18) {
+        cardY = 100 - easeOut(photoP / 0.18) * 100;
+      } else if (photoP > 0.85) {
+        cardY = easeIn((photoP - 0.85) / 0.15) * 100;
+      } else {
+        cardY = 0;
+      }
+      setTr('photoCard', `translateY(${cardY}%)`);
+
+      document.getElementById('photoThumb').src = photo?.url || '';
+      document.getElementById('photoCounter').textContent = `📷 FOTO ${photoIdx + 1} DE ${photoCount}`;
+      document.getElementById('photoLocationText').textContent = hasGps
+        ? 'Ubicación exacta en el mapa ↑'
+        : 'Punto del recorrido en el mapa ↑';
+
+      // El marcador naranja SIEMPRE señala el punto (exacto o del recorrido)
+      map.getSource('photo-active').setData({
+        type:'FeatureCollection', features:[{
+          type:'Feature', properties:{},
+          geometry:{ type:'Point', coordinates: anchor }
+        }]
+      });
+      const bearing = ((photoIdx * 67) + 20) % 360;
+      map.jumpTo({ center: anchor, zoom: hasGps ? 15.5 : 14, pitch: 58, bearing });
+      badgesOn = true;
+
+    // ── STATS [T_INTRO+T_ROUTE+photos*T_PHOTO, +T_STATS) ─────────────
+    } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO + T_STATS) {
+      hide('intro'); hide('rideNameBar'); hide('hudBar'); hide('outro');
+      setTr('photoCard', 'translateY(100%)');
+      map.getSource('photo-active').setData({ type:'FeatureCollection', features:[] });
+      show('statsPanel');
+
+      document.getElementById('sv-dist').textContent = (DATA.distanceKm || '0') + ' km';
+      document.getElementById('sv-time').textContent = DATA.elapsed || '00:00';
+      document.getElementById('sv-spd').textContent  = (DATA.maxSpeedKmh || '0') + ' km/h';
+
+      const p = (t - T_INTRO - T_ROUTE - photoCount * T_PHOTO) / T_STATS;
+      const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
+      const pitch = 45 - easeIn(p) * 15;
+      map.jumpTo({ center: bCenter, zoom: fitZoom, pitch, bearing: easeIn(p) * 30 });
+      badgesOn = true;
+
+    // ── OUTRO [últimos T_OUTRO segundos] ──────────────────────────────
+    } else {
+      hide('intro'); hide('rideNameBar'); hide('hudBar'); hide('statsPanel');
+      setTr('photoCard', 'translateY(100%)');
+      show('outro');
+
+      const p = (t - T_INTRO - T_ROUTE - photoCount * T_PHOTO - T_STATS) / T_OUTRO;
+      const op = p < 0.15 ? easeIn(p / 0.15) : p > 0.85 ? easeOut((1-p)/0.15) : 1;
+      setOp('outro', op);
+
+      const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
+      map.jumpTo({ center: bCenter, zoom: fitZoom - 1 + easeIn(p), pitch: 30 - easeIn(p) * 15, bearing: 60 + p * 20 });
+    }
+
+    // Posicionar insignias INICIO/FINAL con la cámara ya movida
+    placeBadges(badgesOn);
+
+    // Forzar re-render y esperar a que las teselas estén cargadas.
+    // jumpTo siempre dispara 'idle' cuando termina de cargar; el timeout
+    // largo es solo red de seguridad para que nunca se cuelgue.
+    map.triggerRepaint();
+    await new Promise(resolve => {
+      map.once('idle', resolve);
+      setTimeout(resolve, 2000);
+    });
+  };
+</script>
+</body>
+</html>

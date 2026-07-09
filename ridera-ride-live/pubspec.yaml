@@ -1,0 +1,32 @@
+name: ridera_ride_live
+description: RIDERA AVENTURA
+publish_to: none
+version: 0.1.0+1
+
+environment:
+  sdk: ">=3.6.0 <4.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  supabase_flutter: ^2.3.0
+  sensors_plus: ^6.1.1
+  url_launcher: ^6.3.1
+  permission_handler: ^11.3.1
+  shared_preferences: ^2.3.2
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+  image_picker: ^1.1.2
+  gal: ^1.1.0
+  http: ^1.2.2
+  wakelock_plus: ^1.2.8
+  video_player: ^2.9.2
+  onesignal_flutter: ^5.2.9
+
+dev_dependencies:
+  flutter_lints: ^4.0.0
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/videos/splash.mp4

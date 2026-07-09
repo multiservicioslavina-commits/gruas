@@ -1,0 +1,12 @@
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+*.g.dart
+
+# Secrets — never commit these
+lib/video_config.dart
+lib/notif_config.dart
+lib/rita_config.dart
