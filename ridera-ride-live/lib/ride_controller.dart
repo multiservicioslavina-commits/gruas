@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 import 'models/rider.dart';
 import 'models/telemetry.dart';
 import 'services/ride_repository.dart';
@@ -55,16 +56,41 @@ class RideController extends ChangeNotifier {
     this.myUid = myUid;
     if (name != null) rideName = name;
     riders.clear();
-    _memberSub?.cancel();
-    _memberSub = repo.membersStream(rideId).listen((list) {
-      riders
-        ..clear()
-        ..addAll(list);
-      notifyListeners();
-    });
+    _subscribeMemberStream();
     _startClock();
     _crash.start(() => _crashCtrl.add(null));
+    WakelockPlus.enable();
     notifyListeners();
+  }
+
+  void _subscribeMemberStream() {
+    _memberSub?.cancel();
+    if (_repo == null || rideId == null) return;
+    _memberSub = _repo!.membersStream(rideId!).listen(
+      (list) {
+        riders
+          ..clear()
+          ..addAll(list);
+        notifyListeners();
+      },
+      onError: (_) => _scheduleReconnect(),
+      onDone: () => _scheduleReconnect(),
+    );
+  }
+
+  Timer? _reconnectTimer;
+
+  void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
+    _reconnectTimer = Timer(const Duration(seconds: 3), () {
+      if (_repo != null && rideId != null) {
+        _subscribeMemberStream();
+      }
+    });
+  }
+
+  void reconnect() {
+    _subscribeMemberStream();
   }
 
   void pushMyTelemetry(double lat, double lon, double speedKmh,
@@ -327,9 +353,11 @@ class RideController extends ChangeNotifier {
     _sim?.cancel();
     _clock?.cancel();
     _memberSub?.cancel();
+    _reconnectTimer?.cancel();
     _location.stop();
     _crash.stop();
     _crashCtrl.close();
+    WakelockPlus.disable();
     super.dispose();
   }
 }

@@ -46,8 +46,13 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
             myUid: uid,
             name: bound.rideName);
 
-      await SessionService()
-          .save(joinCode: bound.joinCode, isLeader: bound.isLeader, name: name);
+      await SessionService().save(
+        joinCode: bound.joinCode,
+        isLeader: bound.isLeader,
+        name: name,
+        rideId: bound.rideId,
+        uid: uid,
+      );
 
       if (!mounted) return;
       Navigator.of(context).pushReplacement(MaterialPageRoute(

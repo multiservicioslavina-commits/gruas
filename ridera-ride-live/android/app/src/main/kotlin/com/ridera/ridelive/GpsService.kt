@@ -178,7 +178,8 @@ class GpsService : Service() {
                     .openConnection() as HttpURLConnection
                 conn.requestMethod = "PATCH"
                 conn.setRequestProperty("apikey", ANON_KEY)
-                conn.setRequestProperty("Authorization", "Bearer ${accessToken.ifEmpty { ANON_KEY }}")
+                val token = savedAccessToken.ifEmpty { accessToken }.ifEmpty { ANON_KEY }
+                conn.setRequestProperty("Authorization", "Bearer $token")
                 conn.setRequestProperty("Content-Type", "application/json")
                 conn.setRequestProperty("Prefer", "return=minimal")
                 conn.doOutput = true
@@ -199,7 +200,8 @@ class GpsService : Service() {
                         .openConnection() as HttpURLConnection
                     conn.requestMethod = "POST"
                     conn.setRequestProperty("apikey", ANON_KEY)
-                    conn.setRequestProperty("Authorization", "Bearer ${accessToken.ifEmpty { ANON_KEY }}")
+                    val token2 = savedAccessToken.ifEmpty { accessToken }.ifEmpty { ANON_KEY }
+                    conn.setRequestProperty("Authorization", "Bearer $token2")
                     conn.setRequestProperty("Content-Type", "application/json")
                     conn.setRequestProperty("Prefer", "return=minimal")
                     conn.doOutput = true

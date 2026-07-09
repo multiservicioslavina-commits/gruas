@@ -32,6 +32,17 @@ class LocationService {
     }
   }
 
+  Future<void> refreshToken() async {
+    final accessToken =
+        Supabase.instance.client.auth.currentSession?.accessToken ?? '';
+    if (accessToken.isEmpty) return;
+    try {
+      await _channel.invokeMethod('refreshToken', {
+        'accessToken': accessToken,
+      });
+    } catch (_) {}
+  }
+
   Future<void> stop() async {
     try {
       await _channel.invokeMethod('setRideActive', {'active': false});

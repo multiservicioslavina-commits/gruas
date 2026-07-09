@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/crash_detector.dart';
+import '../services/session_service.dart';
 import '../services/location_service.dart';
 import '../services/mesh_service.dart';
 import '../services/photo_service.dart';
@@ -318,15 +319,25 @@ class _RideMapScreenState extends State<RideMapScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.resumed) {
-      // App vuelve al frente — verifica que TODO esté vivo (Android puede haber
-      // matado el GPS service o desconectado el WebSocket en background).
-      _ensureGpsRunning();
-      _channel?.unsubscribe();
-      _channel = null;
-      _subscribeRealtime();
-      _loadMembers();
-      _loadRoutePoints(clearFirst: true);
+      _refreshTokenAndReconnect();
     }
+  }
+
+  Future<void> _refreshTokenAndReconnect() async {
+    // Refrescar sesión de Supabase (el token puede haber expirado en background)
+    try {
+      await Supabase.instance.client.auth.refreshSession();
+    } catch (_) {}
+    // Pasar token fresco al servicio GPS nativo
+    await _locationService.refreshToken();
+    // Reiniciar GPS con token fresco
+    _ensureGpsRunning();
+    // Reconectar Realtime
+    _channel?.unsubscribe();
+    _channel = null;
+    _subscribeRealtime();
+    _loadMembers();
+    _loadRoutePoints(clearFirst: true);
   }
 
   Future<void> _loadRoutePoints({bool clearFirst = false}) async {
@@ -588,6 +599,7 @@ class _RideMapScreenState extends State<RideMapScreen>
   }
 
   void _goToSummary() {
+    SessionService().clear();
     final elapsed = widget.startedAt != null
         ? DateTime.now().difference(widget.startedAt!)
         : Duration.zero;

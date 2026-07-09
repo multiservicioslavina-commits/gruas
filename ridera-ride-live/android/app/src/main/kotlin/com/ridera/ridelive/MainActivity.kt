@@ -86,6 +86,11 @@ class MainActivity : FlutterActivity() {
                         // true si logró abrir la pantalla específica del fabricante
                         result.success(openAutoStartSettings())
                     }
+                    "refreshToken" -> {
+                        val accessToken = call.argument<String>("accessToken") ?: ""
+                        GpsService.savedAccessToken = accessToken
+                        result.success(true)
+                    }
                     "sendSms" -> {
                         val phone = call.argument<String>("phone") ?: ""
                         val message = call.argument<String>("message") ?: ""
