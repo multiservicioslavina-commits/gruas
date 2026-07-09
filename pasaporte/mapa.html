@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Mapa · Ridera 125</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{max-width:560px;margin:0 auto;min-height:100vh;padding:0 0 30px}
+  .top{padding:20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  .back{font-family:"Bebas Neue",sans-serif;font-size:30px;color:var(--ink-dim);text-decoration:none;line-height:1}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:36px;line-height:.95;margin:2px 0 0}
+  .wrap{padding:18px}
+  .pick{text-align:center;padding:36px 20px}
+  .pick .ico{font-size:46px}
+  .pick h2{font-family:"Bebas Neue",sans-serif;font-size:30px;margin:14px 0 6px}
+  .pick p{color:var(--ink-dim);font-size:16px;margin:0 0 18px;line-height:1.5}
+  .cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.5px;text-transform:uppercase;padding:15px 26px;cursor:pointer;text-decoration:none}
+  .cta:active{transform:translateY(1px)}
+  .seg{display:flex;background:var(--panel-2);border-radius:11px;padding:4px;margin-bottom:14px}
+  .seg .o{flex:1;text-align:center;padding:11px;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim)}
+  .seg .o.on{background:var(--orange);color:#100a06}
+  .mapbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;overflow:hidden}
+  svg{width:100%;height:auto;display:block}
+  .count{text-align:center;margin-top:14px;font-family:"Bebas Neue",sans-serif;font-size:34px;letter-spacing:.5px}
+  .count b{color:var(--orange)} .count span{color:var(--ink-dim);font-size:22px}
+  .hint{text-align:center;color:var(--ink-dim);font-size:15px;margin-top:4px;line-height:1.5}
+  .tools{display:flex;gap:10px;margin-top:16px}
+  .tools .btn{flex:1;text-align:center;padding:13px;border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;cursor:pointer;text-decoration:none}
+  #file{display:none}
+  #loader{min-height:60vh;display:grid;place-items:center}
+  .spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:s 1s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .hidden{display:none!important}
+</style>
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="pasaporte.html">‹</a>
+    <div><div class="eyebrow">Rompecabezas · Antioquia 125</div><h1>Mi Mapa</h1></div>
+  </header>
+
+  <div id="loader"><div class="spinner"></div></div>
+
+  <div class="wrap pick hidden" id="pickView">
+    <div class="ico">🧩📸</div>
+    <h2>Arma tu Antioquia</h2>
+    <p>Elige una foto tuya (tu moto, tu familia, un paisaje...). Tomará la forma de Antioquia y se irá revelando cada vez que selles un municipio.</p>
+    <button class="cta" id="pickBtn">Elegir mi foto</button>
+  </div>
+
+  <div class="wrap hidden" id="mapView">
+    <div class="seg" id="seg">
+      <div class="o on" data-m="avance">Mi avance</div>
+      <div class="o" data-m="meta">La meta</div>
+    </div>
+    <div class="mapbox" id="mapbox"></div>
+    <div class="count"><b id="cNum">0</b> <span>/ 125 fichas</span></div>
+    <div class="hint" id="hint">Sella municipios y ve apareciendo tu foto.</div>
+    <div class="tools">
+      <button class="btn" id="changeBtn">🔄 Cambiar foto</button>
+      <a class="btn" href="sello.html">＋ Sellar municipio</a>
+    </div>
+  </div>
+
+  <input type="file" id="file" accept="image/*">
+
+<script>
+const SUPABASE_URL="https://vzzxsdtsaahhzyctvmhx.supabase.co";
+const SUPABASE_KEY="sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const MAP={"w":1000.0,"h":1063.7,"paths":{"medellin":"M449.5 779.2L454.8 791.5L494.9 805.4L501.3 802.7L506.2 835.9L476.0 836.3L446.1 844.4L441.5 834.8L436.6 814.7L434.4 783.0L449.5 779.2Z","ciudad-bolivar":"M373.4 937.9L373.4 942.9L361.0 958.3L340.9 972.2L326.9 968.7L316.7 942.1L330.3 916.6L373.4 937.9Z","briceno":"M510.4 568.4L490.7 586.9L468.0 566.4L452.5 574.9L443.8 557.5L469.2 528.2L518.7 506.2L502.5 542.5L510.4 568.4Z","buritica":"M395.0 624.0L387.1 651.0L398.8 683.4L384.0 694.2L359.8 669.1L352.3 658.3L361.3 594.2L372.7 595.0L395.0 624.0Z","caceres":"M650.0 402.7L631.5 423.2L647.0 431.3L658.0 461.0L642.1 451.7L605.0 473.0L579.3 441.3L571.3 417.4L553.5 417.0L542.9 391.1L520.6 375.3L506.2 354.4L514.6 323.9L546.7 313.1L553.9 295.4L565.3 306.2L589.5 289.6L605.4 306.6L605.4 334.4L645.9 343.6L643.2 393.4L650.0 402.7Z","betulia":"M392.0 818.6L396.1 843.6L348.1 871.1L332.2 813.9L345.8 806.6L367.8 827.8L392.0 818.6Z","betania":"M380.2 971.8L376.1 989.6L346.2 998.1L324.3 995.8L320.1 992.3L326.9 968.7L340.9 972.2L361.0 958.3L380.2 971.8Z","bello":"M491.5 774.1L494.9 805.4L454.8 791.5L449.5 779.2L451.4 769.1L473.3 760.6L491.5 774.1Z","belmira":"M462.4 650.6L475.2 685.0L454.0 691.5L481.6 730.1L456.7 741.3L434.4 697.3L431.7 646.7L449.9 660.6L462.4 650.6Z","barbosa":"M574.7 737.1L581.5 756.0L561.5 773.4L531.2 781.5L517.6 759.5L533.9 757.9L556.2 735.5L574.7 737.1Z","armenia":"M403.7 825.1L425.3 849.8L392.0 864.1L396.1 843.6L392.0 818.6L392.7 817.8L403.7 825.1Z","argelia":"M693.2 974.5L658.3 983.8L634.9 1000.4L606.5 1005.4L583.4 996.2L583.0 980.7L625.8 970.3L659.1 976.1L693.2 974.5Z","arboletes":"M234.6 51.4L269.4 81.9L268.3 87.3L248.2 102.7L245.6 133.2L222.5 127.8L213.0 132.0L170.6 91.1L172.2 81.9L207.7 57.5L196.7 17.4L219.4 0.0L234.6 51.4Z","anza":"M399.2 771.4L391.6 793.5L392.7 817.8L367.8 827.8L345.8 806.6L350.7 788.0L376.5 771.8L399.2 771.4Z","santa-fe-de-antioquia":"M398.8 683.4L408.6 727.8L403.0 767.6L399.2 771.4L376.5 771.8L364.7 752.5L335.2 738.2L344.7 697.7L368.5 701.6L384.0 694.2L398.8 683.4Z","anori":"M682.9 494.2L649.6 540.2L630.0 594.6L603.5 613.1L586.8 604.6L586.8 572.2L575.9 547.9L558.8 534.0L558.1 517.4L564.5 512.4L597.0 499.6L605.0 473.0L642.1 451.7L658.0 461.0L690.1 461.4L682.9 494.2Z","angostura":"M581.2 606.6L567.2 639.4L539.2 654.5L504.7 654.5L510.4 630.1L540.3 614.7L552.4 600.8L573.2 593.1L581.2 606.6Z","angelopolis":"M446.1 844.4L448.4 858.3L446.8 868.0L425.3 873.8L419.2 853.3L425.3 849.8L441.5 834.8L446.1 844.4Z","andes":"M397.7 979.6L406.0 1002.7L386.3 1008.5L387.1 1037.5L376.1 1056.8L352.3 1045.2L344.3 1030.1L345.1 1012.8L324.3 995.8L346.2 998.1L376.1 989.6L380.2 971.8L386.3 965.3L397.7 979.6Z","amalfi":"M682.9 494.2L682.2 501.6L704.9 542.1L700.0 569.1L706.4 586.5L694.3 630.9L680.7 661.4L648.1 635.5L637.9 656.4L622.4 651.8L600.1 631.7L603.5 613.1L630.0 594.6L649.6 540.2L682.9 494.2Z","amaga":"M449.1 895.8L440.0 901.2L419.2 895.4L425.3 873.8L446.8 868.0L449.1 895.8Z","alejandria":"M660.2 775.3L620.1 801.2L603.5 802.7L611.4 767.2L628.8 772.6L645.9 765.3L660.2 775.3Z","abriaqui":"M343.5 693.8L344.7 697.7L335.2 738.2L329.2 737.5L297.0 710.8L292.5 683.8L315.2 673.0L320.1 660.2L343.5 693.8Z","abejorral":"M527.8 925.9L568.3 934.8L573.2 940.9L556.9 963.3L525.5 979.9L525.2 990.0L508.1 1000.0L484.3 981.1L491.1 939.0L505.9 935.5L507.4 915.9L527.8 925.9Z","zaragoza":"M777.5 463.3L749.1 486.5L682.2 501.6L690.1 461.4L658.0 461.0L647.0 431.3L631.5 423.2L650.0 402.7L675.0 390.4L687.1 374.5L705.3 375.7L723.4 357.9L729.1 373.8L711.7 400.4L731.0 440.6L756.7 447.5L777.5 463.3Z","yondo":"M991.3 491.9L987.1 547.9L1000.0 561.8L997.0 588.0L961.8 610.8L936.1 644.8L931.5 653.3L893.7 674.1L886.1 685.0L854.0 698.5L835.4 665.7L825.6 660.2L847.5 611.6L889.9 582.6L991.3 491.9Z","yolombo":"M648.1 635.5L684.8 665.7L671.6 675.3L683.3 696.9L717.7 695.4L764.3 677.6L785.8 675.7L811.6 677.2L791.9 696.5L738.2 707.4L706.0 736.7L650.0 727.4L645.5 727.8L627.3 713.9L614.1 724.7L592.1 722.4L595.2 716.2L618.2 690.4L622.4 651.8L637.9 656.4L648.1 635.5Z","yarumal":"M563.0 513.1L558.1 517.4L553.2 560.2L559.2 580.3L552.4 600.8L540.3 614.7L510.4 630.1L504.7 654.5L478.6 629.7L478.2 617.0L469.9 591.5L452.5 574.9L468.0 566.4L490.7 586.9L525.2 556.4L536.5 530.5L563.0 513.1Z","yali":"M786.2 651.8L785.8 675.7L764.3 677.6L717.7 695.4L683.3 696.9L671.6 675.3L684.8 665.7L707.2 667.2L731.4 649.4L766.6 646.7L786.2 651.8Z","venecia":"M419.2 895.4L440.0 901.2L416.6 932.5L391.6 914.7L393.9 908.9L396.1 892.7L419.2 895.4Z","vegachi":"M786.2 651.8L766.6 646.7L731.4 649.4L707.2 667.2L684.8 665.7L680.7 661.4L694.3 630.9L706.4 586.5L711.3 624.7L769.6 607.3L788.5 627.0L786.2 651.8Z","valparaiso":"M471.1 994.6L476.7 1018.2L447.2 1020.5L457.8 971.1L471.1 994.6Z","valdivia":"M564.5 512.4L536.5 530.5L525.2 556.4L510.4 568.4L502.5 542.5L518.7 506.2L492.6 490.7L497.2 467.6L513.8 471.8L571.3 462.9L564.5 512.4Z","uramita":"M357.9 590.0L352.3 601.6L315.9 617.4L309.5 630.1L298.9 638.6L270.9 622.0L277.7 608.5L299.7 590.7L323.9 602.3L352.6 583.4L357.9 590.0Z","turbo":"M55.7 237.1L74.2 258.7L61.3 264.5L62.1 298.1L91.2 302.7L115.8 296.5L120.3 250.2L118.8 218.2L107.8 189.2L154.7 169.5L172.2 147.5L209.6 156.4L213.0 132.0L222.5 127.8L225.5 154.1L220.2 212.7L222.9 240.5L182.4 283.8L114.3 310.0L98.4 313.1L96.9 375.7L126.7 398.9L147.9 437.8L136.2 438.2L99.5 405.8L57.9 401.9L50.3 384.6L0.0 337.8L14.8 319.7L29.9 306.6L39.0 266.4L57.1 251.0L55.7 237.1Z","toledo":"M443.8 557.5L452.5 574.9L428.7 606.6L419.6 564.5L443.8 557.5Z","titiribi":"M425.3 873.8L419.2 895.4L396.1 892.7L392.0 864.1L419.2 853.3L425.3 873.8Z","tarso":"M391.6 914.7L421.1 934.8L402.6 951.0L382.1 937.5L382.5 924.3L391.6 914.7Z","taraza":"M605.0 473.0L597.0 499.6L564.5 512.4L571.3 462.9L513.8 471.8L497.2 467.6L480.5 465.3L488.8 430.5L470.3 400.0L506.2 354.4L520.6 375.3L542.9 391.1L553.5 417.0L571.3 417.4L579.3 441.3L605.0 473.0Z","tamesis":"M458.2 969.5L447.2 1020.5L435.5 1036.3L430.6 1031.3L423.8 1011.2L406.7 1003.1L426.0 978.4L450.6 957.6L458.2 969.5Z","sopetran":"M455.2 739.0L429.8 742.5L415.1 764.5L403.0 767.6L408.6 727.8L434.4 697.3L455.2 739.0Z","sonson":"M767.3 939.0L759.7 967.6L744.6 967.2L736.7 988.8L715.9 988.8L693.2 974.5L659.1 976.1L625.8 970.3L583.0 980.7L583.4 996.2L568.7 1058.7L558.5 1063.7L560.0 1047.9L525.2 990.0L525.5 979.9L556.9 963.3L573.2 940.9L605.0 934.8L639.0 920.5L649.3 949.8L639.4 972.6L671.6 963.3L689.0 948.7L704.5 918.2L767.3 939.0Z","segovia":"M854.7 436.7L866.4 446.7L842.2 475.3L845.3 500.8L774.1 531.7L745.7 561.8L730.2 541.7L704.9 542.1L682.2 501.6L749.1 486.5L791.9 450.6L813.5 476.8L837.3 459.5L837.7 440.6L854.7 436.7Z","el-santuario":"M584.2 844.4L604.6 863.7L588.0 859.9L573.2 877.6L561.1 850.6L578.1 842.1L584.2 844.4Z","santo-domingo":"M592.1 722.4L650.0 727.4L626.2 751.0L645.9 765.3L628.8 772.6L581.5 756.0L574.7 737.1L592.1 722.4Z","santa-rosa-de-osos":"M504.7 654.5L539.2 654.5L567.5 684.2L595.2 716.2L592.1 722.4L579.3 716.6L552.0 725.9L524.4 725.9L514.6 734.4L499.1 716.6L488.5 683.8L475.2 685.0L462.4 650.6L457.4 624.3L478.2 617.0L478.6 629.7L504.7 654.5Z","santa-barbara":"M473.3 893.5L482.4 903.1L491.1 939.0L484.3 981.1L480.1 981.1L464.6 957.2L459.7 905.8L466.5 902.0L473.3 893.5Z","giraldo":"M384.0 694.2L368.5 701.6L344.7 697.7L343.5 693.8L359.8 669.1L384.0 694.2Z","fredonia":"M466.5 902.0L459.7 905.8L464.6 957.2L458.2 969.5L450.6 957.6L416.6 932.5L440.0 901.2L449.1 895.8L466.5 902.0Z","envigado":"M506.2 835.9L509.3 846.0L479.0 864.5L473.7 860.3L469.2 844.4L476.0 836.3L506.2 835.9Z","entrerrios":"M514.6 734.4L513.8 735.9L481.6 730.1L454.0 691.5L475.2 685.0L488.5 683.8L499.1 716.6L514.6 734.4Z","el-bagre":"M791.9 282.2L804.8 303.1L808.2 358.3L791.9 382.6L791.9 450.6L777.5 463.3L756.7 447.5L731.0 440.6L711.7 400.4L729.1 373.8L716.2 339.4L721.2 331.7L711.7 290.7L733.6 289.2L769.2 303.1L791.9 282.2Z","ebejico":"M434.4 783.0L436.6 814.7L406.0 814.3L403.7 825.1L392.7 817.8L391.6 793.5L399.2 771.4L403.0 767.6L415.1 764.5L434.4 783.0Z","donmatias":"M591.4 722.8L574.7 737.1L556.2 735.5L533.9 757.9L505.1 761.4L514.6 734.4L524.4 725.9L552.0 725.9L579.3 716.6L591.4 722.8Z","copacabana":"M516.8 791.1L501.3 802.7L494.9 805.4L491.5 774.1L505.1 761.4L516.8 791.1Z","concordia":"M396.1 843.6L392.0 864.1L396.1 892.7L393.9 908.9L364.4 902.0L364.7 881.5L347.7 873.8L348.1 871.1L396.1 843.6Z","concepcion":"M611.4 767.2L603.5 802.7L599.7 806.6L581.2 795.0L561.5 773.4L581.5 756.0L611.4 767.2Z","cocorna":"M604.6 863.7L630.0 888.8L634.9 895.4L639.0 920.5L605.0 934.8L614.1 913.9L573.2 877.6L588.0 859.9L604.6 863.7Z","cisneros":"M645.5 727.8L614.1 724.7L627.3 713.9L645.5 727.8Z","chigorodo":"M195.2 359.5L191.8 410.8L169.1 432.4L147.9 437.8L126.7 398.9L96.9 375.7L96.9 343.6L130.2 359.9L155.5 355.2L195.2 359.5Z","caucasia":"M716.2 339.4L723.4 357.9L705.3 375.7L687.1 374.5L675.0 390.4L650.0 402.7L643.2 393.4L645.9 343.6L605.4 334.4L605.4 306.6L589.5 289.6L565.3 306.2L553.9 295.4L552.0 288.4L560.7 288.8L588.0 251.7L604.2 256.0L638.7 257.5L682.9 241.3L676.9 278.4L679.9 331.7L716.2 339.4Z","carolina-del-principe":"M567.5 684.2L539.2 654.5L567.2 639.4L584.9 648.3L567.5 684.2Z","el-carmen-de-viboral":"M561.1 850.6L573.2 877.6L614.1 913.9L605.0 934.8L573.2 940.9L568.3 934.8L544.8 885.7L536.5 877.2L547.5 850.2L561.1 850.6Z","carepa":"M114.3 310.0L130.2 330.9L177.4 343.6L187.3 323.6L203.6 312.7L195.2 359.5L155.5 355.2L130.2 359.9L96.9 343.6L98.4 313.1L114.3 310.0Z","caramanta":"M476.7 1018.2L479.8 1037.5L477.9 1046.0L458.2 1041.7L438.5 1039.4L435.5 1036.3L447.2 1020.5L476.7 1018.2Z","caracoli":"M743.5 771.8L769.6 809.7L745.0 820.5L720.0 797.7L706.4 760.2L714.3 751.4L743.5 771.8Z","canasgordas":"M361.3 594.2L352.3 658.3L359.8 669.1L343.5 693.8L320.1 660.2L309.5 630.1L315.9 617.4L352.3 601.6L357.9 590.0L361.3 594.2Z","campamento":"M586.8 604.6L581.2 606.6L573.2 593.1L552.4 600.8L559.2 580.3L553.2 560.2L558.1 517.4L558.8 534.0L575.9 547.9L586.8 572.2L586.8 604.6Z","caldas":"M448.4 858.3L473.7 860.3L479.0 864.5L473.3 893.5L466.5 902.0L449.1 895.8L446.8 868.0L448.4 858.3Z","caicedo":"M335.2 738.2L364.7 752.5L376.5 771.8L350.7 788.0L334.1 777.6L329.2 737.5L335.2 738.2Z","san-vicente-ferrer":"M561.5 773.4L581.2 795.0L568.3 814.7L555.1 825.5L538.8 822.8L530.5 786.9L531.2 781.5L561.5 773.4Z","san-roque":"M706.0 736.7L714.3 751.4L706.4 760.2L720.0 797.7L681.8 769.9L660.2 775.3L626.2 751.0L650.0 727.4L706.0 736.7Z","san-rafael":"M709.4 790.0L683.3 798.9L638.3 830.1L619.8 822.0L620.1 801.2L660.2 775.3L681.8 769.9L709.4 790.0Z","san-pedro-de-uraba":"M268.3 87.3L282.3 109.3L279.6 134.0L291.3 147.9L258.0 169.9L238.4 208.9L239.5 223.9L222.9 240.5L220.2 212.7L225.5 154.1L222.5 127.8L245.6 133.2L248.2 102.7L268.3 87.3Z","san-pedro-de-los-milagros":"M513.8 735.9L505.1 761.4L491.5 774.1L473.3 760.6L451.4 769.1L456.7 741.3L481.6 730.1L513.8 735.9Z","san-luis":"M681.0 881.9L727.6 897.3L704.5 918.2L670.5 910.1L653.0 918.6L630.0 888.8L637.2 855.6L670.1 864.1L681.0 881.9Z","san-juan-de-uraba":"M172.2 81.9L152.9 47.9L179.0 34.7L196.7 17.4L207.7 57.5L172.2 81.9Z","san-jose-de-la-montana":"M457.4 624.3L462.4 650.6L449.9 660.6L429.4 644.4L440.4 618.9L457.4 624.3Z","san-jeronimo":"M455.2 739.0L456.7 741.3L449.5 779.2L434.4 783.0L415.1 764.5L429.8 742.5L455.2 739.0Z","san-francisco":"M704.5 918.2L689.0 948.7L671.6 963.3L639.4 972.6L649.3 949.8L639.0 920.5L634.9 895.4L653.0 918.6L670.5 910.1L704.5 918.2Z","san-carlos":"M720.0 797.7L745.0 820.5L726.4 832.8L711.7 868.4L681.0 881.9L670.1 864.1L637.2 855.6L618.6 823.2L619.8 822.0L638.3 830.1L683.3 798.9L709.4 790.0L720.0 797.7Z","san-andres-de-cuerquia":"M478.2 617.0L457.4 624.3L440.4 618.9L429.4 644.4L420.0 649.8L428.7 606.6L452.5 574.9L469.9 591.5L478.2 617.0Z","salgar":"M347.7 873.8L364.7 881.5L364.4 902.0L393.9 908.9L391.6 914.7L382.5 924.3L373.4 937.9L330.3 916.6L317.1 894.2L347.7 873.8Z","sabanalarga":"M428.7 606.6L420.0 649.8L387.1 651.0L395.0 624.0L401.8 590.4L419.6 564.5L428.7 606.6Z","rionegro":"M555.1 825.5L547.5 850.2L536.5 877.2L518.7 876.9L505.9 831.3L538.8 822.8L555.1 825.5Z","el-retiro":"M509.3 846.0L518.7 876.9L514.6 895.0L499.1 907.7L482.4 903.1L473.3 893.5L479.0 864.5L509.3 846.0Z","remedios":"M855.5 580.7L889.9 582.6L847.5 611.6L825.6 660.2L811.6 677.2L785.8 675.7L788.5 627.0L769.6 607.3L711.3 624.7L706.4 586.5L700.0 569.1L704.9 542.1L730.2 541.7L745.7 561.8L774.1 531.7L845.3 500.8L838.4 520.9L856.6 558.3L855.5 580.7Z","puerto-triunfo":"M767.3 939.0L704.5 918.2L727.6 897.3L747.6 885.7L790.0 877.2L784.3 918.6L767.3 939.0Z","puerto-nare":"M769.6 809.7L800.2 811.6L776.0 856.0L790.0 877.2L747.6 885.7L727.6 897.3L681.0 881.9L711.7 868.4L726.4 832.8L745.0 820.5L769.6 809.7Z","puerto-berrio":"M854.0 698.5L838.8 712.8L842.6 754.5L826.0 791.9L800.2 811.6L769.6 809.7L743.5 771.8L764.3 754.8L777.1 714.3L825.6 660.2L835.4 665.7L854.0 698.5Z","pueblorrico":"M382.5 924.3L382.1 937.5L402.6 951.0L397.7 979.6L386.3 965.3L373.4 942.9L373.4 937.9L382.5 924.3Z","peque":"M416.6 569.5L401.8 590.4L395.0 624.0L372.7 595.0L361.3 594.2L352.6 583.4L357.5 542.9L364.0 525.9L382.5 514.7L384.4 547.9L416.6 569.5Z","el-penol":"M599.7 806.6L595.5 820.1L605.8 841.7L584.2 844.4L578.1 842.1L568.3 814.7L581.2 795.0L599.7 806.6Z","olaya":"M433.6 692.3L434.4 697.3L408.6 727.8L401.8 695.4L433.6 692.3Z","nechi":"M770.3 255.2L791.9 282.2L769.2 303.1L733.6 289.2L711.7 290.7L721.2 331.7L716.2 339.4L679.9 331.7L676.9 278.4L682.9 241.3L708.7 210.0L722.7 231.3L770.3 255.2Z","necocli":"M172.2 81.9L170.6 91.1L213.0 132.0L209.6 156.4L172.2 147.5L154.7 169.5L107.8 189.2L112.8 150.2L92.3 117.8L60.5 103.5L73.4 78.4L100.3 75.7L146.4 63.3L152.9 47.9L172.2 81.9Z","narino":"M568.7 1058.7L583.4 996.2L606.5 1005.4L634.9 1000.4L615.2 1038.2L568.7 1058.7Z","mutata":"M229.3 461.8L279.6 537.1L249.0 536.3L224.7 525.5L197.1 541.7L183.1 504.3L157.0 486.5L136.2 438.2L147.9 437.8L169.1 432.4L191.8 410.8L229.3 461.8Z","montebello":"M482.4 903.1L499.1 907.7L507.4 915.9L505.9 935.5L491.1 939.0L482.4 903.1Z","marinilla":"M568.3 814.7L578.1 842.1L561.1 850.6L547.5 850.2L555.1 825.5L568.3 814.7Z","maceo":"M791.9 696.5L777.1 714.3L764.3 754.8L743.5 771.8L714.3 751.4L706.0 736.7L738.2 707.4L791.9 696.5Z","liborina":"M429.4 644.4L431.7 646.7L433.6 692.3L401.8 695.4L387.1 651.0L420.0 649.8L429.4 644.4Z","la-union":"M568.3 934.8L527.8 925.9L526.7 901.2L544.8 885.7L568.3 934.8Z","la-pintada":"M480.1 981.1L471.1 994.6L457.8 971.1L464.6 957.2L480.1 981.1Z","la-ceja":"M536.5 877.2L544.8 885.7L526.7 901.2L527.8 925.9L507.4 915.9L499.1 907.7L514.6 895.0L518.7 876.9L536.5 877.2Z","jerico":"M450.6 957.6L426.0 978.4L406.0 1002.7L397.7 979.6L402.6 951.0L421.1 934.8L450.6 957.6Z","jardin":"M406.7 1003.1L423.8 1011.2L430.6 1031.3L387.8 1054.1L376.1 1056.8L387.1 1037.5L386.3 1008.5L406.7 1003.1Z","itagui":"M476.0 836.3L469.2 844.4L462.7 847.5L455.9 841.7L476.0 836.3Z","hispania":"M386.3 965.3L380.2 971.8L361.0 958.3L373.4 942.9L386.3 965.3Z","heliconia":"M436.6 814.7L441.5 834.8L425.3 849.8L403.7 825.1L406.0 814.3L436.6 814.7Z","guatape":"M619.8 822.0L605.8 841.7L595.5 820.1L599.7 806.6L603.5 802.7L620.1 801.2L619.8 822.0Z","guarne":"M530.5 786.9L538.8 822.8L505.9 831.3L501.3 802.7L516.8 791.1L530.5 786.9Z","guadalupe":"M603.5 613.1L600.1 631.7L584.9 648.3L567.2 639.4L581.2 606.6L586.8 604.6L603.5 613.1Z","granada":"M637.2 855.6L630.0 888.8L584.2 844.4L605.8 841.7L618.6 823.2L637.2 855.6Z","gomez-plata":"M622.4 651.8L618.2 690.4L595.2 716.2L567.5 684.2L584.9 648.3L600.1 631.7L622.4 651.8Z","girardota":"M531.2 781.5L530.5 786.9L516.8 791.1L505.1 761.4L517.6 759.5L531.2 781.5Z","dabeiba":"M279.6 537.1L298.5 544.0L328.0 530.5L357.5 542.9L352.6 583.4L323.9 602.3L299.7 590.7L277.7 608.5L257.7 615.1L261.8 644.8L249.7 654.1L221.0 630.5L214.2 663.7L186.2 657.2L168.7 678.8L161.2 672.6L170.3 631.7L188.8 607.0L177.8 583.0L184.6 551.0L197.1 541.7L224.7 525.5L249.0 536.3L279.6 537.1Z","frontino":"M309.5 630.1L320.1 660.2L315.2 673.0L292.5 683.8L297.0 710.8L277.0 717.4L249.0 737.9L229.7 710.4L197.5 740.6L185.4 712.4L172.9 718.9L168.7 678.8L186.2 657.2L214.2 663.7L221.0 630.5L249.7 654.1L261.8 644.8L257.7 615.1L277.7 608.5L270.9 622.0L298.9 638.6L309.5 630.1Z","ituango":"M448.4 397.7L470.3 400.0L488.8 430.5L480.5 465.3L497.2 467.6L492.6 490.7L518.7 506.2L469.2 528.2L443.8 557.5L419.6 564.5L416.6 569.5L384.4 547.9L382.5 514.7L364.0 525.9L357.5 542.9L328.0 530.5L298.5 544.0L279.6 537.1L229.3 461.8L395.0 475.7L426.8 393.1L448.4 397.7Z","urrao":"M297.0 710.8L329.2 737.5L334.1 777.6L350.7 788.0L345.8 806.6L332.2 813.9L348.1 871.1L347.7 873.8L317.1 894.2L297.8 894.2L287.9 876.9L282.3 837.9L270.9 831.7L230.4 835.2L209.6 842.9L185.4 827.0L185.0 776.1L172.9 718.9L185.4 712.4L197.5 740.6L229.7 710.4L249.0 737.9L277.0 717.4L297.0 710.8Z","murindo":"M177.8 583.0L188.8 607.0L170.3 631.7L161.2 672.6L168.7 678.8L169.9 698.1L128.3 688.8L115.4 696.2L84.8 690.0L77.9 667.2L63.6 651.0L68.9 637.1L101.8 625.9L92.3 582.3L138.1 574.5L177.8 583.0Z","vigia-del-fuerte":"M68.9 637.1L63.6 651.0L77.9 667.2L84.8 690.0L115.4 696.2L128.3 688.8L169.9 698.1L172.9 718.9L185.0 776.1L185.4 827.0L209.6 842.9L161.2 835.5L126.0 842.1L125.2 828.2L107.1 806.2L102.5 788.8L106.7 742.9L69.2 714.7L52.2 685.0L46.5 646.7L64.7 631.7L68.9 637.1Z","apartado":"M215.7 249.4L219.8 270.3L216.8 299.6L203.6 312.7L187.3 323.6L177.4 343.6L130.2 330.9L114.3 310.0L182.4 283.8L215.7 249.4Z","sabaneta":"M473.7 860.3L468.8 859.1L462.7 847.5L469.2 844.4L473.7 860.3Z","la-estrella":"M455.9 841.7L462.7 847.5L468.8 859.1L448.4 858.3L446.1 844.4L455.9 841.7Z"}};
+
+let userId=null, sealed=new Set(), photo=null, mode="avance";
+
+(async function(){
+  const { data:sess } = await sb.auth.getSession();
+  if(!sess.session){ window.location.href="index.html"; return; }
+  userId=sess.session.user.id;
+  const { data:s } = await sb.from("sellos").select("municipio_id").eq("rider_id",userId);
+  sealed = new Set((s||[]).map(x=>x.municipio_id));
+  try{
+    const { data:prof } = await sb.from("riders").select("foto_mapa").eq("id",userId).maybeSingle();
+    if(prof && prof.foto_mapa){ photo = prof.foto_mapa; }
+  }catch(e){}
+  if(!photo){ photo = localStorage.getItem("ridera125_mapa_"+userId); }
+  $("loader").classList.add("hidden");
+  if(photo){ showMap(); } else { $("pickView").classList.remove("hidden"); }
+})();
+
+function buildSVG(){
+  let defs='<defs><pattern id="ph" patternUnits="userSpaceOnUse" width="'+MAP.w+'" height="'+MAP.h+'"><image href="'+photo+'" width="'+MAP.w+'" height="'+MAP.h+'" preserveAspectRatio="xMidYMid slice"/></pattern></defs>';
+  let body="";
+  for(const sg in MAP.paths){
+    const isOn = mode==="meta" || sealed.has(sg);
+    const fill = isOn ? "url(#ph)" : "#6b716a";
+    let stroke, sw;
+    if(sealed.has(sg) && mode==="avance"){ stroke="#46c265"; sw="2.4"; }   // sellado: borde verde
+    else if(isOn){ stroke="#0d0d0d"; sw="1.2"; }                            // meta (foto): costura oscura
+    else { stroke="#9aa298"; sw="1.1"; }                                   // sin sellar: costura clara visible
+    body += '<path d="'+MAP.paths[sg]+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="'+sw+'"/>';
+  }
+  return '<svg viewBox="0 0 '+MAP.w+' '+MAP.h+'" xmlns="http://www.w3.org/2000/svg">'+defs+body+'</svg>';
+}
+function showMap(){
+  $("pickView").classList.add("hidden");
+  $("mapView").classList.remove("hidden");
+  $("mapbox").innerHTML=buildSVG();
+  $("cNum").textContent=sealed.size;
+  $("hint").textContent = mode==="meta"
+    ? "Así se verá cuando completes los 125."
+    : (sealed.size===0 ? "Sella tu primer municipio para empezar a revelar la foto."
+       : "Vas "+sealed.size+"/125. ¡Sigue rodando para completarla!");
+}
+
+document.querySelectorAll("#seg .o").forEach(o=>o.addEventListener("click",()=>{
+  mode=o.dataset.m;
+  document.querySelectorAll("#seg .o").forEach(x=>x.classList.toggle("on",x===o));
+  showMap();
+}));
+
+$("pickBtn").addEventListener("click",()=>$("file").click());
+$("changeBtn").addEventListener("click",()=>$("file").click());
+$("file").addEventListener("change", async e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const dataUrl = await compress(f);
+  photo = dataUrl;                       // preview inmediata
+  try{ localStorage.setItem("ridera125_mapa_"+userId, dataUrl); }catch(err){}
+  showMap();
+  // Subir a la nube para que se vea en CUALQUIER dispositivo (celular o PC)
+  try{
+    const blob = await (await fetch(dataUrl)).blob();
+    const path = userId + "/mapa.jpg";
+    const up = await sb.storage.from("sellos").upload(path, blob, { contentType:"image/jpeg", upsert:true });
+    if(up.error) throw up.error;
+    const url = sb.storage.from("sellos").getPublicUrl(path).data.publicUrl + "?t=" + Date.now();
+    const { error } = await sb.from("riders").update({ foto_mapa: url }).eq("id", userId);
+    if(error) throw error;
+    photo = url;
+  }catch(err){
+    alert("Se guardó en este dispositivo, pero no se pudo subir a la nube:\n" + (err.message||err) + "\n\nRevisa tu conexión e intenta de nuevo.");
+  }
+});
+function compress(file,maxW=1000,q=0.72){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,maxW/img.width), w=Math.round(img.width*sc), h=Math.round(img.height*sc);
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      res(c.toDataURL("image/jpeg",q));
+    };
+    img.onerror=rej; img.src=URL.createObjectURL(file);
+  });
+}
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

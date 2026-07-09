@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Ridera 125 · Pasaporte de Antioquia</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+<meta name="description" content="El reto de sellar los 125 municipios de Antioquia en moto. Cada pueblo, un sello. ¿Te le mides?">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://pasaporte.ridera.com.co/">
+<meta property="og:title" content="Ridera 125 · Pasaporte de Antioquia">
+<meta property="og:description" content="El reto de sellar los 125 municipios de Antioquia en moto. Cada pueblo, un sello. ¿Te le mides?">
+<meta property="og:image" content="https://pasaporte.ridera.com.co/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Ridera 125 · Pasaporte de Antioquia">
+<meta name="twitter:description" content="El reto de sellar los 125 municipios de Antioquia en moto. ¿Te le mides?">
+<meta name="twitter:image" content="https://pasaporte.ridera.com.co/og.png">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;
+    --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;
+    --ink-faint:#a89e90;--copper:#c9a84c;--ok:#5fb86a;--err:#ff8a6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px}
+  .wrap{width:100%;max-width:400px}
+
+  .brand{text-align:center;margin-bottom:26px}
+  .brand .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.34em;color:var(--orange);text-transform:uppercase}
+  .brand h1{font-family:"Bebas Neue",sans-serif;font-size:62px;line-height:.9;letter-spacing:1px;margin:6px 0 0}
+  .brand .sub{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:16px;letter-spacing:.3em;color:var(--ink-dim);text-transform:uppercase}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px}
+
+  .tabs{display:flex;background:var(--panel-2);border-radius:11px;padding:4px;margin-bottom:20px}
+  .tab{flex:1;text-align:center;padding:10px;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-dim);transition:.2s}
+  .tab.active{background:var(--orange);color:#100a06}
+
+  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:14px 0 6px}
+  input{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
+  input:focus{outline:none;border-color:var(--orange)}
+  .field-extra{display:none}
+  body.mode-signup #forgot{display:none}
+  #forgot{cursor:pointer;color:var(--orange)!important;margin-top:10px}
+  body.mode-signup .field-extra{display:block}
+
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:22px;border:0;border-radius:11px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.6px;text-transform:uppercase;padding:15px;cursor:pointer}
+  .cta:active{transform:translateY(1px)}
+  .cta:disabled{opacity:.55;cursor:default}
+
+  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:14px;line-height:1.5;border-radius:10px;padding:11px 13px;display:none}
+  .msg.show{display:block}
+  .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
+  .msg.ok{color:var(--ok);background:#0d160e;border:1px solid #1d3a22}
+
+  .foot{text-align:center;margin-top:18px;font-size:15px;color:var(--ink-faint);font-family:"Barlow Condensed",sans-serif;letter-spacing:.3px}
+
+  .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:s 1s linear infinite;display:none}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .loading .spin{display:inline-block}
+  .loading .cta-label{opacity:.6}
+
+  #success{display:none;text-align:center}
+  #card,#keyGate{display:none}
+  body.view-card #card{display:block}
+  body.view-key #keyGate{display:block}
+  body.done #card{display:none!important}
+  body.done #success{display:block}
+  .check{width:64px;height:64px;border-radius:50%;border:2px solid var(--ok);color:var(--ok);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
+  #success h2{font-family:"Bebas Neue",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:.5px}
+  #success p{color:var(--ink-dim);margin:0 0 20px}
+
+  #keyGate p{color:var(--ink-dim);font-size:14px;text-align:center;margin:0 0 4px}
+  .pwrap{position:relative}
+  .pwrap > input{padding-right:78px}
+  .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--orange);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;padding:10px 8px}
+</style>
+</head>
+<body class="mode-login">
+<div class="wrap">
+
+  <div class="brand">
+    <div class="eyebrow">Pasaporte</div>
+    <h1>RIDERA 125</h1>
+    <div class="sub">Antioquia</div>
+  </div>
+
+  <!-- Gate: pegar la llave (solo la primera vez) -->
+  <div class="card" id="keyGate">
+    <p>Pega tu llave <b>anon / public</b> de Supabase para conectar (Settings → API). Solo una vez.</p>
+    <label>Llave anon</label>
+    <input id="keyInput" type="text" placeholder="eyJ… o sb_publishable_…" autocomplete="off">
+    <button class="cta" id="keyBtn"><span class="cta-label">Conectar</span></button>
+    <div class="msg" id="keyMsg"></div>
+  </div>
+
+  <!-- Login / Registro -->
+  <div class="card" id="card">
+    <div class="tabs">
+      <div class="tab active" data-mode="login">Ingresar</div>
+      <div class="tab" data-mode="signup">Crear cuenta</div>
+    </div>
+
+    <div class="field-extra">
+      <label>Tu nombre de rider</label>
+      <input id="nombre" type="text" placeholder="Ej: Samuel TBC" autocomplete="name">
+    </div>
+
+    <label>Correo</label>
+    <input id="email" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+
+    <label>Contraseña</label>
+    <div class="pwrap">
+      <input id="password" type="password" placeholder="mínimo 6 caracteres" autocomplete="current-password">
+      <button class="eye" type="button" data-for="password" aria-label="Ver contraseña">Ver</button>
+    </div>
+
+    <button class="cta" id="submitBtn">
+      <span class="cta-label" id="ctaLabel">Ingresar</span>
+      <span class="spin"></span>
+    </button>
+
+    <div class="msg" id="msg"></div>
+    <div class="foot" id="foot">¿Aún no tienes cuenta? Crea una y empieza a sellar Antioquia.</div>
+    <div class="foot" id="forgot">¿Olvidaste tu contraseña?</div>
+  </div>
+
+  <div id="success">
+    <div class="check">✓</div>
+    <h2 id="successTitle">¡Bienvenido!</h2>
+    <p id="successText">Ya estás dentro. Tu pasaporte te espera.</p>
+    <button class="cta" id="goPasaporte">Ir a mi Pasaporte →</button>
+  </div>
+
+  <button id="installBtn" type="button" style="display:none;width:100%;margin-top:10px;padding:14px;border-radius:12px;background:#E85D20;border:0;color:#100a06;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:18px;letter-spacing:.5px;cursor:pointer">📲 Instalar app</button>
+    <div id="iosHelp" style="display:none;margin-top:10px;padding:14px;border-radius:12px;background:#1b1b1b;border:1px solid #c9a84c;color:#c2beb4;font-size:15px;line-height:1.6">📲 <b style="color:#c9a84c">Para instalar en iPhone:</b><br>1. Toca <b>Compartir</b> ↑ (abajo, en Safari).<br>2. Elige <b>"Agregar a inicio"</b>.</div>
+
+</div>
+
+<script>
+const CONFIG = {
+  SUPABASE_URL: "https://vzzxsdtsaahhzyctvmhx.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu",                 // opcional: si la dejas vacía, se pide en pantalla
+  T_RIDERS: "riders",
+  PASAPORTE_URL: "pasaporte.html"
+};
+
+const $ = id => document.getElementById(id);
+let sb = null, mode = "login";
+
+function isSecretKey(k){
+  if(!k) return false;
+  if(k.startsWith("sb_secret_")) return true;
+  if(k.startsWith("sb_publishable_")) return false;
+  try{ // JWT antiguo: revisar el claim "role"
+    const payload = JSON.parse(atob(k.split(".")[1]));
+    if(payload && payload.role === "service_role") return true;
+  }catch(e){}
+  return false;
+}
+function resolveKey(){
+  if(CONFIG.SUPABASE_ANON_KEY && CONFIG.SUPABASE_ANON_KEY.length > 20) return CONFIG.SUPABASE_ANON_KEY;
+  try{ return localStorage.getItem("ridera_supabase_key"); }catch(e){ return null; }
+}
+function showGate(msg){
+  document.body.className = "view-key";
+  const m = $("keyMsg");
+  if(msg){ m.textContent = msg; m.className = "msg show error"; }
+}
+function initClient(key){
+  sb = supabase.createClient(CONFIG.SUPABASE_URL, key);
+  try{
+    localStorage.setItem("ridera_supabase_url", CONFIG.SUPABASE_URL);
+    localStorage.setItem("ridera_supabase_key", key);
+  }catch(e){}
+  document.body.className = "mode-login view-card";
+  sb.auth.getSession().then(({data})=>{ if(data.session){ success("Ya estás dentro","Tu pasaporte te espera."); } });
+}
+
+// Arranque: ¿tenemos llave? (y que no sea la secreta)
+(function boot(){
+  const k = resolveKey();
+  if(k && isSecretKey(k)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; showGate("La llave guardada era la SECRETA. Pega la anon/publishable."); return; }
+  if(k){ initClient(k); }
+  else { document.body.className = "view-key"; }
+})();
+
+// Gate de llave
+$("keyBtn").addEventListener("click", ()=>{
+  const v = $("keyInput").value.trim();
+  const m = $("keyMsg");
+  if(v.startsWith("http")){ m.textContent="Eso es la URL. La llave empieza con eyJ… o sb_publishable_…"; m.className="msg show error"; return; }
+  if(v.length < 20){ m.textContent="Pega tu llave anon completa."; m.className="msg show error"; return; }
+  if(isSecretKey(v)){ m.textContent="Esa es la llave SECRETA (service_role). Usa la 'anon public' / 'publishable'."; m.className="msg show error"; return; }
+  m.className="msg";
+  initClient(v);
+});
+
+// Pestañas
+document.querySelectorAll(".tab").forEach(t=>{
+  t.addEventListener("click",()=>{
+    mode = t.dataset.mode;
+    document.querySelectorAll(".tab").forEach(x=>x.classList.toggle("active",x===t));
+    document.body.classList.toggle("mode-signup", mode==="signup");
+    document.body.classList.toggle("mode-login", mode==="login");
+    $("ctaLabel").textContent = mode==="login" ? "Ingresar" : "Crear mi cuenta";
+    $("foot").textContent = mode==="login"
+      ? "¿Aún no tienes cuenta? Crea una y empieza a sellar Antioquia."
+      : "¿Ya tienes cuenta? Entra con tu correo.";
+    hideMsg();
+  });
+});
+
+function showMsg(t,k){ const m=$("msg"); m.textContent=t; m.className="msg show "+k; }
+function hideMsg(){ $("msg").className="msg"; }
+function setLoading(on){ $("submitBtn").disabled=on; $("card").classList.toggle("loading",on); }
+
+$("submitBtn").addEventListener("click", async ()=>{
+  hideMsg();
+  const email = $("email").value.trim();
+  const password = $("password").value;
+  const nombre = $("nombre").value.trim();
+
+  if(!email || !password) return showMsg("Escribe tu correo y contraseña.", "error");
+  if(mode==="signup" && !nombre) return showMsg("Ponte un nombre de rider.", "error");
+  if(password.length < 6) return showMsg("La contraseña debe tener mínimo 6 caracteres.", "error");
+
+  setLoading(true);
+  try{
+    if(mode==="signup"){
+      const { data, error } = await sb.auth.signUp({ email, password });
+      if(error) throw error;
+      if(data.session){
+        const { error:e2 } = await sb.from(CONFIG.T_RIDERS).insert({ id:data.user.id, nombre });
+        if(e2 && !String(e2.message).includes("duplicate")) throw e2;
+        success("¡Cuenta creada!", "Ahora cuéntanos algo de ti, "+nombre+".", "perfil.html", "Completar mi perfil →");
+      } else {
+        showMsg("Cuenta creada. Revisa tu correo para confirmar y luego inicia sesión.", "ok");
+      }
+    } else {
+      const { data, error } = await sb.auth.signInWithPassword({ email, password });
+      if(error) throw error;
+      const { data:prof } = await sb.from(CONFIG.T_RIDERS).select("nombre").eq("id",data.user.id).maybeSingle();
+      const dn = (prof && prof.nombre) ? prof.nombre : "rider";
+      success("¡Bienvenido de vuelta!", "A seguir sellando Antioquia, "+dn+".");
+    }
+  }catch(err){
+    const msg = String(err.message||"");
+    if(/secret API key|Forbidden/i.test(msg)){
+      try{ localStorage.removeItem("ridera_supabase_key"); }catch(e){}
+      setLoading(false);
+      showGate("Esa era la llave SECRETA. Pega la anon/publishable y reintenta.");
+      return;
+    }
+    showMsg(traducir(msg), "error");
+  }finally{ setLoading(false); }
+});
+
+let successDest = CONFIG.PASAPORTE_URL;
+function success(title,text,dest,label){
+  $("successTitle").textContent=title; $("successText").textContent=text;
+  if(dest){ successDest=dest; }
+  if(label){ $("goPasaporte").textContent=label; }
+  document.body.classList.add("done","view-card");
+}
+$("goPasaporte").addEventListener("click", ()=>{ window.location.href = successDest; });
+$("forgot").addEventListener("click", async ()=>{
+  if(!sb) return;
+  const email=$("email").value.trim();
+  if(!email){ showMsg("Escribe tu correo arriba y vuelve a tocar aquí.","error"); return; }
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + "/reset.html" });
+    if(error) throw error;
+    showMsg("Te enviamos un correo para restablecer tu contraseña. Revisa tu bandeja (y la carpeta de spam).","ok");
+  }catch(err){ showMsg("Ups: "+err.message,"error"); }
+});
+
+function traducir(m){
+  m=String(m||"");
+  if(m.includes("Invalid login credentials")) return "Correo o contraseña incorrectos.";
+  if(m.includes("already registered")||m.includes("already exists")) return "Ese correo ya tiene cuenta. Inicia sesión.";
+  if(m.includes("Password should be")) return "La contraseña debe tener mínimo 6 caracteres.";
+  if(m.includes("Email not confirmed")) return "Aún no confirmas tu correo. Revisa tu bandeja.";
+  return "Ups: "+m;
+}
+
+document.querySelectorAll(".eye").forEach(b=>b.addEventListener("click",()=>{
+  const i=document.getElementById(b.dataset.for);
+  const show=i.type==="password"; i.type=show?"text":"password"; b.textContent=show?"Ocultar":"Ver";
+}));
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+<script>
+(function(){
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var btn=document.getElementById('installBtn'), help=document.getElementById('iosHelp'), deferred=null;
+  if(!btn || isStandalone) return;
+  if(isIOS){
+    btn.textContent="📲 Instalar en iPhone"; btn.style.display="block";
+    btn.addEventListener('click', function(){ if(help) help.style.display = (help.style.display==="block"?"none":"block"); });
+  } else {
+    window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; btn.style.display="block"; });
+    btn.addEventListener('click', function(){ if(deferred){ deferred.prompt(); deferred.userChoice.then(function(){ deferred=null; btn.style.display="none"; }); } });
+  }
+  window.addEventListener('appinstalled', function(){ btn.style.display="none"; if(help) help.style.display="none"; });
+})();
+</script>
+</body>
+</html>
