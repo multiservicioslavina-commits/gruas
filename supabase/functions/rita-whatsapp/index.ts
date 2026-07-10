@@ -160,6 +160,25 @@ async function getRiderContext(phone: string): Promise<any> {
   } catch { return { encontrado: false }; }
 }
 
+// ─── Route detail lookup from rita_rutas ────────────────────────
+async function fetchRutaDetail(message: string): Promise<any | null> {
+  const msg2 = norm(message);
+  if (!/ruta|viaje|viajar|ir a|destino|recorrido|como llego|llegar/.test(msg2) && msg2.split(/\s+/).length > 6) return null;
+
+  const stopWords = new Set(["que","me","recomiendas","para","rutas","ruta","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se"]);
+  const keywords = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 2 && !stopWords.has(w));
+  if (!keywords.length) return null;
+
+  const orFilters = keywords.map(k => `destino.ilike.%${k}%,titulo.ilike.%${k}%,slug.ilike.%${k}%`).join(",");
+  const { data } = await supabase
+    .from("rita_rutas")
+    .select("*")
+    .or(orFilters)
+    .limit(1);
+
+  return data?.[0] || null;
+}
+
 // ─── Search context ─────────────────────────────────────────────
 async function fetchContext(message: string, phone: string): Promise<any> {
   const msg2 = norm(message);
@@ -297,6 +316,10 @@ async function askClaude(
   }
   if (context.marcaMencionada) {
     contextBlock += `\nMarca mencionada: ${context.marcaMencionada}`;
+  }
+  if (context.rutaDetail) {
+    const r = context.rutaDetail;
+    contextBlock += `\nDATOS DETALLADOS DE RUTA:\nDestino: ${r.destino} (${r.departamento})\nDistancia: ${r.km}km | Duración: ${r.duracion} | Dificultad: ${r.dificultad}\nSuperficie: ${r.superficie}\nMejor época: ${r.mejor_epoca}\nMoto recomendada: ${r.moto_recomendada}\nResumen: ${r.resumen}\nTips: ${r.tips}\nGasolina: ${r.gasolina_tip}\nHospedaje: ${r.hospedaje}\nGastronomía: ${r.gastronomia}\nLink: ${r.wp_link}`;
   }
 
   const messages: { role: string; content: string }[] = [];
@@ -511,13 +534,15 @@ Deno.serve(async (req: Request) => {
       }
 
       // ── Obtener contexto en paralelo ──
-      const [context, riderCtx, history] = await Promise.all([
+      const [context, riderCtx, history, rutaDetail] = await Promise.all([
         fetchContext(message, from),
         getRiderContext(from),
         getHistory(from, 10),
+        fetchRutaDetail(message),
       ]);
 
       // ── Todo pasa por Claude con historial ──
+      if (rutaDetail) context.rutaDetail = rutaDetail;
       let reply = await askClaude(message, history, context, riderCtx);
 
       if (!reply) {
