@@ -382,9 +382,25 @@ async function handleRegistration(from: string, message: string, conv: { state: 
       return `Listo ${nombre}, quedaste registrado 🏍️ Cuando tengas moto me cuentas y la agrego. ¿En qué te ayudo?`;
     }
 
+    // Si el usuario claramente NO está respondiendo sobre su moto, salir del flujo
+    const looksLikeMotoAnswer = MARCAS.some(m => msg2.includes(m)) || /\d{3,4}\s*cc/i.test(msg2) || /\b(moto|tiene|tengo|manejo|ando en)\b/.test(msg2);
+    if (!looksLikeMotoAnswer && msg2.split(/\s+/).length > 3) {
+      // Registrar sin moto y dejar que Claude responda
+      const nombre = conv.data.nombre || "Piloto";
+      const tel = from.replace(/^57/, "");
+      await supabase.from("riders").insert({
+        id: crypto.randomUUID(),
+        nombre,
+        telefono: tel,
+        created_at: new Date().toISOString(),
+      });
+      await clearConvState(from);
+      return null; // null = pasar al flujo normal de Claude
+    }
+
     const moto = parseMotoResponse(message);
     if (!moto) {
-      return "No pillé la moto 🤔 Intenta así: Honda CB500X 2022";
+      return "No pillé la moto 🤔 Intenta así: Honda CB500X 2022\n\nO si quieres saltarte eso, dime \"no tengo\" y seguimos 🤙";
     }
 
     const nombre = conv.data.nombre || "Piloto";
