@@ -600,18 +600,18 @@
       document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
       document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-      // ── CHASE CAM estilo Relive (FreeCamera API) ──────────────────────
-      // Cámara DETRÁS del piloto, a altitud real, mirándolo.
+      // ── LEAD CAM (cámara ADELANTE del piloto, mirando hacia atrás) ────
+      // Estilo drone cinematográfico: ves al piloto acercándose con la
+      // ruta naranja creciendo detrás de él.
       const dirBearing = bearingAlong(riderDist);
       const smoothBearing = lerpBearing(currentBearing, dirBearing, 0.10);
       currentBearing = smoothBearing;
 
-      // Posición: CAM_BACK metros detrás del piloto en dirección opuesta
-      // al movimiento (extrapola geográficamente si aún no hay ruta detrás)
-      const camBehindDist = riderDist - CAM_BACK;
-      const camLngLat = camBehindDist >= 0
-        ? pointAlong(camBehindDist)
-        : destination(coords[0], smoothBearing + 180, CAM_BACK - riderDist);
+      // Posición: CAM_BACK metros ADELANTE del piloto en su dirección
+      const camAheadDist = riderDist + CAM_BACK;
+      const camLngLat = camAheadDist <= totalDist
+        ? pointAlong(camAheadDist)
+        : destination(coords[coords.length - 1], smoothBearing, camAheadDist - totalDist);
 
       // Altitud: terreno bajo la cámara + altura de vuelo (con boost inicial
       // y final para abrir el plano)
