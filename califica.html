@@ -132,7 +132,32 @@ async function installPwa(){
   const b = document.getElementById('installBtn');
   if (b) b.style.display = 'none';
 }
-(function init(){ if(!S){ document.getElementById('loading').classList.add('hide'); document.getElementById('content').classList.remove('hide'); document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Enlace inválido</h2><p>No pudimos identificar tu servicio.</p></div>`; return; } renderForm(); })();
+(async function init(){
+  if(!S){
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('content').classList.remove('hide');
+    document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Enlace inválido</h2><p>No pudimos identificar tu servicio.</p></div>`;
+    return;
+  }
+  try{
+    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'info',s:S})});
+    const d=await r.json();
+    if(d.ok && d.sol?.calificacion){
+      rating=d.sol.calificacion;
+      document.getElementById('loading').classList.add('hide');
+      document.getElementById('content').classList.remove('hide');
+      gracias();
+      return;
+    }
+    if(!d.ok || !d.sol){
+      document.getElementById('loading').classList.add('hide');
+      document.getElementById('content').classList.remove('hide');
+      document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Servicio no encontrado</h2><p>No pudimos encontrar este servicio.</p></div>`;
+      return;
+    }
+  }catch(e){ /* si falla la verificación, mostrar formulario de todos modos */ }
+  renderForm();
+})();
 </script>
 </body>
 </html>
