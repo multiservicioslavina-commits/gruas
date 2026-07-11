@@ -1,0 +1,1001 @@
+{
+  "page": "garage-ridera",
+  "descripcion": "Fichas técnicas de motos 650cc+: aceite, llantas, mantenimiento, fallas comunes. Rita consulta aquí.",
+  "marcas": ["Suzuki","Yamaha","Honda","BMW","Triumph","Kawasaki"],
+  "motos": [
+    {
+      "id": "vstrom650-2007",
+      "marca": "Suzuki", "modelo": "V-Strom 650", "años": "2007–2014", "codigo": "DL650 K7–L4",
+      "motor": "Bicilíndrico en V 90°, 645cc, refrigerado por líquido",
+      "aceite_litros": "2.7 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas_psi": {"delantera": 33, "trasera_solo": 36, "trasera_carga": 42},
+      "manual_url": "https://drive.google.com/file/d/1a5uH3cr-8oIucX7opGXP3pgXI-F_Zeh8/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "12,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar (iridio recomendado)", "intervalo": "24,000 km"},
+        {"item": "Cadena", "accion": "Limpiar y tensar", "intervalo": "1,000 km"},
+        {"item": "Refrigerante", "accion": "Cambio", "intervalo": "Cada 2 años"}
+      ],
+      "fallas": [
+        {"nombre": "Sensor TPS", "sintoma": "Tirones a bajas RPM", "solucion": "Ajuste electrónico en Modo Dealer"},
+        {"nombre": "Conectores eléctricos", "sintoma": "Fallos aleatorios", "solucion": "Limpieza con grasa dieléctrica"},
+        {"nombre": "Estátor / Regulador", "sintoma": "Batería no carga", "solucion": "Verificar voltaje carga: 13.5–15.5V a 5,000 RPM"},
+        {"nombre": "Drenaje de tanque", "sintoma": "Pérdida de combustible", "solucion": "Limpieza periódica conducto drenaje"}
+      ]
+    },
+    {
+      "id": "vstrom650abs-2014",
+      "marca": "Suzuki", "modelo": "V-Strom 650 ABS", "años": "2014–2018", "codigo": "DL650A L4–L7",
+      "motor": "Bicilíndrico en V 90°, 645cc — evolución mayor eficiencia térmica",
+      "aceite_litros": "2.7 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas_psi": {"delantera": 33, "trasera_solo": 42, "nota": "Crítico para correcto funcionamiento del ABS"},
+      "manual_url": "https://drive.google.com/file/d/1NdEv0TiGaogqn3KmG0AT-GA2pHai4ZQs/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "12,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar (iridio recomendado)", "intervalo": "24,000 km"},
+        {"item": "Sistema ABS", "accion": "Purga y revisión", "intervalo": "Cada 2 años"},
+        {"item": "Cadena", "accion": "Limpiar y tensar", "intervalo": "1,000 km"}
+      ],
+      "fallas": [
+        {"nombre": "Sistema ABS", "sintoma": "Errores / luz ABS encendida", "solucion": "Limpieza anillos fónicos + purgado profesional"},
+        {"nombre": "Sistema eléctrico", "sintoma": "Fallos en ABS por voltaje bajo", "solucion": "Batería óptima; verificar carga 13.5–15.5V"},
+        {"nombre": "Parabrisas turbulencia", "sintoma": "Turbulencia excesiva (pre-2017)", "solucion": "Deflectores o pantalla Givi Airflow"}
+      ]
+    },
+    {
+      "id": "vstrom650xt-2018",
+      "marca": "Suzuki", "modelo": "V-Strom 650 XT", "años": "2018+", "codigo": "DL650XTA / DL650XT",
+      "motor": "Bicilíndrico en V 90°, 645cc, Euro 4 — TCS 3 modos, Low RPM Assist, Easy Start",
+      "aceite_litros": "3.0 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas": "Radios tubeless 19\" (del.) / 17\" (tras.)",
+      "llantas_psi": {"delantera": 33, "trasera_solo": 42, "nota": "Crítico para ABS y TCS"},
+      "manual_url": "https://drive.google.com/file/d/1h_zq0tyXR5jgT8OmmA2ScaKbnBH_ZvoC/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "12,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar (iridio recomendado)", "intervalo": "24,000 km"},
+        {"item": "TCS — Sensores de rueda", "accion": "Revisión / limpieza anillos fónicos", "intervalo": "Periódica"},
+        {"item": "Sistema ABS", "accion": "Purga y revisión", "intervalo": "Cada 2 años"},
+        {"item": "Radios", "accion": "Verificar tensión", "intervalo": "Cada mantenimiento"}
+      ],
+      "fallas": [
+        {"nombre": "Control de Tracción (TCS)", "sintoma": "Luz TCS / intervención inesperada", "solucion": "Limpieza anillos fónicos y sensores de rueda"},
+        {"nombre": "Sistema eléctrico", "sintoma": "Fallos electrónicos varios", "solucion": "Mantener batería óptima — alta carga electrónica"},
+        {"nombre": "Radios", "sintoma": "Vibraciones en manillar", "solucion": "Verificar tensión de radios en cada servicio"},
+        {"nombre": "Código C1635", "sintoma": "Fallo módulo ABS", "solucion": "Verificar escobillas internas antes de reemplazar módulo"}
+      ]
+    },
+    {
+      "id": "vstrom1000-gen1",
+      "marca": "Suzuki", "modelo": "V-Strom 1000 (Gen 1)", "años": "2002–2013", "codigo": "DL1000",
+      "motor": "Bicilíndrico en V 90°, 996cc — basado en motor TL1000, par masivo en bajas",
+      "aceite_litros": "3.4 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas_psi": {"delantera": 33, "trasera_solo": 36},
+      "manual_url": "https://drive.google.com/file/d/1MiCtrsgBEH51jgGR04hjjLcj1gis9mjw/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Reglaje de válvulas", "accion": "Inspección y ajuste — crítico", "intervalo": "24,000 km"},
+        {"item": "Conectores eléctricos", "accion": "Limpieza anti-sulfatación", "intervalo": "Cada revisión"},
+        {"item": "Cadena", "accion": "Limpiar y tensar", "intervalo": "1,000 km"}
+      ],
+      "fallas": [
+        {"nombre": "Canasta de embrague (clutch basket)", "sintoma": "Ruido y vibración excesiva", "solucion": "Modificación comunidad (mod 'Werks') o reemplazo"},
+        {"nombre": "Conectores eléctricos", "sintoma": "Fallos aleatorios, cortos", "solucion": "Limpieza con grasa dieléctrica (sulfatación frecuente)"},
+        {"nombre": "Reglaje de válvulas", "sintoma": "Ruido tren de válvulas — tic-tic metálico", "solucion": "Ajuste a los 24,000 km o antes si hay sonido"}
+      ]
+    },
+    {
+      "id": "vstrom1000-gen2",
+      "marca": "Suzuki", "modelo": "V-Strom 1000A (Gen 2)", "años": "2014–2019", "codigo": "DL1000A",
+      "motor": "Bicilíndrico en V 90°, 1037cc rediseñado — TCS + ABS de serie, chasis aluminio",
+      "aceite_litros": "3.2 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas_psi": {"delantera": 36, "trasera_solo": 42},
+      "manual_url": "https://drive.google.com/file/d/1sJohb72YEadS8_8wQzn81qSjl8swaWS9/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "12,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar", "intervalo": "24,000 km"},
+        {"item": "Batería", "accion": "Verificar CCA y voltaje", "intervalo": "Cada año"},
+        {"item": "Cadena", "accion": "Limpiar y tensar", "intervalo": "1,000 km"}
+      ],
+      "fallas": [
+        {"nombre": "Sensor TPS", "sintoma": "Respuesta irregular de la mariposa", "solucion": "Reemplazo o recalibración en taller autorizado"},
+        {"nombre": "Sistema eléctrico", "sintoma": "Fallos en electrónica con batería débil", "solucion": "Usar batería con alto CCA; verificar voltaje de carga"}
+      ]
+    },
+    {
+      "id": "vstrom1050-2020",
+      "marca": "Suzuki", "modelo": "V-Strom 1050 / XT / DE", "años": "2020+", "codigo": "DL1050 / DL1050DE",
+      "motor": "Bicilíndrico en V 90°, 1037cc, Euro 5 — S.I.R.S., IMU 6 ejes, ABS en curva, control crucero",
+      "aceite_litros": "3.2 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA/MA2",
+      "torque_filtro": "20 Nm", "cambio_aceite_km": 6000,
+      "llantas_psi": {"delantera": 36, "trasera_solo": 42},
+      "variantes": "Standard (llantas aleación) | XT (radios tubeless, más electrónica) | DE 2023+ (21\" delantera, off-road)",
+      "manual_url": "https://drive.google.com/file/d/1qPAbCL8sC_hwLeyl3L-GMq7TDWXsK-_S/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "12,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar (iridio recomendado)", "intervalo": "24,000 km"},
+        {"item": "Batería", "accion": "Verificar voltaje — mínimo 12.4V", "intervalo": "Cada revisión"},
+        {"item": "Sistema S.I.R.S. / IMU", "accion": "Diagnóstico con herramienta SDS", "intervalo": "En caso de código DTC"}
+      ],
+      "fallas": [
+        {"nombre": "Sistema eléctrico / IMU", "sintoma": "Fallos ABS / TCS / control crucero", "solucion": "Batería <12.4V causa fallos en IMU y ABS. Cargar o reemplazar."},
+        {"nombre": "TCS — llantas no originales", "sintoma": "Intervención incorrecta del TCS", "solucion": "El TCS es sensible al diámetro de llanta — usar solo medidas originales"},
+        {"nombre": "S.I.R.S. — diagnóstico", "sintoma": "Luz de fallo electrónico", "solucion": "Requiere herramienta de diagnóstico SDS de Suzuki"}
+      ]
+    },
+    {
+      "id": "yamaha-supertenere-1200",
+      "marca": "Yamaha", "modelo": "Super Ténéré 1200Z / ZE", "años": "2010+", "codigo": "XT1200Z / XT1200ZE",
+      "motor": "Bicilíndrico en paralelo, 1199cc — YCC-T (Yamaha Chip Controlled Throttle) — Transmisión: Cardán",
+      "aceite_litros": "3.4 L (con filtro)", "aceite_spec": "SAE 10W-40 / 20W-50 JASO MA",
+      "torque_filtro": "17 Nm", "cambio_aceite_km": 10000,
+      "llantas_psi": {"delantera": 33, "trasera_solo": 36},
+      "variantes": "XT1200Z (suspensión manual, 3 modos D-Mode) | XT1200ZE (suspensión electrónica Öhlins ERCS — 84 combinaciones precarga/compresión/rebote ajustables desde tablero, requiere herramienta YDT para diagnóstico)",
+      "manual_url": "https://drive.google.com/file/d/1_GDfoQf9zT-VLeL8eD3yqPTk7_QGdP2M/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "10,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio", "intervalo": "20,000 km"},
+        {"item": "Aceite de cardán", "accion": "Reemplazar", "intervalo": "20,000 km"},
+        {"item": "Bujías", "accion": "Reemplazar", "intervalo": "20,000 km"},
+        {"item": "Conectores eléctricos", "accion": "Limpieza anti-sulfatación", "intervalo": "Cada revisión"}
+      ],
+      "fallas": [
+        {"nombre": "Tensor de cadena distribución (CCT)", "sintoma": "Ruido metálico en arranque en frío", "solucion": "Instalar tensor actualizado (versiones tempranas)"},
+        {"nombre": "Conectores eléctricos", "sintoma": "Fallos aleatorios", "solucion": "Limpieza de contactos con grasa dieléctrica"},
+        {"nombre": "Ralentí inestable", "sintoma": "Moto corta o tiembla en ralentí", "solucion": "Limpieza de cuerpos de inyección"},
+        {"nombre": "Cardán", "sintoma": "Sonido o vibración transmisión", "solucion": "Verificar nivel y estado del aceite de cardán"},
+        {"nombre": "Suspensión Öhlins ERCS (ZE) — fallo electrónico", "sintoma": "Luz de error suspensión / suspensión se pone rígida o no ajusta", "solucion": "REQUIERE herramienta YDT (Yamaha Diagnostic Tool) — no es diagnosticable con scanner genérico OBD. Taller autorizado Yamaha obligatorio. Verificar conectores de sensores Öhlins antes de enviar a taller (corrosión frecuente)"},
+        {"nombre": "Suspensión ZE — calibración perdida", "sintoma": "Suspensión ZE actúa erráticamente tras batería descargada", "solucion": "Recalibrar desde menú de tablero (procedimiento en manual XT1200ZE) o con YDT"}
+      ]
+    },
+    {
+      "id": "tenere700-2019",
+      "marca": "Yamaha", "modelo": "Ténéré 700", "años": "2019+", "codigo": "XTZ690 / XTZ690Z",
+      "motor": "Bicilíndrico en paralelo, 689cc, CP2 (mismo bloque MT-07) — 2 modos conducción (ROAD/RAIN), TCS desde 2022 (versión World Rally), sin ABS cornering. Peso 204 kg",
+      "aceite_litros": "2.7 L (con filtro)", "aceite_spec": "SAE 10W-40 JASO MA2 (Yamalube 4)",
+      "torque_filtro": "17 Nm", "cambio_aceite_km": 6000,
+      "llantas": "Radios 21\" (del.) / 18\" (tras.) — Dunlop Trailmax Mission original",
+      "llantas_psi": {"delantera": 33, "trasera_solo": 36, "nota": "Off-road: 33/36 psi | Ruta asfalto cargado: 36/42 psi — 21\"/18\" no admiten presiones de llanta tubeless de moto de calle"},
+      "variantes": "Standard (2 modos, sin TCS) | World Rally (2022+, TCS, tanque 23L, protecciones) | Rally Edition (colores Dakar exclusivos)",
+      "manual_url": "https://drive.google.com/file/d/1bm3Xo8TQs_XLtxMN-T2NU3ZzpdkfzrmJ/view",
+      "mantenimiento": [
+        {"item": "Aceite de motor", "accion": "Reemplazar", "intervalo": "6,000 km"},
+        {"item": "Filtro de aire", "accion": "Inspección / Cambio (más frecuente en tierra)", "intervalo": "12,000 km (cada 3,000 en uso off-road)"},
+        {"item": "Bujías", "accion": "Reemplazar", "intervalo": "24,000 km"},
+        {"item": "Cadena", "accion": "Limpiar y tensar — DID 520VX recomendada", "intervalo": "1,000 km (500 km en tierra)"},
+        {"item": "Válvulas CP2", "accion": "Inspección y ajuste — crítico para motor CP2", "intervalo": "42,000 km"}
+      ],
+      "fallas": [
+        {"nombre": "Consumo aceite elevado", "sintoma": "Consume aceite entre cambios (normal hasta 0.5L/1000 km en moto nueva)", "solucion": "Normal en CP2 durante rodaje (primeros 10,000 km); verificar si supera 1L/1000 km"},
+        {"nombre": "TCS barro — falsa activación", "sintoma": "TCS se activa innecesariamente en tierra o arena", "solucion": "Desactivar TCS en offroad (versión World Rally) — TCS calibrado para asfalto"},
+        {"nombre": "Suspensión trasera — riders pesados", "sintoma": "Suspensión trasera muy blanda para riders >90 kg con equipaje", "solucion": "Aumentar precarga trasera al máximo; amortiguador Öhlins STX22 aftermarket para uso cargado"},
+        {"nombre": "Palanca freno trasero — barro", "sintoma": "Palanca se atasca con tierra en off-road intenso", "solucion": "Guardar o sellar la varillería; lavar tras cada salida off-road"}
+      ]
+    },
+
+    {"id":"sv650-2017","marca":"Suzuki","modelo":"SV650","años":"2017+","codigo":"SV650A",
+     "motor":"Bicilíndrico en V 90°, 645cc, Euro 4 — Inyección electrónica, PAIR valve, ABS, 168 kg",
+     "aceite_litros":"2.4 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA/MA2",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"PAIR valve — popping","sintoma":"Detonaciones en escape al cerrar gas","solucion":"Bloqueo PAIR valve o reprogramación ECU Stage 1"},
+       {"nombre":"Bomba de combustible","sintoma":"Zumbido notable (generaciones tempranas)","solucion":"Normal si zumba; alarma si deja de zumbar (señal de fallo inminente)"},
+       {"nombre":"Embrague — judder","sintoma":"Vibración al soltar embrague en salidas lentas","solucion":"Aceite JASO MA/MA2 correcto; ajuste punto de embrague"},
+       {"nombre":"Sensor TPS","sintoma":"Respuesta irregular a bajas RPM en frío","solucion":"Limpieza con limpiador electrónico o reemplazo sensor"}
+     ]},
+
+    {"id":"gsx-s750-2017","marca":"Suzuki","modelo":"GSX-S750","años":"2017–2021","codigo":"GSX-S750A",
+     "motor":"4 cilindros en línea, 749cc, DOHC — Derivado GSX-R750 K5/K6. 3 modos conducción (A/B/C), ABS",
+     "aceite_litros":"3.4 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA/MA2",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar (iridio recomendado)","intervalo":"24,000 km"},
+       {"item":"Válvulas (DOHC)","accion":"Inspección y ajuste","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Vibración en manillar","sintoma":"Vibración notable 4,000–5,000 RPM","solucion":"Bar end weights aftermarket; verificar balanceo ruedas"},
+       {"nombre":"Cadena desgaste rápido","sintoma":"Cadena se alarga rápido con uso agresivo","solucion":"Lubricación cada 300–500 km; cadena DID 525 VX recomendada"},
+       {"nombre":"Respuesta throttle brusco","sintoma":"Tirones bruscos al abrir gas en Modo A","solucion":"Usar Modo B para ciudad; reprogramación ECU Stage 1 opcional"}
+     ]},
+
+    {"id":"gsx-s1000-2021","marca":"Suzuki","modelo":"GSX-S1000","años":"2021+","codigo":"GSX-S1000A",
+     "motor":"4 cilindros en línea, 999cc, Euro 5 — 10 modos conducción, TCS, ABS cornering Bosch, quickshifter UP (opción)",
+     "aceite_litros":"3.7 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA/MA2",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar (iridio recomendado)","intervalo":"24,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste (DOHC 16v)","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura en tráfico","sintoma":"Calor elevado entre piernas en semáforo","solucion":"Normal en 4C de alto rendimiento — reducir exposición a tráfico parado"},
+       {"nombre":"Batería y electrónica","sintoma":"Fallos en modos si batería < 12.4V","solucion":"Sistema exigente — batería CCA alta y revisión anual"},
+       {"nombre":"Quickshifter UP","sintoma":"Cambios inconsistentes a bajas RPM","solucion":"Requiere > 4,000 RPM para funcionar correctamente"}
+     ]},
+
+    {"id":"hayabusa-gen3-2021","marca":"Suzuki","modelo":"Hayabusa Gen3","años":"2021+","codigo":"GSX1300RA",
+     "motor":"4 cilindros en línea, 1340cc, Euro 5 — IMU 6 ejes, 10 modos conducción, TCS, Launch Control, Hill Hold, Cruise Control, QSS bidireccional",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA/MA2",
+     "torque_filtro":"20 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"190/50-17 trasera — no cambiar perfil (TCS calibrado)"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar (iridio recomendado)","intervalo":"24,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Refrigerante","accion":"Reemplazar","intervalo":"Cada 2 años"}
+     ],
+     "fallas":[
+       {"nombre":"TCS — llantas no originales","sintoma":"Intervención incorrecta del TCS","solucion":"TCS calibrado para 190/50-17 — no cambiar perfil trasero"},
+       {"nombre":"Sensores IMU — polvo","sintoma":"Luz de fallo electrónico en carreteras polvorientas","solucion":"Limpiar sensores IMU con paño suave — no usar agua a presión"},
+       {"nombre":"Calor asiento en tráfico","sintoma":"Temperatura alta debajo del asiento","solucion":"Motor 1340cc genera calor considerable — normal; evitar tráfico lento prolongado"}
+     ]},
+
+    {"id":"mt07-2021","marca":"Yamaha","modelo":"MT-07","años":"2021+","codigo":"MTN690",
+     "motor":"Bicilíndrico en paralelo, 689cc, CP2 (270° crossplane experience) — 3 modos (A/STD/B), ASSIST & SLIPPER clutch, TCS, ABS",
+     "aceite_litros":"2.9 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4 recomendado)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Cadena desgaste rápido","sintoma":"Cadena se alarga más rápido de lo esperado","solucion":"Motor con mucho par — lubricación cada 500 km; cadena DID 520VX"},
+       {"nombre":"Vibración manillar alta velocidad","sintoma":"Vibración notable > 100 km/h","solucion":"Bar end weights aftermarket (Oxford o Yamaha Performance); balanceo ruedas"},
+       {"nombre":"Sensor ABS — suciedad","sintoma":"Luz ABS en carreteras con barro o polvo","solucion":"Limpiar anillo fónico rueda delantera con paño seco — no agua a presión"},
+       {"nombre":"TCS en lluvia","sintoma":"TCS se activa frecuentemente en curvas mojadas","solucion":"Activar Modo B (más suave) o desactivar TCS en carretera seca"}
+     ]},
+
+    {"id":"mt09-2021","marca":"Yamaha","modelo":"MT-09","años":"2021+","codigo":"RN69",
+     "motor":"Tricilíndrico en línea, 890cc, CP3 — 3 modos D-Mode (SPORT/STREET/RAIN), TCS multinivel, quickshifter bidireccional, control crucero (versión SP)",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "manual_url":"https://drive.google.com/file/d/1ky72kRwjcrJvz1YhddlHI9v8SbjUUzG7/view",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"CCT (tensor cadena distribución) — ruido frío","sintoma":"Ruido metálico en arranque en frío (primeros 2–3 segundos)","solucion":"Conocido en 2021 — TSB Yamaha disponible. Tensionar manualmente o instalar CCT manual aftermarket"},
+       {"nombre":"Termostato — bloqueo","sintoma":"Temperatura muy alta en tráfico (modelos 2021)","solucion":"TSB Yamaha actualización SW de termostato; verificar en concesionario"},
+       {"nombre":"Vibración asiento alta velocidad","sintoma":"Vibración en asiento y estriberas > 120 km/h","solucion":"Normal en 3 cilindros a esa banda — bar ends y estriberas aftermarket mejoran"}
+     ]},
+
+    {"id":"mt10-2022","marca":"Yamaha","modelo":"MT-10","años":"2022+","codigo":"RN78",
+     "motor":"4 cilindros en línea, 998cc, derivado YZF-R1 — QSS bidireccional, Slide Control, TCS por curva, 3 modos D-Mode",
+     "aceite_litros":"4.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42},
+     "variantes":"Standard | SP (Öhlins YMF, frenos radiales mejorados, quickshifter bidireccional de serie)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar (iridio)","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura en tráfico urbano","sintoma":"Calor elevado entre piernas en tráfico lento","solucion":"Motor de competición en moto naked — normal; reducir exposición tráfico"},
+       {"nombre":"Batería — electrónica compleja","sintoma":"Fallos en electrónica con batería débil","solucion":"Batería CCA alta obligatoria; revisar voltaje carga (>13.5V a 4,000 RPM)"},
+       {"nombre":"Ajuste preload horquilla KYB","sintoma":"Horquilla requiere llave especial para ajuste","solucion":"Requiere llave de 22mm tipo cubo; no es ajuste convencional"}
+     ]},
+
+    {"id":"tracer7-2021","marca":"Yamaha","modelo":"Tracer 7","años":"2021+","codigo":"MTT690P",
+     "motor":"Bicilíndrico en paralelo, 689cc, CP2 (mismo que MT-07) — Cruise Control, TCS, parabrisas motorizado ajustable",
+     "aceite_litros":"2.9 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Motor parabrisas — fallo","sintoma":"Parabrisas motorizado no responde o hace ruido (modelos 2021)","solucion":"TSB Yamaha para actualización motor eléctrico parabrisas; verificar en concesionario"},
+       {"nombre":"Cadena desgaste","sintoma":"Igual que MT-07 (mismo motor)","solucion":"Lubricación cada 500 km; cadena DID 520VX"},
+       {"nombre":"Quickshifter sensible a temperatura","sintoma":"Cambios inconsistentes en frío extremo","solucion":"Esperar calentamiento motor (60°C) para uso óptimo del quickshifter"}
+     ]},
+
+    {"id":"tracer9gt-2021","marca":"Yamaha","modelo":"Tracer 9 GT","años":"2021+","codigo":"MTT890D",
+     "motor":"Tricilíndrico en línea, 890cc, CP3 (mismo que MT-09) — IMU, Cruise Control, QSS bidireccional, suspensión KYB semi-activa (GT)",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "variantes":"Tracer 9 (suspensión manual) | GT (suspensión KYB semi-activa, maletas laterales incluidas)",
+     "manual_url":"https://drive.google.com/file/d/1GNa6pPjnNuHEfkh5fCsXr7WAX_a1UOsy/view",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Suspensión KYB semi-activa","accion":"Reset tras cambio de aceite o servicio","intervalo":"Cada servicio principal"}
+     ],
+     "fallas":[
+       {"nombre":"Suspensión KYB — reset requerido","sintoma":"Suspensión se comporta errática tras servicio","solucion":"Realizar reset de suspensión semi-activa via menú de la moto (procedimiento en manual)"},
+       {"nombre":"CCT ruido frío (mismo que MT-09)","sintoma":"Ruido metálico arranque en frío","solucion":"TSB Yamaha disponible — verificar en concesionario"},
+       {"nombre":"Ralentí bajo — calor tráfico","sintoma":"Temperatura alta en tráfico con ralentí < 1,200 RPM","solucion":"Aumentar ralentí a 1,300–1,400 RPM via ajuste TPS en taller"}
+     ]},
+
+    {"id":"yzf-r7-2022","marca":"Yamaha","modelo":"YZF-R7","años":"2022+","codigo":"RH18",
+     "motor":"Bicilíndrico en paralelo, 689cc, CP2 (mismo que MT-07) — Frenos Brembo radiales, horquilla KYB invertida 41mm, posición deportiva",
+     "aceite_litros":"2.9 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena (uso track)","accion":"Lubricación tras cada sesión","intervalo":"Tras cada track day"},
+       {"item":"Pastillas de freno (Brembo)","accion":"Revisión espesor","intervalo":"Cada 8,000 km o antes en track"}
+     ],
+     "fallas":[
+       {"nombre":"Posición de conducción","sintoma":"Postura agresiva incómoda para uso diario largo","solucion":"Manillares alzados (riser) o descanso de rodillas — posición diseñada para circuito"},
+       {"nombre":"Cadena desgaste — track","sintoma":"Cadena se desgasta rápido en uso en pista","solucion":"Cadena DID 520 ERV7 para uso circuito; lubricar después de cada sesión"},
+       {"nombre":"Temperatura alta tráfico","sintoma":"Calor elevado sin carenado inferior","solucion":"Mismo motor MT-07 — reducir exposición a tráfico parado"}
+     ]},
+
+    {"id":"xsr700-2018","marca":"Yamaha","modelo":"XSR700","años":"2018+","codigo":"MTM690",
+     "motor":"Bicilíndrico en paralelo, 689cc, CP2 (mismo motor que MT-07) — Estética retro, chasis idéntico MT-07, ABS, ASSIST & SLIPPER clutch",
+     "aceite_litros":"2.9 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Mismas fallas que MT-07","sintoma":"Motor y chasis idénticos — mismos problemas","solucion":"Ver ficha MT-07: cadena, vibración, sensor ABS"},
+       {"nombre":"Escape caliente (estética retro)","sintoma":"Escape lateral calienta pierna derecha","solucion":"Protector de escape de cuero o neopreno (popular en XSR700 Colombia)"},
+       {"nombre":"Vibración a alta velocidad","sintoma":"Vibración en manillar recto tipo café racer","solucion":"Bar end weights obligatorios — el manillar retro amplifica vibración del CP2"}
+     ]},
+
+    {"id":"xsr900-2022","marca":"Yamaha","modelo":"XSR900","años":"2022+","codigo":"RN74",
+     "motor":"Tricilíndrico en línea, 890cc, CP3 (mismo motor MT-09 Gen3) — QSS bidireccional, TCS, 3 modos D-Mode, estética retro 270° firing",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Yamalube 4)",
+     "torque_filtro":"17 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Inspección / Cambio","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"42,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"CCT ruido frío (mismo MT-09)","sintoma":"Ruido metálico arranque en frío 2–3 segundos","solucion":"TSB Yamaha disponible — verificar en concesionario Yamaha"},
+       {"nombre":"Escape caliente lateral","sintoma":"Escape 3-en-1 calienta pierna izquierda","solucion":"Protector de escape aftermarket — diseño retro acerca el escape al cuerpo"},
+       {"nombre":"Vibración manillar bajo","sintoma":"Manillar tipo scrambler amplifica vibraciones CP3","solucion":"Bar end weights Yamaha Performance o aftermarket"}
+     ]},
+
+    {"id":"cb650r-2019","marca":"Honda","modelo":"CB650R","años":"2019+","codigo":"RH02",
+     "motor":"4 cilindros en línea, 649cc, DOHC 16v — Horquilla Showa SFF-BP 41mm, frenos Nissin 4 pistones, Neo Sports Café",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 10W-30 o 10W-40 JASO MA2 (Honda GN4 recomendado)",
+     "torque_filtro":"26 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":29,"trasera_solo":33,"nota":"Pirelli Diablo Rosso III 120/70-17 del / 160/60-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas (DOHC)","accion":"Inspección y ajuste","intervalo":"16,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura alta en semáforo","sintoma":"Motor 4C genera calor considerable entre piernas","solucion":"Normal en motor 4 cilindros inline — ventiladores cumplen función; reducir tráfico parado"},
+       {"nombre":"Calzado térmico pierna derecha","sintoma":"Escape calienta la pierna con calzado normal","solucion":"Protector de escape o redireccionamiento con deflector aftermarket"},
+       {"nombre":"Batería — vida corta en clima cálido","sintoma":"Batería de fábrica dura 2–3 años en Colombia","solucion":"Reemplazar por batería Yuasa o Bosch de alta CCA; cargar tras periodos de inactividad"}
+     ]},
+
+    {"id":"cbr650r-2019","marca":"Honda","modelo":"CBR650R","años":"2019+","codigo":"RH02",
+     "motor":"4 cilindros en línea, 649cc, DOHC 16v (mismo motor CB650R) — Carenado aerodinámico deportivo, posición más agresiva, escape bajo",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 10W-30 o 10W-40 JASO MA2 (Honda GN4)",
+     "torque_filtro":"26 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"16,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Posición de conducción incómoda","sintoma":"Espalda y muñecas cansan en viajes > 2 horas","solucion":"Alzas de manillar (risers) o manillares más altos; descansos de rodillas en carenado"},
+       {"nombre":"Temperatura motor (igual CB650R)","sintoma":"Calor elevado en tráfico","solucion":"Normal — motor 4 cilindros; mantener movimiento o usar modo de conservación en tráfico"},
+       {"nombre":"Escape bajo — temperatura pierna","sintoma":"Escape lateral derecho calienta pantorrilla","solucion":"Protector de neopreno o cuero para el escape; accesorio popular en Colombia"}
+     ]},
+
+    {"id":"nc750x-2021","marca":"Honda","modelo":"NC750X","años":"2021+","codigo":"RH09",
+     "motor":"Bicilíndrico en paralelo, 745cc, SOHC — HSTC (Honda Selectable TC), baúl frontal 21L. Disponible en versión DCT (cambio doble embrague automático)",
+     "aceite_litros":"3.0 L (con filtro) | DCT caja: 1.0 L ATF Honda DW-1","aceite_spec":"SAE 10W-30 JASO MA2",
+     "torque_filtro":"26 Nm","cambio_aceite_km":12000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36},
+     "variantes":"Manual 6 vel. | DCT (Dual Clutch Transmission — automático 7 vel.)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"12,000 km"},
+       {"item":"Aceite de caja DCT","accion":"Reemplazar (versión DCT — ATF Honda DW-1)","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"36,000 km"},
+       {"item":"Cadena (versión manual)","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"DCT — software actualización","sintoma":"Cambios bruscos o comportamiento errático","solucion":"Actualización de software DCT recomendada cada 2 años en concesionario Honda"},
+       {"nombre":"Ruido bomba de aceite en frío","sintoma":"Rumble suave a bajas RPM en arranque frío","solucion":"Normal en primeros 30 segundos — desaparece al calentar. Si persiste, revisar nivel"},
+       {"nombre":"Batería AGM — carga","sintoma":"Batería AGM no acepta cargador convencional","solucion":"Usar exclusivamente cargador compatible AGM (CTEK o similar) — no cargador de plomo-ácido"}
+     ]},
+
+    {"id":"cb750hornet-2023","marca":"Honda","modelo":"CB750 Hornet","años":"2023+","codigo":"RC93",
+     "motor":"Bicilíndrico en paralelo, 755cc, DOHC 16v — 3 modos conducción, HSTC, quickshifter UP, suspensión Showa SFF-CA",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-30 o 10W-40 JASO MA2 (Honda GN4)",
+     "torque_filtro":"26 Nm","cambio_aceite_km":12000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"Metzeler Roadtec 01 — 120/70-17 del / 180/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"36,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Cadena — primera tensión","sintoma":"Cadena requiere tensión adicional en primeros 1,000 km","solucion":"Revisión obligatoria a los 1,000 km — la cadena se estira en el rodaje"},
+       {"nombre":"Temperatura en tráfico","sintoma":"Calor notable en tráfico denso (bicilindrínos Honda)","solucion":"Normal en paralelo DOHC — similar NC750X pero más agresivo térmicamente"},
+       {"nombre":"Modelo reciente — pocos datos","sintoma":"Modelo 2023 — datos de fallas aún limitados","solucion":"Seguir comunidad Honda Hornet Colombia para reportes actualizados"}
+     ]},
+
+    {"id":"africatwin-2020","marca":"Honda","modelo":"Africa Twin CRF1100L","años":"2020+","codigo":"SD09",
+     "motor":"Bicilíndrico en paralelo, 1084cc, DOHC — 6 modos conducción, HSTC, Wheelie Control, IMU 6 ejes. Versión DCT disponible",
+     "aceite_litros":"5.4 L (con filtro) — 3.6 L sin filtro","aceite_spec":"SAE 10W-30 Honda HP4 Pro o 10W-40 JASO MA2",
+     "torque_filtro":"26 Nm","cambio_aceite_km":12000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Dunlop Trailmax Mixtour 21\"/18\" (estándar) o 21\"/17\" (Adventure Sports)"},
+     "variantes":"CRF1100L estándar | Adventure Sports (maletas, suspensión alta) | DCT (ambas versiones)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"12,000 km"},
+       {"item":"Aceite caja DCT","accion":"ATF Honda DW-1","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"36,000 km"},
+       {"item":"Cadena (versión manual)","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Refrigerante","accion":"Reemplazar","intervalo":"Cada 3 años"}
+     ],
+     "fallas":[
+       {"nombre":"Peso en pistas fuera de ruta","sintoma":"226 kg con combustible — difícil en off-road real","solucion":"Off-road básico bien; pistas técnicas requieren entrenamiento específico. Péndulo bajo ayuda"},
+       {"nombre":"DCT delay en maniobras lentas","sintoma":"DCT tarda en reaccionar en maniobras de parking/U-turn","solucion":"Activar modo S (Sport) en maniobras lentas; práctica específica para manejo DCT a baja velocidad"},
+       {"nombre":"Calor motor en tráfico urbano","sintoma":"Temperatura alta entre piernas en tráfico","solucion":"Normal en 1100cc bicilíndrico — reducir exposición; el ventilador se activa automáticamente"}
+     ]},
+
+    {"id":"cb1000r-2021","marca":"Honda","modelo":"CB1000R","años":"2021+","codigo":"SC80",
+     "motor":"4 cilindros en línea, 998cc, DOHC — HSTC, Wheelie Control, QSS (quickshifter) UP/DOWN, 4 modos conducción. Diseño Neo Sports Café minimalista",
+     "aceite_litros":"4.3 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Honda GN4)",
+     "torque_filtro":"26 Nm","cambio_aceite_km":12000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"Pirelli Diablo Rosso IV — 120/70-17 del / 190/55-17 tras"},
+     "variantes":"Standard (negro) | Plus (Öhlins, quickshifter de serie, colores premium)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"12,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"36,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura alta motor 4C","sintoma":"Calor elevado en tráfico (4 cilindros inline)","solucion":"Normal para motor de altas prestaciones — reducir tráfico parado"},
+       {"nombre":"Faros baja visibilidad campo","sintoma":"Diseño minimalista sin deflectores — faros cortos en lluvia","solucion":"Faros auxiliares LED aftermarket (popular en Colombia para carretera nocturna)"},
+       {"nombre":"TC sensible en lluvia fuerte","sintoma":"HSTC interviene agresivamente en lluvia intensa","solucion":"Activar Modo Rain para curvas en lluvia; TC calibrado para asfalto seco en modos Sport/Track"}
+     ]},
+
+    {"id":"cbr1000rrr-2020","marca":"Honda","modelo":"CBR1000RR-R Fireblade","años":"2020+","codigo":"SC82",
+     "motor":"4 cilindros en línea, 999cc, DOHC — Winglets aerodinámicos, IMU 6 ejes, TC por curva, Wheelie Control, Launch Control, 5 modos conducción",
+     "aceite_litros":"4.6 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA2 (Honda Genuine)",
+     "torque_filtro":"26 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Pirelli Supercorsa SP V3 — 120/70-17 del / 200/55-17 tras"},
+     "variantes":"Standard | SP (Öhlins Smart EC 2.0, Brembo Stylema R, Akrapovic de serie)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km (o 1 año; cada 3,000 km en track)"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"500–1,000 km"},
+       {"item":"Refrigerante","accion":"Reemplazar","intervalo":"Cada 2 años"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura en circuito tropical","sintoma":"Temperatura radiador alta en pistas de Colombia (calor + circuito cerrado)","solucion":"Refrigerante Honda Long Life (azul) cambiado cada 2 años; ventiladores verificados antes de track day"},
+       {"nombre":"Neumático trasero 200mm","sintoma":"Desgaste rápido en uso track intensivo","solucion":"Pirelli SC1/SC2 para track day; SP para calle; nunca mezclar perfiles"},
+       {"nombre":"Arranque en frío — demora ICU","sintoma":"Tarda 2–3 segundos antes de arrancar (ICU calibrando)","solucion":"Normal — la ICU verifica sensores antes de permitir arranque. No es falla"}
+     ]},
+
+    {"id":"bmw-f750gs-2018","marca":"BMW","modelo":"F750GS","años":"2018+","codigo":"4G85",
+     "motor":"Bicilíndrico en paralelo, 853cc, Euro 5 — 2 modos conducción (Road/Rain), ABS estándar, ABS Pro (opción), peso 229 kg",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 15W-50 API SM+ (BMW Motorrad Advantec Ultimate)",
+     "torque_filtro":"15 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Metzeler Tourance Next 2 — 19\"/17\""},
+     "manual_url":"https://drive.google.com/file/d/1u6A7ODTVhVmCvH1NxX1Beifps-fh2zjA/view",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultimate 15W-50)","intervalo":"10,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Frenos","accion":"Revisión pastillas y discos","intervalo":"10,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Diagnóstico — scanner BMW","sintoma":"Errores OBD requieren scanner compatible BMW Motorrad","solucion":"Scanner Motorrad Diagnose o GS-911 (popular en Colombia) para leer y resetear códigos"},
+       {"nombre":"Palanca de cambio — altura","sintoma":"Palanca muy corta para piernas largas o calzado off-road","solucion":"Palanca de cambio extendida aftermarket (Touratech o SW-Motech)"},
+       {"nombre":"Costo repuestos en Colombia","sintoma":"Precio de piezas BMW elevado","solucion":"Importar vía BMW Motorrad Colombia o mayoristas USA; algunas piezas compatibles con F850GS"}
+     ]},
+
+    {"id":"bmw-f850gs-2018","marca":"BMW","modelo":"F850GS / Adventure","años":"2018+","codigo":"4G85A",
+     "motor":"Bicilíndrico en paralelo, 853cc (mismo bloque F750GS, mayor potencia) — 3 modos conducción, ABS Pro, TCS, opciones electrónicas adicionales",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 15W-50 API SM+ (BMW Motorrad Advantec Ultimate)",
+     "torque_filtro":"15 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Radios 21\"/17\" Adventure | 19\"/17\" Standard"},
+     "variantes":"F850GS (versátil, 18L depósito) | F850GS Adventure (24L depósito, protecciones, suspensión alta)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultimate 15W-50)","intervalo":"10,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Altura asiento","accion":"Verificar regulación (F850GS Adventure tiene 3 posiciones)","intervalo":"Según conductor"}
+     ],
+     "fallas":[
+       {"nombre":"Guardabarro trasero — off-road","sintoma":"Guardabarro de plástico se agrieta en uso off-road Adventure","solucion":"Guardabarro Touratech o Wunderlich acero inoxidable (popular en Colombia para off-road)"},
+       {"nombre":"Blinkers LED — caídas","sintoma":"Intermitentes LED se rompen fácilmente en caídas a baja velocidad","solucion":"Protectores de intermitentes SW-Motech o reemplazar por versiones más robustas"},
+       {"nombre":"ABS Pro — llantas no homologadas","sintoma":"ABS Pro desactivado con llantas aftermarket no en lista BMW","solucion":"Usar llantas de lista homologada BMW; o verificar compatibilidad en concesionario"}
+     ]},
+
+    {"id":"bmw-r1250gs-2019","marca":"BMW","modelo":"R1250GS / Adventure","años":"2019+","codigo":"1G13",
+     "motor":"Bicilíndrico boxer 1254cc, ShiftCam (variación de válvulas) — 5 modos conducción, ABS Pro cornering, ASC, DDC semi-activa, Cruise Control, Hill Start Control",
+     "aceite_litros":"3.75 L (con filtro)","aceite_spec":"SAE 15W-50 BMW Motorrad Advantec Ultimate — OBLIGATORIO para ShiftCam (10W-40 puede dañar pivotes)",
+     "torque_filtro":"25 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"GS: 19\"/17\" | Adventure: 21\"/17\" (Michelin Anakee Adventure o Metzeler Tourance Next 2)"},
+     "variantes":"R1250GS (19\" del, 20L dep) | R1250GS Adventure (21\" del, 30L dep, protecciones, suspensión alta)",
+     "manual_url":"https://drive.google.com/file/d/189UTxrDtuvK1FZwrjvFGWIPyDHYjpM86/view",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar — SOLO BMW Advantec Ultimate 15W-50","intervalo":"10,000 km"},
+       {"item":"Filtro de aceite","accion":"Reemplazar","intervalo":"10,000 km"},
+       {"item":"Bujías boxer","accion":"Reemplazar (acceso lateral — fácil)","intervalo":"20,000 km"},
+       {"item":"Válvulas boxer","accion":"Inspección y ajuste (acceso lateral — más fácil que inline)","intervalo":"10,000 km"},
+       {"item":"Refrigerante","accion":"Reemplazar","intervalo":"Cada 3 años"}
+     ],
+     "fallas":[
+       {"nombre":"ShiftCam — aceite incorrecto","sintoma":"Pérdida de potencia o error ShiftCam","solucion":"CRÍTICO: usar SOLO 15W-50 BMW Advantec Ultimate — 10W-40 puede bloquear pivotes ShiftCam y destruir el motor"},
+       {"nombre":"DDC semi-activa — batería","sintoma":"Suspensión DDC falla o se pone en modo duro","solucion":"Batería débil < 12V causa fallos DDC — batería BMW OEM AGM obligatoria; verificar voltaje"},
+       {"nombre":"Bocina débil","sintoma":"Bocina original inaudible en tráfico colombiano","solucion":"Modificación popular: bocina Fiamm o Stebel — mejora dramática"},
+       {"nombre":"Conector USB — calor","sintoma":"Conector USB se suelta con el calor de Colombia","solucion":"Usar conector de rosca Powerlet o RAM Mount para accesorios; no forzar conector estándar"}
+     ]},
+
+    {"id":"bmw-f900r-2020","marca":"BMW","modelo":"F900R","años":"2020+","codigo":"4R90",
+     "motor":"Bicilíndrico en paralelo, 895cc, Euro 5 — 3 modos conducción, ABS Pro, DTC (traction control dinámico), quickshifter (opción)",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 15W-50 BMW Motorrad Advantec Ultimate",
+     "torque_filtro":"15 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Metzeler Roadtec 01 — 120/70-17 del / 180/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultimate 15W-50)","intervalo":"10,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km (más frecuente en uso agresivo)"}
+     ],
+     "fallas":[
+       {"nombre":"Cadena desgaste — uso agresivo","sintoma":"Cadena requiere revisión frecuente con conducción deportiva","solucion":"Lubricación cada 300–500 km en uso agresivo; cadena DID 525 VX"},
+       {"nombre":"Temperatura lateral derecho","sintoma":"Calor del motor hacia el lado derecho del conductor","solucion":"Normal en paralelo 895cc — deflector lateral opcional o calzado de cuero"},
+       {"nombre":"Ruido característico paralelo","sintoma":"Vibración y ruido típico del motor bicilíndrico a bajas RPM","solucion":"Característica del motor — no es falla. Mejora con mapa ECU aftermarket en modo 'relajado'"}
+     ]},
+
+    {"id":"bmw-f900xr-2020","marca":"BMW","modelo":"F900XR","años":"2020+","codigo":"4R90X",
+     "motor":"Bicilíndrico en paralelo, 895cc (mismo motor F900R) — 4 modos conducción (+ DYNAMIC en Sport), parabrisas ajustable, geometría touring",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 15W-50 BMW Motorrad Advantec Ultimate",
+     "torque_filtro":"15 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"19\"/17\" — posición touring"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultimate 15W-50)","intervalo":"10,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Parabrisas motor","accion":"Lubricar mecanismo ajuste","intervalo":"Cada año"}
+     ],
+     "fallas":[
+       {"nombre":"Parabrisas motor — polvo","sintoma":"Motor del parabrisas se atasca con polvo (carreteras Colombia)","solucion":"Lubricar mecanismo cada año con grasa silicona; limpiar guías con paño seco"},
+       {"nombre":"Cadena desgaste (igual F900R)","sintoma":"Mismo motor — misma cadena","solucion":"Lubricación cada 500 km; DID 525 VX recomendada"},
+       {"nombre":"Precio vs competencia","sintoma":"Más caro que Africa Twin o Tracer 9 GT con prestaciones similares","solucion":"No es falla técnica — el precio BMW incluye tecnología ABS Pro y garantía Motorrad Colombia"}
+     ]},
+
+    {"id":"bmw-s1000rr-2019","marca":"BMW","modelo":"S1000RR","años":"2019+","codigo":"4G80",
+     "motor":"4 cilindros en línea, 999cc, ShiftCam (2019+) — 4 modos conducción (Rain/Road/Dynamic/Race), TC por curva, Launch Control, Pit Lane Limiter, ABS Pro circuito, IMU",
+     "aceite_litros":"4.0 L (con filtro)","aceite_spec":"SAE 10W-40 o 5W-40 API SN (BMW Advantec Ultra — ShiftCam 4C usa 10W NO 15W)",
+     "torque_filtro":"18 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Pirelli Supercorsa SP V3 — 120/70-17 del / 190/55-17 tras"},
+     "variantes":"Standard | M Sport (Öhlins TTX, frenos M, colores M) | M Package (accesorios adicionales)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultra 10W-40 — NO 15W-50)","intervalo":"10,000 km o 1 año; 3,000 km en uso track"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena (track)","accion":"Lubricación y tensión tras cada sesión","intervalo":"Tras cada track day"},
+       {"item":"Frenos (track)","accion":"Revisión pastillas y sangrado","intervalo":"Antes de cada track day"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura en circuito clima cálido","sintoma":"Temperatura radiador alta en pistas con calor tropical","solucion":"Refrigerante BMW 50/50 cambiado anualmente; ventiladores verificados; no usar agua pura"},
+       {"nombre":"Batería — OEM obligatoria","sintoma":"Fallos electrónicos con batería no BMW","solucion":"Batería BMW OEM AGM obligatoria — la electrónica está calibrada para su voltaje específico"},
+       {"nombre":"Quickshifter DOWN — manos mojadas","sintoma":"Cambios involuntarios cuesta abajo con manos mojadas","solucion":"Calibración sensibilidad quickshifter en menú; guantes secos en pista mojada"}
+     ]},
+
+    {"id":"bmw-s1000xr-2020","marca":"BMW","modelo":"S1000XR","años":"2020+","codigo":"K69",
+     "motor":"4 cilindros en línea, 999cc, ShiftCam (mismo bloque S1000RR pero detuneado) — 5 modos conducción, DDC opcional, Cruise Control, ABS Pro por curva",
+     "aceite_litros":"4.0 L (con filtro)","aceite_spec":"SAE 10W-40 o 5W-40 API SN (BMW Advantec Ultra)",
+     "torque_filtro":"18 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Michelin Road 5 — 120/70-17 del / 190/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (BMW Advantec Ultra 10W-40)","intervalo":"10,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"DDC (si equipada)","accion":"Reset tras cambio de aceite","intervalo":"Cada servicio"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura asiento pasajero","sintoma":"Asiento de pasajero muy caliente en ruta larga","solucion":"Temperatura del escape hacia arriba — deflector Wunderlich o asiento aftermarket con mayor aislamiento"},
+       {"nombre":"DDC — batería débil","sintoma":"Suspensión DDC falla con batería baja","solucion":"Igual que R1250GS — batería BMW OEM AGM; verificar voltaje carga"},
+       {"nombre":"Costo repuestos en Colombia","sintoma":"Piezas BMW 4C más caras que GS boxer","solucion":"Importar via BMW Motorrad Colombia; algunas piezas comparten con S1000RR (motor)"}
+     ]},
+
+    {"id":"bmw-r1250r-2019","marca":"BMW","modelo":"R1250R / R1250RS","años":"2019+","codigo":"1R12 / 1S12",
+     "motor":"Bicilíndrico boxer 1254cc, ShiftCam (mismo que R1250GS) — 3–4 modos conducción, ABS Pro, ASC, DDC opcional",
+     "aceite_litros":"3.75 L (con filtro)","aceite_spec":"SAE 15W-50 BMW Motorrad Advantec Ultimate — OBLIGATORIO ShiftCam",
+     "torque_filtro":"25 Nm","cambio_aceite_km":10000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Michelin Road 5 — 120/70-17 del / 190/55-17 tras"},
+     "variantes":"R1250R (roadster naked) | R1250RS (deportivo-touring con carenado)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar — SOLO BMW Advantec Ultimate 15W-50","intervalo":"10,000 km"},
+       {"item":"Válvulas boxer","accion":"Inspección y ajuste (acceso lateral boxer)","intervalo":"10,000 km"},
+       {"item":"Bujías boxer","accion":"Reemplazar","intervalo":"20,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"ShiftCam — aceite incorrecto","sintoma":"Pérdida de potencia o error ShiftCam","solucion":"CRÍTICO: SOLO 15W-50 BMW Advantec Ultimate — igual que R1250GS"},
+       {"nombre":"DDC batería (si equipado)","sintoma":"Suspensión DDC falla con batería débil","solucion":"Batería BMW OEM AGM; revisar voltaje carga (>13.5V a 3,000 RPM)"},
+       {"nombre":"Cilindros laterales — fuerza lateral","sintoma":"Cilindros del boxer sobresalen — vulnerables en caídas","solucion":"Protectores de cilindros SW-Motech o Wunderlich — accesorios básicos para cualquier boxer BMW"}
+     ]},
+
+    {"id":"triumph-tiger660-2022","marca":"Triumph","modelo":"Tiger 660 Sport","años":"2022+","codigo":"A2302",
+     "motor":"Tricilíndrico en línea, 660cc, 12v DOHC — 2 modos conducción (Road/Rain), TF (Triumph Traction Control), ABS switchable",
+     "aceite_litros":"2.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine o Mobil 1 Racing 4T)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42,"nota":"Michelin Road 5 Trail — 110/80-19 del / 140/70-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"16,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Termostato — temperatura baja","sintoma":"Temperatura no sube en frío (termostato abre tarde)","solucion":"TSB Triumph 2022 — actualización de software ECU; verificar en concesionario Triumph Colombia"},
+       {"nombre":"Sensor TPS — humedad","sintoma":"TPS errático en humedad alta o lluvia fuerte","solucion":"Limpieza conector TPS con grasa dieléctrica; verificar sellado en temporada de lluvia"},
+       {"nombre":"Vibración 6,000–7,000 RPM","sintoma":"Vibración notable en esa banda de RPM","solucion":"Normal en 3 cilindros — resonancia natural. Mejora con empuñaduras de gel y bar ends"}
+     ]},
+
+    {"id":"triumph-trident660-2021","marca":"Triumph","modelo":"Trident 660","años":"2021+","codigo":"A2301",
+     "motor":"Tricilíndrico en línea, 660cc (mismo bloque Tiger 660) — Naked sport, 2 modos conducción, ABS, ASSIST & SLIPPER clutch",
+     "aceite_litros":"2.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42,"nota":"Pirelli Phantom Sportscomp RS — 120/70-17 del / 160/60-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"16,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Vibración manillar alta velocidad","sintoma":"Vibración notable manillar > 100–110 km/h","solucion":"Bar end weights Triumph o aftermarket — mejora significativa. Balanceo de ruedas también ayuda"},
+       {"nombre":"Escape calienta costado izquierdo","sintoma":"Escape 3-en-1 acerca calor al conductor","solucion":"Protector de escape neopreno o cuero — accesorio básico recomendado para Trident"},
+       {"nombre":"Termostato (mismo TSB Tiger 660)","sintoma":"Temperatura no sube en frío","solucion":"Actualización SW via concesionario Triumph Colombia"}
+     ]},
+
+    {"id":"triumph-tiger900-2020","marca":"Triumph","modelo":"Tiger 900","años":"2020+","codigo":"C702",
+     "motor":"Tricilíndrico en línea, 888cc, T-plane crankshaft (270°/180°/90° — carácter motor MotoGP) — 5 modos conducción, TC cornering, ABS switchable, quickshifter opcional",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine o Mobil 1 Racing 4T)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"GT: 120/70-17 del / 150/70-17 tras | Rally: 21\"/17\""},
+     "variantes":"GT | GT Pro | Rally (21\" del, motor llantas off-road) | Rally Pro (suspensión Öhlins)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"8,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Escape — calor pierna derecha","sintoma":"Escape lateral calienta pierna con conducción prolongada","solucion":"Protector de cuero o neopreno; modificación popular en Colombia para largas rutas"},
+       {"nombre":"Rally — protectores laterales","sintoma":"Protectores plásticos se aflojan con vibración off-road","solucion":"Torcar tornillos según especificación manual (2.5 Nm); revisar en cada servicio off-road"},
+       {"nombre":"TPS sensible a humedad (similar Tiger 660)","sintoma":"Respuesta irregular throttle en lluvia","solucion":"Limpieza conector TPS con grasa dieléctrica; sellado mejorado"}
+     ]},
+
+    {"id":"triumph-tiger1200-2022","marca":"Triumph","modelo":"Tiger 1200","años":"2022+","codigo":"B3122",
+     "motor":"Tricilíndrico en línea, 1160cc, T-plane — 5 modos conducción, ABS cornering, IMU, Triumph Shift Assist (TSA), cruise control, cambio automático (opción)",
+     "aceite_litros":"4.0 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":16000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Rally: 21\"/18\" | GT: 21\"/17\" | GT Explorer: 19\"/17\""},
+     "variantes":"GT | GT Explorer (19\" del, más road) | Rally (21\" del, off-road) | Rally Explorer (21\" del, depósito grande)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar — intervalo extendido gran innovación","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Refrigerante","accion":"Reemplazar","intervalo":"Cada 3 años"}
+     ],
+     "fallas":[
+       {"nombre":"CCT — ruido arranque frío (2022)","sintoma":"Ruido cadena de distribución en arranque frío — modelos 2022","solucion":"Mejora incorporada en modelos 2023 — verificar TSB en concesionario Triumph"},
+       {"nombre":"Peso — off-road técnico","sintoma":"220 kg+ difícil en pistas técnicas","solucion":"Modelo diseñado para off-road suave a moderado — no enduro técnico"},
+       {"nombre":"Precio repuestos 1160cc","sintoma":"Costo de repuestos elevado en Colombia","solucion":"Triumph Colombia con stock limitado — importar con anticipación piezas de desgaste"}
+     ]},
+
+    {"id":"triumph-speedtriple1200rs","marca":"Triumph","modelo":"Speed Triple 1200 RS","años":"2021+","codigo":"B1121",
+     "motor":"Tricilíndrico en línea, 1160cc T-plane — 5 modos conducción, IMU, Launch Control, Öhlins STX40 serie, frenos Brembo Stylema de serie",
+     "aceite_litros":"4.0 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":8000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Metzeler Racetec RR Interact — 120/70-17 del / 190/55-17 tras"},
+     "variantes":"RS (estándar con Öhlins y Brembo) | RR (edición Factory Racing exclusiva)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (NO confundir con Tiger 1200 — intervalo diferente)","intervalo":"8,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"24,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Frenos Brembo — sangrado","accion":"Sangrado de líquido de frenos","intervalo":"Cada año"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura asiento pasajero","sintoma":"Escape lateral calienta zona pasajero en ruta","solucion":"Escape Akrapovic titanio (baja temperatura y peso 4 kg) — popular en Colombia"},
+       {"nombre":"Retrovisores — vibración","sintoma":"Retrovisores vibran a velocidad de autopista","solucion":"Retrovisores aftermarket Bar End (Oxford o Rizoma) — eliminan vibración y mejoran imagen"},
+       {"nombre":"Peso delantero (1160cc)","sintoma":"Sensación pesada en maniobras de ciudad","solucion":"Práctica de bajo velocidad; peso repartido — se siente más liviana a velocidad"}
+     ]},
+
+    {"id":"triumph-scrambler1200","marca":"Triumph","modelo":"Scrambler 1200 XC / XE","años":"2019+","codigo":"C1201",
+     "motor":"Tricilíndrico en línea, 1200cc (base Bonneville T120 con 90cv) — Par ampliado en bajas RPM, 2 modos conducción, TFC (Triumph Factory Circuit), escape high",
+     "aceite_litros":"4.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":16000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"Metzeler Karoo 4 trail — 21\"/17\" — llantas trail/enduro"},
+     "variantes":"XC (versatil, más road) | XE (off-road, suspensión alta Öhlins, escape aún más alto)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Suspensión Öhlins (XE)","accion":"Verificar precarga y amortiguación","intervalo":"Cada temporada"}
+     ],
+     "fallas":[
+       {"nombre":"Escape high XE — suciedad","sintoma":"Escape tipo alto se ensucia con barro en trail","solucion":"Limpiar con paño húmedo tras uso off-road — barro baja calidad puede dañar acabado"},
+       {"nombre":"Retrovisores cortos para road","sintoma":"Retrovisores cortos en uso en carretera — visión limitada","solucion":"Retrovisores más largos Triumph OEM o adaptadores de espejo (accesorio popular XC)"},
+       {"nombre":"Batería — misma familia Bonneville","sintoma":"Batería Yuasa YTZ10S — revisar cada año en Colombia","solucion":"Recarga con CTEK MXS 5.0 si inactividad > 3 semanas; climas cálidos aceleran descarga"}
+     ]},
+
+    {"id":"triumph-speedtwin900","marca":"Triumph","modelo":"Speed Twin 900","años":"2021+","codigo":"B2121",
+     "motor":"Bicilíndrico en paralelo, 900cc, 270° firing (Bonneville style) — 3 modos conducción, TC, ABS, embrague asistido y antirrebote",
+     "aceite_litros":"3.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA (Triumph Genuine)",
+     "torque_filtro":"20 Nm","cambio_aceite_km":16000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"Pirelli Phantom Sportscomp — 100/90-18 del / 150/70-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"16,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"32,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"16,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Rueda delantera 18\" — neumáticos","sintoma":"Menor variedad y mayor precio de neumáticos 18\"","solucion":"Pirelli Phantom, Michelin Road 5 y Dunlop Roadsport disponibles en Colombia para 18\""},
+       {"nombre":"Temperatura alta en verano/tráfico","sintoma":"Motor 900cc genera calor notable en tráfico denso","solucion":"Normal — igual a todas las Triumph paralelo; reducir exposición a tráfico parado"},
+       {"nombre":"CCT (tensor cadena distribución)","sintoma":"Ruido metálico tenue en arranque frío","solucion":"Mismo CCT familia Bonneville — verificar; actualización manual aftermarket si ruido persiste"}
+     ]},
+
+    {"id":"kawasaki-ninja650-2017","marca":"Kawasaki","modelo":"Ninja 650","años":"2017+","codigo":"ER650H",
+     "motor":"Bicilíndrico en paralelo, 649cc, 360° firing — KTC (Kawasaki TC), ABS, peso 193 kg — moto de iniciación/intermedio ideal",
+     "aceite_litros":"2.0 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42,"nota":"Dunlop Sportmax D222 — 120/70-17 del / 160/60-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Escape — par de apriete","sintoma":"Vibración en escape a cierta banda de RPM","solucion":"Verificar par de apriete tornillo abrazadera escape — 8 Nm; puede aflojarse con vibraciones"},
+       {"nombre":"Sensor ABS — suciedad vial","sintoma":"Luz ABS en carreteras con barro o polvo","solucion":"Limpiar anillo fónico con paño — frecuente en carreteras polvorientas de Colombia"},
+       {"nombre":"Motor caliente en tráfico Bogotá","sintoma":"Paralelo 360° genera más calor que CP2 270°","solucion":"Normal — reducir exposición al tráfico; ventilador se activa automáticamente"}
+     ]},
+
+    {"id":"kawasaki-z650-2017","marca":"Kawasaki","modelo":"Z650 / Z650RS","años":"2017+","codigo":"ER650H / ER650P",
+     "motor":"Bicilíndrico en paralelo, 649cc (mismo motor Ninja 650) — Naked Z650 sin carenado | Z650RS estética retro con rueda trasera 18\"",
+     "aceite_litros":"2.0 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":42,"nota":"Z650RS: trasera 18\" — variedad neumáticos menor"},
+     "variantes":"Z650 (naked estándar, 17\" ambas) | Z650RS (estética retro Z900RS, 18\" trasera — 2022+)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura manillar — sin carenado","sintoma":"Calor del motor al manillar izquierdo sin carenado protector","solucion":"Puños de gel aftermarket o protector de calor lateral — sin carenado el calor es directo"},
+       {"nombre":"Z650RS — neumáticos 18\"","sintoma":"Neumáticos 18\" más caros y menos variedad en Colombia","solucion":"Dunlop Roadsport o Metzeler Classic disponibles; verificar disponibilidad antes de comprar"},
+       {"nombre":"Cadena desgaste — uso agresivo urbano","sintoma":"Cadena se desgasta rápido en uso urbano agresivo","solucion":"Lubricación cada 500 km en ciudad; cadena DID 520VX"}
+     ]},
+
+    {"id":"kawasaki-versys650-2015","marca":"Kawasaki","modelo":"Versys 650","años":"2015+","codigo":"LE650E",
+     "motor":"Bicilíndrico en paralelo, 649cc (mismo bloque Ninja 650) — ABS, KTC (2022+), maletas laterales originales disponibles, parabrisas ajustable",
+     "aceite_litros":"2.0 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"Dunlop D222 touring — 120/70-17 del / 160/60-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar — más frecuente con carga y maletas","intervalo":"800–1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Parabrisas — turbulencias alta velocidad","sintoma":"Turbulencia excesiva en casco a > 110 km/h","solucion":"Deflector Puig o GIVI A601N — mejora significativa para ruta larga en Colombia"},
+       {"nombre":"Cadena — carga con maletas","sintoma":"Desgaste más rápido al viajar con maletas llenas","solucion":"Aumentar frecuencia lubricación a cada 800 km; tensar después de cada viaje cargado"},
+       {"nombre":"Sensor TPS — humedad Medellín","sintoma":"Respuesta irregular throttle en temporada lluviosa","solucion":"Limpieza conector TPS con grasa dieléctrica; revisar sellado del cuerpo de mariposa"}
+     ]},
+
+    {"id":"kawasaki-versys1000se-2019","marca":"Kawasaki","modelo":"Versys 1000 SE","años":"2019+","codigo":"LZT00A",
+     "motor":"4 cilindros en línea, 1043cc, DOHC — KECS (suspensión electrónica Showa), Cruise Control, Cornering ABS, KTRC 3 modos, 3 modos conducción",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Bridgestone Battlax T31 — 120/70-17 del / 180/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Suspensión KECS","accion":"Reset y calibración tras servicio mayor","intervalo":"Cada servicio de aceite"}
+     ],
+     "fallas":[
+       {"nombre":"Suspensión KECS — batería","sintoma":"Suspensión electrónica en modo rígido si batería débil","solucion":"Batería cargada obligatoria; resetear KECS en taller tras servicio (procedimiento en manual)"},
+       {"nombre":"Temperatura en tráfico (4C)","sintoma":"Calor elevado en tráfico denso — 4 cilindros","solucion":"Normal para 4C — reducir exposición; el ventilador se activa a ~110°C"},
+       {"nombre":"Precio vs competencia Colombia","sintoma":"Más costosa que Africa Twin o Tracer 9 con prestaciones similares","solucion":"No es falla — el SE incluye KECS Showa y Cornering ABS Bosch que justifican el precio"}
+     ]},
+
+    {"id":"kawasaki-z900-2017","marca":"Kawasaki","modelo":"Z900","años":"2017+","codigo":"ZR900B",
+     "motor":"4 cilindros en línea, 948cc, DOHC — 3 modos conducción, KTRC (Power/Low/Off), ABS — peso 210 kg",
+     "aceite_litros":"3.4 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Dunlop Sportmax Roadsport 2 — 120/70-17 del / 180/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Válvulas","accion":"Inspección y ajuste","intervalo":"24,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Vibración manillar 5,000–6,000 RPM","sintoma":"Vibración notable en esa banda de revs (4C a media potencia)","solucion":"Bar end weights; tacos de manillar aftermarket — modificación muy popular en Z900 Colombia"},
+       {"nombre":"Retrovisores pequeños de serie","sintoma":"Retrovisores de fábrica con escasa visibilidad","solucion":"Retrovisores bar end aftermarket o extensores de retrovisor (Rizoma, Barracuda)"},
+       {"nombre":"Sensor ABS — suciedad","sintoma":"Luz ABS en barro o polvo","solucion":"Limpieza regular del anillo fónico; normal en uso mixto carretera/trocha"}
+     ]},
+
+    {"id":"kawasaki-z900rs-2018","marca":"Kawasaki","modelo":"Z900RS / Café","años":"2018+","codigo":"ZR900C",
+     "motor":"4 cilindros en línea, 948cc (mismo Z900) — Estética retro años 70 (Z1) — Café con carenado bíptico, rueda delantera 18\" en Café",
+     "aceite_litros":"3.4 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":33,"trasera_solo":36,"nota":"RS: 120/70-17 del / 180/70-17 tras | Café: 100/90-18 del (neumáticos retro)"},
+     "variantes":"Z900RS (estética Z1 clásica) | Z900RS Café (café racer, monoplaza, faros redondos)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Rueda trasera 18\" / neumáticos especiales","sintoma":"Neumático 180/70-17 (RS) — variedad y precio","solucion":"Dunlop Roadsport 2 y Bridgestone disponibles; Café usa 100/90-18 retro con menos opciones"},
+       {"nombre":"Escape original muy silencioso","sintoma":"Escape de fábrica no tiene el sonido que esperan los moteros","solucion":"Escape Akrapovic o SC-Project — modificación casi universal en Z900RS Colombia"},
+       {"nombre":"Mismas vibraciones que Z900","sintoma":"Mismo motor — mismas vibraciones a 5,000-6,000 RPM","solucion":"Bar end weights; la estética retro del manillar las hace más notorias que en Z900 naked"}
+     ]},
+
+    {"id":"kawasaki-ninja1000sx-2020","marca":"Kawasaki","modelo":"Ninja 1000SX","años":"2020+","codigo":"ZXT00L",
+     "motor":"4 cilindros en línea, 1043cc, DOHC — Cruise Control, Cornering ABS, KTRC 3 modos, QSS bidireccional, maletas laterales 28L incluidas",
+     "aceite_litros":"3.8 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Bridgestone Battlax T31 — 120/70-17 del / 190/50-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km"},
+       {"item":"Maletas — bisagras","accion":"Lubricar con grasa silicona","intervalo":"Cada año"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura pierna pasajero con maletas","sintoma":"Maletas y escape calientan zona de pasajero","solucion":"Forro térmico interior de maletas o deflector entre escape y maleta"},
+       {"nombre":"QSS DOWN — inconsistente en frío","sintoma":"Quickshifter bajada falla en motor frío","solucion":"Esperar temperatura > 60°C para uso del quickshifter DOWN; normal en frío"},
+       {"nombre":"Peso con maletas llenas","sintoma":"268 kg + 28 kg maletas = manejo distinto a moto vacía","solucion":"Practicar maniobras de bajo velocidad cargado antes de viaje largo; distribuir peso simétricamente"}
+     ]},
+
+    {"id":"kawasaki-zx6r-2019","marca":"Kawasaki","modelo":"ZX-6R / ZX636","años":"2019+","codigo":"ZX636F",
+     "motor":"4 cilindros en línea, 636cc, DOHC 16v — KQS (quickshifter), 3 modos conducción, ABS — motor 636cc para uso legal en calle (vs 600cc puro de pista)",
+     "aceite_litros":"3.4 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Bridgestone Battlax RS11 — 120/70-17 del / 180/55-17 tras"},
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar","intervalo":"1,000 km (track: tras cada sesión)"},
+       {"item":"Válvulas (DOHC)","accion":"Inspección y ajuste — inspección más frecuente en track","intervalo":"15,000 km"}
+     ],
+     "fallas":[
+       {"nombre":"Posición deportiva — commute","sintoma":"Espalda y muñecas cansan en uso urbano diario","solucion":"Posición diseñada para circuito — no recomendada como moto de uso diario urbano"},
+       {"nombre":"Temperatura alta en tráfico lento","sintoma":"4C deportivo genera temperatura muy alta en semáforo","solucion":"Normal para supersport — modo de espera en tráfico con ralentí; ventilador automático"},
+       {"nombre":"Embrague duro","sintoma":"Embrague más duro que bicilindrínos 650cc","solucion":"Embrague hidráulico accionamiento manual — upgrade a palanca ajustable y semiradial de aluminio"}
+     ]},
+
+    {"id":"kawasaki-zx10r-2021","marca":"Kawasaki","modelo":"ZX-10R","años":"2021+","codigo":"ZX1002M",
+     "motor":"4 cilindros en línea, 998cc, DOHC — IMU 6 ejes, ABS cornering, TC por curva, Launch Control, Engine Brake Control, Kawasaki Corner Management Function",
+     "aceite_litros":"4.3 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Pirelli Diablo Supercorsa SP V3 — 120/70-17 del / 200/55-17 tras"},
+     "variantes":"Standard | SE (Öhlins electrónica, quickshifter mejorado) | RR (homologación SBK — edición limitada)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar (track: cada 3,000 km o antes)","intervalo":"6,000 km"},
+       {"item":"Filtro de aire","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Lubricación tras cada sesión de track; cada 500 km en calle","intervalo":"500 km calle / tras cada track day"},
+       {"item":"Refrigerante","accion":"Verificar nivel y reemplazar","intervalo":"Anual (obligatorio en uso track)"}
+     ],
+     "fallas":[
+       {"nombre":"Temperatura en circuito tropical","sintoma":"Temperatura radiador alta en pistas de Colombia (calor + uso intenso)","solucion":"Refrigerante Kawasaki Long Life cambiado anualmente; verificar ventiladores antes de track day"},
+       {"nombre":"Neumático trasero 200mm","sintoma":"Desgaste rápido del neumático 200mm en uso track","solucion":"Pirelli SC1 (blando) para pista seca, SC2 (medio) para pista con variaciones; nunca mezclar compuestos"},
+       {"nombre":"Quickshifter sensibilidad","sintoma":"Cambios falsos en manos mojadas o lluvia","solucion":"Calibrar sensibilidad QS en menú; modo Rain reduce agresividad electrónica"},
+       {"nombre":"Costo operación","sintoma":"Costo de mantenimiento y neumáticos muy alto","solucion":"Presupuestar neumáticos 200mm SC1 cada 2–3 track days; kit de mantenimiento anual"}
+     ]},
+
+    {"id":"kawasaki-ninjah2-2015","marca":"Kawasaki","modelo":"Ninja H2 / H2 SX","años":"2015+","codigo":"ZX1000X / ZX1002A",
+     "motor":"4 cilindros en línea, 998cc, DOHC — SUPERCHARGER Centrifugal (compresor centrífugo engranaje) — 200cv (H2) / 200cv (H2 SX) — tecnología aeroespacial Kawasaki",
+     "aceite_litros":"4.5 L (con filtro)","aceite_spec":"SAE 10W-40 JASO MA o MA2 (Kawasaki OEM recomendado — viscosidad crítica para compresor)",
+     "torque_filtro":"17.5 Nm","cambio_aceite_km":6000,
+     "llantas_psi":{"delantera":36,"trasera_solo":42,"nota":"Bridgestone Battlax RS11 o Michelin Power GP — 120/70-17 del / 200/55-17 tras"},
+     "variantes":"H2 (naked supercharged) | H2 Carbon (winglets carbono) | H2 SX (touring supercharged, maletas) | H2 SX SE (suspensión Öhlins)",
+     "mantenimiento":[
+       {"item":"Aceite de motor","accion":"Reemplazar — viscosidad 10W-40 OBLIGATORIA para el compresor","intervalo":"6,000 km"},
+       {"item":"Filtro supercharger","accion":"Inspección y reemplazo (filtro interno del compresor)","intervalo":"24,000 km o según manual"},
+       {"item":"Bujías","accion":"Reemplazar","intervalo":"15,000 km"},
+       {"item":"Cadena","accion":"Limpiar y tensar — cadena reforzada por torque del supercharged","intervalo":"500 km"},
+       {"item":"Refrigerante intercooler","accion":"Verificar nivel e inspección intercooler","intervalo":"Cada año"}
+     ],
+     "fallas":[
+       {"nombre":"Compresor — aceite viscosidad","sintoma":"Fallo en compresor por aceite incorrecto","solucion":"CRÍTICO: SOLO 10W-40 — aceite más delgado daña el compresor centrifugo; usar Kawasaki OEM o equivalente certificado"},
+       {"nombre":"Temperatura intercooler en tráfico","sintoma":"Calor del intercooler en tráfico lento Colombia","solucion":"Normal — el H2 no es moto de ciudad; temperatura se normaliza a > 60 km/h de velocidad"},
+       {"nombre":"Costo servicio y repuestos","sintoma":"Costo de mantenimiento muy elevado en Colombia","solucion":"Importar repuestos desde USA o Japón; servicio en taller especializado Kawasaki (pocos en Colombia)"}
+     ]}
+  ]
+}

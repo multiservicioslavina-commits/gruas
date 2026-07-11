@@ -108,17 +108,22 @@ get_header();
 <?php /* ── JSON DATA — Rita y los moteros consultan aquí ── */ ?>
 <script type="application/json" id="rita-motos">
 <?php
-// Incluir el archivo JSON de datos si existe, o usar inline
+// 1. Archivo local en el tema (subir wordpress/ridera-data/motos.json al tema activo)
 $data_file = get_template_directory() . '/ridera-data/motos.json';
 if (file_exists($data_file)) {
     echo file_get_contents($data_file);
 } else {
-    // Data inline — misma data del garage-ridera.html
-    ?>
-{"page":"garage-ridera","descripcion":"Fichas técnicas de motos 650cc+ para Rita y los moteros de Ridera","marcas":["Suzuki","Yamaha","Honda","BMW","Triumph","Kawasaki"],"motos":[]}
-    <?php
-    // NOTA: Reemplazar el JSON vacío por el contenido completo del archivo garage-ridera.html
-    // o cargar desde motos.json en el directorio del tema
+    // 2. Fallback: cargar desde Netlify (siempre actualizado)
+    $remote = wp_remote_get('https://gruas.ridera.com.co/motos.json', [
+        'timeout'   => 8,
+        'sslverify' => true,
+    ]);
+    if (!is_wp_error($remote) && wp_remote_retrieve_response_code($remote) === 200) {
+        echo wp_remote_retrieve_body($remote);
+    } else {
+        // 3. Último recurso: JSON mínimo (no debería llegar aquí)
+        echo '{"page":"garage-ridera","motos":[]}';
+    }
 }
 ?>
 </script>
