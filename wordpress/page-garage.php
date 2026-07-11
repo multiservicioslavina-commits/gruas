@@ -92,6 +92,9 @@ get_header();
 #ridera-garage .g-falla-sol::before{content:'→ ';}
 #ridera-garage .g-variantes{margin:10px 16px 0;background:var(--accent-dim);border-radius:6px;padding:8px 10px;font-size:11px;color:var(--text-2);line-height:1.55;}
 #ridera-garage .g-variantes strong{color:var(--accent);display:block;margin-bottom:2px;font-size:10px;letter-spacing:1px;text-transform:uppercase;}
+#ridera-garage .g-manual-link{display:flex;align-items:center;gap:6px;padding:9px 16px;border-top:1px solid var(--border-2);font-size:12px;font-weight:600;color:var(--text-2);text-decoration:none;transition:background .15s,color .15s;}
+#ridera-garage .g-manual-link:hover{background:var(--accent-dim);color:var(--accent);}
+#ridera-garage .g-manual-link svg{width:14px;height:14px;flex-shrink:0;opacity:.6;}
 #ridera-garage .g-empty{text-align:center;padding:56px 20px;display:none;}
 #ridera-garage .g-empty.on{display:block;}
 #ridera-garage .g-rita{background:var(--hero-bg);border-radius:var(--r-lg);padding:30px 24px;text-align:center;margin-top:40px;}
@@ -237,7 +240,11 @@ if (file_exists($data_file)) {
         <div class="g-expand-body">
           ${(m.fallas||[]).map(f=>`<div class="g-falla"><div class="g-falla-nombre">${f.nombre}</div><div class="g-falla-sintoma">${f.sintoma}</div><div class="g-falla-sol">${f.solucion}</div></div>`).join('')}
         </div>
-      </div>`;
+      </div>
+      ${m.manual_url ? `<a class="g-manual-link" href="${m.manual_url}" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        Manual oficial (PDF)</a>` : ''}
+      `;
 
     card.querySelectorAll('.g-expand-btn').forEach(btn => {
       btn.addEventListener('click', function(){
