@@ -3,83 +3,156 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Ridera — Registro de Grúa</title>
+<title>Trabaja con Ridera Grúas — Recibe solicitudes de grúa para motos</title>
+<meta name="description" content="Registra tu grúa en Ridera y recibe solicitudes de clientes verificados en Antioquia. Gratis. Tú pones el precio. Trabajas cuando quieres.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
 <style>
 :root {
-  --orange:#E85D20; --orange-hot:#FF6B2B;
-  --carbon:#111316; --carbon2:#1a1e23; --carbon3:#222830; --carbon4:#2c3340;
-  --smoke:#F4F3EF; --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.58);
+  --orange:#E85D20; --orange-hot:#FF6B2B; --orange-dim:rgba(232,93,32,0.15);
+  --carbon:#0D0F12; --carbon2:#141720; --carbon3:#1E2229; --carbon4:#262D37;
+  --smoke:#F4F3EF; --cream:#FDF8F2;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.48);
   --border:rgba(255,255,255,0.07); --border-hi:rgba(255,255,255,0.13);
-  --green:#4ade80; --radius-sm:8px; --radius-md:12px; --radius-lg:16px;
+  --green:#4ade80; --radius-sm:8px; --radius-md:12px; --radius-lg:20px;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:'DM Sans',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;overflow-x:hidden}
-.topbar{background:rgba(17,19,22,0.97);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);padding:0 20px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+
+/* ── TOPBAR ─────────────────────────────────────────── */
+.topbar{background:rgba(13,15,18,0.97);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
 .topbar-logo{display:flex;align-items:center;gap:10px}
-.topbar-badge{font-size:10px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--orange);background:rgba(232,93,32,0.1);border:0.5px solid rgba(232,93,32,0.25);padding:3px 10px;border-radius:99px}
-.topbar-right{font-size:12px;color:var(--text-muted)}
-.page-wrap{max-width:680px;margin:0 auto;padding:32px 20px 80px}
-.form-header{margin-bottom:32px}
-.form-eyebrow{font-size:12px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--orange);display:flex;align-items:center;gap:8px;margin-bottom:12px}
-.form-eyebrow::before{content:'';width:18px;height:1px;background:var(--orange)}
-.form-heading{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,7vw,52px);font-weight:900;text-transform:uppercase;line-height:0.95;letter-spacing:-0.5px}
-.form-heading em{color:var(--orange);font-style:normal}
-.form-subhead{font-size:16px;font-weight:400;color:var(--text-muted);line-height:1.6;margin-top:14px}
+.topbar-badge{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--orange);background:rgba(232,93,32,0.1);border:0.5px solid rgba(232,93,32,0.28);padding:3px 10px;border-radius:99px}
+.topbar-cta{font-size:12px;color:var(--text-dim)}
+.topbar-cta a{color:var(--orange);text-decoration:none;font-weight:600}
+
+/* ── HERO ───────────────────────────────────────────── */
+.hero{position:relative;padding:80px 24px 72px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(232,93,32,0.14) 0%,transparent 70%)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% -10%,rgba(232,93,32,0.07),transparent 60%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--orange);margin-bottom:22px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:24px;height:1px;background:var(--orange);opacity:0.5}
+.hero-headline{font-family:'Barlow Condensed',sans-serif;font-size:clamp(44px,9vw,84px);font-weight:900;text-transform:uppercase;line-height:0.93;letter-spacing:-1px;margin-bottom:22px}
+.hero-headline em{color:var(--orange);font-style:normal;display:block}
+.hero-sub{font-size:clamp(16px,3vw,20px);font-weight:400;color:var(--text-muted);line-height:1.6;max-width:540px;margin:0 auto 36px}
+.hero-btns{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+.btn-hero{display:inline-flex;align-items:center;gap:9px;padding:16px 32px;border-radius:var(--radius-md);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;text-decoration:none;cursor:pointer;border:none;transition:all .2s}
+.btn-hero.primary{background:var(--orange);color:#fff}
+.btn-hero.primary:hover{background:var(--orange-hot);transform:translateY(-2px);box-shadow:0 8px 28px rgba(232,93,32,0.35)}
+.btn-hero.ghost{background:transparent;color:rgba(255,255,255,0.7);border:1px solid var(--border-hi)}
+.btn-hero.ghost:hover{border-color:var(--orange);color:var(--orange)}
+.hero-proof{margin-top:40px;display:flex;flex-wrap:wrap;gap:28px;justify-content:center;font-size:13px;color:var(--text-dim)}
+.hero-proof span{display:flex;align-items:center;gap:7px}
+.hero-proof .dot{width:6px;height:6px;border-radius:50%;background:var(--orange);flex-shrink:0}
+
+/* ── SECTION SHELL ──────────────────────────────────── */
+.section{padding:72px 24px}
+.section-inner{max-width:900px;margin:0 auto}
+.section-eyebrow{font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--orange);margin-bottom:10px}
+.section-title{font-family:'Barlow Condensed',sans-serif;font-size:clamp(30px,5vw,48px);font-weight:900;text-transform:uppercase;line-height:0.97;margin-bottom:14px}
+.section-sub{font-size:16px;color:var(--text-muted);line-height:1.65;max-width:540px}
+
+/* ── BENEFITS GRID ──────────────────────────────────── */
+.benefits-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:40px}
+.benefit-card{background:var(--carbon3);border:0.5px solid var(--border-hi);border-radius:var(--radius-lg);padding:26px 24px;transition:border-color .2s,transform .2s}
+.benefit-card:hover{border-color:rgba(232,93,32,0.3);transform:translateY(-3px)}
+.benefit-icon{font-size:32px;margin-bottom:14px}
+.benefit-title{font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:800;text-transform:uppercase;letter-spacing:0.02em;margin-bottom:7px}
+.benefit-desc{font-size:14px;color:var(--text-muted);line-height:1.6}
+
+/* ── STEPS ──────────────────────────────────────────── */
+.steps{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:0}
+.step{position:relative;padding:28px 24px;background:var(--carbon3);border:0.5px solid var(--border);text-align:center}
+.step:first-child{border-radius:var(--radius-lg) 0 0 var(--radius-lg)}
+.step:last-child{border-radius:0 var(--radius-lg) var(--radius-lg) 0}
+.step-num{font-family:'Barlow Condensed',sans-serif;font-size:56px;font-weight:900;color:rgba(232,93,32,0.2);line-height:1;margin-bottom:6px}
+.step-title{font-size:15px;font-weight:700;margin-bottom:6px}
+.step-desc{font-size:13px;color:var(--text-dim);line-height:1.55}
+.step-arrow{position:absolute;right:-10px;top:50%;transform:translateY(-50%);width:20px;height:20px;background:var(--orange);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;z-index:1;box-shadow:0 0 0 3px var(--carbon)}
+.step:last-child .step-arrow{display:none}
+
+/* ── REQUIREMENTS ───────────────────────────────────── */
+.req-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:32px}
+.req-item{display:flex;align-items:flex-start;gap:13px;background:var(--carbon3);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:18px 16px}
+.req-check{width:24px;height:24px;border-radius:6px;background:rgba(74,222,128,0.12);border:1px solid rgba(74,222,128,0.25);display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;font-size:13px}
+.req-text strong{display:block;font-size:14px;font-weight:600;margin-bottom:3px}
+.req-text span{font-size:13px;color:var(--text-dim)}
+
+/* ── TESTIMONIAL / SOCIAL PROOF ─────────────────────── */
+.proof-band{background:var(--carbon3);border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);padding:40px 24px;text-align:center}
+.proof-stat-row{display:flex;flex-wrap:wrap;gap:32px;justify-content:center;max-width:700px;margin:0 auto}
+.proof-stat strong{display:block;font-family:'Barlow Condensed',sans-serif;font-size:48px;font-weight:900;color:var(--orange);line-height:1}
+.proof-stat span{font-size:13px;color:var(--text-dim);margin-top:4px;display:block}
+
+/* ── FORM ZONE ──────────────────────────────────────── */
+.form-zone{background:var(--carbon2);border-top:0.5px solid var(--border)}
+.form-zone-inner{max-width:680px;margin:0 auto;padding:64px 24px 80px}
+.form-zone-header{margin-bottom:36px}
+.form-zone-headline{font-family:'Barlow Condensed',sans-serif;font-size:clamp(28px,5vw,44px);font-weight:900;text-transform:uppercase;line-height:0.97;margin-bottom:12px}
+.form-zone-headline em{color:var(--orange);font-style:normal}
+.form-zone-sub{font-size:15px;color:var(--text-muted);line-height:1.6}
 .form-section{margin-bottom:28px}
-.form-section-label{font-size:13px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--orange);margin-bottom:14px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
+.form-section-label{font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--orange);margin-bottom:14px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
 .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
 .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
-.form-group label{font-size:14px;font-weight:600;color:rgba(255,255,255,0.92);letter-spacing:0.01em}
+.form-group label{font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:0.01em}
 .form-group .req{color:var(--orange);margin-left:2px}
-input[type=text],input[type=tel],input[type=email],input[type=url],input[type=number],select,textarea{width:100%;background:var(--carbon3);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;padding:14px 15px;transition:border-color .2s,background .2s;appearance:none;-webkit-appearance:none}
-input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,0.5);background:var(--carbon4)}
-input.field-error{border-color:rgba(248,113,113,0.6)!important;background:rgba(248,113,113,0.05)!important}
+input[type=text],input[type=tel],input[type=email],input[type=url],input[type=number],select,textarea{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;padding:14px 15px;transition:border-color .2s,background .2s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,0.5);background:#2e3542}
+input.field-error,select.field-error{border-color:rgba(248,113,113,0.6)!important;background:rgba(248,113,113,0.05)!important}
 input::placeholder,textarea::placeholder{color:var(--text-dim)}
 select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.3)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
 select option{background:var(--carbon3)}
 textarea{resize:vertical;min-height:90px;line-height:1.55}
-input[type=file]{width:100%;background:var(--carbon3);border:1px solid var(--border-hi);border-radius:var(--radius-sm);color:var(--text-muted);font-size:14px;padding:10px 12px;cursor:pointer}
-input[type=file]::file-selector-button{background:var(--carbon4);color:#fff;border:none;border-radius:6px;padding:9px 15px;margin-right:12px;cursor:pointer;font-family:inherit;font-size:14px;font-weight:600}
-.file-hint{font-size:12.5px;color:var(--text-dim);margin-top:4px}
 .check-group{display:flex;flex-wrap:wrap;gap:9px;margin-top:4px}
-.check-chip{display:inline-flex;align-items:center;gap:6px;font-size:15px;color:rgba(255,255,255,0.88);background:var(--carbon3);border:1px solid var(--border-hi);border-radius:99px;padding:10px 17px;cursor:pointer;transition:all .18s;user-select:none}
+.check-chip{display:inline-flex;align-items:center;gap:6px;font-size:15px;color:rgba(255,255,255,0.85);background:var(--carbon3);border:1px solid var(--border-hi);border-radius:99px;padding:10px 17px;cursor:pointer;transition:all .18s;user-select:none}
 .check-chip input{display:none}
 .check-chip.checked{background:rgba(232,93,32,0.12);border-color:rgba(232,93,32,0.4);color:#fff}
 .check-group.field-error{outline:1px solid rgba(248,113,113,0.6);outline-offset:6px;border-radius:12px}
 .submit-area{margin-top:32px;padding-top:24px;border-top:0.5px solid var(--border)}
-.btn-submit{width:100%;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:18px 28px;border:none;border-radius:var(--radius-md);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
-.btn-submit:hover{background:var(--orange-hot);transform:translateY(-1px)}
-.btn-submit:disabled{background:var(--carbon3);color:var(--text-dim);cursor:default;transform:none}
-.form-note{font-size:13px;color:var(--text-muted);text-align:center;margin-top:12px;line-height:1.6}
+.btn-submit{width:100%;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:20px 28px;border:none;border-radius:var(--radius-md);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-submit:hover{background:var(--orange-hot);transform:translateY(-1px);box-shadow:0 8px 28px rgba(232,93,32,0.3)}
+.btn-submit:disabled{background:var(--carbon3);color:var(--text-dim);cursor:default;transform:none;box-shadow:none}
+.form-note{font-size:13px;color:var(--text-dim);text-align:center;margin-top:12px;line-height:1.6}
 .status-bar{display:none;align-items:center;gap:10px;background:var(--carbon3);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;font-size:13px}
 .status-bar.visible{display:flex}
 .status-bar.loading{border-left:3px solid var(--orange)}
 .status-bar.success{border-left:3px solid var(--green)}
 .status-bar.error{border-left:3px solid #f87171}
 .status-icon{font-size:18px}
-.progress-wrap{display:none;margin-bottom:16px;background:var(--carbon3);border-radius:99px;height:6px;overflow:hidden}
+.progress-wrap{display:none;margin-bottom:16px;background:var(--carbon3);border-radius:99px;height:5px;overflow:hidden}
 .progress-wrap.visible{display:block}
 .progress-bar{height:100%;background:var(--orange);border-radius:99px;transition:width .3s ease;width:0%}
-.success-card{display:none;background:linear-gradient(135deg,rgba(74,222,128,0.07),rgba(74,222,128,0.02));border:0.5px solid rgba(74,222,128,0.2);border-radius:var(--radius-lg);padding:36px 28px;text-align:center;margin-top:24px}
+.success-card{display:none;background:linear-gradient(135deg,rgba(74,222,128,0.07),rgba(74,222,128,0.02));border:0.5px solid rgba(74,222,128,0.2);border-radius:var(--radius-lg);padding:40px 32px;text-align:center;margin-top:24px}
 .success-card.visible{display:block}
-.success-card .check{font-size:48px;margin-bottom:16px}
-.success-card h3{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
-.success-card p{font-size:14px;color:var(--text-muted);line-height:1.65}
-.success-card .countdown{font-size:12px;color:var(--text-dim);margin-top:8px}
-.btn-portal{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--orange);color:#fff;border:none;padding:16px 22px;border-radius:var(--radius-md);font-family:'Barlow Condensed',sans-serif;font-size:18px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;margin-top:20px;text-decoration:none;transition:all .2s}
+.success-card .check{font-size:52px;margin-bottom:18px}
+.success-card h3{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:10px}
+.success-card p{font-size:15px;color:var(--text-muted);line-height:1.7}
+.success-card .countdown{font-size:12px;color:var(--text-dim);margin-top:10px}
+.btn-portal{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--orange);color:#fff;border:none;padding:18px 22px;border-radius:var(--radius-md);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;margin-top:22px;text-decoration:none;transition:all .2s}
 .btn-portal:hover{background:var(--orange-hot)}
-.btn-nuevo{display:inline-flex;align-items:center;gap:8px;background:var(--carbon3);color:#fff;border:0.5px solid var(--border-hi);padding:12px 22px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;margin-top:10px;transition:all .2s;text-align:center;width:100%;justify-content:center}
+.btn-nuevo{display:inline-flex;align-items:center;gap:8px;background:var(--carbon3);color:#fff;border:0.5px solid var(--border-hi);padding:12px 22px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;margin-top:10px;transition:all .2s;width:100%;justify-content:center}
 .btn-nuevo:hover{background:var(--carbon4)}
-@media (max-width:820px){.page-wrap{max-width:600px;padding:28px 20px 70px}}
-@media (max-width:560px){.form-row{grid-template-columns:1fr}.page-wrap{padding:22px 16px 60px}.check-chip{font-size:15px;padding:11px 16px}.form-heading{font-size:clamp(30px,9vw,40px)}}
+
+/* ── FOOTER ─────────────────────────────────────────── */
+footer{background:var(--carbon);border-top:0.5px solid var(--border);padding:28px 24px;text-align:center;font-size:12px;color:var(--text-dim)}
+footer a{color:var(--orange);text-decoration:none}
+
+@media (max-width:700px){
+  .steps{grid-template-columns:1fr}.step{border-radius:0!important}.step:first-child{border-radius:var(--radius-lg) var(--radius-lg) 0 0!important}.step:last-child{border-radius:0 0 var(--radius-lg) var(--radius-lg)!important}
+  .step-arrow{right:50%;top:auto;bottom:-10px;transform:translateX(50%);rotate:90deg}
+  .step:last-child .step-arrow{display:none}
+  .form-row{grid-template-columns:1fr}
+  .hero{padding:60px 20px 56px}
+  .section{padding:56px 20px}
+}
+@media (max-width:440px){.check-chip{font-size:14px;padding:9px 14px}}
 </style>
 </head>
 <body>
 
+<!-- ── TOPBAR ──────────────────────────────────────── -->
 <div class="topbar">
   <div class="topbar-logo">
     <svg width="110" height="28" viewBox="0 0 140 36" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -88,372 +161,433 @@ input[type=file]::file-selector-button{background:var(--carbon4);color:#fff;bord
       <text x="36" y="26" font-family="Arial Narrow,sans-serif" font-size="21" font-weight="700" fill="white" letter-spacing="2">RIDER</text>
       <text x="106" y="26" font-family="Arial Narrow,sans-serif" font-size="21" font-weight="700" fill="#E85D20" letter-spacing="2">A</text>
     </svg>
-    <span class="topbar-badge">Registro Grúa</span>
+    <span class="topbar-badge">Para Grueros</span>
   </div>
-  <div class="topbar-right" id="topbar-date"></div>
+  <div class="topbar-cta">¿Necesitas grúa? <a href="https://gruas.ridera.com.co">Solicitar aquí</a></div>
 </div>
 
-<div class="page-wrap">
-  <div class="form-header">
-    <div class="form-eyebrow">Directorio Ridera · Grúas y asistencia</div>
-    <h1 class="form-heading">Registrar<br><em>grúa.</em></h1>
-    <p class="form-subhead">Servicios de grúa, rescate en ruta y asistencia especializada en motos. Aparece gratis en la plataforma.</p>
+<!-- ── HERO ───────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-eyebrow">Únete a Ridera Grúas · Antioquia</div>
+  <h1 class="hero-headline">
+    ¿Tienes grúa<br>para motos?
+    <em>Trabaja con Ridera.</em>
+  </h1>
+  <p class="hero-sub">Recibe solicitudes de clientes verificados directamente en tu celular. Tú decides cuándo trabajas y cuánto cobras. Registro completamente gratis.</p>
+  <div class="hero-btns">
+    <a href="#registro" class="btn-hero primary">🚛 Registrarme ahora</a>
+    <a href="#como-funciona" class="btn-hero ghost">Cómo funciona</a>
   </div>
+  <div class="hero-proof">
+    <span><span class="dot"></span>Clientes verificados</span>
+    <span><span class="dot"></span>Solicitudes 24/7</span>
+    <span><span class="dot"></span>Sin comisión fija</span>
+    <span><span class="dot"></span>Cobertura Antioquia</span>
+  </div>
+</section>
 
-  <div id="status-grua" class="status-bar">
-    <span class="status-icon"></span>
-    <span class="status-msg"></span>
-  </div>
-  <div id="progress-wrap" class="progress-wrap">
-    <div id="progress-bar" class="progress-bar"></div>
-  </div>
-
-  <!-- ÉXITO -->
-  <div id="success-grua" class="success-card">
-    <div class="check">✅</div>
-    <h3>¡Registro enviado!</h3>
-    <p>Tu información quedó guardada en Ridera.<br>
-       <strong style="color:#fff">Revisamos tu perfil en menos de 48 horas.</strong><br><br>
-       Cuando te aprobemos, <strong style="color:#fff">recibirás un correo</strong> con el enlace para
-       crear tu contraseña y entrar a tu portal de gruero.</p>
-    <div class="countdown" id="countdown-txt"></div>
-    <a class="btn-portal" href="https://gruas.ridera.com.co/login-gruero.html?nuevo=1" id="btn-portal">
-      🔐 Ir al portal de grueros
-    </a>
-    <button class="btn-nuevo" onclick="resetForm()">+ Registrar otra grúa</button>
-  </div>
-
-  <!-- FORMULARIO -->
-  <div id="form-grua-body">
-    <div class="form-section">
-      <div class="form-section-label">01 · Información básica</div>
-      <div class="form-group">
-        <label>Nombre del servicio <span class="req">*</span></label>
-        <input type="text" id="g-nombre" placeholder="Ej: Grúas Moto Colombia · Medellín">
+<!-- ── BENEFITS ───────────────────────────────────── -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-eyebrow">Por qué unirte</div>
+    <h2 class="section-title">6 razones para<br>trabajar con Ridera</h2>
+    <div class="benefits-grid">
+      <div class="benefit-card">
+        <div class="benefit-icon">📲</div>
+        <div class="benefit-title">Solicitudes en tu celular</div>
+        <div class="benefit-desc">Recibe alertas en tiempo real cuando un cliente cerca necesita grúa. Sin llamadas en cadena, sin intermediarios.</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Teléfono principal <span class="req">*</span></label>
-          <input type="tel" id="g-tel" placeholder="+57 300 000 0000">
-        </div>
-        <div class="form-group">
-          <label>WhatsApp (si es diferente)</label>
-          <input type="tel" id="g-wp" placeholder="+57 310 000 0000">
-        </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">💰</div>
+        <div class="benefit-title">Tú pones el precio</div>
+        <div class="benefit-desc">Defines tu tarifa por servicio. Ridera no te cobra comisión fija — acordamos un modelo justo desde el inicio.</div>
       </div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Correo electrónico <span class="req">*</span></label>
-          <input type="email" id="g-email" placeholder="grua@correo.com">
-        </div>
-        <div class="form-group">
-          <label>Instagram</label>
-          <input type="text" id="g-insta" placeholder="@nombre_grua">
-        </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🕐</div>
+        <div class="benefit-title">Trabajas cuando quieres</div>
+        <div class="benefit-desc">Activa o desactiva tu disponibilidad con un solo botón. Tú decides tu horario y zonas de cobertura.</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🔐</div>
+        <div class="benefit-title">Clientes verificados</div>
+        <div class="benefit-desc">Cada solicitud viene de un usuario registrado. Ves la ubicación exacta y el tipo de problema antes de aceptar.</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🗺️</div>
+        <div class="benefit-title">Mapa en tiempo real</div>
+        <div class="benefit-desc">Navega directo a donde está el cliente. El mapa se actualiza mientras te desplazas hacia él.</div>
+      </div>
+      <div class="benefit-card">
+        <div class="benefit-icon">🆓</div>
+        <div class="benefit-title">Registro gratuito</div>
+        <div class="benefit-desc">Créate tu perfil sin costo. Verificamos tu información en 48 horas y quedas activo en la plataforma.</div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="form-section">
-      <div class="form-section-label">02 · Sede base y cobertura</div>
-      <div class="form-row">
-        <div class="form-group">
-          <label>Ciudad / Sede base <span class="req">*</span></label>
-          <select id="g-ciudad">
-            <option value="">Seleccionar...</option>
-            <option>Medellín</option><option>Bello</option><option>Itagüí</option>
-            <option>Envigado</option><option>Sabaneta</option><option>La Estrella</option>
-            <option>Caldas</option><option>Copacabana</option><option>Girardota</option>
-            <option>Barbosa</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Dirección / Sede</label>
-          <input type="text" id="g-direccion" placeholder="Carrera 50 # 12-34">
-        </div>
+<!-- ── STATS BAND ──────────────────────────────────── -->
+<div class="proof-band">
+  <div class="proof-stat-row">
+    <div class="proof-stat">
+      <strong>24 / 7</strong>
+      <span>Solicitudes disponibles</span>
+    </div>
+    <div class="proof-stat">
+      <strong>48h</strong>
+      <span>Aprobación de perfil</span>
+    </div>
+    <div class="proof-stat">
+      <strong>$0</strong>
+      <span>Costo de registro</span>
+    </div>
+    <div class="proof-stat">
+      <strong>100%</strong>
+      <span>Cobertura Antioquia</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── HOW IT WORKS ────────────────────────────────── -->
+<section class="section" id="como-funciona">
+  <div class="section-inner">
+    <div class="section-eyebrow">Proceso</div>
+    <h2 class="section-title">4 pasos para<br>empezar a recibir servicios</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-title">Te registras</div>
+        <div class="step-desc">Llenas el formulario con tu información, flota y cobertura. Toma menos de 5 minutos.</div>
+        <div class="step-arrow">›</div>
       </div>
-      <div class="form-group">
-        <label>Barrios o referencias de cobertura</label>
-        <textarea id="g-cobertura" placeholder="Ej: Robledo, Belén, sectores que conoces bien…" style="min-height:70px;"></textarea>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-title">Te verificamos</div>
+        <div class="step-desc">Revisamos tu perfil en 48 horas y te confirmamos por correo cuando estás activo.</div>
+        <div class="step-arrow">›</div>
       </div>
-      <div class="form-group">
-        <label>Municipios que cubres <span class="req">*</span></label>
-        <div class="check-group" id="g-municipios">
-          <label class="check-chip"><input type="checkbox" value="Medellín"> Medellín</label>
-          <label class="check-chip"><input type="checkbox" value="Bello"> Bello</label>
-          <label class="check-chip"><input type="checkbox" value="Itagüí"> Itagüí</label>
-          <label class="check-chip"><input type="checkbox" value="Envigado"> Envigado</label>
-          <label class="check-chip"><input type="checkbox" value="Sabaneta"> Sabaneta</label>
-          <label class="check-chip"><input type="checkbox" value="La Estrella"> La Estrella</label>
-          <label class="check-chip"><input type="checkbox" value="Caldas"> Caldas</label>
-          <label class="check-chip"><input type="checkbox" value="Copacabana"> Copacabana</label>
-          <label class="check-chip"><input type="checkbox" value="Girardota"> Girardota</label>
-          <label class="check-chip"><input type="checkbox" value="Barbosa"> Barbosa</label>
-        </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-title">Te activamos</div>
+        <div class="step-desc">Creas tu contraseña, entras al portal y activas tu disponibilidad con un botón.</div>
+        <div class="step-arrow">›</div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-title">Primer servicio</div>
+        <div class="step-desc">Recibes tu primera alerta, la aceptas y navegas al cliente. ¡Así de simple!</div>
       </div>
     </div>
+  </div>
+</section>
 
-    <div class="form-section">
-      <div class="form-section-label">03 · Servicio</div>
-      <div class="form-group">
-        <label>Disponibilidad</label>
-        <div class="check-group">
-          <label class="check-chip"><input type="radio" name="g-disponibilidad" value="24/7"> 🟢 24/7</label>
-          <label class="check-chip"><input type="radio" name="g-disponibilidad" value="Horario hábil"> Horario hábil</label>
-          <label class="check-chip"><input type="radio" name="g-disponibilidad" value="Fines de semana"> Fines de semana</label>
+<!-- ── REQUIREMENTS ───────────────────────────────── -->
+<section class="section" style="padding-top:0">
+  <div class="section-inner">
+    <div class="section-eyebrow">Requisitos</div>
+    <h2 class="section-title">¿Qué necesitas<br>para unirte?</h2>
+    <div class="req-grid">
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>Vehículo con rampa</strong><span>Plataforma o grúa apta para motos de cualquier cilindraje</span></div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>Cédula de ciudadanía</strong><span>Verificación de identidad del operador principal</span></div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>Licencia de conducción</strong><span>Categoría acorde al vehículo de remolque</span></div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>SOAT y revisión vigente</strong><span>Documentos del vehículo al día</span></div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>Celular con datos</strong><span>Para recibir alertas y navegar al cliente en tiempo real</span></div>
+      </div>
+      <div class="req-item">
+        <div class="req-check">✓</div>
+        <div class="req-text"><strong>Cobertura en Antioquia</strong><span>Área metropolitana, municipios cercanos o zona rural</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FORM ZONE ───────────────────────────────────── -->
+<div class="form-zone" id="registro">
+  <div class="form-zone-inner">
+
+    <div class="form-zone-header">
+      <p class="section-eyebrow">Registro gratuito</p>
+      <h2 class="form-zone-headline">Regístrate y<br><em>empieza a recibir servicios</em></h2>
+      <p class="form-zone-sub">Completa tu información. Revisamos tu perfil en 48 horas y te avisamos por correo cuando estés activo.</p>
+    </div>
+
+    <div id="status-grua" class="status-bar">
+      <span class="status-icon"></span>
+      <span class="status-msg"></span>
+    </div>
+    <div id="progress-wrap" class="progress-wrap">
+      <div id="progress-bar" class="progress-bar"></div>
+    </div>
+
+    <!-- ÉXITO -->
+    <div id="success-grua" class="success-card">
+      <div class="check">✅</div>
+      <h3>¡Registro enviado!</h3>
+      <p>Tu información quedó guardada en Ridera.<br>
+         <strong style="color:#fff">Revisamos tu perfil en menos de 48 horas.</strong><br><br>
+         Cuando te aprobemos, <strong style="color:#fff">recibirás un correo</strong> con el enlace para crear tu contraseña y entrar a tu portal de gruero.</p>
+      <div class="countdown" id="countdown-txt"></div>
+      <a class="btn-portal" href="https://gruas.ridera.com.co/login-gruero.html?nuevo=1" id="btn-portal">
+        🔐 Ir al portal de grueros
+      </a>
+      <button class="btn-nuevo" onclick="resetForm()">+ Registrar otra grúa</button>
+    </div>
+
+    <!-- FORMULARIO -->
+    <form id="form-grua-body" name="registro-gruero" method="POST" data-netlify="true" onsubmit="return false">
+      <input type="hidden" name="form-name" value="registro-gruero">
+
+      <div class="form-section">
+        <div class="form-section-label">01 · Información básica</div>
+        <div class="form-group">
+          <label>Nombre del servicio <span class="req">*</span></label>
+          <input type="text" id="g-nombre" name="nombre" placeholder="Ej: Grúas Moto Express · Medellín">
         </div>
-      </div>
-      <div class="form-group">
-        <label>Tiempo promedio de llegada</label>
-        <select id="g-tiempo">
-          <option value="">Seleccionar...</option>
-          <option>Menos de 30 min (zona urbana)</option>
-          <option>30 – 60 min</option>
-          <option>60 – 90 min</option>
-          <option>Más de 90 min (rutas lejanas)</option>
-          <option>Variable según ubicación</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Servicios que ofrece</label>
-        <div class="check-group" id="g-servicios">
-          <label class="check-chip"><input type="checkbox" value="Grúa plataforma"> 🚛 Grúa plataforma</label>
-          <label class="check-chip"><input type="checkbox" value="Asistencia en ruta"> 🔧 Asistencia en ruta</label>
-          <label class="check-chip"><input type="checkbox" value="Cambio de llanta"> 🔄 Cambio de llanta</label>
-          <label class="check-chip"><input type="checkbox" value="Gasolina de emergencia"> ⛽ Gasolina emergencia</label>
-          <label class="check-chip"><input type="checkbox" value="Batería/Arranque"> 🔋 Batería / Arranque</label>
-          <label class="check-chip"><input type="checkbox" value="Traslado largo"> 🗺️ Traslado largo</label>
-          <label class="check-chip"><input type="checkbox" value="Custodia"> 🔒 Custodia moto</label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Acepta motos de estas marcas / peso</label>
-        <div class="check-group" id="g-acepta">
-          <label class="check-chip"><input type="checkbox" value="Cualquier moto"> Cualquier moto</label>
-          <label class="check-chip"><input type="checkbox" value="Motos grandes 500cc+"> 500cc+</label>
-          <label class="check-chip"><input type="checkbox" value="Adventure / Doble propósito"> Adventure</label>
-          <label class="check-chip"><input type="checkbox" value="Motos +300kg"> +300kg</label>
-          <label class="check-chip"><input type="checkbox" value="Sidecar / trike"> Sidecar / trike</label>
-        </div>
-      </div>
-      <div class="form-group">
-        <label>Precio aprox (referencia)</label>
-        <div class="form-row" style="margin-bottom:0">
-          <div class="form-group" style="margin-bottom:0">
-            <label style="font-size:11px;color:var(--text-dim)">Desde (COP)</label>
-            <input type="number" id="g-precio-desde" placeholder="80000">
+        <div class="form-row">
+          <div class="form-group">
+            <label>WhatsApp <span class="req">*</span></label>
+            <input type="tel" id="g-tel" name="telefono" placeholder="+57 300 000 0000">
           </div>
-          <div class="form-group" style="margin-bottom:0">
-            <label style="font-size:11px;color:var(--text-dim)">Hasta (COP)</label>
-            <input type="number" id="g-precio-hasta" placeholder="300000">
+          <div class="form-group">
+            <label>Correo electrónico <span class="req">*</span></label>
+            <input type="email" id="g-email" name="email" placeholder="grua@correo.com">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ciudad / Sede base <span class="req">*</span></label>
+            <select id="g-ciudad" name="ciudad">
+              <option value="">Seleccionar...</option>
+              <option>Medellín</option><option>Bello</option><option>Itagüí</option>
+              <option>Envigado</option><option>Sabaneta</option><option>La Estrella</option>
+              <option>Caldas</option><option>Copacabana</option><option>Girardota</option>
+              <option>Barbosa</option><option>Otro municipio Antioquia</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Tipo de vehículo</label>
+            <select id="g-tipo-vehiculo" name="tipo_vehiculo">
+              <option value="">Seleccionar...</option>
+              <option>Plataforma para motos</option>
+              <option>Grúa gancho + cunas</option>
+              <option>Remolque / trailer</option>
+              <option>Camioneta con rampa</option>
+              <option>Más de un tipo</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Placa del vehículo</label>
+            <input type="text" id="g-placa" name="placa" placeholder="ABC-123" style="text-transform:uppercase">
+          </div>
+          <div class="form-group">
+            <label>Instagram</label>
+            <input type="text" id="g-insta" name="instagram" placeholder="@nombre_grua">
           </div>
         </div>
       </div>
-    </div>
 
-    <div class="form-section">
-      <div class="form-section-label">04 · Flota y experiencia</div>
-      <div class="form-row">
+      <div class="form-section">
+        <div class="form-section-label">02 · Cobertura</div>
         <div class="form-group">
-          <label>Número de grúas disponibles</label>
-          <select id="g-flota">
-            <option value="">Seleccionar...</option>
-            <option>1 grúa</option><option>2 – 3 grúas</option>
-            <option>4 – 6 grúas</option><option>Más de 6</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Años de experiencia</label>
-          <select id="g-experiencia">
-            <option value="">Seleccionar...</option>
-            <option>Menos de 2 años</option><option>2 – 5 años</option>
-            <option>5 – 10 años</option><option>Más de 10 años</option>
-          </select>
+          <label>Municipios que cubres <span class="req">*</span></label>
+          <div class="check-group" id="g-municipios">
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Medellín"> Medellín</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Bello"> Bello</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Itagüí"> Itagüí</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Envigado"> Envigado</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Sabaneta"> Sabaneta</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="La Estrella"> La Estrella</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Caldas"> Caldas</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Copacabana"> Copacabana</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Girardota"> Girardota</label>
+            <label class="check-chip"><input type="checkbox" name="municipios" value="Barbosa"> Barbosa</label>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="form-section">
-      <div class="form-section-label">05 · Descripción</div>
-      <div class="form-group">
-        <label>Descripción del servicio</label>
-        <textarea id="g-descripcion" placeholder="¿Qué los diferencia? Experiencia con motos pesadas, rutas específicas…"></textarea>
-      </div>
-      <div class="form-group">
-        <label>Contacto en el local</label>
-        <input type="text" id="g-contacto" placeholder="Nombre de quien atendió">
-      </div>
-    </div>
-
-    <div class="form-section">
-      <div class="form-section-label">06 · Foto y logo (opcional)</div>
-      <div class="form-row">
+      <div class="form-section">
+        <div class="form-section-label">03 · Disponibilidad y servicios</div>
         <div class="form-group">
-          <label>Foto de la grúa</label>
-          <input type="file" id="g-foto" accept="image/*">
-          <span class="file-hint">Una foto ayuda a que los clientes confíen.</span>
+          <label>Disponibilidad</label>
+          <div class="check-group">
+            <label class="check-chip"><input type="radio" name="disponibilidad" value="24/7"> 🟢 24/7</label>
+            <label class="check-chip"><input type="radio" name="disponibilidad" value="Horario hábil"> Horario hábil</label>
+            <label class="check-chip"><input type="radio" name="disponibilidad" value="Fines de semana"> Fines de semana</label>
+          </div>
         </div>
         <div class="form-group">
-          <label>Logo de la empresa</label>
-          <input type="file" id="g-logo" accept="image/*">
-          <span class="file-hint">Si no tienes, déjalo vacío.</span>
+          <label>Servicios que ofreces</label>
+          <div class="check-group" id="g-servicios">
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Grúa plataforma"> 🚛 Grúa plataforma</label>
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Asistencia en ruta"> 🔧 Asistencia en ruta</label>
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Cambio de llanta"> 🔄 Cambio de llanta</label>
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Gasolina emergencia"> ⛽ Gasolina emergencia</label>
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Batería/Arranque"> 🔋 Batería / Arranque</label>
+            <label class="check-chip"><input type="checkbox" name="servicios" value="Traslado largo"> 🗺️ Traslado largo</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Mensaje adicional (opcional)</label>
+          <textarea id="g-notas" name="notas" placeholder="Cuéntanos algo sobre tu servicio, experiencia o zonas específicas que cubres…"></textarea>
         </div>
       </div>
-    </div>
 
-    <div class="submit-area">
-      <button class="btn-submit" id="btn-grua" onclick="submitGrua()">
-        💾 Registrar grúa en Ridera
-      </button>
-      <div class="form-note">🔒 Verificación manual en 48h · Recibirás un correo cuando tu perfil esté activo</div>
-    </div>
-  </div><!-- /form-grua-body -->
-</div><!-- /page-wrap -->
+      <div class="submit-area">
+        <button class="btn-submit" id="btn-grua" onclick="submitGrua()">
+          🚛 Quiero trabajar con Ridera
+        </button>
+        <div class="form-note">🔒 Verificación en 48 h · Recibirás un correo cuando tu perfil esté activo · Completamente gratis</div>
+      </div>
+    </form>
+
+  </div>
+</div>
+
+<footer>
+  <p>Ridera Grúas · <a href="https://gruas.ridera.com.co">gruas.ridera.com.co</a> · Medellín, Antioquia · Colombia</p>
+</footer>
 
 <script>
 const SUPABASE_FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/registrar-gruero';
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxwFz8YUBWv4fdTJFR5Y8B62y0j2A1zhmPyeqBH1x9cH8VKvD514kJ8u1YFld7a4L97QA/exec';
 
-document.getElementById('topbar-date').textContent =
-  new Date().toLocaleDateString('es-CO',{weekday:'short',day:'numeric',month:'short'});
-
-document.querySelectorAll('.check-chip').forEach(chip=>{
-  const input=chip.querySelector('input');
-  if(!input)return;
-  if(input.checked)chip.classList.add('checked');
-  chip.addEventListener('click',()=>{
-    setTimeout(()=>{
-      if(input.type==='radio'){
-        document.querySelectorAll(`input[name="${input.name}"]`).forEach(r=>r.closest('.check-chip').classList.remove('checked'));
+document.querySelectorAll('.check-chip').forEach(chip => {
+  const input = chip.querySelector('input');
+  if (!input) return;
+  if (input.checked) chip.classList.add('checked');
+  chip.addEventListener('click', () => {
+    setTimeout(() => {
+      if (input.type === 'radio') {
+        document.querySelectorAll(`input[name="${input.name}"]`).forEach(r => r.closest('.check-chip').classList.remove('checked'));
       }
-      chip.classList.toggle('checked',input.checked);
-    },0);
+      chip.classList.toggle('checked', input.checked);
+    }, 0);
   });
 });
 
-function getChecked(id){const v=[];document.querySelectorAll(`#${id} input:checked`).forEach(cb=>v.push(cb.value));return v.join(', ')}
-function getRadio(name){const r=document.querySelector(`input[name="${name}"]:checked`);return r?r.value:''}
-function setStatus(state,msg){const b=document.getElementById('status-grua');b.className='status-bar visible '+state;const ic={loading:'⏳',success:'✅',error:'❌'};b.querySelector('.status-icon').textContent=ic[state]||'';b.querySelector('.status-msg').textContent=msg}
-function clearStatus(){document.getElementById('status-grua').className='status-bar'}
-function setProgress(pct){const w=document.getElementById('progress-wrap'),b=document.getElementById('progress-bar');if(pct>0){w.classList.add('visible');b.style.width=pct+'%'}else{w.classList.remove('visible');b.style.width='0%'}}
+function getChecked(id) { const v = []; document.querySelectorAll(`#${id} input:checked`).forEach(cb => v.push(cb.value)); return v.join(', '); }
+function getRadio(name) { const r = document.querySelector(`input[name="${name}"]:checked`); return r ? r.value : ''; }
+function setStatus(state, msg) { const b = document.getElementById('status-grua'); b.className = 'status-bar visible ' + state; const ic = { loading:'⏳', success:'✅', error:'❌' }; b.querySelector('.status-icon').textContent = ic[state] || ''; b.querySelector('.status-msg').textContent = msg; }
+function clearStatus() { document.getElementById('status-grua').className = 'status-bar'; }
+function setProgress(pct) { const w = document.getElementById('progress-wrap'), b = document.getElementById('progress-bar'); if (pct > 0) { w.classList.add('visible'); b.style.width = pct + '%'; } else { w.classList.remove('visible'); b.style.width = '0%'; } }
 
-function validate(){
-  const req=[{id:'g-nombre',label:'Nombre'},{id:'g-tel',label:'Teléfono'},{id:'g-ciudad',label:'Ciudad'},{id:'g-email',label:'Correo'}];
-  let err=false;
-  req.forEach(f=>{const el=document.getElementById(f.id);if(!el)return;el.classList.remove('field-error');if(!el.value.trim()){el.classList.add('field-error');err=true;}});
-  const muniCount=document.querySelectorAll('#g-municipios input:checked').length;
-  const muniBox=document.getElementById('g-municipios');
-  muniBox.classList.toggle('field-error',muniCount===0);
-  if(muniCount===0)err=true;
-  if(err){setStatus('error','Completa los campos obligatorios *');document.querySelector('.field-error')?.scrollIntoView({behavior:'smooth',block:'center'});return false;}
+function validate() {
+  const req = [
+    { id:'g-nombre', label:'Nombre' },
+    { id:'g-tel',    label:'WhatsApp' },
+    { id:'g-email',  label:'Correo' },
+    { id:'g-ciudad', label:'Ciudad' }
+  ];
+  let err = false;
+  req.forEach(f => {
+    const el = document.getElementById(f.id);
+    if (!el) return;
+    el.classList.remove('field-error');
+    if (!el.value.trim()) { el.classList.add('field-error'); err = true; }
+  });
+  const muniCount = document.querySelectorAll('#g-municipios input:checked').length;
+  const muniBox = document.getElementById('g-municipios');
+  muniBox.classList.toggle('field-error', muniCount === 0);
+  if (muniCount === 0) err = true;
+  if (err) {
+    setStatus('error', 'Completa los campos obligatorios *');
+    document.querySelector('.field-error')?.scrollIntoView({ behavior:'smooth', block:'center' });
+    return false;
+  }
   return true;
 }
 
-function collectData(){
-  return{
-    tipo:'Grúa',timestamp:new Date().toLocaleString('es-CO'),
-    nombre:document.getElementById('g-nombre').value.trim(),
-    telefono:document.getElementById('g-tel').value.trim(),
-    whatsapp:document.getElementById('g-wp').value.trim(),
-    email:document.getElementById('g-email').value.trim(),
-    instagram:document.getElementById('g-insta').value.trim(),
-    ciudad:document.getElementById('g-ciudad').value,
-    direccion:document.getElementById('g-direccion').value.trim(),
-    cobertura:document.getElementById('g-cobertura').value.trim(),
-    municipios:getChecked('g-municipios'),
-    disponibilidad:getRadio('g-disponibilidad'),
-    tiempo_llegada:document.getElementById('g-tiempo').value,
-    servicios:getChecked('g-servicios'),
-    acepta:getChecked('g-acepta'),
-    precio_desde:document.getElementById('g-precio-desde').value,
-    precio_hasta:document.getElementById('g-precio-hasta').value,
-    flota:document.getElementById('g-flota').value,
-    experiencia:document.getElementById('g-experiencia').value,
-    descripcion:document.getElementById('g-descripcion').value.trim(),
-    contacto:document.getElementById('g-contacto').value.trim(),
+function collectData() {
+  return {
+    tipo: 'Grúa', timestamp: new Date().toLocaleString('es-CO'),
+    nombre:        document.getElementById('g-nombre').value.trim(),
+    telefono:      document.getElementById('g-tel').value.trim(),
+    whatsapp:      document.getElementById('g-tel').value.trim(),
+    email:         document.getElementById('g-email').value.trim(),
+    instagram:     document.getElementById('g-insta').value.trim(),
+    ciudad:        document.getElementById('g-ciudad').value,
+    tipo_vehiculo: document.getElementById('g-tipo-vehiculo').value,
+    placa:         document.getElementById('g-placa').value.trim().toUpperCase(),
+    municipios:    getChecked('g-municipios'),
+    disponibilidad:getRadio('disponibilidad'),
+    servicios:     getChecked('g-servicios'),
+    notas:         document.getElementById('g-notas').value.trim(),
   };
 }
 
-function readAndCompress(file,maxDim,quality){
-  return new Promise(resolve=>{
-    if(!file){resolve(null);return;}
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const img=new Image();
-      img.onload=()=>{
-        let w=img.width,h=img.height;
-        if(w>maxDim||h>maxDim){const r=Math.min(maxDim/w,maxDim/h);w=Math.round(w*r);h=Math.round(h*r);}
-        const c=document.createElement('canvas');c.width=w;c.height=h;
-        c.getContext('2d').drawImage(img,0,0,w,h);
-        try{resolve(c.toDataURL('image/jpeg',quality));}catch(_){resolve(null);}
-      };
-      img.onerror=()=>resolve(null);
-      img.src=e.target.result;
-    };
-    reader.onerror=()=>resolve(null);
-    reader.readAsDataURL(file);
-  });
-}
-
-async function submitGrua(){
-  if(!validate())return;
-  const btn=document.getElementById('btn-grua');
-  btn.disabled=true;btn.textContent='⏳ Registrando…';
-  setStatus('loading','Guardando datos…');setProgress(20);
-  try{
-    const data=collectData();
-    setProgress(35);setStatus('loading','Procesando imágenes…');
-    const fotoFile=document.getElementById('g-foto').files[0];
-    const logoFile=document.getElementById('g-logo').files[0];
-    const foto_base64=await readAndCompress(fotoFile,1000,0.8);
-    const logo_base64=await readAndCompress(logoFile,600,0.85);
-    setProgress(60);setStatus('loading','Creando perfil en Ridera…');
-    try{
-      const r=await fetch(SUPABASE_FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({...data,foto_base64,logo_base64})});
-      const j=await r.json().catch(()=>({}));
-      if(j&&j.foto_url)data.foto_url=j.foto_url;
-      if(j&&j.logo_url)data.logo_url=j.logo_url;
-    }catch(e){console.warn('Supabase:',e);}
-    setProgress(85);
-    if(SHEETS_URL){
-      fetch(SHEETS_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data),mode:'no-cors'}).catch(()=>{});
+async function submitGrua() {
+  if (!validate()) return;
+  const btn = document.getElementById('btn-grua');
+  btn.disabled = true; btn.textContent = '⏳ Enviando…';
+  setStatus('loading', 'Guardando datos…'); setProgress(25);
+  try {
+    const data = collectData();
+    setProgress(50); setStatus('loading', 'Creando perfil en Ridera…');
+    try {
+      await fetch(SUPABASE_FN_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+    } catch(e) { console.warn('Supabase:', e); }
+    setProgress(80);
+    if (SHEETS_URL) {
+      fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data), mode:'no-cors' }).catch(() => {});
     }
+    // Also submit to Netlify
+    try {
+      const fd = new FormData(document.getElementById('form-grua-body'));
+      Object.entries(data).forEach(([k,v]) => { if (!fd.has(k)) fd.set(k, v); });
+      await fetch('/', { method:'POST', body:fd });
+    } catch(e) { console.warn('Netlify:', e); }
     setProgress(100);
-    setTimeout(()=>{setProgress(0);showSuccess();},500);
-  }catch(err){
-    setStatus('error','⚠️ Error al enviar. Intenta de nuevo.');
-    btn.disabled=false;btn.textContent='💾 Registrar grúa en Ridera';
+    setTimeout(() => { setProgress(0); showSuccess(); }, 400);
+  } catch(err) {
+    setStatus('error', '⚠️ Error al enviar. Intenta de nuevo.');
+    btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera';
     setProgress(0);
   }
 }
 
-let countdown=null;
-function showSuccess(){
+let countdown = null;
+function showSuccess() {
   clearStatus();
-  document.getElementById('form-grua-body').style.display='none';
+  document.getElementById('form-grua-body').style.display = 'none';
   document.getElementById('success-grua').classList.add('visible');
-  window.scrollTo({top:0,behavior:'smooth'});
-  // Cuenta regresiva 10s → portal
-  let s=10;
-  const txt=document.getElementById('countdown-txt');
-  txt.textContent=`Redirigiendo al portal en ${s} segundos…`;
-  countdown=setInterval(()=>{
+  window.scrollTo({ top:0, behavior:'smooth' });
+  let s = 10;
+  const txt = document.getElementById('countdown-txt');
+  txt.textContent = `Redirigiendo al portal en ${s} segundos…`;
+  countdown = setInterval(() => {
     s--;
-    if(s<=0){clearInterval(countdown);window.location.href='https://gruas.ridera.com.co/login-gruero.html?nuevo=1';}
-    else{txt.textContent=`Redirigiendo al portal en ${s} segundos…`;}
-  },1000);
+    if (s <= 0) { clearInterval(countdown); window.location.href = 'https://gruas.ridera.com.co/login-gruero.html?nuevo=1'; }
+    else { txt.textContent = `Redirigiendo al portal en ${s} segundos…`; }
+  }, 1000);
 }
 
-function resetForm(){
-  if(countdown)clearInterval(countdown);
-  document.getElementById('form-grua-body').style.display='';
-  document.querySelectorAll('input[type=text],input[type=tel],input[type=email],input[type=number],textarea').forEach(el=>{el.value='';el.classList.remove('field-error');});
-  document.querySelectorAll('select').forEach(el=>el.selectedIndex=0);
-  document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(cb=>cb.checked=false);
-  document.querySelectorAll('.check-chip').forEach(c=>c.classList.remove('checked'));
+function resetForm() {
+  if (countdown) clearInterval(countdown);
+  document.getElementById('form-grua-body').style.display = '';
+  document.querySelectorAll('input[type=text],input[type=tel],input[type=email],textarea').forEach(el => { el.value = ''; el.classList.remove('field-error'); });
+  document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
+  document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(cb => cb.checked = false);
+  document.querySelectorAll('.check-chip').forEach(c => c.classList.remove('checked'));
   document.getElementById('success-grua').classList.remove('visible');
-  document.getElementById('countdown-txt').textContent='';
-  const btn=document.getElementById('btn-grua');btn.disabled=false;btn.textContent='💾 Registrar grúa en Ridera';
-  clearStatus();window.scrollTo({top:0,behavior:'smooth'});
+  document.getElementById('countdown-txt').textContent = '';
+  const btn = document.getElementById('btn-grua'); btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera';
+  clearStatus(); window.scrollTo({ top:0, behavior:'smooth' });
 }
 </script>
 </body>
