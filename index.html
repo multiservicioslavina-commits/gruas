@@ -351,6 +351,13 @@
         loadGruerosCerca($("#municipio").value, ins.id);
         // Fire push notifications to nearby grueros (fire-and-forget)
         const muni = $("#municipio").value || '';
+        // WhatsApp confirmation to client
+        fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/enviar-confirmacion', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-webhook-secret': 'rid3ra_whk_9f2a7c1e8b' },
+          body: JSON.stringify({ record: { id: ins.id, cliente_nombre: nombre, cliente_telefono: tel, ubicacion: ubic } }),
+        }).catch(() => {});
+        // Push notifications to nearby grueros
         fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/send-push', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json',
