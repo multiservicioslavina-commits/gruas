@@ -5,6 +5,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
+const OPENAI_KEY   = Deno.env.get("OPENAI_API_KEY") ?? "";
 const SB_URL       = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY       = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GRAPH        = "https://graph.facebook.com/v25.0";
@@ -456,6 +457,85 @@ async function handleRegistration(from: string, message: string, conv: { state: 
   return null;
 }
 
+// ─── Audio: descargar media de WhatsApp ────────────────────────
+async function downloadWhatsAppMedia(mediaId: string): Promise<Uint8Array> {
+  const metaRes = await fetch(`${GRAPH}/${mediaId}`, {
+    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
+  });
+  const meta = await metaRes.json();
+  const audioRes = await fetch(meta.url, {
+    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
+  });
+  return new Uint8Array(await audioRes.arrayBuffer());
+}
+
+// ─── Audio: transcribir con Whisper ────────────────────────────
+async function transcribeAudio(audioBytes: Uint8Array, mimeType: string): Promise<string> {
+  const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "ogg";
+  const form = new FormData();
+  form.append("file", new Blob([audioBytes], { type: mimeType }), `audio.${ext}`);
+  form.append("model", "whisper-1");
+  form.append("language", "es");
+
+  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${OPENAI_KEY}` },
+    body: form,
+  });
+  const data = await res.json();
+  return data?.text || "";
+}
+
+// ─── Audio: texto a voz con OpenAI TTS ─────────────────────────
+async function textToSpeech(text: string): Promise<Uint8Array> {
+  const res = await fetch("https://api.openai.com/v1/audio/speech", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${OPENAI_KEY}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      model: "tts-1",
+      voice: "nova",
+      input: text,
+      response_format: "opus",
+    }),
+  });
+  return new Uint8Array(await res.arrayBuffer());
+}
+
+// ─── Audio: subir media y enviar nota de voz por WhatsApp ──────
+async function sendWhatsAppAudio(to: string, audioBytes: Uint8Array): Promise<any> {
+  const form = new FormData();
+  form.append("messaging_product", "whatsapp");
+  form.append("type", "audio/ogg; codecs=opus");
+  form.append("file", new Blob([audioBytes], { type: "audio/ogg; codecs=opus" }), "rita.ogg");
+
+  const uploadRes = await fetch(`${GRAPH}/${RITA_PHONE}/media`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
+    body: form,
+  });
+  const uploadData = await uploadRes.json();
+  const mediaId = uploadData?.id;
+  if (!mediaId) throw new Error(`Media upload failed: ${JSON.stringify(uploadData)}`);
+
+  const sendRes = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${WA_TOKEN}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      to,
+      type: "audio",
+      audio: { id: mediaId },
+    }),
+  });
+  return sendRes.json();
+}
+
 // ─── WhatsApp send ──────────────────────────────────────────────
 async function sendWhatsApp(to: string, text: string): Promise<any> {
   const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
@@ -499,12 +579,39 @@ Deno.serve(async (req: Request) => {
       const change = entry?.changes?.[0]?.value;
       const msg = change?.messages?.[0];
 
-      if (!msg || !msg.text?.body) {
+      if (!msg) {
         return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
       }
 
       const from = msg.from || "";
-      const message = msg.text.body || "";
+      const isAudio = msg.type === "audio";
+      let message = "";
+      let respondWithVoice = false;
+
+      if (isAudio && msg.audio) {
+        if (!OPENAI_KEY) {
+          await sendWhatsApp(from, "Parce, por ahora no puedo escuchar audios 🎧 ¿Me lo escribes?");
+          return new Response(JSON.stringify({ ok: true, skip: "no_openai_key" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+        try {
+          const audioBytes = await downloadWhatsAppMedia(msg.audio.id);
+          const mimeType = msg.audio.mime_type || "audio/ogg";
+          message = await transcribeAudio(audioBytes, mimeType);
+          respondWithVoice = true;
+        } catch (e) {
+          console.error("Transcription error:", e);
+          await sendWhatsApp(from, "No pude escuchar ese audio 😅 ¿Me lo mandas de nuevo o me escribes?");
+          return new Response(JSON.stringify({ ok: true, error: "transcription_failed" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+        if (!message.trim()) {
+          await sendWhatsApp(from, "Uy, no pillé qué dijiste en el audio 🤔 ¿Me lo repites?");
+          return new Response(JSON.stringify({ ok: true, skip: "empty_transcription" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+      } else if (msg.text?.body) {
+        message = msg.text.body;
+      } else {
+        return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
 
       // Guardar mensaje del usuario
       await saveMessage(from, "user", message);
@@ -515,7 +622,14 @@ Deno.serve(async (req: Request) => {
         const regReply = await handleRegistration(from, message, conv);
         if (regReply) {
           await saveMessage(from, "assistant", regReply);
-          await sendWhatsApp(from, regReply);
+          if (respondWithVoice && OPENAI_KEY) {
+            try {
+              const speechBytes = await textToSpeech(regReply);
+              await sendWhatsAppAudio(from, speechBytes);
+            } catch { await sendWhatsApp(from, regReply); }
+          } else {
+            await sendWhatsApp(from, regReply);
+          }
           return new Response(JSON.stringify({ ok: true, flow: "registration" }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
       }
@@ -526,9 +640,16 @@ Deno.serve(async (req: Request) => {
         const riderCheck = await getRiderContext(from);
         if (!riderCheck?.encontrado) {
           await setConvState(from, "waiting_name", {});
-          const reply = "¡Dale! Vamos a registrarte para darte info personalizada de tu moto 🏍️ ¿Cómo te llamas?";
-          await saveMessage(from, "assistant", reply);
-          await sendWhatsApp(from, reply);
+          const regStartReply = "¡Dale! Vamos a registrarte para darte info personalizada de tu moto 🏍️ ¿Cómo te llamas?";
+          await saveMessage(from, "assistant", regStartReply);
+          if (respondWithVoice && OPENAI_KEY) {
+            try {
+              const speechBytes = await textToSpeech(regStartReply);
+              await sendWhatsAppAudio(from, speechBytes);
+            } catch { await sendWhatsApp(from, regStartReply); }
+          } else {
+            await sendWhatsApp(from, regStartReply);
+          }
           return new Response(JSON.stringify({ ok: true, flow: "start_registration" }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
       }
@@ -556,7 +677,18 @@ Deno.serve(async (req: Request) => {
       // Guardar respuesta de Rita
       await saveMessage(from, "assistant", reply);
 
-      const waResult = await sendWhatsApp(from, reply);
+      let waResult;
+      if (respondWithVoice && OPENAI_KEY) {
+        try {
+          const speechBytes = await textToSpeech(reply);
+          waResult = await sendWhatsAppAudio(from, speechBytes);
+        } catch (e) {
+          console.error("TTS/audio send error:", e);
+          waResult = await sendWhatsApp(from, reply);
+        }
+      } else {
+        waResult = await sendWhatsApp(from, reply);
+      }
 
       return new Response(JSON.stringify({ ok: true, wa: waResult }), {
         status: 200,
