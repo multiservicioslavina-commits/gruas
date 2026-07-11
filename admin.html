@@ -318,6 +318,9 @@ function esc(x) {
   return (x == null ? '' : String(x)).replace(/[&<>"]/g,
     c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
+function jsq(x) {
+  return (x == null ? '' : String(x)).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
 
 let solStatsLoaded = false;
 
@@ -441,7 +444,7 @@ async function loadPendingDispatch() {
       ${s.municipio ? `<span class="pend-muni">📍 ${esc(s.municipio)}</span>` : ''}
       <div class="pend-ubic">${esc(s.ubicacion||'Sin ubicación')}</div>
       <div class="pend-actions">
-        <button class="btn-dispatch" onclick="toggleDespacho('${s.id}','${esc(s.municipio||'')}')">
+        <button class="btn-dispatch" onclick="toggleDespacho('${jsq(s.id)}','${jsq(s.municipio||'')}')">
           👥 Ver grueros disponibles
         </button>
         <a class="btn-dispatch" style="text-decoration:none" href="/aceptar?s=${s.id}" target="_blank">
@@ -541,6 +544,8 @@ async function reloadList() {
     renderStats();
     renderTable();
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+    const sel = document.getElementById('grueroSelect');
+    if (sel) sel.dataset.loaded = '';
   }
 }
 
@@ -623,9 +628,9 @@ function renderTable() {
       <td class="tel">${fecha}</td>
       <td>
         <div class="actions-cell">
-          ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${esc(g.id)}','${esc(g.nombre||'')}','${esc(g.email||'')}',this)">✓ Aprobar</button>` : ''}
-          ${apro  ? `<button class="act-btn" onclick="toggleDisp('${esc(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
-          <button class="act-btn del" onclick="doDelete('${esc(g.id)}','${esc(g.nombre||'')}',this)">Eliminar</button>
+          ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
+          ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
+          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">Eliminar</button>
         </div>
       </td>
     </tr>`;
