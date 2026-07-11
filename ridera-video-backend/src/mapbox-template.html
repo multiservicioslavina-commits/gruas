@@ -600,18 +600,19 @@
       document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
       document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-      // ── LEAD CAM (cámara ADELANTE del piloto, mirando hacia atrás) ────
-      // Estilo drone cinematográfico: ves al piloto acercándose con la
-      // ruta naranja creciendo detrás de él.
+      // ── CHASE CAM (cámara DETRÁS del piloto, mirando ADELANTE) ────
       const dirBearing = bearingAlong(riderDist);
       const smoothBearing = lerpBearing(currentBearing, dirBearing, 0.10);
       currentBearing = smoothBearing;
 
-      // Posición: CAM_BACK metros ADELANTE del piloto en su dirección
-      const camAheadDist = riderDist + CAM_BACK;
-      const camLngLat = camAheadDist <= totalDist
-        ? pointAlong(camAheadDist)
-        : destination(coords[coords.length - 1], smoothBearing, camAheadDist - totalDist);
+      // Posición: CAM_BACK metros DETRÁS del piloto
+      const camBehindDist = Math.max(0, riderDist - CAM_BACK);
+      const camLngLat = pointAlong(camBehindDist);
+
+      // Punto de mira: un tramo ADELANTE del piloto en la ruta
+      const LOOK_AHEAD = CAM_BACK * 0.6;
+      const lookDist = Math.min(riderDist + LOOK_AHEAD, totalDist);
+      const lookPt = pointAlong(lookDist);
 
       // Altitud: terreno bajo la cámara + altura de vuelo (con boost inicial
       // y final para abrir el plano)
@@ -632,7 +633,7 @@
       camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
         { lng: smCamPos[0], lat: smCamPos[1] }, finalAlt
       );
-      camera.lookAtPoint({ lng: rider[0], lat: rider[1] });
+      camera.lookAtPoint({ lng: lookPt[0], lat: lookPt[1] });
       map.setFreeCameraOptions(camera);
       badgesOn = true;
 
