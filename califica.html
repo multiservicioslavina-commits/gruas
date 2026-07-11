@@ -100,11 +100,13 @@ async function enviar(){
 }
 function gracias(){
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isAndroid = /android/i.test(navigator.userAgent);
   const iosHint = isIos
-    ? `<p class="ios-hint">En Safari toca <b>Compartir</b> → <b>"Añadir a pantalla de inicio"</b></p>`
+    ? `<p class="ios-hint">En Safari toca <b>Compartir ↑</b> → <b>"Añadir a pantalla de inicio"</b></p>`
     : ``;
+  // Android: mostrar botón siempre; si no hay prompt nativo, dar instrucción manual
   const installBtn = (!isIos)
-    ? `<button class="app-btn" id="installBtn" onclick="installPwa()" style="display:none">+ Agregar a inicio</button>`
+    ? `<button class="app-btn" id="installBtn" onclick="installPwa()">📲 Agregar a inicio</button>`
     : ``;
   document.getElementById('content').innerHTML = `
     <div class="big-msg">
@@ -118,19 +120,25 @@ function gracias(){
       <div class="app-btns">${installBtn}</div>
       ${iosHint}
     </div>`;
-  // Mostrar botón si el navegador ya tiene el prompt guardado
-  if (deferredPrompt) {
-    const b = document.getElementById('installBtn');
-    if (b) b.style.display = 'inline-flex';
-  }
 }
 async function installPwa(){
-  if (!deferredPrompt) return;
-  deferredPrompt.prompt();
-  await deferredPrompt.userChoice;
-  deferredPrompt = null;
-  const b = document.getElementById('installBtn');
-  if (b) b.style.display = 'none';
+  if (deferredPrompt) {
+    // Prompt nativo de Chrome disponible
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    if (outcome === 'accepted') {
+      const b = document.getElementById('installBtn');
+      if (b) { b.textContent = '✓ ¡Agregada!'; b.disabled = true; }
+    }
+  } else {
+    // Sin prompt nativo: instrucción manual según navegador
+    const isFirefox = /firefox/i.test(navigator.userAgent);
+    const msg = isFirefox
+      ? 'En Firefox: toca el menú (⋮) → "Instalar"'
+      : 'En Chrome: toca el menú (⋮) arriba a la derecha → "Añadir a pantalla de inicio"';
+    alert(msg);
+  }
 }
 (async function init(){
   if(!S){
