@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="/icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
 <style>
 :root{
   --bg:#0d0d0d; --s:#16171b; --s2:#1e2026; --line:#2a2c33;
@@ -217,8 +217,8 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
   <p class="nota" id="nota">Esta página se actualiza en tiempo real.</p>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WPeE=" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="window._sbFailed=true"></script>
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window._sbFailed=true"></script>
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
@@ -237,33 +237,33 @@ const MUNIS = {
 const MDE = [6.2518, -75.5636];
 
 let map = null, grueroMarker = null, sol = null, pollTimer = null;
+let grueroIcon = null, clienteIcon = null;
 
-// Init map
-try {
-  map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
-    maxZoom:19
-  }).addTo(map);
-} catch(e) {
-  document.getElementById('map').style.background='#111';
+function initMap(){
+  const mapEl = document.getElementById('map');
+  if(!mapEl || map) return;
+  // Always set explicit pixel height so Leaflet gets a definite container size
+  mapEl.style.height = Math.round(window.innerHeight * 0.44) + 'px';
+  try {
+    if(typeof L === 'undefined') throw new Error('Leaflet not loaded');
+    map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
+      maxZoom:19
+    }).addTo(map);
+    grueroIcon = L.divIcon({
+      html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
+      className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
+    });
+    clienteIcon = L.divIcon({
+      html:`<div class="c-pin">📍</div>`,
+      className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
+    });
+    setTimeout(()=>{ try{ map.invalidateSize(false); }catch(e){} }, 150);
+  } catch(e) {
+    mapEl.style.background = '#111';
+  }
 }
-
-let grueroIcon = null;
-try {
-  grueroIcon = L.divIcon({
-    html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
-    className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
-  });
-} catch(e) {}
-
-let clienteIcon = null;
-try {
-  clienteIcon = L.divIcon({
-    html:`<div class="c-pin">📍</div>`,
-    className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
-  });
-} catch(e) {}
 
 function extractClientCoords(ubic){
   const m=(ubic||'').match(/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
@@ -308,6 +308,7 @@ function hideOverlay(){
 
 function moveGrueroMarker(lat, lng){
   if(!lat||!lng||!map) return;
+  hideOverlay(); // always hide before Leaflet calls — can't be swallowed by try/catch
   try {
     if(grueroMarker){
       grueroMarker.setLatLng([lat,lng]);
@@ -316,7 +317,6 @@ function moveGrueroMarker(lat, lng){
         .bindPopup('Tu gruero está aquí 🛵',{closeButton:false});
     }
     map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
-    hideOverlay();
   } catch(e) { return; }
 
   // ETA approximation — usa GPS del cliente si está disponible, sino centro del municipio
@@ -372,17 +372,19 @@ function applyEstado(estado){
   };
   document.getElementById('nota').textContent = notas[s]||'';
 
-  // Overlay del mapa según estado (solo si aún no hay GPS del gruero)
-  if(!sol?.gruero_lat){
-    const overlayStates = {
-      pendiente:{icon:'🔍', title:'Buscando tu gruero…', sub:'Avisamos a todos los disponibles en tu área'},
-      asignada: {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
-      llego:    {icon:'📍', title:'¡Tu gruero llegó!', sub:'Está en tu ubicación esperándote'},
-      finalizada:{icon:'✅', title:'Servicio completado', sub:'Califica para ayudar a otros moteros'},
-      cancelada:{icon:'❌', title:'Servicio cancelado', sub:'Puedes solicitar una nueva grúa'},
-    };
-    const ov = overlayStates[s]||overlayStates.pendiente;
-    setOverlay(ov.icon, ov.title, ov.sub);
+  // Overlay del mapa: siempre actualizar según estado real
+  const overlayStates = {
+    pendiente: {icon:'🔍', title:'Buscando tu gruero…',    sub:'Avisamos a todos los disponibles en tu área'},
+    asignada:  {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
+    llego:     {icon:'📍', title:'¡Tu gruero llegó!',      sub:'Está en tu ubicación esperándote'},
+    finalizada:{icon:'✅', title:'Servicio completado',    sub:'Califica para ayudar a otros moteros'},
+    cancelada: {icon:'❌', title:'Servicio cancelado',     sub:'Puedes solicitar una nueva grúa'},
+  };
+  const ovCfg = overlayStates[s] || overlayStates.pendiente;
+  if(sol?.gruero_lat){
+    hideOverlay(); // GPS disponible → mapa muestra al gruero
+  } else {
+    setOverlay(ovCfg.icon, ovCfg.title, ovCfg.sub);
   }
 }
 
@@ -441,12 +443,14 @@ async function loadGruero(gid){
 async function init(){
   if(window._sbFailed || !sb){
     document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
     document.getElementById('nota').textContent='Error cargando seguimiento. Por favor recarga la página.';
     return;
   }
   if(!sid){
-    document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
     document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
+    document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
     return;
   }
 
@@ -462,6 +466,7 @@ async function init(){
   }
 
   document.getElementById('loader').classList.add('hide');
+  if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
 
   if(error||!data){
     document.getElementById('nota').textContent='Solicitud no encontrada. El enlace puede haber expirado.';
@@ -555,6 +560,9 @@ async function doCancelClient() {
 window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.invalidateSize(),200); });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&map) map.invalidateSize(); });
 
+// Initialize map immediately — <script> is at end of <body> so DOM is ready.
+// Decouples map from Supabase: tiles load even if data fetch is slow or fails.
+initMap();
 init();
 </script>
 </body>
