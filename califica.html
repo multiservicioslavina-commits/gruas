@@ -50,15 +50,16 @@ textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
 .ios-steps{margin-top:16px;background:rgba(255,255,255,.04);border-radius:10px;padding:14px 16px;text-align:left}
 .ios-steps p{font-size:13px;color:var(--muted);line-height:1.7}
 .ios-steps p strong{color:var(--text)}
-/* Install guide — reemplaza el alert() */
-.install-guide{margin-top:16px;background:rgba(232,93,32,.06);border:1px solid rgba(232,93,32,.2);border-radius:14px;padding:18px 16px;text-align:left;display:none}
-.install-guide.on{display:block}
-.ig-title{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px;text-align:center;letter-spacing:.3px;text-transform:uppercase}
-.ig-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
-.ig-step:last-child{margin-bottom:0}
-.ig-num{width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
-.ig-txt{font-size:14px;color:var(--muted);line-height:1.55}
-.ig-txt strong{color:var(--text)}
+/* FLOATING INSTALL BANNER */
+.install-banner{position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface);border-top:1px solid rgba(232,93,32,.35);padding:14px 18px max(18px,env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;box-shadow:0 -8px 32px rgba(0,0,0,.55)}
+.install-banner.on{display:flex}
+.ib-icon{font-size:30px;flex-shrink:0}
+.ib-text{flex:1;min-width:0}
+.ib-text strong{display:block;font-size:15px;font-weight:700;margin-bottom:1px}
+.ib-text span{font-size:12px;color:var(--muted)}
+.ib-btn{flex-shrink:0;background:var(--orange);color:#fff;border:none;border-radius:11px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap;transition:filter .15s}
+.ib-btn:active{filter:brightness(.9)}
+.ib-close{flex-shrink:0;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 2px;line-height:1}
 </style>
 </head>
 <body>
@@ -68,6 +69,17 @@ textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
 <div class="wrap">
   <div id="loading" class="loading"><span class="spin"></span> Cargando…</div>
   <div id="content" class="hide"></div>
+</div>
+
+<!-- FLOATING INSTALL BANNER -->
+<div class="install-banner hide" id="installBanner">
+  <div class="ib-icon">📱</div>
+  <div class="ib-text">
+    <strong>Instala Ridera</strong>
+    <span>Pide grúas en segundos, siempre</span>
+  </div>
+  <button class="ib-btn" id="bannerInstallBtn">Instalar</button>
+  <button class="ib-close" id="bannerCloseBtn" aria-label="Cerrar">✕</button>
 </div>
 
 <script>
@@ -111,7 +123,6 @@ async function enviar(){
   }catch(e){ b.disabled=false; b.textContent='Enviar calificación'; alert('Error de conexión'); }
 }
 function gracias(){
-  const waLink = `https://wa.me/?text=${encodeURIComponent('Pide grúas para moto con Ridera — rápido y confiable 🏍️ https://gruas.ridera.com.co')}`;
   document.getElementById('content').innerHTML = `
     <div class="big-msg">
       <span class="ic">🙏</span>
@@ -119,8 +130,10 @@ function gracias(){
       <p>Tu calificación quedó registrada.</p>
       <div class="stars-shown">${'⭐'.repeat(rating)}</div>
     </div>`;
-  // Redirigir al inicio en 3 segundos para que la PWA no quede atrapada en esta URL
-  setTimeout(() => { location.replace('/'); }, 3000);
+  // Mostrar banner de instalación después de un segundo
+  setTimeout(() => showInstallBanner(), 1000);
+  // Redirigir al inicio en 6 s para que la PWA no quede atrapada en esta URL
+  setTimeout(() => { location.replace('/'); }, 6000);
 }
 async function installPwa(){
   if (deferredPrompt) {
@@ -142,6 +155,62 @@ async function installPwa(){
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
+
+// Install banner
+var _deferredPrompt = null;
+var _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredPrompt = e; });
+
+function showInstallBanner(){
+  if(_isStandalone) return; // ya está instalada
+  var banner = document.getElementById('installBanner');
+  if(!banner) return;
+  if(_isIOS){
+    var btn = document.getElementById('bannerInstallBtn');
+    if(btn) btn.textContent = 'Cómo instalar';
+  }
+  banner.classList.remove('hide');
+  banner.classList.add('on');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var bannerInstallBtn = document.getElementById('bannerInstallBtn');
+  var bannerCloseBtn = document.getElementById('bannerCloseBtn');
+  var banner = document.getElementById('installBanner');
+
+  if(bannerInstallBtn){
+    bannerInstallBtn.addEventListener('click', async function(){
+      if(_deferredPrompt){
+        _deferredPrompt.prompt();
+        try{ await _deferredPrompt.userChoice; }catch(e){}
+        _deferredPrompt = null;
+      } else if(_isIOS){
+        // Mostrar instrucciones inline
+        if(banner) banner.classList.remove('on');
+        var c = document.getElementById('content');
+        if(c) c.innerHTML += `<div style="margin-top:20px;background:rgba(232,93,32,.06);border:1px solid rgba(232,93,32,.25);border-radius:14px;padding:18px 16px;text-align:left">
+          <p style="font-family:'Barlow Condensed';font-size:17px;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:14px">Cómo instalar en iPhone</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">1. Toca el botón <strong style="color:var(--text)">Compartir</strong> en Safari</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">2. Elige <strong style="color:var(--text)">"Agregar a inicio"</strong></p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7">3. Toca <strong style="color:var(--text)">"Agregar"</strong> — listo</p>
+        </div>`;
+      }
+      if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+    });
+  }
+
+  if(bannerCloseBtn){
+    bannerCloseBtn.addEventListener('click', function(){
+      if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+    });
+  }
+});
+
+window.addEventListener('appinstalled', function(){
+  var banner = document.getElementById('installBanner');
+  if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+});
 (async function init(){
   if(!S){
     document.getElementById('loading').classList.add('hide');
