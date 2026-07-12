@@ -32,21 +32,24 @@ textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
 .btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;border-radius:13px;padding:16px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;background:var(--orange);color:#fff;transition:filter .15s}
 .btn:hover{filter:brightness(1.08)}
 .btn:disabled{opacity:.5;cursor:default}
-.big-msg{padding:40px 10px}
-.big-msg .ic{font-size:56px;margin-bottom:14px}
-.big-msg h2{font-family:'Barlow Condensed';font-weight:800;font-size:28px;text-transform:uppercase;margin-bottom:8px}
-.big-msg p{color:var(--muted);font-size:14px;line-height:1.6}
+.big-msg{padding:40px 10px 28px}
+.big-msg .ic{font-size:70px;margin-bottom:16px;display:block}
+.big-msg h2{font-family:'Barlow Condensed';font-weight:800;font-size:46px;text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px}
+.big-msg p{color:var(--muted);font-size:17px;line-height:1.65}
+.big-msg .stars-shown{font-size:22px;margin-top:4px}
 .loading{color:var(--muted);padding:50px 0;font-size:14px}
 .spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
 @keyframes s{to{transform:rotate(360deg)}}
 .hide{display:none!important}
-.app-cta{background:var(--surface-2);border:.5px solid var(--line);border-radius:16px;padding:22px 20px;margin-top:24px;text-align:center}
-.app-cta-title{font-family:'Barlow Condensed';font-weight:800;font-size:22px;text-transform:uppercase;margin-bottom:8px}
-.app-cta-sub{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:18px}
+.app-cta{background:var(--surface-2);border:.5px solid var(--line);border-radius:18px;padding:26px 22px;margin-top:20px;text-align:center}
+.app-cta-title{font-family:'Barlow Condensed';font-weight:800;font-size:28px;text-transform:uppercase;margin-bottom:10px;letter-spacing:.3px}
+.app-cta-sub{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px}
 .app-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
-.app-btn{display:inline-flex;align-items:center;gap:8px;padding:11px 20px;border-radius:10px;background:var(--orange);color:#fff;text-decoration:none;border:none;font-family:'Barlow Condensed';font-weight:700;font-size:16px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.app-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:16px 20px;border-radius:13px;background:var(--orange);color:#fff;text-decoration:none;border:none;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
 .app-btn:hover{filter:brightness(1.1)}
-.ios-hint{color:var(--muted);font-size:12px;margin-top:12px;line-height:1.5}
+.ios-steps{margin-top:16px;background:rgba(255,255,255,.04);border-radius:10px;padding:14px 16px;text-align:left}
+.ios-steps p{font-size:13px;color:var(--muted);line-height:1.7}
+.ios-steps p strong{color:var(--text)}
 </style>
 </head>
 <body>
@@ -100,25 +103,29 @@ async function enviar(){
 }
 function gracias(){
   const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const isAndroid = /android/i.test(navigator.userAgent);
-  const iosHint = isIos
-    ? `<p class="ios-hint">En Safari toca <b>Compartir ↑</b> → <b>"Añadir a pantalla de inicio"</b></p>`
-    : ``;
-  // Android: mostrar botón siempre; si no hay prompt nativo, dar instrucción manual
   const installBtn = (!isIos)
-    ? `<button class="app-btn" id="installBtn" onclick="installPwa()">📲 Agregar a inicio</button>`
+    ? `<button class="app-btn" id="installBtn" onclick="installPwa()">📲 Instalar app en mi celular</button>`
+    : ``;
+  const iosSteps = isIos
+    ? `<div class="ios-steps">
+        <p>Para guardar Ridera como app:<br>
+        1. Toca el ícono <strong>Compartir ↑</strong> en Safari<br>
+        2. Selecciona <strong>"Añadir a pantalla de inicio"</strong><br>
+        3. Listo — queda como una app nativa</p>
+       </div>`
     : ``;
   document.getElementById('content').innerHTML = `
     <div class="big-msg">
-      <div class="ic">🙏</div>
+      <span class="ic">🙏</span>
       <h2>¡Gracias!</h2>
-      <p>Tu calificación de ${'⭐'.repeat(rating)} quedó registrada.<br>Gracias por usar Ridera.</p>
+      <p>Tu calificación quedó registrada.</p>
+      <div class="stars-shown">${'⭐'.repeat(rating)}</div>
     </div>
     <div class="app-cta">
-      <div class="app-cta-title">Acceso rápido</div>
-      <p class="app-cta-sub">Agrega Ridera a tu pantalla de inicio para pedir tu próxima grúa en segundos.</p>
+      <div class="app-cta-title">¡Tenla siempre lista!</div>
+      <p class="app-cta-sub">Guarda Ridera como app en tu celular — la próxima vez pides tu grúa en segundos, sin buscar el link.</p>
       <div class="app-btns">${installBtn}</div>
-      ${iosHint}
+      ${iosSteps}
     </div>`;
 }
 async function installPwa(){
