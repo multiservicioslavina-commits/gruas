@@ -92,7 +92,9 @@
   .success h2{font-family:'Bebas Neue';font-weight:400;font-size:36px;letter-spacing:.5px;margin-bottom:8px}
   .success p{color:#d6d6d6;font-size:15px;line-height:1.5;max-width:34ch;margin:0 auto 8px}
   .success .small{color:var(--muted);font-size:13px}
-  .success .track-btn{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border-radius:12px;padding:14px 22px;font-weight:700;font-size:15px;text-decoration:none;margin:12px auto;}
+  @keyframes track-pulse{0%,100%{box-shadow:0 0 0 0 rgba(230,100,30,.5)}60%{box-shadow:0 0 0 10px rgba(230,100,30,0)}}
+  .success .track-btn{display:inline-flex;align-items:center;gap:8px;background:var(--orange);color:#fff;border-radius:12px;padding:16px 26px;font-weight:700;font-size:16px;text-decoration:none;margin:14px auto 6px;animation:track-pulse 2s ease-in-out infinite;}
+  .success .track-hint{font-size:12px;color:var(--muted);margin:0 auto 6px;display:none;}
   .grueros-cerca{margin-top:22px;text-align:left}
   .gc-title{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:13px;color:var(--muted);margin-bottom:12px;text-align:center}
   .gc-list{display:flex;flex-direction:column;gap:10px}
@@ -222,8 +224,9 @@
           <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#25D366" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
         </div>
         <h2>¡Solicitud enviada!</h2>
-        <p>Ya avisamos a los grueros disponibles. Uno te escribirá al WhatsApp muy pronto.</p>
-        <a class="track-btn" id="trackLink" href="#" style="display:none">📍 Ver seguimiento en vivo</a>
+        <p>Ya avisamos a los grueros. Entra aquí para ver <strong style="color:#fff">quién acepta, cuánto demora y cómo contactarlo</strong>.</p>
+        <a class="track-btn" id="trackLink" href="#" style="display:none">📍 Ver quién viene por mi moto →</a>
+        <p class="track-hint" id="trackHint">Nombre del gruero · Teléfono · Tiempo estimado · Estado en vivo</p>
         <p class="small">Mantén tu teléfono a la mano. 🏍️</p>
         <div class="grueros-cerca" id="gruerosCards" style="display:none">
           <div class="gc-title">También puedes escribirles directo 👇</div>
@@ -348,6 +351,7 @@
         const tl = document.getElementById('trackLink');
         tl.href = `/seguimiento?s=${ins.id}`;
         tl.style.display = 'inline-flex';
+        document.getElementById('trackHint').style.display = 'block';
         loadGruerosCerca($("#municipio").value, ins.id);
         // Fire push notifications to nearby grueros (fire-and-forget)
         const muni = $("#municipio").value || '';
