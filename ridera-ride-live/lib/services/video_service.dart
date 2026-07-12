@@ -4,6 +4,9 @@ import 'package:http/http.dart' as http;
 import '../video_config.dart';
 
 class VideoService {
+  static const _pollInterval = Duration(seconds: 5);
+  static const _maxWait = Duration(minutes: 10);
+
   Future<String> renderVideo({
     required String rideId,
     required String rideName,
@@ -33,7 +36,7 @@ class VideoService {
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 45));
+        .timeout(const Duration(seconds: 60));
 
     if (res.statusCode != 200 && res.statusCode != 202) {
       throw Exception('Backend ${res.statusCode}: ${res.body}');
@@ -41,15 +44,57 @@ class VideoService {
 
     final data = jsonDecode(res.body) as Map<String, dynamic>;
 
-    final directUrl = data['url'] as String?;
-    if (directUrl != null && directUrl.isNotEmpty) return directUrl;
-
-    final jobId = data['jobId'] as String?;
-    if (jobId == null || jobId.isEmpty) {
-      throw Exception('Backend no devolvió jobId');
+    if (data.containsKey('error')) {
+      throw Exception(data['error']);
     }
 
-    return jobId;
+    final renderId = data['renderId'] as String?;
+    final bucketName = data['bucketName'] as String? ?? '';
+
+    if (renderId == null || renderId.isEmpty) {
+      final directUrl = data['url'] as String?;
+      if (directUrl != null && directUrl.isNotEmpty) return directUrl;
+      throw Exception('Backend no devolvió renderId ni url');
+    }
+
+    onProgress?.call(0);
+
+    final deadline = DateTime.now().add(_maxWait);
+    while (DateTime.now().isBefore(deadline)) {
+      await Future.delayed(_pollInterval);
+
+      final http.Response st;
+      try {
+        final statusUrl = '$kVideoBackendUrl?renderId=$renderId&bucketName=$bucketName';
+        st = await http
+            .get(Uri.parse(statusUrl))
+            .timeout(const Duration(seconds: 20));
+      } catch (_) {
+        continue;
+      }
+
+      if (st.statusCode != 200) continue;
+
+      final s = jsonDecode(st.body) as Map<String, dynamic>;
+      final status = s['status'] as String?;
+      final progress = s['progress'] as int? ?? 0;
+
+      onProgress?.call(progress);
+
+      if (status == 'done') {
+        final url = s['url'] as String?;
+        if (url == null || url.isEmpty) {
+          throw Exception('Render completado pero sin URL');
+        }
+        return url;
+      }
+
+      if (status == 'error') {
+        throw Exception('Render falló: ${s['error'] ?? 'desconocido'}');
+      }
+    }
+
+    throw Exception('El video tardó más de ${_maxWait.inMinutes} minutos');
   }
 
   List<Map<String, double>> _simplify(
