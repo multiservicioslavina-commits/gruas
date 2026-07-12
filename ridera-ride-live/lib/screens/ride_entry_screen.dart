@@ -15,7 +15,7 @@ class RideEntryScreen extends StatefulWidget {
 
 class _RideEntryScreenState extends State<RideEntryScreen> {
   final _name = TextEditingController();
-  final _rideName = TextEditingController(text: 'Rodada Oriente Antioqueño');
+  final _rideName = TextEditingController();
   final _code = TextEditingController();
   final _auth = AuthService();
   final _repo = RideRepository();
@@ -73,7 +73,7 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
   Future<_Bound> _create(String uid, String name) async {
     final planned = _plannedRoute;
     final ride = await _repo.createRide(
-      name: _rideName.text.trim(),
+      name: _rideName.text.trim().isEmpty ? 'Rodada' : _rideName.text.trim(),
       leaderUid: uid,
       leaderName: name,
       plannedRouteGeoJson: planned?.route.toGeoJsonLineString(),
@@ -130,7 +130,7 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
               child: Column(children: [
                 TextField(
                     controller: _rideName,
-                    decoration: _dec('Nombre de la rodada')),
+                    decoration: _dec('Ej: Rodada Oriente Antioqueño')),
                 const SizedBox(height: 12),
                 // Botón planear ruta
                 InkWell(

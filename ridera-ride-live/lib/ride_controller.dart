@@ -33,7 +33,7 @@ class RideController extends ChangeNotifier {
   Timer? _clock;
   Duration elapsed = Duration.zero;
   int battery = 84;
-  String rideName = 'Rodada Oriente Antioqueño';
+  String rideName = 'Rodada';
 
   RideController({bool demo = true}) {
     if (demo) {
