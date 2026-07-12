@@ -31,6 +31,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   List<String> _photoUrls = [];
   List<Map<String, dynamic>> _photos = []; // {url, lat, lon}
   List<Map<String, double>> _routePoints = [];
+  List<Map<String, dynamic>> _municipios = [];
 
   final _videoService = VideoService();
   final _rideService = RideService();
@@ -83,6 +84,22 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
               })
           .toList();
 
+      // Cargar municipios de Antioquia para sellos en el video
+      List<Map<String, dynamic>> munis = [];
+      try {
+        final muniRows = await _db
+            .from('municipios')
+            .select('nombre, subregion, lat, lon');
+        munis = List<Map<String, dynamic>>.from(muniRows.map((m) => {
+          return {
+            'nombre': m['nombre'],
+            'departamento': m['subregion'] ?? 'Antioquia',
+            'lat': (m['lat'] as num).toDouble(),
+            'lon': (m['lon'] as num).toDouble(),
+          };
+        }));
+      } catch (_) {}
+
       // Verificar si ya existe un video generado para esta rodada
       String? existingVideo;
       try {
@@ -103,6 +120,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           _photoUrls = photos.map<String>((p) => p['url'] as String).toList();
           _photos = List<Map<String, dynamic>>.from(photos);
           _routePoints = routePts;
+          _municipios = munis;
           _loading = false;
           if (existingVideo != null && existingVideo.isNotEmpty) {
             _videoStatus = 'done';
@@ -145,6 +163,10 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         maxSpeedKmh: _maxSpeedKmh.toStringAsFixed(0),
         photos: _photos,
         routePoints: _routePoints,
+        municipios: _municipios,
+        onProgress: (p) {
+          if (mounted) setState(() {});
+        },
       );
       // Guardar la URL SIEMPRE, aunque el usuario ya haya salido de la
       // pantalla — el render tarda minutos y el video no puede perderse

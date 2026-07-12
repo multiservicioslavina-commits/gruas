@@ -104,6 +104,13 @@ Deno.serve(async (req: Request) => {
         );
       }
 
+      if (!MAPBOX_TOKEN) {
+        return new Response(
+          JSON.stringify({ error: "MAPBOX_TOKEN not configured" }),
+          { status: 500, headers: CORS },
+        );
+      }
+
       const inputProps = {
         rideId,
         rideName: rideName || "Rodada",
@@ -183,7 +190,6 @@ Deno.serve(async (req: Request) => {
         type: "status",
         bucketName,
         renderId,
-        version: "2025-07-01",
       });
 
       const res = await invokeLambda(payload);
