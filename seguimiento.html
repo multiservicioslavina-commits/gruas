@@ -308,6 +308,7 @@ function hideOverlay(){
 
 function moveGrueroMarker(lat, lng){
   if(!lat||!lng||!map) return;
+  hideOverlay(); // always hide when GPS coordinates exist, before any Leaflet call
   try {
     if(grueroMarker){
       grueroMarker.setLatLng([lat,lng]);
@@ -316,7 +317,6 @@ function moveGrueroMarker(lat, lng){
         .bindPopup('Tu gruero está aquí 🛵',{closeButton:false});
     }
     map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
-    hideOverlay();
   } catch(e) { return; }
 
   // ETA approximation — usa GPS del cliente si está disponible, sino centro del municipio
@@ -372,17 +372,19 @@ function applyEstado(estado){
   };
   document.getElementById('nota').textContent = notas[s]||'';
 
-  // Overlay del mapa según estado (solo si aún no hay GPS del gruero)
-  if(!sol?.gruero_lat){
-    const overlayStates = {
-      pendiente:{icon:'🔍', title:'Buscando tu gruero…', sub:'Avisamos a todos los disponibles en tu área'},
-      asignada: {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
-      llego:    {icon:'📍', title:'¡Tu gruero llegó!', sub:'Está en tu ubicación esperándote'},
-      finalizada:{icon:'✅', title:'Servicio completado', sub:'Califica para ayudar a otros moteros'},
-      cancelada:{icon:'❌', title:'Servicio cancelado', sub:'Puedes solicitar una nueva grúa'},
-    };
-    const ov = overlayStates[s]||overlayStates.pendiente;
-    setOverlay(ov.icon, ov.title, ov.sub);
+  // Overlay del mapa: siempre actualizar contenido al estado real
+  const overlayStates = {
+    pendiente: {icon:'🔍', title:'Buscando tu gruero…',    sub:'Avisamos a todos los disponibles en tu área'},
+    asignada:  {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
+    llego:     {icon:'📍', title:'¡Tu gruero llegó!',      sub:'Está en tu ubicación esperándote'},
+    finalizada:{icon:'✅', title:'Servicio completado',    sub:'Califica para ayudar a otros moteros'},
+    cancelada: {icon:'❌', title:'Servicio cancelado',     sub:'Puedes solicitar una nueva grúa'},
+  };
+  const ovCfg = overlayStates[s]||overlayStates.pendiente;
+  if(sol?.gruero_lat){
+    hideOverlay(); // GPS disponible → ocultar overlay, el mapa muestra al gruero
+  } else {
+    setOverlay(ovCfg.icon, ovCfg.title, ovCfg.sub);
   }
 }
 
