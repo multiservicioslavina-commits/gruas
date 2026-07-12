@@ -245,6 +245,7 @@ try {
     attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
     maxZoom:19
   }).addTo(map);
+  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 100);
 } catch(e) {
   document.getElementById('map').style.background='#111';
 }
@@ -464,6 +465,8 @@ async function init(){
   }
 
   document.getElementById('loader').classList.add('hide');
+  // Force Leaflet to recalculate map size now that the loader is gone
+  if(map) setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 50);
 
   if(error||!data){
     document.getElementById('nota').textContent='Solicitud no encontrada. El enlace puede haber expirado.';
