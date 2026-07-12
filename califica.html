@@ -50,6 +50,15 @@ textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
 .ios-steps{margin-top:16px;background:rgba(255,255,255,.04);border-radius:10px;padding:14px 16px;text-align:left}
 .ios-steps p{font-size:13px;color:var(--muted);line-height:1.7}
 .ios-steps p strong{color:var(--text)}
+/* Install guide — reemplaza el alert() */
+.install-guide{margin-top:16px;background:rgba(232,93,32,.06);border:1px solid rgba(232,93,32,.2);border-radius:14px;padding:18px 16px;text-align:left;display:none}
+.install-guide.on{display:block}
+.ig-title{font-family:'Barlow Condensed';font-size:17px;font-weight:700;color:var(--text);margin-bottom:14px;text-align:center;letter-spacing:.3px;text-transform:uppercase}
+.ig-step{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px}
+.ig-step:last-child{margin-bottom:0}
+.ig-num{width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;font-family:'Barlow Condensed';font-weight:700;font-size:15px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+.ig-txt{font-size:14px;color:var(--muted);line-height:1.55}
+.ig-txt strong{color:var(--text)}
 </style>
 </head>
 <body>
@@ -107,13 +116,18 @@ function gracias(){
     ? `<button class="app-btn" id="installBtn" onclick="installPwa()">📲 Instalar app en mi celular</button>`
     : ``;
   const iosSteps = isIos
-    ? `<div class="ios-steps">
-        <p>Para guardar Ridera como app:<br>
-        1. Toca el ícono <strong>Compartir ↑</strong> en Safari<br>
-        2. Selecciona <strong>"Añadir a pantalla de inicio"</strong><br>
-        3. Listo — queda como una app nativa</p>
+    ? `<div class="install-guide on">
+        <div class="ig-title">Cómo instalarla en iPhone</div>
+        <div class="ig-step"><div class="ig-num">1</div><div class="ig-txt">Toca el ícono <strong>Compartir ↑</strong> en la barra de Safari</div></div>
+        <div class="ig-step"><div class="ig-num">2</div><div class="ig-txt">Busca y toca <strong>"Añadir a pantalla de inicio"</strong></div></div>
+        <div class="ig-step"><div class="ig-num">3</div><div class="ig-txt">Toca <strong>Agregar</strong> — Ridera queda en tu pantalla como una app</div></div>
        </div>`
-    : ``;
+    : `<div class="install-guide" id="installGuide">
+        <div class="ig-title">Cómo instalarla en Android</div>
+        <div class="ig-step"><div class="ig-num">1</div><div class="ig-txt">Toca los <strong>3 puntos ⋮</strong> arriba a la derecha en Chrome</div></div>
+        <div class="ig-step"><div class="ig-num">2</div><div class="ig-txt">Selecciona <strong>"Añadir a pantalla de inicio"</strong> o <strong>"Instalar app"</strong></div></div>
+        <div class="ig-step"><div class="ig-num">3</div><div class="ig-txt">Confirma — Ridera queda en tu pantalla como una app</div></div>
+       </div>`;
   document.getElementById('content').innerHTML = `
     <div class="big-msg">
       <span class="ic">🙏</span>
@@ -130,22 +144,23 @@ function gracias(){
 }
 async function installPwa(){
   if (deferredPrompt) {
-    // Prompt nativo de Chrome disponible
     deferredPrompt.prompt();
     const { outcome } = await deferredPrompt.userChoice;
     deferredPrompt = null;
     if (outcome === 'accepted') {
       const b = document.getElementById('installBtn');
-      if (b) { b.textContent = '✓ ¡Agregada!'; b.disabled = true; }
+      if (b) { b.textContent = '✓ ¡Instalada!'; b.disabled = true; }
     }
   } else {
-    // Sin prompt nativo: instrucción manual según navegador
-    const isFirefox = /firefox/i.test(navigator.userAgent);
-    const msg = isFirefox
-      ? 'En Firefox: toca el menú (⋮) → "Instalar"'
-      : 'En Chrome: toca el menú (⋮) arriba a la derecha → "Añadir a pantalla de inicio"';
-    alert(msg);
+    // Sin prompt nativo: mostrar guía visual inline (sin alert)
+    const guide = document.getElementById('installGuide');
+    const btn = document.getElementById('installBtn');
+    if (guide) { guide.classList.add('on'); }
+    if (btn) { btn.style.display = 'none'; }
   }
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
 }
 (async function init(){
   if(!S){
