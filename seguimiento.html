@@ -237,34 +237,27 @@ const MUNIS = {
 const MDE = [6.2518, -75.5636];
 
 let map = null, grueroMarker = null, sol = null, pollTimer = null;
+let grueroIcon = null, clienteIcon = null;
 
-// Init map
-try {
-  map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
-    maxZoom:19
-  }).addTo(map);
-  setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 100);
-} catch(e) {
-  document.getElementById('map').style.background='#111';
+function initMap(){
+  try {
+    map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
+      maxZoom:19
+    }).addTo(map);
+    grueroIcon = L.divIcon({
+      html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
+      className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
+    });
+    clienteIcon = L.divIcon({
+      html:`<div class="c-pin">📍</div>`,
+      className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
+    });
+  } catch(e) {
+    document.getElementById('map').style.background='#111';
+  }
 }
-
-let grueroIcon = null;
-try {
-  grueroIcon = L.divIcon({
-    html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
-    className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
-  });
-} catch(e) {}
-
-let clienteIcon = null;
-try {
-  clienteIcon = L.divIcon({
-    html:`<div class="c-pin">📍</div>`,
-    className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
-  });
-} catch(e) {}
 
 function extractClientCoords(ubic){
   const m=(ubic||'').match(/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
@@ -465,8 +458,8 @@ async function init(){
   }
 
   document.getElementById('loader').classList.add('hide');
-  // Force Leaflet to recalculate map size now that the loader is gone
-  if(map) setTimeout(()=>{ try{ map.invalidateSize(); }catch(e){} }, 50);
+  // Init map NOW — after loader hides, flex layout is computed and #map has correct dimensions
+  initMap();
 
   if(error||!data){
     document.getElementById('nota').textContent='Solicitud no encontrada. El enlace puede haber expirado.';
