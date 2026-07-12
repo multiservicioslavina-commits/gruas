@@ -90,14 +90,14 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         final muniRows = await _db
             .from('municipios')
             .select('nombre, subregion, lat, lon');
-        munis = List<Map<String, dynamic>>.from(muniRows.map((m) => {
-          return {
+        munis = List<Map<String, dynamic>>.from(muniRows.map((m) =>
+          <String, dynamic>{
             'nombre': m['nombre'],
             'departamento': m['subregion'] ?? 'Antioquia',
             'lat': (m['lat'] as num).toDouble(),
             'lon': (m['lon'] as num).toDouble(),
-          };
-        }));
+          }
+        ));
       } catch (_) {}
 
       // Verificar si ya existe un video generado para esta rodada
