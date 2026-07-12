@@ -88,8 +88,6 @@ const qs = new URLSearchParams(location.search);
 let S = qs.get('s') || qs.get('t') || '';
 if (S.includes('~')) S = S.split('~')[0];
 let rating = 0;
-let deferredPrompt = null;
-window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); deferredPrompt = e; });
 
 const LBLS = ['','Muy malo','Malo','Regular','Bueno','¡Excelente!'];
 
@@ -134,23 +132,6 @@ function gracias(){
   setTimeout(() => showInstallBanner(), 1000);
   // Redirigir al inicio en 6 s para que la PWA no quede atrapada en esta URL
   setTimeout(() => { location.replace('/'); }, 6000);
-}
-async function installPwa(){
-  if (deferredPrompt) {
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    deferredPrompt = null;
-    if (outcome === 'accepted') {
-      const b = document.getElementById('installBtn');
-      if (b) { b.textContent = '✓ ¡Instalada!'; b.disabled = true; }
-    }
-  } else {
-    // Sin prompt nativo: mostrar guía visual inline (sin alert)
-    const guide = document.getElementById('installGuide');
-    const btn = document.getElementById('installBtn');
-    if (guide) { guide.classList.add('on'); }
-    if (btn) { btn.style.display = 'none'; }
-  }
 }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(()=>{});

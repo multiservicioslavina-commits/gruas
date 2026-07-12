@@ -218,7 +218,7 @@ header{flex-shrink:0;display:flex;align-items:center;justify-content:space-betwe
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" crossorigin=""></script>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js" onerror="window._sbFailed=true"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window._sbFailed=true"></script>
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
@@ -241,11 +241,9 @@ let grueroIcon = null, clienteIcon = null;
 
 function initMap(){
   const mapEl = document.getElementById('map');
-  if(!mapEl) return;
-  // Force explicit pixel height so Leaflet always knows the container size
-  if(!mapEl.offsetHeight){
-    mapEl.style.height = Math.round(window.innerHeight * 0.44) + 'px';
-  }
+  if(!mapEl || map) return;
+  // Always set explicit pixel height so Leaflet gets a definite container size
+  mapEl.style.height = Math.round(window.innerHeight * 0.44) + 'px';
   try {
     if(typeof L === 'undefined') throw new Error('Leaflet not loaded');
     map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
@@ -261,10 +259,8 @@ function initMap(){
       html:`<div class="c-pin">📍</div>`,
       className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
     });
-    // Trigger tile load after a paint cycle
     setTimeout(()=>{ try{ map.invalidateSize(false); }catch(e){} }, 150);
   } catch(e) {
-    mapEl.innerHTML = '';
     mapEl.style.background = '#111';
   }
 }
@@ -312,7 +308,7 @@ function hideOverlay(){
 
 function moveGrueroMarker(lat, lng){
   if(!lat||!lng||!map) return;
-  hideOverlay(); // always hide when GPS coordinates exist, before any Leaflet call
+  hideOverlay(); // always hide before Leaflet calls — can't be swallowed by try/catch
   try {
     if(grueroMarker){
       grueroMarker.setLatLng([lat,lng]);
@@ -376,7 +372,7 @@ function applyEstado(estado){
   };
   document.getElementById('nota').textContent = notas[s]||'';
 
-  // Overlay del mapa: siempre actualizar contenido al estado real
+  // Overlay del mapa: siempre actualizar según estado real
   const overlayStates = {
     pendiente: {icon:'🔍', title:'Buscando tu gruero…',    sub:'Avisamos a todos los disponibles en tu área'},
     asignada:  {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
@@ -384,9 +380,9 @@ function applyEstado(estado){
     finalizada:{icon:'✅', title:'Servicio completado',    sub:'Califica para ayudar a otros moteros'},
     cancelada: {icon:'❌', title:'Servicio cancelado',     sub:'Puedes solicitar una nueva grúa'},
   };
-  const ovCfg = overlayStates[s]||overlayStates.pendiente;
+  const ovCfg = overlayStates[s] || overlayStates.pendiente;
   if(sol?.gruero_lat){
-    hideOverlay(); // GPS disponible → ocultar overlay, el mapa muestra al gruero
+    hideOverlay(); // GPS disponible → mapa muestra al gruero
   } else {
     setOverlay(ovCfg.icon, ovCfg.title, ovCfg.sub);
   }
@@ -447,12 +443,14 @@ async function loadGruero(gid){
 async function init(){
   if(window._sbFailed || !sb){
     document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
     document.getElementById('nota').textContent='Error cargando seguimiento. Por favor recarga la página.';
     return;
   }
   if(!sid){
-    document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
     document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
+    document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
     return;
   }
 
@@ -468,8 +466,7 @@ async function init(){
   }
 
   document.getElementById('loader').classList.add('hide');
-  // Init map NOW — after loader hides, flex layout is computed and #map has correct dimensions
-  initMap();
+  if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
 
   if(error||!data){
     document.getElementById('nota').textContent='Solicitud no encontrada. El enlace puede haber expirado.';
@@ -563,6 +560,9 @@ async function doCancelClient() {
 window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.invalidateSize(),200); });
 document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&map) map.invalidateSize(); });
 
+// Initialize map immediately — <script> is at end of <body> so DOM is ready.
+// Decouples map from Supabase: tiles load even if data fetch is slow or fails.
+initMap();
 init();
 </script>
 </body>
