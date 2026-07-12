@@ -17,37 +17,43 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a;--err:#ff8a6b}
+  :root{--bg:#0a0a0a;--panel:#131313;--panel-2:#1a1a1a;--line:#242424;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a;--err:#ff8a6b;--copper:#c9a84c}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
-  body{font-size:17px;line-height:1.5;max-width:480px;margin:0 auto;min-height:100vh;padding:0 0 30px}
-  .top{padding:22px 20px 16px;border-bottom:1px solid var(--line)}
-  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
-  .top h1{font-family:"Bebas Neue",sans-serif;font-size:42px;line-height:.95;letter-spacing:.5px;margin:4px 0 0}
-  .top p{color:var(--ink-dim);font-size:14px;margin:6px 0 0}
-  .wrap{padding:18px}
-  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:16px 0 6px}
-  input,select{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
-  input:focus,select:focus{outline:none;border-color:var(--orange)}
-  input:disabled{color:var(--ink-dim)}
+  body{font-size:17px;line-height:1.5;max-width:480px;margin:0 auto;min-height:100vh;padding:0 0 30px;overflow-x:hidden}
+  .bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-glow{position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:140%;height:55%;background:radial-gradient(ellipse at 50% 0%,rgba(232,93,32,.12) 0%,transparent 65%)}
+  .bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(232,93,32,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,93,32,.03) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(ellipse 100% 50% at 50% 0%,black 0%,transparent 80%);mask-image:radial-gradient(ellipse 100% 50% at 50% 0%,black 0%,transparent 80%)}
+  .top{padding:24px 20px 18px;border-bottom:1px solid var(--line);position:relative;z-index:1}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:11px;letter-spacing:.38em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:44px;line-height:.92;letter-spacing:.5px;margin:6px 0 0;background:linear-gradient(155deg,#f4f1ea 20%,#c9a84c 60%,#f4f1ea 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .top p{color:var(--ink-faint);font-size:14px;margin:8px 0 0;line-height:1.5}
+  .wrap{padding:18px;position:relative;z-index:1}
+  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:11px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase;margin:16px 0 6px}
+  input,select{width:100%;padding:13px 14px;font-size:16px;background:rgba(16,16,16,.95);border:1px solid var(--line);border-radius:11px;color:var(--ink);font-family:"DM Sans",sans-serif;transition:border-color .2s,box-shadow .2s}
+  input:focus,select:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,93,32,.1)}
+  input:disabled{color:var(--ink-dim);opacity:.6}
   .row{display:flex;gap:10px}.row>div{flex:1}
   .seg{display:flex;gap:8px;margin-top:6px}
-  .seg .opt{flex:1;text-align:center;padding:13px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim)}
-  .seg .opt.on{background:var(--orange);color:#100a06;border-color:var(--orange)}
-  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:26px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.6px;text-transform:uppercase;padding:16px;cursor:pointer}
-  .cta:active{transform:translateY(1px)} .cta:disabled{opacity:.5}
+  .seg .opt{flex:1;text-align:center;padding:13px;border:1px solid var(--line);border-radius:11px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim);transition:.2s}
+  .seg .opt.on{background:linear-gradient(135deg,#c94d18,#E85D20);color:#fff;border-color:transparent;box-shadow:0 2px 12px rgba(232,93,32,.3)}
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:26px;border:0;border-radius:13px;background:linear-gradient(135deg,#c94d18,#E85D20,#f06a28);color:#fff;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.8px;text-transform:uppercase;padding:16px;cursor:pointer;box-shadow:0 4px 22px rgba(232,93,32,.4),inset 0 1px 0 rgba(255,255,255,.1);position:relative;overflow:hidden;transition:box-shadow .2s,transform .1s}
+  .cta::after{content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);transition:left .5s ease}
+  .cta:hover::after{left:160%}
+  .cta:active{transform:translateY(1px);box-shadow:0 2px 12px rgba(232,93,32,.3)} .cta:disabled{opacity:.45}
   .skip{display:block;text-align:center;margin-top:14px;color:var(--ink-faint);font-family:"Barlow Condensed",sans-serif;font-weight:600;letter-spacing:.4px;text-decoration:none}
-  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:14px;border-radius:10px;padding:11px 13px;display:none}
-  .msg.show{display:block} .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
-  .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:s 1s linear infinite;display:none}
-  @keyframes s{to{transform:rotate(360deg)}} .loading .spin{display:inline-block}
+  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:13px;border-radius:10px;padding:11px 13px;display:none;line-height:1.5}
+  .msg.show{display:block} .msg.ok{color:var(--ok);background:#0d160e;border:1px solid #1d3a22} .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
+  .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:none}
+  @keyframes sp{to{transform:rotate(360deg)}} .loading .spin{display:inline-block}
   #app{display:none} body.ready #app{display:block}
-  .loader{min-height:100vh;display:grid;place-items:center}
-  .spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:s 1s linear infinite}
+  .loader{min-height:100vh;display:grid;place-items:center;position:relative;z-index:1}
+  .spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:sp 1s linear infinite;box-shadow:0 0 16px rgba(232,93,32,.15)}
   body.ready #loader{display:none}
 </style>
 </head>
 <body>
+<div class="bg-fx"><div class="bg-glow"></div><div class="bg-grid"></div></div>
 <div class="loader" id="loader"><div class="spinner"></div></div>
 
 <div id="app">

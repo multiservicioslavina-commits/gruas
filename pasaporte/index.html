@@ -32,74 +32,99 @@
 
 <style>
   :root{
-    --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;
+    --bg:#0a0a0a;--panel:#131313;--panel-2:#1a1a1a;--line:#242424;
     --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;
     --ink-faint:#a89e90;--copper:#c9a84c;--ok:#5fb86a;--err:#ff8a6b;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
-  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px}
-  .wrap{width:100%;max-width:400px}
+  body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;overflow-x:hidden}
+  .wrap{width:100%;max-width:400px;position:relative;z-index:1}
 
-  .brand{text-align:center;margin-bottom:26px}
-  .brand .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.34em;color:var(--orange);text-transform:uppercase}
-  .brand h1{font-family:"Bebas Neue",sans-serif;font-size:62px;line-height:.9;letter-spacing:1px;margin:6px 0 0}
-  .brand .sub{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:16px;letter-spacing:.3em;color:var(--ink-dim);text-transform:uppercase}
+  /* ── Fondo dramático ── */
+  .bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-glow{position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:140%;height:70%;background:radial-gradient(ellipse at 50% 0%,rgba(232,93,32,.22) 0%,rgba(232,93,32,.06) 35%,transparent 65%)}
+  .bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(232,93,32,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(232,93,32,.045) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(ellipse 100% 80% at 50% 0%,black 0%,transparent 75%);mask-image:radial-gradient(ellipse 100% 80% at 50% 0%,black 0%,transparent 75%)}
+  .bg-noise{position:absolute;inset:0;opacity:.018;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)'/%3E%3C/svg%3E");background-size:200px 200px}
 
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:24px 20px}
+  /* ── Marca ── */
+  .brand{text-align:center;margin-bottom:32px}
+  .brand .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;letter-spacing:.45em;color:var(--orange);text-transform:uppercase;opacity:.9}
+  .brand h1{font-family:"Bebas Neue",sans-serif;font-size:72px;line-height:.88;letter-spacing:2px;margin:8px 0 0;background:linear-gradient(160deg,#f4f1ea 10%,#fffbe8 40%,#c9a84c 55%,#f4f1ea 85%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;filter:drop-shadow(0 0 40px rgba(201,168,76,.25))}
+  .brand .sub{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:14px;letter-spacing:.38em;color:rgba(201,168,76,.65);text-transform:uppercase;margin-top:6px}
+  .brand .tagline{font-family:"DM Sans",sans-serif;font-size:14px;color:var(--ink-faint);margin-top:10px;line-height:1.5}
 
-  .tabs{display:flex;background:var(--panel-2);border-radius:11px;padding:4px;margin-bottom:20px}
-  .tab{flex:1;text-align:center;padding:10px;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-dim);transition:.2s}
-  .tab.active{background:var(--orange);color:#100a06}
+  /* ── Separador de marca ── */
+  .divider{display:flex;align-items:center;gap:12px;margin:0 0 24px}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(232,93,32,.25),transparent)}
+  .divider span{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.3em;color:rgba(232,93,32,.45);text-transform:uppercase;white-space:nowrap}
 
-  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:14px 0 6px}
-  input{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
-  input:focus{outline:none;border-color:var(--orange)}
+  /* ── Tarjeta ── */
+  .card{background:rgba(16,16,16,.97);border:1px solid rgba(42,42,42,.9);border-radius:20px;padding:26px 22px;box-shadow:0 0 0 1px rgba(232,93,32,.06),0 2px 8px rgba(0,0,0,.3),0 24px 60px rgba(0,0,0,.7),inset 0 1px 0 rgba(255,255,255,.04)}
+
+  /* ── Pestañas ── */
+  .tabs{display:flex;background:rgba(8,8,8,.8);border:1px solid var(--line);border-radius:12px;padding:4px;margin-bottom:22px}
+  .tab{flex:1;text-align:center;padding:11px;border-radius:9px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.5px;text-transform:uppercase;color:var(--ink-faint);transition:.25s}
+  .tab.active{background:linear-gradient(135deg,#E85D20,#c94d18);color:#fff;box-shadow:0 2px 14px rgba(232,93,32,.4),inset 0 1px 0 rgba(255,255,255,.12)}
+
+  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:13px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase;margin:16px 0 6px}
+  input{width:100%;padding:13px 14px;font-size:16px;background:rgba(10,10,10,.9);border:1px solid var(--line);border-radius:11px;color:var(--ink);font-family:"DM Sans",sans-serif;transition:border-color .2s,box-shadow .2s}
+  input:focus{outline:none;border-color:var(--orange);box-shadow:0 0 0 3px rgba(232,93,32,.12)}
   .field-extra{display:none}
   body.mode-signup #forgot{display:none}
   #forgot{cursor:pointer;color:var(--orange)!important;margin-top:10px}
   body.mode-signup .field-extra{display:block}
 
-  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:22px;border:0;border-radius:11px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.6px;text-transform:uppercase;padding:15px;cursor:pointer}
-  .cta:active{transform:translateY(1px)}
-  .cta:disabled{opacity:.55;cursor:default}
+  /* ── Botón CTA ── */
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:22px;border:0;border-radius:12px;background:linear-gradient(135deg,#d44d18,#E85D20,#f06a28);color:#fff;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.8px;text-transform:uppercase;padding:16px;cursor:pointer;box-shadow:0 4px 20px rgba(232,93,32,.38),0 1px 0 rgba(255,255,255,.1) inset;position:relative;overflow:hidden;transition:box-shadow .2s,transform .1s}
+  .cta::after{content:"";position:absolute;top:0;left:-120%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.14),transparent);transition:left .5s ease}
+  .cta:hover::after{left:160%}
+  .cta:hover{box-shadow:0 6px 28px rgba(232,93,32,.52)}
+  .cta:active{transform:translateY(1px);box-shadow:0 2px 10px rgba(232,93,32,.3)}
+  .cta:disabled{opacity:.5;cursor:default}
 
-  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:14px;line-height:1.5;border-radius:10px;padding:11px 13px;display:none}
+  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:13px;line-height:1.5;border-radius:10px;padding:11px 13px;display:none}
   .msg.show{display:block}
   .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
   .msg.ok{color:var(--ok);background:#0d160e;border:1px solid #1d3a22}
 
   .foot{text-align:center;margin-top:18px;font-size:15px;color:var(--ink-faint);font-family:"Barlow Condensed",sans-serif;letter-spacing:.3px}
 
-  .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:s 1s linear infinite;display:none}
+  .spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:s 1s linear infinite;display:none}
   @keyframes s{to{transform:rotate(360deg)}}
   .loading .spin{display:inline-block}
-  .loading .cta-label{opacity:.6}
+  .loading .cta-label{opacity:.7}
 
+  /* ── Éxito ── */
   #success{display:none;text-align:center}
   #card,#keyGate{display:none}
   body.view-card #card{display:block}
   body.view-key #keyGate{display:block}
   body.done #card{display:none!important}
   body.done #success{display:block}
-  .check{width:64px;height:64px;border-radius:50%;border:2px solid var(--ok);color:var(--ok);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
-  #success h2{font-family:"Bebas Neue",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:.5px}
-  #success p{color:var(--ink-dim);margin:0 0 20px}
+  .check{width:72px;height:72px;border-radius:50%;border:2px solid var(--ok);color:var(--ok);display:grid;place-items:center;margin:0 auto 18px;font-size:34px;box-shadow:0 0 30px rgba(95,184,106,.2)}
+  #success h2{font-family:"Bebas Neue",sans-serif;font-size:38px;margin:0 0 8px;letter-spacing:.5px}
+  #success p{color:var(--ink-dim);margin:0 0 22px}
 
   #keyGate p{color:var(--ink-dim);font-size:14px;text-align:center;margin:0 0 4px}
   .pwrap{position:relative}
   .pwrap > input{padding-right:78px}
   .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--orange);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;padding:10px 8px}
+  @media(prefers-reduced-motion:reduce){.cta::after{display:none}}
 </style>
 </head>
 <body class="mode-login">
+<div class="bg-fx"><div class="bg-glow"></div><div class="bg-grid"></div><div class="bg-noise"></div></div>
 <div class="wrap">
 
   <div class="brand">
     <div class="eyebrow">Pasaporte</div>
     <h1>RIDERA 125</h1>
     <div class="sub">Antioquia</div>
+    <p class="tagline">El reto de sellar los 125 municipios.<br>Cada pueblo, un sello. ¿Te le mides?</p>
   </div>
+
+  <div class="divider"><span>acceso</span></div>
 
   <!-- Gate: pegar la llave (solo la primera vez) -->
   <div class="card" id="keyGate">

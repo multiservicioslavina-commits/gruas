@@ -17,39 +17,46 @@
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  :root{--bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a}
+  :root{--bg:#0a0a0a;--panel:#131313;--panel-2:#1a1a1a;--line:#242424;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a;--copper:#c9a84c}
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
   html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
-  body{max-width:560px;margin:0 auto;min-height:100vh;padding:0 0 30px}
-  .top{padding:20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
-  .back{font-family:"Bebas Neue",sans-serif;font-size:30px;color:var(--ink-dim);text-decoration:none;line-height:1}
-  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
-  .top h1{font-family:"Bebas Neue",sans-serif;font-size:36px;line-height:.95;margin:2px 0 0}
-  .wrap{padding:18px}
+  body{max-width:560px;margin:0 auto;min-height:100vh;padding:0 0 30px;overflow-x:hidden}
+  .bg-fx{position:fixed;inset:0;pointer-events:none;z-index:0;overflow:hidden}
+  .bg-glow{position:absolute;top:-20%;left:50%;transform:translateX(-50%);width:140%;height:55%;background:radial-gradient(ellipse at 50% 0%,rgba(232,93,32,.12) 0%,transparent 65%)}
+  .bg-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(232,93,32,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(232,93,32,.03) 1px,transparent 1px);background-size:46px 46px;-webkit-mask-image:radial-gradient(ellipse 100% 50% at 50% 0%,black 0%,transparent 80%);mask-image:radial-gradient(ellipse 100% 50% at 50% 0%,black 0%,transparent 80%)}
+  .top{padding:22px 20px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;position:sticky;top:0;background:rgba(10,10,10,.95);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);z-index:5}
+  .back{font-family:"Bebas Neue",sans-serif;font-size:32px;color:var(--orange);text-decoration:none;line-height:1;opacity:.8;transition:opacity .15s}
+  .back:hover{opacity:1}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:11px;letter-spacing:.38em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:36px;line-height:.92;margin:4px 0 0;background:linear-gradient(155deg,#f4f1ea 20%,#c9a84c 60%,#f4f1ea 90%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .wrap{padding:18px;position:relative;z-index:1}
   .pick{text-align:center;padding:36px 20px}
   .pick .ico{font-size:46px}
-  .pick h2{font-family:"Bebas Neue",sans-serif;font-size:30px;margin:14px 0 6px}
+  .pick h2{font-family:"Bebas Neue",sans-serif;font-size:32px;margin:14px 0 6px}
   .pick p{color:var(--ink-dim);font-size:16px;margin:0 0 18px;line-height:1.5}
-  .cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.5px;text-transform:uppercase;padding:15px 26px;cursor:pointer;text-decoration:none}
+  .cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:0;border-radius:13px;background:linear-gradient(135deg,#c94d18,#E85D20,#f06a28);color:#fff;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.6px;text-transform:uppercase;padding:15px 26px;cursor:pointer;text-decoration:none;box-shadow:0 4px 18px rgba(232,93,32,.35);transition:box-shadow .2s}
+  .cta:hover{box-shadow:0 6px 26px rgba(232,93,32,.5)}
   .cta:active{transform:translateY(1px)}
-  .seg{display:flex;background:var(--panel-2);border-radius:11px;padding:4px;margin-bottom:14px}
-  .seg .o{flex:1;text-align:center;padding:11px;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim)}
-  .seg .o.on{background:var(--orange);color:#100a06}
-  .mapbox{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:10px;overflow:hidden}
+  .seg{display:flex;background:rgba(8,8,8,.8);border:1px solid var(--line);border-radius:11px;padding:4px;margin-bottom:14px}
+  .seg .o{flex:1;text-align:center;padding:11px;border-radius:8px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-faint);transition:.2s}
+  .seg .o.on{background:linear-gradient(135deg,#E85D20,#c94d18);color:#fff;box-shadow:0 2px 12px rgba(232,93,32,.35)}
+  .mapbox{background:rgba(16,16,16,.95);border:1px solid rgba(42,42,42,.9);border-radius:16px;padding:10px;overflow:hidden;box-shadow:0 8px 30px rgba(0,0,0,.4)}
   svg{width:100%;height:auto;display:block}
-  .count{text-align:center;margin-top:14px;font-family:"Bebas Neue",sans-serif;font-size:34px;letter-spacing:.5px}
-  .count b{color:var(--orange)} .count span{color:var(--ink-dim);font-size:22px}
-  .hint{text-align:center;color:var(--ink-dim);font-size:15px;margin-top:4px;line-height:1.5}
+  .count{text-align:center;margin-top:14px;font-family:"Bebas Neue",sans-serif;font-size:36px;letter-spacing:.5px}
+  .count b{color:var(--orange);filter:drop-shadow(0 0 8px rgba(232,93,32,.3))} .count span{color:var(--ink-dim);font-size:22px}
+  .hint{text-align:center;color:var(--ink-faint);font-size:14px;margin-top:4px;line-height:1.5}
   .tools{display:flex;gap:10px;margin-top:16px}
-  .tools .btn{flex:1;text-align:center;padding:13px;border-radius:11px;background:var(--panel);border:1px solid var(--line);color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;cursor:pointer;text-decoration:none}
+  .tools .btn{flex:1;text-align:center;padding:13px;border-radius:12px;background:rgba(16,16,16,.95);border:1px solid var(--line);color:var(--ink-dim);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;cursor:pointer;text-decoration:none;transition:border-color .2s,color .2s}
+  .tools .btn:hover{border-color:rgba(232,93,32,.3);color:var(--ink)}
   #file{display:none}
-  #loader{min-height:60vh;display:grid;place-items:center}
-  .spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:s 1s linear infinite}
-  @keyframes s{to{transform:rotate(360deg)}}
+  #loader{min-height:60vh;display:grid;place-items:center;position:relative;z-index:1}
+  .spinner{width:32px;height:32px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:sp 1s linear infinite;box-shadow:0 0 16px rgba(232,93,32,.15)}
+  @keyframes sp{to{transform:rotate(360deg)}}
   .hidden{display:none!important}
 </style>
 </head>
 <body>
+<div class="bg-fx"><div class="bg-glow"></div><div class="bg-grid"></div></div>
   <header class="top">
     <a class="back" href="pasaporte.html">‹</a>
     <div><div class="eyebrow">Rompecabezas · Antioquia 125</div><h1>Mi Mapa</h1></div>
