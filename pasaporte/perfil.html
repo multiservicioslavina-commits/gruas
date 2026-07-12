@@ -91,6 +91,12 @@
     <button class="cta" id="saveBtn"><span class="lbl">Guardar y entrar</span><span class="spin"></span></button>
     <a class="skip" href="pasaporte.html">Completar después →</a>
     <div class="msg" id="msg"></div>
+
+    <div style="margin-top:32px;border-top:1px solid var(--line);padding-top:20px;text-align:center;display:flex;flex-direction:column;gap:12px">
+      <a href="privacidad.html" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.3px;text-decoration:none">Política de privacidad</a>
+      <a href="#" id="logoutLink" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+      <a href="#" id="deleteAccLink" style="color:#c0392b;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.3px;text-decoration:none">Eliminar mi cuenta</a>
+    </div>
   </div>
 </div>
 
@@ -147,6 +153,36 @@ $("saveBtn").addEventListener("click", async ()=>{
   }catch(err){
     m.textContent="Ups: "+err.message; m.className="msg show error";
     $("saveBtn").classList.remove("loading"); $("saveBtn").disabled=false;
+  }
+});
+</script>
+<script>
+document.getElementById("logoutLink").addEventListener("click", async e=>{
+  e.preventDefault();
+  try{ await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+});
+
+document.getElementById("deleteAccLink").addEventListener("click", async e=>{
+  e.preventDefault();
+  if(!confirm("¿Seguro que quieres eliminar tu cuenta?\n\nSe borrarán tus sellos, perfil y membresías de club. Esta acción no se puede deshacer.")) return;
+  const btn = document.getElementById("deleteAccLink");
+  btn.textContent = "Eliminando...";
+  try{
+    // Borrar datos propios (RLS permite al rider borrar sus propios registros)
+    if(user){
+      await sb.from("club_members").delete().eq("rider_id", user.id);
+      await sb.from("sellos").delete().eq("rider_id", user.id);
+      await sb.from("riders").delete().eq("id", user.id);
+    }
+    await sb.auth.signOut();
+    try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+    alert("Tu cuenta y datos han sido eliminados. ¡Hasta pronto!");
+    window.location.href="index.html";
+  }catch(err){
+    btn.textContent = "Eliminar mi cuenta";
+    alert("No se pudo eliminar: " + (err.message||err));
   }
 });
 </script>

@@ -1,7 +1,7 @@
-const CACHE = "ridera125-v2";
+const CACHE = "ridera125-v3";
 const ASSETS = [
   "index.html","perfil.html","pasaporte.html","sello.html","album.html",
-  "compartir.html","mapa.html","clubes.html","reset.html",
+  "compartir.html","mapa.html","clubes.html","reset.html","privacidad.html",
   "manifest.json","icon-192.png","icon-512.png","apple-touch-icon.png","og.png"
 ];
 self.addEventListener("install", e=>{

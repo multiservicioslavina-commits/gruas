@@ -62,6 +62,9 @@
     <h2>Arma tu Antioquia</h2>
     <p>Elige una foto tuya (tu moto, tu familia, un paisaje...). Tomará la forma de Antioquia y se irá revelando cada vez que selles un municipio.</p>
     <button class="cta" id="pickBtn">Elegir mi foto</button>
+    <div style="text-align:center;margin-top:22px">
+      <a href="#" id="logoutPick" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+    </div>
   </div>
 
   <div class="wrap hidden" id="mapView">
@@ -75,6 +78,9 @@
     <div class="tools">
       <button class="btn" id="changeBtn">🔄 Cambiar foto</button>
       <a class="btn" href="sello.html">＋ Sellar municipio</a>
+    </div>
+    <div style="text-align:center;margin-top:18px">
+      <a href="#" id="logout" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
     </div>
   </div>
 
@@ -150,13 +156,22 @@ $("file").addEventListener("change", async e=>{
     const up = await sb.storage.from("sellos").upload(path, blob, { contentType:"image/jpeg", upsert:true });
     if(up.error) throw up.error;
     const url = sb.storage.from("sellos").getPublicUrl(path).data.publicUrl + "?t=" + Date.now();
-    const { error } = await sb.from("riders").update({ foto_mapa: url }).eq("id", userId);
+    const { error } = await sb.from("riders").upsert({ id: userId, foto_mapa: url }, { onConflict: 'id' });
     if(error) throw error;
     photo = url;
   }catch(err){
     alert("Se guardó en este dispositivo, pero no se pudo subir a la nube:\n" + (err.message||err) + "\n\nRevisa tu conexión e intenta de nuevo.");
   }
 });
+async function doLogout(e){
+  e.preventDefault();
+  try{ await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+}
+document.getElementById("logout").addEventListener("click", doLogout);
+document.getElementById("logoutPick").addEventListener("click", doLogout);
+
 function compress(file,maxW=1000,q=0.72){
   return new Promise((res,rej)=>{
     const img=new Image();

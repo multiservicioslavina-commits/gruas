@@ -168,6 +168,11 @@
 
     <button class="cta" id="sellarBtn" disabled><span class="lbl">Sellar este municipio</span><span class="spin"></span></button>
     <div class="msg" id="msg"></div>
+    <div style="margin-top:24px;text-align:center">
+      <a href="pasaporte.html" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">← Volver al pasaporte</a>
+      <span style="color:var(--line);margin:0 10px">•</span>
+      <a href="#" id="logout" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+    </div>
   </div>
 </div>
 
@@ -357,7 +362,10 @@ $("gpsBtn").addEventListener("click",()=>{
   );
 });
 
-function updateBtn(){ $("sellarBtn").disabled = !(selected && photoData); }
+function updateBtn(){
+  // Para reemplazar sello ya existente también se requiere foto nueva
+  $("sellarBtn").disabled = !(selected && photoData);
+}
 
 const VERIF_RADIUS_KM = 40;
 function haversineKm(la1,lo1,la2,lo2){
@@ -491,6 +499,13 @@ $("syncNow").addEventListener("click", async ()=>{
 
 $("goPasaporte").addEventListener("click",()=>{ window.location.href=CONFIG.PASAPORTE_URL; });
 $("otro").addEventListener("click",()=>{ location.reload(); });
+
+document.getElementById("logout").addEventListener("click", async e=>{
+  e.preventDefault();
+  try{ if(sb) await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+});
 
 function showErr(t){ const m=$("msg"); m.textContent=t; m.className="msg show error"; }
 function hideErr(){ $("msg").className="msg"; }

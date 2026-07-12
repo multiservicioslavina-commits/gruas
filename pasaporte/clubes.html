@@ -94,6 +94,10 @@
     <h2>Ranking de clubes 🏁</h2>
     <div id="ranking"></div>
 
+    <div style="text-align:center;margin-top:28px;padding-bottom:8px">
+      <a href="#" id="logout" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+    </div>
+
   </div>
 
 <script>
@@ -140,14 +144,19 @@ async function loadMyClubs(){
 }
 
 async function loadRanking(){
-  const { data } = await sb.from("club_rankings").select("*").order("municipios_cubiertos",{ascending:false}).limit(50);
   const box=$("ranking");
-  if(!data || !data.length){ box.innerHTML='<div class="empty">Aún no hay clubes en el ranking. ¡Sé el primero!</div>'; return; }
-  box.innerHTML = data.map((c,i)=>
-    '<div class="rank-row"><div class="rank-pos">'+(i+1)+'</div>'
-    +'<div class="rank-info"><div class="n">'+c.nombre+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
-    +'<div class="rank-pct">'+(c.porcentaje_club||0)+'%</div></div>'
-  ).join("");
+  try{
+    const { data, error } = await sb.from("club_rankings").select("*").order("municipios_cubiertos",{ascending:false}).limit(50);
+    if(error) throw error;
+    if(!data || !data.length){ box.innerHTML='<div class="empty">Aún no hay clubes en el ranking. ¡Sé el primero!</div>'; return; }
+    box.innerHTML = data.map((c,i)=>
+      '<div class="rank-row"><div class="rank-pos">'+(i+1)+'</div>'
+      +'<div class="rank-info"><div class="n">'+c.nombre+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
+      +'<div class="rank-pct">'+(c.porcentaje_club||0)+'%</div></div>'
+    ).join("");
+  }catch(e){
+    box.innerHTML='<div class="empty" style="color:var(--orange)">No se pudo cargar el ranking. Revisa tu conexión.</div>';
+  }
 }
 
 // Unirse por código
@@ -195,6 +204,13 @@ $("createBtn").addEventListener("click", async ()=>{
     await loadMyClubs(); await loadRanking();
   }catch(e){ msg.className="msg err"; msg.textContent="Error: "+(e.message||e); }
   finally{ $("createBtn").disabled=false; }
+});
+
+document.getElementById("logout").addEventListener("click", async e=>{
+  e.preventDefault();
+  try{ await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
 });
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
