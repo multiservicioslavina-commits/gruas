@@ -121,6 +121,17 @@
   .ios-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:var(--orange);color:#fff;font-family:'Bebas Neue';font-size:16px;display:grid;place-items:center}
   .ios-step b{color:var(--text)}
   .share-ic{display:inline-flex;vertical-align:-3px;color:var(--orange-2)}
+
+  /* FLOATING INSTALL BANNER */
+  .install-banner{position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface);border-top:1px solid rgba(232,93,32,.35);padding:14px 18px max(18px,env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;box-shadow:0 -8px 32px rgba(0,0,0,.55)}
+  .install-banner.on{display:flex}
+  .ib-icon{font-size:30px;flex-shrink:0}
+  .ib-text{flex:1;min-width:0}
+  .ib-text strong{display:block;font-size:15px;font-weight:700;margin-bottom:1px}
+  .ib-text span{font-size:12px;color:var(--muted)}
+  .ib-btn{flex-shrink:0;background:var(--orange);color:#fff;border:none;border-radius:11px;padding:12px 18px;font-family:'DM Sans';font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap;transition:filter .15s}
+  .ib-btn:active{filter:brightness(.9)}
+  .ib-close{flex-shrink:0;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 2px;line-height:1}
 </style>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-JRQQPRV6QC"></script>
@@ -237,6 +248,17 @@
   </main>
 
   <footer>Ridera · Comunidad motera de Antioquia</footer>
+
+  <!-- FLOATING INSTALL BANNER (Android/Chrome: aparece automático; iOS: instrucciones) -->
+  <div class="install-banner" id="installBanner">
+    <div class="ib-icon">📱</div>
+    <div class="ib-text">
+      <strong>Instala Ridera</strong>
+      <span>Acceso rápido · Funciona sin internet</span>
+    </div>
+    <button class="ib-btn" id="bannerInstallBtn">Instalar</button>
+    <button class="ib-close" id="bannerCloseBtn" aria-label="Cerrar">✕</button>
+  </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
@@ -417,10 +439,16 @@
   var installBtn = document.getElementById("installBtn");
   var installHint = document.getElementById("installHint");
   var iosHelp = document.getElementById("iosHelp");
+  var banner = document.getElementById("installBanner");
+  var bannerInstallBtn = document.getElementById("bannerInstallBtn");
+  var bannerCloseBtn = document.getElementById("bannerCloseBtn");
   var deferredPrompt = null;
   var isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
   var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var bannerDismissed = sessionStorage.getItem("ib_dismissed");
+
   function showInstalled(){
+    hideBanner();
     if(!installBtn) return;
     var d = document.createElement("div");
     d.className = "install-done";
@@ -429,16 +457,70 @@
     if(installHint) installHint.style.display = "none";
     if(iosHelp) iosHelp.classList.add("hide");
   }
+
+  function showBanner(){
+    if(!banner || bannerDismissed) return;
+    banner.classList.add("on");
+  }
+
+  function hideBanner(){
+    if(!banner) return;
+    banner.classList.remove("on");
+  }
+
   if(isStandalone){ showInstalled(); }
-  window.addEventListener("beforeinstallprompt", function(e){ e.preventDefault(); deferredPrompt = e; });
+
+  window.addEventListener("beforeinstallprompt", function(e){
+    e.preventDefault();
+    deferredPrompt = e;
+    showBanner();
+  });
+
+  // iOS: show banner after 2s if not installed and in Safari
+  if(!isStandalone && isIOS && !bannerDismissed){
+    setTimeout(function(){ showBanner(); }, 2000);
+    if(bannerInstallBtn){ bannerInstallBtn.textContent = "Cómo instalar"; }
+  }
+
+  if(bannerInstallBtn){
+    bannerInstallBtn.addEventListener("click", async function(){
+      if(deferredPrompt){
+        deferredPrompt.prompt();
+        try{ var res = await deferredPrompt.userChoice; if(res.outcome==="accepted") showInstalled(); }catch(e){}
+        deferredPrompt = null;
+        hideBanner();
+        return;
+      }
+      if(isIOS && iosHelp){
+        hideBanner();
+        iosHelp.classList.remove("hide");
+        iosHelp.scrollIntoView({behavior:"smooth", block:"center"});
+        return;
+      }
+      hideBanner();
+      if(installHint){ installHint.textContent = "Abre el menú ⋮ de tu navegador y elige \"Instalar app\" o \"Agregar a pantalla de inicio\"."; }
+    });
+  }
+
+  if(bannerCloseBtn){
+    bannerCloseBtn.addEventListener("click", function(){
+      hideBanner();
+      sessionStorage.setItem("ib_dismissed","1");
+      bannerDismissed = "1";
+    });
+  }
+
+  // Mid-page install button
   if(installBtn){
     installBtn.addEventListener("click", async function(){
       if(deferredPrompt){ deferredPrompt.prompt(); try{ await deferredPrompt.userChoice; }catch(e){} deferredPrompt = null; return; }
       if(isIOS && iosHelp){ iosHelp.classList.toggle("hide"); iosHelp.scrollIntoView({behavior:"smooth", block:"center"}); return; }
-      if(installHint){ installHint.textContent = "Abre el menú de tu navegador y elige \"Instalar app\" o \"Agregar a pantalla de inicio\"."; }
+      if(installHint){ installHint.textContent = "Abre el menú ⋮ de tu navegador y elige \"Instalar app\" o \"Agregar a pantalla de inicio\"."; }
     });
   }
+
   window.addEventListener("appinstalled", function(){ showInstalled(); });
+
   if("serviceWorker" in navigator){
     window.addEventListener("load", function(){ navigator.serviceWorker.register("/sw.js").catch(function(){}); });
   }
