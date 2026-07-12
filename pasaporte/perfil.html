@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Perfil · Ridera 125</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<link rel="icon" href="favicon.ico" sizes="any">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;--orange:#E85D20;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;--ok:#5fb86a;--err:#ff8a6b}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{font-size:17px;line-height:1.5;max-width:480px;margin:0 auto;min-height:100vh;padding:0 0 30px}
+  .top{padding:22px 20px 16px;border-bottom:1px solid var(--line)}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:42px;line-height:.95;letter-spacing:.5px;margin:4px 0 0}
+  .top p{color:var(--ink-dim);font-size:14px;margin:6px 0 0}
+  .wrap{padding:18px}
+  label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:16px 0 6px}
+  input,select{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
+  input:focus,select:focus{outline:none;border-color:var(--orange)}
+  input:disabled{color:var(--ink-dim)}
+  .row{display:flex;gap:10px}.row>div{flex:1}
+  .seg{display:flex;gap:8px;margin-top:6px}
+  .seg .opt{flex:1;text-align:center;padding:13px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim)}
+  .seg .opt.on{background:var(--orange);color:#100a06;border-color:var(--orange)}
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:26px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.6px;text-transform:uppercase;padding:16px;cursor:pointer}
+  .cta:active{transform:translateY(1px)} .cta:disabled{opacity:.5}
+  .skip{display:block;text-align:center;margin-top:14px;color:var(--ink-faint);font-family:"Barlow Condensed",sans-serif;font-weight:600;letter-spacing:.4px;text-decoration:none}
+  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:14px;border-radius:10px;padding:11px 13px;display:none}
+  .msg.show{display:block} .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
+  .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:s 1s linear infinite;display:none}
+  @keyframes s{to{transform:rotate(360deg)}} .loading .spin{display:inline-block}
+  #app{display:none} body.ready #app{display:block}
+  .loader{min-height:100vh;display:grid;place-items:center}
+  .spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:s 1s linear infinite}
+  body.ready #loader{display:none}
+</style>
+</head>
+<body>
+<div class="loader" id="loader"><div class="spinner"></div></div>
+
+<div id="app">
+  <header class="top">
+    <div class="eyebrow">Pasaporte · Ridera 125</div>
+    <h1>Tu perfil de rider</h1>
+    <p>Esto nos ayuda a armar mejores rutas y tu carné. Toma 1 minuto.</p>
+  </header>
+
+  <div class="wrap">
+    <label>Nombre de rider</label>
+    <input id="nombre" type="text" placeholder="Ej: Samuel TBC">
+
+    <label>Correo</label>
+    <input id="correo" type="email" disabled>
+
+    <label>Teléfono / WhatsApp</label>
+    <input id="telefono" type="tel" placeholder="+57 3xx xxx xxxx" inputmode="tel">
+
+    <label>¿De dónde eres?</label>
+    <input id="ciudad" type="text" placeholder="Ej: Medellín">
+
+    <label>Edad</label>
+    <input id="edad" type="number" placeholder="Ej: 48" inputmode="numeric" min="14" max="99">
+
+    <label>Tu moto</label>
+    <div class="row">
+      <div><input id="marca" type="text" placeholder="Marca (ej. BMW)"></div>
+      <div><input id="modelo" type="text" placeholder="Modelo (ej. GS 1250)"></div>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <div><input id="cc" type="number" placeholder="Cilindraje (cc)" inputmode="numeric"></div>
+    </div>
+
+    <label>¿Viajas solo o acompañado?</label>
+    <div class="seg" id="viajaSeg">
+      <div class="opt" data-v="Solo">Solo</div>
+      <div class="opt" data-v="Acompañado">Acompañado</div>
+    </div>
+
+    <button class="cta" id="saveBtn"><span class="lbl">Guardar y entrar</span><span class="spin"></span></button>
+    <a class="skip" href="pasaporte.html">Completar después →</a>
+    <div class="msg" id="msg"></div>
+
+    <div style="margin-top:32px;border-top:1px solid var(--line);padding-top:20px;text-align:center;display:flex;flex-direction:column;gap:12px">
+      <a href="privacidad.html" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:15px;letter-spacing:.3px;text-decoration:none">Política de privacidad</a>
+      <a href="#" id="logoutLink" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+      <a href="#" id="deleteAccLink" style="color:#c0392b;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.3px;text-decoration:none">Eliminar mi cuenta</a>
+    </div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL="https://vzzxsdtsaahhzyctvmhx.supabase.co";
+const SUPABASE_KEY="sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let user=null, viaja="";
+
+(async function(){
+  const { data:sess } = await sb.auth.getSession();
+  if(!sess.session){ window.location.href="index.html"; return; }
+  user = sess.session.user;
+  $("correo").value = user.email || "";
+  // Trae lo que ya exista
+  const { data:p } = await sb.from("riders").select("*").eq("id",user.id).maybeSingle();
+  if(p){
+    $("nombre").value = p.nombre||"";
+    $("telefono").value = p.telefono||"";
+    $("ciudad").value = p.ciudad||"";
+    $("edad").value = p.edad||"";
+    $("marca").value = p.moto_marca||"";
+    $("modelo").value = p.moto_modelo||"";
+    $("cc").value = p.moto_cc||"";
+    if(p.viaja){ setViaja(p.viaja); }
+  }
+  document.body.classList.add("ready");
+})();
+
+function setViaja(v){ viaja=v; document.querySelectorAll("#viajaSeg .opt").forEach(o=>o.classList.toggle("on",o.dataset.v===v)); }
+document.querySelectorAll("#viajaSeg .opt").forEach(o=>o.addEventListener("click",()=>setViaja(o.dataset.v)));
+
+$("saveBtn").addEventListener("click", async ()=>{
+  const m=$("msg"); m.className="msg";
+  const nombre=$("nombre").value.trim();
+  if(!nombre){ m.textContent="Ponte un nombre de rider."; m.className="msg show error"; return; }
+  $("saveBtn").classList.add("loading"); $("saveBtn").disabled=true;
+  try{
+    const upd={
+      nombre,
+      correo: user.email || null,
+      telefono: $("telefono").value.trim() || null,
+      ciudad: $("ciudad").value.trim() || null,
+      edad: $("edad").value ? parseInt($("edad").value,10) : null,
+      moto_marca: $("marca").value.trim() || null,
+      moto_modelo: $("modelo").value.trim() || null,
+      moto_cc: $("cc").value ? parseInt($("cc").value,10) : null,
+      viaja: viaja || null
+    };
+    const { error } = await sb.from("riders").upsert({ id: user.id, ...upd }, { onConflict: 'id' });
+    if(error) throw error;
+    window.location.href="pasaporte.html";
+  }catch(err){
+    m.textContent="Ups: "+err.message; m.className="msg show error";
+    $("saveBtn").classList.remove("loading"); $("saveBtn").disabled=false;
+  }
+});
+</script>
+<script>
+document.getElementById("logoutLink").addEventListener("click", async e=>{
+  e.preventDefault();
+  try{ await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+});
+
+document.getElementById("deleteAccLink").addEventListener("click", async e=>{
+  e.preventDefault();
+  if(!confirm("¿Seguro que quieres eliminar tu cuenta?\n\nSe borrarán tus sellos, perfil y membresías de club. Esta acción no se puede deshacer.")) return;
+  const btn = document.getElementById("deleteAccLink");
+  btn.textContent = "Eliminando...";
+  try{
+    // Borrar datos propios (RLS permite al rider borrar sus propios registros)
+    if(user){
+      await sb.from("club_members").delete().eq("rider_id", user.id);
+      await sb.from("sellos").delete().eq("rider_id", user.id);
+      await sb.from("riders").delete().eq("id", user.id);
+    }
+    await sb.auth.signOut();
+    try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+    alert("Tu cuenta y datos han sido eliminados. ¡Hasta pronto!");
+    window.location.href="index.html";
+  }catch(err){
+    btn.textContent = "Eliminar mi cuenta";
+    alert("No se pudo eliminar: " + (err.message||err));
+  }
+});
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>
