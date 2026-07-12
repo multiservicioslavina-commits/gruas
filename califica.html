@@ -118,9 +118,9 @@ function gracias(){
       <h2>¡Gracias!</h2>
       <p>Tu calificación quedó registrada.</p>
       <div class="stars-shown">${'⭐'.repeat(rating)}</div>
-      <p style="margin-top:20px;font-size:15px;color:var(--muted)">Cuando vuelvas a necesitar una grúa,<br>entra a <strong style="color:var(--text)">gruas.ridera.com.co</strong></p>
-    </div>
-    <a class="btn" href="/" style="margin-top:8px;text-decoration:none">Pedir otra grúa</a>`;
+    </div>`;
+  // Redirigir al inicio en 3 segundos para que la PWA no quede atrapada en esta URL
+  setTimeout(() => { location.replace('/'); }, 3000);
 }
 async function installPwa(){
   if (deferredPrompt) {
