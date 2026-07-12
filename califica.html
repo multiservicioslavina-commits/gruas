@@ -121,17 +121,46 @@ async function enviar(){
   }catch(e){ b.disabled=false; b.textContent='Enviar calificación'; alert('Error de conexión'); }
 }
 function gracias(){
+  var canInstall = !_isStandalone && (_deferredPrompt || _isIOS);
+  var installBlock = canInstall ? `
+    <div class="app-cta" id="installCta">
+      <div class="app-cta-title">Tenla siempre a mano</div>
+      <div class="app-cta-sub">Instala Ridera en tu celular y pide grúa en segundos, sin abrir el navegador.</div>
+      <div class="app-btns">
+        <button class="app-btn" id="inlineInstallBtn">${_isIOS ? 'Cómo instalar' : 'Instalar Ridera'}</button>
+      </div>
+    </div>` : '';
+
   document.getElementById('content').innerHTML = `
     <div class="big-msg">
       <span class="ic">🙏</span>
       <h2>¡Gracias!</h2>
       <p>Tu calificación quedó registrada.</p>
       <div class="stars-shown">${'⭐'.repeat(rating)}</div>
-    </div>`;
-  // Mostrar banner de instalación después de un segundo
-  setTimeout(() => showInstallBanner(), 1000);
-  // Redirigir al inicio en 6 s para que la PWA no quede atrapada en esta URL
-  setTimeout(() => { location.replace('/'); }, 6000);
+    </div>
+    ${installBlock}`;
+
+  var inlineBtn = document.getElementById('inlineInstallBtn');
+  if(inlineBtn){
+    inlineBtn.addEventListener('click', async function(){
+      if(_deferredPrompt){
+        _deferredPrompt.prompt();
+        try{ await _deferredPrompt.userChoice; }catch(e){}
+        _deferredPrompt = null;
+        var cta = document.getElementById('installCta');
+        if(cta) cta.remove();
+      } else if(_isIOS){
+        document.getElementById('installCta').innerHTML = `
+          <p style="font-family:'Barlow Condensed';font-size:17px;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:14px">Cómo instalar en iPhone</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">1. Toca el botón <strong style="color:var(--text)">Compartir</strong> en Safari</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">2. Elige <strong style="color:var(--text)">"Agregar a inicio"</strong></p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7">3. Toca <strong style="color:var(--text)">"Agregar"</strong> — listo</p>`;
+      }
+    });
+  }
+
+  // Redirect home — more time if install CTA is visible
+  setTimeout(() => { location.replace('/'); }, canInstall ? 30000 : 8000);
 }
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js').catch(()=>{});
