@@ -15,14 +15,14 @@ export default async () => {
 
   try {
     const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/grueros?aprobado=eq.SI&slug=not.is.null&select=slug,updated_at&order=updated_at.desc`,
+      `${SUPABASE_URL}/rest/v1/grueros?aprobado=eq.SI&slug=not.is.null&select=slug,created_at&order=created_at.desc`,
       { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
     );
     if (res.ok) {
-      const rows: { slug: string; updated_at: string }[] = await res.json();
+      const rows: { slug: string; created_at: string }[] = await res.json();
       grueroUrls = rows.map(r => ({
         url: `/grua/${r.slug}`,
-        mod: r.updated_at ? r.updated_at.split('T')[0] : today,
+        mod: r.created_at ? r.created_at.split('T')[0] : today,
         priority: '0.9',
       }));
     }
