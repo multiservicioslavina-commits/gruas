@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
 
 const AWS_REGION = Deno.env.get("REMOTION_REGION") || "us-east-1";
 const FUNCTION_NAME = Deno.env.get("REMOTION_FUNCTION_NAME") || "";
@@ -14,71 +15,26 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-const encoder = new TextEncoder();
-
-async function hmac(key: ArrayBuffer | Uint8Array, msg: string): Promise<ArrayBuffer> {
-  const cryptoKey = await crypto.subtle.importKey(
-    "raw",
-    key instanceof Uint8Array ? key : new Uint8Array(key),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  return crypto.subtle.sign("HMAC", cryptoKey, encoder.encode(msg));
-}
-
-async function sha256(msg: string): Promise<string> {
-  const hash = await crypto.subtle.digest("SHA-256", encoder.encode(msg));
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+const aws = new AwsClient({
+  accessKeyId: AWS_ACCESS_KEY,
+  secretAccessKey: AWS_SECRET_KEY,
+  region: AWS_REGION,
+  service: "lambda",
+});
 
 async function invokeLambda(
   payload: string,
   invocationType: "RequestResponse" | "Event" = "RequestResponse",
 ): Promise<{ status: number; body: string }> {
-  const now = new Date();
-  const dateStamp = now.toISOString().replace(/[:-]|\.\d{3}/g, "").slice(0, 8);
-  const amzDate = now.toISOString().replace(/[:-]|\.\d{3}/g, "");
+  const endpoint =
+    `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
 
-  const service = "lambda";
-  const host = `lambda.${AWS_REGION}.amazonaws.com`;
-  const path = `/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
-  const payloadHash = await sha256(payload);
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "X-Amz-Date": amzDate,
-    "X-Amz-Invocation-Type": invocationType,
-  };
-
-  const canonicalHeaders =
-    `content-type:application/json\nhost:${host}\nx-amz-date:${amzDate}\nx-amz-invocation-type:${invocationType}\n`;
-  const signedHeaders = "content-type;host;x-amz-date;x-amz-invocation-type";
-  const canonicalRequest =
-    `POST\n${path}\n\n${canonicalHeaders}\n${signedHeaders}\n${payloadHash}`;
-
-  const credentialScope = `${dateStamp}/${AWS_REGION}/${service}/aws4_request`;
-  const stringToSign =
-    `AWS4-HMAC-SHA256\n${amzDate}\n${credentialScope}\n${await sha256(canonicalRequest)}`;
-
-  const kDate = await hmac(encoder.encode(`AWS4${AWS_SECRET_KEY}`), dateStamp);
-  const kRegion = await hmac(kDate, AWS_REGION);
-  const kService = await hmac(kRegion, service);
-  const kSigning = await hmac(kService, "aws4_request");
-  const signatureBytes = await hmac(kSigning, stringToSign);
-  const signature = Array.from(new Uint8Array(signatureBytes))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  headers["Authorization"] =
-    `AWS4-HMAC-SHA256 Credential=${AWS_ACCESS_KEY}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  headers["Host"] = host;
-
-  const res = await fetch(`https://${host}${path}`, {
+  const res = await aws.fetch(endpoint, {
     method: "POST",
-    headers,
+    headers: {
+      "Content-Type": "application/json",
+      "X-Amz-Invocation-Type": invocationType,
+    },
     body: payload,
   });
 
