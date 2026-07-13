@@ -2,5 +2,13 @@
   path = "/sitemap.xml"
   function = "sitemap"
 
+[[edge_functions]]
+  path = "/grua/*"
+  function = "grua-og"
+
+[[edge_functions]]
+  path = "/grua.html"
+  function = "grua-og"
+
 [functions."mensajes-delay"]
   schedule = "*/5 * * * *"
