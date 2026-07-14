@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel admin — Ridera Mercadoalce</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
+      --or: #E85D20; --text: #f0f0f0; --mu: #888;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LOGIN */
+    #loginWrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .login-card { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; }
+    .login-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--or); margin-bottom: 0.25rem; }
+    .login-card p { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.75rem; }
+    label { display: block; font-size: 0.8rem; color: var(--mu); margin-bottom: 0.35rem; margin-top: 1rem; }
+    input[type="password"], input[type="text"], input[type="number"] {
+      width: 100%; background: #111; border: 1px solid var(--line); border-radius: 8px;
+      color: var(--text); font-size: 1rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--or); }
+    .btn { display: block; width: 100%; margin-top: 1.5rem; padding: 0.8rem; background: var(--or); color: #fff; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s; }
+    .btn:hover { background: #cf4f18; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+    /* PANEL */
+    #panel { display: none; }
+    nav { background: var(--s); border-bottom: 1px solid var(--line); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .nav-brand { font-weight: 700; color: var(--or); font-size: 1.05rem; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--mu); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+    .btn-sm:hover { border-color: var(--or); color: var(--or); }
+    .btn-sm.danger:hover { border-color: #f87171; color: #f87171; }
+
+    .container { max-width: 1200px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    /* STATS */
+    .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; min-width: 120px; }
+    .stat .num { font-size: 1.75rem; font-weight: 700; color: var(--or); }
+    .stat .num.warn { color: #f59e0b; }
+    .stat .num.green { color: #4ade80; }
+    .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-btn { padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 20px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; }
+    .filter-btn.active { background: var(--or); border-color: var(--or); color: #fff; }
+    .search-input { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; width: 200px; }
+    .search-input:focus { border-color: var(--or); }
+
+    /* GRID */
+    .moto-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .moto-card { background: var(--s); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; transition: all 0.2s; }
+    .moto-card:hover { border-color: var(--or); }
+    .moto-img { width: 100%; height: 200px; background: #0a0a0a; display: flex; align-items: center; justify-content: center; color: var(--mu); font-size: 0.85rem; position: relative; overflow: hidden; }
+    .moto-img img { width: 100%; height: 100%; object-fit: cover; }
+    .moto-img.no-img { color: var(--mu); text-align: center; }
+    .moto-body { padding: 1rem; }
+    .moto-titulo { font-weight: 700; font-size: 1rem; color: var(--text); margin-bottom: 0.25rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .moto-info { font-size: 0.8rem; color: var(--mu); margin-bottom: 0.5rem; }
+    .moto-precio { font-size: 1.2rem; font-weight: 700; color: var(--or); margin-bottom: 0.75rem; }
+    .moto-badges { display: flex; gap: 0.35rem; margin-bottom: 0.75rem; flex-wrap: wrap; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.7rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; }
+    .badge-apro { background: #0a1e2e; color: #60a5fa; border: 1px solid #1a4a6e; }
+    .badge-pend { background: #2a2000; color: #f59e0b; border: 1px solid #5c3d00; }
+    .badge-foto { background: #0e2a1a; color: #4ade80; }
+    .badge-nofoto { background: #2a1212; color: #f87171; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; }
+    .dot-on { background: #4ade80; }
+    .dot-off { background: #f87171; }
+    .moto-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .act-btn { font-size: 0.75rem; padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .act-btn:hover { border-color: var(--or); color: var(--or); }
+    .act-btn.danger:hover { border-color: #f87171; color: #f87171; }
+    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .spin { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--or); border-radius: 50%; animation: rot 0.7s linear infinite; vertical-align: middle; }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; overflow-y: auto; }
+    .modal { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label { display: block; font-size: 0.8rem; color: var(--mu); margin-bottom: 0.35rem; }
+    .form-group input, .form-group textarea, .form-group select { width: 100%; background: #111; border: 1px solid var(--line); border-radius: 8px; color: var(--text); font-size: 0.9rem; padding: 0.65rem; outline: none; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus { border-color: var(--or); }
+    .form-group textarea { resize: vertical; min-height: 80px; }
+    .file-input-wrap { display: flex; gap: 0.5rem; align-items: center; }
+    .file-input-wrap input[type="file"] { flex: 1; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .btn-cancel { padding: 0.6rem 1.2rem; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--mu); font-size: 0.9rem; cursor: pointer; }
+    .btn-ok { padding: 0.6rem 1.2rem; background: var(--or); color: #fff; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+    .btn-ok:disabled { opacity: 0.5; cursor: not-allowed; }
+    .modal-err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+    .modal-success { color: #4ade80; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+    .hide { display: none !important; }
+
+    /* PHOTO GALLERY */
+    .photo-preview { display: flex; gap: 0.5rem; margin-top: 0.5rem; flex-wrap: wrap; }
+    .photo-thumb { position: relative; width: 80px; height: 80px; border-radius: 8px; overflow: hidden; }
+    .photo-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-del { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; background: rgba(248,113,113,0.9); color: #fff; border: none; border-radius: 50%; cursor: pointer; font-size: 0.7rem; display: none; }
+    .photo-thumb:hover .photo-del { display: flex; align-items: center; justify-content: center; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <h1>Ridera Mercadoalce</h1>
+    <p>Panel de administración</p>
+    <label for="pwdInput">Clave de acceso</label>
+    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password">
+    <div class="err" id="loginErr">Clave incorrecta.</div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <nav>
+    <span class="nav-brand">Ridera Mercadoalce · Admin</span>
+    <div class="nav-right">
+      <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
+      <button class="btn-sm danger" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-title">Panel de administración</div>
+    <div class="page-sub" id="lastUpdated">Cargando…</div>
+
+    <!-- STATS -->
+    <div class="stats" id="statsRow"></div>
+
+    <!-- FILTERS -->
+    <div class="filters">
+      <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+      <button class="filter-btn" data-f="pend" onclick="setFilter('pend',this)">Pendientes aprobación</button>
+      <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
+      <button class="filter-btn" data-f="nofoto" onclick="setFilter('nofoto',this)">Sin foto</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar título, marca…" oninput="renderGrid()">
+    </div>
+
+    <!-- GRID -->
+    <div class="moto-grid" id="motoGrid"></div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="modal-overlay hide" id="editModal">
+  <div class="modal">
+    <h2 id="editTitle">Editar moto</h2>
+    <div class="form-group">
+      <label>Título / Modelo</label>
+      <input type="text" id="editTitulo" placeholder="Ej: Honda CB 500">
+    </div>
+    <div class="form-group">
+      <label>Precio (COP)</label>
+      <input type="text" id="editPrecio" placeholder="5000000">
+    </div>
+    <div class="form-group">
+      <label>Kilómetros</label>
+      <input type="text" id="editKm" placeholder="45000">
+    </div>
+    <div class="form-group">
+      <label>Descripción</label>
+      <textarea id="editDesc" placeholder="Describe el estado, características, etc."></textarea>
+    </div>
+    <div class="form-group">
+      <label>Ciudad</label>
+      <input type="text" id="editCiudad" placeholder="Bogotá">
+    </div>
+    <div class="form-group">
+      <label>Teléfono</label>
+      <input type="text" id="editTel" placeholder="+57 300 123 4567">
+    </div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="text" id="editEmail" placeholder="correo@ejemplo.com">
+    </div>
+    <div class="form-group">
+      <label>Aprobado</label>
+      <select id="editAprobado">
+        <option value="0">No (pendiente)</option>
+        <option value="1">Sí (aprobado)</option>
+      </select>
+    </div>
+
+    <div style="margin-top: 1.5rem;">
+      <div style="font-size: 0.8rem; font-weight: 700; color: var(--mu); margin-bottom: 0.75rem;">Fotos</div>
+      <div class="file-input-wrap">
+        <input type="file" id="photoInput" accept="image/*" multiple>
+        <button class="btn-sm" onclick="uploadPhoto()">Subir foto</button>
+      </div>
+      <div class="photo-preview" id="photoPreview"></div>
+    </div>
+
+    <div class="modal-err" id="editErr"></div>
+    <div class="modal-success" id="editSuccess"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-ok" id="editSaveBtn" onclick="doSave()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FN_ADMIN = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-motos';
+
+let adminKey = '';
+let allMotos = [];
+let currentFilter = 'all';
+let currentMotoId = '';
+let currentMotoPhotos = [];
+
+function esc(x) {
+  return (x == null ? '' : String(x)).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+
+async function callAdmin(body) {
+  const res = await fetch(FN_ADMIN, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: adminKey, ...body }),
+  });
+  return res.json();
+}
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginErr');
+  const pwd = document.getElementById('pwdInput').value.trim();
+  if (!pwd) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  errEl.style.display = 'none';
+  adminKey = pwd;
+  const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allMotos = data.motos || [];
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+    renderStats();
+    renderGrid();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+  } else {
+    errEl.style.display = 'block';
+    adminKey = '';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function reloadList() {
+  const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allMotos = data.motos || [];
+    renderStats();
+    renderGrid();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+  }
+}
+
+function logout() {
+  adminKey = '';
+  allMotos = [];
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('panel').style.display = 'none';
+  document.getElementById('pwdInput').value = '';
+}
+
+function renderStats() {
+  const total = allMotos.length;
+  const aprobados = allMotos.filter(m => m.aprobado).length;
+  const pendientes = total - aprobados;
+  const conFoto = allMotos.filter(m => m.foto_url).length;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Total motos</div></div>
+    <div class="stat"><div class="num warn">${pendientes}</div><div class="lbl">Pendientes aprobación</div></div>
+    <div class="stat"><div class="num">${aprobados}</div><div class="lbl">Aprobadas</div></div>
+    <div class="stat"><div class="num green">${conFoto}</div><div class="lbl">Con foto</div></div>
+  `;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active');
+    if (b === btn) b.classList.add('active');
+  });
+  renderGrid();
+}
+
+function renderGrid() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let rows = allMotos;
+  if (currentFilter === 'pend') rows = rows.filter(m => !m.aprobado);
+  if (currentFilter === 'apro') rows = rows.filter(m => m.aprobado);
+  if (currentFilter === 'nofoto') rows = rows.filter(m => !m.foto_url);
+  if (q) rows = rows.filter(m =>
+    (m.titulo||'').toLowerCase().includes(q) ||
+    (m.marca||'').toLowerCase().includes(q) ||
+    (m.modelo||'').toLowerCase().includes(q)
+  );
+
+  const grid = document.getElementById('motoGrid');
+  if (!rows.length) {
+    grid.innerHTML = '<div style="grid-column: 1/-1; color: var(--mu); text-align: center; padding: 2rem;">No hay motos que coincidan.</div>';
+    return;
+  }
+
+  grid.innerHTML = rows.map(m => {
+    const apro = m.aprobado;
+    const foto = m.foto_url;
+    return `<div class="moto-card">
+      <div class="moto-img ${foto ? '' : 'no-img'}">
+        ${foto ? `<img src="${esc(foto)}" alt="${esc(m.titulo||'')}">` : '📷 Sin foto'}
+      </div>
+      <div class="moto-body">
+        <div class="moto-titulo">${esc(m.titulo||'—')}</div>
+        <div class="moto-info">${esc(m.marca||'')} ${esc(m.modelo||'')} • ${m.km || '—'} km</div>
+        <div class="moto-precio">\$${(m.precio || 0).toLocaleString('es-CO')}</div>
+        <div class="moto-badges">
+          <span class="badge ${apro ? 'badge-apro' : 'badge-pend'}">
+            <span class="dot ${apro ? 'dot-on' : 'dot-off'}"></span>
+            ${apro ? 'Aprobado' : 'Pendiente'}
+          </span>
+          <span class="badge ${foto ? 'badge-foto' : 'badge-nofoto'}">
+            ${foto ? '✓ Foto' : '✗ Sin foto'}
+          </span>
+        </div>
+        <div class="moto-actions">
+          <button class="act-btn" onclick="openEditModal('${m.id}')">✎ Editar</button>
+          <button class="act-btn danger" onclick="doDelete('${m.id}','${esc(m.titulo||'')}',this)">🗑 Eliminar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openEditModal(id) {
+  const m = allMotos.find(x => x.id === id);
+  if (!m) return;
+
+  currentMotoId = id;
+  currentMotoPhotos = m.foto_url ? [m.foto_url] : [];
+
+  document.getElementById('editTitulo').value = m.titulo || '';
+  document.getElementById('editPrecio').value = m.precio || '';
+  document.getElementById('editKm').value = m.km || '';
+  document.getElementById('editDesc').value = m.descripcion || '';
+  document.getElementById('editCiudad').value = m.ciudad || '';
+  document.getElementById('editTel').value = m.telefono || '';
+  document.getElementById('editEmail').value = m.email || '';
+  document.getElementById('editAprobado').value = m.aprobado ? '1' : '0';
+
+  document.getElementById('photoInput').value = '';
+  renderPhotoPreview();
+
+  document.getElementById('editErr').style.display = 'none';
+  document.getElementById('editSuccess').style.display = 'none';
+  document.getElementById('editModal').classList.remove('hide');
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').classList.add('hide');
+  currentMotoId = '';
+  currentMotoPhotos = [];
+}
+
+function renderPhotoPreview() {
+  const preview = document.getElementById('photoPreview');
+  if (!currentMotoPhotos.length) {
+    preview.innerHTML = '<span style="color: var(--mu); font-size: 0.85rem;">Sin fotos</span>';
+    return;
+  }
+
+  preview.innerHTML = currentMotoPhotos.map((photo, idx) => `
+    <div class="photo-thumb">
+      <img src="${esc(photo)}" alt="Foto ${idx+1}">
+      <button class="photo-del" onclick="deletePhoto(${idx})">✕</button>
+    </div>
+  `).join('');
+}
+
+function deletePhoto(idx) {
+  currentMotoPhotos.splice(idx, 1);
+  renderPhotoPreview();
+}
+
+async function uploadPhoto() {
+  const input = document.getElementById('photoInput');
+  if (!input.files.length) return;
+
+  const file = input.files[0];
+  const reader = new FileReader();
+
+  reader.onload = (e) => {
+    const base64 = e.target.result;
+    currentMotoPhotos = [base64];
+    document.getElementById('photoInput').value = '';
+    renderPhotoPreview();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+async function doSave() {
+  const btn = document.getElementById('editSaveBtn');
+  const errEl = document.getElementById('editErr');
+  const sucEl = document.getElementById('editSuccess');
+
+  errEl.style.display = 'none';
+  sucEl.style.display = 'none';
+
+  const titulo = document.getElementById('editTitulo').value.trim();
+  const precio = document.getElementById('editPrecio').value.trim().replace(/\D/g, '');
+  const km = document.getElementById('editKm').value.trim().replace(/\D/g, '');
+
+  if (!titulo) { errEl.textContent = 'El título es requerido.'; errEl.style.display = 'block'; return; }
+  if (!precio) { errEl.textContent = 'El precio es requerido.'; errEl.style.display = 'block'; return; }
+
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  const data = await callAdmin({
+    action: 'update',
+    id: currentMotoId,
+    titulo,
+    precio: Number(precio),
+    km: Number(km) || 0,
+    descripcion: document.getElementById('editDesc').value.trim(),
+    ciudad: document.getElementById('editCiudad').value.trim(),
+    telefono: document.getElementById('editTel').value.trim(),
+    email: document.getElementById('editEmail').value.trim(),
+    aprobado: document.getElementById('editAprobado').value === '1',
+    foto: currentMotoPhotos.length > 0 ? currentMotoPhotos[0] : null,
+  }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.textContent = 'Guardar cambios';
+
+  if (data.ok) {
+    const moto = allMotos.find(x => x.id === currentMotoId);
+    if (moto) {
+      moto.titulo = titulo;
+      moto.precio = Number(precio);
+      moto.km = Number(km);
+      moto.descripcion = document.getElementById('editDesc').value.trim();
+      moto.ciudad = document.getElementById('editCiudad').value.trim();
+      moto.telefono = document.getElementById('editTel').value.trim();
+      moto.email = document.getElementById('editEmail').value.trim();
+      moto.aprobado = document.getElementById('editAprobado').value === '1';
+      if (currentMotoPhotos.length > 0) moto.foto_url = currentMotoPhotos[0];
+    }
+    renderStats();
+    renderGrid();
+    sucEl.textContent = '✓ Cambios guardados correctamente.';
+    sucEl.style.display = 'block';
+    setTimeout(closeEditModal, 1500);
+  } else {
+    errEl.textContent = data.error || 'Error al guardar.';
+    errEl.style.display = 'block';
+  }
+}
+
+async function doDelete(id, titulo, btn) {
+  if (!confirm(`¿Eliminar "${titulo}" permanentemente? Esta acción no se puede deshacer.`)) return;
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'delete', id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allMotos = allMotos.filter(x => x.id !== id);
+    renderStats();
+    renderGrid();
+  } else {
+    btn.disabled = false;
+    alert('No se pudo eliminar.');
+  }
+}
+</script>
+</body>
+</html>
