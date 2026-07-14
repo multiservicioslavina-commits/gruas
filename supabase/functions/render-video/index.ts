@@ -86,7 +86,7 @@ Deno.serve(async (req: Request) => {
         codec: "h264",
         imageFormat: "jpeg",
         maxRetries: 1,
-        framesPerLambda: 20,
+        framesPerLambda: 40,
         privacy: "public",
         outName: `ridera-${rideId}-${Date.now()}.mp4`,
       });
