@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>El Gran Álbum · Patrón de Antioquia · Ridera</title>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0a0908;
+    --panel:#12100e;
+    --panel-2:#1a1712;
+    --line:#2a2419;
+    --gold:#c9a84c;
+    --gold-bright:#e8c96a;
+    --gold-dim:#8a7434;
+    --orange:#E85D20;
+    --ink:#f4f1ea;
+    --ink-dim:#c2beb4;
+    --ink-faint:#948a7c;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif;font-size:17px;line-height:1.6}
+  body{max-width:720px;margin:0 auto;padding:0 0 60px}
+  h1,h2,h3{margin:0;font-weight:400}
+  img{max-width:100%}
+
+  /* ══════════ PORTADA ══════════ */
+  .cover{
+    min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;
+    text-align:center;padding:60px 24px;position:relative;overflow:hidden;
+    background:
+      radial-gradient(ellipse 90% 55% at 50% -10%, rgba(201,168,76,.16), transparent 60%),
+      radial-gradient(ellipse 70% 40% at 50% 110%, rgba(232,93,32,.10), transparent 60%),
+      var(--bg);
+  }
+  .cover::before, .cover::after{
+    content:"";position:absolute;left:24px;right:24px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--gold-dim),var(--gold),var(--gold-dim),transparent);
+  }
+  .cover::before{top:26px} .cover::after{bottom:26px}
+  .cover .marco{
+    position:absolute;inset:36px 34px;border:1px solid rgba(201,168,76,.25);pointer-events:none;
+  }
+  .cover .marco::before{content:"";position:absolute;inset:6px;border:1px solid rgba(201,168,76,.12)}
+  .escudo{
+    width:96px;height:96px;border-radius:50%;
+    border:2px solid var(--gold);display:flex;align-items:center;justify-content:center;
+    font-family:"Cormorant Garamond",serif;font-size:44px;font-weight:700;color:var(--gold-bright);
+    background:radial-gradient(circle at 35% 30%, #241e12, #0f0d09);
+    box-shadow:0 0 0 6px rgba(201,168,76,.08), 0 0 60px rgba(201,168,76,.18);
+    margin-bottom:34px;letter-spacing:1px;
+  }
+  .cover .eyebrow{
+    font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.42em;text-transform:uppercase;
+    color:var(--gold);margin-bottom:20px;
+  }
+  .cover h1{
+    font-family:"Cormorant Garamond",serif;font-weight:600;font-size:clamp(42px,9vw,68px);
+    line-height:1.04;letter-spacing:.01em;
+    background:linear-gradient(180deg,#f6e9c8 0%, var(--gold-bright) 45%, var(--gold-dim) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent;
+    margin-bottom:14px;
+  }
+  .cover .sub{
+    font-family:"Barlow Condensed",sans-serif;font-size:21px;letter-spacing:.14em;text-transform:uppercase;
+    color:var(--ink-dim);margin-bottom:38px;
+  }
+  .rider-plate{
+    border-top:1px solid var(--gold-dim);border-bottom:1px solid var(--gold-dim);
+    padding:20px 34px;margin-bottom:38px;
+  }
+  .rider-plate .quien{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px}
+  .rider-plate .nombre{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:34px;color:var(--ink)}
+  .cover .conteo{font-family:"JetBrains Mono",monospace;font-size:15px;color:var(--gold-bright);letter-spacing:.2em}
+  .cover .fecha-logro{font-size:14px;color:var(--ink-faint);margin-top:10px}
+
+  /* ══════════ PROCLAMA ══════════ */
+  .proclama{padding:78px 30px 30px;text-align:center}
+  .proclama p{
+    font-family:"Cormorant Garamond",serif;font-size:23px;font-style:italic;line-height:1.7;
+    color:var(--ink-dim);max-width:520px;margin:0 auto;
+  }
+  .proclama p b{color:var(--gold-bright);font-style:normal}
+  .ornamento{display:flex;align-items:center;gap:14px;justify-content:center;margin:34px 0 6px;color:var(--gold-dim)}
+  .ornamento::before,.ornamento::after{content:"";width:70px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-dim))}
+  .ornamento::after{background:linear-gradient(90deg,var(--gold-dim),transparent)}
+
+  /* ══════════ CIFRAS ══════════ */
+  .cifras{display:grid;grid-template-columns:repeat(2,1fr);gap:1px;background:var(--line);margin:44px 20px;border:1px solid var(--line)}
+  .cifra{background:var(--panel);padding:22px 18px;text-align:center}
+  .cifra .n{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:38px;color:var(--gold-bright);line-height:1}
+  .cifra .t{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint);margin-top:8px}
+
+  /* ══════════ CAPÍTULOS ══════════ */
+  .capitulo{margin:70px 0 0}
+  .cap-head{padding:0 24px 18px;display:flex;align-items:baseline;gap:14px;border-bottom:1px solid var(--line);margin:0 20px 26px}
+  .cap-num{font-family:"Cormorant Garamond",serif;font-size:52px;color:var(--gold-dim);line-height:1}
+  .cap-head h2{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:30px;letter-spacing:.08em;text-transform:uppercase}
+  .cap-head .cap-cuenta{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--gold)}
+
+  /* ══════════ PÁGINA DE MUNICIPIO ══════════ */
+  .pagina{
+    margin:0 20px 34px;background:var(--panel);border:1px solid var(--line);overflow:hidden;position:relative;
+  }
+  .pagina .foto{
+    position:relative;aspect-ratio:4/3;background:var(--panel-2);overflow:hidden;
+  }
+  .pagina .foto img{width:100%;height:100%;object-fit:cover;display:block;filter:saturate(1.05) contrast(1.03)}
+  .pagina .foto .velo{position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(10,9,8,.82) 100%)}
+  .pagina .foto .sin-foto{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--ink-faint);font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.2em}
+  .sello-medalla{
+    position:absolute;top:14px;right:14px;width:64px;height:64px;border-radius:50%;
+    border:1.5px solid var(--gold);display:flex;flex-direction:column;align-items:center;justify-content:center;
+    background:rgba(10,9,8,.72);backdrop-filter:blur(3px);
+    font-family:"JetBrains Mono",monospace;color:var(--gold-bright);
+    box-shadow:0 0 0 4px rgba(201,168,76,.10);
+    transform:rotate(6deg);
+  }
+  .sello-medalla .ok{font-size:18px;line-height:1}
+  .sello-medalla .pts{font-size:9.5px;letter-spacing:.08em;margin-top:2px}
+  .pagina .foto .titulo-foto{
+    position:absolute;left:18px;bottom:14px;right:92px;
+  }
+  .pagina .foto .titulo-foto h3{
+    font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:30px;letter-spacing:.04em;text-transform:uppercase;line-height:1.05;
+    text-shadow:0 2px 12px rgba(0,0,0,.7);
+  }
+  .pagina .foto .titulo-foto .fecha{
+    font-family:"JetBrains Mono",monospace;font-size:11.5px;color:var(--gold-bright);letter-spacing:.14em;margin-top:4px;
+  }
+  .pagina .cuerpo{padding:20px 22px 24px}
+  .pagina .historia{
+    font-family:"Cormorant Garamond",serif;font-size:19.5px;line-height:1.65;color:var(--ink-dim);
+  }
+  .pagina .historia::first-letter{
+    font-size:46px;float:left;line-height:.85;padding:4px 8px 0 0;color:var(--gold-bright);font-weight:600;
+  }
+  .pagina .meta{display:flex;gap:16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .pagina .meta span{font-family:"JetBrains Mono",monospace;font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint)}
+  .pagina .meta b{color:var(--gold)}
+  .tag-fluvial{color:var(--orange)!important}
+
+  /* ══════════ CERTIFICADO FINAL ══════════ */
+  .certificado{
+    margin:80px 20px 20px;border:1px solid var(--gold-dim);padding:44px 28px;text-align:center;position:relative;
+    background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(201,168,76,.07), transparent 65%), var(--panel);
+  }
+  .certificado::before{content:"";position:absolute;inset:8px;border:1px solid rgba(201,168,76,.18);pointer-events:none}
+  .certificado .eyebrow{font-family:"JetBrains Mono",monospace;font-size:11px;letter-spacing:.36em;text-transform:uppercase;color:var(--gold);margin-bottom:18px}
+  .certificado h2{font-family:"Cormorant Garamond",serif;font-size:34px;color:var(--ink);margin-bottom:16px}
+  .certificado p{font-size:15px;color:var(--ink-dim);max-width:420px;margin:0 auto 26px}
+  .firma{font-family:"Cormorant Garamond",serif;font-style:italic;font-size:24px;color:var(--gold-bright)}
+  .firma-sub{font-family:"JetBrains Mono",monospace;font-size:10px;letter-spacing:.28em;text-transform:uppercase;color:var(--ink-faint);margin-top:6px}
+
+  /* ══════════ GATE BLOQUEADO ══════════ */
+  .gate{min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;padding:40px 24px}
+  .gate .inner{max-width:400px}
+  .gate h2{font-family:"Cormorant Garamond",serif;font-size:32px;margin:16px 0 10px}
+  .gate p{color:var(--ink-dim);font-size:15.5px}
+  .gate .prog{font-family:"JetBrains Mono",monospace;color:var(--gold-bright);font-size:15px;margin-top:18px;letter-spacing:.12em}
+  .barra{height:6px;background:var(--panel-2);border:1px solid var(--line);margin-top:12px;overflow:hidden}
+  .barra i{display:block;height:100%;background:linear-gradient(90deg,var(--gold-dim),var(--gold-bright))}
+  .cta{margin-top:26px;display:inline-block;background:var(--orange);color:#fff;text-decoration:none;padding:13px 30px;font-family:"Barlow Condensed",sans-serif;font-size:18px;letter-spacing:.1em;text-transform:uppercase;border:none;cursor:pointer}
+  .hidden{display:none!important}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--gold);border-radius:50%;margin:0 auto;animation:sp 1s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+
+  @media print{
+    body{background:#fff;color:#111}
+    .cover{min-height:auto;page-break-after:always}
+    .pagina{page-break-inside:avoid;border-color:#ccc}
+    .cta{display:none}
+  }
+</style>
+</head>
+<body>
+
+<!-- CARGANDO -->
+<div id="loading" class="gate"><div class="inner"><div class="spinner"></div><h2>Abriendo el Gran Álbum…</h2></div></div>
+
+<!-- BLOQUEADO: aún no completa los 125 -->
+<div id="lockedGate" class="gate hidden">
+  <div class="inner">
+    <div class="escudo" style="margin:0 auto 10px">R</div>
+    <h2>El Gran Álbum aún está sellado</h2>
+    <p>Este álbum se abre solo para quienes conquistan los <b style="color:var(--gold-bright)">125 municipios de Antioquia</b>. Cada sello que pongas te acerca.</p>
+    <div class="prog"><span id="progNum">0</span> / 125</div>
+    <div class="barra"><i id="progBar" style="width:0%"></i></div>
+    <a class="cta" href="pasaporte.html">Volver al pasaporte</a>
+  </div>
+</div>
+
+<!-- ERROR -->
+<div id="errorGate" class="gate hidden">
+  <div class="inner">
+    <h2>No pude abrir el álbum</h2>
+    <p id="errDetail" style="color:var(--orange)"></p>
+    <button class="cta" onclick="location.reload()">Reintentar</button>
+  </div>
+</div>
+
+<!-- ══════════ EL ÁLBUM ══════════ -->
+<div id="album" class="hidden">
+
+  <section class="cover">
+    <div class="marco"></div>
+    <div class="escudo">R</div>
+    <div class="eyebrow">Ridera · Pasaporte Antioquia</div>
+    <h1>El Gran Álbum</h1>
+    <div class="sub">Crónica de una conquista · 125 municipios</div>
+    <div class="rider-plate">
+      <div class="quien">Forjado por</div>
+      <div class="nombre" id="riderName">Rider</div>
+    </div>
+    <div class="conteo">✦ 125 / 125 SELLOS ✦</div>
+    <div class="fecha-logro" id="fechaLogro"></div>
+  </section>
+
+  <section class="proclama">
+    <p>Hubo quien lo soñó y quien lo dudó. Pero solo uno encendió la moto <b>125 veces</b> hacia un pueblo distinto, cruzó páramos, trochas y ríos, y volvió con la prueba en su pasaporte. Este álbum es la memoria de esa hazaña: cada foto, cada sello, cada historia. <b>Bienvenido, Patrón de Antioquia.</b></p>
+    <div class="ornamento">✦</div>
+  </section>
+
+  <section class="cifras" id="cifras"></section>
+
+  <div id="capitulos"></div>
+
+  <section class="certificado">
+    <div class="eyebrow">Certificado de grandeza</div>
+    <h2 id="certNombre">Patrón de Antioquia</h2>
+    <p>Ridera certifica que este rider recorrió y selló los 125 municipios del departamento de Antioquia, Colombia. Su nombre queda escrito en la memoria de la comunidad motera.</p>
+    <div class="firma">Ridera</div>
+    <div class="firma-sub">ridera.com.co · comunidad motera de Colombia</div>
+  </section>
+
+</div>
+
+<script>
+const CONFIG = {
+  SUPABASE_URL: "https://vzzxsdtsaahhzyctvmhx.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu",
+  T_MUNICIPIO: "municipios",
+  T_SELLO: "sellos",
+  TOTAL: 125,
+};
+
+const SUBREGIONES_ORDEN = ["Valle de Aburrá","Oriente","Suroeste","Occidente","Norte","Nordeste","Bajo Cauca","Magdalena Medio","Urabá"];
+
+const $ = id => document.getElementById(id);
+function show(id){ ["loading","lockedGate","errorGate","album"].forEach(x=>$(x).classList.toggle("hidden", x!==id)); }
+
+function fmtFecha(d){
+  if(!d) return "";
+  const f = new Date(d + "T12:00:00");
+  return f.toLocaleDateString("es-CO",{day:"numeric",month:"long",year:"numeric"});
+}
+
+/* demo: 4 municipios de muestra para revisar el diseño sin datos reales (?demo=1) */
+const DEMO = {
+  nombre: "Rider de Prueba",
+  items: [
+    {n:"Jardín", s:"Suroeste", p:3, fluvial:false, fecha:"2026-03-15", foto:"", historia:"Fundado en 1863 entre cafetales y montañas, Jardín conserva una de las plazas más hermosas de Colombia. Sus casas de colores, la basílica de piedra y la garrucha que cruza la montaña lo hacen parada obligada de todo motero del Suroeste."},
+    {n:"Guatapé", s:"Oriente", p:2, fluvial:false, fecha:"2026-04-02", foto:"", historia:"El pueblo de los zócalos pintados y la piedra del Peñol. Sus 740 escalones y el embalse de aguas verdes son el premio de una de las rutas más queridas del Oriente antioqueño."},
+    {n:"Murindó", s:"Urabá", p:5, fluvial:true, fecha:"2026-06-20", foto:"", historia:"Solo se llega por el río Atrato. Murindó es la prueba máxima del pasaporte: aquí la moto se sube a una lancha y el rider se convierte en navegante. Pocos tienen este sello."},
+    {n:"Santa Fe de Antioquia", s:"Occidente", p:2, fluvial:false, fecha:"2026-02-10", foto:"", historia:"La ciudad madre. Fue capital de Antioquia hasta 1826 y sus calles empedradas, el puente de Occidente y sus iglesias coloniales guardan cuatro siglos de historia paisa."},
+  ]
+};
+
+function render(nombre, items, fechaFinal){
+  $("riderName").textContent = nombre;
+  $("certNombre").textContent = nombre + " · Patrón de Antioquia";
+  if(fechaFinal) $("fechaLogro").textContent = "Conquista completada el " + fmtFecha(fechaFinal);
+
+  const pts = items.reduce((a,i)=>a+(i.p||0),0);
+  const fluviales = items.filter(i=>i.fluvial).length;
+  const fechas = items.map(i=>i.fecha).filter(Boolean).sort();
+  const dias = fechas.length>1 ? Math.round((new Date(fechas[fechas.length-1]) - new Date(fechas[0]))/86400000) : 0;
+  const subs = new Set(items.map(i=>i.s)).size;
+  $("cifras").innerHTML = [
+    [items.length, "Municipios sellados"],
+    [pts, "Puntos de conquista"],
+    [subs, "Subregiones"],
+    [dias>0? dias : "—", "Días de travesía"],
+  ].map(([n,t])=>`<div class="cifra"><div class="n">${n}</div><div class="t">${t}</div></div>`).join("");
+
+  const porSub = {};
+  items.forEach(i=>{ (porSub[i.s] = porSub[i.s]||[]).push(i); });
+  const orden = SUBREGIONES_ORDEN.filter(s=>porSub[s]).concat(Object.keys(porSub).filter(s=>!SUBREGIONES_ORDEN.includes(s)));
+
+  $("capitulos").innerHTML = orden.map((sub,ix)=>{
+    const lista = porSub[sub].sort((a,b)=>a.n.localeCompare(b.n));
+    return `<section class="capitulo">
+      <div class="cap-head">
+        <div class="cap-num">${String(ix+1).padStart(2,"0")}</div>
+        <h2>${sub}</h2>
+        <div class="cap-cuenta">${lista.length} sellos</div>
+      </div>
+      ${lista.map(i=>`
+        <article class="pagina">
+          <div class="foto">
+            ${i.foto ? `<img src="${i.foto}" alt="${i.n}" loading="lazy">` : `<div class="sin-foto">SIN FOTO · ${i.n.toUpperCase()}</div>`}
+            <div class="velo"></div>
+            <div class="sello-medalla"><div class="ok">✦</div><div class="pts">+${i.p||0} pts</div></div>
+            <div class="titulo-foto">
+              <h3>${i.n}</h3>
+              <div class="fecha">${fmtFecha(i.fecha)}</div>
+            </div>
+          </div>
+          <div class="cuerpo">
+            <div class="historia">${i.historia || "La historia de este municipio se está escribiendo. Pronto estará aquí."}</div>
+            <div class="meta">
+              <span>Subregión <b>${i.s}</b></span>
+              ${i.fluvial ? `<span class="tag-fluvial">⚓ Acceso fluvial</span>` : ""}
+            </div>
+          </div>
+        </article>`).join("")}
+    </section>`;
+  }).join("");
+
+  show("album");
+}
+
+async function boot(){
+  show("loading");
+  const qs = new URLSearchParams(location.search);
+  if(qs.get("demo")==="1" || !window.supabase){
+    render(DEMO.nombre, DEMO.items, "2026-06-20");
+    return;
+  }
+  try{
+    const sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    const u = (await sb.auth.getUser()).data.user;
+    if(!u){ location.href = "index.html"; return; }
+
+    /* reintentos automáticos: red móvil inestable no debe tumbar el álbum */
+    async function q(fn, intentos=3){
+      for(let i=0;i<intentos;i++){
+        try{ const r = await fn(); if(!r.error) return r; if(i===intentos-1) throw new Error(r.error.message); }
+        catch(e){ if(i===intentos-1) throw e; await new Promise(s=>setTimeout(s, 800*(i+1))); }
+      }
+    }
+
+    const [m, s, prof] = await Promise.all([
+      q(()=>sb.from(CONFIG.T_MUNICIPIO).select("*")),
+      q(()=>sb.from(CONFIG.T_SELLO).select("*").eq("rider_id", u.id)),
+      q(()=>sb.from("riders").select("nombre").eq("id", u.id).maybeSingle()),
+    ]);
+
+    const sellosPorMun = {};
+    (s.data||[]).forEach(x=>{ sellosPorMun[x.municipio_id] = x; });
+    const sellados = (m.data||[]).filter(mu=>sellosPorMun[mu.id]);
+
+    if(sellados.length < CONFIG.TOTAL && qs.get("preview")!=="1"){
+      $("progNum").textContent = sellados.length;
+      $("progBar").style.width = (sellados.length/CONFIG.TOTAL*100)+"%";
+      show("lockedGate");
+      return;
+    }
+
+    const items = sellados.map(mu=>({
+      n: mu.nombre, s: mu.subregion || "Antioquia", p: mu.puntos_sello||0, fluvial: !!mu.es_fluvial,
+      fecha: sellosPorMun[mu.id].fecha, foto: sellosPorMun[mu.id].foto_url || "",
+      historia: mu.historia || "",
+    }));
+    const fechaFinal = items.map(i=>i.fecha).filter(Boolean).sort().pop();
+    render((prof.data&&prof.data.nombre)||"Rider", items, fechaFinal);
+  }catch(e){
+    $("errDetail").textContent = e.message;
+    show("errorGate");
+  }
+}
+boot();
+</script>
+</body>
+</html>
