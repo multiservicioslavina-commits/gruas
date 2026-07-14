@@ -6,7 +6,10 @@ REM Guarda todo en %USERPROFILE%\Backups-Ridera\
 setlocal enabledelayedexpansion
 
 REM Configuración
-set BACKUP_DIR=%USERPROFILE%\Backups-Ridera
+REM Cambiar la ruta según donde quieras guardar los backups
+REM Opción 1 (Usuario): set BACKUP_DIR=%USERPROFILE%\Backups-Ridera
+REM Opción 2 (Disco D): set BACKUP_DIR=D:\Backups-Ridera
+set BACKUP_DIR=D:\Backups-Ridera
 set PROJECT_ID=vzzxsdtsaahhzyctvmhx
 for /f "tokens=2-4 delims=/ " %%a in ('date /t') do (set mydate=%%c%%a%%b)
 for /f "tokens=1-2 delims=/:" %%a in ('time /t') do (set mytime=%%a%%b)

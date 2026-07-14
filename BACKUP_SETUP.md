@@ -7,7 +7,7 @@ Este guía te ayuda a configurar backups automáticos de toda tu base de datos y
 - ✅ Base de datos (PostgreSQL)
 - ✅ Archivos de Storage (motos-venta, pasaporte-ridera, riders, etc.)
 - ✅ Se guarda automáticamente cada semana
-- ✅ Se almacena en tu PC en `~/Backups-Ridera/`
+- ✅ Se almacena en tu PC en `D:\Backups-Ridera\` (disco D)
 
 ---
 
@@ -29,21 +29,29 @@ Se abrirá el navegador. Login con tu cuenta (multiservicioslavina@gmail.com) y 
 
 ### Paso 3: Hacer backup manual (prueba)
 
+**En Windows:**
 ```bash
-bash ~/gruas/backup-script.sh
+backup-script.bat
 ```
 
-Esto descargará todos tus archivos en:
+**En Mac/Linux:**
+```bash
+bash backup-script.sh
 ```
-~/Backups-Ridera/
-├── storage/
-│   ├── motos-venta/
-│   ├── pasaporte-ridera/
-│   ├── riders/
-│   └── ride-photos/
-├── database/
-└── logs/
+
+Esto descargará todos tus archivos en el **disco D**:
 ```
+D:\Backups-Ridera\
+├── storage\
+│   ├── motos-venta\
+│   ├── pasaporte-ridera\
+│   ├── riders\
+│   └── ride-photos\
+├── database\
+└── logs\
+```
+
+✅ Los backups se guardan automáticamente en **D:\Backups-Ridera\**
 
 ---
 

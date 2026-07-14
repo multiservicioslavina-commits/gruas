@@ -7,7 +7,10 @@
 set -e
 
 # Configuración
-BACKUP_DIR="$HOME/Backups-Ridera"
+# Cambia esta ruta a donde quieras guardar los backups
+# Opción 1 (Home): BACKUP_DIR="$HOME/Backups-Ridera"
+# Opción 2 (Disco externo): BACKUP_DIR="/Volumes/D/Backups-Ridera" (Mac) o "/mnt/d/Backups-Ridera" (Linux)
+BACKUP_DIR="/mnt/d/Backups-Ridera"  # Cambiar según tu sistema
 PROJECT_ID="vzzxsdtsaahhzyctvmhx"
 TIMESTAMP=$(date +%Y%m%d_%H%M%S)
 
