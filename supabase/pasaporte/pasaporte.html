@@ -651,19 +651,8 @@
 
       currentUser = user;
 
-      // Find rider by email
-      const { data: riders, error: riderError } = await supabase
-        .from("riders")
-        .select("id")
-        .eq("email", user.email)
-        .single();
-
-      if (riderError || !riders) {
-        showAuthError();
-        return;
-      }
-
-      currentRiderId = riders.id;
+      // Use auth.uid() directly as rider_id
+      currentRiderId = user.id;
 
       // Load data with retry logic
       await loadPassportData();
