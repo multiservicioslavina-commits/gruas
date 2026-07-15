@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pasaporte Ridera · Antioquia</title>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=Cormorant+Garamond:ital,wght@0,500;0,600;0,700;1,500&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg: #0a0908;
+      --panel: #12100e;
+      --panel-2: #1a1712;
+      --line: #2a2419;
+      --gold: #c9a84c;
+      --gold-bright: #e8c96a;
+      --gold-dim: #8a7434;
+      --orange: #E85D20;
+      --ink: #f4f1ea;
+      --ink-dim: #c2beb4;
+      --ink-faint: #948a7c;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "DM Sans", system-ui, sans-serif;
+      font-size: 17px;
+      line-height: 1.6;
+    }
+
+    body {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 0 0 60px;
+    }
+
+    h1, h2, h3 {
+      margin: 0;
+      font-weight: 400;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    /* ══════════ HEADER ══════════ */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(180deg, rgba(12,10,8,.95) 0%, rgba(12,10,8,.8) 100%);
+      border-bottom: 1px solid var(--line);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    header h1 {
+      font-family: "Cormorant Garamond", serif;
+      font-size: 28px;
+      color: var(--gold-bright);
+      flex: 1;
+      margin: 0;
+    }
+
+    .logout-btn {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      background: transparent;
+      border: 1px solid var(--line);
+      padding: 6px 12px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      border-color: var(--gold-dim);
+      color: var(--gold);
+    }
+
+    /* ══════════ SEAL COUNTER HERO ══════════ */
+    .counter-hero {
+      padding: 40px 24px;
+      text-align: center;
+      background: radial-gradient(ellipse 100% 60% at 50% 0%, rgba(201,168,76,.12), transparent 70%);
+      border-bottom: 1px solid var(--line);
+      margin-bottom: 30px;
+    }
+
+    .counter-hero .eyebrow {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.3em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-bottom: 12px;
+    }
+
+    .counter-display {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .counter-display .current {
+      font-family: "Barlow Condensed", sans-serif;
+      font-size: 72px;
+      font-weight: 700;
+      color: var(--gold-bright);
+      line-height: 1;
+    }
+
+    .counter-display .divider {
+      font-size: 48px;
+      color: var(--ink-faint);
+      margin: 0 6px;
+    }
+
+    .counter-display .total {
+      font-family: "Barlow Condensed", sans-serif;
+      font-size: 52px;
+      font-weight: 600;
+      color: var(--ink-dim);
+      line-height: 1;
+    }
+
+    .progress-bar {
+      height: 2px;
+      background: var(--line);
+      margin: 18px 0;
+      border-radius: 1px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--gold), var(--orange));
+      transition: width 0.3s ease;
+    }
+
+    .progress-text {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.05em;
+      color: var(--ink-faint);
+    }
+
+    /* ══════════ ALBUM BUTTON ══════════ */
+    .album-button-section {
+      text-align: center;
+      padding: 24px;
+      margin-bottom: 30px;
+    }
+
+    .album-button-section.hidden {
+      display: none;
+    }
+
+    .album-button {
+      display: inline-block;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 28px;
+      font-weight: 600;
+      color: var(--bg);
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      border: none;
+      padding: 18px 42px;
+      border-radius: 2px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.2s ease;
+      box-shadow: 0 8px 24px rgba(201,168,76,.25);
+      letter-spacing: 0.02em;
+    }
+
+    .album-button:hover {
+      background: linear-gradient(135deg, #f6e9c8, var(--gold-bright));
+      box-shadow: 0 12px 32px rgba(201,168,76,.35);
+      transform: translateY(-2px);
+    }
+
+    .album-button:active {
+      transform: translateY(0);
+      box-shadow: 0 4px 16px rgba(201,168,76,.2);
+    }
+
+    .album-subtitle {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 12px;
+      letter-spacing: 0.15em;
+      text-transform: uppercase;
+      color: var(--gold);
+      margin-top: 16px;
+    }
+
+    /* ══════════ MUNICIPIOS GRID ══════════ */
+    .municipios-section {
+      padding: 0 24px 30px;
+    }
+
+    .municipios-section h2 {
+      font-family: "Barlow Condensed", sans-serif;
+      font-weight: 600;
+      font-size: 24px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--ink);
+      margin-bottom: 24px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .municipios-section h2::before {
+      content: "";
+      width: 3px;
+      height: 3px;
+      background: var(--gold-bright);
+      border-radius: 50%;
+    }
+
+    .municipios-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .municipio-card {
+      position: relative;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      padding: 12px;
+      text-align: center;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+
+    .municipio-card:hover {
+      border-color: var(--gold-dim);
+      background: var(--panel-2);
+    }
+
+    .municipio-card.sealed {
+      border-color: var(--gold);
+      background: linear-gradient(135deg, rgba(201,168,76,.12), rgba(232,93,32,.08));
+    }
+
+    .municipio-card.sealed::before {
+      content: "✓";
+      position: absolute;
+      top: 6px;
+      right: 8px;
+      font-size: 16px;
+      color: var(--gold-bright);
+    }
+
+    .municipio-nombre {
+      font-family: "Barlow Condensed", sans-serif;
+      font-weight: 600;
+      font-size: 14px;
+      letter-spacing: 0.05em;
+      color: var(--ink);
+      margin-bottom: 4px;
+      word-break: break-word;
+    }
+
+    .municipio-subregion {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 9px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .municipio-card.sealed .municipio-subregion {
+      color: var(--gold-dim);
+    }
+
+    /* ══════════ LOADING ══════════ */
+    .loading {
+      text-align: center;
+      padding: 60px 24px;
+      color: var(--ink-faint);
+    }
+
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--line);
+      border-top-color: var(--gold);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin: 0 auto 16px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ══════════ AUTH ERROR ══════════ */
+    .auth-error {
+      padding: 40px 24px;
+      text-align: center;
+    }
+
+    .auth-error h2 {
+      font-size: 22px;
+      color: var(--orange);
+      margin-bottom: 12px;
+    }
+
+    .auth-error p {
+      color: var(--ink-faint);
+      margin-bottom: 20px;
+    }
+
+    .login-button {
+      display: inline-block;
+      font-family: "Cormorant Garamond", serif;
+      font-size: 24px;
+      color: var(--bg);
+      background: var(--gold);
+      border: none;
+      padding: 14px 32px;
+      cursor: pointer;
+      text-decoration: none;
+      transition: background 0.2s ease;
+    }
+
+    .login-button:hover {
+      background: var(--gold-bright);
+    }
+
+    /* ══════════ MOBILE ══════════ */
+    @media (max-width: 480px) {
+      .counter-display .current {
+        font-size: 52px;
+      }
+      .counter-display .total {
+        font-size: 36px;
+      }
+      .counter-display .divider {
+        font-size: 36px;
+      }
+      .municipios-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      header h1 {
+        font-size: 22px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Pasaporte</h1>
+  <button class="logout-btn" id="logoutBtn">Salir</button>
+</header>
+
+<div id="app">
+  <!-- Loading state -->
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <p>Cargando tu pasaporte...</p>
+  </div>
+
+  <!-- Auth error state -->
+  <div class="auth-error" id="authError" style="display: none;">
+    <h2>Acceso Requerido</h2>
+    <p>Debes iniciar sesión para ver tu pasaporte Ridera.</p>
+    <a href="https://ridera.com.co/login" class="login-button">Iniciar Sesión</a>
+  </div>
+
+  <!-- Main content -->
+  <div id="mainContent" style="display: none;">
+    <!-- Seal Counter Hero -->
+    <div class="counter-hero">
+      <div class="eyebrow">Tu Progreso</div>
+      <div class="counter-display">
+        <span class="current" id="selloCount">0</span>
+        <span class="divider">/</span>
+        <span class="total">125</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="progressFill" style="width: 0%"></div>
+      </div>
+      <div class="progress-text" id="progressText">0 municipios sellados</div>
+    </div>
+
+    <!-- Album Button (shown when 125/125) -->
+    <div class="album-button-section" id="albumSection">
+      <a href="./album-legado.html" class="album-button">Abrir el Gran Álbum</a>
+      <div class="album-subtitle">¡Completaste el pasaporte!</div>
+    </div>
+
+    <!-- Municipios Grid -->
+    <div class="municipios-section">
+      <h2>Municipios</h2>
+      <div class="municipios-grid" id="municipiosGrid"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Supabase config (same as album)
+  const SUPABASE_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co";
+  const SUPABASE_ANON_KEY = "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  let currentUser = null;
+  let currentRiderId = null;
+  let retryCount = 0;
+  const MAX_RETRIES = 3;
+  const RETRY_DELAYS = [800, 1600, 3200];
+
+  async function initializeApp() {
+    try {
+      // Check authentication
+      const { data: { user }, error } = await supabase.auth.getUser();
+
+      if (error || !user) {
+        showAuthError();
+        return;
+      }
+
+      currentUser = user;
+
+      // Find rider by email
+      const { data: riders, error: riderError } = await supabase
+        .from("riders")
+        .select("id")
+        .eq("email", user.email)
+        .single();
+
+      if (riderError || !riders) {
+        showAuthError();
+        return;
+      }
+
+      currentRiderId = riders.id;
+
+      // Load data with retry logic
+      await loadPassportData();
+
+      // Show main content
+      document.getElementById("loadingState").style.display = "none";
+      document.getElementById("mainContent").style.display = "block";
+
+    } catch (error) {
+      console.error("Init error:", error);
+      if (retryCount < MAX_RETRIES) {
+        retryCount++;
+        const delay = RETRY_DELAYS[retryCount - 1];
+        console.log(`Retry ${retryCount}/${MAX_RETRIES} after ${delay}ms`);
+        setTimeout(initializeApp, delay);
+      } else {
+        showAuthError();
+      }
+    }
+  }
+
+  async function loadPassportData() {
+    // Get all municipios with their details
+    const { data: municipios, error: munError } = await supabase
+      .from("municipios")
+      .select("id, nombre, subregion, fluvial")
+      .order("nombre");
+
+    if (munError || !municipios) {
+      throw new Error("Failed to load municipios");
+    }
+
+    // Get rider's seals
+    const { data: seals, error: sealError } = await supabase
+      .from("sellos")
+      .select("municipio_id")
+      .eq("rider_id", currentRiderId);
+
+    if (sealError) {
+      throw new Error("Failed to load seals");
+    }
+
+    const sealedMunicipioIds = new Set(seals.map(s => s.municipio_id));
+    const selloCount = sealedMunicipioIds.size;
+    const percentage = (selloCount / 125) * 100;
+
+    // Update counter
+    document.getElementById("selloCount").textContent = selloCount;
+    document.getElementById("progressFill").style.width = percentage + "%";
+    document.getElementById("progressText").textContent =
+      `${selloCount} municipio${selloCount !== 1 ? 's' : ''} sellado${selloCount !== 1 ? 's' : ''}`;
+
+    // Show/hide album button
+    const albumSection = document.getElementById("albumSection");
+    if (selloCount >= 125) {
+      albumSection.style.display = "block";
+    } else {
+      albumSection.style.display = "none";
+    }
+
+    // Render municipios grid
+    const grid = document.getElementById("municipiosGrid");
+    grid.innerHTML = "";
+
+    municipios.forEach(municipio => {
+      const card = document.createElement("div");
+      card.className = "municipio-card";
+      if (sealedMunicipioIds.has(municipio.id)) {
+        card.classList.add("sealed");
+      }
+
+      card.innerHTML = `
+        <div class="municipio-nombre">${municipio.nombre}</div>
+        <div class="municipio-subregion">${municipio.subregion}</div>
+      `;
+
+      grid.appendChild(card);
+    });
+  }
+
+  function showAuthError() {
+    document.getElementById("loadingState").style.display = "none";
+    document.getElementById("authError").style.display = "block";
+  }
+
+  // Logout
+  document.getElementById("logoutBtn").addEventListener("click", async () => {
+    await supabase.auth.signOut();
+    window.location.href = "https://ridera.com.co/login";
+  });
+
+  // Start app
+  initializeApp();
+</script>
+
+</body>
+</html>
