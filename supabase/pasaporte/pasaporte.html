@@ -293,6 +293,178 @@
       color: var(--gold-dim);
     }
 
+    /* ══════════ MODAL ══════════ */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px;
+      max-width: 500px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .modal-header h2 {
+      font-size: 24px;
+      margin: 0;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 28px;
+      color: var(--ink-dim);
+      cursor: pointer;
+      padding: 0;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close:hover {
+      color: var(--ink);
+    }
+
+    .seal-form {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .form-group-modal {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group-modal label {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+    }
+
+    .photo-input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .photo-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .photo-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 12px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      font-size: 14px;
+      cursor: pointer;
+      border-radius: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .photo-btn:hover {
+      border-color: var(--gold-dim);
+      background: var(--panel);
+    }
+
+    .photo-preview-modal {
+      width: 100%;
+      max-height: 240px;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      display: none;
+    }
+
+    .photo-preview-modal img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .seal-submit {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 14px;
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold));
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .seal-submit:hover {
+      background: linear-gradient(135deg, #f6e9c8, var(--gold-bright));
+    }
+
+    .seal-submit:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .seal-status {
+      padding: 12px;
+      border-radius: 8px;
+      font-size: 14px;
+      text-align: center;
+      display: none;
+    }
+
+    .seal-status.success {
+      display: block;
+      background: rgba(74, 222, 128, 0.1);
+      color: #86efac;
+      border: 1px solid rgba(74, 222, 128, 0.2);
+    }
+
+    .seal-status.error {
+      display: block;
+      background: rgba(248, 113, 113, 0.08);
+      color: #fca5a5;
+      border: 1px solid rgba(248, 113, 113, 0.2);
+    }
+
     /* ══════════ LOADING ══════════ */
     .loading {
       text-align: center;
@@ -417,6 +589,39 @@
       <div class="municipios-grid" id="municipiosGrid"></div>
     </div>
   </div>
+
+  <!-- Seal Modal -->
+  <div class="modal" id="sealModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h2 id="sealModalTitle">Sellar Municipio</h2>
+          <p style="font-size: 13px; color: var(--ink-faint); margin-top: 4px;" id="sealModalSubtitle"></p>
+        </div>
+        <button class="modal-close" id="closeModal">&times;</button>
+      </div>
+
+      <form class="seal-form" id="sealForm">
+        <div class="form-group-modal">
+          <label>Prueba fotográfica</label>
+          <div class="photo-input-group">
+            <div class="photo-buttons">
+              <button type="button" class="photo-btn" id="cameraBtn">📷 Cámara</button>
+              <button type="button" class="photo-btn" id="galleryBtn">📁 Galería</button>
+            </div>
+            <input type="file" id="photoFile" accept="image/*" style="display: none;" capture="environment">
+            <input type="file" id="galleryFile" accept="image/*" style="display: none;">
+            <div class="photo-preview-modal" id="photoPreview"></div>
+          </div>
+          <div style="font-size: 12px; color: var(--ink-faint);">JPG, PNG o WebP · máx. 5 MB · mínimo 480x360px</div>
+        </div>
+
+        <div id="sealStatus" class="seal-status"></div>
+
+        <button type="submit" class="seal-submit" id="submitBtn">✦ Sellar este municipio</button>
+      </form>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -431,6 +636,8 @@
   let retryCount = 0;
   const MAX_RETRIES = 3;
   const RETRY_DELAYS = [800, 1600, 3200];
+  let selectedMunicipio = null;
+  let selectedPhoto = null;
 
   async function initializeApp() {
     try {
@@ -533,8 +740,171 @@
         <div class="municipio-subregion">${municipio.subregion}</div>
       `;
 
+      // Click to seal (or view if already sealed)
+      card.addEventListener("click", () => {
+        if (!sealedMunicipioIds.has(municipio.id)) {
+          openSealModal(municipio);
+        }
+      });
+
       grid.appendChild(card);
     });
+  }
+
+  function openSealModal(municipio) {
+    selectedMunicipio = municipio;
+    selectedPhoto = null;
+    document.getElementById("sealModalTitle").textContent = municipio.nombre;
+    document.getElementById("sealModalSubtitle").textContent = municipio.subregion;
+    document.getElementById("photoPreview").style.display = "none";
+    document.getElementById("photoPreview").innerHTML = "";
+    document.getElementById("photoFile").value = "";
+    document.getElementById("galleryFile").value = "";
+    document.getElementById("sealStatus").textContent = "";
+    document.getElementById("sealStatus").className = "seal-status";
+    document.getElementById("sealForm").reset();
+    document.getElementById("submitBtn").disabled = false;
+    document.getElementById("sealModal").classList.add("active");
+  }
+
+  function closeSealModal() {
+    document.getElementById("sealModal").classList.remove("active");
+    selectedMunicipio = null;
+    selectedPhoto = null;
+  }
+
+  async function uploadPhoto(file) {
+    if (!file) return null;
+
+    // Validate
+    if (file.size > 5 * 1024 * 1024) {
+      throw new Error("La foto no puede superar 5 MB");
+    }
+
+    // Simple dimension check if possible
+    if (!file.type.startsWith("image/")) {
+      throw new Error("Debe ser una imagen");
+    }
+
+    // Upload to storage
+    const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
+    const timestamp = Date.now();
+    const path = `sellos/${currentRiderId}/${selectedMunicipio.id}_${timestamp}.${ext}`;
+
+    const { data, error } = await supabase.storage
+      .from("riders")
+      .upload(path, file, { upsert: false, contentType: file.type });
+
+    if (error) {
+      throw new Error("Error al subir foto: " + error.message);
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from("riders")
+      .getPublicUrl(data.path);
+
+    return publicUrl;
+  }
+
+  async function createSeal(fotoUrl) {
+    const { data, error } = await supabase
+      .from("sellos")
+      .insert([
+        {
+          rider_id: currentRiderId,
+          municipio_id: selectedMunicipio.id,
+          foto_url: fotoUrl,
+          fecha: new Date().toISOString().split("T")[0],
+        },
+      ]);
+
+    if (error) {
+      throw new Error("Error al guardar sello: " + error.message);
+    }
+
+    return data;
+  }
+
+  // Modal events
+  document.getElementById("closeModal").addEventListener("click", closeSealModal);
+  document.getElementById("sealModal").addEventListener("click", (e) => {
+    if (e.target.id === "sealModal") closeSealModal();
+  });
+
+  document.getElementById("cameraBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("photoFile").click();
+  });
+
+  document.getElementById("galleryBtn").addEventListener("click", (e) => {
+    e.preventDefault();
+    document.getElementById("galleryFile").click();
+  });
+
+  function handlePhotoSelect(file) {
+    if (!file) return;
+    selectedPhoto = file;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const preview = document.getElementById("photoPreview");
+      preview.innerHTML = `<img src="${e.target.result}" alt="Preview">`;
+      preview.style.display = "block";
+    };
+    reader.readAsDataURL(file);
+  }
+
+  document.getElementById("photoFile").addEventListener("change", (e) => {
+    handlePhotoSelect(e.target.files[0]);
+  });
+
+  document.getElementById("galleryFile").addEventListener("change", (e) => {
+    handlePhotoSelect(e.target.files[0]);
+  });
+
+  document.getElementById("sealForm").addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    if (!selectedPhoto) {
+      showSealStatus("error", "Selecciona una foto");
+      return;
+    }
+
+    if (!selectedMunicipio) {
+      showSealStatus("error", "Municipio no seleccionado");
+      return;
+    }
+
+    const btn = document.getElementById("submitBtn");
+    btn.disabled = true;
+    btn.textContent = "Sellando…";
+
+    try {
+      showSealStatus("", "");
+      const fotoUrl = await uploadPhoto(selectedPhoto);
+      await createSeal(fotoUrl);
+      showSealStatus("success", "✓ ¡Municipio sellado correctamente!");
+      setTimeout(() => {
+        closeSealModal();
+        // Reload the passport data
+        loadPassportData();
+      }, 1500);
+    } catch (error) {
+      showSealStatus("error", "Error: " + error.message);
+    } finally {
+      btn.disabled = false;
+      btn.textContent = "✦ Sellar este municipio";
+    }
+  });
+
+  function showSealStatus(type, message) {
+    const status = document.getElementById("sealStatus");
+    if (message) {
+      status.textContent = message;
+      status.className = "seal-status " + type;
+    } else {
+      status.className = "seal-status";
+      status.textContent = "";
+    }
   }
 
   function showAuthError() {
