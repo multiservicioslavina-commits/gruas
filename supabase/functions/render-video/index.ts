@@ -69,20 +69,58 @@ Deno.serve(async (req: Request) => {
 
       const outName = `ridera-${rideId}-${Date.now()}.mp4`;
 
+      const serializedInputProps = JSON.stringify({ data: inputProps });
+
       const payload = JSON.stringify({
         type: "start",
         serveUrl: SERVE_URL,
         composition: "RideVideo",
-        inputProps: { data: inputProps },
+        inputProps: { type: "payload", payload: serializedInputProps },
         codec: "h264",
         imageFormat: "jpeg",
         maxRetries: 1,
         framesPerLambda: 40,
         privacy: "public",
         outName,
+        version: "4.0.293",
+        rendererFunctionName: FUNCTION_NAME,
+        bucketName: BUCKET_NAME,
+        timeoutInMilliseconds: 900000,
+        logLevel: "info",
+        frameRange: null,
+        chromiumOptions: {},
+        scale: 1,
+        everyNthFrame: 1,
+        numberOfGifLoops: null,
+        concurrencyPerLambda: 1,
+        downloadBehavior: { type: "play-in-browser" },
+        muted: false,
+        overwrite: true,
+        audioBitrate: null,
+        videoBitrate: null,
+        encodingBufferSize: null,
+        encodingMaxRate: null,
+        webhook: null,
+        forceHeight: null,
+        forceWidth: null,
+        audioCodec: null,
+        offthreadVideoCacheSizeInBytes: null,
+        deleteAfter: null,
+        colorSpace: null,
+        preferLossless: false,
+        forcePathStyle: false,
+        metadata: null,
+        apiKey: null,
+        offthreadVideoThreads: null,
+        envVariables: {},
+        pixelFormat: null,
+        proResProfile: null,
+        x264Preset: null,
+        jpegQuality: 80,
+        crf: null,
       });
 
-      await log("render_async_start_v77", { rideId, outName, payloadSize: payload.length });
+      await log("render_async_start_v83", { rideId, outName, payloadSize: payload.length });
 
       const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
 
@@ -95,7 +133,7 @@ Deno.serve(async (req: Request) => {
         body: payload,
       });
 
-      await log("render_async_result_v77", {
+      await log("render_async_result_v83", {
         rideId,
         outName,
         lambdaStatus: res.status,
@@ -114,7 +152,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_async_error_v77", { error: String(e) });
+      await log("render_async_error_v83", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
@@ -126,37 +164,37 @@ Deno.serve(async (req: Request) => {
       const bucketName = url.searchParams.get("bucketName") || BUCKET_NAME;
 
       if (!renderId) {
-        return new Response(JSON.stringify({ version: "v77-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
+        return new Response(JSON.stringify({ version: "v83-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
       }
 
-      // renderId is actually the outName (S3 key). Check if the file exists via signed HEAD.
-      const s3Url = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/${renderId}`;
+      // Remotion stores output at renders/{internalId}/{outName}.
+      // List all render dirs and check each for our outName.
+      const listUrl = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/?list-type=2&max-keys=1000&prefix=renders/`;
+      const listRes = await s3Client.fetch(listUrl, { method: "GET" });
 
-      const headRes = await s3Client.fetch(s3Url, { method: "HEAD" });
-
-      if (headRes.status === 200) {
-        return new Response(JSON.stringify({
-          status: "done",
-          progress: 100,
-          url: s3Url,
-        }), { status: 200, headers: CORS });
-      }
-
-      if (headRes.status === 404 || headRes.status === 403) {
-        return new Response(JSON.stringify({
-          status: "rendering",
-          progress: 0,
-        }), { status: 200, headers: CORS });
+      if (listRes.ok) {
+        const xml = await listRes.text();
+        const keyRegex = /<Key>([^<]*)<\/Key>/g;
+        let match;
+        while ((match = keyRegex.exec(xml)) !== null) {
+          if (match[1].endsWith(`/${renderId}`)) {
+            const fileUrl = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/${match[1]}`;
+            return new Response(JSON.stringify({
+              status: "done",
+              progress: 100,
+              url: fileUrl,
+            }), { status: 200, headers: CORS });
+          }
+        }
       }
 
       return new Response(JSON.stringify({
         status: "rendering",
         progress: 0,
-        s3Status: headRes.status,
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_poll_error_v77", { error: String(e) });
+      await log("render_poll_error_v83", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
