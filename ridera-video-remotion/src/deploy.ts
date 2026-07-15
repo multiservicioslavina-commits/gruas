@@ -39,8 +39,8 @@ async function main() {
   console.log("3. Desplegando función Lambda...");
   const { functionName } = await deployFunction({
     region: REGION,
-    timeoutInSeconds: 240,
-    memorySizeInMb: 2048,
+    timeoutInSeconds: 900,
+    memorySizeInMb: 3072,
     createCloudWatchLogGroup: true,
   });
   console.log(`   Function: ${functionName}`);
