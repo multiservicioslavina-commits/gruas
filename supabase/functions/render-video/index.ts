@@ -47,7 +47,6 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { headers: CORS });
   }
 
-  // POST — start render
   if (req.method === "POST") {
     try {
       const body = await req.json();
@@ -128,7 +127,6 @@ Deno.serve(async (req: Request) => {
     }
   }
 
-  // GET — check render progress
   if (req.method === "GET") {
     try {
       const url = new URL(req.url);
@@ -148,7 +146,11 @@ Deno.serve(async (req: Request) => {
         renderId,
       });
 
+      console.log("STATUS CHECK - renderId:", renderId, "bucketName:", bucketName);
+
       const res = await invokeLambda(payload);
+
+      console.log("LAMBDA RESPONSE - status:", res.status, "body:", res.body.substring(0, 500));
 
       if (res.status < 200 || res.status >= 300) {
         throw new Error(`Lambda status failed: ${res.status} ${res.body}`);
@@ -197,7 +199,7 @@ Deno.serve(async (req: Request) => {
         { status: 200, headers: CORS },
       );
     } catch (e) {
-      console.error("Render status error:", e);
+      console.error("RENDER STATUS ERROR DETAIL:", String(e));
       return new Response(
         JSON.stringify({ error: String(e) }),
         { status: 500, headers: CORS },

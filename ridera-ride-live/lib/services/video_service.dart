@@ -60,6 +60,7 @@ class VideoService {
     onProgress?.call(0);
 
     final deadline = DateTime.now().add(_maxWait);
+    int consecutiveErrors = 0;
     while (DateTime.now().isBefore(deadline)) {
       await Future.delayed(_pollInterval);
 
@@ -70,10 +71,22 @@ class VideoService {
             .get(Uri.parse(statusUrl))
             .timeout(const Duration(seconds: 20));
       } catch (_) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= 5) {
+          throw Exception('No se pudo consultar el estado del video después de $consecutiveErrors intentos');
+        }
         continue;
       }
 
-      if (st.statusCode != 200) continue;
+      if (st.statusCode != 200) {
+        consecutiveErrors++;
+        if (consecutiveErrors >= 5) {
+          throw Exception('Error del servidor (${st.statusCode}) al consultar estado del video');
+        }
+        continue;
+      }
+
+      consecutiveErrors = 0;
 
       final s = jsonDecode(st.body) as Map<String, dynamic>;
       final status = s['status'] as String?;
