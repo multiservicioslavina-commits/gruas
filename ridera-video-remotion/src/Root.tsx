@@ -3,10 +3,10 @@ import { MapScene } from "./components/MapScene";
 import type { RideData } from "./lib/types";
 
 const FPS = 24;
-const T_INTRO = 3.0;
-const T_ROUTE = 14.0;
-const T_STATS = 4.5;
-const T_OUTRO = 3.0;
+const T_INTRO = 5.0;
+const T_ROUTE = 40.0;
+const T_STATS = 10.0;
+const T_OUTRO = 5.0;
 const TOTAL_SECONDS = T_INTRO + T_ROUTE + T_STATS + T_OUTRO;
 
 export const RemotionRoot: React.FC = () => {

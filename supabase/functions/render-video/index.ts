@@ -79,7 +79,7 @@ Deno.serve(async (req: Request) => {
         codec: "h264",
         imageFormat: "jpeg",
         maxRetries: 1,
-        framesPerLambda: 40,
+        framesPerLambda: 50,
         privacy: "public",
         outName,
         version: "4.0.293",
