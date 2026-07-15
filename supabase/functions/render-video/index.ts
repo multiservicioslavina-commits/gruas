@@ -1,13 +1,18 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { AwsClient } from "https://esm.sh/aws4fetch@1.0.20";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
-const AWS_REGION = Deno.env.get("REMOTION_REGION") || "us-east-1";
-const FUNCTION_NAME = Deno.env.get("REMOTION_FUNCTION_NAME") || "";
-const SERVE_URL = Deno.env.get("REMOTION_SERVE_URL") || "";
-const BUCKET_NAME = Deno.env.get("REMOTION_BUCKET") || "";
-const AWS_ACCESS_KEY = Deno.env.get("AWS_ACCESS_KEY_ID") || "";
-const AWS_SECRET_KEY = Deno.env.get("AWS_SECRET_ACCESS_KEY") || "";
-const MAPBOX_TOKEN = Deno.env.get("MAPBOX_TOKEN") || "";
+const AWS_REGION = (Deno.env.get("REMOTION_REGION") || "us-east-1").trim();
+const FUNCTION_NAME = (Deno.env.get("REMOTION_FUNCTION_NAME") || "").trim();
+const SERVE_URL = (Deno.env.get("REMOTION_SERVE_URL") || "").trim();
+const BUCKET_NAME = (Deno.env.get("REMOTION_BUCKET") || "").trim();
+const AWS_ACCESS_KEY = (Deno.env.get("AWS_ACCESS_KEY_ID") || "").trim();
+const AWS_SECRET_KEY = (Deno.env.get("AWS_SECRET_ACCESS_KEY") || "").trim();
+const MAPBOX_TOKEN = (Deno.env.get("MAPBOX_TOKEN") || "").trim();
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -15,31 +20,24 @@ const CORS = {
   "Content-Type": "application/json",
 };
 
-const aws = new AwsClient({
+const lambdaClient = new AwsClient({
   accessKeyId: AWS_ACCESS_KEY,
   secretAccessKey: AWS_SECRET_KEY,
   region: AWS_REGION,
   service: "lambda",
 });
 
-async function invokeLambda(
-  payload: string,
-  invocationType: "RequestResponse" | "Event" = "RequestResponse",
-): Promise<{ status: number; body: string }> {
-  const endpoint =
-    `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
+const s3Client = new AwsClient({
+  accessKeyId: AWS_ACCESS_KEY,
+  secretAccessKey: AWS_SECRET_KEY,
+  region: AWS_REGION,
+  service: "s3",
+});
 
-  const res = await aws.fetch(endpoint, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Amz-Invocation-Type": invocationType,
-    },
-    body: payload,
-  });
-
-  const body = await res.text();
-  return { status: res.status, body };
+async function log(testName: string, result: Record<string, unknown>) {
+  try {
+    await supabase.from("_debug_results").insert({ test_name: testName, result });
+  } catch (_) {}
 }
 
 Deno.serve(async (req: Request) => {
@@ -51,19 +49,11 @@ Deno.serve(async (req: Request) => {
     try {
       const body = await req.json();
       const { rideId, rideName, elapsed, distanceKm, maxSpeedKmh, routePoints, municipios } = body;
-
       if (!rideId || !routePoints?.length) {
-        return new Response(
-          JSON.stringify({ error: "rideId and routePoints required" }),
-          { status: 400, headers: CORS },
-        );
+        return new Response(JSON.stringify({ error: "rideId and routePoints required" }), { status: 400, headers: CORS });
       }
-
       if (!MAPBOX_TOKEN) {
-        return new Response(
-          JSON.stringify({ error: "MAPBOX_TOKEN not configured" }),
-          { status: 500, headers: CORS },
-        );
+        return new Response(JSON.stringify({ error: "MAPBOX_TOKEN not configured" }), { status: 500, headers: CORS });
       }
 
       const inputProps = {
@@ -77,6 +67,8 @@ Deno.serve(async (req: Request) => {
         mapboxToken: MAPBOX_TOKEN,
       };
 
+      const outName = `ridera-${rideId}-${Date.now()}.mp4`;
+
       const payload = JSON.stringify({
         type: "start",
         serveUrl: SERVE_URL,
@@ -87,43 +79,43 @@ Deno.serve(async (req: Request) => {
         maxRetries: 1,
         framesPerLambda: 40,
         privacy: "public",
-        outName: `ridera-${rideId}-${Date.now()}.mp4`,
+        outName,
       });
 
-      const res = await invokeLambda(payload, "RequestResponse");
+      await log("render_async_start_v77", { rideId, outName, payloadSize: payload.length });
 
-      if (res.status < 200 || res.status >= 300) {
-        throw new Error(`Lambda invoke failed: ${res.status} ${res.body}`);
+      const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
+
+      const res = await lambdaClient.fetch(endpoint, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Amz-Invocation-Type": "Event",
+        },
+        body: payload,
+      });
+
+      await log("render_async_result_v77", {
+        rideId,
+        outName,
+        lambdaStatus: res.status,
+      });
+
+      if (res.status !== 202) {
+        const errBody = await res.text();
+        throw new Error(`Lambda Event invoke failed: ${res.status} ${errBody}`);
       }
 
-      let lambdaResult: Record<string, unknown>;
-      try {
-        lambdaResult = JSON.parse(res.body);
-      } catch {
-        throw new Error(`Lambda response not JSON: ${res.body}`);
-      }
+      // Return outName as renderId — the client will poll GET with it
+      return new Response(JSON.stringify({
+        renderId: outName,
+        bucketName: BUCKET_NAME,
+        status: "rendering",
+      }), { status: 200, headers: CORS });
 
-      const renderId = lambdaResult.renderId as string;
-      const bucketName = lambdaResult.bucketName as string;
-
-      if (!renderId) {
-        throw new Error(`Lambda did not return renderId: ${JSON.stringify(lambdaResult)}`);
-      }
-
-      return new Response(
-        JSON.stringify({
-          renderId,
-          bucketName: bucketName || BUCKET_NAME,
-          status: "rendering",
-        }),
-        { status: 200, headers: CORS },
-      );
     } catch (e) {
-      console.error("Render start error:", e);
-      return new Response(
-        JSON.stringify({ error: String(e) }),
-        { status: 500, headers: CORS },
-      );
+      await log("render_async_error_v77", { error: String(e) });
+      return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
 
@@ -134,76 +126,38 @@ Deno.serve(async (req: Request) => {
       const bucketName = url.searchParams.get("bucketName") || BUCKET_NAME;
 
       if (!renderId) {
-        return new Response(
-          JSON.stringify({ error: "renderId query param required" }),
-          { status: 400, headers: CORS },
-        );
+        return new Response(JSON.stringify({ version: "v77-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
       }
 
-      const payload = JSON.stringify({
-        type: "status",
-        bucketName,
-        renderId,
-      });
+      // renderId is actually the outName (S3 key). Check if the file exists via signed HEAD.
+      const s3Url = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/${renderId}`;
 
-      console.log("STATUS CHECK - renderId:", renderId, "bucketName:", bucketName);
+      const headRes = await s3Client.fetch(s3Url, { method: "HEAD" });
 
-      const res = await invokeLambda(payload);
-
-      console.log("LAMBDA RESPONSE - status:", res.status, "body:", res.body.substring(0, 500));
-
-      if (res.status < 200 || res.status >= 300) {
-        throw new Error(`Lambda status failed: ${res.status} ${res.body}`);
+      if (headRes.status === 200) {
+        return new Response(JSON.stringify({
+          status: "done",
+          progress: 100,
+          url: s3Url,
+        }), { status: 200, headers: CORS });
       }
 
-      let result: Record<string, unknown>;
-      try {
-        result = JSON.parse(res.body);
-      } catch {
-        throw new Error(`Lambda status response not JSON: ${res.body}`);
-      }
-
-      const overallProgress = result.overallProgress as number ?? 0;
-      const fatalErrorEncountered = result.fatalErrorEncountered as boolean ?? false;
-      const done = result.done as boolean ?? false;
-      const outputUrl = (result.outputFile as string) ?? (result.outputUrl as string) ?? null;
-      const errors = result.errors as unknown[] ?? [];
-
-      if (fatalErrorEncountered) {
-        return new Response(
-          JSON.stringify({
-            status: "error",
-            progress: Math.round(overallProgress * 100),
-            error: errors.length > 0 ? JSON.stringify(errors[0]) : "Render failed",
-          }),
-          { status: 200, headers: CORS },
-        );
-      }
-
-      if (done && outputUrl) {
-        return new Response(
-          JSON.stringify({
-            status: "done",
-            progress: 100,
-            url: outputUrl,
-          }),
-          { status: 200, headers: CORS },
-        );
-      }
-
-      return new Response(
-        JSON.stringify({
+      if (headRes.status === 404 || headRes.status === 403) {
+        return new Response(JSON.stringify({
           status: "rendering",
-          progress: Math.round(overallProgress * 100),
-        }),
-        { status: 200, headers: CORS },
-      );
+          progress: 0,
+        }), { status: 200, headers: CORS });
+      }
+
+      return new Response(JSON.stringify({
+        status: "rendering",
+        progress: 0,
+        s3Status: headRes.status,
+      }), { status: 200, headers: CORS });
+
     } catch (e) {
-      console.error("RENDER STATUS ERROR DETAIL:", String(e));
-      return new Response(
-        JSON.stringify({ error: String(e) }),
-        { status: 500, headers: CORS },
-      );
+      await log("render_poll_error_v77", { error: String(e) });
+      return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
 
