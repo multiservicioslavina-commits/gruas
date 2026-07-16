@@ -23,6 +23,7 @@ ENV PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true
 ENV PUPPETEER_SKIP_DOWNLOAD=true
 ENV PUPPETEER_CACHE_DIR=/opt/pptr-cache
 ENV NODE_ENV=production
+ENV PORT=3000
 
 WORKDIR /app
 COPY package.json ./
@@ -35,4 +36,5 @@ COPY src ./src
 RUN mkdir -p ./assets
 COPY assets* ./assets/
 
+EXPOSE 3000
 CMD ["node", "src/server.js"]
