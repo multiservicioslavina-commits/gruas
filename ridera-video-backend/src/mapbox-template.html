@@ -127,6 +127,29 @@
   #stampName  { font-size: 30px; font-weight: 900; color: #fff; letter-spacing: 2px; text-transform: uppercase; margin: 2px 0; }
   #stampPts   { font-size: 14px; color: #E8B84B; font-weight: 700; letter-spacing: 2px; }
 
+  /* PERFIL DE ELEVACIÓN */
+  #elevBar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 100px;
+    display: none; pointer-events: none;
+  }
+  #elevBar.show { display: block; }
+
+  /* PANEL DE RIDERS DEL GRUPO */
+  #groupPanel {
+    position: absolute; top: 130px; right: 30px;
+    display: none; flex-direction: column; gap: 8px;
+    pointer-events: none;
+  }
+  #groupPanel.show { display: flex; }
+  .riderChip {
+    display: flex; align-items: center; gap: 8px;
+    background: rgba(0,0,0,0.65); border-radius: 20px;
+    padding: 5px 12px 5px 8px;
+    border-left: 3px solid currentColor;
+  }
+  .riderDot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .riderName { font-size: 12px; color: #fff; letter-spacing: 1px; font-weight: 700; }
+
   /* OUTRO */
   #outro {
     position: absolute; inset: 0;
@@ -194,6 +217,12 @@
     <div id="stampName"></div>
     <div id="stampPts"></div>
   </div>
+
+  <div id="elevBar">
+    <canvas id="elevCanvas" width="1080" height="100" style="width:1080px;height:100px;display:block"></canvas>
+  </div>
+
+  <div id="groupPanel"></div>
 
   <div id="outro">
     <div id="outroLogo">RIDERA</div>
@@ -347,20 +376,162 @@
     }
   }
 
+  // ── Iluminación según hora real de la rodada ──────────────────────────
+  function getLightPreset(isoStr) {
+    if (!isoStr) return 'dawn';
+    try {
+      const h = new Date(isoStr).getHours();
+      if (h >= 5  && h < 8)  return 'dawn';
+      if (h >= 8  && h < 17) return 'day';
+      if (h >= 17 && h < 20) return 'dusk';
+      return 'night';
+    } catch { return 'dawn'; }
+  }
+  const lightPreset = getLightPreset(DATA.rideStartedAt);
+
+  // ── Paleta de colores para riders del grupo ───────────────────────────
+  const RIDER_COLORS = ['#FF6B1A','#3B82F6','#10B981','#F59E0B','#EC4899','#8B5CF6','#06B6D4','#EF4444'];
+  const groupRiders  = DATA.groupRiders || [];
+  // Distancias acumuladas por rider del grupo
+  const groupCumDists = groupRiders.map(r => {
+    const pts = (r.routePoints || []).map(p => [p.lon, p.lat]);
+    if (pts.length < 2) return [];
+    const cd = [0];
+    for (let i = 1; i < pts.length; i++) cd.push(cd[i-1] + haversine(pts[i-1], pts[i]));
+    return cd;
+  });
+
+  // ── Cámara dinámica: tiempo → distancia basado en velocidad GPS ───────
+  // Construye un mapa t_norm → dist que hace que la cámara vaya más rápido
+  // donde el piloto iba rápido y más lento donde iba despacio.
+  function buildSpeedTimemap() {
+    const speeds = DATA.routePoints.map(p => p.speed_kmh || 0);
+    if (speeds.every(s => s === 0)) return null; // sin datos de velocidad
+    const weights = [];
+    for (let i = 0; i < coords.length - 1; i++) {
+      const dist = haversine(coords[i], coords[i+1]);
+      // Velocidad promedio del segmento; clamp 15-150 para evitar extremos
+      const spd  = Math.max(15, Math.min(150, (speeds[i] + speeds[i+1]) / 2));
+      weights.push(dist / spd); // tiempo proporcional a dist/velocidad
+    }
+    const totalW = weights.reduce((a,b) => a+b, 0) || 1;
+    // Tabla: cumDist[i] → tNorm[i]
+    const tNorms = [0];
+    let acc = 0;
+    for (const w of weights) { acc += w / totalW; tNorms.push(acc); }
+    return { tNorms, cumDist };
+  }
+  const speedTimemap = buildSpeedTimemap();
+
+  // Dado t normalizado [0,1], devuelve la distancia recorrida (m)
+  function tNormToDist(tNorm) {
+    if (!speedTimemap) return tNorm * totalDist;
+    const { tNorms, cumDist: cd } = speedTimemap;
+    tNorm = Math.max(0, Math.min(1, tNorm));
+    let lo = 0, hi = tNorms.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (tNorms[mid] < tNorm) lo = mid + 1; else hi = mid;
+    }
+    const i = Math.max(1, lo);
+    const seg = tNorms[i] - tNorms[i-1] || 1;
+    const f   = (tNorm - tNorms[i-1]) / seg;
+    return cd[i-1] + (cd[i] - cd[i-1]) * f;
+  }
+
+  // ── Perfil de elevación: se precomputa tras el idle ───────────────────
+  let elevations = [];   // metros por cada punto de la ruta
+  const elevCanvas = document.getElementById('elevCanvas');
+
+  function drawElevProfile(riderDist) {
+    if (elevations.length < 4) return;
+    const ctx  = elevCanvas.getContext('2d');
+    const W = elevCanvas.width, H = elevCanvas.height;
+    ctx.clearRect(0, 0, W, H);
+
+    const minE = Math.min(...elevations), maxE = Math.max(...elevations);
+    const range = maxE - minE || 1;
+    const pad = 14;
+
+    const toX = i => (i / (elevations.length - 1)) * (W - 2*pad) + pad;
+    const toY = e => H - pad - ((e - minE) / range) * (H - 2.5*pad);
+
+    // Cut idx for rider position
+    let cutIdx = 0;
+    while (cutIdx < cumDist.length - 1 && cumDist[cutIdx+1] <= riderDist) cutIdx++;
+    const riderF = cumDist[cutIdx] < totalDist
+      ? (riderDist - cumDist[cutIdx]) / Math.max(1, cumDist[cutIdx+1] - cumDist[cutIdx])
+      : 1;
+    const riderElevIdx = Math.min(cutIdx + riderF, elevations.length - 1);
+
+    // Fondo gradiente
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, 'rgba(0,0,0,0)');
+    bgGrad.addColorStop(1, 'rgba(0,0,0,0.75)');
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Área ruta completa
+    ctx.beginPath();
+    ctx.moveTo(toX(0), H);
+    elevations.forEach((e, i) => ctx.lineTo(toX(i), toY(e)));
+    ctx.lineTo(toX(elevations.length-1), H);
+    ctx.closePath();
+    ctx.fillStyle = 'rgba(255,255,255,0.06)';
+    ctx.fill();
+
+    // Línea ruta completa
+    ctx.beginPath();
+    elevations.forEach((e, i) => i===0 ? ctx.moveTo(toX(i), toY(e)) : ctx.lineTo(toX(i), toY(e)));
+    ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+    ctx.lineWidth = 1.5; ctx.stroke();
+
+    // Área recorrida (naranja)
+    const cutX = toX(Math.min(riderElevIdx, elevations.length-1));
+    const fillGrad = ctx.createLinearGradient(0, 0, 0, H);
+    fillGrad.addColorStop(0, 'rgba(232,93,32,0.55)');
+    fillGrad.addColorStop(1, 'rgba(232,93,32,0.08)');
+    ctx.beginPath();
+    ctx.moveTo(toX(0), H);
+    elevations.slice(0, Math.ceil(riderElevIdx) + 1).forEach((e, i) => ctx.lineTo(toX(i), toY(e)));
+    ctx.lineTo(cutX, H);
+    ctx.closePath();
+    ctx.fillStyle = fillGrad;
+    ctx.fill();
+
+    // Línea recorrida (naranja)
+    ctx.beginPath();
+    elevations.slice(0, Math.ceil(riderElevIdx) + 1)
+      .forEach((e, i) => i===0 ? ctx.moveTo(toX(i), toY(e)) : ctx.lineTo(toX(i), toY(e)));
+    ctx.strokeStyle = '#FF6B1A'; ctx.lineWidth = 2.5; ctx.stroke();
+
+    // Dot rider
+    const rx = cutX;
+    const ry = toY(elevations[Math.min(Math.round(riderElevIdx), elevations.length-1)]);
+    ctx.beginPath();
+    ctx.arc(rx, ry, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#FF6B1A'; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2; ctx.stroke();
+
+    // Altitud actual
+    const curElev = Math.round(elevations[Math.min(Math.round(riderElevIdx), elevations.length-1)]);
+    ctx.fillStyle = 'rgba(255,107,26,0.95)';
+    ctx.font = 'bold 11px Arial';
+    const label = `${curElev} m`;
+    const lx = Math.min(rx + 8, W - 45);
+    ctx.fillText(label, lx, ry - 6);
+  }
+
   // ── Estado del mapa ────────────────────────────────────────────────────
   let mapReady = false;
-  // Bearing inicial = dirección real del arranque de la ruta, para que
-  // la chase cam no dé un bandazo buscando el rumbo en el primer segundo
   let currentBearing = bearingAlong(0);
-  let smCamPos = null;   // posición de cámara suavizada [lng, lat]
-  let smCamAlt = null;   // altitud suavizada (m)
+  let smCamPos = null;
+  let smCamAlt = null;
 
-  // Standard Satellite: satélite + iluminación 3D real (sol, sombras,
-  // cielo). lightPreset 'dusk' = hora dorada — el look cinematográfico.
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/standard-satellite',
-    config: { basemap: { lightPreset: 'dawn' } },
+    config: { basemap: { lightPreset } },
     center: [centerLng, centerLat],
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
@@ -399,6 +570,44 @@
         'star-intensity': 0.2,
       });
     } catch (e) { console.log('fog no aplicado:', e.message); }
+
+    // ── Heatmap de velocidad: segmentos coloreados por km/h ──────────────
+    const speedFeatures = coords.slice(0, -1).map((c, i) => ({
+      type: 'Feature',
+      properties: { speed: DATA.routePoints[i]?.speed_kmh || 0 },
+      geometry: { type: 'LineString', coordinates: [c, coords[i+1]] },
+    }));
+    const hasSpeedData = speedFeatures.some(f => f.properties.speed > 0);
+    map.addSource('speed-heatmap', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: speedFeatures },
+    });
+
+    // ── Sources de riders del grupo ───────────────────────────────────────
+    groupRiders.forEach((r, idx) => {
+      const rCoords = (r.routePoints || []).map(p => [p.lon, p.lat]);
+      const color = RIDER_COLORS[(idx + 1) % RIDER_COLORS.length];
+      map.addSource(`group-route-${idx}`, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: rCoords.length >= 2 ? rCoords : [rCoords[0]||coords[0], rCoords[0]||coords[0]] } },
+      });
+      map.addSource(`group-live-${idx}`, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [rCoords[0]||coords[0], rCoords[0]||coords[0]] } },
+      });
+      map.addSource(`group-pin-${idx}`, {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'Point', coordinates: rCoords[0]||coords[0] } },
+      });
+      map.addLayer({ id: `group-trail-${idx}`, type: 'line', source: `group-live-${idx}`,
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: { 'line-color': color, 'line-width': 5, 'line-opacity': 0.75 },
+      });
+      map.addLayer({ id: `group-dot-${idx}`, type: 'circle', source: `group-pin-${idx}`,
+        paint: { 'circle-radius': 9, 'circle-color': color,
+          'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff' },
+      });
+    });
 
     // Capas de ruta
     map.addSource('route-full', {
@@ -515,15 +724,54 @@
         'circle-stroke-width': 4, 'circle-stroke-color': '#fff' },
     });
 
+    // ── Heatmap de velocidad (sobre la ruta completa, fondo) ─────────────
+    if (hasSpeedData) {
+      map.addLayer({ id: 'speed-heatmap-layer', type: 'line', source: 'speed-heatmap',
+        layout: { 'line-cap': 'round', 'line-join': 'round' },
+        paint: {
+          'line-width': 6,
+          'line-opacity': 0.85,
+          'line-color': ['interpolate', ['linear'], ['get', 'speed'],
+            0,   '#3B82F6',  // azul   — parado/muy lento
+            20,  '#10B981',  // verde  — despacio
+            60,  '#F59E0B',  // ámbar  — moderado
+            100, '#EF4444',  // rojo   — muy rápido
+          ],
+        },
+      }, 'route-full-layer'); // debajo de la ruta naranja
+    }
+
     // Precarga fotos
     await Promise.all(photos.map(p => new Promise(r => {
       const im = new Image(); im.crossOrigin = 'anonymous';
       im.onload = im.onerror = () => r(); im.src = p.url;
     })));
 
+    // ── Pre-computar elevaciones tras idle para el perfil animado ────────
     map.once('idle', () => {
       map.triggerRepaint();
       setTimeout(() => {
+        // queryTerrainElevation funciona cuando las teselas DEM del viewport
+        // están cargadas. Con la vista general de la ruta la mayoría están listas.
+        elevations = coords.map(c => {
+          const e = map.queryTerrainElevation(c);
+          return (typeof e === 'number' && !isNaN(e)) ? e : 0;
+        });
+        // Si muchos ceros (teselas no cargadas), limpiar para no dibujar ruido
+        const nonZero = elevations.filter(e => e > 0).length;
+        if (nonZero < coords.length * 0.3) elevations = [];
+
+        // Panel de riders del grupo (se construye una sola vez)
+        const panel = document.getElementById('groupPanel');
+        [{ name: DATA.rideName || 'Tú', color: RIDER_COLORS[0] }, ...groupRiders.map((r, i) => ({ name: r.name, color: RIDER_COLORS[(i+1)%RIDER_COLORS.length] }))]
+          .forEach(r => {
+            const chip = document.createElement('div');
+            chip.className = 'riderChip';
+            chip.style.borderLeftColor = r.color;
+            chip.innerHTML = `<div class="riderDot" style="background:${r.color}"></div><div class="riderName">${r.name}</div>`;
+            panel.appendChild(chip);
+          });
+
         map.triggerRepaint();
         mapReady = true;
         window.__ready = true;
@@ -565,6 +813,7 @@
       const p = t / T_INTRO;
       setOp('intro', Math.min(1, p < 0.1 ? p * 10 : p > 0.85 ? (1-p)*(1/0.15) : 1));
       hide('rideNameBar'); hide('hudBar'); hide('statsPanel'); hide('outro');
+      hide('elevBar'); hide('groupPanel');
       setTr('photoCard', 'translateY(100%)');
 
       // Contexto de región: se ve la RUTA COMPLETA con inicio/final
@@ -580,13 +829,14 @@
       hide('intro'); hide('statsPanel'); hide('outro');
       setTr('photoCard', 'translateY(100%)');
       show('rideNameBar'); show('hudBar');
+      if (elevations.length >= 4) show('elevBar');
+      if (groupRiders.length > 0) show('groupPanel');
 
       const p = (t - T_INTRO) / T_ROUTE;
       const eased = easeInOut(p);
 
-      // Progreso por DISTANCIA real (no por índice de puntos GPS) —
-      // avance constante aunque los puntos estén espaciados irregular.
-      const riderDist = eased * totalDist;
+      // Distancia basada en velocidad real GPS (cámara dinámica)
+      const riderDist = tNormToDist(eased);
       const rider = pointAlong(riderDist);
 
       // Ruta parcial dibujada (por distancia)
@@ -637,6 +887,28 @@
       map.setFreeCameraOptions(camera);
       badgesOn = true;
 
+      // ── Perfil de elevación animado ───────────────────────────────────
+      drawElevProfile(riderDist);
+
+      // ── Riders del grupo: posición simultánea en el mapa ─────────────
+      groupRiders.forEach((r, idx) => {
+        const rPts = (r.routePoints || []).map(p => [p.lon, p.lat]);
+        if (rPts.length < 2) return;
+        const rCumDist = groupCumDists[idx];
+        const rTotalDist = rCumDist[rCumDist.length - 1];
+        const rDist = eased * rTotalDist;
+        let rCutIdx = 0;
+        while (rCutIdx < rCumDist.length - 1 && rCumDist[rCutIdx+1] <= rDist) rCutIdx++;
+        const rFrac = rCumDist[rCutIdx] < rTotalDist
+          ? (rDist - rCumDist[rCutIdx]) / (rCumDist[rCutIdx+1] - rCumDist[rCutIdx])
+          : 1;
+        const ra = rPts[rCutIdx], rb = rPts[Math.min(rCutIdx+1, rPts.length-1)];
+        const rRider = [ra[0]+(rb[0]-ra[0])*rFrac, ra[1]+(rb[1]-ra[1])*rFrac];
+        const partial = [...rPts.slice(0, rCutIdx+1), rRider];
+        map.getSource(`group-live-${idx}`)?.setData({type:'Feature',geometry:{type:'LineString',coordinates:partial}});
+        map.getSource(`group-pin-${idx}`)?.setData({type:'Feature',geometry:{type:'Point',coordinates:rRider}});
+      });
+
       // ── SELLO DE MUNICIPIO: estampa al pasar por cada pueblo ─────────
       const stamp = stamps.find(s => t >= s.t && t < s.t + STAMP_SHOW);
       const chip = document.getElementById('stampChip');
@@ -676,7 +948,7 @@
     // ── FOTOS [T_INTRO+T_ROUTE, T_INTRO+T_ROUTE+photoCount*T_PHOTO) ───
     } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO) {
       hide('intro'); hide('statsPanel'); hide('outro');
-      hide('rideNameBar'); hide('hudBar');
+      hide('rideNameBar'); hide('hudBar'); hide('elevBar'); hide('groupPanel');
 
       const photoT = t - T_INTRO - T_ROUTE;
       const photoIdx = Math.floor(photoT / T_PHOTO);
@@ -720,6 +992,7 @@
     // ── STATS [T_INTRO+T_ROUTE+photos*T_PHOTO, +T_STATS) ─────────────
     } else if (t < T_INTRO + T_ROUTE + photoCount * T_PHOTO + T_STATS) {
       hide('intro'); hide('rideNameBar'); hide('hudBar'); hide('outro');
+      hide('elevBar'); hide('groupPanel');
       setTr('photoCard', 'translateY(100%)');
       map.getSource('photo-active').setData({ type:'FeatureCollection', features:[] });
       show('statsPanel');
@@ -737,6 +1010,7 @@
     // ── OUTRO [últimos T_OUTRO segundos] ──────────────────────────────
     } else {
       hide('intro'); hide('rideNameBar'); hide('hudBar'); hide('statsPanel');
+      hide('elevBar'); hide('groupPanel');
       setTr('photoCard', 'translateY(100%)');
       show('outro');
 

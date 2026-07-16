@@ -68,6 +68,8 @@ app.post('/render', (req, res) => {
     routePoints,
     photos,
     municipios,
+    rideStartedAt,
+    groupRiders,
   } = req.body || {};
 
   if (!rideId || !Array.isArray(routePoints) || routePoints.length < 2) {
@@ -106,6 +108,8 @@ app.post('/render', (req, res) => {
         routePoints,
         photos: photos || [],
         municipiosFromClient: Array.isArray(municipios) ? municipios : [],
+        rideStartedAt: rideStartedAt || null,
+        groupRiders: Array.isArray(groupRiders) ? groupRiders : [],
         onProgress: (pct) => { job.progress = pct; },
       });
       const timeoutPromise = new Promise((_, reject) =>

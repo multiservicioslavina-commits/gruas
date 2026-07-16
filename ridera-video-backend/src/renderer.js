@@ -71,6 +71,8 @@ export async function renderRideVideo({
   routePoints,
   photos,
   municipiosFromClient,
+  rideStartedAt,
+  groupRiders,
   onProgress,
 }) {
   const T = (label, from) =>
@@ -124,6 +126,12 @@ export async function renderRideVideo({
         routePoints,
         photos: (photos || []).slice(0, 8),
         municipios,
+        rideStartedAt: rideStartedAt || null,
+        groupRiders: (groupRiders || []).map(r => ({
+          uid: r.uid,
+          name: r.name,
+          routePoints: r.routePoints || [],
+        })),
       }).replace(/</g, '\\u003c')
     );
 

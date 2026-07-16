@@ -39,6 +39,8 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   String? _videoUrl;
   String? _videoError;
   int _videoProgress = 0;
+  String? _rideStartedAt;
+  List<Map<String, dynamic>> _groupRiders = [];
 
   @override
   void initState() {
@@ -77,13 +79,59 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           .eq('uid', uid)
           .order('created_at'); // ascendente = orden cronológico
 
-      // Puntos de ruta para el mapa del video
+      // Puntos de ruta para el mapa del video (con velocidad para heatmap y cámara dinámica)
       final routePts = points
           .map<Map<String, double>>((p) => {
                 'lat': (p['lat'] as num).toDouble(),
                 'lon': (p['lon'] as num).toDouble(),
+                'speed_kmh': ((p['speed_kmh'] as num?) ?? 0).toDouble(),
               })
           .toList();
+
+      // Hora de inicio de la rodada (para iluminación horaria en el video)
+      String? startedAt;
+      try {
+        final rideRow = await _db
+            .from('rides')
+            .select('created_at')
+            .eq('id', widget.rideId)
+            .maybeSingle();
+        startedAt = rideRow?['created_at'] as String?;
+      } catch (_) {}
+
+      // Otros riders del grupo (para video grupal)
+      List<Map<String, dynamic>> groupRiders = [];
+      try {
+        final otherMembers = await _db
+            .from('members')
+            .select('uid, name')
+            .eq('ride_id', widget.rideId)
+            .neq('uid', uid)
+            .limit(7);
+        for (final member in otherMembers) {
+          final memberUid = member['uid'] as String;
+          final memberPts = await _db
+              .from('route_points')
+              .select('lat, lon, speed_kmh')
+              .eq('ride_id', widget.rideId)
+              .eq('uid', memberUid)
+              .order('recorded_at')
+              .limit(300);
+          if (memberPts.length >= 2) {
+            groupRiders.add({
+              'uid': memberUid,
+              'name': member['name'] ?? 'Rider',
+              'routePoints': memberPts
+                  .map<Map<String, double>>((p) => {
+                        'lat': (p['lat'] as num).toDouble(),
+                        'lon': (p['lon'] as num).toDouble(),
+                        'speed_kmh': ((p['speed_kmh'] as num?) ?? 0).toDouble(),
+                      })
+                  .toList(),
+            });
+          }
+        }
+      } catch (_) {}
 
       // Cargar municipios de Antioquia para sellos en el video
       List<Map<String, dynamic>> munis = [];
@@ -122,6 +170,8 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           _photos = List<Map<String, dynamic>>.from(photos);
           _routePoints = routePts;
           _municipios = munis;
+          _rideStartedAt = startedAt;
+          _groupRiders = groupRiders;
           _loading = false;
           if (existingVideo != null && existingVideo.isNotEmpty) {
             _videoStatus = 'done';
@@ -165,6 +215,8 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         photos: _photos,
         routePoints: _routePoints,
         municipios: _municipios,
+        rideStartedAt: _rideStartedAt,
+        groupRiders: _groupRiders,
         onProgress: (p) {
           if (mounted) setState(() { _videoProgress = p; });
         },

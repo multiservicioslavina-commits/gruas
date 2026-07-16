@@ -16,6 +16,8 @@ class VideoService {
     required List<Map<String, dynamic>> photos,
     required List<Map<String, double>> routePoints,
     List<Map<String, dynamic>>? municipios,
+    String? rideStartedAt,
+    List<Map<String, dynamic>>? groupRiders,
     void Function(int progress)? onProgress,
   }) async {
     final body = {
@@ -25,7 +27,11 @@ class VideoService {
       'distanceKm': distanceKm,
       'maxSpeedKmh': maxSpeedKmh,
       'routePoints': _simplify(routePoints, 300)
-          .map((p) => {'lat': p['lat'], 'lon': p['lon']})
+          .map((p) => {
+                'lat': p['lat'],
+                'lon': p['lon'],
+                if (p.containsKey('speed_kmh')) 'speed_kmh': p['speed_kmh'],
+              })
           .toList(),
       'photos': photos
           .map((p) => {
@@ -35,6 +41,8 @@ class VideoService {
               })
           .toList(),
       'municipios': municipios ?? [],
+      if (rideStartedAt != null) 'rideStartedAt': rideStartedAt,
+      if (groupRiders != null && groupRiders.isNotEmpty) 'groupRiders': groupRiders,
     };
 
     final res = await http
