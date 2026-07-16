@@ -5,7 +5,7 @@ import '../video_config.dart';
 
 class VideoService {
   static const _pollInterval = Duration(seconds: 5);
-  static const _maxWait = Duration(minutes: 10);
+  static const _maxWait = Duration(minutes: 30);
 
   Future<String> renderVideo({
     required String rideId,
@@ -24,19 +24,26 @@ class VideoService {
       'elapsed': elapsed,
       'distanceKm': distanceKm,
       'maxSpeedKmh': maxSpeedKmh,
-      'routePoints': _simplify(routePoints, 200)
+      'routePoints': _simplify(routePoints, 300)
           .map((p) => {'lat': p['lat'], 'lon': p['lon']})
+          .toList(),
+      'photos': photos
+          .map((p) => {
+                'url': p['url'],
+                if (p['lat'] != null) 'lat': p['lat'],
+                if (p['lon'] != null) 'lon': p['lon'],
+              })
           .toList(),
       'municipios': municipios ?? [],
     };
 
     final res = await http
         .post(
-          Uri.parse(kVideoBackendUrl),
+          Uri.parse('$kVideoBackendUrl/render'),
           headers: {'Content-Type': 'application/json'},
           body: jsonEncode(body),
         )
-        .timeout(const Duration(seconds: 60));
+        .timeout(const Duration(seconds: 30));
 
     if (res.statusCode != 200 && res.statusCode != 202) {
       throw Exception('Backend ${res.statusCode}: ${res.body}');
@@ -48,32 +55,28 @@ class VideoService {
       throw Exception(data['error']);
     }
 
-    final renderId = data['renderId'] as String?;
-    final bucketName = data['bucketName'] as String? ?? '';
-
-    if (renderId == null || renderId.isEmpty) {
-      final directUrl = data['url'] as String?;
-      if (directUrl != null && directUrl.isNotEmpty) return directUrl;
-      throw Exception('Backend no devolvió renderId ni url');
+    final jobId = data['jobId'] as String?;
+    if (jobId == null || jobId.isEmpty) {
+      throw Exception('Backend no devolvió jobId');
     }
 
     onProgress?.call(0);
 
     final deadline = DateTime.now().add(_maxWait);
     int consecutiveErrors = 0;
+
     while (DateTime.now().isBefore(deadline)) {
       await Future.delayed(_pollInterval);
 
       final http.Response st;
       try {
-        final statusUrl = '$kVideoBackendUrl?renderId=$renderId&bucketName=$bucketName';
         st = await http
-            .get(Uri.parse(statusUrl))
+            .get(Uri.parse('$kVideoBackendUrl/status/$jobId'))
             .timeout(const Duration(seconds: 20));
       } catch (_) {
         consecutiveErrors++;
         if (consecutiveErrors >= 5) {
-          throw Exception('No se pudo consultar el estado del video después de $consecutiveErrors intentos');
+          throw Exception('No se pudo consultar el estado del video');
         }
         continue;
       }
@@ -81,7 +84,7 @@ class VideoService {
       if (st.statusCode != 200) {
         consecutiveErrors++;
         if (consecutiveErrors >= 5) {
-          throw Exception('Error del servidor (${st.statusCode}) al consultar estado del video');
+          throw Exception('Error del servidor (${st.statusCode})');
         }
         continue;
       }
@@ -89,12 +92,12 @@ class VideoService {
       consecutiveErrors = 0;
 
       final s = jsonDecode(st.body) as Map<String, dynamic>;
-      final status = s['status'] as String?;
-      final progress = s['progress'] as int? ?? 0;
+      final state = s['state'] as String?;
+      final progress = (s['progress'] as num?)?.toInt() ?? 0;
 
       onProgress?.call(progress);
 
-      if (status == 'done') {
+      if (state == 'done') {
         final url = s['url'] as String?;
         if (url == null || url.isEmpty) {
           throw Exception('Render completado pero sin URL');
@@ -102,7 +105,7 @@ class VideoService {
         return url;
       }
 
-      if (status == 'error') {
+      if (state == 'error') {
         throw Exception('Render falló: ${s['error'] ?? 'desconocido'}');
       }
     }
