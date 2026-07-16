@@ -19,7 +19,7 @@ if (!MAPBOX_TOKEN) {
 const FPS    = 24;
 const WIDTH  = 1080;
 const HEIGHT = 1080;
-const MAX_DURATION_SEC = 20;
+const MAX_DURATION_SEC = 28;
 
 // Pista musical opcional: si existe assets/music.mp3 (o MUSIC_PATH),
 // se mezcla con fade-out al final — el video mudo no emociona a nadie.
