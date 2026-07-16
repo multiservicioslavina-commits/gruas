@@ -68,6 +68,7 @@ Deno.serve(async (req: Request) => {
       };
 
       const outName = `ridera-${rideId}-${Date.now()}.mp4`;
+      const fn900 = "remotion-render-4-0-293-mem3072mb-disk2048mb-900sec";
 
       const serializedInputProps = JSON.stringify({ data: inputProps });
 
@@ -79,11 +80,11 @@ Deno.serve(async (req: Request) => {
         codec: "h264",
         imageFormat: "jpeg",
         maxRetries: 1,
-        framesPerLambda: 50,
+        framesPerLambda: 40,
         privacy: "public",
         outName,
         version: "4.0.293",
-        rendererFunctionName: FUNCTION_NAME,
+        rendererFunctionName: fn900,
         bucketName: BUCKET_NAME,
         timeoutInMilliseconds: 900000,
         logLevel: "info",
@@ -120,9 +121,9 @@ Deno.serve(async (req: Request) => {
         crf: null,
       });
 
-      await log("render_async_start_v88", { rideId, outName, payloadSize: payload.length });
+      await log("render_async_start_v89", { rideId, outName, payloadSize: payload.length });
 
-      const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
+      const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${fn900}/invocations`;
 
       const res = await lambdaClient.fetch(endpoint, {
         method: "POST",
@@ -133,7 +134,7 @@ Deno.serve(async (req: Request) => {
         body: payload,
       });
 
-      await log("render_async_result_v88", {
+      await log("render_async_result_v89", {
         rideId,
         outName,
         lambdaStatus: res.status,
@@ -152,7 +153,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_async_error_v88", { error: String(e) });
+      await log("render_async_error_v89", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
@@ -164,7 +165,7 @@ Deno.serve(async (req: Request) => {
       const bucketName = url.searchParams.get("bucketName") || BUCKET_NAME;
 
       if (!renderId) {
-        return new Response(JSON.stringify({ version: "v88-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
+        return new Response(JSON.stringify({ version: "v89-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
       }
 
       // Remotion stores output at renders/{internalId}/{outName}.
@@ -194,7 +195,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_poll_error_v88", { error: String(e) });
+      await log("render_poll_error_v89", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
