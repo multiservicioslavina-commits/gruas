@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Club · Ridera</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400;700&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #E85D20;
+      --orange-light: #f07a3a;
+      --orange-dark: #c44d18;
+      --black: #0a0908;
+      --off-black: #0f0f0f;
+      --dark-gray: #1a1712;
+      --white: #f4f1ed;
+      --muted: #e6e3de;
+      --muted-dark: #9d9891;
+      --accent: #4ade80;
+      --display: 'Bebas Neue', sans-serif;
+      --condensed: 'Barlow Condensed', sans-serif;
+      --body: 'DM Sans', sans-serif;
+      --mono: 'DM Mono', monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--black);
+      color: var(--white);
+      font-family: var(--body);
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    body {
+      max-width: 1520px;
+      margin: 0 auto;
+      padding: 0;
+    }
+
+    a { color: var(--orange); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    h1, h2, h3 { margin: 0; }
+
+    /* HEADER */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: linear-gradient(180deg, rgba(12,10,8,.95) 0%, rgba(12,10,8,.8) 100%);
+      border-bottom: 1px solid rgba(232, 93, 32, 0.2);
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    header a {
+      font-family: var(--condensed);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      padding: 0.5rem 1rem;
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    header a:hover {
+      border-color: var(--orange);
+      text-decoration: none;
+    }
+
+    /* HERO */
+    .hero {
+      position: relative;
+      height: 500px;
+      display: flex;
+      align-items: flex-end;
+      overflow: hidden;
+      background: linear-gradient(135deg, #0f0f0f 0%, #1a1712 50%, #0f0f0f 100%);
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: radial-gradient(circle at 30% 50%, rgba(232,93,32,0.15) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      padding: 4rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 4rem;
+      align-items: flex-end;
+    }
+
+    .hero-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .club-avatar-hero {
+      width: 140px;
+      height: 140px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, rgba(232,93,32,0.3), rgba(232,93,32,0.1));
+      border: 2px solid rgba(232,93,32,0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 4rem;
+      box-shadow: 0 20px 60px rgba(232,93,32,0.2);
+      backdrop-filter: blur(10px);
+    }
+
+    .hero-text h1 {
+      font-family: var(--display);
+      font-size: 3.5rem;
+      color: var(--white);
+      margin-bottom: 0.5rem;
+    }
+
+    .hero-subtitle {
+      font-family: var(--condensed);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--orange);
+    }
+
+    .hero-description {
+      color: var(--muted-dark);
+      font-size: 1rem;
+      line-height: 1.8;
+      max-width: 500px;
+    }
+
+    .hero-right {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .stat-card {
+      background: rgba(232, 93, 32, 0.08);
+      border: 1px solid rgba(232, 93, 32, 0.25);
+      border-radius: 12px;
+      padding: 2rem;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .stat-card h3 {
+      font-family: var(--condensed);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted-dark);
+      margin-bottom: 1rem;
+    }
+
+    .stat-card .value {
+      font-family: var(--display);
+      font-size: 2.5rem;
+      color: var(--orange);
+      line-height: 1;
+    }
+
+    /* CONTENT SECTIONS */
+    .content-section {
+      padding: 4rem;
+      border-bottom: 1px solid rgba(232, 93, 32, 0.1);
+    }
+
+    .section-title {
+      font-family: var(--display);
+      font-size: 2.5rem;
+      margin-bottom: 2rem;
+      color: var(--white);
+    }
+
+    .about-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+
+    .about-text {
+      color: var(--muted-dark);
+      line-height: 1.8;
+    }
+
+    .about-text p {
+      margin-bottom: 1.5rem;
+    }
+
+    .highlights-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .highlight-item {
+      background: rgba(232, 93, 32, 0.08);
+      border-left: 4px solid var(--orange);
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+
+    .highlight-label {
+      font-family: var(--condensed);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--orange);
+      margin-bottom: 0.5rem;
+    }
+
+    .highlight-text {
+      color: var(--white);
+      font-size: 1.1rem;
+      line-height: 1.6;
+    }
+
+    /* CONTACT & SOCIAL */
+    .contact-section {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 2rem;
+    }
+
+    .contact-card {
+      background: rgba(232, 93, 32, 0.08);
+      border: 1px solid rgba(232, 93, 32, 0.25);
+      border-radius: 12px;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .contact-label {
+      font-family: var(--condensed);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--muted-dark);
+    }
+
+    .contact-value {
+      color: var(--white);
+      font-size: 1.1rem;
+    }
+
+    .social-links {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .social-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(232, 93, 32, 0.15);
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      border-radius: 6px;
+      color: var(--orange);
+      font-family: var(--condensed);
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .social-btn:hover {
+      background: rgba(232, 93, 32, 0.25);
+      border-color: var(--orange);
+    }
+
+    /* BRANDS & ROUTES */
+    .tags-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 3rem;
+    }
+
+    .tags-group h3 {
+      font-family: var(--condensed);
+      font-size: 1rem;
+      text-transform: uppercase;
+      letter-spacing: 0.15em;
+      color: var(--orange);
+      margin-bottom: 1.5rem;
+    }
+
+    .tags-grid {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .tag {
+      padding: 0.6rem 1.2rem;
+      background: rgba(232, 93, 32, 0.12);
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      border-radius: 6px;
+      color: var(--muted);
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .tag:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+      background: rgba(232, 93, 32, 0.2);
+    }
+
+    /* CTA */
+    .cta-section {
+      background: linear-gradient(135deg, rgba(232,93,32,0.15) 0%, rgba(232,93,32,0.05) 100%);
+      padding: 4rem;
+      text-align: center;
+      border-top: 1px solid rgba(232, 93, 32, 0.25);
+      border-bottom: 1px solid rgba(232, 93, 32, 0.25);
+    }
+
+    .cta-section h2 {
+      font-family: var(--display);
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .cta-section p {
+      font-size: 1.1rem;
+      color: var(--muted-dark);
+      margin-bottom: 2rem;
+    }
+
+    .cta-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 1rem 2.5rem;
+      background: var(--orange);
+      color: var(--black);
+      border: none;
+      border-radius: 8px;
+      font-family: var(--condensed);
+      font-size: 1rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .cta-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 15px 30px rgba(232, 93, 32, 0.3);
+    }
+
+    /* LOADING & ERROR */
+    .loading-spinner {
+      display: inline-block;
+      width: 30px;
+      height: 30px;
+      border: 3px solid rgba(232, 93, 32, 0.3);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-message {
+      background: rgba(232, 93, 32, 0.2);
+      border: 1px solid rgba(232, 93, 32, 0.4);
+      color: var(--orange);
+      padding: 2rem;
+      text-align: center;
+      border-radius: 8px;
+      margin: 4rem;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      .hero-content {
+        grid-template-columns: 1fr;
+        gap: 2rem;
+        padding: 2rem;
+      }
+
+      .hero-right {
+        grid-template-columns: 1fr;
+      }
+
+      .hero-text h1 {
+        font-size: 2rem;
+      }
+
+      .about-content,
+      .contact-section,
+      .tags-section {
+        grid-template-columns: 1fr;
+      }
+
+      .content-section {
+        padding: 2rem;
+      }
+
+      .section-title {
+        font-size: 1.8rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <span style="font-family: var(--condensed); text-transform: uppercase; letter-spacing: 0.1em; color: var(--orange);">Ridera Clubes</span>
+    <a href="/supabase/clubes/clubes.html">← Volver a clubes</a>
+  </header>
+
+  <div id="loadingState" style="display: flex; align-items: center; justify-content: center; min-height: 400px; flex-direction: column; gap: 1rem;">
+    <div class="loading-spinner"></div>
+    <p style="color: var(--muted-dark);">Cargando club...</p>
+  </div>
+
+  <div id="clubContent" style="display: none;">
+    <!-- HERO SECTION -->
+    <section class="hero">
+      <div class="hero-content">
+        <div class="hero-left">
+          <div class="club-avatar-hero" id="heroAvatar">🏍</div>
+          <div>
+            <h1 id="heroTitle">Club Name</h1>
+            <p class="hero-subtitle" id="heroCategory">Category</p>
+          </div>
+        </div>
+        <div class="hero-right">
+          <div class="stat-card">
+            <h3>Miembros</h3>
+            <div class="value" id="statMembers">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Rutas</h3>
+            <div class="value" id="statRoutes">0</div>
+          </div>
+          <div class="stat-card">
+            <h3>Fundado</h3>
+            <div class="value" id="statFounded">—</div>
+          </div>
+          <div class="stat-card">
+            <h3>Ubicación</h3>
+            <div class="value" style="font-size: 1.2rem;" id="statLocation">—</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT SECTION -->
+    <section class="content-section" id="aboutSection" style="display: none;">
+      <h2 class="section-title">Acerca del Club</h2>
+      <div class="about-content">
+        <div class="about-text" id="aboutText"></div>
+        <div class="highlights-grid" id="highlightsGrid"></div>
+      </div>
+    </section>
+
+    <!-- CONTACT & SOCIAL -->
+    <section class="content-section" id="contactSection" style="display: none;">
+      <h2 class="section-title">Conecta con Nosotros</h2>
+      <div class="contact-section" id="contactCards"></div>
+    </section>
+
+    <!-- BRANDS & ROUTES -->
+    <section class="content-section" id="brandSection" style="display: none;">
+      <h2 class="section-title">Motos y Rutas</h2>
+      <div class="tags-section">
+        <div class="tags-group">
+          <h3>🏍 Marcas de Motos</h3>
+          <div class="tags-grid" id="brandsTags"></div>
+        </div>
+        <div class="tags-group">
+          <h3>🛣 Tipos de Ruta</h3>
+          <div class="tags-grid" id="routesTags"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA SECTION -->
+    <section class="cta-section" id="ctaSection" style="display: none;">
+      <h2>¿Quieres Unirte?</h2>
+      <p>Contacta con los líderes del club y únete a la comunidad</p>
+      <button class="cta-btn" id="joinBtn">Contactar →</button>
+    </section>
+  </div>
+
+  <div id="errorState" class="error-message" style="display: none;">
+    <p>No se pudo cargar la información del club. Intenta más tarde.</p>
+    <p style="margin-top: 1rem;"><a href="/supabase/clubes/clubes.html">← Volver a clubes</a></p>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase config
+    const SUPABASE_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Get slug from URL
+    const slug = window.location.pathname.split('/').pop().replace('.html', '');
+
+    // Data for Rita compatibility
+    window.clubData = {
+      current: null,
+      extractClubInfo: function() {
+        if (!this.current) return null;
+        const club = this.current;
+        return {
+          clubId: club.id,
+          name: club.name,
+          description: club.description,
+          category: club.category,
+          stats: {
+            members: club.members_count || 0,
+            routes: club.routes_completed || 0,
+            founded: club.founded_year,
+            location: `${club.city}, ${club.state}`
+          },
+          contact: {
+            leader: club.leader_name,
+            phone: club.leader_phone,
+            email: club.leader_email,
+            city: club.city,
+            region: club.region
+          },
+          social: {
+            facebook: club.facebook_url,
+            instagram: club.instagram_url,
+            whatsapp: club.whatsapp,
+            twitter: club.twitter_url
+          },
+          brands: club.motorcycle_brands || [],
+          routes: club.route_types || [],
+          philosophy: club.philosophy,
+          frequency: club.frequency
+        };
+      }
+    };
+
+    async function loadClub() {
+      try {
+        const { data, error } = await supabase
+          .from('clubs')
+          .select('*')
+          .eq('slug', slug)
+          .eq('active', true)
+          .single();
+
+        if (error || !data) {
+          document.getElementById('loadingState').style.display = 'none';
+          document.getElementById('errorState').style.display = 'block';
+          return;
+        }
+
+        window.clubData.current = data;
+        renderClub(data);
+      } catch (error) {
+        console.error('Error:', error);
+        document.getElementById('loadingState').style.display = 'none';
+        document.getElementById('errorState').style.display = 'block';
+      }
+    }
+
+    function renderClub(club) {
+      const loading = document.getElementById('loadingState');
+      const content = document.getElementById('clubContent');
+
+      // Hero
+      document.getElementById('heroAvatar').textContent = club.avatar_emoji || '🏍';
+      document.getElementById('heroTitle').textContent = club.name;
+      document.getElementById('heroCategory').textContent = club.category;
+      document.getElementById('statMembers').textContent = club.members_count || '0';
+      document.getElementById('statRoutes').textContent = club.routes_completed || '0';
+      document.getElementById('statFounded').textContent = club.founded_year || '—';
+      document.getElementById('statLocation').textContent = club.city || '—';
+
+      // About
+      if (club.description || club.philosophy || club.frequency) {
+        document.getElementById('aboutSection').style.display = 'block';
+        document.getElementById('aboutText').innerHTML = `
+          ${club.description ? `<p>${club.description}</p>` : ''}
+          ${club.philosophy ? `<p><strong>Filosofía:</strong> ${club.philosophy}</p>` : ''}
+          ${club.frequency ? `<p><strong>Frecuencia:</strong> ${club.frequency}</p>` : ''}
+        `;
+
+        // Highlights
+        const highlights = [];
+        if (club.philosophy) highlights.push({ label: 'Filosofía', text: club.philosophy });
+        if (club.frequency) highlights.push({ label: 'Frecuencia de Rutas', text: club.frequency });
+        if (club.highlights) highlights.push({ label: 'Destacado', text: club.highlights });
+
+        document.getElementById('highlightsGrid').innerHTML = highlights.map(h => `
+          <div class="highlight-item">
+            <div class="highlight-label">${h.label}</div>
+            <div class="highlight-text">${h.text}</div>
+          </div>
+        `).join('');
+      }
+
+      // Contact
+      if (club.leader_name || club.leader_email || club.facebook_url || club.instagram_url) {
+        document.getElementById('contactSection').style.display = 'block';
+        const contactCards = [];
+
+        if (club.leader_name) {
+          contactCards.push(`
+            <div class="contact-card">
+              <div class="contact-label">Líder del Club</div>
+              <div class="contact-value">${club.leader_name}</div>
+              ${club.leader_phone ? `<div class="contact-value" style="font-size: 0.9rem; color: var(--muted-dark);">${club.leader_phone}</div>` : ''}
+            </div>
+          `);
+        }
+
+        if (club.leader_email) {
+          contactCards.push(`
+            <div class="contact-card">
+              <div class="contact-label">Email</div>
+              <div class="contact-value"><a href="mailto:${club.leader_email}">${club.leader_email}</a></div>
+            </div>
+          `);
+        }
+
+        if (club.facebook_url || club.instagram_url || club.whatsapp || club.twitter_url) {
+          let socials = `<div class="contact-card" style="grid-column: 1 / -1;">
+            <div class="contact-label">Síguenos</div>
+            <div class="social-links">`;
+
+          if (club.facebook_url) socials += `<a href="${club.facebook_url}" target="_blank" class="social-btn">Facebook</a>`;
+          if (club.instagram_url) socials += `<a href="${club.instagram_url}" target="_blank" class="social-btn">Instagram</a>`;
+          if (club.twitter_url) socials += `<a href="${club.twitter_url}" target="_blank" class="social-btn">Twitter</a>`;
+          if (club.whatsapp) socials += `<a href="https://wa.me/${club.whatsapp.replace(/\D/g, '')}" target="_blank" class="social-btn">WhatsApp</a>`;
+
+          socials += `</div></div>`;
+          contactCards.push(socials);
+        }
+
+        document.getElementById('contactCards').innerHTML = contactCards.join('');
+      }
+
+      // Brands & Routes
+      if (club.motorcycle_brands?.length || club.route_types?.length) {
+        document.getElementById('brandSection').style.display = 'block';
+
+        if (club.motorcycle_brands?.length) {
+          document.getElementById('brandsTags').innerHTML = club.motorcycle_brands.map(brand =>
+            `<span class="tag">${brand}</span>`
+          ).join('');
+        }
+
+        if (club.route_types?.length) {
+          document.getElementById('routesTags').innerHTML = club.route_types.map(route =>
+            `<span class="tag">${route}</span>`
+          ).join('');
+        }
+      }
+
+      // CTA
+      document.getElementById('ctaSection').style.display = 'block';
+      if (club.whatsapp) {
+        document.getElementById('joinBtn').onclick = () => {
+          window.open(`https://wa.me/${club.whatsapp.replace(/\D/g, '')}?text=Hola, me gustaría información sobre el club ${club.name}`, '_blank');
+        };
+      } else if (club.leader_email) {
+        document.getElementById('joinBtn').onclick = () => {
+          window.location.href = `mailto:${club.leader_email}?subject=Interés en unirme a ${club.name}`;
+        };
+      }
+
+      // Update page title and meta
+      document.title = `${club.name} · Ridera Clubes`;
+
+      loading.style.display = 'none';
+      content.style.display = 'block';
+    }
+
+    // Start
+    loadClub();
+  </script>
+</body>
+</html>

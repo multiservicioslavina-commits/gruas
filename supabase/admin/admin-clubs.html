@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin · Ridera Clubes</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400;700&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;700&family=DM+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --orange: #E85D20;
+      --orange-light: #f07a3a;
+      --green: #10b981;
+      --red: #ef4444;
+      --black: #0a0908;
+      --dark-gray: #1a1712;
+      --white: #f4f1ed;
+      --muted: #e6e3de;
+      --muted-dark: #9d9891;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      background: var(--black);
+      color: var(--white);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      line-height: 1.6;
+    }
+
+    body {
+      display: grid;
+      grid-template-columns: 250px 1fr;
+      min-height: 100vh;
+    }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: linear-gradient(180deg, rgba(26,23,18,.8) 0%, rgba(15,15,15,.9) 100%);
+      border-right: 1px solid rgba(232, 93, 32, 0.2);
+      padding: 2rem 1.5rem;
+      position: fixed;
+      width: 250px;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      color: var(--orange);
+      margin-bottom: 2rem;
+      letter-spacing: -1px;
+    }
+
+    .sidebar-nav {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .sidebar-nav a {
+      display: block;
+      padding: 0.75rem 1rem;
+      color: var(--muted-dark);
+      text-decoration: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-nav a:hover,
+    .sidebar-nav a.active {
+      background: rgba(232, 93, 32, 0.15);
+      color: var(--orange);
+    }
+
+    .sidebar-user {
+      position: absolute;
+      bottom: 2rem;
+      left: 1.5rem;
+      right: 1.5rem;
+      padding-top: 1rem;
+      border-top: 1px solid rgba(232, 93, 32, 0.2);
+      font-size: 0.8rem;
+    }
+
+    .sidebar-user-name {
+      color: var(--white);
+      margin-bottom: 0.5rem;
+      font-weight: 500;
+    }
+
+    .sidebar-user-email {
+      color: var(--muted-dark);
+      margin-bottom: 1rem;
+      word-break: break-all;
+    }
+
+    .logout-btn {
+      width: 100%;
+      padding: 0.6rem 0.8rem;
+      background: transparent;
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      color: var(--muted-dark);
+      cursor: pointer;
+      border-radius: 4px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: all 0.2s ease;
+    }
+
+    .logout-btn:hover {
+      border-color: var(--red);
+      color: var(--red);
+    }
+
+    /* MAIN */
+    .main-content {
+      grid-column: 2;
+      padding: 2rem;
+      overflow-y: auto;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 3rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid rgba(232, 93, 32, 0.15);
+    }
+
+    .header h1 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 2rem;
+      color: var(--white);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 1rem;
+    }
+
+    .btn {
+      padding: 0.75rem 1.5rem;
+      background: transparent;
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      color: var(--muted-dark);
+      cursor: pointer;
+      border-radius: 6px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    .btn.primary {
+      background: var(--orange);
+      color: var(--black);
+      border-color: var(--orange);
+      font-weight: 600;
+    }
+
+    .btn.primary:hover {
+      background: var(--orange-light);
+      border-color: var(--orange-light);
+    }
+
+    .btn.danger {
+      color: var(--red);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn.danger:hover {
+      border-color: var(--red);
+      background: rgba(239, 68, 68, 0.1);
+    }
+
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid rgba(232, 93, 32, 0.15);
+      margin-bottom: 2rem;
+    }
+
+    .tab-btn {
+      padding: 1rem 1.5rem;
+      background: transparent;
+      border: none;
+      color: var(--muted-dark);
+      cursor: pointer;
+      font-family: 'DM Sans', sans-serif;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .tab-btn:hover {
+      color: var(--orange);
+    }
+
+    .tab-btn.active {
+      color: var(--orange);
+      border-bottom-color: var(--orange);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* CLUBS TABLE */
+    .table-wrapper {
+      overflow-x: auto;
+      background: rgba(26, 23, 18, 0.4);
+      border: 1px solid rgba(232, 93, 32, 0.15);
+      border-radius: 8px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th {
+      padding: 1rem;
+      text-align: left;
+      background: rgba(232, 93, 32, 0.08);
+      border-bottom: 1px solid rgba(232, 93, 32, 0.2);
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--orange);
+    }
+
+    td {
+      padding: 1rem;
+      border-bottom: 1px solid rgba(232, 93, 32, 0.1);
+    }
+
+    tr:hover {
+      background: rgba(232, 93, 32, 0.05);
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.3rem 0.8rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .status-active {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--green);
+    }
+
+    .status-inactive {
+      background: rgba(107, 114, 128, 0.15);
+      color: var(--muted-dark);
+    }
+
+    .actions-cell {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .action-btn {
+      padding: 0.4rem 0.8rem;
+      background: transparent;
+      border: 1px solid rgba(232, 93, 32, 0.2);
+      color: var(--muted-dark);
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      border-color: var(--orange);
+      color: var(--orange);
+    }
+
+    /* FORM */
+    .form-section {
+      background: rgba(26, 23, 18, 0.4);
+      border: 1px solid rgba(232, 93, 32, 0.15);
+      border-radius: 8px;
+      padding: 2rem;
+      max-width: 800px;
+    }
+
+    .form-group {
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .form-group label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--orange);
+    }
+
+    .form-group input,
+    .form-group textarea,
+    .form-group select {
+      background: rgba(232, 93, 32, 0.05);
+      border: 1px solid rgba(232, 93, 32, 0.2);
+      color: var(--white);
+      padding: 0.75rem 1rem;
+      border-radius: 6px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 0.95rem;
+      transition: all 0.2s ease;
+    }
+
+    .form-group input:focus,
+    .form-group textarea:focus,
+    .form-group select:focus {
+      outline: none;
+      border-color: var(--orange);
+      background: rgba(232, 93, 32, 0.1);
+      box-shadow: 0 0 0 3px rgba(232, 93, 32, 0.1);
+    }
+
+    .form-group textarea {
+      min-height: 120px;
+      resize: vertical;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    /* ALERTS */
+    .alert {
+      padding: 1rem;
+      border-radius: 6px;
+      margin-bottom: 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    .alert.success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--green);
+    }
+
+    .alert.error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: var(--red);
+    }
+
+    .alert.info {
+      background: rgba(232, 93, 32, 0.15);
+      border: 1px solid rgba(232, 93, 32, 0.3);
+      color: var(--orange);
+    }
+
+    /* LOADING */
+    .loading-spinner {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 2px solid rgba(232, 93, 32, 0.3);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* MODAL */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal.active {
+      display: flex;
+    }
+
+    .modal-content {
+      background: var(--dark-gray);
+      border: 1px solid rgba(232, 93, 32, 0.2);
+      border-radius: 12px;
+      padding: 2rem;
+      max-width: 500px;
+      width: 90%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+
+    .modal-header {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      color: var(--muted-dark);
+      cursor: pointer;
+      font-size: 1.5rem;
+    }
+
+    /* RESPONSIVE */
+    @media (max-width: 768px) {
+      body {
+        grid-template-columns: 1fr;
+      }
+
+      .sidebar {
+        position: absolute;
+        width: 100%;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid rgba(232, 93, 32, 0.2);
+      }
+
+      .main-content {
+        grid-column: 1;
+        margin-top: 200px;
+      }
+
+      .form-row {
+        grid-template-columns: 1fr;
+      }
+
+      table {
+        font-size: 0.8rem;
+      }
+
+      th, td {
+        padding: 0.75rem;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">RIDERA</div>
+    <nav class="sidebar-nav">
+      <a href="#clubs" class="nav-link active" data-tab="clubs">Clubes</a>
+      <a href="#create" class="nav-link" data-tab="create">Crear Club</a>
+      <a href="#myclub" class="nav-link" data-tab="myclub">Mi Club</a>
+    </nav>
+
+    <div class="sidebar-user">
+      <div class="sidebar-user-name" id="userName">Cargando...</div>
+      <div class="sidebar-user-email" id="userEmail">usuario@ejemplo.com</div>
+      <button class="logout-btn" id="logoutBtn">Cerrar sesión</button>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    <div class="header">
+      <h1>Administrador de Clubes</h1>
+      <div class="header-actions">
+        <a href="/supabase/clubes/clubes.html" class="btn">Ver Clubes</a>
+      </div>
+    </div>
+
+    <div id="alertContainer"></div>
+
+    <!-- CLUBS TAB -->
+    <div id="clubs-tab" class="tab-content active">
+      <div class="header" style="margin-bottom: 1.5rem; border: none;">
+        <h2 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; margin: 0;">Todos los Clubes</h2>
+        <button class="btn primary" onclick="showCreateClubForm()">+ Nuevo Club</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Categoría</th>
+              <th>Ubicación</th>
+              <th>Miembros</th>
+              <th>Estado</th>
+              <th>Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="clubsTableBody">
+            <tr>
+              <td colspan="6" style="text-align: center; color: var(--muted-dark);">
+                <div class="loading-spinner" style="margin: 1rem auto;"></div>
+                <p>Cargando clubes...</p>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- CREATE CLUB TAB -->
+    <div id="create-tab" class="tab-content">
+      <h2 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; margin-bottom: 2rem;">Crear Nuevo Club</h2>
+      <form id="createClubForm" class="form-section">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nombre del Club</label>
+            <input type="text" name="name" required>
+          </div>
+          <div class="form-group">
+            <label>Slug (URL)</label>
+            <input type="text" name="slug" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Descripción</label>
+          <textarea name="description" placeholder="Describe el propósito y visión de tu club..."></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Categoría</label>
+            <select name="category">
+              <option value="Touring">Touring</option>
+              <option value="Cruiser">Cruiser</option>
+              <option value="Enduro">Enduro</option>
+              <option value="Sport">Sport</option>
+              <option value="Adventure">Adventure</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Emoji Avatar</label>
+            <input type="text" name="avatar_emoji" value="🏍" maxlength="5">
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ciudad</label>
+            <input type="text" name="city">
+          </div>
+          <div class="form-group">
+            <label>Departamento</label>
+            <input type="text" name="state" value="Antioquia">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Región</label>
+          <select name="region">
+            <option value="Metropolitana">Metropolitana</option>
+            <option value="Oriente">Oriente</option>
+            <option value="Occidente">Occidente</option>
+            <option value="Valle">Valle de Aburrá</option>
+          </select>
+        </div>
+
+        <div style="border-top: 1px solid rgba(232, 93, 32, 0.15); padding-top: 1.5rem; margin-top: 1.5rem;">
+          <h3 style="font-size: 1rem; margin-bottom: 1rem;">Información del Líder</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Nombre del Líder</label>
+              <input type="text" name="leader_name">
+            </div>
+            <div class="form-group">
+              <label>Email</label>
+              <input type="email" name="leader_email">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Teléfono</label>
+              <input type="tel" name="leader_phone">
+            </div>
+            <div class="form-group">
+              <label>WhatsApp</label>
+              <input type="tel" name="whatsapp" placeholder="+57 300 1234 567">
+            </div>
+          </div>
+        </div>
+
+        <div style="border-top: 1px solid rgba(232, 93, 32, 0.15); padding-top: 1.5rem; margin-top: 1.5rem;">
+          <h3 style="font-size: 1rem; margin-bottom: 1rem;">Redes Sociales</h3>
+          <div class="form-group">
+            <label>Facebook</label>
+            <input type="url" name="facebook_url" placeholder="https://facebook.com/...">
+          </div>
+          <div class="form-group">
+            <label>Instagram</label>
+            <input type="url" name="instagram_url" placeholder="https://instagram.com/...">
+          </div>
+          <div class="form-group">
+            <label>Twitter/X</label>
+            <input type="url" name="twitter_url" placeholder="https://twitter.com/...">
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary">Crear Club</button>
+          <button type="reset" class="btn">Limpiar</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- MY CLUB TAB -->
+    <div id="myclub-tab" class="tab-content">
+      <h2 style="font-family: 'Bebas Neue', sans-serif; font-size: 1.5rem; margin-bottom: 2rem;">Mi Club</h2>
+      <div id="myClubContent" style="text-align: center; padding: 2rem; color: var(--muted-dark);">
+        <p>Aún no eres el líder de un club registrado.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- MODAL -->
+  <div id="clubModal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span id="modalTitle">Editar Club</span>
+        <button class="modal-close" onclick="closeModal()">&times;</button>
+      </div>
+      <form id="editClubForm" style="display: flex; flex-direction: column; gap: 1rem;"></form>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase config
+    const SUPABASE_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co";
+    const SUPABASE_ANON_KEY = "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+
+    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentUser = null;
+    let allClubs = [];
+
+    // INIT
+    async function init() {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error || !user) {
+          window.location.href = '/login-gruero.html';
+          return;
+        }
+
+        currentUser = user;
+        document.getElementById('userName').textContent = user.user_metadata?.name || 'Usuario';
+        document.getElementById('userEmail').textContent = user.email;
+
+        setupTabs();
+        setupEventListeners();
+        await loadClubs();
+      } catch (error) {
+        console.error('Init error:', error);
+        showAlert('Error al inicializar', 'error');
+      }
+    }
+
+    function setupTabs() {
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const tab = link.dataset.tab;
+          switchTab(tab);
+        });
+      });
+    }
+
+    function switchTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+
+      // Remove active from all links
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+      });
+
+      // Show selected tab
+      const tabEl = document.getElementById(`${tabName}-tab`);
+      if (tabEl) {
+        tabEl.classList.add('active');
+      }
+
+      // Set active link
+      document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+    }
+
+    function setupEventListeners() {
+      document.getElementById('logoutBtn').addEventListener('click', logout);
+      document.getElementById('createClubForm').addEventListener('submit', createClub);
+    }
+
+    async function loadClubs() {
+      try {
+        const { data, error } = await supabase
+          .from('clubs')
+          .select('*')
+          .order('featured', { ascending: false });
+
+        if (error) throw error;
+
+        allClubs = data || [];
+        renderClubsTable();
+      } catch (error) {
+        console.error('Error loading clubs:', error);
+        showAlert('Error al cargar clubes', 'error');
+      }
+    }
+
+    function renderClubsTable() {
+      const tbody = document.getElementById('clubsTableBody');
+
+      if (allClubs.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: var(--muted-dark);">No hay clubes registrados</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = allClubs.map(club => `
+        <tr>
+          <td><strong>${club.name}</strong></td>
+          <td>${club.category}</td>
+          <td>${club.city}, ${club.state}</td>
+          <td>${club.members_count || 0}</td>
+          <td>
+            <span class="status-badge ${club.active ? 'status-active' : 'status-inactive'}">
+              ${club.active ? 'Activo' : 'Inactivo'}
+            </span>
+          </td>
+          <td>
+            <div class="actions-cell">
+              <button class="action-btn" onclick="editClub('${club.id}')">Editar</button>
+              <button class="action-btn" onclick="deleteClub('${club.id}')" style="border-color: rgba(239, 68, 68, 0.3); color: var(--red);">Eliminar</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    async function createClub(e) {
+      e.preventDefault();
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData);
+
+      try {
+        const { error } = await supabase
+          .from('clubs')
+          .insert([{
+            ...data,
+            leader_email: currentUser.email,
+            active: true
+          }]);
+
+        if (error) throw error;
+
+        showAlert('Club creado exitosamente', 'success');
+        e.target.reset();
+        await loadClubs();
+        switchTab('clubs');
+      } catch (error) {
+        console.error('Error:', error);
+        showAlert(error.message || 'Error al crear club', 'error');
+      }
+    }
+
+    async function editClub(clubId) {
+      const club = allClubs.find(c => c.id === clubId);
+      if (!club) return;
+
+      // For now, show an alert
+      showAlert(`Función de edición: ${club.name} (pronto disponible)`, 'info');
+    }
+
+    async function deleteClub(clubId) {
+      if (!confirm('¿Estás seguro de que deseas eliminar este club?')) return;
+
+      try {
+        const { error } = await supabase
+          .from('clubs')
+          .delete()
+          .eq('id', clubId);
+
+        if (error) throw error;
+
+        showAlert('Club eliminado', 'success');
+        await loadClubs();
+      } catch (error) {
+        console.error('Error:', error);
+        showAlert(error.message || 'Error al eliminar', 'error');
+      }
+    }
+
+    function showCreateClubForm() {
+      switchTab('create');
+    }
+
+    function closeModal() {
+      document.getElementById('clubModal').classList.remove('active');
+    }
+
+    async function logout() {
+      try {
+        await supabase.auth.signOut();
+        window.location.href = '/login-gruero.html';
+      } catch (error) {
+        console.error('Logout error:', error);
+      }
+    }
+
+    function showAlert(message, type = 'info') {
+      const container = document.getElementById('alertContainer');
+      const alert = document.createElement('div');
+      alert.className = `alert ${type}`;
+      alert.textContent = message;
+      alert.style.animation = 'slideIn 0.3s ease';
+      container.appendChild(alert);
+
+      setTimeout(() => {
+        alert.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => alert.remove(), 300);
+      }, 4000);
+    }
+
+    // Start
+    init();
+  </script>
+  <style>
+    @keyframes slideIn {
+      from {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(-100%);
+        opacity: 0;
+      }
+    }
+  </style>
+</body>
+</html>
