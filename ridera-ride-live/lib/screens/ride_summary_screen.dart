@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/ride_service.dart';
@@ -187,6 +188,11 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             maxSpeedKmh: maxSpd,
           );
         } catch (_) {}
+
+        // Auto-trigger: si hay ruta y no hay video previo, generar automáticamente
+        if (existingVideo == null && routePts.length >= 2) {
+          _generateVideo();
+        }
       }
     } catch (_) {
       if (mounted) setState(() => _loading = false);
@@ -367,7 +373,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            const Text('Video 1080p con relieve 3D — tarda varios minutos.\nPuedes salir: quedará en Mis rodadas.',
+            const Text('Generando automáticamente tu video 1080p.\nPuedes salir — quedará guardado en Mis rodadas.',
                 style: TextStyle(color: RColors.inkDim, fontSize: 12)),
           ]),
         );
@@ -388,21 +394,46 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             ]),
           ),
           const SizedBox(height: 10),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => launchUrl(Uri.parse(_videoUrl!),
-                  mode: LaunchMode.externalApplication),
-              icon: const Icon(Icons.download_rounded),
-              label: const Text('DESCARGAR VIDEO',
-                  style: TextStyle(fontSize: 14, letterSpacing: 1.5)),
-              style: FilledButton.styleFrom(
-                backgroundColor: RColors.ok,
-                minimumSize: const Size(0, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          Row(children: [
+            Expanded(
+              child: FilledButton.icon(
+                onPressed: () => launchUrl(Uri.parse(_videoUrl!),
+                    mode: LaunchMode.externalApplication),
+                icon: const Icon(Icons.download_rounded),
+                label: const Text('DESCARGAR',
+                    style: TextStyle(fontSize: 13, letterSpacing: 1.2)),
+                style: FilledButton.styleFrom(
+                  backgroundColor: RColors.ok,
+                  minimumSize: const Size(0, 52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
               ),
             ),
-          ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: OutlinedButton.icon(
+                onPressed: () async {
+                  await Clipboard.setData(ClipboardData(text: _videoUrl!));
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Enlace copiado al portapapeles'),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.link_rounded, color: RColors.brand),
+                label: const Text('COMPARTIR',
+                    style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: RColors.brand)),
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: RColors.brand),
+                  minimumSize: const Size(0, 52),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                ),
+              ),
+            ),
+          ]),
         ]);
       default:
         return Container(
