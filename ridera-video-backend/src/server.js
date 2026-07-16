@@ -271,7 +271,7 @@ async function recoverStaleJobs() {
   } catch (e) { console.warn('[startup] recoverStaleJobs:', e.message); }
 }
 
-app.listen(PORT, async () => {
+app.listen(PORT, '0.0.0.0', async () => {
   console.log(`ridera-video-backend :${PORT} | worker ${WORKER_ID} | max ${MAX_CONCURRENT} renders`);
   await recoverStaleJobs();
   // Procesar jobs que hayan quedado encolados mientras el servidor estaba caído
