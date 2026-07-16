@@ -236,13 +236,13 @@
   mapboxgl.accessToken = '__MAPBOX_TOKEN__';
 
   // ── Tiempos de secciones (segundos) ──────────────────────────────────
-  const T_INTRO  = 5.0;
-  const T_ROUTE  = 44.0;
-  const T_PHOTO  = 3.5;
-  const T_STATS  = 6.0;
-  const T_OUTRO  = 5.0;
+  const T_INTRO  = 3.0;
+  const T_ROUTE  = 10.0;
+  const T_PHOTO  = 2.5;
+  const T_STATS  = 4.0;
+  const T_OUTRO  = 3.0;
 
-  const photos    = (DATA.photos || []).slice(0, 6);
+  const photos    = (DATA.photos || []).slice(0, 2);
   const photoCount = photos.length;
   const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
   window.__totalSeconds = totalSeconds;
@@ -772,6 +772,19 @@
             panel.appendChild(chip);
           });
 
+        // Pre-cargar teselas de la ruta: muestrear 5 puntos a lo largo
+        // para que Mapbox los solicite antes de empezar la captura.
+        const sampleIdxs = [0, 0.25, 0.5, 0.75, 1].map(f =>
+          Math.min(Math.round(f * (coords.length - 1)), coords.length - 1)
+        );
+        for (const idx of sampleIdxs) {
+          map.jumpTo({ center: coords[idx], zoom: 14.5, pitch: 60, bearing: bearingAlong(cumDist[idx]) });
+          await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
+        }
+        // Volver a la vista general
+        map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 45, bearing: 15 });
+        await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
+
         map.triggerRepaint();
         mapReady = true;
         window.__ready = true;
@@ -1031,7 +1044,7 @@
     map.triggerRepaint();
     await new Promise(resolve => {
       map.once('idle', resolve);
-      setTimeout(resolve, 2000);
+      setTimeout(resolve, 800);
     });
   };
 </script>

@@ -16,7 +16,7 @@ if (!MAPBOX_TOKEN) {
 }
 
 
-const FPS    = 12;
+const FPS    = 24;
 const WIDTH  = 1080;
 const HEIGHT = 1080;
 const MAX_DURATION_SEC = 20;
@@ -242,7 +242,7 @@ export async function renderRideVideo({
     await page.screenshot({
       path: join(framesDir, `frame_${frameNum}.jpg`),
       type: 'jpeg',
-      quality: 90,
+      quality: 95,
       clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
     });
 
