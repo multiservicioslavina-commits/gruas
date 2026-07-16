@@ -37,4 +37,4 @@ RUN mkdir -p ./assets
 COPY assets* ./assets/
 
 EXPOSE 3000
-CMD ["/bin/sh", "-c", "mkdir -p /run/dbus /tmp/.chromium && (dbus-daemon --system --fork 2>/dev/null || true); exec node src/server.js"]
+CMD ["node", "src/server.js"]

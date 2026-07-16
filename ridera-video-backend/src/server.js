@@ -1,4 +1,5 @@
 import './env-fix.js';
+console.log('[startup] Node.js arrancando, PORT=' + (process.env.PORT || 3000));
 import express from 'express';
 import { randomUUID } from 'crypto';
 import { existsSync } from 'fs';
