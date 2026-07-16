@@ -80,7 +80,7 @@ Deno.serve(async (req: Request) => {
         codec: "h264",
         imageFormat: "jpeg",
         maxRetries: 1,
-        framesPerLambda: 40,
+        framesPerLambda: 20,
         privacy: "public",
         outName,
         version: "4.0.293",
@@ -121,7 +121,7 @@ Deno.serve(async (req: Request) => {
         crf: null,
       });
 
-      await log("render_async_start_v90", { rideId, outName, fn, payloadSize: payload.length });
+      await log("render_async_start_v91", { rideId, outName, fn, payloadSize: payload.length });
 
       const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${fn}/invocations`;
 
@@ -134,7 +134,7 @@ Deno.serve(async (req: Request) => {
         body: payload,
       });
 
-      await log("render_async_result_v90", {
+      await log("render_async_result_v91", {
         rideId,
         outName,
         fn,
@@ -154,7 +154,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_async_error_v90", { error: String(e) });
+      await log("render_async_error_v91", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
@@ -166,7 +166,7 @@ Deno.serve(async (req: Request) => {
       const bucketName = url.searchParams.get("bucketName") || BUCKET_NAME;
 
       if (!renderId) {
-        return new Response(JSON.stringify({ version: "v90", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
+        return new Response(JSON.stringify({ version: "v91", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
       }
 
       // Remotion stores output at renders/{internalId}/{outName}.
@@ -196,7 +196,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_poll_error_v90", { error: String(e) });
+      await log("render_poll_error_v91", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }

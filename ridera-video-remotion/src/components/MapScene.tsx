@@ -123,36 +123,19 @@ export const MapScene: React.FC<{ data: RideData }> = ({ data }) => {
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: "mapbox://styles/mapbox/standard-satellite",
+      style: "mapbox://styles/mapbox/satellite-v9",
       center: [centerLng, centerLat],
       zoom: 12,
-      pitch: 60,
+      pitch: 55,
       bearing: 30,
       antialias: true,
       fadeDuration: 0,
       interactive: false,
       preserveDrawingBuffer: true,
+      maxTileCacheSize: 20,
     });
 
     map.on("load", () => {
-      map.addSource("mapbox-dem", {
-        type: "raster-dem",
-        url: "mapbox://mapbox.mapbox-terrain-dem-v1",
-        tileSize: 512,
-        maxzoom: 14,
-      });
-      map.setTerrain({ source: "mapbox-dem", exaggeration: 1.6 });
-
-      try {
-        map.setFog({
-          range: [0.5, 10],
-          color: "rgba(230, 200, 170, 0.75)",
-          "high-color": "#3a5bbf",
-          "horizon-blend": 0.08,
-          "space-color": "#0b1026",
-          "star-intensity": 0.2,
-        });
-      } catch {}
 
       map.addSource("route-full", {
         type: "geojson",
@@ -335,8 +318,7 @@ export const MapScene: React.FC<{ data: RideData }> = ({ data }) => {
 
     const openShot =
       p < 0.12 ? 1 - p / 0.12 : p > 0.88 ? (p - 0.88) / 0.12 : 0;
-    const terrainElev = map.queryTerrainElevation(camLngLat) || 0;
-    const targetAlt = terrainElev + CAM_HEIGHT * (1 + openShot * 1.6);
+    const targetAlt = CAM_HEIGHT * (1 + openShot * 1.6);
 
     if (!smCamPosRef.current) {
       smCamPosRef.current = camLngLat;
@@ -348,9 +330,7 @@ export const MapScene: React.FC<{ data: RideData }> = ({ data }) => {
     ];
     smCamAltRef.current = lerp(smCamAltRef.current!, targetAlt, 0.08);
 
-    const floorAlt =
-      (map.queryTerrainElevation(smCamPosRef.current) || 0) + 120;
-    const finalAlt = Math.max(smCamAltRef.current!, floorAlt);
+    const finalAlt = Math.max(smCamAltRef.current!, 120);
 
     const camera = map.getFreeCameraOptions();
     camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
