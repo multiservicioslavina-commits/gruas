@@ -16,9 +16,10 @@ if (!MAPBOX_TOKEN) {
 }
 
 
-const FPS    = 24;
+const FPS    = 12;
 const WIDTH  = 1080;
 const HEIGHT = 1080;
+const MAX_DURATION_SEC = 20;
 
 // Pista musical opcional: si existe assets/music.mp3 (o MUSIC_PATH),
 // se mezcla con fade-out al final — el video mudo no emociona a nadie.
@@ -224,11 +225,12 @@ export async function renderRideVideo({
       'La escena Mapbox no cargó (revisar MAPBOX_TOKEN y acceso a api.mapbox.com — ver logs BROWSER)'
     );
   }
-  console.log(`  [${rideId}] duración: ${totalSeconds}s, frames: ${Math.ceil(totalSeconds * FPS)}`);
+  const cappedSeconds = Math.min(totalSeconds, MAX_DURATION_SEC);
+  console.log(`  [${rideId}] duración: ${cappedSeconds}s (original: ${totalSeconds}s), frames: ${Math.ceil(cappedSeconds * FPS)}`);
 
   // ── Captura frame a frame ──────────────────────────────────────────────
   const tCapture = Date.now();
-  const totalFrames = Math.ceil(totalSeconds * FPS);
+  const totalFrames = Math.ceil(cappedSeconds * FPS);
 
   for (let f = 0; f < totalFrames; f++) {
     const t = f / FPS;
@@ -259,7 +261,7 @@ export async function renderRideVideo({
 
   // ── Ensamblar con FFmpeg ───────────────────────────────────────────────
   const tFfmpeg = Date.now();
-  await ffmpegEncode(framesDir, outputPath, totalSeconds);
+  await ffmpegEncode(framesDir, outputPath, cappedSeconds);
   T('ffmpeg encode', tFfmpeg);
 
   return outputPath;
