@@ -1,0 +1,560 @@
+<!-- RIDERA REGISTRO CLUB - Pegar en bloque Custom HTML de WordPress/Elementor -->
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue:wght@400;700&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+<div id="ridera-registro-wrap">
+<style>
+  #ridera-registro-wrap {
+    --orange: #E85D20;
+    --orange-light: #f07a3a;
+    --orange-dark: #c44d18;
+    --black: #0a0908;
+    --off-black: #0f0f0f;
+    --dark-gray: #1a1712;
+    --white: #f4f1ed;
+    --muted: #e6e3de;
+    --muted-dark: #9d9891;
+    --red: #ef4444;
+    --display: 'Bebas Neue', sans-serif;
+    --condensed: 'Barlow Condensed', sans-serif;
+    --body: 'DM Sans', sans-serif;
+    color: var(--white);
+    font-family: var(--body);
+    background: var(--black);
+    line-height: 1.6;
+  }
+  #ridera-registro-wrap * { box-sizing: border-box; margin: 0; padding: 0; }
+  #ridera-registro-wrap a { color: var(--orange); text-decoration: none; }
+  #ridera-registro-wrap h1, #ridera-registro-wrap h2, #ridera-registro-wrap h3 { margin: 0; }
+
+  /* HEADER BAR */
+  #ridera-registro-wrap .header-bar {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: linear-gradient(180deg, rgba(12,10,8,.95) 0%, rgba(12,10,8,.8) 100%);
+    border-bottom: 1px solid rgba(232, 93, 32, 0.2);
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    backdrop-filter: blur(10px);
+  }
+  #ridera-registro-wrap .header-bar span { font-family: var(--condensed); text-transform: uppercase; letter-spacing: 0.1em; color: var(--orange); }
+  #ridera-registro-wrap .header-bar a { font-family: var(--condensed); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; padding: 0.5rem 1rem; border: 1px solid rgba(232,93,32,0.3); border-radius: 4px; transition: all 0.2s ease; color: var(--muted-dark); }
+  #ridera-registro-wrap .header-bar a:hover { border-color: var(--orange); color: var(--orange); text-decoration: none; }
+
+  /* HERO */
+  #ridera-registro-wrap .hero {
+    position: relative;
+    height: 500px;
+    display: flex;
+    align-items: flex-end;
+    overflow: hidden;
+    background: linear-gradient(135deg, #0f0f0f 0%, #1a1712 50%, #0f0f0f 100%);
+  }
+  #ridera-registro-wrap .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 30% 50%, rgba(232,93,32,0.15) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  #ridera-registro-wrap .hero-content {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    padding: 4rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4rem;
+    align-items: flex-end;
+  }
+  #ridera-registro-wrap .hero-left { display: flex; flex-direction: column; gap: 2rem; }
+  #ridera-registro-wrap .club-avatar-hero {
+    width: 140px; height: 140px;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(232,93,32,0.3), rgba(232,93,32,0.1));
+    border: 2px solid rgba(232,93,32,0.4);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 4rem;
+    box-shadow: 0 20px 60px rgba(232,93,32,0.2);
+    backdrop-filter: blur(10px);
+    overflow: hidden;
+  }
+  #ridera-registro-wrap .club-avatar-hero img { width: 100%; height: 100%; object-fit: cover; }
+  #ridera-registro-wrap .hero-text h1 { font-family: var(--display); font-size: 3.5rem; color: var(--white); margin-bottom: 0.5rem; }
+  #ridera-registro-wrap .hero-subtitle { font-family: var(--condensed); font-size: 1rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--orange); }
+  #ridera-registro-wrap .hero-right { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  #ridera-registro-wrap .stat-card {
+    background: rgba(232, 93, 32, 0.08);
+    border: 1px solid rgba(232, 93, 32, 0.25);
+    border-radius: 12px;
+    padding: 2rem;
+    text-align: center;
+    backdrop-filter: blur(10px);
+  }
+  #ridera-registro-wrap .stat-card h3 { font-family: var(--condensed); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--muted-dark); margin-bottom: 1rem; }
+  #ridera-registro-wrap .stat-card .value { font-family: var(--display); font-size: 2.5rem; color: var(--orange); line-height: 1; }
+
+  /* CONTENT SECTIONS */
+  #ridera-registro-wrap .content-section { padding: 4rem; border-bottom: 1px solid rgba(232, 93, 32, 0.1); }
+  #ridera-registro-wrap .section-title { font-family: var(--display); font-size: 2.5rem; margin-bottom: 2rem; color: var(--white); }
+
+  /* GALLERY */
+  #ridera-registro-wrap .gallery-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin: 2rem 0; }
+  #ridera-registro-wrap .gallery-item { width: 100%; aspect-ratio: 1; border-radius: 12px; overflow: hidden; border: 1px solid rgba(232,93,32,0.2); cursor: pointer; transition: all 0.3s ease; }
+  #ridera-registro-wrap .gallery-item:hover { border-color: var(--orange); transform: scale(1.05); box-shadow: 0 10px 30px rgba(232,93,32,0.2); }
+  #ridera-registro-wrap .gallery-item img { width: 100%; height: 100%; object-fit: cover; }
+
+  /* SIGNUP SECTION */
+  #ridera-registro-wrap .signup-section {
+    background: linear-gradient(135deg, rgba(232,93,32,0.08) 0%, rgba(232,93,32,0.02) 100%);
+    padding: 3rem;
+    border-radius: 12px;
+    border: 1px solid rgba(232, 93, 32, 0.2);
+  }
+  #ridera-registro-wrap .form-group { margin-bottom: 1.5rem; display: flex; flex-direction: column; gap: 0.5rem; }
+  #ridera-registro-wrap .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+  #ridera-registro-wrap .form-group label { font-family: var(--condensed); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--orange); }
+  #ridera-registro-wrap .form-group input,
+  #ridera-registro-wrap .form-group textarea,
+  #ridera-registro-wrap .form-group select {
+    background: rgba(232, 93, 32, 0.05);
+    border: 1px solid rgba(232, 93, 32, 0.2);
+    color: var(--white);
+    padding: 0.75rem 1rem;
+    border-radius: 6px;
+    font-family: var(--body);
+    font-size: 0.95rem;
+    transition: all 0.2s ease;
+  }
+  #ridera-registro-wrap .form-group input::placeholder { color: rgba(255,255,255,0.3); }
+  #ridera-registro-wrap .form-group input:focus,
+  #ridera-registro-wrap .form-group textarea:focus { outline: none; border-color: var(--orange); background: rgba(232,93,32,0.1); box-shadow: 0 0 0 3px rgba(232,93,32,0.1); }
+  #ridera-registro-wrap .form-group textarea { min-height: 100px; resize: vertical; }
+
+  /* UPLOAD */
+  #ridera-registro-wrap .upload-area {
+    border: 2px dashed rgba(232,93,32,0.3);
+    border-radius: 8px;
+    padding: 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    background: rgba(232,93,32,0.02);
+  }
+  #ridera-registro-wrap .upload-area:hover,
+  #ridera-registro-wrap .upload-area.dragover { border-color: var(--orange); background: rgba(232,93,32,0.08); }
+  #ridera-registro-wrap .upload-area p { color: var(--muted-dark); margin: 0.5rem 0; }
+  #ridera-registro-wrap .upload-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+  #ridera-registro-wrap .preview-images { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 1rem; margin-top: 1rem; }
+  #ridera-registro-wrap .preview-image { position: relative; border-radius: 8px; overflow: hidden; aspect-ratio: 1; border: 1px solid rgba(232,93,32,0.2); }
+  #ridera-registro-wrap .preview-image img { width: 100%; height: 100%; object-fit: cover; }
+  #ridera-registro-wrap .preview-image .remove {
+    position: absolute; top: 0.5rem; right: 0.5rem;
+    background: rgba(239,68,68,0.8); color: white; border: none;
+    border-radius: 50%; width: 30px; height: 30px; cursor: pointer;
+    font-size: 1.2rem; display: flex; align-items: center; justify-content: center;
+  }
+  #ridera-registro-wrap .preview-image .remove:hover { background: var(--red); }
+
+  /* BUTTONS */
+  #ridera-registro-wrap .btn { padding: 0.75rem 1.5rem; background: transparent; border: 1px solid rgba(232,93,32,0.3); color: var(--muted-dark); cursor: pointer; border-radius: 6px; font-family: var(--condensed); font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.1em; transition: all 0.2s ease; }
+  #ridera-registro-wrap .btn:hover { border-color: var(--orange); color: var(--orange); }
+  #ridera-registro-wrap .btn.primary { background: var(--orange); color: var(--black); border-color: var(--orange); font-weight: 600; }
+  #ridera-registro-wrap .btn.primary:hover { background: var(--orange-light); }
+  #ridera-registro-wrap .btn.primary:disabled { background: rgba(232,93,32,0.5); cursor: not-allowed; }
+  #ridera-registro-wrap .form-actions { display: flex; gap: 1rem; margin-top: 2rem; }
+
+  /* ALERTS */
+  #ridera-registro-wrap .alert { padding: 1rem; border-radius: 6px; margin-bottom: 1.5rem; font-size: 0.95rem; }
+  #ridera-registro-wrap .alert.success { background: rgba(16,185,129,0.15); border: 1px solid rgba(16,185,129,0.3); color: #10b981; }
+  #ridera-registro-wrap .alert.error { background: rgba(239,68,68,0.15); border: 1px solid rgba(239,68,68,0.3); color: var(--red); }
+  #ridera-registro-wrap .alert.info { background: rgba(232,93,32,0.15); border: 1px solid rgba(232,93,32,0.3); color: var(--orange); display: flex; align-items: center; gap: 1rem; }
+
+  /* SPINNER */
+  #ridera-registro-wrap .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(232,93,32,0.3); border-top-color: var(--orange); border-radius: 50%; animation: rr-spin 0.8s linear infinite; }
+  @keyframes rr-spin { to { transform: rotate(360deg); } }
+
+  /* IMAGE MODAL */
+  #ridera-registro-wrap .img-modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 9999; align-items: center; justify-content: center; padding: 1rem; }
+  #ridera-registro-wrap .img-modal.active { display: flex; }
+  #ridera-registro-wrap .img-modal-close { position: absolute; top: 20px; right: 20px; background: rgba(0,0,0,0.5); border: none; color: white; font-size: 2rem; cursor: pointer; width: 50px; height: 50px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  #ridera-registro-wrap .img-modal img { max-width: 800px; width: 100%; border-radius: 12px; }
+
+  /* RESPONSIVE */
+  @media (max-width: 768px) {
+    #ridera-registro-wrap .hero-content { grid-template-columns: 1fr; gap: 2rem; padding: 2rem; }
+    #ridera-registro-wrap .hero-right { grid-template-columns: 1fr 1fr; }
+    #ridera-registro-wrap .hero-text h1 { font-size: 2rem; }
+    #ridera-registro-wrap .content-section { padding: 2rem; }
+    #ridera-registro-wrap .section-title { font-size: 1.8rem; }
+    #ridera-registro-wrap .form-row { grid-template-columns: 1fr; }
+    #ridera-registro-wrap .signup-section { padding: 1.5rem; }
+  }
+</style>
+
+<!-- HEADER BAR -->
+<header class="header-bar">
+  <span>Ridera Clubes</span>
+  <a href="/clubes/">← Volver a clubes</a>
+</header>
+
+<!-- LOADING -->
+<div id="rr-loading" style="display:flex;align-items:center;justify-content:center;min-height:400px;flex-direction:column;gap:1rem;">
+  <div class="spinner"></div>
+  <p style="color:var(--muted-dark);">Cargando club...</p>
+</div>
+
+<!-- CONTENIDO DEL CLUB -->
+<div id="rr-content" style="display:none;">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="club-avatar-hero" id="rr-avatar">🏍</div>
+        <div class="hero-text">
+          <h1 id="rr-title">—</h1>
+          <p class="hero-subtitle" id="rr-category">—</p>
+        </div>
+      </div>
+      <div class="hero-right">
+        <div class="stat-card"><h3>Miembros</h3><div class="value" id="rr-members">0</div></div>
+        <div class="stat-card"><h3>Rutas</h3><div class="value" id="rr-routes">0</div></div>
+        <div class="stat-card"><h3>Fundado</h3><div class="value" id="rr-founded">—</div></div>
+        <div class="stat-card"><h3>Ubicación</h3><div class="value" style="font-size:1.2rem;" id="rr-location">—</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="content-section" id="rr-about" style="display:none;">
+    <h2 class="section-title">Acerca del Club</h2>
+    <div id="rr-about-text"></div>
+  </section>
+
+  <!-- GALLERY -->
+  <section class="content-section" id="rr-gallery-section" style="display:none;">
+    <h2 class="section-title">Galería</h2>
+    <div class="gallery-grid" id="rr-gallery"></div>
+  </section>
+
+  <!-- CONTACT -->
+  <section class="content-section" id="rr-contact-section" style="display:none;">
+    <h2 class="section-title">Conecta con Nosotros</h2>
+    <div id="rr-contact" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:1.5rem;"></div>
+  </section>
+
+  <!-- BRANDS & ROUTES -->
+  <section class="content-section" id="rr-brands-section" style="display:none;">
+    <h2 class="section-title">Motos y Rutas</h2>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:3rem;">
+      <div>
+        <h3 style="font-family:var(--condensed);font-size:1rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--orange);margin-bottom:1.5rem;">🏍 Marcas de Motos</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;" id="rr-brands"></div>
+      </div>
+      <div>
+        <h3 style="font-family:var(--condensed);font-size:1rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--orange);margin-bottom:1.5rem;">🛣 Tipos de Ruta</h3>
+        <div style="display:flex;flex-wrap:wrap;gap:1rem;" id="rr-route-types"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SIGNUP -->
+  <section class="content-section">
+    <h2 class="section-title">¡Únete al Club!</h2>
+    <div class="signup-section">
+      <div id="rr-alert"></div>
+      <form id="rr-form" style="display:flex;flex-direction:column;gap:2rem;">
+
+        <!-- PERSONAL -->
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1.5rem;color:var(--white);">Información Personal</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Nombre Completo *</label><input type="text" name="fullname" required></div>
+            <div class="form-group"><label>Email *</label><input type="email" name="email" required></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Teléfono</label><input type="tel" name="phone"></div>
+            <div class="form-group"><label>WhatsApp</label><input type="tel" name="whatsapp"></div>
+          </div>
+          <div class="form-group"><label>Ciudad</label><input type="text" name="city"></div>
+        </div>
+
+        <!-- MOTO -->
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1.5rem;color:var(--white);">Información de tu Moto</h3>
+          <div class="form-row">
+            <div class="form-group"><label>Marca *</label><input type="text" name="moto_brand" placeholder="Ej: BMW, Harley-Davidson" required></div>
+            <div class="form-group"><label>Modelo</label><input type="text" name="moto_model" placeholder="Ej: R1200GS"></div>
+          </div>
+          <div class="form-row">
+            <div class="form-group"><label>Año</label><input type="number" name="moto_year" placeholder="2024"></div>
+            <div class="form-group"><label>Color</label><input type="text" name="moto_color" placeholder="Ej: Rojo"></div>
+          </div>
+        </div>
+
+        <!-- FOTOS -->
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1.5rem;color:var(--white);">Fotos (Mínimo 3 requeridas)</h3>
+          <div class="form-group">
+            <label>Sube tus fotos (Arrastra o haz click)</label>
+            <div class="upload-area" id="rr-upload">
+              <div class="upload-icon">📸</div>
+              <p style="font-weight:500;">Arrastra tus fotos aquí</p>
+              <p>o haz click para seleccionar</p>
+              <p style="font-size:0.85em;margin-top:1rem;">Mínimo 3 fotos requeridas</p>
+              <input type="file" id="rr-photo-input" style="display:none;" multiple accept="image/*">
+            </div>
+            <div class="preview-images" id="rr-preview"></div>
+            <div id="rr-photo-count" style="color:var(--muted-dark);margin-top:1rem;font-size:0.9rem;">
+              Fotos seleccionadas: <strong>0/∞</strong> (mínimo 3)
+            </div>
+          </div>
+        </div>
+
+        <!-- MENSAJE -->
+        <div>
+          <h3 style="font-size:1.2rem;margin-bottom:1.5rem;color:var(--white);">Mensaje Adicional</h3>
+          <div class="form-group">
+            <label>¿Por qué quieres unirte a este club?</label>
+            <textarea name="message" placeholder="Cuéntanos por qué te interesa este club..."></textarea>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn primary" id="rr-submit">🚀 Unirme al Club</button>
+          <button type="reset" class="btn">Limpiar</button>
+        </div>
+      </form>
+    </div>
+  </section>
+</div>
+
+<!-- ERROR STATE -->
+<div id="rr-error" style="display:none;padding:4rem 2rem;text-align:center;">
+  <div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#ef4444;padding:2rem;border-radius:8px;">
+    <p>No se pudo cargar la información del club.</p>
+    <p style="margin-top:1rem;"><a href="/clubes/">← Volver a clubes</a></p>
+  </div>
+</div>
+
+<!-- IMAGE MODAL -->
+<div id="rr-modal" class="img-modal">
+  <button class="img-modal-close" onclick="document.getElementById('rr-modal').classList.remove('active')">×</button>
+  <img id="rr-modal-img" src="" alt="">
+</div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function() {
+  const SB_URL = "https://vzzxsdtsaahhzyctvmhx.supabase.co";
+  const SB_KEY = "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // Leer slug desde URL: /registro-club/?slug=touring-bikers-colombia
+  const params = new URLSearchParams(window.location.search);
+  const SLUG = params.get('slug') || '';
+
+  let currentClub = null;
+  let selectedPhotos = [];
+
+  // ===== RITA COMPATIBILITY =====
+  window.clubData = {
+    current: null,
+    extractClubInfo: function() {
+      if (!this.current) return null;
+      const c = this.current;
+      return {
+        clubId: c.id, name: c.name, description: c.description, category: c.category,
+        stats: { members: c.members_count||0, routes: c.routes_completed||0, founded: c.founded_year, location: `${c.city}, ${c.state}` },
+        contact: { leader: c.leader_name, phone: c.leader_phone, email: c.leader_email },
+        social: { facebook: c.facebook_url, instagram: c.instagram_url, whatsapp: c.whatsapp },
+        brands: c.motorcycle_brands||[], routes: c.route_types||[]
+      };
+    }
+  };
+
+  // ===== PHOTO UPLOAD =====
+  const uploadArea = document.getElementById('rr-upload');
+  const photoInput = document.getElementById('rr-photo-input');
+
+  uploadArea.addEventListener('click', () => photoInput.click());
+  uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('dragover'); });
+  uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('dragover'));
+  uploadArea.addEventListener('drop', e => { e.preventDefault(); uploadArea.classList.remove('dragover'); handlePhotos([...e.dataTransfer.files]); });
+  photoInput.addEventListener('change', e => handlePhotos([...e.target.files]));
+
+  function handlePhotos(files) {
+    files.filter(f => f.type.startsWith('image/')).forEach(file => {
+      if (selectedPhotos.length >= 10) return;
+      if (selectedPhotos.some(p => p.name === file.name && p.size === file.size)) return;
+      selectedPhotos.push(file);
+      const reader = new FileReader();
+      reader.onload = ev => {
+        const div = document.createElement('div');
+        div.className = 'preview-image';
+        div.dataset.name = file.name;
+        div.dataset.size = file.size;
+        div.innerHTML = `<img src="${ev.target.result}" alt="Preview"><button type="button" class="remove" onclick="removePhoto(this)">×</button>`;
+        document.getElementById('rr-preview').appendChild(div);
+        updateCount();
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  window.removePhoto = function(btn) {
+    const div = btn.closest('.preview-image');
+    selectedPhotos = selectedPhotos.filter(p => !(p.name === div.dataset.name && p.size == div.dataset.size));
+    div.remove();
+    updateCount();
+  };
+
+  function updateCount() {
+    document.getElementById('rr-photo-count').innerHTML = `Fotos seleccionadas: <strong>${selectedPhotos.length}/∞</strong> (mínimo 3)`;
+  }
+
+  // ===== LOAD CLUB =====
+  async function loadClub() {
+    if (!SLUG) {
+      document.getElementById('rr-loading').style.display = 'none';
+      document.getElementById('rr-error').style.display = 'block';
+      return;
+    }
+    try {
+      const { data, error } = await sb.from('clubs').select('*').eq('slug', SLUG).eq('active', true).single();
+      if (error || !data) throw new Error('Club no encontrado');
+      currentClub = data;
+      window.clubData.current = data;
+      renderClub(data);
+    } catch(e) {
+      document.getElementById('rr-loading').style.display = 'none';
+      document.getElementById('rr-error').style.display = 'block';
+    }
+  }
+
+  function renderClub(c) {
+    // Hero
+    const av = document.getElementById('rr-avatar');
+    if (c.avatar_url) av.innerHTML = `<img src="${c.avatar_url}" alt="${c.name}">`;
+    else av.textContent = c.avatar_emoji || '🏍';
+    document.getElementById('rr-title').textContent = c.name;
+    document.getElementById('rr-category').textContent = c.category || '';
+    document.getElementById('rr-members').textContent = c.members_count || '0';
+    document.getElementById('rr-routes').textContent = c.routes_completed || '0';
+    document.getElementById('rr-founded').textContent = c.founded_year || '—';
+    document.getElementById('rr-location').textContent = c.city || '—';
+    document.title = `${c.name} · Ridera Clubes`;
+
+    // About
+    if (c.description || c.philosophy || c.frequency) {
+      document.getElementById('rr-about').style.display = 'block';
+      document.getElementById('rr-about-text').innerHTML = `
+        ${c.description?`<p style="margin-bottom:1.5rem;font-size:1.05rem;line-height:1.8;">${c.description}</p>`:''}
+        ${c.philosophy?`<div style="background:rgba(232,93,32,0.08);padding:1.5rem;border-left:4px solid var(--orange);margin:1rem 0;border-radius:4px;"><strong>Filosofía:</strong> ${c.philosophy}</div>`:''}
+        ${c.frequency?`<div style="background:rgba(232,93,32,0.08);padding:1.5rem;border-left:4px solid var(--orange);margin:1rem 0;border-radius:4px;"><strong>Frecuencia:</strong> ${c.frequency}</div>`:''}`;
+    }
+
+    // Gallery
+    if (c.cover_url || c.avatar_url) {
+      document.getElementById('rr-gallery-section').style.display = 'block';
+      const imgs = [c.cover_url, c.avatar_url].filter(Boolean);
+      document.getElementById('rr-gallery').innerHTML = imgs.map(url =>
+        `<div class="gallery-item" onclick="document.getElementById('rr-modal').classList.add('active');document.getElementById('rr-modal-img').src='${url}'"><img src="${url}" alt="${c.name}"></div>`
+      ).join('');
+    }
+
+    // Contact
+    if (c.leader_name || c.leader_email || c.facebook_url || c.instagram_url) {
+      document.getElementById('rr-contact-section').style.display = 'block';
+      const cards = [];
+      if (c.leader_name) cards.push(`<div style="background:rgba(232,93,32,0.08);border:1px solid rgba(232,93,32,0.2);border-radius:12px;padding:1.5rem;"><div style="font-family:var(--condensed);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted-dark);margin-bottom:1rem;">Líder del Club</div><div style="font-size:1.1rem;color:var(--white);">${c.leader_name}</div>${c.leader_phone?`<div style="font-size:0.9rem;color:var(--muted-dark);margin-top:0.5rem;">${c.leader_phone}</div>`:''}</div>`);
+      if (c.leader_email) cards.push(`<div style="background:rgba(232,93,32,0.08);border:1px solid rgba(232,93,32,0.2);border-radius:12px;padding:1.5rem;"><div style="font-family:var(--condensed);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted-dark);margin-bottom:1rem;">Email</div><a href="mailto:${c.leader_email}">${c.leader_email}</a></div>`);
+      if (c.facebook_url||c.instagram_url||c.whatsapp||c.twitter_url) {
+        let s = `<div style="background:rgba(232,93,32,0.08);border:1px solid rgba(232,93,32,0.2);border-radius:12px;padding:1.5rem;grid-column:1/-1;"><div style="font-family:var(--condensed);font-size:0.8rem;text-transform:uppercase;letter-spacing:0.15em;color:var(--muted-dark);margin-bottom:1rem;">Síguenos</div><div style="display:flex;gap:1rem;flex-wrap:wrap;">`;
+        if (c.facebook_url) s += `<a href="${c.facebook_url}" target="_blank" class="btn primary">Facebook</a>`;
+        if (c.instagram_url) s += `<a href="${c.instagram_url}" target="_blank" class="btn primary">Instagram</a>`;
+        if (c.twitter_url) s += `<a href="${c.twitter_url}" target="_blank" class="btn primary">Twitter</a>`;
+        if (c.whatsapp) s += `<a href="https://wa.me/${c.whatsapp.replace(/\D/g,'')}" target="_blank" class="btn primary">WhatsApp</a>`;
+        s += `</div></div>`;
+        cards.push(s);
+      }
+      document.getElementById('rr-contact').innerHTML = cards.join('');
+    }
+
+    // Brands & Routes
+    if (c.motorcycle_brands?.length || c.route_types?.length) {
+      document.getElementById('rr-brands-section').style.display = 'block';
+      const tag = t => `<span style="padding:0.6rem 1.2rem;background:rgba(232,93,32,0.12);border:1px solid rgba(232,93,32,0.3);border-radius:6px;color:var(--muted);font-size:0.9rem;">${t}</span>`;
+      if (c.motorcycle_brands?.length) document.getElementById('rr-brands').innerHTML = c.motorcycle_brands.map(tag).join('');
+      if (c.route_types?.length) document.getElementById('rr-route-types').innerHTML = c.route_types.map(tag).join('');
+    }
+
+    document.getElementById('rr-loading').style.display = 'none';
+    document.getElementById('rr-content').style.display = 'block';
+  }
+
+  // ===== FORM SUBMIT =====
+  document.getElementById('rr-form').addEventListener('submit', async e => {
+    e.preventDefault();
+    const btn = document.getElementById('rr-submit');
+    const alertDiv = document.getElementById('rr-alert');
+
+    if (selectedPhotos.length < 3) {
+      alertDiv.innerHTML = '<div class="alert error">⚠️ Debes seleccionar al menos 3 fotos</div>';
+      return;
+    }
+
+    btn.disabled = true;
+    alertDiv.innerHTML = '<div class="alert info"><div class="spinner"></div>Procesando tu registro...</div>';
+
+    try {
+      const photoUrls = [];
+      for (const photo of selectedPhotos) {
+        const fileName = `${Date.now()}-${Math.random().toString(36).substr(2,9)}-${photo.name}`;
+        const { error: upErr } = await sb.storage.from('club-photos').upload(`${currentClub.id}/${fileName}`, photo);
+        if (upErr) throw upErr;
+        const { data: { publicUrl } } = sb.storage.from('club-photos').getPublicUrl(`${currentClub.id}/${fileName}`);
+        photoUrls.push(publicUrl);
+      }
+
+      const fd = new FormData(e.target);
+      const { error: insErr } = await sb.from('club_members').insert([{
+        club_id: currentClub.id,
+        fullname: fd.get('fullname'),
+        email: fd.get('email'),
+        phone: fd.get('phone'),
+        whatsapp: fd.get('whatsapp'),
+        city: fd.get('city'),
+        moto_brand: fd.get('moto_brand'),
+        moto_model: fd.get('moto_model'),
+        moto_year: fd.get('moto_year'),
+        moto_color: fd.get('moto_color'),
+        photo_urls: photoUrls,
+        message: fd.get('message'),
+        created_at: new Date().toISOString()
+      }]);
+
+      if (insErr) throw insErr;
+
+      alertDiv.innerHTML = '<div class="alert success">✅ ¡Éxito! Tu registro ha sido enviado<br><small>El líder del club se pondrá en contacto pronto</small></div>';
+      e.target.reset();
+      selectedPhotos = [];
+      document.getElementById('rr-preview').innerHTML = '';
+      updateCount();
+
+    } catch(err) {
+      console.error('Error:', err);
+      alertDiv.innerHTML = `<div class="alert error">❌ Error: ${err.message}</div>`;
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  loadClub();
+})();
+</script>
