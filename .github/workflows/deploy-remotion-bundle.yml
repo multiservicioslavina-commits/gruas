@@ -1,0 +1,43 @@
+name: Deploy Remotion Bundle to S3
+
+on:
+  workflow_dispatch:
+    inputs:
+      force_redeploy:
+        description: 'Force redeploy even if bundle exists'
+        required: false
+        default: 'true'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ridera-video-remotion
+
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: claude/ridera-rider-live-gktim8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: ridera-video-remotion/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy Remotion bundle to S3
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          REMOTION_AWS_REGION: us-east-1
+          MAPBOX_TOKEN: ${{ secrets.MAPBOX_TOKEN }}
+        run: npm run deploy-lambda
+
+      - name: Show deploy result
+        run: echo "Deploy completado. La ServeUrl ya está configurada en Supabase."
