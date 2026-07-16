@@ -2,5 +2,9 @@
   path = "/sitemap.xml"
   function = "sitemap"
 
+[[edge_functions]]
+  path = "/supabase/clubes/*.html"
+  function = "club-page"
+
 [functions."mensajes-delay"]
   schedule = "*/5 * * * *"
