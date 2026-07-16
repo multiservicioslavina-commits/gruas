@@ -38,9 +38,12 @@ class RideTrackingService {
   final Duration heartbeat;
 
   Position? _last;
+  Position? _lastWritten; // último punto guardado en route_points
   StreamSubscription<Position>? _posSub;
   Timer? _timer;
   bool _running = false;
+
+  static const _minWriteDistM = 30.0; // mínimo 30m entre puntos guardados
 
   bool get isRunning => _running;
 
@@ -99,19 +102,40 @@ class RideTrackingService {
   Future<void> _push() async {
     final p = _last;
     if (p == null) return;
+    final speedKmh = (p.speed * 3.6).clamp(0.0, 300.0);
+    final now = DateTime.now().toUtc().toIso8601String();
     try {
+      // Posición en vivo para el mapa del convoy (igual que antes)
       await supabase
           .from('members')
           .update({
             'lat': p.latitude,
             'lon': p.longitude,
-            'speed_kmh': (p.speed * 3.6).clamp(0, 300), // m/s -> km/h
-            'last_seen': DateTime.now().toUtc().toIso8601String(),
+            'speed_kmh': speedKmh,
+            'last_seen': now,
           })
           .eq('ride_id', rideId)
           .eq('uid', uid);
-    } catch (_) {
-      // Sin red (zona muerta): se reintenta solo en el proximo heartbeat.
+    } catch (_) {}
+
+    // Historial GPS para el motor de video — solo si avanzó ≥30m
+    final prev = _lastWritten;
+    final distM = prev == null
+        ? double.infinity
+        : Geolocator.distanceBetween(
+            prev.latitude, prev.longitude, p.latitude, p.longitude);
+    if (distM >= _minWriteDistM) {
+      try {
+        await supabase.from('route_points').insert({
+          'ride_id': rideId,
+          'uid': uid,
+          'lat': p.latitude,
+          'lon': p.longitude,
+          'speed_kmh': speedKmh,
+          'recorded_at': now,
+        });
+        _lastWritten = p;
+      } catch (_) {}
     }
   }
 
@@ -122,6 +146,7 @@ class RideTrackingService {
     _posSub = null;
     _timer = null;
     _running = false;
+    _lastWritten = null;
   }
 }
 
