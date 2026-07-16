@@ -236,13 +236,13 @@
   mapboxgl.accessToken = '__MAPBOX_TOKEN__';
 
   // ── Tiempos de secciones (segundos) ──────────────────────────────────
-  const T_INTRO  = 3.0;
-  const T_ROUTE  = 16.0;
-  const T_PHOTO  = 2.5;
-  const T_STATS  = 4.0;
-  const T_OUTRO  = 3.0;
+  const T_INTRO  = 4.0;
+  const T_ROUTE  = 40.0;
+  const T_PHOTO  = 3.0;
+  const T_STATS  = 6.0;
+  const T_OUTRO  = 4.0;
 
-  const photos    = (DATA.photos || []).slice(0, 2);
+  const photos    = (DATA.photos || []).slice(0, 3);
   const photoCount = photos.length;
   const totalSeconds = T_INTRO + T_ROUTE + (photoCount * T_PHOTO) + T_STATS + T_OUTRO;
   window.__totalSeconds = totalSeconds;
