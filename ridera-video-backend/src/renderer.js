@@ -206,11 +206,13 @@ export async function renderRideVideo({
 
   // Esperar que el mapa y el terreno estén listos
   const tReady = Date.now();
+  // idle inicial (12s) + pausa (2s) + 5 preloads×1.5s + 1 final = ~22s máx
+  // Damos 70s para cubrir tiles lentos desde Railway-US a Mapbox CDN
   const totalSeconds = await page.evaluate(() =>
     new Promise(resolve => {
       if (window.__ready) return resolve(window.__totalSeconds || 30);
       window.__onReady = () => resolve(window.__totalSeconds || 30);
-      setTimeout(() => resolve(window.__totalSeconds || 30), 50000);
+      setTimeout(() => resolve(window.__totalSeconds || 30), 70000);
     })
   );
   T('scene ready', tReady);

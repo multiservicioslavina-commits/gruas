@@ -747,50 +747,48 @@
       im.onload = im.onerror = () => r(); im.src = p.url;
     })));
 
-    // ── Pre-computar elevaciones tras idle para el perfil animado ────────
-    map.once('idle', () => {
-      map.triggerRepaint();
-      setTimeout(() => {
-        // queryTerrainElevation funciona cuando las teselas DEM del viewport
-        // están cargadas. Con la vista general de la ruta la mayoría están listas.
-        elevations = coords.map(c => {
-          const e = map.queryTerrainElevation(c);
-          return (typeof e === 'number' && !isNaN(e)) ? e : 0;
-        });
-        // Si muchos ceros (teselas no cargadas), limpiar para no dibujar ruido
-        const nonZero = elevations.filter(e => e > 0).length;
-        if (nonZero < coords.length * 0.3) elevations = [];
+    // ── Pre-computar elevaciones y marcar escena lista ────────────────────
+    // Esperamos idle con timeout: si los tiles de satélite/terreno tardan
+    // más de 12s (común en rutas largas desde Railway-US), procedemos igual.
+    await new Promise(r => { map.once('idle', r); setTimeout(r, 12000); });
+    map.triggerRepaint();
+    // Pausa breve para que queryTerrainElevation tenga datos DEM disponibles
+    await new Promise(r => setTimeout(r, 2000));
 
-        // Panel de riders del grupo (se construye una sola vez)
-        const panel = document.getElementById('groupPanel');
-        [{ name: DATA.rideName || 'Tú', color: RIDER_COLORS[0] }, ...groupRiders.map((r, i) => ({ name: r.name, color: RIDER_COLORS[(i+1)%RIDER_COLORS.length] }))]
-          .forEach(r => {
-            const chip = document.createElement('div');
-            chip.className = 'riderChip';
-            chip.style.borderLeftColor = r.color;
-            chip.innerHTML = `<div class="riderDot" style="background:${r.color}"></div><div class="riderName">${r.name}</div>`;
-            panel.appendChild(chip);
-          });
-
-        // Pre-cargar teselas de la ruta: muestrear 5 puntos a lo largo
-        // para que Mapbox los solicite antes de empezar la captura.
-        const sampleIdxs = [0, 0.25, 0.5, 0.75, 1].map(f =>
-          Math.min(Math.round(f * (coords.length - 1)), coords.length - 1)
-        );
-        for (const idx of sampleIdxs) {
-          map.jumpTo({ center: coords[idx], zoom: 14.5, pitch: 60, bearing: bearingAlong(cumDist[idx]) });
-          await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
-        }
-        // Volver a la vista general
-        map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 45, bearing: 15 });
-        await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
-
-        map.triggerRepaint();
-        mapReady = true;
-        window.__ready = true;
-        window.__onReady && window.__onReady();
-      }, 3000);
+    elevations = coords.map(c => {
+      const e = map.queryTerrainElevation(c);
+      return (typeof e === 'number' && !isNaN(e)) ? e : 0;
     });
+    const nonZero = elevations.filter(e => e > 0).length;
+    if (nonZero < coords.length * 0.3) elevations = [];
+
+    // Panel de riders del grupo (se construye una sola vez)
+    const panel = document.getElementById('groupPanel');
+    [{ name: DATA.rideName || 'Tú', color: RIDER_COLORS[0] }, ...groupRiders.map((r, i) => ({ name: r.name, color: RIDER_COLORS[(i+1)%RIDER_COLORS.length] }))]
+      .forEach(r => {
+        const chip = document.createElement('div');
+        chip.className = 'riderChip';
+        chip.style.borderLeftColor = r.color;
+        chip.innerHTML = `<div class="riderDot" style="background:${r.color}"></div><div class="riderName">${r.name}</div>`;
+        panel.appendChild(chip);
+      });
+
+    // Pre-cargar teselas de la ruta: muestrear 5 puntos a lo largo
+    const sampleIdxs = [0, 0.25, 0.5, 0.75, 1].map(f =>
+      Math.min(Math.round(f * (coords.length - 1)), coords.length - 1)
+    );
+    for (const idx of sampleIdxs) {
+      map.jumpTo({ center: coords[idx], zoom: 14.5, pitch: 60, bearing: bearingAlong(cumDist[idx]) });
+      await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
+    }
+    // Volver a la vista general
+    map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 45, bearing: 15 });
+    await new Promise(r => { map.once('idle', r); setTimeout(r, 1500); });
+
+    map.triggerRepaint();
+    mapReady = true;
+    window.__ready = true;
+    window.__onReady && window.__onReady();
   });
 
   // ── seekTo(t): lleva el estado de la escena al segundo t ─────────────
