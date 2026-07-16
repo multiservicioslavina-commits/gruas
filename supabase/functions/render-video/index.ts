@@ -120,7 +120,7 @@ Deno.serve(async (req: Request) => {
         crf: null,
       });
 
-      await log("render_async_start_v83", { rideId, outName, payloadSize: payload.length });
+      await log("render_async_start_v88", { rideId, outName, payloadSize: payload.length });
 
       const endpoint = `https://lambda.${AWS_REGION}.amazonaws.com/2015-03-31/functions/${FUNCTION_NAME}/invocations`;
 
@@ -133,7 +133,7 @@ Deno.serve(async (req: Request) => {
         body: payload,
       });
 
-      await log("render_async_result_v83", {
+      await log("render_async_result_v88", {
         rideId,
         outName,
         lambdaStatus: res.status,
@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_async_error_v83", { error: String(e) });
+      await log("render_async_error_v88", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
@@ -164,12 +164,12 @@ Deno.serve(async (req: Request) => {
       const bucketName = url.searchParams.get("bucketName") || BUCKET_NAME;
 
       if (!renderId) {
-        return new Response(JSON.stringify({ version: "v83-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
+        return new Response(JSON.stringify({ version: "v88-s3-poll", info: "POST to start render, GET with ?renderId=outName&bucketName=X to poll" }), { headers: CORS });
       }
 
       // Remotion stores output at renders/{internalId}/{outName}.
       // List all render dirs and check each for our outName.
-      const listUrl = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/?list-type=2&max-keys=1000&prefix=renders/`;
+      const listUrl = `https://${bucketName}.s3.${AWS_REGION}.amazonaws.com/?list-type=2&max-keys=3000&prefix=renders/`;
       const listRes = await s3Client.fetch(listUrl, { method: "GET" });
 
       if (listRes.ok) {
@@ -194,7 +194,7 @@ Deno.serve(async (req: Request) => {
       }), { status: 200, headers: CORS });
 
     } catch (e) {
-      await log("render_poll_error_v83", { error: String(e) });
+      await log("render_poll_error_v88", { error: String(e) });
       return new Response(JSON.stringify({ error: String(e) }), { status: 500, headers: CORS });
     }
   }
