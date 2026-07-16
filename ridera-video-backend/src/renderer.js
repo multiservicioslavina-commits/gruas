@@ -70,33 +70,45 @@ export async function renderRideVideo({
   maxSpeedKmh,
   routePoints,
   photos,
+  municipiosFromClient,
   onProgress,
 }) {
   const T = (label, from) =>
     console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
 
-  // Municipios de Antioquia dentro del área de la ruta (sellos pasaporte)
+  // Municipios para sellos pasaporte: usar los que envió Flutter (ya filtrados
+  // por la app al cargar la pantalla de resumen). Solo hacer el fetch de Supabase
+  // si el cliente no mandó ninguno (versión antigua de la app, por ejemplo).
   let municipios = [];
-  try {
-    const lats = routePoints.map(p => p.lat);
-    const lons = routePoints.map(p => p.lon);
-    const m = 0.05; // margen ~5km
-    const url = `${process.env.SUPABASE_URL}/rest/v1/municipios` +
-      `?select=nombre,lat,lon,puntos_sello,subregion` +
-      `&lat=gte.${Math.min(...lats) - m}&lat=lte.${Math.max(...lats) + m}` +
-      `&lon=gte.${Math.min(...lons) - m}&lon=lte.${Math.max(...lons) + m}` +
-      `&limit=15`;
-    const res = await fetch(url, {
-      headers: {
-        apikey: process.env.SUPABASE_SERVICE_KEY,
-        Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
-      },
-      signal: AbortSignal.timeout(8000),
-    });
-    if (res.ok) municipios = await res.json();
-    console.log(`  [${rideId}] municipios en zona: ${municipios.length}`);
-  } catch (e) {
-    console.warn(`  [${rideId}] municipios no disponibles: ${e.message}`);
+  if (Array.isArray(municipiosFromClient) && municipiosFromClient.length > 0) {
+    municipios = municipiosFromClient;
+    console.log(`  [${rideId}] municipios del cliente: ${municipios.length}`);
+  } else {
+    try {
+      const lats = routePoints.map(p => p.lat);
+      const lons = routePoints.map(p => p.lon);
+      const m = 0.05; // margen ~5km
+      const url = `${process.env.SUPABASE_URL}/rest/v1/municipios` +
+        `?select=nombre,lat,lon,puntos_sello,subregion` +
+        `&lat=gte.${Math.min(...lats) - m}&lat=lte.${Math.max(...lats) + m}` +
+        `&lon=gte.${Math.min(...lons) - m}&lon=lte.${Math.max(...lons) + m}` +
+        `&limit=15`;
+      const res = await fetch(url, {
+        headers: {
+          apikey: process.env.SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_KEY}`,
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      if (res.ok) {
+        const rows = await res.json();
+        // Normalizar: Supabase devuelve 'subregion', el template espera 'departamento'
+        municipios = rows.map(m => ({ ...m, departamento: m.departamento || m.subregion || 'Antioquia' }));
+      }
+      console.log(`  [${rideId}] municipios de Supabase: ${municipios.length}`);
+    } catch (e) {
+      console.warn(`  [${rideId}] municipios no disponibles: ${e.message}`);
+    }
   }
 
   const templatePath = join(__dirname, 'mapbox-template.html');

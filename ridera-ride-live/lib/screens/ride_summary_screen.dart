@@ -38,6 +38,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   String _videoStatus = 'idle'; // idle | rendering | done | error
   String? _videoUrl;
   String? _videoError;
+  int _videoProgress = 0;
 
   @override
   void initState() {
@@ -153,7 +154,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   }
 
   Future<void> _generateVideo() async {
-    setState(() { _videoStatus = 'rendering'; _videoError = null; });
+    setState(() { _videoStatus = 'rendering'; _videoError = null; _videoProgress = 0; });
     try {
       final url = await _videoService.renderVideo(
         rideId: widget.rideId,
@@ -165,7 +166,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         routePoints: _routePoints,
         municipios: _municipios,
         onProgress: (p) {
-          if (mounted) setState(() {});
+          if (mounted) setState(() { _videoProgress = p; });
         },
       );
       // Guardar la URL SIEMPRE, aunque el usuario ya haya salido de la
@@ -293,14 +294,29 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             border: Border.all(color: RColors.line),
             borderRadius: BorderRadius.circular(14),
           ),
-          child: const Row(mainAxisAlignment: MainAxisAlignment.center, children: [
-            SizedBox(width: 20, height: 20,
-                child: CircularProgressIndicator(color: RColors.brand, strokeWidth: 2)),
-            SizedBox(width: 14),
-            Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
-              Text('Video 1080p con relieve 3D — tarda varios minutos.\nPuedes salir: quedará en Mis rodadas.', style: TextStyle(color: RColors.inkDim, fontSize: 12)),
+          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+            Row(children: [
+              SizedBox(width: 20, height: 20,
+                  child: CircularProgressIndicator(color: RColors.brand, strokeWidth: 2)),
+              const SizedBox(width: 14),
+              const Text('Generando video…', style: TextStyle(color: RColors.ink, fontSize: 15)),
+              const Spacer(),
+              Text('$_videoProgress%',
+                  style: const TextStyle(color: RColors.brand, fontSize: 15, fontWeight: FontWeight.w800)),
             ]),
+            const SizedBox(height: 12),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: _videoProgress / 100,
+                backgroundColor: RColors.asphalt,
+                color: RColors.brand,
+                minHeight: 6,
+              ),
+            ),
+            const SizedBox(height: 10),
+            const Text('Video 1080p con relieve 3D — tarda varios minutos.\nPuedes salir: quedará en Mis rodadas.',
+                style: TextStyle(color: RColors.inkDim, fontSize: 12)),
           ]),
         );
       case 'done':

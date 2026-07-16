@@ -661,7 +661,7 @@
         chip.style.opacity = op;
         document.getElementById('stampName').textContent = stamp.nombre;
         document.getElementById('stampPts').textContent =
-          `${stamp.subregion || ''} · +${stamp.puntos_sello || 0} PTS`;
+          `${stamp.departamento || stamp.subregion || 'Antioquia'} · +${stamp.puntos_sello || 10} PTS`;
         map.getSource('stamp-active').setData({
           type: 'FeatureCollection',
           features: [{ type: 'Feature', properties: {},

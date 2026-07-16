@@ -67,6 +67,7 @@ app.post('/render', (req, res) => {
     maxSpeedKmh,
     routePoints,
     photos,
+    municipios,
   } = req.body || {};
 
   if (!rideId || !Array.isArray(routePoints) || routePoints.length < 2) {
@@ -104,6 +105,7 @@ app.post('/render', (req, res) => {
         maxSpeedKmh: String(maxSpeedKmh ?? '0'),
         routePoints,
         photos: photos || [],
+        municipiosFromClient: Array.isArray(municipios) ? municipios : [],
         onProgress: (pct) => { job.progress = pct; },
       });
       const timeoutPromise = new Promise((_, reject) =>
