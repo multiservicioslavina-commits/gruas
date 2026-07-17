@@ -550,6 +550,17 @@
         `${desdeName || 'Salida'}  →  ${hastaName || 'Llegada'}`;
     }
 
+    // Ocultar capas de texto/símbolo del estilo base para evitar el error
+    // "glyphs > 65535 not supported" que degrada el render frame a frame.
+    // No las necesitamos: tenemos nuestros propios overlays de HUD.
+    try {
+      map.getStyle().layers.forEach(layer => {
+        if (layer.type === 'symbol') {
+          map.setLayoutProperty(layer.id, 'visibility', 'none');
+        }
+      });
+    } catch (e) { console.log('hide symbols:', e.message); }
+
     // Terreno 3D con exageración alta
     map.addSource('mapbox-dem', {
       type: 'raster-dem', url: 'mapbox://mapbox.mapbox-terrain-dem-v1',
