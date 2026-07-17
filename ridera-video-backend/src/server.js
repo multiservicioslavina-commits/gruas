@@ -28,7 +28,11 @@ app.use(express.json({ limit: '10mb' }));
 const PORT           = process.env.PORT || 3000;
 const SUPABASE_URL   = process.env.SUPABASE_URL;
 const SUPABASE_KEY   = process.env.SUPABASE_SERVICE_KEY;
-const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT || '3', 10);
+// Default 1: el contenedor de Railway solo aguanta UN render a la vez (dos se
+// ahogan por CPU/memoria y crashean con "Target closed"). Se deja configurable
+// por si algún día hay más recursos, pero el default seguro es 1 aunque la
+// variable de entorno se pierda.
+const MAX_CONCURRENT = parseInt(process.env.MAX_CONCURRENT || '1', 10);
 const WORKER_ID      = randomUUID().slice(0, 8); // identifica esta instancia Railway
 
 // ── Semáforo: limita renders simultáneos en este proceso ──────────────────
