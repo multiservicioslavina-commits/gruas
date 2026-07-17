@@ -153,6 +153,7 @@ export async function renderRideVideo({
       '--disable-breakpad',
       '--disable-extensions',
       '--mute-audio',
+      '--js-flags=--max-old-space-size=512',
       // NO usar --use-gl=angle/--use-angle=swiftshader: en Chrome 127
       // deshabilitan WebGL (verificado). Sin ellos Chrome cae solo a
       // SwiftShader y WebGL funciona.

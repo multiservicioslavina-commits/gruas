@@ -536,6 +536,7 @@
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
     interactive: false, preserveDrawingBuffer: true,
+    maxTileCacheSize: 50,  // limitar caché para no OOM en Railway (default=ilimitado)
   });
 
   // Errores del mapa (token inválido, teselas) → visibles en logs del server
