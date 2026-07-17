@@ -202,7 +202,7 @@ async function processJob(jobId, inputData) {
   try {
     await sbUpdateJob(jobId, { state: 'rendering', worker_id: WORKER_ID, started_at: new Date().toISOString() });
 
-    const TIMEOUT = 25 * 60 * 1000;
+    const TIMEOUT = 40 * 60 * 1000;
     const localPath = await Promise.race([
       renderRideVideo({
         ...inputData,
@@ -211,7 +211,7 @@ async function processJob(jobId, inputData) {
           await sbUpdateJob(jobId, { progress: pct }).catch(() => {});
         },
       }),
-      new Promise((_, rej) => setTimeout(() => rej(new Error('Render superó 25 minutos')), TIMEOUT)),
+      new Promise((_, rej) => setTimeout(() => rej(new Error('Render superó 40 minutos')), TIMEOUT)),
     ]);
 
     const url = await uploadVideo(inputData.rideId, localPath);
