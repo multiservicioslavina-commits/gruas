@@ -271,6 +271,10 @@ tbody td{padding:.8rem .75rem;vertical-align:middle}
     </select>
     <label>Descripción</label>
     <textarea id="eDescripcion" rows="3"></textarea>
+    <div class="form-row">
+      <div><label>Marcas (separadas por coma)</label><input type="text" id="eMarcas" placeholder="BMW Motorrad, KTM, Yamaha"></div>
+      <div><label>Rutas favoritas (separadas por coma)</label><input type="text" id="eRutas" placeholder="Medellín-Honda, Ruta del Café"></div>
+    </div>
     <div class="section-label">Redes sociales</div>
     <div class="form-row">
       <div><label>Facebook</label><input type="url" id="eFacebook" placeholder="https://facebook.com/..."></div>
@@ -497,6 +501,8 @@ function openEdit(id){
   $id('eInstagram').value = datos.instagram||'';
   $id('eWeb').value = datos.web||'';
   $id('eNotas').value = datos.notas||'';
+  $id('eMarcas').value = datos.marcas||'';
+  $id('eRutas').value = datos.rutas||'';
   $id('editErr').style.display='none';
   $id('editModal').classList.remove('hide');
 }
@@ -522,6 +528,8 @@ async function saveEdit(){
     instagram: $id('eInstagram').value.trim(),
     web: $id('eWeb').value.trim(),
     notas: $id('eNotas').value.trim(),
+    marcas: $id('eMarcas').value.trim(),
+    rutas: $id('eRutas').value.trim(),
   };
   const res = await callClubs({
     action:'edit', id:editingId,
