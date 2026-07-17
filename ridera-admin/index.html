@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridera · Panel Admin</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0e0e0e;--s:#161616;--s2:#1e1e1e;--line:#282828;
+  --or:#E85D20;--text:#f0f0f0;--mu:#888;--mu2:#555;
+  --green:#4ade80;--amber:#f59e0b;--red:#f87171;--blue:#60a5fa;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* LOGIN */
+#loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:1rem}
+.lcard{background:var(--s);border:1px solid var(--line);border-radius:14px;padding:2.5rem 2rem;width:100%;max-width:360px}
+.lcard .brand{display:flex;align-items:center;gap:.75rem;margin-bottom:1.75rem}
+.badge-r{width:38px;height:38px;background:var(--or);border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:1.2rem;color:#fff;flex-shrink:0}
+.lcard h1{font-size:1.2rem;font-weight:700}
+.lcard p{color:var(--mu);font-size:.8rem}
+label{display:block;font-size:.78rem;color:var(--mu);margin-bottom:.3rem;margin-top:.9rem}
+input[type="password"],input[type="text"],input[type="email"],input[type="url"],input[type="number"],select,textarea{
+  width:100%;background:#111;border:1px solid var(--line);border-radius:8px;
+  color:var(--text);font-size:.95rem;padding:.65rem .85rem;outline:none;transition:border-color .2s;font-family:inherit}
+input:focus,select:focus,textarea:focus{border-color:var(--or)}
+textarea{resize:vertical;min-height:80px}
+.btn{display:block;width:100%;margin-top:1.25rem;padding:.75rem;background:var(--or);color:#fff;font-size:1rem;font-weight:700;border:none;border-radius:8px;cursor:pointer;transition:background .2s,opacity .2s}
+.btn:hover{background:#cf4f18}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.err{color:var(--red);font-size:.83rem;margin-top:.6rem;display:none}
+
+/* LAYOUT */
+#app{display:none;height:100vh;overflow:hidden}
+.layout{display:flex;height:100vh}
+
+/* SIDEBAR */
+.sidebar{width:220px;background:var(--s);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto}
+.sb-brand{padding:1.1rem 1.2rem;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:.7rem}
+.sb-brand .badge-r{width:30px;height:30px;font-size:.9rem;border-radius:6px}
+.sb-title{font-weight:800;font-size:.95rem;letter-spacing:.5px}
+.sb-title span{color:var(--or)}
+.sb-nav{padding:.5rem 0;flex:1}
+.sb-item{display:flex;align-items:center;gap:.7rem;padding:.7rem 1.2rem;font-size:.875rem;color:var(--mu);cursor:pointer;transition:background .15s,color .15s;border-left:3px solid transparent;user-select:none}
+.sb-item:hover{background:var(--s2);color:var(--text)}
+.sb-item.active{background:rgba(232,93,32,.08);color:var(--or);border-left-color:var(--or);font-weight:600}
+.sb-item .icon{font-size:1rem;width:20px;text-align:center}
+.sb-badge{margin-left:auto;background:var(--or);color:#fff;font-size:.65rem;font-weight:700;padding:.1rem .45rem;border-radius:20px;min-width:18px;text-align:center}
+.sb-badge.zero{background:var(--s2);color:var(--mu)}
+.sb-footer{padding:1rem 1.2rem;border-top:1px solid var(--line)}
+.sb-email{font-size:.75rem;color:var(--mu);word-break:break-all}
+.sb-logout{display:block;margin-top:.4rem;font-size:.75rem;color:var(--mu);background:none;border:none;cursor:pointer;padding:0;text-align:left}
+.sb-logout:hover{color:var(--red)}
+
+/* MAIN */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.top-bar{background:var(--s);border-bottom:1px solid var(--line);padding:.75rem 1.5rem;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.top-bar h2{font-size:1.1rem;font-weight:700}
+.btn-sm{padding:.35rem .75rem;font-size:.78rem;font-weight:600;border:1px solid var(--line);border-radius:6px;background:transparent;color:var(--mu);cursor:pointer;transition:all .15s}
+.btn-sm:hover{border-color:var(--or);color:var(--or)}
+.content{padding:1.5rem;flex:1}
+
+/* STATS */
+.stats-row{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:1.5rem}
+.stat{background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1rem 1.25rem;min-width:110px}
+.stat .num{font-size:1.8rem;font-weight:800}
+.stat .num.or{color:var(--amber)}
+.stat .num.green{color:var(--green)}
+.stat .lbl{font-size:.72rem;color:var(--mu);margin-top:.2rem}
+
+/* FILTERS */
+.filters{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1.25rem}
+.fbtn{padding:.4rem 1rem;font-size:.8rem;font-weight:600;border-radius:20px;border:1px solid var(--line);background:transparent;color:var(--mu);cursor:pointer;transition:all .15s}
+.fbtn.pend{border-color:rgba(245,158,11,.4);color:var(--amber)}
+.fbtn.pend.active{background:rgba(245,158,11,.15);border-color:var(--amber)}
+.fbtn.apro.active{background:var(--or);border-color:var(--or);color:#fff}
+.btn-new{margin-left:auto;padding:.4rem 1rem;font-size:.8rem;font-weight:700;border-radius:8px;border:none;background:var(--or);color:#fff;cursor:pointer;transition:background .15s}
+.btn-new:hover{background:#cf4f18}
+
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:.855rem}
+thead th{text-align:left;padding:.55rem .75rem;color:var(--mu);font-weight:600;font-size:.7rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--line)}
+tbody tr{border-bottom:1px solid var(--line);transition:background .1s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(255,255,255,.02)}
+tbody td{padding:.8rem .75rem;vertical-align:middle}
+.club-logo{width:42px;height:42px;border-radius:8px;object-fit:cover;background:var(--s2);border:1px solid var(--line)}
+.logo-ph{width:42px;height:42px;border-radius:8px;background:var(--s2);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:1.1rem}
+.club-nm{font-weight:700;font-size:.9rem}
+.club-sub{font-size:.75rem;color:var(--mu);margin-top:.15rem}
+.badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:700;padding:.2rem .55rem;border-radius:20px}
+.badge-apro{background:rgba(74,222,128,.1);color:var(--green);border:1px solid rgba(74,222,128,.3)}
+.badge-pend{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.3)}
+.actions{display:flex;gap:.35rem;flex-wrap:wrap}
+.act{font-size:.72rem;padding:.28rem .65rem;border-radius:6px;border:1px solid var(--line);background:transparent;color:var(--mu);cursor:pointer;transition:all .15s;white-space:nowrap}
+.act:hover{border-color:var(--or);color:var(--or)}
+.act.aprobar{border-color:rgba(74,222,128,.4);color:var(--green)}
+.act.aprobar:hover{background:rgba(74,222,128,.1)}
+.act.editar{border-color:rgba(96,165,250,.4);color:var(--blue)}
+.act.editar:hover{background:rgba(96,165,250,.1)}
+.act.despub{border-color:rgba(245,158,11,.4);color:var(--amber)}
+.act.despub:hover{background:rgba(245,158,11,.1)}
+.act.del{border-color:rgba(248,113,113,.4);color:var(--red)}
+.act.del:hover{background:rgba(248,113,113,.1)}
+.act:disabled{opacity:.4;cursor:not-allowed}
+.empty-td{color:var(--mu);text-align:center;padding:3rem;font-size:.9rem}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.15);border-top-color:var(--or);border-radius:50%;animation:rot .7s linear infinite;vertical-align:middle}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* MODAL */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;z-index:100;padding:1rem}
+.modal{background:var(--s);border:1px solid var(--line);border-radius:14px;padding:1.75rem;width:100%;max-width:520px;max-height:90vh;overflow-y:auto}
+.modal h3{font-size:1.1rem;font-weight:700;margin-bottom:1.25rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+.modal-actions{display:flex;gap:.75rem;justify-content:flex-end;margin-top:1.5rem}
+.btn-cancel{padding:.6rem 1.1rem;border:1px solid var(--line);border-radius:8px;background:transparent;color:var(--mu);font-size:.9rem;cursor:pointer}
+.btn-save{padding:.6rem 1.3rem;background:var(--or);color:#fff;font-size:.9rem;font-weight:700;border:none;border-radius:8px;cursor:pointer}
+.modal-err{color:var(--red);font-size:.83rem;margin-top:.5rem;display:none}
+.section-label{font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--mu);margin:1rem 0 .25rem;border-bottom:1px solid var(--line);padding-bottom:.25rem}
+.hide{display:none!important}
+.placeholder-msg{color:var(--mu);font-size:.9rem;padding:3rem 1rem;text-align:center;border:1px dashed var(--line);border-radius:10px}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="lcard">
+    <div class="brand">
+      <div class="badge-r">R</div>
+      <div><div style="font-size:.7rem;color:var(--or);font-weight:700;letter-spacing:.1em">RIDERA</div><h1>Panel Admin</h1></div>
+    </div>
+    <label for="pwdIn">Clave de acceso</label>
+    <input type="password" id="pwdIn" placeholder="••••••••" autocomplete="current-password">
+    <div class="err" id="loginErr">Clave incorrecta.</div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <div class="layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sb-brand">
+        <div class="badge-r">R</div>
+        <div class="sb-title"><span>Ridera</span> ADMIN</div>
+      </div>
+      <nav class="sb-nav">
+        <div class="sb-item" onclick="goto('despacho')">
+          <span class="icon">📡</span> Despacho <span class="sb-badge zero" id="bdg-despacho">0</span>
+        </div>
+        <div class="sb-item" onclick="goto('sellos')">
+          <span class="icon">📮</span> Sellos <span class="sb-badge zero" id="bdg-sellos">0</span>
+        </div>
+        <div class="sb-item" onclick="goto('grueros')">
+          <span class="icon">🔧</span> Grueros
+        </div>
+        <div class="sb-item" onclick="goto('riders')">
+          <span class="icon">🏍️</span> Riders
+        </div>
+        <div class="sb-item active" id="nav-clubs" onclick="goto('clubs')">
+          <span class="icon">🏁</span> Clubs <span class="sb-badge zero" id="bdg-clubs">0</span>
+        </div>
+        <div class="sb-item" onclick="goto('motos')">
+          <span class="icon">⚙️</span> Motos
+        </div>
+        <div class="sb-item" onclick="goto('talleres')">
+          <span class="icon">🔩</span> Talleres
+        </div>
+        <div class="sb-item" onclick="goto('almacenes')">
+          <span class="icon">🛒</span> Almacenes
+        </div>
+      </nav>
+      <div class="sb-footer">
+        <div class="sb-email" id="sbEmail">—</div>
+        <button class="sb-logout" onclick="logout()">Cerrar sesión</button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="top-bar">
+        <h2 id="pageTitle">Clubs</h2>
+        <div style="display:flex;gap:.5rem">
+          <button class="btn-sm" onclick="reloadSection()">↻ Actualizar</button>
+        </div>
+      </div>
+      <div class="content">
+
+        <!-- CLUBS SECTION -->
+        <div id="sec-clubs">
+          <div class="stats-row">
+            <div class="stat"><div class="num or" id="cPend">—</div><div class="lbl">Pendientes</div></div>
+            <div class="stat"><div class="num green" id="cApro">—</div><div class="lbl">Aprobados</div></div>
+            <div class="stat"><div class="num" id="cTotal">—</div><div class="lbl">Total</div></div>
+          </div>
+          <div class="filters">
+            <button class="fbtn pend active" id="fPend" onclick="filterClubs('pend',this)">⏳ Pendientes (<span id="fPendNum">0</span>)</button>
+            <button class="fbtn apro" id="fApro" onclick="filterClubs('apro',this)">✅ Aprobados (<span id="fAproNum">0</span>)</button>
+            <button class="btn-new" onclick="openNew()">+ Nuevo club</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Logo</th><th>Club</th><th>Código</th><th>Ciudad</th>
+                  <th>Líder</th><th>Miembros</th><th>Estado</th><th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="clubsTbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- OTHER SECTIONS -->
+        <div id="sec-despacho" class="hide"><div class="placeholder-msg">📡 Ir al panel de grúas: <a href="https://gruas.ridera.com.co/admin" target="_blank" style="color:var(--or)">gruas.ridera.com.co/admin</a></div></div>
+        <div id="sec-sellos" class="hide"><div class="placeholder-msg">📮 Gestión de sellos próximamente.</div></div>
+        <div id="sec-grueros" class="hide"><div class="placeholder-msg">🔧 Gestión de grueros: <a href="https://gruas.ridera.com.co/admin" target="_blank" style="color:var(--or)">gruas.ridera.com.co/admin</a></div></div>
+        <div id="sec-riders" class="hide"><div class="placeholder-msg">🏍️ Gestión de riders próximamente.</div></div>
+        <div id="sec-motos" class="hide">
+          <div class="filters" style="margin-bottom:1rem">
+            <button class="fbtn apro" id="fMotoPend" onclick="filterMotos('pendiente',this)">⏳ Pendientes</button>
+            <button class="fbtn apro active" id="fMotoApro" onclick="filterMotos('aprobado',this)">✅ Aprobadas</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Moto</th><th>Precio</th><th>Ciudad</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="motosTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="sec-talleres" class="hide"><div class="placeholder-msg">🔩 Gestión de talleres próximamente.</div></div>
+        <div id="sec-almacenes" class="hide"><div class="placeholder-msg">🛒 Gestión de almacenes próximamente.</div></div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT MODAL -->
+<div class="overlay hide" id="editModal">
+  <div class="modal">
+    <h3 id="editTitle">Editar club</h3>
+    <div class="section-label">Información básica</div>
+    <label>Nombre del club</label><input type="text" id="eNombre">
+    <div class="form-row">
+      <div><label>Ciudad</label><input type="text" id="eCiudad"></div>
+      <div><label>Código de miembro</label><input type="text" id="eCodigo" style="text-transform:uppercase"></div>
+    </div>
+    <label>URL del logo</label><input type="url" id="eLogoUrl" placeholder="https://...">
+    <div class="section-label">Información del club</div>
+    <label>Líder / Presidente</label><input type="text" id="eLider">
+    <div class="form-row">
+      <div><label>WhatsApp</label><input type="text" id="eWhatsapp" placeholder="3001234567"></div>
+      <div><label>Teléfono líder</label><input type="text" id="eLiderTel"></div>
+    </div>
+    <div class="form-row">
+      <div><label>Email</label><input type="email" id="eEmail"></div>
+      <div><label>Año de fundación</label><input type="number" id="eFundacion" placeholder="2020"></div>
+    </div>
+    <label>Número de miembros</label>
+    <select id="eMiembros">
+      <option value="">— Seleccionar —</option>
+      <option>1 – 10 miembros</option><option>11 – 30 miembros</option>
+      <option>31 – 60 miembros</option><option>61 – 100 miembros</option>
+      <option>101 – 200 miembros</option><option>Más de 200 miembros</option>
+    </select>
+    <label>Descripción</label>
+    <textarea id="eDescripcion" rows="3"></textarea>
+    <div class="section-label">Redes sociales</div>
+    <div class="form-row">
+      <div><label>Facebook</label><input type="url" id="eFacebook" placeholder="https://facebook.com/..."></div>
+      <div><label>Instagram</label><input type="url" id="eInstagram" placeholder="https://instagram.com/..."></div>
+    </div>
+    <label>Sitio web</label><input type="url" id="eWeb" placeholder="https://...">
+    <label>Notas adicionales</label><input type="text" id="eNotas">
+    <div class="modal-err" id="editErr"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeEdit()">Cancelar</button>
+      <button class="btn-save" id="editSaveBtn" onclick="saveEdit()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- NEW CLUB MODAL -->
+<div class="overlay hide" id="newModal">
+  <div class="modal">
+    <h3>Nuevo club</h3>
+    <label>Nombre del club *</label><input type="text" id="nNombre">
+    <div class="form-row">
+      <div><label>Ciudad</label><input type="text" id="nCiudad"></div>
+      <div><label>Código</label><input type="text" id="nCodigo" style="text-transform:uppercase"></div>
+    </div>
+    <label>Líder</label><input type="text" id="nLider">
+    <div class="form-row">
+      <div><label>WhatsApp</label><input type="text" id="nWhatsapp"></div>
+      <div><label>Email</label><input type="email" id="nEmail"></div>
+    </div>
+    <label>Descripción</label><textarea id="nDescripcion" rows="3"></textarea>
+    <div class="modal-err" id="newErr"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeNew()">Cancelar</button>
+      <button class="btn-save" id="newSaveBtn" onclick="saveNew()">Crear club</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FN_CLUBS = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-clubs';
+const FN_GRUEROS = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
+const FN_MOTOS = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-motos';
+
+let adminKey = '';
+let allClubs = [];
+let currentClubFilter = 'pend';
+let editingId = null;
+const USER_EMAIL = 'multiservicioslavina@gmail.com';
+
+function esc(x){ return (x==null?'':String(x)).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function $id(id){ return document.getElementById(id); }
+
+// ── AUTH ─────────────────────────────────────────────────────────────
+async function doLogin(){
+  const btn = $id('loginBtn');
+  const pwd = $id('pwdIn').value.trim();
+  if(!pwd) return;
+  btn.disabled=true; btn.textContent='Verificando…';
+  $id('loginErr').style.display='none';
+  adminKey=pwd;
+  const res = await callClubs({action:'list'}).catch(()=>({ok:false}));
+  if(res.ok){
+    $id('sbEmail').textContent = USER_EMAIL;
+    $id('loginScreen').style.display='none';
+    $id('app').style.display='block';
+    renderClubs(res);
+  } else {
+    $id('loginErr').style.display='block';
+    adminKey=''; btn.disabled=false; btn.textContent='Entrar';
+  }
+}
+$id('pwdIn').addEventListener('keydown',e=>{ if(e.key==='Enter') doLogin(); });
+
+function logout(){
+  adminKey=''; allClubs=[];
+  $id('loginScreen').style.display='flex';
+  $id('app').style.display='none';
+  $id('pwdIn').value='';
+}
+
+// ── NAVIGATION ───────────────────────────────────────────────────────
+const SECTIONS = ['clubs','despacho','sellos','grueros','riders','motos','talleres','almacenes'];
+const TITLES = {clubs:'Clubs',despacho:'Despacho',sellos:'Sellos',grueros:'Grueros',riders:'Riders',motos:'Motos',talleres:'Talleres',almacenes:'Almacenes'};
+
+async function goto(sec){
+  SECTIONS.forEach(s=>{
+    $id('sec-'+s).classList.toggle('hide', s!==sec);
+  });
+  document.querySelectorAll('.sb-item').forEach((el,i)=>{
+    el.classList.toggle('active', SECTIONS[i]===sec);
+  });
+  $id('pageTitle').textContent = TITLES[sec]||sec;
+  if(sec==='clubs') await reloadClubs();
+  if(sec==='motos') await loadMotos('aprobado');
+}
+
+async function reloadSection(){
+  const active = SECTIONS.find(s=>!$id('sec-'+s).classList.contains('hide'));
+  if(active==='clubs') await reloadClubs();
+  if(active==='motos') await loadMotos(currentMotoFilter);
+}
+
+// ── CLUBS ─────────────────────────────────────────────────────────────
+async function callClubs(body){
+  const res = await fetch(FN_CLUBS,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({key:adminKey,...body})});
+  return res.json();
+}
+
+async function reloadClubs(){
+  const tbody = $id('clubsTbody');
+  tbody.innerHTML = '<tr><td colspan="8" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  const data = await callClubs({action:'list'}).catch(()=>({ok:false}));
+  if(!data.ok){ tbody.innerHTML='<tr><td colspan="8" class="empty-td">Error al cargar clubs.</td></tr>'; return; }
+  renderClubs(data);
+}
+
+function renderClubs(data){
+  allClubs = data.clubs || [];
+  $id('cPend').textContent = data.pendientes ?? 0;
+  $id('cApro').textContent = data.aprobados ?? 0;
+  $id('cTotal').textContent = data.total ?? 0;
+  $id('fPendNum').textContent = data.pendientes ?? 0;
+  $id('fAproNum').textContent = data.aprobados ?? 0;
+  const bdg = $id('bdg-clubs');
+  const pend = data.pendientes ?? 0;
+  bdg.textContent = pend;
+  bdg.className = 'sb-badge' + (pend>0 ? '' : ' zero');
+  paintTable();
+}
+
+function filterClubs(f, btn){
+  currentClubFilter = f;
+  document.querySelectorAll('.fbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  paintTable();
+}
+
+function paintTable(){
+  const rows = currentClubFilter==='pend'
+    ? allClubs.filter(c=>!c.aprobado)
+    : allClubs.filter(c=>c.aprobado);
+  const tbody = $id('clubsTbody');
+  if(!rows.length){ tbody.innerHTML='<tr><td colspan="8" class="empty-td">No hay clubs en este estado.</td></tr>'; return; }
+  tbody.innerHTML = rows.map(c=>{
+    const logo = c.logo_url
+      ? `<img class="club-logo" src="${esc(c.logo_url)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      : '';
+    const ph = `<div class="logo-ph" style="${c.logo_url?'display:none':''}">🏁</div>`;
+    const datos = c.datos||{};
+    const lider = c.lider_nombre || datos.lider || '—';
+    const apro = c.aprobado;
+    const estado = apro
+      ? '<span class="badge badge-apro">✓ Aprobado</span>'
+      : '<span class="badge badge-pend">⏳ Pendiente</span>';
+    const accs = apro
+      ? `<button class="act despub" onclick="despublicar('${c.id}',this)">↩ Despublicar</button>
+         <button class="act editar" onclick="openEdit('${c.id}')">✎ Editar</button>
+         <button class="act del" onclick="eliminar('${c.id}','${esc(c.nombre)}',this)">✕ Eliminar</button>`
+      : `<button class="act aprobar" onclick="aprobar('${c.id}','${esc(c.nombre)}',this)">✓ Aprobar</button>
+         <button class="act editar" onclick="openEdit('${c.id}')">✎ Editar</button>
+         <button class="act del" onclick="eliminar('${c.id}','${esc(c.nombre)}',this)">✕ Eliminar</button>`;
+    return `<tr>
+      <td>${logo}${ph}</td>
+      <td><div class="club-nm">${esc(c.nombre)}</div><div class="club-sub">${esc(datos.descripcion||'').slice(0,60)||'—'}</div></td>
+      <td>${esc(c.codigo||'—')}</td>
+      <td>${esc(c.ciudad||'—')}</td>
+      <td>${esc(lider)}</td>
+      <td>${c.miembros||0}</td>
+      <td>${estado}</td>
+      <td><div class="actions">${accs}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+async function aprobar(id, nombre, btn){
+  if(!confirm(`¿Aprobar el club "${nombre}"?\n\nSe actualizará el estado a Aprobado y se intentará crear la tarjeta en WordPress.`)) return;
+  btn.disabled=true; btn.textContent='…';
+  const res = await callClubs({action:'approve',id}).catch(()=>({ok:false}));
+  if(res.ok){
+    const wpMsg = res.wp?.ok ? '\n✅ Tarjeta creada en WordPress.' : (res.wp?.error ? `\nWordPress: ${res.wp.error}` : '');
+    alert(`✅ Club aprobado.${wpMsg}`);
+    await reloadClubs();
+  } else {
+    btn.disabled=false; btn.textContent='✓ Aprobar';
+    alert('Error: '+(res.error||'No se pudo aprobar'));
+  }
+}
+
+async function despublicar(id, btn){
+  if(!confirm('¿Despublicar este club? Quedará en estado pendiente.')) return;
+  btn.disabled=true;
+  const res = await callClubs({action:'reject',id}).catch(()=>({ok:false}));
+  if(res.ok){ await reloadClubs(); }
+  else { btn.disabled=false; alert('Error: '+(res.error||'No se pudo despublicar')); }
+}
+
+async function eliminar(id, nombre, btn){
+  if(!confirm(`¿Eliminar permanentemente el club "${nombre}"? Esta acción no se puede deshacer.`)) return;
+  btn.disabled=true;
+  const res = await callClubs({action:'delete',id}).catch(()=>({ok:false}));
+  if(res.ok){ await reloadClubs(); }
+  else { btn.disabled=false; alert('Error: '+(res.error||'No se pudo eliminar')); }
+}
+
+// ── EDIT MODAL ────────────────────────────────────────────────────────
+function openEdit(id){
+  const c = allClubs.find(x=>x.id===id);
+  if(!c) return;
+  editingId = id;
+  const datos = c.datos||{};
+  $id('editTitle').textContent = 'Editar: '+c.nombre;
+  $id('eNombre').value = c.nombre||'';
+  $id('eCiudad').value = c.ciudad||'';
+  $id('eCodigo').value = c.codigo||'';
+  $id('eLogoUrl').value = c.logo_url||'';
+  $id('eLider').value = datos.lider||'';
+  $id('eWhatsapp').value = datos.whatsapp||'';
+  $id('eLiderTel').value = datos.lider_tel||'';
+  $id('eEmail').value = datos.email||'';
+  $id('eFundacion').value = datos.fundacion||'';
+  $id('eMiembros').value = datos.miembros||'';
+  $id('eDescripcion').value = datos.descripcion||'';
+  $id('eFacebook').value = datos.facebook||'';
+  $id('eInstagram').value = datos.instagram||'';
+  $id('eWeb').value = datos.web||'';
+  $id('eNotas').value = datos.notas||'';
+  $id('editErr').style.display='none';
+  $id('editModal').classList.remove('hide');
+}
+function closeEdit(){ $id('editModal').classList.add('hide'); editingId=null; }
+
+async function saveEdit(){
+  if(!editingId) return;
+  const btn = $id('editSaveBtn');
+  const errEl = $id('editErr');
+  errEl.style.display='none';
+  const nombre = $id('eNombre').value.trim();
+  if(!nombre){ errEl.textContent='El nombre es obligatorio.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Guardando…';
+  const datos = {
+    lider: $id('eLider').value.trim(),
+    whatsapp: $id('eWhatsapp').value.trim(),
+    lider_tel: $id('eLiderTel').value.trim(),
+    email: $id('eEmail').value.trim(),
+    fundacion: $id('eFundacion').value.trim(),
+    miembros: $id('eMiembros').value,
+    descripcion: $id('eDescripcion').value.trim(),
+    facebook: $id('eFacebook').value.trim(),
+    instagram: $id('eInstagram').value.trim(),
+    web: $id('eWeb').value.trim(),
+    notas: $id('eNotas').value.trim(),
+  };
+  const res = await callClubs({
+    action:'edit', id:editingId,
+    nombre,
+    ciudad: $id('eCiudad').value.trim()||null,
+    codigo: $id('eCodigo').value.trim().toUpperCase()||null,
+    logo_url: $id('eLogoUrl').value.trim()||null,
+    datos,
+  }).catch(()=>({ok:false}));
+  btn.disabled=false; btn.textContent='Guardar';
+  if(res.ok){ closeEdit(); await reloadClubs(); }
+  else { errEl.textContent=res.error||'Error al guardar.'; errEl.style.display='block'; }
+}
+
+// ── NEW MODAL ─────────────────────────────────────────────────────────
+function openNew(){
+  ['nNombre','nCiudad','nCodigo','nLider','nWhatsapp','nEmail','nDescripcion'].forEach(id=>{ $id(id).value=''; });
+  $id('newErr').style.display='none';
+  $id('newModal').classList.remove('hide');
+}
+function closeNew(){ $id('newModal').classList.add('hide'); }
+
+async function saveNew(){
+  const btn = $id('newSaveBtn');
+  const errEl = $id('newErr');
+  errEl.style.display='none';
+  const nombre = $id('nNombre').value.trim();
+  if(!nombre){ errEl.textContent='El nombre es obligatorio.'; errEl.style.display='block'; return; }
+  btn.disabled=true; btn.textContent='Creando…';
+  const res = await callClubs({
+    action:'create', nombre,
+    ciudad: $id('nCiudad').value.trim()||null,
+    codigo: $id('nCodigo').value.trim().toUpperCase()||null,
+    datos:{ lider:$id('nLider').value.trim(), whatsapp:$id('nWhatsapp').value.trim(), email:$id('nEmail').value.trim(), descripcion:$id('nDescripcion').value.trim() },
+  }).catch(()=>({ok:false}));
+  btn.disabled=false; btn.textContent='Crear club';
+  if(res.ok){ closeNew(); filterClubs('pend',$id('fPend')); await reloadClubs(); }
+  else { errEl.textContent=res.error||'Error al crear.'; errEl.style.display='block'; }
+}
+
+// ── MOTOS ─────────────────────────────────────────────────────────────
+let currentMotoFilter = 'aprobado';
+async function loadMotos(estado){
+  currentMotoFilter = estado;
+  ['fMotoPend','fMotoApro'].forEach(id=>$id(id).classList.remove('active'));
+  $id(estado==='pendiente'?'fMotoPend':'fMotoApro').classList.add('active');
+  const tbody = $id('motosTbody');
+  tbody.innerHTML='<tr><td colspan="5" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  const key = adminKey;
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=listar&seccion=motos&estado=${estado}&key=${encodeURIComponent(key)}`);
+    const data = await res.json();
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error al cargar motos.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">No hay motos en este estado.</td></tr>'; return; }
+    tbody.innerHTML = data.map(m=>`<tr>
+      <td><strong>${esc(m.titulo||m.nombre||'—')}</strong><br><span style="font-size:.75rem;color:var(--mu)">${esc(m.marca||'')} ${esc(m.modelo||'')} ${esc(m.anio||m.año||'')}</span></td>
+      <td>${m.precio?'$'+Number(m.precio).toLocaleString('es-CO'):'—'}</td>
+      <td>${esc(m.ciudad||'—')}</td>
+      <td>${m.aprobado?'<span class="badge badge-apro">Aprobada</span>':'<span class="badge badge-pend">Pendiente</span>'}</td>
+      <td><div class="actions">
+        ${!m.aprobado?`<button class="act aprobar" onclick="aprobarMoto('${m.id}',this)">✓ Aprobar</button>`:''}
+        <button class="act del" onclick="eliminarMoto('${m.id}',this)">✕ Eliminar</button>
+      </div></td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error: '+e.message+'</td></tr>'; }
+}
+function filterMotos(estado,btn){ loadMotos(estado); }
+
+async function aprobarMoto(id,btn){
+  if(!confirm('¿Aprobar esta moto?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?key=${encodeURIComponent(adminKey)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,aprobado:true})});
+    const d = await res.json();
+    if(d.ok) await loadMotos(currentMotoFilter);
+    else { btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+async function eliminarMoto(id,btn){
+  if(!confirm('¿Eliminar esta moto?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?id=${id}&key=${encodeURIComponent(adminKey)}`,{method:'DELETE'});
+    const d = await res.json();
+    if(d.ok) await loadMotos(currentMotoFilter);
+    else { btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+
+// Close modals on overlay click
+['editModal','newModal'].forEach(id=>{
+  $id(id).addEventListener('click',e=>{ if(e.target===$id(id)) $id(id).classList.add('hide'); });
+});
+</script>
+</body>
+</html>
