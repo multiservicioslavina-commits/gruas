@@ -201,7 +201,7 @@ export async function renderRideVideo({
   page.on('pageerror', err => console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`));
 
   await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
-  await page.setContent(html, { waitUntil: 'networkidle0', timeout: 90000 });
+  await page.setContent(html, { waitUntil: 'load', timeout: 60000 });
   T('page load', tBrowser);
 
   // Esperar que el mapa y el terreno estén listos
