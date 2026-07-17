@@ -536,7 +536,7 @@
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
     interactive: false, preserveDrawingBuffer: true,
-    maxTileCacheSize: 50,  // limitar caché para no OOM en Railway (default=ilimitado)
+    maxTileCacheSize: 15,  // limitar caché agresivamente para no OOM en Railway
   });
 
   // Errores del mapa (token inválido, teselas) → visibles en logs del server
@@ -786,7 +786,7 @@
       });
 
     // Pre-cargar teselas de la ruta: muestrear 5 puntos a lo largo
-    const sampleIdxs = [0, 0.25, 0.5, 0.75, 1].map(f =>
+    const sampleIdxs = [0, 0.5, 1].map(f =>
       Math.min(Math.round(f * (coords.length - 1)), coords.length - 1)
     );
     for (const idx of sampleIdxs) {
