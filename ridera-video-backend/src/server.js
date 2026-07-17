@@ -259,7 +259,7 @@ setInterval(pickNextJob, 10_000).unref();
 // para que los retome este u otro worker.
 async function recoverStaleJobs() {
   try {
-    const cutoff = new Date(Date.now() - 30 * 60 * 1000).toISOString(); // >30min
+    const cutoff = new Date(Date.now() - 50 * 60 * 1000).toISOString(); // >50min (TIMEOUT=40min)
     const res = await sbFetch(
       `/video_jobs?state=eq.rendering&started_at=lt.${cutoff}`,
       { method: 'PATCH', prefer: 'return=representation', body: JSON.stringify({ state: 'queued', worker_id: null }) }

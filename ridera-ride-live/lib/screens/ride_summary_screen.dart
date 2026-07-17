@@ -139,13 +139,14 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
       try {
         final muniRows = await _db
             .from('municipios')
-            .select('nombre, subregion, lat, lon');
+            .select('nombre, subregion, lat, lon, puntos_sello');
         munis = List<Map<String, dynamic>>.from(muniRows.map((m) =>
           <String, dynamic>{
             'nombre': m['nombre'],
             'departamento': m['subregion'] ?? 'Antioquia',
             'lat': (m['lat'] as num).toDouble(),
             'lon': (m['lon'] as num).toDouble(),
+            'puntos_sello': m['puntos_sello'] ?? 10,
           }
         ));
       } catch (_) {}

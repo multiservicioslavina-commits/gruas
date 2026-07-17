@@ -5,7 +5,7 @@ import '../video_config.dart';
 
 class VideoService {
   static const _pollInterval = Duration(seconds: 5);
-  static const _maxWait = Duration(minutes: 30);
+  static const _maxWait = Duration(minutes: 45);
 
   Future<String> renderVideo({
     required String rideId,
