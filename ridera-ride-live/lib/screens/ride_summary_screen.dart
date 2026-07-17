@@ -105,7 +105,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
       try {
         final otherMembers = await _db
             .from('members')
-            .select('uid, name')
+            .select('uid, nombre')
             .eq('ride_id', widget.rideId)
             .neq('uid', uid)
             .limit(7);
@@ -121,7 +121,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           if (memberPts.length >= 2) {
             groupRiders.add({
               'uid': memberUid,
-              'name': member['name'] ?? 'Rider',
+              'name': member['nombre'] ?? 'Rider',
               'routePoints': memberPts
                   .map<Map<String, double>>((p) => {
                         'lat': (p['lat'] as num).toDouble(),
