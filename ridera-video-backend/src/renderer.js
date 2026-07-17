@@ -36,7 +36,8 @@ function ffmpegEncode(framesDir, outputPath, durationSec) {
       ...(hasMusic ? ['-stream_loop', '-1', '-i', MUSIC_PATH] : []),
       '-c:v', 'libx264',
       '-preset', 'medium',
-      '-crf', '20',
+      '-crf', '26',  // 20→26: ~mitad de peso (rutas urbanas superaban 50MB del bucket), sin pérdida visible en móvil
+      '-maxrate', '6M', '-bufsize', '12M',  // techo de bitrate: evita picos que inflan el archivo
       '-pix_fmt', 'yuv420p',
       '-vf', `scale=${WIDTH}:${HEIGHT}`,
       ...(hasMusic
