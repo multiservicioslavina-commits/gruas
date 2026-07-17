@@ -531,7 +531,16 @@
   const map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/standard-satellite',
-    config: { basemap: { lightPreset } },
+    // Apagar labels del basemap DESDE la construcción (no solo tras load): así
+    // el error "glyphs > 65535 not supported" nunca se dispara, ni durante el
+    // preload. Verificado: standard-satellite soporta estas props (docs Mapbox).
+    config: { basemap: {
+      lightPreset,
+      showPlaceLabels: false,
+      showRoadLabels: false,
+      showPointOfInterestLabels: false,
+      showTransitLabels: false,
+    } },
     center: [centerLng, centerLat],
     zoom: 12, pitch: 60, bearing: 30,
     antialias: true, fadeDuration: 0,
