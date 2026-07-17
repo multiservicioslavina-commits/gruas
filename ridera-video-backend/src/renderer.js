@@ -17,10 +17,8 @@ if (!MAPBOX_TOKEN) {
 
 
 const FPS    = 12;   // SwiftShader ~1.8s/frame → 720 frames ~21min (antes 24fps=43min→timeout)
-const WIDTH  = 720;  // Viewport interno: menos memoria WebGL (ffmpeg escala a 1080 al encode)
-const HEIGHT = 720;
-const OUT_WIDTH  = 1080; // Resolución final del MP4
-const OUT_HEIGHT = 1080;
+const WIDTH  = 1080; // Debe coincidir con el CSS del template (html/body/#map = 1080px)
+const HEIGHT = 1080; // — un viewport menor recortaría la captura a la esquina sup. izq.
 const MAX_DURATION_SEC = 60;
 
 // Pista musical opcional: si existe assets/music.mp3 (o MUSIC_PATH),
@@ -40,7 +38,7 @@ function ffmpegEncode(framesDir, outputPath, durationSec) {
       '-preset', 'medium',
       '-crf', '20',
       '-pix_fmt', 'yuv420p',
-      '-vf', `scale=${OUT_WIDTH}:${OUT_HEIGHT}`,
+      '-vf', `scale=${WIDTH}:${HEIGHT}`,
       ...(hasMusic
         ? [
             '-c:a', 'aac', '-b:a', '128k',
