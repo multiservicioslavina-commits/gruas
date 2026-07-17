@@ -199,12 +199,24 @@ export async function renderRideVideo({
   T('browser boot', tBrowser);
 
   const page = await browser.newPage();
-  page.on('console', msg => console.log(`  [${rideId}] BROWSER ${msg.type()}: ${msg.text()}`));
-  page.on('pageerror', err => console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`));
+  // Capturar el último error/aviso del navegador y de la página para adjuntarlo
+  // al error del job si el render falla (así sabemos QUÉ dijo Chrome antes de morir).
+  let lastBrowserErr = '';
+  page.on('console', msg => {
+    const type = msg.type();
+    if (type === 'error' || type === 'warning') lastBrowserErr = `${type}: ${msg.text()}`.slice(0, 200);
+    console.log(`  [${rideId}] BROWSER ${type}: ${msg.text()}`);
+  });
+  page.on('pageerror', err => { lastBrowserErr = `pageerror: ${err.message}`.slice(0, 200); console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`); });
+  // También si el proceso del renderer se cae (=OOM o segfault de SwiftShader)
+  page.on('crash', () => { lastBrowserErr = 'RENDERER CRASH (page crashed)'; console.error(`  [${rideId}] BROWSER page CRASH`); });
+  let phase = 'init', curFrame = -1;
 
   await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
+  phase = 'setContent';
   await page.setContent(html, { waitUntil: 'load', timeout: 60000 });
   T('page load', tBrowser);
+  phase = 'sceneReady';
 
   // Esperar que el mapa y el terreno estén listos
   const tReady = Date.now();
@@ -238,9 +250,12 @@ export async function renderRideVideo({
 
   for (let f = 0; f < totalFrames; f++) {
     const t = f / FPS;
+    curFrame = f;
+    phase = `seek f${f}`;
     // Seek al segundo exacto y esperar idle del mapa
     await page.evaluate(t => window.__seekTo(t), t);
 
+    phase = `screenshot f${f}`;
     const frameNum = String(f).padStart(6, '0');
     // JPEG q90: ~10x más liviano y rápido que PNG, sin pérdida visible
     await page.screenshot({
@@ -270,6 +285,11 @@ export async function renderRideVideo({
 
   return outputPath;
 
+  } catch (err) {
+    // Adjuntar el CONTEXTO exacto de la falla: en qué fase/frame estaba y qué
+    // dijo Chrome justo antes de morir. Esto viaja al campo error del job.
+    err.message = `${err.message} | CTX fase=${phase} frame=${curFrame} ultimoErrorBrowser=[${lastBrowserErr || 'ninguno'}]`;
+    throw err;
   } finally {
     if (browser) await browser.close().catch(() => {});
     rm(framesDir, { recursive: true, force: true }).catch(() => {});
