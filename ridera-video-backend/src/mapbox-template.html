@@ -550,16 +550,17 @@
         `${desdeName || 'Salida'}  →  ${hastaName || 'Llegada'}`;
     }
 
-    // Ocultar capas de texto/símbolo del estilo base para evitar el error
-    // "glyphs > 65535 not supported" que degrada el render frame a frame.
-    // No las necesitamos: tenemos nuestros propios overlays de HUD.
+    // Apagar TODAS las etiquetas del basemap del estilo Standard. En Standard v3
+    // las labels NO están en getStyle().layers (viven dentro del import 'basemap'),
+    // por eso setLayoutProperty NO las tocaba y el error "glyphs > 65535 not
+    // supported" seguía disparándose frame a frame (rendes de texto = memoria).
+    // La API correcta es setConfigProperty('basemap', ...).
     try {
-      map.getStyle().layers.forEach(layer => {
-        if (layer.type === 'symbol') {
-          map.setLayoutProperty(layer.id, 'visibility', 'none');
-        }
-      });
-    } catch (e) { console.log('hide symbols:', e.message); }
+      map.setConfigProperty('basemap', 'showPlaceLabels', false);
+      map.setConfigProperty('basemap', 'showRoadLabels', false);
+      map.setConfigProperty('basemap', 'showPointOfInterestLabels', false);
+      map.setConfigProperty('basemap', 'showTransitLabels', false);
+    } catch (e) { console.log('hide basemap labels:', e.message); }
 
     // Terreno 3D con exageración alta
     map.addSource('mapbox-dem', {
