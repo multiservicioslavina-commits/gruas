@@ -2,7 +2,21 @@ import './env-fix.js';
 console.log('[startup] Node.js arrancando, PORT=' + (process.env.PORT || 3000));
 import express from 'express';
 import { randomUUID } from 'crypto';
-import { existsSync } from 'fs';
+import { existsSync, readFileSync } from 'fs';
+
+// Diagnóstico de memoria del contenedor (cgroup v2 o v1). Sirve para saber,
+// cuando un render falla, si el kernel mató Chrome por OOM (oom_kill) y cuánta
+// RAM se usó vs el límite — sin depender de nadie que corra comandos.
+function memStat() {
+  const rd = p => { try { return readFileSync(p, 'utf8').trim(); } catch { return null; } };
+  const limRaw = rd('/sys/fs/cgroup/memory.max') || rd('/sys/fs/cgroup/memory/memory.limit_in_bytes');
+  const curRaw = rd('/sys/fs/cgroup/memory.current') || rd('/sys/fs/cgroup/memory/memory.usage_in_bytes');
+  const ev = (rd('/sys/fs/cgroup/memory.events') || '') + (rd('/sys/fs/cgroup/memory/memory.oom_control') || '');
+  const om = ev.match(/oom_kill\s+(\d+)/);
+  const lim = (limRaw === 'max' || !limRaw) ? Infinity : Number(limRaw);
+  return { lim, cur: Number(curRaw) || 0, oom: om ? +om[1] : 0 };
+}
+const gbStr = b => (b === Infinity ? 'inf' : (b / 1073741824).toFixed(2));
 import puppeteer from 'puppeteer';
 import { renderRideVideo } from './renderer.js';
 import { uploadVideo } from './uploader.js';
@@ -199,6 +213,13 @@ app.get('/jobs', async (_req, res) => {
 async function processJob(jobId, inputData) {
   await sem.acquire();
   const started = Date.now();
+  // Instrumentación de memoria: muestrea el pico de RAM durante todo el render
+  const m0 = memStat();
+  let peakMem = m0.cur;
+  const memTimer = setInterval(() => {
+    const c = memStat().cur;
+    if (c > peakMem) peakMem = c;
+  }, 2000);
   try {
     await sbUpdateJob(jobId, { state: 'rendering', worker_id: WORKER_ID, started_at: new Date().toISOString() });
 
@@ -225,13 +246,19 @@ async function processJob(jobId, inputData) {
 
   } catch (err) {
     const msg = err.message || String(err);
-    console.error(`[${inputData.rideId}] error:`, msg.slice(0, 300));
+    // Diagnóstico de memoria adjunto al error: si oom_kills>0, el kernel mató
+    // Chrome por falta de RAM (=OOM confirmado). Si es 0, la falla es otra cosa.
+    const m1 = memStat();
+    const diag = ` | DIAG_MEM oom_kills=${m1.oom - m0.oom} pico=${gbStr(peakMem)}GB limite=${gbStr(m1.lim)}GB`;
+    console.error(`[${inputData.rideId}] error:`, msg.slice(0, 300), diag);
+    const full = (msg.length > 600 ? '…' + msg.slice(-600) : msg) + diag;
     await sbUpdateJob(jobId, {
       state: 'error',
-      error: msg.length > 700 ? '…' + msg.slice(-700) : msg,
+      error: full,
       finished_at: new Date().toISOString(),
     }).catch(() => {});
   } finally {
+    clearInterval(memTimer);
     sem.release();
     // Intentar procesar el siguiente job en cola si hay slots libres
     pickNextJob();
