@@ -71,8 +71,6 @@ class _RideMapScreenState extends State<RideMapScreen>
   String _emergencyName = '';
   String _emergencyPhone = '';
   bool _crashDialogShowing = false;
-  Timer? _meshBroadcastTimer;
-  Timer? _meshKeepAlive;
   StreamSubscription<MeshPeerMessage>? _meshSub;
   StreamSubscription<MeshConnectionEvent>? _meshConnSub;
   int _meshDirectPeers = 0;
@@ -221,9 +219,9 @@ class _RideMapScreenState extends State<RideMapScreen>
     _meshConnSub = _mesh.onConnection.listen((e) {
       if (mounted) setState(() => _meshDirectPeers = _mesh.directPeers);
     });
-    // NOTA: NO iniciamos _meshBroadcastTimer aquí — el broadcast lo hace
-    // directamente el GpsService nativo cada vez que recibe posición GPS.
-    // Eso funciona incluso sin Supabase (sin internet), y no depende de esta pantalla.
+    // El broadcast de posición en el mesh lo hace directamente el GpsService
+    // nativo cada vez que recibe un update de GPS. Funciona sin internet y no
+    // depende del ciclo de vida de esta pantalla.
   }
 
   void _onMeshPeerMessage(MeshPeerMessage m) {
@@ -656,7 +654,6 @@ class _RideMapScreenState extends State<RideMapScreen>
     _channel?.unsubscribe();
     _statusTimer?.cancel();
     _refreshTimer?.cancel();
-    _meshBroadcastTimer?.cancel();
     _meshSub?.cancel();
     _meshConnSub?.cancel();
     _mesh.stop();
