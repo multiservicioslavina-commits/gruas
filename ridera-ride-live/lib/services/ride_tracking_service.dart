@@ -149,14 +149,3 @@ class RideTrackingService {
     _lastWritten = null;
   }
 }
-
-/// Mismo criterio que la vista `member_live_status` de la base de datos.
-/// Usalo en el PANEL DEL LIDER, recalculando con un Timer local cada 1 s,
-/// porque el realtime NO emite ningun evento cuando un piloto se queda en
-/// silencio: el unico que puede "apagar" un pin a perdido es el reloj local.
-String memberEstado({required DateTime lastSeen, required double speedKmh}) {
-  final secs = DateTime.now().toUtc().difference(lastSeen.toUtc()).inSeconds;
-  if (secs > 15) return 'perdido'; // rojo
-  if (speedKmh < 3) return 'detenido'; // amarillo
-  return 'en_marcha'; // verde
-}

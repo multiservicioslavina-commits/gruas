@@ -100,7 +100,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         startedAt = rideRow?['created_at'] as String?;
       } catch (_) {}
 
-      // Otros riders del grupo (para video grupal)
+      // Otros riders del grupo (para video grupal) — batch query
       List<Map<String, dynamic>> groupRiders = [];
       try {
         final otherMembers = await _db
@@ -109,27 +109,36 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             .eq('ride_id', widget.rideId)
             .neq('uid', uid)
             .limit(7);
-        for (final member in otherMembers) {
-          final memberUid = member['uid'] as String;
-          final memberPts = await _db
+        if (otherMembers.isNotEmpty) {
+          final otherUids = otherMembers.map((m) => m['uid'] as String).toList();
+          final allMemberPts = await _db
               .from('route_points')
-              .select('lat, lon, speed_kmh')
+              .select('uid, lat, lon, speed_kmh')
               .eq('ride_id', widget.rideId)
-              .eq('uid', memberUid)
+              .inFilter('uid', otherUids)
               .order('recorded_at')
-              .limit(300);
-          if (memberPts.length >= 2) {
-            groupRiders.add({
-              'uid': memberUid,
-              'name': member['nombre'] ?? 'Rider',
-              'routePoints': memberPts
-                  .map<Map<String, double>>((p) => {
-                        'lat': (p['lat'] as num).toDouble(),
-                        'lon': (p['lon'] as num).toDouble(),
-                        'speed_kmh': ((p['speed_kmh'] as num?) ?? 0).toDouble(),
-                      })
-                  .toList(),
-            });
+              .limit(2100);
+          final byUid = <String, List<Map<String, dynamic>>>{};
+          for (final p in allMemberPts) {
+            final pUid = p['uid'] as String;
+            (byUid[pUid] ??= []).add(p);
+          }
+          for (final member in otherMembers) {
+            final memberUid = member['uid'] as String;
+            final memberPts = (byUid[memberUid] ?? []).take(300).toList();
+            if (memberPts.length >= 2) {
+              groupRiders.add({
+                'uid': memberUid,
+                'name': member['nombre'] ?? 'Rider',
+                'routePoints': memberPts
+                    .map<Map<String, double>>((p) => {
+                          'lat': (p['lat'] as num).toDouble(),
+                          'lon': (p['lon'] as num).toDouble(),
+                          'speed_kmh': ((p['speed_kmh'] as num?) ?? 0).toDouble(),
+                        })
+                    .toList(),
+              });
+            }
           }
         }
       } catch (_) {}

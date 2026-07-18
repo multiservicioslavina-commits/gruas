@@ -3,6 +3,7 @@ import 'package:url_launcher/url_launcher.dart';
 import '../rita_config.dart';
 import '../services/auth_service.dart';
 import '../theme.dart';
+import 'login_screen.dart';
 import 'my_history_screen.dart';
 import 'ride_entry_screen.dart';
 import 'profile_screen.dart';
@@ -30,6 +31,12 @@ class RideHomeScreen extends StatelessWidget {
             tooltip: 'Cerrar sesión',
             onPressed: () async {
               await AuthService().signOut();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (_) => false,
+                );
+              }
             },
           ),
         ],
