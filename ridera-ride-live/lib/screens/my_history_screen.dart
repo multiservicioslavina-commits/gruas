@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/ride_service.dart';
 import '../theme.dart';
+import '../widgets/rita_fab.dart';
 import 'ride_summary_screen.dart';
 
 class MyHistoryScreen extends StatefulWidget {
@@ -106,6 +107,7 @@ class _MyHistoryScreenState extends State<MyHistoryScreen> {
                     ),
                   ],
                 ),
+      floatingActionButton: const RitaFab(),
     );
   }
 

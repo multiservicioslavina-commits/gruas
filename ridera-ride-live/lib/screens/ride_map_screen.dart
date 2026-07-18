@@ -14,6 +14,7 @@ import '../services/push_dispatcher.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
 import '../services/safety_service.dart';
+import '../widgets/rita_fab.dart';
 import 'mesh_diagnostic_screen.dart';
 import '../widgets/rider_marker.dart';
 import 'ride_summary_screen.dart';
@@ -937,6 +938,8 @@ class _RideMapScreenState extends State<RideMapScreen>
         floatingActionButton: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            RitaFab(),
+            const SizedBox(height: 12),
             FloatingActionButton(
               heroTag: 'camera',
               onPressed: _uploadingPhoto ? null : _takePhoto,
