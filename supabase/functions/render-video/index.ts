@@ -3,7 +3,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // Proxy hacia Railway — funciona con CUALQUIER versión del app:
 // v1 (antigua): POST /render-video  +  GET /render-video?renderId=uuid
 // v2 (nueva):   POST /render-video/render  +  GET /render-video/status/uuid
-const RAILWAY_URL = (Deno.env.get("RAILWAY_VIDEO_URL") || "https://insightful-love-production-12c1.up.railway.app").trim();
+const RAILWAY_URL = (Deno.env.get("RAILWAY_VIDEO_URL") || "https://ridera-video-backend-prod.up.railway.app").trim();
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
