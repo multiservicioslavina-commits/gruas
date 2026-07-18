@@ -236,8 +236,11 @@
   mapboxgl.accessToken = '__MAPBOX_TOKEN__';
 
   // ── Tiempos de secciones (segundos) ──────────────────────────────────
+  // T_ROUTE adaptativo: una vuelta de 5km no necesita 40s de sobrevuelo —
+  // menos segundos = menos frames = render más rápido y menos riesgo de OOM.
+  const _km = parseFloat(DATA.distanceKm) || 0;
   const T_INTRO  = 4.0;
-  const T_ROUTE  = 40.0;
+  const T_ROUTE  = _km < 8 ? 22.0 : _km < 25 ? 32.0 : 40.0;
   const T_PHOTO  = 3.0;
   const T_STATS  = 6.0;
   const T_OUTRO  = 4.0;

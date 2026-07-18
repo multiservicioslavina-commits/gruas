@@ -256,11 +256,22 @@ async function processJob(jobId, inputData) {
     const diag = ` | DIAG_MEM oom_kills=${m1.oom - m0.oom} pico=${gbStr(peakMem)}GB limite=${gbStr(m1.lim)}GB`;
     console.error(`[${inputData.rideId}] error:`, msg.slice(0, 300), diag);
     const full = (msg.length > 600 ? '…' + msg.slice(-600) : msg) + diag;
-    await sbUpdateJob(jobId, {
-      state: 'error',
-      error: full,
-      finished_at: new Date().toISOString(),
-    }).catch(() => {});
+    // Chrome muerto (OOM/crash) es transitorio: reencolar hasta 2 veces en vez
+    // de obligar al usuario a darle "Reintentar" manualmente una y otra vez.
+    const retries = inputData._retries || 0;
+    if (/Target closed|Session closed|Connection closed|page crashed/i.test(msg) && retries < 2) {
+      console.warn(`[${inputData.rideId}] Chrome murió — auto-retry ${retries + 1}/2, reencolando`);
+      await sbUpdateJob(jobId, {
+        state: 'queued', worker_id: null, progress: 0,
+        input_data: { ...inputData, _retries: retries + 1 },
+      }).catch(() => {});
+    } else {
+      await sbUpdateJob(jobId, {
+        state: 'error',
+        error: full,
+        finished_at: new Date().toISOString(),
+      }).catch(() => {});
+    }
   } finally {
     clearInterval(memTimer);
     sem.release();

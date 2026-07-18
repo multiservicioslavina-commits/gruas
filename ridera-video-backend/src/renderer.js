@@ -16,7 +16,7 @@ if (!MAPBOX_TOKEN) {
 }
 
 
-const FPS    = 12;   // SwiftShader ~1.8s/frame → 720 frames ~21min (antes 24fps=43min→timeout)
+const FPS    = 10;   // SwiftShader ~1.8s/frame → menos frames = menos tiempo y menos OOM (12fps daba ~25min y Chrome moría por memoria)
 const WIDTH  = 1080; // Debe coincidir con el CSS del template (html/body/#map = 1080px)
 const HEIGHT = 1080; // — un viewport menor recortaría la captura a la esquina sup. izq.
 const MAX_DURATION_SEC = 60;
@@ -261,7 +261,7 @@ export async function renderRideVideo({
     await page.screenshot({
       path: join(framesDir, `frame_${frameNum}.jpg`),
       type: 'jpeg',
-      quality: 75,
+      quality: 62,
       clip: { x: 0, y: 0, width: WIDTH, height: HEIGHT },
     });
 
