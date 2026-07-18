@@ -6,6 +6,8 @@ import Flutter
 
     private var meshChannel: FlutterMethodChannel?
     private let mesh = BleMeshService.shared
+    private let gps = GpsLocationService.shared
+    private var rideActive = false
 
     override func application(
         _ application: UIApplication,
@@ -77,20 +79,41 @@ import Flutter
             }
         }
 
-        // ── Canal GPS (stub — iOS usa CLLocationManager directamente) ─
+        // ── Canal GPS (CLLocationManager) ───────────────────────────
         let gpsChannel = FlutterMethodChannel(
             name: "com.ridera.ridelive/gps",
             binaryMessenger: controller.binaryMessenger
         )
-        gpsChannel.setMethodCallHandler { (call, result) in
+        gpsChannel.setMethodCallHandler { [weak self] (call, result) in
+            guard let self = self else { result(FlutterMethodNotImplemented); return }
             switch call.method {
-            case "startGps":
-                // TODO: Implementar CLLocationManager foreground service equivalent
+            case "start":
+                let args = call.arguments as? [String: Any] ?? [:]
+                let rideId = args["rideId"] as? String ?? ""
+                let uid = args["uid"] as? String ?? ""
+                let accessToken = args["accessToken"] as? String ?? ""
+                self.gps.start(rideId: rideId, uid: uid, accessToken: accessToken)
                 result(true)
-            case "stopGps":
+            case "stop":
+                self.rideActive = false
+                self.gps.stop()
+                result(true)
+            case "setRideActive":
+                let args = call.arguments as? [String: Any] ?? [:]
+                self.rideActive = args["active"] as? Bool ?? false
                 result(true)
             case "isBatteryOptimized":
-                result(false) // iOS no tiene battery optimization como Android
+                result(false)
+            case "requestIgnoreBatteryOptimization":
+                result(true)
+            case "openAutoStartSettings":
+                result(false)
+            case "refreshToken":
+                let args = call.arguments as? [String: Any] ?? [:]
+                self.gps.accessToken = args["accessToken"] as? String ?? ""
+                result(true)
+            case "sendSms":
+                result(false)
             default:
                 result(FlutterMethodNotImplemented)
             }
