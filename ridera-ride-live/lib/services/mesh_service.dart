@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io' show Platform;
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -38,10 +39,13 @@ class MeshService {
 
   Future<bool> ensurePermissions() async {
     final needed = <Permission>[
-      Permission.bluetoothScan,
-      Permission.bluetoothConnect,
-      Permission.bluetoothAdvertise,
       Permission.locationWhenInUse,
+      if (Platform.isAndroid) ...[
+        Permission.bluetoothScan,
+        Permission.bluetoothConnect,
+        Permission.bluetoothAdvertise,
+      ],
+      if (Platform.isIOS) Permission.bluetooth,
     ];
     final statuses = await needed.request();
     return statuses.values.every((s) => s.isGranted || s.isLimited);
