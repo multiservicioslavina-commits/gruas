@@ -224,6 +224,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     try {
       final url = await _videoService.renderVideo(
         rideId: widget.rideId,
+        uid: _db.auth.currentUser?.id,
         rideName: widget.rideName,
         elapsed: _hms(widget.elapsed),
         distanceKm: _distanceKm.toStringAsFixed(1),

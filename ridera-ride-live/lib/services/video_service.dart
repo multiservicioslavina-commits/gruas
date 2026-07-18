@@ -15,6 +15,7 @@ class VideoService {
     required String maxSpeedKmh,
     required List<Map<String, dynamic>> photos,
     required List<Map<String, double>> routePoints,
+    String? uid,
     List<Map<String, dynamic>>? municipios,
     String? rideStartedAt,
     List<Map<String, dynamic>>? groupRiders,
@@ -22,6 +23,9 @@ class VideoService {
   }) async {
     final body = {
       'rideId': rideId,
+      // uid del piloto: permite al backend guardar members.video_url al
+      // terminar, aunque la app ya no esté esperando el polling.
+      if (uid != null) 'uid': uid,
       'rideName': rideName,
       'elapsed': elapsed,
       'distanceKm': distanceKm,

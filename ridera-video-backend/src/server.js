@@ -134,7 +134,7 @@ app.get('/health', (_req, res) => res.json({ ok: true }));
 // ── POST /render ──────────────────────────────────────────────────────────
 app.post('/render', async (req, res) => {
   const {
-    rideId, rideName, elapsed, distanceKm, maxSpeedKmh,
+    rideId, uid, rideName, elapsed, distanceKm, maxSpeedKmh,
     routePoints, photos, municipios, rideStartedAt, groupRiders,
   } = req.body || {};
 
@@ -154,7 +154,7 @@ app.post('/render', async (req, res) => {
   }
 
   const inputData = {
-    rideId, rideName: rideName || 'Rodada',
+    rideId, uid: uid || null, rideName: rideName || 'Rodada',
     elapsed: elapsed || '00:00:00',
     distanceKm: String(distanceKm ?? '0'),
     maxSpeedKmh: String(maxSpeedKmh ?? '0'),
@@ -246,6 +246,17 @@ async function processJob(jobId, inputData) {
       state: 'done', progress: 100, url,
       finished_at: new Date().toISOString(),
     });
+
+    // Guardar la URL en members directamente desde el backend: si la app dejó
+    // de esperar (cerró la pantalla, se quedó sin batería), el video igual
+    // aparece en "Mis rodadas".
+    if (inputData.uid) {
+      await sbFetch(
+        `/members?ride_id=eq.${encodeURIComponent(inputData.rideId)}&uid=eq.${encodeURIComponent(inputData.uid)}`,
+        { method: 'PATCH', body: JSON.stringify({ video_url: url }) }
+      ).catch(e => console.warn(`[${inputData.rideId}] members.video_url no guardado: ${e.message}`));
+    }
+
     console.log(`[${inputData.rideId}] done en ${((Date.now()-started)/1000).toFixed(0)}s → ${url}`);
 
   } catch (err) {
