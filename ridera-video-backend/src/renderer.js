@@ -80,6 +80,9 @@ export async function renderRideVideo({
   const T = (label, from) =>
     console.log(`  [${rideId}] ${label}: ${((Date.now() - from) / 1000).toFixed(1)}s`);
 
+  const p0 = routePoints[0], pN = routePoints[routePoints.length - 1];
+  console.log(`  [${rideId}] ruta: ${routePoints.length} pts, INICIO(${p0?.lat?.toFixed(4)},${p0?.lon?.toFixed(4)}) → FINAL(${pN?.lat?.toFixed(4)},${pN?.lon?.toFixed(4)})`);
+
   // Municipios para sellos pasaporte: usar los que envió Flutter (ya filtrados
   // por la app al cargar la pantalla de resumen). Solo hacer el fetch de Supabase
   // si el cliente no mandó ninguno (versión antigua de la app, por ejemplo).
