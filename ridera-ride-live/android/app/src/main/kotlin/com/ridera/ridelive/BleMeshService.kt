@@ -14,6 +14,8 @@ import androidx.core.app.ActivityCompat
 import java.nio.ByteBuffer
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.random.Random
 
 /**
  * Mesh BLE puro (sin Nearby Connections, sin Google Play Services).
@@ -42,10 +44,20 @@ class BleMeshService(private val ctx: Context) {
         const val MSG_TYPE_POSITION: Byte = 0x01
         const val PAYLOAD_SIZE = 33
 
-        // Duty cycling para batería: solo cuando YA hay peers conectados.
-        // Sin peers → escaneo continuo (para no perderse en el ciclo).
-        const val SCAN_ACTIVE_MS = 15_000L
-        const val SCAN_REST_MS = 5_000L
+        // Duty cycling adaptativo: sin peers → escaneo agresivo para descubrir
+        // rápido; con peers → ciclo más relajado para ahorrar batería.
+        const val SCAN_ACTIVE_NO_PEERS_MS = 20_000L
+        const val SCAN_REST_NO_PEERS_MS = 3_000L
+        const val SCAN_ACTIVE_WITH_PEERS_MS = 12_000L
+        const val SCAN_REST_WITH_PEERS_MS = 8_000L
+
+        // Reconexión: reintentar peers perdidos hasta 5 veces con backoff.
+        const val RECONNECT_BASE_DELAY_MS = 3_000L
+        const val RECONNECT_MAX_ATTEMPTS = 5
+
+        // Heartbeat: si un peer no envía datos en 45s, considerarlo muerto.
+        const val PEER_TIMEOUT_MS = 45_000L
+        const val PEER_CLEANUP_INTERVAL_MS = 15_000L
 
         /** Instancia global accesible desde otros servicios (ej: GpsService). */
         @Volatile
@@ -58,7 +70,7 @@ class BleMeshService(private val ctx: Context) {
                           speedKmh: Int, statusCode: Int, hops: Int)
         fun onPeerConnected(endpointId: String)
         fun onPeerDisconnected(endpointId: String)
-        fun onStatus(kind: String, message: String)  // "advertising_ok" / "scan_err" / etc
+        fun onStatus(kind: String, message: String)
     }
 
     private var listener: Listener? = null
@@ -75,23 +87,37 @@ class BleMeshService(private val ctx: Context) {
     // Peers que se conectaron a nosotros como server (ellos → nosotros)
     private val incomingPeers = ConcurrentHashMap<String, BluetoothDevice>() // addr -> device
 
-    // Set consolidado de peers únicos (por MAC address) — evita contar doble
-    // el mismo peer cuando se conecta bidireccional.
+    // Set consolidado de peers únicos (por MAC address)
     private val uniquePeers = java.util.Collections.synchronizedSet(HashSet<String>())
+
+    // Último mensaje recibido de cada peer (para detectar peers muertos)
+    private val peerLastSeen = ConcurrentHashMap<String, Long>() // addr -> timestamp
 
     // Cache de msgIds para dedup mesh flood
     private val seenMessages = object : LinkedHashMap<Int, Long>(200, 0.75f, true) {
         override fun removeEldestEntry(eldest: MutableMap.MutableEntry<Int, Long>?): Boolean = size > 500
     }
 
+    // Reconexión: peers que se desconectaron y estamos reintentando
+    private val reconnectAttempts = ConcurrentHashMap<String, Int>() // addr -> intento actual
+    private val reconnectDevices = ConcurrentHashMap<String, BluetoothDevice>()
+
     private var adapter: BluetoothAdapter? = null
     private var advertiser: BluetoothLeAdvertiser? = null
     private var scanner: BluetoothLeScanner? = null
     private var gattServer: BluetoothGattServer? = null
     private var scanCycleRunnable: Runnable? = null
+    private var peerCleanupRunnable: Runnable? = null
     private var scanning = false
 
-    // ─── API pública ──────────────────────────────────────────────────
+    // ─── Cola de escrituras GATT ──────────────────────────────────
+    // Android BLE solo permite UNA operación GATT a la vez por conexión.
+    // Sin cola, las escrituras simultáneas a múltiples peers se pierden.
+    private data class GattWrite(val gatt: BluetoothGatt, val char: BluetoothGattCharacteristic, val data: ByteArray)
+    private val writeQueue = ConcurrentLinkedQueue<GattWrite>()
+    @Volatile private var writeInFlight = false
+
+    // ─── API pública ──────────────────────────────────────────────
 
     fun start(uid: String, name: String, listener: Listener) {
         if (running) return
@@ -120,6 +146,7 @@ class BleMeshService(private val ctx: Context) {
             startGattServer(manager!!)
             startAdvertising()
             startScanCycle()
+            startPeerCleanup()
         } catch (e: Exception) {
             emitStatus("start_error", e.message ?: "error desconocido")
         }
@@ -130,6 +157,8 @@ class BleMeshService(private val ctx: Context) {
         instance = null
         scanCycleRunnable?.let { mainHandler.removeCallbacks(it) }
         scanCycleRunnable = null
+        peerCleanupRunnable?.let { mainHandler.removeCallbacks(it) }
+        peerCleanupRunnable = null
         try { advertiser?.stopAdvertising(advertiseCallback) } catch (_: Exception) {}
         try { if (scanning) scanner?.stopScan(scanCallback); scanning = false } catch (_: Exception) {}
         try { gattServer?.close() } catch (_: Exception) {}
@@ -140,13 +169,18 @@ class BleMeshService(private val ctx: Context) {
         outgoingCharCache.clear()
         incomingPeers.clear()
         uniquePeers.clear()
+        peerLastSeen.clear()
+        reconnectAttempts.clear()
+        reconnectDevices.clear()
+        writeQueue.clear()
+        writeInFlight = false
         gattServer = null
         listener = null
     }
 
     fun broadcastPosition(lat: Double, lon: Double, speedKmh: Int, statusCode: Int) {
         if (!running || myUid.isEmpty()) return
-        val msgId = (System.nanoTime() and 0xFFFFFFFFL).toInt()
+        val msgId = Random.nextInt()
         markSeen(msgId)
         val payload = packPosition(myUid, lat, lon, speedKmh, statusCode, TTL_INITIAL, msgId)
         sendToAllPeers(payload)
@@ -154,7 +188,7 @@ class BleMeshService(private val ctx: Context) {
 
     fun directPeers(): Int = uniquePeers.size
 
-    // ─── GATT Server (recibir mensajes) ───────────────────────────────
+    // ─── GATT Server (recibir mensajes) ───────────────────────────
 
     private fun startGattServer(manager: BluetoothManager) {
         gattServer = manager.openGattServer(ctx, gattServerCallback)
@@ -176,6 +210,7 @@ class BleMeshService(private val ctx: Context) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
                     incomingPeers[device.address] = device
+                    peerLastSeen[device.address] = System.currentTimeMillis()
                     notifyPeerAdded(device.address)
                     Log.d(TAG, "incoming connected: ${device.address}")
                 }
@@ -193,6 +228,7 @@ class BleMeshService(private val ctx: Context) {
             offset: Int, value: ByteArray?,
         ) {
             if (value != null && characteristic.uuid == CHAR_MESSAGE_UUID) {
+                peerLastSeen[device.address] = System.currentTimeMillis()
                 handleIncomingBytes(value, fromAddress = device.address)
             }
             if (responseNeeded) {
@@ -220,7 +256,7 @@ class BleMeshService(private val ctx: Context) {
         }
     }
 
-    // ─── Advertising ──────────────────────────────────────────────────
+    // ─── Advertising ──────────────────────────────────────────────
 
     private fun startAdvertising() {
         advertiser = adapter?.bluetoothLeAdvertiser
@@ -262,7 +298,7 @@ class BleMeshService(private val ctx: Context) {
         }
     }
 
-    // ─── Scanning con duty cycling ────────────────────────────────────
+    // ─── Scanning con duty cycling adaptativo ────────────────────
 
     private fun startScanCycle() {
         scanner = adapter?.bluetoothLeScanner
@@ -270,7 +306,6 @@ class BleMeshService(private val ctx: Context) {
             emitStatus("scan_unsupported", "Scanner BLE no disponible")
             return
         }
-        // Primer ciclo ya
         runScanCycle()
     }
 
@@ -285,30 +320,33 @@ class BleMeshService(private val ctx: Context) {
                 .build()
             scanner?.startScan(listOf(filter), settings, scanCallback)
             scanning = true
-            emitStatus("scanning", "Buscando peers (${SCAN_ACTIVE_MS/1000}s)")
         } catch (se: SecurityException) {
             emitStatus("scan_perm", "Sin permiso BLUETOOTH_SCAN")
             return
         }
-        // Después de SCAN_ACTIVE_MS, paramos y descansamos
+
+        val hasPeers = uniquePeers.isNotEmpty()
+        val activeMs = if (hasPeers) SCAN_ACTIVE_WITH_PEERS_MS else SCAN_ACTIVE_NO_PEERS_MS
+        val restMs = if (hasPeers) SCAN_REST_WITH_PEERS_MS else SCAN_REST_NO_PEERS_MS
+
         scanCycleRunnable = Runnable {
             try {
                 if (scanning) scanner?.stopScan(scanCallback)
                 scanning = false
             } catch (_: Exception) {}
-            // Esperamos SCAN_REST_MS y volvemos a escanear
             scanCycleRunnable = Runnable { runScanCycle() }
-            mainHandler.postDelayed(scanCycleRunnable!!, SCAN_REST_MS)
+            mainHandler.postDelayed(scanCycleRunnable!!, restMs)
         }
-        mainHandler.postDelayed(scanCycleRunnable!!, SCAN_ACTIVE_MS)
+        mainHandler.postDelayed(scanCycleRunnable!!, activeMs)
     }
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
             val device = result.device
-            // Ya estamos conectados a este peer?
             if (outgoingPeers.containsKey(device.address)) return
-            // Conectar como GATT client para poder escribirle
+            // Si estábamos intentando reconectar a este peer, cancelar
+            reconnectAttempts.remove(device.address)
+            reconnectDevices.remove(device.address)
             connectAsClient(device)
         }
         override fun onScanFailed(errorCode: Int) {
@@ -323,7 +361,7 @@ class BleMeshService(private val ctx: Context) {
         }
     }
 
-    // ─── GATT Client (enviar mensajes) ────────────────────────────────
+    // ─── GATT Client (enviar mensajes) ────────────────────────────
 
     private fun connectAsClient(device: BluetoothDevice) {
         try {
@@ -336,18 +374,20 @@ class BleMeshService(private val ctx: Context) {
         }
     }
 
-    /** Notifica al listener SOLO la primera vez que este peer aparece. */
     private fun notifyPeerAdded(address: String) {
         val isNew = uniquePeers.add(address)
-        if (isNew) listener?.onPeerConnected(address)
+        if (isNew) {
+            peerLastSeen[address] = System.currentTimeMillis()
+            listener?.onPeerConnected(address)
+        }
     }
 
-    /** Notifica al listener SOLO cuando el peer se pierde por ambos lados. */
     private fun notifyPeerRemoved(address: String) {
         val stillConnected = outgoingPeers.containsKey(address) ||
                              incomingPeers.containsKey(address)
         if (!stillConnected) {
             uniquePeers.remove(address)
+            peerLastSeen.remove(address)
             listener?.onPeerDisconnected(address)
         }
     }
@@ -356,6 +396,7 @@ class BleMeshService(private val ctx: Context) {
         override fun onConnectionStateChange(gatt: BluetoothGatt, status: Int, newState: Int) {
             when (newState) {
                 BluetoothProfile.STATE_CONNECTED -> {
+                    peerLastSeen[gatt.device.address] = System.currentTimeMillis()
                     try { gatt.discoverServices() } catch (_: SecurityException) {}
                 }
                 BluetoothProfile.STATE_DISCONNECTED -> {
@@ -364,6 +405,7 @@ class BleMeshService(private val ctx: Context) {
                     outgoingCharCache.remove(addr)
                     try { gatt.close() } catch (_: Exception) {}
                     notifyPeerRemoved(addr)
+                    scheduleReconnect(gatt.device)
                 }
             }
         }
@@ -375,31 +417,135 @@ class BleMeshService(private val ctx: Context) {
             outgoingCharCache[gatt.device.address] = char
             emitStatus("peer_ready", "Peer listo: ${gatt.device.address}")
         }
+
+        override fun onCharacteristicWrite(gatt: BluetoothGatt, characteristic: BluetoothGattCharacteristic, status: Int) {
+            writeInFlight = false
+            drainWriteQueue()
+        }
     }
 
-    // ─── Envío mesh flood ─────────────────────────────────────────────
+    // ─── Reconexión automática ────────────────────────────────────
+
+    private fun scheduleReconnect(device: BluetoothDevice) {
+        if (!running) return
+        val addr = device.address
+        val attempt = (reconnectAttempts[addr] ?: 0) + 1
+        if (attempt > RECONNECT_MAX_ATTEMPTS) {
+            reconnectAttempts.remove(addr)
+            reconnectDevices.remove(addr)
+            emitStatus("reconnect_give_up", "Peer $addr: ${RECONNECT_MAX_ATTEMPTS} intentos agotados")
+            return
+        }
+        reconnectAttempts[addr] = attempt
+        reconnectDevices[addr] = device
+        val delay = RECONNECT_BASE_DELAY_MS * attempt
+        emitStatus("reconnect_scheduled", "Peer $addr: intento $attempt en ${delay/1000}s")
+        mainHandler.postDelayed({
+            if (!running) return@postDelayed
+            if (outgoingPeers.containsKey(addr)) return@postDelayed
+            if (!reconnectDevices.containsKey(addr)) return@postDelayed
+            emitStatus("reconnect_trying", "Reconectando a $addr (intento $attempt)")
+            connectAsClient(device)
+        }, delay)
+    }
+
+    // ─── Cola de escrituras GATT ──────────────────────────────────
+
+    private fun enqueueWrite(gatt: BluetoothGatt, char: BluetoothGattCharacteristic, data: ByteArray) {
+        writeQueue.add(GattWrite(gatt, char, data))
+        drainWriteQueue()
+    }
+
+    private fun drainWriteQueue() {
+        if (writeInFlight) return
+        val item = writeQueue.poll() ?: return
+        if (!outgoingPeers.containsKey(item.gatt.device.address)) {
+            drainWriteQueue()
+            return
+        }
+        writeInFlight = true
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val result = item.gatt.writeCharacteristic(item.char, item.data,
+                    BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
+                if (result != BluetoothStatusCodes.SUCCESS) {
+                    writeInFlight = false
+                    drainWriteQueue()
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                item.char.value = item.data
+                @Suppress("DEPRECATION")
+                item.char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
+                @Suppress("DEPRECATION")
+                val ok = item.gatt.writeCharacteristic(item.char)
+                if (!ok) {
+                    writeInFlight = false
+                    drainWriteQueue()
+                }
+            }
+        } catch (_: Exception) {
+            writeInFlight = false
+            drainWriteQueue()
+        }
+        // Timeout: si onCharacteristicWrite no llega en 2s, liberar la cola
+        mainHandler.postDelayed({
+            if (writeInFlight) {
+                writeInFlight = false
+                drainWriteQueue()
+            }
+        }, 2000)
+    }
+
+    // ─── Envío mesh flood ─────────────────────────────────────────
 
     private fun sendToAllPeers(bytes: ByteArray, exclude: String? = null) {
         for ((addr, gatt) in outgoingPeers) {
             if (addr == exclude) continue
             val char = outgoingCharCache[addr] ?: continue
-            try {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    gatt.writeCharacteristic(char, bytes,
-                        BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE)
-                } else {
-                    @Suppress("DEPRECATION")
-                    char.value = bytes
-                    @Suppress("DEPRECATION")
-                    char.writeType = BluetoothGattCharacteristic.WRITE_TYPE_NO_RESPONSE
-                    @Suppress("DEPRECATION")
-                    gatt.writeCharacteristic(char)
-                }
-            } catch (_: Exception) {}
+            enqueueWrite(gatt, char, bytes.copyOf())
         }
     }
 
-    // ─── Helpers ──────────────────────────────────────────────────────
+    // ─── Limpieza de peers muertos (heartbeat) ───────────────────
+
+    private fun startPeerCleanup() {
+        peerCleanupRunnable = object : Runnable {
+            override fun run() {
+                if (!running) return
+                cleanupStalePeers()
+                mainHandler.postDelayed(this, PEER_CLEANUP_INTERVAL_MS)
+            }
+        }
+        mainHandler.postDelayed(peerCleanupRunnable!!, PEER_CLEANUP_INTERVAL_MS)
+    }
+
+    private fun cleanupStalePeers() {
+        val now = System.currentTimeMillis()
+        val staleAddrs = mutableListOf<String>()
+        for ((addr, lastSeen) in peerLastSeen) {
+            if (now - lastSeen > PEER_TIMEOUT_MS && uniquePeers.contains(addr)) {
+                staleAddrs.add(addr)
+            }
+        }
+        for (addr in staleAddrs) {
+            emitStatus("peer_timeout", "Peer $addr sin datos en ${PEER_TIMEOUT_MS/1000}s")
+            // Desconectar outgoing
+            outgoingPeers.remove(addr)?.let { gatt ->
+                outgoingCharCache.remove(addr)
+                try { gatt.disconnect(); gatt.close() } catch (_: Exception) {}
+            }
+            // Desconectar incoming
+            incomingPeers.remove(addr)?.let { device ->
+                try { gattServer?.cancelConnection(device) } catch (_: Exception) {}
+            }
+            uniquePeers.remove(addr)
+            peerLastSeen.remove(addr)
+            listener?.onPeerDisconnected(addr)
+        }
+    }
+
+    // ─── Helpers ──────────────────────────────────────────────────
 
     private fun hasPermissions(): Boolean {
         val perms = mutableListOf<String>()
@@ -427,7 +573,7 @@ class BleMeshService(private val ctx: Context) {
         seenMessages[msgId] = System.currentTimeMillis()
     }
 
-    // ─── Serialización binaria (33 bytes) ─────────────────────────────
+    // ─── Serialización binaria (33 bytes) ─────────────────────────
 
     private fun packPosition(uid: String, lat: Double, lon: Double,
                              speedKmh: Int, statusCode: Int, ttl: Byte, msgId: Int): ByteArray {
