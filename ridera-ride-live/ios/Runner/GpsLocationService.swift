@@ -45,7 +45,7 @@ class GpsLocationService: NSObject, CLLocationManagerDelegate {
         locationManager?.showsBackgroundLocationIndicator = true
         locationManager?.activityType = .otherNavigation
 
-        locationManager?.requestWhenInUseAuthorization()
+        locationManager?.requestAlwaysAuthorization()
         locationManager?.startUpdatingLocation()
 
         heartbeatTimer?.invalidate()
