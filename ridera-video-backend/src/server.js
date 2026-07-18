@@ -137,6 +137,8 @@ app.get('/', (_req, res) => res.json({
     MAPBOX_TOKEN:        process.env.MAPBOX_TOKEN        ? 'set' : 'FALTA',
     SUPABASE_URL:        SUPABASE_URL                    ? 'set' : 'FALTA',
     SUPABASE_SERVICE_KEY: SUPABASE_KEY                   ? 'set' : 'FALTA',
+    R2_ENABLED:          (!!process.env.R2_ACCOUNT_ID && !!process.env.R2_ACCESS_KEY_ID && !!process.env.R2_SECRET_ACCESS_KEY && !!process.env.R2_BUCKET && !!process.env.R2_PUBLIC_URL) ? 'set (5/5 vars)' : 'NO — fallback a Supabase Storage',
+    R2_PUBLIC_URL:       process.env.R2_PUBLIC_URL || 'no configurado',
   },
 }));
 
