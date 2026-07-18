@@ -75,26 +75,3 @@ class RideraApp extends StatelessWidget {
     );
   }
 }
-
-class _AuthGate extends StatefulWidget {
-  const _AuthGate();
-  @override
-  State<_AuthGate> createState() => _AuthGateState();
-}
-
-class _AuthGateState extends State<_AuthGate> {
-  @override
-  void initState() {
-    super.initState();
-    Supabase.instance.client.auth.onAuthStateChange.listen((_) {
-      if (mounted) setState(() {});
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final user = Supabase.instance.client.auth.currentUser;
-    final isRealUser = user != null && user.isAnonymous != true;
-    return isRealUser ? const RideHomeScreen() : const LoginScreen();
-  }
-}
