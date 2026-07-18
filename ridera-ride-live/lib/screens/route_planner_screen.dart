@@ -4,6 +4,7 @@ import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:latlong2/latlong.dart' as ll;
 import '../services/directions_service.dart';
 import '../theme.dart';
+import '../widgets/rita_fab.dart';
 
 /// Pantalla para que el líder planee la ruta de la rodada.
 /// Retorna un [PlannedRouteResult] cuando el usuario guarda, o null si cancela.
@@ -148,6 +149,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             ),
         ],
       ),
+      floatingActionButton: const RitaFab(),
     );
   }
 
