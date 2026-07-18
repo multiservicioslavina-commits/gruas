@@ -218,9 +218,23 @@ tbody td{padding:.8rem .75rem;vertical-align:middle}
 
         <!-- OTHER SECTIONS -->
         <div id="sec-despacho" class="hide"><div class="placeholder-msg">📡 Ir al panel de grúas: <a href="https://gruas.ridera.com.co/admin" target="_blank" style="color:var(--or)">gruas.ridera.com.co/admin</a></div></div>
-        <div id="sec-sellos" class="hide"><div class="placeholder-msg">📮 Gestión de sellos próximamente.</div></div>
+        <div id="sec-sellos" class="hide">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Municipio</th><th>Rider ID</th><th>Fecha</th><th>Estado</th><th>En manada</th></tr></thead>
+              <tbody id="sellosTbody"></tbody>
+            </table>
+          </div>
+        </div>
         <div id="sec-grueros" class="hide"><div class="placeholder-msg">🔧 Gestión de grueros: <a href="https://gruas.ridera.com.co/admin" target="_blank" style="color:var(--or)">gruas.ridera.com.co/admin</a></div></div>
-        <div id="sec-riders" class="hide"><div class="placeholder-msg">🏍️ Gestión de riders próximamente.</div></div>
+        <div id="sec-riders" class="hide">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Nombre</th><th>Moto</th><th>Ciudad</th><th>Placa</th><th>Teléfono</th></tr></thead>
+              <tbody id="ridersTbody"></tbody>
+            </table>
+          </div>
+        </div>
         <div id="sec-motos" class="hide">
           <div class="filters" style="margin-bottom:1rem">
             <button class="fbtn apro" id="fMotoPend" onclick="filterMotos('pendiente',this)">⏳ Pendientes</button>
@@ -233,8 +247,30 @@ tbody td{padding:.8rem .75rem;vertical-align:middle}
             </table>
           </div>
         </div>
-        <div id="sec-talleres" class="hide"><div class="placeholder-msg">🔩 Gestión de talleres próximamente.</div></div>
-        <div id="sec-almacenes" class="hide"><div class="placeholder-msg">🛒 Gestión de almacenes próximamente.</div></div>
+        <div id="sec-talleres" class="hide">
+          <div class="filters" style="margin-bottom:1rem">
+            <button class="fbtn pend" id="fTallerPend" onclick="filterTalleres('pendiente',this)">⏳ Pendientes</button>
+            <button class="fbtn apro active" id="fTallerApro" onclick="filterTalleres('aprobado',this)">✅ Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Taller</th><th>Ciudad</th><th>Teléfono</th><th>Email</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="talleresTbody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div id="sec-almacenes" class="hide">
+          <div class="filters" style="margin-bottom:1rem">
+            <button class="fbtn pend" id="fAlmacenPend" onclick="filterAlmacenes('pendiente',this)">⏳ Pendientes</button>
+            <button class="fbtn apro active" id="fAlmacenApro" onclick="filterAlmacenes('aprobado',this)">✅ Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Almacén</th><th>Ciudad</th><th>Teléfono</th><th>Email</th><th>Estado</th><th>Acciones</th></tr></thead>
+              <tbody id="almacenesTbody"></tbody>
+            </table>
+          </div>
+        </div>
 
       </div>
     </div>
@@ -369,12 +405,20 @@ async function goto(sec){
   $id('pageTitle').textContent = TITLES[sec]||sec;
   if(sec==='clubs') await reloadClubs();
   if(sec==='motos') await loadMotos('aprobado');
+  if(sec==='talleres') await loadTalleres('aprobado');
+  if(sec==='almacenes') await loadAlmacenes('aprobado');
+  if(sec==='riders') await loadRiders();
+  if(sec==='sellos') await loadSellos();
 }
 
 async function reloadSection(){
   const active = SECTIONS.find(s=>!$id('sec-'+s).classList.contains('hide'));
   if(active==='clubs') await reloadClubs();
   if(active==='motos') await loadMotos(currentMotoFilter);
+  if(active==='talleres') await loadTalleres(currentTallerFilter);
+  if(active==='almacenes') await loadAlmacenes(currentAlmacenFilter);
+  if(active==='riders') await loadRiders();
+  if(active==='sellos') await loadSellos();
 }
 
 // ── CLUBS ─────────────────────────────────────────────────────────────
@@ -617,6 +661,142 @@ async function eliminarMoto(id,btn){
     if(d.ok) await loadMotos(currentMotoFilter);
     else { btn.disabled=false; alert('Error: '+d.error); }
   }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+
+// ── TALLERES ─────────────────────────────────────────────────────────
+let currentTallerFilter = 'aprobado';
+async function loadTalleres(estado){
+  currentTallerFilter = estado;
+  ['fTallerPend','fTallerApro'].forEach(id=>$id(id).classList.remove('active'));
+  $id(estado==='pendiente'?'fTallerPend':'fTallerApro').classList.add('active');
+  const tbody = $id('talleresTbody');
+  tbody.innerHTML='<tr><td colspan="6" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=listar&seccion=talleres&estado=${estado}&key=${encodeURIComponent(adminKey)}`);
+    const data = await res.json();
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error al cargar talleres.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">No hay talleres en este estado.</td></tr>'; return; }
+    tbody.innerHTML = data.map(t=>`<tr>
+      <td><strong>${esc(t.nombre||'—')}</strong>${t.barrio?`<br><span style="font-size:.75rem;color:var(--mu)">${esc(t.barrio)}</span>`:''}</td>
+      <td>${esc(t.ciudad||'—')}</td>
+      <td>${esc(t.telefono||'—')}</td>
+      <td>${esc(t.email||'—')}</td>
+      <td>${t.aprobado?'<span class="badge badge-apro">Aprobado</span>':'<span class="badge badge-pend">Pendiente</span>'}</td>
+      <td><div class="actions">
+        ${!t.aprobado?`<button class="act aprobar" onclick="aprobarTaller('${t.id}',this)">✓ Aprobar</button>`:''}
+        <button class="act del" onclick="eliminarTaller('${t.id}',this)">✕ Eliminar</button>
+      </div></td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error: '+e.message+'</td></tr>'; }
+}
+function filterTalleres(estado,btn){ loadTalleres(estado); }
+async function aprobarTaller(id,btn){
+  if(!confirm('¿Aprobar este taller?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?seccion=talleres&key=${encodeURIComponent(adminKey)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,aprobado:true})});
+    const d = await res.json();
+    if(d.ok) await loadTalleres(currentTallerFilter);
+    else{ btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+async function eliminarTaller(id,btn){
+  if(!confirm('¿Eliminar este taller?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?id=${id}&seccion=talleres&key=${encodeURIComponent(adminKey)}`,{method:'DELETE'});
+    const d = await res.json();
+    if(d.ok) await loadTalleres(currentTallerFilter);
+    else{ btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+
+// ── ALMACENES ─────────────────────────────────────────────────────────
+let currentAlmacenFilter = 'aprobado';
+async function loadAlmacenes(estado){
+  currentAlmacenFilter = estado;
+  ['fAlmacenPend','fAlmacenApro'].forEach(id=>$id(id).classList.remove('active'));
+  $id(estado==='pendiente'?'fAlmacenPend':'fAlmacenApro').classList.add('active');
+  const tbody = $id('almacenesTbody');
+  tbody.innerHTML='<tr><td colspan="6" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=listar&seccion=almacenes&estado=${estado}&key=${encodeURIComponent(adminKey)}`);
+    const data = await res.json();
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error al cargar almacenes.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">No hay almacenes en este estado.</td></tr>'; return; }
+    tbody.innerHTML = data.map(a=>`<tr>
+      <td><strong>${esc(a.nombre||'—')}</strong>${a.barrio?`<br><span style="font-size:.75rem;color:var(--mu)">${esc(a.barrio)}</span>`:''}</td>
+      <td>${esc(a.ciudad||'—')}</td>
+      <td>${esc(a.telefono||'—')}</td>
+      <td>${esc(a.email||'—')}</td>
+      <td>${a.aprobado?'<span class="badge badge-apro">Aprobado</span>':'<span class="badge badge-pend">Pendiente</span>'}</td>
+      <td><div class="actions">
+        ${!a.aprobado?`<button class="act aprobar" onclick="aprobarAlmacen('${a.id}',this)">✓ Aprobar</button>`:''}
+        <button class="act del" onclick="eliminarAlmacen('${a.id}',this)">✕ Eliminar</button>
+      </div></td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error: '+e.message+'</td></tr>'; }
+}
+function filterAlmacenes(estado,btn){ loadAlmacenes(estado); }
+async function aprobarAlmacen(id,btn){
+  if(!confirm('¿Aprobar este almacén?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?seccion=almacenes&key=${encodeURIComponent(adminKey)}`,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({id,aprobado:true})});
+    const d = await res.json();
+    if(d.ok) await loadAlmacenes(currentAlmacenFilter);
+    else{ btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+async function eliminarAlmacen(id,btn){
+  if(!confirm('¿Eliminar este almacén?')) return;
+  btn.disabled=true;
+  try{
+    const res = await fetch(`${FN_MOTOS}?id=${id}&seccion=almacenes&key=${encodeURIComponent(adminKey)}`,{method:'DELETE'});
+    const d = await res.json();
+    if(d.ok) await loadAlmacenes(currentAlmacenFilter);
+    else{ btn.disabled=false; alert('Error: '+d.error); }
+  }catch(e){ btn.disabled=false; alert('Error: '+e.message); }
+}
+
+// ── RIDERS ─────────────────────────────────────────────────────────────
+async function loadRiders(){
+  const tbody = $id('ridersTbody');
+  tbody.innerHTML='<tr><td colspan="5" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=listar&seccion=riders&key=${encodeURIComponent(adminKey)}`);
+    const data = await res.json();
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error al cargar riders.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">No hay riders registrados.</td></tr>'; return; }
+    tbody.innerHTML = data.map(r=>`<tr>
+      <td><strong>${esc(((r.nombre||'')+' '+(r.apellido||'')).trim()||'—')}</strong><br><span style="font-size:.75rem;color:var(--mu)">${esc(r.correo||r.email||'—')}</span></td>
+      <td>${esc([r.moto_marca,r.moto_modelo].filter(Boolean).join(' ')||'—')}</td>
+      <td>${esc(r.ciudad||'—')}</td>
+      <td>${esc(r.placa||'—')}</td>
+      <td>${esc(r.telefono||'—')}</td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error: '+e.message+'</td></tr>'; }
+}
+
+// ── SELLOS ─────────────────────────────────────────────────────────────
+async function loadSellos(){
+  const tbody = $id('sellosTbody');
+  tbody.innerHTML='<tr><td colspan="5" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=listar&seccion=sellos&key=${encodeURIComponent(adminKey)}`);
+    const data = await res.json();
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error al cargar sellos.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">No hay sellos registrados.</td></tr>'; return; }
+    const bdg = $id('bdg-sellos');
+    if(bdg){ bdg.textContent=data.length; bdg.className='sb-badge'+(data.length>0?'':' zero'); }
+    tbody.innerHTML = data.map(s=>`<tr>
+      <td>${esc(s.municipio_id||'—')}</td>
+      <td>${esc(s.rider_id||'—')}</td>
+      <td>${s.fecha?new Date(s.fecha).toLocaleDateString('es-CO'):'—'}</td>
+      <td><span class="badge ${s.estado==='aprobado'?'badge-apro':'badge-pend'}">${esc(s.estado||'—')}</span></td>
+      <td>${s.en_manada?'✅':'—'}</td>
+    </tr>`).join('');
+  }catch(e){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error: '+e.message+'</td></tr>'; }
 }
 
 // Close modals on overlay click
