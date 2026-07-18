@@ -175,9 +175,79 @@ async function fetchRutaDetail(message: string): Promise<any | null> {
     .from("rita_rutas")
     .select("*")
     .or(orFilters)
-    .limit(1);
+    .limit(3);
 
+  return data || null;
+}
+
+// ─── Municipio lookup from Supabase ──────────────────────────────
+async function fetchMunicipioInfo(message: string): Promise<any[]> {
+  const msg2 = norm(message);
+  const stopWords = new Set(["que","me","recomiendas","para","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se","conocer","visitar","municipio","pueblo","ciudad","info","informacion","sobre"]);
+  const keywords = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 2 && !stopWords.has(w));
+  if (!keywords.length) return [];
+
+  const orFilters = keywords.map(k => `nombre.ilike.%${k}%`).join(",");
+  const { data } = await supabase
+    .from("municipios")
+    .select("nombre, subregion, zona_dificultad, puntos_sello, historia")
+    .or(orFilters)
+    .limit(3);
+  return data || [];
+}
+
+// ─── Talleres lookup from Supabase ───────────────────────────────
+async function fetchTalleres(message: string): Promise<any[]> {
+  const msg2 = norm(message);
+  if (!/taller|mecanico|mecanic|servicio|reparar|arreglar|revision/.test(msg2)) return [];
+  const cityKws = msg2.split(/[\s,.\-]+/).filter(w => w.length > 3);
+  let query = supabase.from("talleres").select("nombre, ciudad, direccion, telefono, barrio").eq("aprobado", true);
+  const cityMatch = cityKws.find(k => /medellin|envigado|bello|itagui|sabaneta|rionegro|pereira|bogota|cali/.test(k));
+  if (cityMatch) query = query.ilike("ciudad", `%${cityMatch}%`);
+  const { data } = await query.limit(5);
+  return data || [];
+}
+
+// ─── Garage motos (datos técnicos verificados) ───────────────────
+async function fetchGarageMoto(marca: string, modelo?: string): Promise<any | null> {
+  let query = supabase.from("garage_motos").select("*").ilike("marca", `%${marca}%`);
+  if (modelo) query = query.ilike("modelo", `%${modelo}%`);
+  const { data } = await query.limit(1);
   return data?.[0] || null;
+}
+
+// ─── INVIAS — estado de vías (scraping RSS/API pública) ──────────
+async function fetchEstadoVias(destino: string): Promise<string | null> {
+  try {
+    const r = await fetch(
+      `https://www.invias.gov.co/index.php/red-vial/estado-de-la-red-vial`,
+      { signal: AbortSignal.timeout(5000) }
+    );
+    if (!r.ok) return null;
+    const html = await r.text();
+    const dest = norm(destino);
+    const lines = html.replace(/<[^>]+>/g, " ").split(/\n/).filter(l => norm(l).includes(dest));
+    if (lines.length === 0) return null;
+    return lines.slice(0, 3).map(l => l.trim().slice(0, 200)).join(" | ");
+  } catch { return null; }
+}
+
+// ─── Antioquia es Mágica — experiencias/destinos ─────────────────
+async function fetchAntioquiaMagica(searchTerm: string): Promise<any[]> {
+  try {
+    const r = await fetch(
+      `https://turismoantioquia.travel/wp-json/wp/v2/posts?search=${encodeURIComponent(searchTerm)}&per_page=3&_fields=title,excerpt,link`,
+      { signal: AbortSignal.timeout(6000) }
+    );
+    if (!r.ok) return [];
+    const items = await r.json();
+    return (items || []).map((i: any) => ({
+      fuente: "Antioquia es Mágica",
+      titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "–"),
+      resumen: (i.excerpt?.rendered || "").replace(/<[^>]+>/g, "").trim().slice(0, 250),
+      link: i.link || "",
+    }));
+  } catch { return []; }
 }
 
 // ─── Search context ─────────────────────────────────────────────
@@ -195,10 +265,13 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   }
 
   const isGarageQ = /aceite|filtro|freno|pastilla|cadena|llanta|bateria|abs|suspensi|ecu|mantenimiento|garage|motor|card[aá]n|transmisi|neumat|electri|diagn[oó]stic|taller|mecanico|servicio/.test(msg2);
+  const isViaQ = /via|carretera|estado.*via|como esta.*via|derrumbe|cierre|peaje|paso|transitable/.test(msg2);
+  const isDestinoQ = /municipio|pueblo|visitar|conocer|turismo|que hay en|destino/.test(msg2);
   const isSimpleChat = /^(hola|buenos|buenas|hey|ey|que tal|como estas|gracias|ok|dale|listo|chao|nos vemos)/.test(msg2) && msg2.split(/\s+/).length <= 5;
 
   const fetches: Promise<any>[] = [];
 
+  // WordPress ridera.com.co
   if (!isGarageQ && !isSimpleChat && searchTerm.length > 2) {
     const wpSearch = async (endpoint: string, tipo: string) => {
       try {
@@ -206,7 +279,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
         if (!r.ok) return [];
         const items = await r.json();
         return (items || []).map((i: any) => ({
-          tipo,
+          tipo, fuente: "ridera.com.co",
           titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "–"),
           resumen: (i.excerpt?.rendered || "").replace(/<[^>]+>/g, "").trim().slice(0, 300),
           link: i.link || "",
@@ -220,6 +293,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     fetches.push(Promise.resolve([]));
   }
 
+  // Garage search (edge function)
   fetches.push(
     fetch(`${SB_URL}/functions/v1/garage-search`, {
       method: "POST",
@@ -228,12 +302,33 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     }).then(r => r.json()).catch(() => ({ resultados: [] }))
   );
 
-  const [rutas, posts, garageRes] = await Promise.all(fetches);
+  // Municipios de Supabase
+  fetches.push(fetchMunicipioInfo(message));
+
+  // Talleres de Supabase
+  fetches.push(fetchTalleres(message));
+
+  // Antioquia es Mágica (turismo verificado)
+  if (!isSimpleChat && !isGarageQ && searchTerm.length > 2) {
+    fetches.push(fetchAntioquiaMagica(searchTerm));
+  } else {
+    fetches.push(Promise.resolve([]));
+  }
+
+  // INVIAS estado de vías
+  if (isViaQ && searchTerm.length > 2) {
+    fetches.push(fetchEstadoVias(searchTerm));
+  } else {
+    fetches.push(Promise.resolve(null));
+  }
+
+  const [rutas, posts, garageRes, municipiosRes, talleresRes, antioquiaRes, inviasRes] = await Promise.all(fetches);
 
   const resultados = [
     ...(rutas || []),
     ...(posts || []),
     ...(garageRes?.resultados || []),
+    ...(antioquiaRes || []),
   ].filter((r: any) => r.titulo || r.resumen);
 
   const tramiteKey = detectTramites(message);
@@ -247,7 +342,17 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   const marcaMencionada = MARCAS.find(m => msg2.includes(m)) || "";
   const isGrua = /grua|remolque|averia|varad/.test(msg2);
 
-  return { resultados, tramitesCtx, marcaMencionada, isGrua, isGarageQ, searchTerm };
+  return {
+    resultados,
+    tramitesCtx,
+    marcaMencionada,
+    isGrua,
+    isGarageQ,
+    searchTerm,
+    municipios: municipiosRes,
+    talleres: talleresRes,
+    estadoVias: inviasRes,
+  };
 }
 
 // ─── System prompt — personalidad de Rita ─────────────────────
@@ -268,31 +373,40 @@ function buildSystemPrompt(riderCtx: any): string {
     riderInfo = `\n\nDATOS DEL RIDER:\n${parts.join("\n")}`;
   }
 
-  return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Eres una motociclista colombiana apasionada que sabe de motos, rutas, mecánica y trámites. Hablas como una amiga cercana — natural, cálida, directa, con sabor paisa pero sin exagerar.
+  return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Motociclista colombiana, cálida, directa, con sabor paisa sin exagerar.
 
 CÓMO HABLAS:
-- Como en un chat de WhatsApp entre amigos moteros. Frases cortas, naturales.
-- Usas expresiones como "parce", "dale", "pilas", "bacano", "uff" cuando fluyen natural, no forzadas.
-- Emojis con moderación, como una persona real (1-3 por mensaje, no en cada frase).
-- NO empiezas cada mensaje con "¡Hola!" ni con tu nombre. Varía cómo arrancas.
-- Máximo 6-8 líneas. Si es un saludo simple, 1-3 líneas.
-- NO uses listas con viñetas a menos que estés dando links o datos técnicos específicos.
+- WhatsApp entre amigos moteros. Frases cortas, naturales.
+- "parce", "dale", "pilas", "bacano" cuando fluyan natural.
+- 1-3 emojis por mensaje. NO empezar con "¡Hola!" siempre.
+- Máximo 6-8 líneas. Saludo simple: 1-3 líneas.
+- NO listas con viñetas a menos que des links o datos técnicos.
 
-QUÉ SABES HACER:
-- Rutas y destinos moteros en Colombia
-- Mecánica y mantenimiento (cuando hay datos del Garage Técnico)
-- Trámites: SOAT, SIMIT, RUNT, impuestos, tecnomecánica, tránsitos
-- Grúas: dirigir a gruas.ridera.com.co o botón SOS de la app
-- Info personalizada si el rider está registrado (pico y placa, alertas de docs, etc.)
+⚠️ REGLA ABSOLUTA — NO INVENTAR:
+- SOLO responde con datos que aparezcan en el CONTEXTO proporcionado abajo.
+- Si NO hay datos en el contexto para responder, di EXACTAMENTE algo como:
+  "Ahí sí no tengo esa info verificada todavía, parce. Puedes consultar en ridera.com.co o escribirme después cuando la tenga actualizada 🙏"
+- NUNCA inventes nombres de talleres, restaurantes, hoteles, precios, distancias, tiempos, horarios ni datos técnicos.
+- NUNCA inventes rutas que no estén en el contexto.
+- NUNCA digas "según mis datos" ni "generalmente" para introducir datos que NO están en el contexto.
+- Si el contexto tiene datos parciales, comparte SOLO lo que hay y aclara qué falta.
+- Prefiere decir "no sé" a inventar. Un dato falso hace más daño que no responder.
 
-REGLAS CLAVE:
-- SOLO usa información del CONTEXTO proporcionado. Si no hay datos, dilo natural: "Ahí sí no tengo info, pero échale un ojo a ridera.com.co"
-- NUNCA inventes rutas, talleres, precios ni datos.
-- Si hay datos del Garage Técnico, comparte el dato técnico + tip práctico + link.
-- Si el rider tiene moto registrada y pregunta mantenimiento sin especificar marca, usa la marca de SU moto.
-- Si preguntan por grúa, menciona gruas.ridera.com.co y el botón SOS.
-- Cuando des links de trámites, formatea limpio con el nombre y URL.
-- Si el rider NO está registrado, al final de tu respuesta (no al inicio) puedes sugerir que se registre escribiendo "quiero registrarme" para info personalizada. Pero NO lo hagas en cada mensaje, solo cada 3-4 intercambios.
+FUENTES QUE CONSULTO (solo estas):
+- Supabase: rutas (rita_rutas), municipios, talleres aprobados, garage_motos (datos técnicos)
+- WordPress: ridera.com.co (artículos y rutas publicadas)
+- Antioquia es Mágica: turismo verificado de turismoantioquia.travel
+- INVIAS: estado de vías (cuando está disponible)
+- Trámites: SOAT, SIMIT, RUNT, impuestos, tecnomecánica (links oficiales)
+- Grúas: gruas.ridera.com.co o botón SOS de la app
+
+REGLAS DE DATOS:
+- Si hay datos del Garage Técnico en el contexto, comparte dato técnico + tip + link.
+- Si el rider tiene moto registrada y pregunta sin marca, usa SU moto.
+- Grúa → gruas.ridera.com.co y botón SOS.
+- Links de trámites: formatea limpio con nombre y URL.
+- Talleres: SOLO los que aparezcan en el contexto (tabla talleres aprobados).
+- Rider NO registrado: sugerir "quiero registrarme" cada 3-4 intercambios, no siempre.
 ${riderInfo}`;
 }
 
@@ -306,8 +420,24 @@ async function askClaude(
   const systemPrompt = buildSystemPrompt(riderCtx);
 
   let contextBlock = "";
+  const hasAnyData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
+    context.municipios?.length || context.talleres?.length || context.estadoVias || context.rutaDetail;
+
+  if (!hasAnyData && !context.marcaMencionada) {
+    contextBlock += `\nSIN DATOS DISPONIBLES: No se encontró información verificada para esta consulta. NO inventes datos. Responde que no tienes esa información todavía.`;
+  }
+
   if (context.resultados?.length) {
-    contextBlock += `\nRESULTADOS DE BÚSQUEDA:\n${JSON.stringify(context.resultados, null, 0)}`;
+    contextBlock += `\nRESULTADOS VERIFICADOS (fuentes: ridera.com.co, Antioquia es Mágica):\n${JSON.stringify(context.resultados, null, 0)}`;
+  }
+  if (context.municipios?.length) {
+    contextBlock += `\nMUNICIPIOS (datos Supabase verificados):\n${JSON.stringify(context.municipios, null, 0)}`;
+  }
+  if (context.talleres?.length) {
+    contextBlock += `\nTALLERES APROBADOS (datos Supabase verificados):\n${JSON.stringify(context.talleres, null, 0)}`;
+  }
+  if (context.estadoVias) {
+    contextBlock += `\nESTADO DE VÍAS (INVIAS):\n${context.estadoVias}`;
   }
   if (context.tramitesCtx) {
     contextBlock += `\nTRÁMITES DISPONIBLES:\n${JSON.stringify(context.tramitesCtx, null, 0)}`;
@@ -319,8 +449,10 @@ async function askClaude(
     contextBlock += `\nMarca mencionada: ${context.marcaMencionada}`;
   }
   if (context.rutaDetail) {
-    const r = context.rutaDetail;
-    contextBlock += `\nDATOS DETALLADOS DE RUTA:\nDestino: ${r.destino} (${r.departamento})\nDistancia: ${r.km}km | Duración: ${r.duracion} | Dificultad: ${r.dificultad}\nSuperficie: ${r.superficie}\nMejor época: ${r.mejor_epoca}\nMoto recomendada: ${r.moto_recomendada}\nResumen: ${r.resumen}\nTips: ${r.tips}\nGasolina: ${r.gasolina_tip}\nHospedaje: ${r.hospedaje}\nGastronomía: ${r.gastronomia}\nLink: ${r.wp_link}`;
+    const rutas = Array.isArray(context.rutaDetail) ? context.rutaDetail : [context.rutaDetail];
+    for (const r of rutas) {
+      contextBlock += `\nRUTA VERIFICADA (Supabase rita_rutas):\nDestino: ${r.destino} (${r.departamento})\nDistancia: ${r.km}km | Duración: ${r.duracion} | Dificultad: ${r.dificultad}\nSuperficie: ${r.superficie}\nMejor época: ${r.mejor_epoca}\nMoto recomendada: ${r.moto_recomendada}\nResumen: ${r.resumen}\nTips: ${r.tips}\nGasolina: ${r.gasolina_tip}\nHospedaje: ${r.hospedaje}\nGastronomía: ${r.gastronomia}\nLink: ${r.wp_link}`;
+    }
   }
 
   const messages: { role: string; content: string }[] = [];
