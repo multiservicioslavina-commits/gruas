@@ -344,7 +344,7 @@ class _RideMapScreenState extends State<RideMapScreen>
           .from('route_points')
           .select('uid, lat, lon')
           .eq('ride_id', widget.rideId)
-          .order('recorded_at');
+          .order('recorded_at', ascending: true);
       if (!mounted) return;
       setState(() {
         // En resume se limpia para evitar duplicar puntos históricos

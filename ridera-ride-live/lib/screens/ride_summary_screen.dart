@@ -58,7 +58,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           .select('lat, lon, speed_kmh')
           .eq('ride_id', widget.rideId)
           .eq('uid', uid)
-          .order('recorded_at');
+          .order('recorded_at', ascending: true);
 
       double dist = 0;
       double maxSpd = 0;
@@ -116,7 +116,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
               .select('uid, lat, lon, speed_kmh')
               .eq('ride_id', widget.rideId)
               .inFilter('uid', otherUids)
-              .order('recorded_at')
+              .order('recorded_at', ascending: true)
               .limit(2100);
           final byUid = <String, List<Map<String, dynamic>>>{};
           for (final p in allMemberPts) {
