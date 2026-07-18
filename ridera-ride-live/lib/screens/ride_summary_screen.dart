@@ -199,8 +199,10 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           );
         } catch (_) {}
 
-        // Auto-trigger: si hay ruta y no hay video previo, generar automáticamente
-        if (existingVideo == null && routePts.length >= 2) {
+        // Auto-trigger: si hay ruta y no hay video previo, generar automáticamente.
+        // Mínimo 1 km: rodadas más cortas (pruebas, GPS sin arrancar) no
+        // justifican ~15 min de render en el servidor.
+        if (existingVideo == null && routePts.length >= 2 && dist >= 1.0) {
           _generateVideo();
         }
       }

@@ -97,6 +97,17 @@ async function sbFindQueued(rideId) {
   return rows[0] || null;
 }
 
+// Video ya terminado para esta rodada: se reutiliza en vez de re-renderizar
+// (cada render cuesta ~15 min de CPU — regenerar lo mismo es plata quemada).
+async function sbFindDone(rideId) {
+  const res = await sbFetch(
+    `/video_jobs?ride_id=eq.${rideId}&state=eq.done&url=not.is.null&order=created_at.desc&limit=1`
+  );
+  if (!res.ok) return null;
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
 // Reclamar el próximo job de la cola (atómico, safe para múltiples instancias)
 async function sbClaimNext() {
   const res = await sbFetch('/rpc/claim_next_video_job', {
@@ -140,6 +151,25 @@ app.post('/render', async (req, res) => {
 
   if (!rideId || !Array.isArray(routePoints) || routePoints.length < 2) {
     return res.status(400).json({ error: 'Se requiere rideId y al menos 2 routePoints' });
+  }
+
+  // Rodadas de menos de 1 km no generan video: cuestan lo mismo que una real
+  // y no aportan nada (pruebas, GPS sin arrancar, vueltas al parqueadero).
+  const km = parseFloat(distanceKm);
+  if (!isNaN(km) && km < 1) {
+    return res.status(400).json({ error: 'La rodada es muy corta para generar video (mínimo 1 km)' });
+  }
+
+  // Reuso: si esta rodada ya tiene video terminado, devolver ese job —
+  // el polling del cliente lo verá 'done' de inmediato con la URL existente.
+  try {
+    const done = await sbFindDone(rideId);
+    if (done) {
+      console.log(`[${rideId}] reuso → video ya existente en job ${done.id.slice(0,8)}`);
+      return res.status(202).json({ jobId: done.id });
+    }
+  } catch (e) {
+    console.warn(`[${rideId}] done check falló: ${e.message}`);
   }
 
   // Dedup: si ya hay un job activo para esta rodada, reutilizarlo
