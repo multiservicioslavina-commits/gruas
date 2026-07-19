@@ -189,6 +189,11 @@ export async function renderRideVideo({
 
   const tBrowser = Date.now();
   let browser = null;
+  // Declaradas FUERA del try a propósito: el bloque catch las usa para reportar
+  // en qué fase/frame murió el render y qué dijo el browser. Si se declaran con
+  // `let` DENTRO del try quedan fuera de scope en el catch → este lanza
+  // "phase is not defined" (ReferenceError) que ENMASCARA el error real.
+  let phase = 'init', curFrame = -1, lastBrowserErr = '';
   // try/finally: si CUALQUIER paso falla, el navegador se cierra y los
   // frames se borran — un Chromium zombi por job fallido agota la
   // memoria de Railway y tumba los renders siguientes.
@@ -210,7 +215,7 @@ export async function renderRideVideo({
   const page = await browser.newPage();
   // Capturar el último error/aviso del navegador y de la página para adjuntarlo
   // al error del job si el render falla (así sabemos QUÉ dijo Chrome antes de morir).
-  let lastBrowserErr = '';
+  // (lastBrowserErr se declara arriba, fuera del try, para que el catch la vea.)
   page.on('console', msg => {
     const type = msg.type();
     if (type === 'error' || type === 'warning') lastBrowserErr = `${type}: ${msg.text()}`.slice(0, 200);
@@ -219,7 +224,6 @@ export async function renderRideVideo({
   page.on('pageerror', err => { lastBrowserErr = `pageerror: ${err.message}`.slice(0, 200); console.error(`  [${rideId}] BROWSER pageerror: ${err.message}`); });
   // También si el proceso del renderer se cae (=OOM o segfault de SwiftShader)
   page.on('crash', () => { lastBrowserErr = 'RENDERER CRASH (page crashed)'; console.error(`  [${rideId}] BROWSER page CRASH`); });
-  let phase = 'init', curFrame = -1;
 
   await page.setViewport({ width: WIDTH, height: HEIGHT, deviceScaleFactor: 1 });
   phase = 'setContent';
