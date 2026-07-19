@@ -340,7 +340,10 @@
     bounds.getEast() - bounds.getWest(),
     (bounds.getNorth() - bounds.getSouth()) * 1.2
   );
-  const fitZoom = Math.max(8, Math.min(14, Math.log2(360 / (spanDeg * 1.6))));
+  // Margen reducido (1.1 vs 1.6) para que la ruta llene más el frame.
+  // Mínimo zoom 12 para rutas cortas (<3km), 10 para medias, 13 max.
+  const rawZoom = Math.log2(360 / (spanDeg * 1.1));
+  const fitZoom = Math.max(totalKm < 3 ? 13 : 11, Math.min(16, rawZoom));
 
   // Desde / Hasta: municipio más cercano al inicio y al final de la ruta
   function nearestMuni(pt) {
@@ -855,10 +858,10 @@
       hide('elevBar'); hide('groupPanel');
       setTr('photoCard', 'translateY(100%)');
 
-      // Contexto de región: se ve la RUTA COMPLETA con inicio/final marcados.
-      // Vista PLANA (top-down) y sin rotar, con un acercamiento muy suave — como
-      // la referencia. Nada de pitch/bearing que maree.
-      const zoom = (fitZoom - 0.5) + easeIn(p) * 0.5;
+      // Intro: empieza un poco alejado y hace zoom hacia la ruta.
+      const introZoomStart = fitZoom - 1;
+      const introZoomEnd = fitZoom + 0.5;
+      const zoom = introZoomStart + easeIn(p) * (introZoomEnd - introZoomStart);
       map.jumpTo({ center: [centerLng, centerLat], zoom, bearing: 0, pitch: 0 });
       badgesOn = true;
 
@@ -888,13 +891,18 @@
       document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
       document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-      // ── CÁMARA FIJA que enmarca TODA la ruta (estilo referencia) ─────
-      // Antes había una "chase cam" 3D que perseguía a la moto y giraba en
-      // cada curva → se veía "dando vueltas en el aire" y nunca se apreciaba
-      // el recorrido completo. Ahora la vista queda PLANA (top-down), sin
-      // rotar y encuadrando toda la ruta: la línea amarilla se dibuja de
-      // inicio a fin y siempre se entiende de dónde a dónde se fue.
-      map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 0, bearing: 0 });
+      // ── CÁMARA que sigue al rider con zoom cercano ─────────────────
+      // La cámara centra en el rider actual con un zoom más cercano que el
+      // fitZoom general, para que se vea la ruta de cerca. Al inicio y al
+      // final muestra más contexto, en el medio va más pegada.
+      const rideZoom = fitZoom + 1.5; // más cerca que el encuadre general
+      const zoomBlend = p < 0.1 ? easeIn(p / 0.1) : p > 0.9 ? 1 - easeIn((p - 0.9) / 0.1) : 1;
+      const curZoom = fitZoom + zoomBlend * (rideZoom - fitZoom);
+      // Centro: mezcla entre el centro de la ruta (contexto) y el rider (seguimiento)
+      const cBlend = p < 0.08 ? easeIn(p / 0.08) : p > 0.92 ? 1 - easeIn((p - 0.92) / 0.08) : 1;
+      const camLng = centerLng + cBlend * (rider[0] - centerLng);
+      const camLat = centerLat + cBlend * (rider[1] - centerLat);
+      map.jumpTo({ center: [camLng, camLat], zoom: curZoom, pitch: 0, bearing: 0 });
       badgesOn = true;
 
       // ── Perfil de elevación animado ───────────────────────────────────
