@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
+import { TOOL_DEFINITIONS, executeTool } from './tools.js';
 
 const client = new Anthropic();
 
@@ -25,16 +26,24 @@ SERVICIOS QUE OFRECES:
 
 3. COMUNIDAD — Clubs de motos, rodadas organizadas, eventos
 
+4. PASAPORTE MOTERO — 125 municipios de Antioquia para visitar en moto
+   - Cada municipio da puntos de sello
+   - Subregiones: Valle de Aburrá, Oriente, Occidente, Suroeste, Norte, Nordeste, Bajo Cauca, Magdalena Medio, Urabá
+   - Usa la herramienta buscar_municipio para dar info específica
+
 REGLAS:
 - Si piden grúa urgente → dar el número de WhatsApp de grúas y preguntar ubicación
-- Si preguntan algo que no sabes → decir "No tengo esa info, pero puedo preguntarle al equipo 🤙"
+- Si preguntan por un municipio o lugar → usa buscar_municipio para dar info real
+- Si preguntan por una subregión → usa municipios_por_subregion para listar opciones
+- Si preguntan algo general (clima, restaurantes, eventos) → usa buscar_web
+- NUNCA inventar datos sobre municipios — siempre consulta la herramienta primero
+- Si no encuentras info → decir "No tengo esa info, pero puedo preguntarle al equipo 🤙"
 - NUNCA inventar precios exactos que no tengas confirmados
 - Si el mensaje es un saludo → saludar y preguntar en qué puedes ayudar
 - Si detectas emergencia (caída, accidente) → priorizar: "¿Estás bien? ¿Necesitas ambulancia?" + dar número de grúa`;
 
-// Simple conversation memory (last 5 messages per user)
 const conversations = new Map();
-const MAX_HISTORY = 10; // 5 pairs
+const MAX_HISTORY = 10;
 
 export async function askClaude(userMessage, phoneNumber, contactName) {
   const history = conversations.get(phoneNumber) || [];
@@ -45,15 +54,50 @@ export async function askClaude(userMessage, phoneNumber, contactName) {
   }
 
   try {
-    const response = await client.messages.create({
+    let response = await client.messages.create({
       model: 'claude-haiku-4-5-20251001',
-      max_tokens: 300,
+      max_tokens: 400,
       system: SYSTEM_PROMPT + `\n\nEl usuario se llama ${contactName}.`,
       messages: history,
+      tools: TOOL_DEFINITIONS,
     });
 
-    const reply = response.content[0].text;
-    history.push({ role: 'assistant', content: reply });
+    // Handle tool use loop (max 3 iterations)
+    let iterations = 0;
+    while (response.stop_reason === 'tool_use' && iterations < 3) {
+      iterations++;
+      const assistantContent = response.content;
+      history.push({ role: 'assistant', content: assistantContent });
+
+      const toolResults = [];
+      for (const block of assistantContent) {
+        if (block.type === 'tool_use') {
+          console.log(`[Rita] Tool: ${block.name}(${JSON.stringify(block.input)})`);
+          const result = await executeTool(block.name, block.input);
+          toolResults.push({
+            type: 'tool_result',
+            tool_use_id: block.id,
+            content: JSON.stringify(result || 'No se encontró información'),
+          });
+        }
+      }
+
+      history.push({ role: 'user', content: toolResults });
+
+      response = await client.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 400,
+        system: SYSTEM_PROMPT + `\n\nEl usuario se llama ${contactName}.`,
+        messages: history,
+        tools: TOOL_DEFINITIONS,
+      });
+    }
+
+    // Extract final text response
+    const textBlocks = response.content.filter(b => b.type === 'text');
+    const reply = textBlocks.map(b => b.text).join('\n') || 'No pude procesar tu mensaje 🤔';
+
+    history.push({ role: 'assistant', content: response.content });
     conversations.set(phoneNumber, history);
 
     return reply;
