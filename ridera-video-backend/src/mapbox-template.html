@@ -852,12 +852,11 @@
       hide('elevBar'); hide('groupPanel');
       setTr('photoCard', 'translateY(100%)');
 
-      // Contexto de región: se ve la RUTA COMPLETA con inicio/final
-      // marcados, y la cámara se acerca lentamente
-      const zoom = (fitZoom - 0.8) + easeIn(p) * 1.4;
-      const bearing = 15 + easeIn(p) * 15;
-      const pitch = 35 + easeIn(p) * 20;
-      map.jumpTo({ center: [centerLng, centerLat], zoom, bearing, pitch });
+      // Contexto de región: se ve la RUTA COMPLETA con inicio/final marcados.
+      // Vista PLANA (top-down) y sin rotar, con un acercamiento muy suave — como
+      // la referencia. Nada de pitch/bearing que maree.
+      const zoom = (fitZoom - 0.5) + easeIn(p) * 0.5;
+      map.jumpTo({ center: [centerLng, centerLat], zoom, bearing: 0, pitch: 0 });
       badgesOn = true;
 
     // ── RUTA [T_INTRO, T_INTRO+T_ROUTE) ───────────────────────────────
@@ -886,41 +885,13 @@
       document.getElementById('hudKm').textContent = (totalKm * eased).toFixed(1);
       document.getElementById('hudSpeed').textContent = DATA.maxSpeedKmh || '0';
 
-      // ── CHASE CAM (cámara DETRÁS del piloto, mirando ADELANTE) ────
-      const dirBearing = bearingAlong(riderDist);
-      const smoothBearing = lerpBearing(currentBearing, dirBearing, 0.10);
-      currentBearing = smoothBearing;
-
-      // Posición: CAM_BACK metros DETRÁS del piloto
-      const camBehindDist = Math.max(0, riderDist - CAM_BACK);
-      const camLngLat = pointAlong(camBehindDist);
-
-      // Punto de mira: un tramo ADELANTE del piloto en la ruta
-      const LOOK_AHEAD = CAM_BACK * 0.6;
-      const lookDist = Math.min(riderDist + LOOK_AHEAD, totalDist);
-      const lookPt = pointAlong(lookDist);
-
-      // Altitud: terreno bajo la cámara + altura de vuelo (con boost inicial
-      // y final para abrir el plano)
-      const openShot = p < 0.12 ? (1 - p / 0.12) : p > 0.88 ? (p - 0.88) / 0.12 : 0;
-      const terrainElev = map.queryTerrainElevation(camLngLat) || 0;
-      const targetAlt = terrainElev + CAM_HEIGHT * (1 + openShot * 1.6);
-
-      // Suavizado de posición y altitud (inercia de cámara)
-      if (!smCamPos) { smCamPos = camLngLat; smCamAlt = targetAlt; }
-      smCamPos = [lerp(smCamPos[0], camLngLat[0], 0.12), lerp(smCamPos[1], camLngLat[1], 0.12)];
-      smCamAlt = lerp(smCamAlt, targetAlt, 0.08);
-
-      // Nunca por debajo del terreno + margen
-      const floorAlt = (map.queryTerrainElevation(smCamPos) || 0) + 120;
-      const finalAlt = Math.max(smCamAlt, floorAlt);
-
-      const camera = map.getFreeCameraOptions();
-      camera.position = mapboxgl.MercatorCoordinate.fromLngLat(
-        { lng: smCamPos[0], lat: smCamPos[1] }, finalAlt
-      );
-      camera.lookAtPoint({ lng: lookPt[0], lat: lookPt[1] });
-      map.setFreeCameraOptions(camera);
+      // ── CÁMARA FIJA que enmarca TODA la ruta (estilo referencia) ─────
+      // Antes había una "chase cam" 3D que perseguía a la moto y giraba en
+      // cada curva → se veía "dando vueltas en el aire" y nunca se apreciaba
+      // el recorrido completo. Ahora la vista queda PLANA (top-down), sin
+      // rotar y encuadrando toda la ruta: la línea amarilla se dibuja de
+      // inicio a fin y siempre se entiende de dónde a dónde se fue.
+      map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 0, bearing: 0 });
       badgesOn = true;
 
       // ── Perfil de elevación animado ───────────────────────────────────
@@ -1021,8 +992,10 @@
           geometry:{ type:'Point', coordinates: anchor }
         }]
       });
-      const bearing = ((photoIdx * 67) + 20) % 360;
-      map.jumpTo({ center: anchor, zoom: hasGps ? 15.5 : 14, pitch: 58, bearing });
+      // Mantener TODA la ruta a la vista, plana y sin girar; el marcador
+      // naranja señala dónde se tomó la foto. Así el recorrido nunca se pierde
+      // y las fotos se ven "en su lugar" sobre la ruta, como pediste.
+      map.jumpTo({ center: [centerLng, centerLat], zoom: fitZoom, pitch: 0, bearing: 0 });
       badgesOn = true;
 
     // ── STATS [T_INTRO+T_ROUTE+photos*T_PHOTO, +T_STATS) ─────────────
@@ -1039,8 +1012,8 @@
 
       const p = (t - T_INTRO - T_ROUTE - photoCount * T_PHOTO) / T_STATS;
       const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
-      const pitch = 45 - easeIn(p) * 15;
-      map.jumpTo({ center: bCenter, zoom: fitZoom, pitch, bearing: easeIn(p) * 30 });
+      // Vista plana y quieta con la ruta completa mientras se muestran las cifras.
+      map.jumpTo({ center: bCenter, zoom: fitZoom, pitch: 0, bearing: 0 });
       badgesOn = true;
 
     // ── OUTRO [últimos T_OUTRO segundos] ──────────────────────────────
@@ -1055,7 +1028,8 @@
       setOp('outro', op);
 
       const bCenter = [(bounds.getWest()+bounds.getEast())/2, (bounds.getSouth()+bounds.getNorth())/2];
-      map.jumpTo({ center: bCenter, zoom: fitZoom - 1 + easeIn(p), pitch: 30 - easeIn(p) * 15, bearing: 60 + p * 20 });
+      // Cierre plano y quieto con la ruta completa a la vista.
+      map.jumpTo({ center: bCenter, zoom: fitZoom - 0.3 + easeIn(p) * 0.3, pitch: 0, bearing: 0 });
     }
 
     // Posicionar insignias INICIO/FINAL con la cámara ya movida
