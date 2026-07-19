@@ -1,0 +1,3 @@
+# Netlify redirects
+# Rider profile SPA — all /rider/ paths serve the same HTML
+/rider/*  /rider/index.html  200
