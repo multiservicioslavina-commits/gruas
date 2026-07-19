@@ -344,7 +344,7 @@
   // Mínimo zoom 12 para rutas cortas (<3km), 10 para medias, 13 max.
   const rawZoom = Math.log2(360 / (spanDeg * 1.1));
   const totalKm = parseFloat(DATA.distanceKm) || 0;
-  const fitZoom = Math.max(totalKm < 3 ? 13 : 11, Math.min(16, rawZoom));
+  const fitZoom = Math.max(totalKm < 3 ? 14 : 12, Math.min(16, rawZoom));
 
   // Desde / Hasta: municipio más cercano al inicio y al final de la ruta
   function nearestMuni(pt) {
@@ -896,7 +896,7 @@
       // La cámara centra en el rider actual con un zoom más cercano que el
       // fitZoom general, para que se vea la ruta de cerca. Al inicio y al
       // final muestra más contexto, en el medio va más pegada.
-      const rideZoom = fitZoom + 1.5; // más cerca que el encuadre general
+      const rideZoom = fitZoom + 2; // más cerca que el encuadre general
       const zoomBlend = p < 0.1 ? easeIn(p / 0.1) : p > 0.9 ? 1 - easeIn((p - 0.9) / 0.1) : 1;
       const curZoom = fitZoom + zoomBlend * (rideZoom - fitZoom);
       // Centro: mezcla entre el centro de la ruta (contexto) y el rider (seguimiento)
