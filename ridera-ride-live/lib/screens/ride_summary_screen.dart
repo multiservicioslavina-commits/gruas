@@ -1,8 +1,11 @@
 import 'dart:math';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:http/http.dart' as http;
+import 'package:gal/gal.dart';
 import '../services/ride_service.dart';
 import '../services/video_service.dart';
 import '../theme.dart';
@@ -221,6 +224,80 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     return r * 2 * asin(sqrt(a));
   }
 
+  Future<void> _savePhotoToGallery(String url) async {
+    try {
+      final response = await http.get(Uri.parse(url));
+      if (response.statusCode != 200) throw Exception('Error descargando');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/ridera_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await file.writeAsBytes(response.bodyBytes);
+      await Gal.putImage(file.path, album: 'Ridera');
+      await file.delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Foto guardada en galería ✓')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
+  Future<void> _saveAllPhotosToGallery() async {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Guardando ${_photoUrls.length} fotos...')),
+    );
+    int saved = 0;
+    for (final url in _photoUrls) {
+      try {
+        final response = await http.get(Uri.parse(url));
+        if (response.statusCode != 200) continue;
+        final tempDir = Directory.systemTemp;
+        final file = File('${tempDir.path}/ridera_${DateTime.now().millisecondsSinceEpoch}.jpg');
+        await file.writeAsBytes(response.bodyBytes);
+        await Gal.putImage(file.path, album: 'Ridera');
+        await file.delete();
+        saved++;
+      } catch (_) {}
+    }
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$saved/${_photoUrls.length} fotos guardadas en galería ✓')),
+      );
+    }
+  }
+
+  Future<void> _saveVideoToGallery() async {
+    if (_videoUrl == null) return;
+    try {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Descargando video...')),
+      );
+      final response = await http.get(Uri.parse(_videoUrl!));
+      if (response.statusCode != 200) throw Exception('Error descargando');
+      final tempDir = Directory.systemTemp;
+      final file = File('${tempDir.path}/ridera_${widget.rideId}.mp4');
+      await file.writeAsBytes(response.bodyBytes);
+      await Gal.putVideo(file.path, album: 'Ridera');
+      await file.delete();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Video guardado en galería ✓')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+
   Future<void> _generateVideo() async {
     setState(() { _videoStatus = 'rendering'; _videoError = null; _videoProgress = 0; });
     try {
@@ -320,17 +397,27 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
                       mainAxisSpacing: 6,
                     ),
                     itemCount: _photoUrls.length,
-                    itemBuilder: (_, i) => ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.network(
-                        _photoUrls[i],
-                        fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => Container(
-                          color: RColors.asphalt2,
-                          child: const Icon(Icons.broken_image, color: RColors.inkDim),
+                    itemBuilder: (_, i) => GestureDetector(
+                      onLongPress: () => _savePhotoToGallery(_photoUrls[i]),
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.network(
+                          _photoUrls[i],
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) => Container(
+                            color: RColors.asphalt2,
+                            child: const Icon(Icons.broken_image, color: RColors.inkDim),
+                          ),
                         ),
                       ),
                     ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: _saveAllPhotosToGallery,
+                    icon: const Icon(Icons.save_alt, size: 18, color: RColors.brand),
+                    label: const Text('Guardar fotos en galería',
+                        style: TextStyle(color: RColors.brand, fontSize: 12)),
                   ),
                 ],
 
@@ -410,10 +497,9 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           Row(children: [
             Expanded(
               child: FilledButton.icon(
-                onPressed: () => launchUrl(Uri.parse(_videoUrl!),
-                    mode: LaunchMode.externalApplication),
+                onPressed: () => _saveVideoToGallery(),
                 icon: const Icon(Icons.download_rounded),
-                label: const Text('DESCARGAR',
+                label: const Text('GUARDAR',
                     style: TextStyle(fontSize: 13, letterSpacing: 1.2)),
                 style: FilledButton.styleFrom(
                   backgroundColor: RColors.ok,
