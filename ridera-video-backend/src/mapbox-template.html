@@ -343,6 +343,7 @@
   // Margen reducido (1.1 vs 1.6) para que la ruta llene más el frame.
   // Mínimo zoom 12 para rutas cortas (<3km), 10 para medias, 13 max.
   const rawZoom = Math.log2(360 / (spanDeg * 1.1));
+  const totalKm = parseFloat(DATA.distanceKm) || 0;
   const fitZoom = Math.max(totalKm < 3 ? 13 : 11, Math.min(16, rawZoom));
 
   // Desde / Hasta: municipio más cercano al inicio y al final de la ruta
