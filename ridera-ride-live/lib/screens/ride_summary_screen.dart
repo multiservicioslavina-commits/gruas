@@ -224,53 +224,6 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     return r * 2 * asin(sqrt(a));
   }
 
-  Future<void> _savePhotoToGallery(String url) async {
-    try {
-      final response = await http.get(Uri.parse(url));
-      if (response.statusCode != 200) throw Exception('Error descargando');
-      final tempDir = Directory.systemTemp;
-      final file = File('${tempDir.path}/ridera_${DateTime.now().millisecondsSinceEpoch}.jpg');
-      await file.writeAsBytes(response.bodyBytes);
-      await Gal.putImage(file.path, album: 'Ridera');
-      await file.delete();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Foto guardada en galería ✓')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _saveAllPhotosToGallery() async {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Guardando ${_photoUrls.length} fotos...')),
-    );
-    int saved = 0;
-    for (final url in _photoUrls) {
-      try {
-        final response = await http.get(Uri.parse(url));
-        if (response.statusCode != 200) continue;
-        final tempDir = Directory.systemTemp;
-        final file = File('${tempDir.path}/ridera_${DateTime.now().millisecondsSinceEpoch}.jpg');
-        await file.writeAsBytes(response.bodyBytes);
-        await Gal.putImage(file.path, album: 'Ridera');
-        await file.delete();
-        saved++;
-      } catch (_) {}
-    }
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('$saved/${_photoUrls.length} fotos guardadas en galería ✓')),
-      );
-    }
-  }
-
   Future<void> _saveVideoToGallery() async {
     if (_videoUrl == null) return;
     try {
@@ -322,6 +275,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
       try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
       if (!mounted) return;
       setState(() { _videoStatus = 'done'; _videoUrl = url; });
+      _saveVideoToGallery();
     } catch (e) {
       if (mounted) setState(() { _videoStatus = 'error'; _videoError = e.toString(); });
     }
@@ -397,27 +351,17 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
                       mainAxisSpacing: 6,
                     ),
                     itemCount: _photoUrls.length,
-                    itemBuilder: (_, i) => GestureDetector(
-                      onLongPress: () => _savePhotoToGallery(_photoUrls[i]),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          _photoUrls[i],
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            color: RColors.asphalt2,
-                            child: const Icon(Icons.broken_image, color: RColors.inkDim),
-                          ),
+                    itemBuilder: (_, i) => ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.network(
+                        _photoUrls[i],
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          color: RColors.asphalt2,
+                          child: const Icon(Icons.broken_image, color: RColors.inkDim),
                         ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 8),
-                  TextButton.icon(
-                    onPressed: _saveAllPhotosToGallery,
-                    icon: const Icon(Icons.save_alt, size: 18, color: RColors.brand),
-                    label: const Text('Guardar fotos en galería',
-                        style: TextStyle(color: RColors.brand, fontSize: 12)),
                   ),
                 ],
 
