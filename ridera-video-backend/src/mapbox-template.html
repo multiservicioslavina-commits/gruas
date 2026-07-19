@@ -749,8 +749,11 @@
         'circle-stroke-width': 4, 'circle-stroke-color': '#fff' },
     });
 
-    // ── Heatmap de velocidad (sobre la ruta completa, fondo) ─────────────
-    if (hasSpeedData) {
+    // ── Heatmap de velocidad — DESACTIVADO ───────────────────────────────
+    // El usuario quiere UNA sola línea limpia (como su referencia), no un
+    // arcoíris multicolor sobre la ruta. Se deja el código por si algún día
+    // se quiere reactivar, pero no se dibuja.
+    if (false) {
       map.addLayer({ id: 'speed-heatmap-layer', type: 'line', source: 'speed-heatmap',
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
