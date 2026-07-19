@@ -16,10 +16,16 @@ if (!MAPBOX_TOKEN) {
 }
 
 
-const FPS    = 10;   // SwiftShader ~1.8s/frame → menos frames = menos tiempo y menos OOM (12fps daba ~25min y Chrome moría por memoria)
+// SwiftShader (WebGL por software, sin GPU en Railway) ~1.8-4s/frame según carga
+// del CPU. El render es CPU-bound: el nº de frames = FPS × duración es lo que
+// decide el tiempo total. Con 10fps×60s (600 frames) el render quedaba pegado al
+// límite de 40 min y se caía por timeout (ej. ride GZS5YA murió al 89%, WX3H6G
+// terminó en 39m42s — al borde). 8fps×45s = 360 frames (−40%) → ~24 min, con
+// colchón real bajo el timeout. Un sobrevuelo de mapa a 8fps se ve fluido.
+const FPS    = 8;
 const WIDTH  = 1080; // Debe coincidir con el CSS del template (html/body/#map = 1080px)
 const HEIGHT = 1080; // — un viewport menor recortaría la captura a la esquina sup. izq.
-const MAX_DURATION_SEC = 60;
+const MAX_DURATION_SEC = 45;
 
 // Pista musical opcional: si existe assets/music.mp3 (o MUSIC_PATH),
 // se mezcla con fade-out al final — el video mudo no emociona a nadie.
