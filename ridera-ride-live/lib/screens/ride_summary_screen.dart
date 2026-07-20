@@ -2,6 +2,7 @@ import 'dart:math';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
@@ -281,6 +282,16 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     }
   }
 
+  void _shareRide() {
+    final text = '🏍️ Rodada: ${widget.rideName}\n'
+        '📏 ${_distanceKm.toStringAsFixed(1)} km\n'
+        '⏱ ${_hms(widget.elapsed)}\n'
+        '🏎 Vel. máx: ${_maxSpeedKmh.toStringAsFixed(0)} km/h\n\n'
+        'Rodada hecha con Ridera Aventura\n'
+        'https://app.ridera.com.co';
+    SharePlus.instance.share(ShareParams(text: text));
+  }
+
   String _hms(Duration d) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${two(d.inHours)}:${two(d.inMinutes % 60)}:${two(d.inSeconds % 60)}';
@@ -455,18 +466,8 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: OutlinedButton.icon(
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: _videoUrl!));
-                  if (mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Enlace copiado al portapapeles'),
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  }
-                },
-                icon: const Icon(Icons.link_rounded, color: RColors.brand),
+                onPressed: () => _shareRide(),
+                icon: const Icon(Icons.share_rounded, color: RColors.brand),
                 label: const Text('COMPARTIR',
                     style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: RColors.brand)),
                 style: OutlinedButton.styleFrom(
