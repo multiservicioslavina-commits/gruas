@@ -289,7 +289,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         '🏎 Vel. máx: ${_maxSpeedKmh.toStringAsFixed(0)} km/h\n\n'
         'Rodada hecha con Ridera Aventura\n'
         'https://app.ridera.com.co';
-    SharePlus.instance.share(ShareParams(text: text));
+    Share.share(text);
   }
 
   String _hms(Duration d) {

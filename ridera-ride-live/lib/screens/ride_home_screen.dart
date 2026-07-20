@@ -119,13 +119,9 @@ class _RideHomeScreenState extends State<RideHomeScreen> {
                 label: 'Invitar moteros',
                 sub: 'Comparte la app por WhatsApp o redes',
                 onTap: () {
-                  SharePlus.instance.share(
-                    ShareParams(
-                      text: '🏍️ Descarga Ridera Aventura y rodemos juntos.\n'
-                          'GPS grupal en vivo, detección de caídas y video resumen de cada rodada.\n\n'
-                          'https://app.ridera.com.co',
-                    ),
-                  );
+                  Share.share('🏍️ Descarga Ridera Aventura y rodemos juntos.\n'
+                      'GPS grupal en vivo, detección de caídas y video resumen de cada rodada.\n\n'
+                      'https://app.ridera.com.co');
                 },
                 dark: true,
               ),
