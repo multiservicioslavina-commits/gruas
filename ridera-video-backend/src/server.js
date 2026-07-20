@@ -185,15 +185,40 @@ app.post('/render', async (req, res) => {
     console.warn(`[${rideId}] dedup check falló: ${e.message}`);
   }
 
-  // Re-fetch route_points desde Supabase ordenados por recorded_at para
-  // garantizar el orden cronológico (la app a veces los envía desordenados).
+  // Re-fetch route_points desde Supabase ordenados por recorded_at.
+  // La app Flutter envía los puntos invertidos, así que siempre re-fetcheamos.
   let orderedPoints = routePoints;
-  if (uid && SUPABASE_URL && SUPABASE_KEY) {
+  if (SUPABASE_URL && SUPABASE_KEY) {
     try {
+      // Si no tenemos uid, buscar el creador de la rodada
+      let fetchUid = uid;
+      if (!fetchUid) {
+        const mUrl = `${SUPABASE_URL}/rest/v1/rides?select=lider_id&id=eq.${encodeURIComponent(rideId)}&limit=1`;
+        const mRes = await fetch(mUrl, {
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+          signal: AbortSignal.timeout(5000),
+        });
+        if (mRes.ok) {
+          const rows = await mRes.json();
+          fetchUid = rows[0]?.lider_id;
+        }
+      }
+      // Si aún no tenemos uid, buscar el que más puntos tiene en esta rodada
+      if (!fetchUid) {
+        const cUrl = `${SUPABASE_URL}/rest/v1/rpc/route_points_main_uid`;
+        const cRes = await fetch(cUrl, {
+          method: 'POST',
+          headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ p_ride_id: rideId }),
+          signal: AbortSignal.timeout(5000),
+        }).catch(() => null);
+        if (cRes?.ok) fetchUid = await cRes.json().catch(() => null);
+      }
+      // Fetch de puntos ordenados
+      let uidFilter = fetchUid ? `&uid=eq.${encodeURIComponent(fetchUid)}` : '';
       const rpUrl = `${SUPABASE_URL}/rest/v1/route_points` +
         `?select=lat,lon,speed_kmh` +
-        `&ride_id=eq.${encodeURIComponent(rideId)}` +
-        `&uid=eq.${encodeURIComponent(uid)}` +
+        `&ride_id=eq.${encodeURIComponent(rideId)}${uidFilter}` +
         `&order=recorded_at.asc&limit=2000`;
       const rpRes = await fetch(rpUrl, {
         headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
@@ -202,7 +227,6 @@ app.post('/render', async (req, res) => {
       if (rpRes.ok) {
         const pts = await rpRes.json();
         if (pts.length >= 2) {
-          // Simplificar a max 300 puntos
           const maxPts = 300;
           let simplified = pts;
           if (pts.length > maxPts) {
@@ -211,7 +235,7 @@ app.post('/render', async (req, res) => {
             for (let i = 0; i < maxPts; i++) simplified.push(pts[Math.round(i * step)]);
           }
           orderedPoints = simplified;
-          console.log(`[${rideId}] route_points re-fetched: ${pts.length} → ${orderedPoints.length} pts`);
+          console.log(`[${rideId}] route_points re-fetched (uid=${fetchUid||'all'}): ${pts.length} → ${orderedPoints.length} pts`);
         }
       }
     } catch (e) {
