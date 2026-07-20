@@ -15,6 +15,14 @@ class UpdateService {
           .eq('id', 1)
           .single();
 
+      final uid = Supabase.instance.client.auth.currentUser?.id;
+      if (uid != null) {
+        await Supabase.instance.client
+            .from('riders')
+            .update({'app_version': currentVersion})
+            .eq('id', uid);
+      }
+
       final latestVersion = row['version'] as String;
       final apkUrl = row['apk_url'] as String?;
       final releaseNotes = row['release_notes'] as String?;
