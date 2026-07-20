@@ -21,7 +21,7 @@ class RideRepository {
         .stream(primaryKey: ['id'])
         .eq('ride_id', rideId)
         .map((rows) => rows
-            .where((r) => r['rol'] != 'pendiente')
+            .where((r) => r['rol'] != 'pendiente' && r['finished_at'] == null)
             .map((r) => Rider.fromSupabase(r))
             .toList());
   }
