@@ -896,11 +896,11 @@
       // La cámara centra en el rider actual con un zoom más cercano que el
       // fitZoom general, para que se vea la ruta de cerca. Al inicio y al
       // final muestra más contexto, en el medio va más pegada.
-      const rideZoom = fitZoom + 2; // más cerca que el encuadre general
-      const zoomBlend = p < 0.1 ? easeIn(p / 0.1) : p > 0.9 ? 1 - easeIn((p - 0.9) / 0.1) : 1;
+      const rideZoom = Math.max(14.5, fitZoom + 3);
+      const zoomBlend = p < 0.05 ? easeIn(p / 0.05) : p > 0.95 ? 1 - easeIn((p - 0.95) / 0.05) : 1;
       const curZoom = fitZoom + zoomBlend * (rideZoom - fitZoom);
-      // Centro: mezcla entre el centro de la ruta (contexto) y el rider (seguimiento)
-      const cBlend = p < 0.08 ? easeIn(p / 0.08) : p > 0.92 ? 1 - easeIn((p - 0.92) / 0.08) : 1;
+      // Centro: sigue al rider directamente (estilo Google Maps)
+      const cBlend = p < 0.03 ? easeIn(p / 0.03) : p > 0.97 ? 1 - easeIn((p - 0.97) / 0.03) : 1;
       const camLng = centerLng + cBlend * (rider[0] - centerLng);
       const camLat = centerLat + cBlend * (rider[1] - centerLat);
       map.jumpTo({ center: [camLng, camLat], zoom: curZoom, pitch: 0, bearing: 0 });
