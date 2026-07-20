@@ -7,6 +7,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:http/http.dart' as http;
 import 'package:gal/gal.dart';
+import 'package:video_player/video_player.dart';
 import '../services/ride_service.dart';
 import '../services/video_service.dart';
 import '../theme.dart';
@@ -46,6 +47,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
   int _videoProgress = 0;
   String? _rideStartedAt;
   List<Map<String, dynamic>> _groupRiders = [];
+  String? _localVideoPath;
 
   @override
   void initState() {
@@ -225,31 +227,41 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
     return r * 2 * asin(sqrt(a));
   }
 
-  Future<void> _saveVideoToGallery() async {
+  Future<void> _downloadAndSaveVideo() async {
     if (_videoUrl == null) return;
     try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Descargando video...')),
-      );
       final response = await http.get(Uri.parse(_videoUrl!));
       if (response.statusCode != 200) throw Exception('Error descargando');
       final tempDir = Directory.systemTemp;
       final file = File('${tempDir.path}/ridera_${widget.rideId}.mp4');
       await file.writeAsBytes(response.bodyBytes);
       await Gal.putVideo(file.path, album: 'Ridera');
-      await file.delete();
       if (mounted) {
+        setState(() => _localVideoPath = file.path);
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Video guardado en galería ✓')),
+          const SnackBar(content: Text('Video guardado en galería')),
         );
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error: $e')),
+          SnackBar(content: Text('Error guardando: $e')),
         );
       }
     }
+  }
+
+  void _openVideoPlayer() {
+    final url = _localVideoPath ?? _videoUrl;
+    if (url == null) return;
+    Navigator.push(context, MaterialPageRoute(
+      builder: (_) => _FullVideoPlayer(
+        videoSource: _localVideoPath != null
+            ? _localVideoPath!
+            : _videoUrl!,
+        isLocal: _localVideoPath != null,
+      ),
+    ));
   }
 
   Future<void> _generateVideo() async {
@@ -276,7 +288,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
       try { await _rideService.saveRideVideo(widget.rideId, url); } catch (_) {}
       if (!mounted) return;
       setState(() { _videoStatus = 'done'; _videoUrl = url; });
-      _saveVideoToGallery();
+      _downloadAndSaveVideo();
     } catch (e) {
       if (mounted) setState(() { _videoStatus = 'error'; _videoError = e.toString(); });
     }
@@ -444,40 +456,40 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
             child: Row(children: [
               const Icon(Icons.check_circle, color: RColors.ok),
               const SizedBox(width: 10),
-              const Expanded(child: Text('¡Video listo!',
+              const Expanded(child: Text('Video guardado en galería',
                   style: TextStyle(color: RColors.ok, fontWeight: FontWeight.w700))),
             ]),
           ),
           const SizedBox(height: 10),
-          Row(children: [
-            Expanded(
-              child: FilledButton.icon(
-                onPressed: () => _saveVideoToGallery(),
-                icon: const Icon(Icons.download_rounded),
-                label: const Text('GUARDAR',
-                    style: TextStyle(fontSize: 13, letterSpacing: 1.2)),
-                style: FilledButton.styleFrom(
-                  backgroundColor: RColors.ok,
-                  minimumSize: const Size(0, 52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: _openVideoPlayer,
+              icon: const Icon(Icons.play_circle_filled),
+              label: const Text('VER VIDEO',
+                  style: TextStyle(fontSize: 15, letterSpacing: 1.5, fontWeight: FontWeight.w700)),
+              style: FilledButton.styleFrom(
+                backgroundColor: RColors.brand,
+                minimumSize: const Size(0, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: OutlinedButton.icon(
-                onPressed: () => _shareRide(),
-                icon: const Icon(Icons.share_rounded, color: RColors.brand),
-                label: const Text('COMPARTIR',
-                    style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: RColors.brand)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: RColors.brand),
-                  minimumSize: const Size(0, 52),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: () => _shareRide(),
+              icon: const Icon(Icons.share_rounded, color: RColors.brand),
+              label: const Text('COMPARTIR',
+                  style: TextStyle(fontSize: 13, letterSpacing: 1.2, color: RColors.brand)),
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: RColors.brand),
+                minimumSize: const Size(0, 52),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
               ),
             ),
-          ]),
+          ),
         ]);
       default:
         return Container(
@@ -524,4 +536,75 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
           ]),
         ),
       );
+}
+
+class _FullVideoPlayer extends StatefulWidget {
+  const _FullVideoPlayer({required this.videoSource, required this.isLocal});
+  final String videoSource;
+  final bool isLocal;
+
+  @override
+  State<_FullVideoPlayer> createState() => _FullVideoPlayerState();
+}
+
+class _FullVideoPlayerState extends State<_FullVideoPlayer> {
+  late VideoPlayerController _ctrl;
+  bool _initialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = widget.isLocal
+        ? VideoPlayerController.file(File(widget.videoSource))
+        : VideoPlayerController.networkUrl(Uri.parse(widget.videoSource));
+    _ctrl.initialize().then((_) {
+      if (mounted) {
+        setState(() => _initialized = true);
+        _ctrl.play();
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
+        title: const Text('Video de rodada'),
+      ),
+      body: Center(
+        child: _initialized
+            ? AspectRatio(
+                aspectRatio: _ctrl.value.aspectRatio,
+                child: Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    VideoPlayer(_ctrl),
+                    ValueListenableBuilder<VideoPlayerValue>(
+                      valueListenable: _ctrl,
+                      builder: (_, val, __) {
+                        if (val.isPlaying) return const SizedBox.shrink();
+                        return IconButton(
+                          iconSize: 64,
+                          icon: const Icon(Icons.play_circle_fill,
+                              color: Colors.white70),
+                          onPressed: () => _ctrl.play(),
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              )
+            : const CircularProgressIndicator(color: Color(0xFFE85D20)),
+      ),
+    );
+  }
 }
