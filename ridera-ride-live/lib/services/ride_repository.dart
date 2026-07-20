@@ -83,7 +83,7 @@ class RideRepository {
   String _generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random.secure();
-    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+    return List.generate(4, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   Future<RideResult> createRide({

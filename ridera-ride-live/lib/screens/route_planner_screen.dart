@@ -32,6 +32,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
   DirectionsRoute? _route;
   bool _computing = false;
+  int? _activeWaypoint;
 
   @override
   Widget build(BuildContext context) {
@@ -93,6 +94,14 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                           style: const TextStyle(color: RColors.ink, fontSize: 13)),
                     ]),
                   ),
+                if (_activeWaypoint != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '👆 Toca el mapa para fijar el punto',
+                      style: TextStyle(color: RColors.brand, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
                 if (_computing)
                   const Padding(
                     padding: EdgeInsets.only(top: 6),
@@ -110,6 +119,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               options: fm.MapOptions(
                 initialCenter: center,
                 initialZoom: 11,
+                onTap: (_, point) => _onMapTap(point),
               ),
               children: [
                 fm.TileLayer(
@@ -179,10 +189,21 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         : isDest
             ? 'Destino'
             : 'Parada intermedia';
+    final isActive = _activeWaypoint == i;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        Icon(icon, color: iconColor, size: 20),
+        GestureDetector(
+          onTap: () => setState(() => _activeWaypoint = isActive ? null : i),
+          child: Container(
+            padding: const EdgeInsets.all(4),
+            decoration: isActive ? BoxDecoration(
+              border: Border.all(color: RColors.brand, width: 2),
+              borderRadius: BorderRadius.circular(8),
+            ) : null,
+            child: Icon(icon, color: isActive ? RColors.brand : iconColor, size: 20),
+          ),
+        ),
         const SizedBox(width: 8),
         Expanded(child: _WaypointField(
           key: ValueKey('wp_$i'),
@@ -227,6 +248,26 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   }
 
   // ─── State handling ────────────────────────────────────────
+
+  void _onMapTap(ll.LatLng point) async {
+    int target;
+    if (_activeWaypoint != null) {
+      target = _activeWaypoint!;
+    } else {
+      final empty = _waypoints.indexWhere((w) => w.lat == null);
+      if (empty == -1) return;
+      target = empty;
+    }
+    setState(() => _activeWaypoint = null);
+    final result = await _dir.reverseGeocode(point.latitude, point.longitude);
+    final label = result?.placeName ?? '${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}';
+    _setWaypoint(target, GeocodeResult(
+      placeName: label,
+      name: result?.name ?? label,
+      lat: point.latitude,
+      lon: point.longitude,
+    ));
+  }
 
   void _addWaypoint() {
     setState(() {

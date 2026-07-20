@@ -208,7 +208,7 @@ class _RideEntryScreenState extends State<RideEntryScreen> {
                 TextField(
                     controller: _code,
                     textCapitalization: TextCapitalization.characters,
-                    decoration: _dec('Código (ej: K7P2M)')),
+                    decoration: _dec('Código (ej: K7P2)')),
                 const SizedBox(height: 12),
                 SizedBox(
                     width: double.infinity,

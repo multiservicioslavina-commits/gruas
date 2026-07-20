@@ -31,6 +31,24 @@ class DirectionsService {
     }).toList();
   }
 
+  Future<GeocodeResult?> reverseGeocode(double lat, double lon) async {
+    final url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
+        '$lon,$lat.json?access_token=$kMapboxToken&language=es&limit=1'
+        '&types=place,locality,neighborhood,address,poi';
+    final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+    if (res.statusCode != 200) return null;
+    final data = jsonDecode(res.body) as Map<String, dynamic>;
+    final features = (data['features'] as List?) ?? [];
+    if (features.isEmpty) return null;
+    final f = features.first;
+    return GeocodeResult(
+      placeName: (f['place_name'] as String?) ?? '',
+      name: (f['text'] as String?) ?? '',
+      lat: lat,
+      lon: lon,
+    );
+  }
+
   /// Calcula la ruta óptima entre waypoints. Primero es origen, último es destino.
   /// Retorna null si no encuentra ruta.
   Future<DirectionsRoute?> route(List<LatLng> waypoints) async {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:share_plus/share_plus.dart';
 import '../ride_controller.dart';
 import '../models/rider.dart';
 import '../services/ride_repository.dart';
@@ -84,7 +85,17 @@ class PreRodadaScreen extends StatelessWidget {
                     letterSpacing: 6)),
           ]),
           const Spacer(),
-          const Icon(Icons.qr_code_2_rounded, color: RColors.brand, size: 44),
+          IconButton(
+            icon: const Icon(Icons.share_rounded, color: RColors.brand, size: 32),
+            tooltip: 'Compartir código',
+            onPressed: () {
+              Share.share(
+                '🏍️ ¡Únete a mi rodada en RIDERA!\n'
+                'Código: ${joinCode!}\n\n'
+                'Descarga la app: https://aventura.ridera.com.co',
+              );
+            },
+          ),
         ]),
       );
 
