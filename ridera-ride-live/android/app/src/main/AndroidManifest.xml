@@ -24,6 +24,7 @@
     <application
         android:label="RIDERA AVENTURA"
         android:name=".MainApplication"
+        android:icon="@mipmap/ic_launcher"
         >
         <activity
             android:name=".MainActivity"
