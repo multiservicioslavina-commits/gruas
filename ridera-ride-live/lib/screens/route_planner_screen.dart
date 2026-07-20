@@ -415,6 +415,14 @@ class _WaypointFieldState extends State<_WaypointField> {
   }
 
   @override
+  void didUpdateWidget(covariant _WaypointField old) {
+    super.didUpdateWidget(old);
+    if (widget.initial != old.initial && widget.initial != _ctrl.text) {
+      _ctrl.text = widget.initial;
+    }
+  }
+
+  @override
   void dispose() {
     _debounce?.cancel();
     _ctrl.dispose();
