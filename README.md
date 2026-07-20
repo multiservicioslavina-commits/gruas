@@ -25,7 +25,7 @@ gruas/
 | Servicio | Hosting | URL |
 |---|---|---|
 | Landing grúas | Netlify | multiservicioslavina.com |
-| Landing app | Netlify | app.ridera.com.co |
+| Landing app | Netlify | aventura.ridera.com.co |
 | Video backend | Railway | ridera-video-backend-prod.up.railway.app |
 | Rita chatbot | Railway | gregarious-tenderness-production-38ad.up.railway.app |
 | Base de datos | Supabase | vzzxsdtsaahhzyctvmhx.supabase.co |

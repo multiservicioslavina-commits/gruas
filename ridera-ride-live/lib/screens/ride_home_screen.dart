@@ -121,7 +121,7 @@ class _RideHomeScreenState extends State<RideHomeScreen> {
                 onTap: () {
                   Share.share('🏍️ Descarga Ridera Aventura y rodemos juntos.\n'
                       'GPS grupal en vivo, detección de caídas y video resumen de cada rodada.\n\n'
-                      'https://app.ridera.com.co');
+                      'https://aventura.ridera.com.co');
                 },
                 dark: true,
               ),

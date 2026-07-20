@@ -300,7 +300,7 @@ class _RideSummaryScreenState extends State<RideSummaryScreen> {
         '⏱ ${_hms(widget.elapsed)}\n'
         '🏎 Vel. máx: ${_maxSpeedKmh.toStringAsFixed(0)} km/h\n\n'
         'Rodada hecha con Ridera Aventura\n'
-        'https://app.ridera.com.co';
+        'https://aventura.ridera.com.co';
     Share.share(text);
   }
 
