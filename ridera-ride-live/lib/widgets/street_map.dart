@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:latlong2/latlong.dart';
 import '../ride_controller.dart';
 import '../models/rider.dart';
@@ -11,6 +12,10 @@ class StreetMap extends StatelessWidget {
   final String? selectedId;
   final void Function(String id) onTapNode;
   final String tileUrl;
+
+  static final _tileProvider = FMTCTileProvider(
+    stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+  );
 
   const StreetMap({
     super.key,
@@ -59,6 +64,7 @@ class StreetMap extends StatelessWidget {
             TileLayer(
               urlTemplate: tileUrl,
               userAgentPackageName: 'co.ridera.ridelive',
+              tileProvider: _tileProvider,
             ),
             MarkerLayer(markers: markers),
           ],

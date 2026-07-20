@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:latlong2/latlong.dart' as ll;
 import '../services/directions_service.dart';
 import '../theme.dart';
@@ -20,6 +21,9 @@ class RoutePlannerScreen extends StatefulWidget {
 class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   final _dir = DirectionsService();
   final _mapCtrl = fm.MapController();
+  final _tileProvider = FMTCTileProvider(
+    stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+  );
 
   final _waypoints = <_Waypoint>[
     _Waypoint(kind: _WpKind.origin),
@@ -111,6 +115,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 fm.TileLayer(
                   urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
                   userAgentPackageName: 'co.ridera.ridelive',
+                  tileProvider: _tileProvider,
                 ),
                 if (_route != null)
                   fm.PolylineLayer(

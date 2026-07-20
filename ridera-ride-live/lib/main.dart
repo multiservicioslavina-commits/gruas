@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
 import 'supabase_config.dart';
@@ -19,6 +20,13 @@ Future<void> main() async {
   // runZonedGuarded atrapa errores asíncronos no manejados (WebSocket cae, etc)
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    try {
+      await FMTCObjectBoxBackend().initialise();
+      await const FMTCStore('mapStore').manage.create();
+    } catch (e) {
+      debugPrint('FMTC init falló: $e');
+    }
 
     try {
       await Supabase.initialize(

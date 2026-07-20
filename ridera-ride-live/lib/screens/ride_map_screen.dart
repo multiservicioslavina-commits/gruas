@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -68,6 +69,9 @@ class _RideMapScreenState extends State<RideMapScreen>
   final _mesh = MeshService();
   final _crashDetector = CrashDetector();
   final _mapCtrl = MapController();
+  final _tileProvider = FMTCTileProvider(
+    stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
+  );
 
   String _emergencyName = '';
   String _emergencyPhone = '';
@@ -687,6 +691,7 @@ class _RideMapScreenState extends State<RideMapScreen>
         TileLayer(
           urlTemplate: _mapType.url,
           userAgentPackageName: 'co.ridera.ridelive',
+          tileProvider: _tileProvider,
         ),
         // Ruta planeada por el líder (azul, debajo del trazado real)
         if (_plannedPolyline != null && _plannedPolyline!.isNotEmpty)
