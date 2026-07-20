@@ -64,12 +64,15 @@ Future<void> main() async {
   });
 }
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 class RideraApp extends StatelessWidget {
   const RideraApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'RIDERA AVENTURA',
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(

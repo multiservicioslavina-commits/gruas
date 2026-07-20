@@ -1,18 +1,15 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:onesignal_flutter/onesignal_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../main.dart' show navigatorKey;
 import '../notif_config.dart';
+import '../screens/ride_map_screen.dart';
 
-/// Wrapper de OneSignal para RIDERA AVENTURA.
-///
-/// Uso:
-///   await NotificationService.initialize();
-///   await NotificationService.linkToUser(uid);
 class NotificationService {
   static bool _initialized = false;
 
-  /// Inicializa OneSignal. Llamar una sola vez en `main()`.
   static Future<void> initialize() async {
     if (_initialized) return;
     _initialized = true;
@@ -20,23 +17,18 @@ class NotificationService {
     OneSignal.Debug.setLogLevel(kDebugMode ? OSLogLevel.info : OSLogLevel.error);
     OneSignal.initialize(kOneSignalAppId);
 
-    // Solicitar permiso de push (Android 13+ requiere permiso explícito)
     await OneSignal.Notifications.requestPermission(true);
 
-    // Cuando el usuario toca una notificación, la ruteamos.
     OneSignal.Notifications.addClickListener((event) {
       final data = event.notification.additionalData;
       if (data != null) _handleNotificationTap(data);
     });
   }
 
-  /// Vincula el player_id de OneSignal con el uid de Supabase para poder
-  /// enviarle push targeted a este usuario.
   static Future<void> linkToUser(String supabaseUid) async {
     if (!_initialized) return;
     try {
       OneSignal.login(supabaseUid);
-      // Guardar en Supabase el player_id (OneSignal subscription id)
       final subscriptionId = OneSignal.User.pushSubscription.id;
       if (subscriptionId != null && subscriptionId.isNotEmpty) {
         await _saveTokenToSupabase(supabaseUid, subscriptionId);
@@ -50,7 +42,6 @@ class NotificationService {
     } catch (_) {}
   }
 
-  /// Desvincula (típicamente al cerrar sesión).
   static Future<void> unlinkFromUser() async {
     if (!_initialized) return;
     try {
@@ -72,10 +63,26 @@ class NotificationService {
   }
 
   static void _handleNotificationTap(Map<String, dynamic> data) {
-    // Placeholder — cuando tengamos rutas nombradas, navegar según data['type']:
-    // - 'sos': abrir mapa de la rodada con rideId=data['ride_id']
-    // - 'ride_start': abrir la rodada
-    // - 'new_member': mostrar quien se unió
-    debugPrint('Notification tapped: $data');
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+
+    final type = data['type'] as String?;
+    final rideId = data['ride_id'] as String?;
+    if (rideId == null) return;
+
+    switch (type) {
+      case 'sos':
+      case 'ride_start':
+      case 'new_member':
+        nav.push(MaterialPageRoute(
+          builder: (_) => RideMapScreen(
+            rideId: rideId,
+            isLider: false,
+            rideName: data['ride_name'] as String? ?? 'Rodada',
+          ),
+        ));
+      default:
+        debugPrint('Notification type desconocido: $type');
+    }
   }
 }

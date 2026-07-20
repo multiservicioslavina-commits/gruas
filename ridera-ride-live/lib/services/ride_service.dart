@@ -7,33 +7,47 @@ class RideService {
 
   final SupabaseClient _sb;
 
-  String get _uid => _sb.auth.currentUser!.id;
+  String get _uid {
+    final user = _sb.auth.currentUser;
+    if (user == null) throw Exception('No hay sesión activa');
+    return user.id;
+  }
 
   String _generateCode() {
     const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     final rng = Random.secure();
-    return List.generate(6, (_) => chars[rng.nextInt(chars.length)]).join();
+    return List.generate(4, (_) => chars[rng.nextInt(chars.length)]).join();
   }
 
   Future<Map<String, dynamic>> createRide(String nombre) async {
-    final code = _generateCode();
-    final ride = {
-      'id': code,
-      'nombre': nombre,
-      'lider_id': _uid,
-      'estado': 'activa',
-    };
+    String code;
+    for (var attempt = 0; attempt < 10; attempt++) {
+      code = _generateCode();
+      final existing = await _sb
+          .from('rides')
+          .select('id')
+          .eq('id', code)
+          .maybeSingle();
+      if (existing == null) {
+        final ride = {
+          'id': code,
+          'nombre': nombre,
+          'lider_id': _uid,
+          'estado': 'activa',
+        };
+        await _sb.from('rides').insert(ride);
 
-    await _sb.from('rides').insert(ride);
+        await _sb.from('members').insert({
+          'ride_id': code,
+          'uid': _uid,
+          'rol': 'lider',
+          'nombre': nombre,
+        });
 
-    await _sb.from('members').insert({
-      'ride_id': code,
-      'uid': _uid,
-      'rol': 'lider',
-      'nombre': nombre,
-    });
-
-    return ride;
+        return ride;
+      }
+    }
+    throw Exception('No se pudo generar un código único');
   }
 
   Future<Map<String, dynamic>> joinRide(String code) async {
