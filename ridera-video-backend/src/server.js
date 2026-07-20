@@ -185,12 +185,46 @@ app.post('/render', async (req, res) => {
     console.warn(`[${rideId}] dedup check falló: ${e.message}`);
   }
 
+  // Re-fetch route_points desde Supabase ordenados por recorded_at para
+  // garantizar el orden cronológico (la app a veces los envía desordenados).
+  let orderedPoints = routePoints;
+  if (uid && SUPABASE_URL && SUPABASE_KEY) {
+    try {
+      const rpUrl = `${SUPABASE_URL}/rest/v1/route_points` +
+        `?select=lat,lon,speed_kmh` +
+        `&ride_id=eq.${encodeURIComponent(rideId)}` +
+        `&uid=eq.${encodeURIComponent(uid)}` +
+        `&order=recorded_at.asc&limit=2000`;
+      const rpRes = await fetch(rpUrl, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (rpRes.ok) {
+        const pts = await rpRes.json();
+        if (pts.length >= 2) {
+          // Simplificar a max 300 puntos
+          const maxPts = 300;
+          let simplified = pts;
+          if (pts.length > maxPts) {
+            simplified = [];
+            const step = (pts.length - 1) / (maxPts - 1);
+            for (let i = 0; i < maxPts; i++) simplified.push(pts[Math.round(i * step)]);
+          }
+          orderedPoints = simplified;
+          console.log(`[${rideId}] route_points re-fetched: ${pts.length} → ${orderedPoints.length} pts`);
+        }
+      }
+    } catch (e) {
+      console.warn(`[${rideId}] re-fetch route_points falló, usando datos del cliente: ${e.message}`);
+    }
+  }
+
   const inputData = {
     rideId, uid: uid || null, rideName: rideName || 'Rodada',
     elapsed: elapsed || '00:00:00',
     distanceKm: String(distanceKm ?? '0'),
     maxSpeedKmh: String(maxSpeedKmh ?? '0'),
-    routePoints, photos: photos || [],
+    routePoints: orderedPoints, photos: photos || [],
     municipios: Array.isArray(municipios) ? municipios : [],
     rideStartedAt: rideStartedAt || null,
     groupRiders: Array.isArray(groupRiders) ? groupRiders : [],
