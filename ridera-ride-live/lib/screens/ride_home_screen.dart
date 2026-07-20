@@ -3,14 +3,28 @@ import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../rita_config.dart';
 import '../services/auth_service.dart';
+import '../services/update_service.dart';
 import '../theme.dart';
 import 'login_screen.dart';
 import 'my_history_screen.dart';
 import 'ride_entry_screen.dart';
 import 'profile_screen.dart';
 
-class RideHomeScreen extends StatelessWidget {
+class RideHomeScreen extends StatefulWidget {
   const RideHomeScreen({super.key});
+
+  @override
+  State<RideHomeScreen> createState() => _RideHomeScreenState();
+}
+
+class _RideHomeScreenState extends State<RideHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      UpdateService.checkForUpdate(context);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
