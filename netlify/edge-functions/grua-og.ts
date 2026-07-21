@@ -69,7 +69,15 @@ export default async (request: Request, context: Context) => {
       `$1${esc(pageDesc)}$2`
     )
     .replace(/(<meta property="og:url" id="ogUrl" content=")[^"]*(")/, `$1${esc(pageUrl)}$2`)
-    .replace(/(<link rel="canonical" id="canonicalUrl" href=")[^"]*(")/, `$1${esc(pageUrl)}$2`);
+    .replace(/(<link rel="canonical" id="canonicalUrl" href=")[^"]*(")/, `$1${esc(pageUrl)}$2`)
+    .replace(
+      /(<meta name="twitter:title" id="twTitle" content=")[^"]*(")/,
+      `$1${esc(pageTitle)}$2`
+    )
+    .replace(
+      /(<meta name="twitter:description" id="twDesc" content=")[^"]*(")/,
+      `$1${esc(pageDesc)}$2`
+    );
 
   if (foto) {
     html = html.replace(/(<meta property="og:image" id="ogImage" content=")[^"]*(")/, `$1${esc(foto)}$2`);

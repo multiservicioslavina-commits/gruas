@@ -6,5 +6,9 @@ Disallow: /admin.html
 Disallow: /registro-gruero.html
 Disallow: /aceptar.html
 Disallow: /rider/
+Disallow: /califica.html
+Disallow: /seguimiento.html
+Disallow: /mimoto.html
+Disallow: /widget-gruas.html
 
 Sitemap: https://gruas.ridera.com.co/sitemap.xml
