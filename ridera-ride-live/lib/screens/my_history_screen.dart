@@ -107,7 +107,6 @@ class _MyHistoryScreenState extends State<MyHistoryScreen> {
                     ),
                   ],
                 ),
-      floatingActionButton: const RitaFab(),
     );
   }
 

@@ -943,8 +943,6 @@ class _RideMapScreenState extends State<RideMapScreen>
         floatingActionButton: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            RitaFab(),
-            const SizedBox(height: 12),
             FloatingActionButton(
               heroTag: 'camera',
               onPressed: _uploadingPhoto ? null : _takePhoto,

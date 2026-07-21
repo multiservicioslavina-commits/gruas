@@ -155,32 +155,19 @@ class _RideraHomeState extends State<RideraHome> {
           elevation: 0,
         ),
         body: LeaderPanelScreen(controller: widget.controller),
-        floatingActionButton: Stack(
-          children: [
-            Positioned(
-              bottom: 16,
-              right: 16,
-              child: RitaFab(),
-            ),
-            Positioned(
-              bottom: 88,
-              right: 16,
-              child: FloatingActionButton(
-                onPressed: () {
-                  Navigator.of(context).push(MaterialPageRoute(
-                    builder: (_) => RideMapScreen(
-                      rideId: widget.rideId,
-                      isLider: true,
-                      rideName: widget.controller.rideName,
-                      startedAt: _startedAt,
-                    ),
-                  ));
-                },
-                backgroundColor: RColors.brand,
-                child: const Icon(Icons.map, color: Colors.white),
+        floatingActionButton: FloatingActionButton(
+          onPressed: () {
+            Navigator.of(context).push(MaterialPageRoute(
+              builder: (_) => RideMapScreen(
+                rideId: widget.rideId,
+                isLider: true,
+                rideName: widget.controller.rideName,
+                startedAt: _startedAt,
               ),
-            ),
-          ],
+            ));
+          },
+          backgroundColor: RColors.brand,
+          child: const Icon(Icons.map, color: Colors.white),
         ),
       );
     }

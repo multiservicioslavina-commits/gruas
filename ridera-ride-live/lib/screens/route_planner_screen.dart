@@ -164,7 +164,6 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             ),
         ],
       ),
-      floatingActionButton: const RitaFab(),
     );
   }
 
