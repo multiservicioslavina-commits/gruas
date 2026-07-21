@@ -86,6 +86,14 @@ class _UpdateDialogState extends State<_UpdateDialog> {
   double _progress = 0;
   String? _error;
 
+  String _fixDriveUrl(String url) {
+    if (!url.contains('drive.google.com')) return url;
+    final uri = Uri.parse(url);
+    final params = Map<String, String>.from(uri.queryParameters);
+    params['confirm'] = 't';
+    return uri.replace(queryParameters: params).toString();
+  }
+
   Future<void> _downloadAndInstall() async {
     setState(() {
       _downloading = true;
@@ -97,8 +105,12 @@ class _UpdateDialogState extends State<_UpdateDialog> {
       final dir = await getTemporaryDirectory();
       final filePath = '${dir.path}/ridera_${widget.latestVersion}.apk';
 
-      await Dio().download(
-        widget.apkUrl,
+      final dio = Dio();
+      dio.options.followRedirects = true;
+      dio.options.maxRedirects = 5;
+
+      await dio.download(
+        _fixDriveUrl(widget.apkUrl),
         filePath,
         onReceiveProgress: (received, total) {
           if (total > 0) {
