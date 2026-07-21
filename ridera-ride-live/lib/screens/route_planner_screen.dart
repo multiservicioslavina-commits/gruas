@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart' as fm;
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
@@ -29,7 +30,10 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
   DirectionsRoute? _route;
   bool _computing = false;
-  bool _showRoute = false; // true after user taps INICIAR
+  bool _showRoute = false;
+  bool _downloadingTiles = false;
+  double _tileProgress = 0;
+  int _tilesDownloaded = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -69,11 +73,23 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 ),
                 if (_showRoute && _route != null)
                   _routeInfoBar(),
-                if (_computing)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 6),
-                    child: LinearProgressIndicator(
-                        color: RColors.brand, backgroundColor: RColors.line, minHeight: 2),
+                if (_computing || _downloadingTiles)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Column(children: [
+                      LinearProgressIndicator(
+                        value: _downloadingTiles ? _tileProgress : null,
+                        color: RColors.brand, backgroundColor: RColors.line, minHeight: 2,
+                      ),
+                      if (_downloadingTiles)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Descargando mapa offline… $_tilesDownloaded tiles',
+                            style: const TextStyle(color: RColors.inkDim, fontSize: 11),
+                          ),
+                        ),
+                    ]),
                   ),
               ],
             ),
@@ -116,12 +132,16 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             color: RColors.asphalt,
             child: _showRoute && _route != null
                 ? FilledButton.icon(
-                    onPressed: _confirm,
-                    icon: const Icon(Icons.check_circle),
-                    label: const Text('CONFIRMAR RUTA',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                    onPressed: _downloadingTiles ? null : _confirm,
+                    icon: Icon(_downloadingTiles ? Icons.download : Icons.check_circle),
+                    label: Text(
+                      _downloadingTiles ? 'DESCARGANDO MAPA…' : 'CONFIRMAR RUTA',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                    ),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF4ade80),
+                      disabledBackgroundColor: RColors.asphalt2,
+                      disabledForegroundColor: RColors.inkDim,
                       foregroundColor: Colors.black,
                       minimumSize: const Size(0, 56),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
@@ -292,8 +312,13 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     }
   }
 
-  void _confirm() {
+  Future<void> _confirm() async {
     if (_route == null) return;
+
+    // Download tiles along the route for offline use
+    await _downloadRouteTiles(_route!);
+
+    if (!mounted) return;
     final origin = _waypoints.first;
     final dest = _waypoints.last;
     Navigator.of(context).pop(PlannedRouteResult(
@@ -305,6 +330,72 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       destinationLat: dest.lat!,
       destinationLon: dest.lon!,
     ));
+  }
+
+  Future<void> _downloadRouteTiles(DirectionsRoute route) async {
+    if (route.polyline.isEmpty) return;
+    setState(() {
+      _downloadingTiles = true;
+      _tileProgress = 0;
+      _tilesDownloaded = 0;
+    });
+
+    try {
+      final store = const FMTCStore('mapStore');
+
+      // Build a bounding box around the route with padding
+      double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
+      for (final p in route.polyline) {
+        minLat = math.min(minLat, p.lat);
+        maxLat = math.max(maxLat, p.lat);
+        minLon = math.min(minLon, p.lon);
+        maxLon = math.max(maxLon, p.lon);
+      }
+      // Add ~2km padding
+      const pad = 0.02;
+      minLat -= pad;
+      maxLat += pad;
+      minLon -= pad;
+      maxLon += pad;
+
+      final region = RectangleRegion(
+        fm.LatLngBounds(
+          ll.LatLng(minLat, minLon),
+          ll.LatLng(maxLat, maxLon),
+        ),
+      );
+
+      final downloadable = region.toDownloadable(
+        minZoom: 10,
+        maxZoom: 15,
+        options: fm.TileLayer(
+          urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+          userAgentPackageName: 'co.ridera.ridelive',
+        ),
+      );
+
+      final (:downloadProgress, :tileEvents) = store.download.startForeground(
+        region: downloadable,
+        parallelThreads: 5,
+        maxBufferLength: 200,
+        skipExistingTiles: true,
+      );
+
+      await downloadProgress.listen((progress) {
+        if (mounted) {
+          setState(() {
+            _tilesDownloaded = progress.attemptedTiles;
+            _tileProgress = progress.percentageProgress / 100;
+          });
+        }
+      }).asFuture();
+    } catch (_) {
+      // If download fails, continue anyway — tiles will load online
+    }
+
+    if (mounted) {
+      setState(() => _downloadingTiles = false);
+    }
   }
 }
 
