@@ -144,23 +144,32 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
           ),
 
           // ─── Botón confirmar ruta ──────────────────────────────
-          if (_route != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
-              color: RColors.asphalt,
-              child: FilledButton.icon(
-                onPressed: _save,
-                icon: const Icon(Icons.check_circle),
-                label: const Text('CONFIRMAR RUTA',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-                style: FilledButton.styleFrom(
-                  backgroundColor: RColors.brand,
-                  minimumSize: const Size(0, 56),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            color: RColors.asphalt,
+            child: FilledButton.icon(
+              onPressed: _route != null ? _save : null,
+              icon: const Icon(Icons.check_circle),
+              label: Text(
+                _route != null
+                    ? 'CONFIRMAR RUTA'
+                    : 'Toca el mapa o busca para fijar origen y destino',
+                style: TextStyle(
+                  fontSize: _route != null ? 16 : 13,
+                  fontWeight: _route != null ? FontWeight.w800 : FontWeight.w500,
+                  letterSpacing: _route != null ? 1.5 : 0,
                 ),
               ),
+              style: FilledButton.styleFrom(
+                backgroundColor: _route != null ? RColors.brand : RColors.asphalt2,
+                disabledBackgroundColor: RColors.asphalt2,
+                disabledForegroundColor: RColors.inkDim,
+                minimumSize: const Size(0, 56),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+              ),
             ),
+          ),
         ],
       ),
     );
