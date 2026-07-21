@@ -22,11 +22,13 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
   );
 
-  // Waypoints: origin + destination + optional stops
   final _waypoints = <_Waypoint>[
     _Waypoint(kind: _WpKind.origin),
     _Waypoint(kind: _WpKind.destination),
   ];
+
+  // Text controllers to track what user typed (even without selecting suggestion)
+  final _textControllers = <int, TextEditingController>{};
 
   DirectionsRoute? _route;
   bool _computing = false;
@@ -35,12 +37,26 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   double _tileProgress = 0;
   int _tilesDownloaded = 0;
 
+  TextEditingController _getController(int i) {
+    _textControllers[i] ??= TextEditingController(text: _waypoints[i].label);
+    return _textControllers[i]!;
+  }
+
+  @override
+  void dispose() {
+    for (final c in _textControllers.values) {
+      c.dispose();
+    }
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final center = widget.initialCenter ?? const ll.LatLng(6.25, -75.57);
-    final hasOrigin = _waypoints.first.lat != null;
-    final hasDest = _waypoints.last.lat != null;
-    final canStart = hasOrigin && hasDest;
+    // Enable button if user typed text in origin AND destination
+    final originText = _getController(0).text.trim();
+    final destText = _getController(_waypoints.length - 1).text.trim();
+    final canStart = originText.isNotEmpty && destText.isNotEmpty;
 
     return Scaffold(
       backgroundColor: RColors.asphalt,
@@ -60,19 +76,16 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 for (int i = 0; i < _waypoints.length; i++)
                   _waypointRow(i),
                 const SizedBox(height: 4),
-                Row(
-                  children: [
-                    TextButton.icon(
-                      onPressed: _addStop,
-                      icon: const Icon(Icons.add_location_alt_outlined,
-                          color: RColors.brand, size: 18),
-                      label: const Text('Agregar parada',
-                          style: TextStyle(color: RColors.brand, fontSize: 13)),
-                    ),
-                  ],
-                ),
-                if (_showRoute && _route != null)
-                  _routeInfoBar(),
+                Row(children: [
+                  TextButton.icon(
+                    onPressed: _addStop,
+                    icon: const Icon(Icons.add_location_alt_outlined,
+                        color: RColors.brand, size: 18),
+                    label: const Text('Agregar parada',
+                        style: TextStyle(color: RColors.brand, fontSize: 13)),
+                  ),
+                ]),
+                if (_showRoute && _route != null) _routeInfoBar(),
                 if (_computing || _downloadingTiles)
                   Padding(
                     padding: const EdgeInsets.only(top: 6),
@@ -93,6 +106,43 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                   ),
               ],
             ),
+          ),
+
+          // ─── Botón principal (arriba del mapa) ─────────────────
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+            color: RColors.asphalt,
+            child: _showRoute && _route != null
+                ? FilledButton.icon(
+                    onPressed: _downloadingTiles ? null : _confirm,
+                    icon: Icon(_downloadingTiles ? Icons.download : Icons.check_circle),
+                    label: Text(
+                      _downloadingTiles ? 'DESCARGANDO MAPA…' : 'CONFIRMAR RUTA',
+                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5),
+                    ),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF4ade80),
+                      disabledBackgroundColor: RColors.asphalt2,
+                      disabledForegroundColor: RColors.inkDim,
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(0, 52),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  )
+                : FilledButton.icon(
+                    onPressed: canStart && !_computing ? _startRoute : null,
+                    icon: const Icon(Icons.navigation_rounded),
+                    label: const Text('INICIAR RUTA',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: RColors.brand,
+                      disabledBackgroundColor: RColors.asphalt2,
+                      disabledForegroundColor: RColors.inkDim,
+                      minimumSize: const Size(0, 52),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
           ),
 
           // ─── Mapa ──────────────────────────────────────────────
@@ -123,43 +173,6 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                 fm.MarkerLayer(markers: _buildMarkers()),
               ],
             ),
-          ),
-
-          // ─── Botón principal ───────────────────────────────────
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
-            color: RColors.asphalt,
-            child: _showRoute && _route != null
-                ? FilledButton.icon(
-                    onPressed: _downloadingTiles ? null : _confirm,
-                    icon: Icon(_downloadingTiles ? Icons.download : Icons.check_circle),
-                    label: Text(
-                      _downloadingTiles ? 'DESCARGANDO MAPA…' : 'CONFIRMAR RUTA',
-                      style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5),
-                    ),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: const Color(0xFF4ade80),
-                      disabledBackgroundColor: RColors.asphalt2,
-                      disabledForegroundColor: RColors.inkDim,
-                      foregroundColor: Colors.black,
-                      minimumSize: const Size(0, 56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  )
-                : FilledButton.icon(
-                    onPressed: canStart && !_computing ? _startRoute : null,
-                    icon: const Icon(Icons.navigation_rounded),
-                    label: const Text('INICIAR RUTA',
-                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: RColors.brand,
-                      disabledBackgroundColor: RColors.asphalt2,
-                      disabledForegroundColor: RColors.inkDim,
-                      minimumSize: const Size(0, 56),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                    ),
-                  ),
           ),
         ],
       ),
@@ -192,7 +205,6 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   // ─── Waypoint row ──────────────────────────────────────────
 
   Widget _waypointRow(int i) {
-    final wp = _waypoints[i];
     final isOrigin = i == 0;
     final isDest = i == _waypoints.length - 1;
     final icon = isOrigin ? Icons.trip_origin : isDest ? Icons.flag : Icons.circle_outlined;
@@ -207,8 +219,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         Expanded(child: _WaypointField(
           key: ValueKey('wp_$i'),
           hint: hint,
-          initial: wp.label,
+          controller: _getController(i),
           onSelected: (r) => _setWaypoint(i, r),
+          onTextChanged: () => setState(() {}),
         )),
         if (!isOrigin && !isDest)
           IconButton(
@@ -255,6 +268,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
   void _setWaypoint(int i, GeocodeResult r) {
     setState(() {
       _waypoints[i] = _Waypoint(kind: _waypoints[i].kind, label: r.placeName, lat: r.lat, lon: r.lon);
+      _getController(i).text = r.placeName;
       _showRoute = false;
       _route = null;
     });
@@ -270,19 +284,57 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
   void _removeStop(int i) {
     setState(() {
+      _textControllers.remove(i);
       _waypoints.removeAt(i);
       _showRoute = false;
       _route = null;
     });
   }
 
+  /// Auto-geocode any waypoint that has text typed but no coordinates
+  Future<bool> _resolveWaypoints() async {
+    for (int i = 0; i < _waypoints.length; i++) {
+      final wp = _waypoints[i];
+      if (wp.lat != null && wp.lon != null) continue;
+      final text = _getController(i).text.trim();
+      if (text.isEmpty) continue;
+      final results = await _dir.geocode(text, limit: 1);
+      if (results.isEmpty) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('No se encontró "$text". Intenta con otro nombre.'), backgroundColor: RColors.sos),
+          );
+        }
+        return false;
+      }
+      final r = results.first;
+      setState(() {
+        _waypoints[i] = _Waypoint(kind: wp.kind, label: r.placeName, lat: r.lat, lon: r.lon);
+        _getController(i).text = r.placeName;
+      });
+    }
+    return true;
+  }
+
   Future<void> _startRoute() async {
+    setState(() => _computing = true);
+
+    // Auto-geocode text that wasn't selected from suggestions
+    final resolved = await _resolveWaypoints();
+    if (!resolved || !mounted) {
+      setState(() => _computing = false);
+      return;
+    }
+
     final points = _waypoints
         .where((w) => w.lat != null && w.lon != null)
         .map((w) => LatLng(w.lat!, w.lon!))
         .toList();
-    if (points.length < 2) return;
-    setState(() => _computing = true);
+    if (points.length < 2) {
+      setState(() => _computing = false);
+      return;
+    }
+
     try {
       final r = await _dir.route(points);
       if (!mounted) return;
@@ -314,10 +366,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
   Future<void> _confirm() async {
     if (_route == null) return;
-
-    // Download tiles along the route for offline use
     await _downloadRouteTiles(_route!);
-
     if (!mounted) return;
     final origin = _waypoints.first;
     final dest = _waypoints.last;
@@ -343,7 +392,6 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     try {
       final store = const FMTCStore('mapStore');
 
-      // Build a bounding box around the route with padding
       double minLat = 90, maxLat = -90, minLon = 180, maxLon = -180;
       for (final p in route.polyline) {
         minLat = math.min(minLat, p.lat);
@@ -351,7 +399,6 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         minLon = math.min(minLon, p.lon);
         maxLon = math.max(maxLon, p.lon);
       }
-      // Add ~2km padding
       const pad = 0.02;
       minLat -= pad;
       maxLat += pad;
@@ -359,10 +406,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       maxLon += pad;
 
       final region = RectangleRegion(
-        fm.LatLngBounds(
-          ll.LatLng(minLat, minLon),
-          ll.LatLng(maxLat, maxLon),
-        ),
+        fm.LatLngBounds(ll.LatLng(minLat, minLon), ll.LatLng(maxLat, maxLon)),
       );
 
       final downloadable = region.toDownloadable(
@@ -389,13 +433,9 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
           });
         }
       }).asFuture();
-    } catch (_) {
-      // If download fails, continue anyway — tiles will load online
-    }
+    } catch (_) {}
 
-    if (mounted) {
-      setState(() => _downloadingTiles = false);
-    }
+    if (mounted) setState(() => _downloadingTiles = false);
   }
 }
 
@@ -436,19 +476,20 @@ class _WaypointField extends StatefulWidget {
   const _WaypointField({
     super.key,
     required this.hint,
-    required this.initial,
+    required this.controller,
     required this.onSelected,
+    required this.onTextChanged,
   });
   final String hint;
-  final String initial;
+  final TextEditingController controller;
   final ValueChanged<GeocodeResult> onSelected;
+  final VoidCallback onTextChanged;
 
   @override
   State<_WaypointField> createState() => _WaypointFieldState();
 }
 
 class _WaypointFieldState extends State<_WaypointField> {
-  final _ctrl = TextEditingController();
   final _dir = DirectionsService();
   final _focus = FocusNode();
   Timer? _debounce;
@@ -459,24 +500,14 @@ class _WaypointFieldState extends State<_WaypointField> {
   @override
   void initState() {
     super.initState();
-    _ctrl.text = widget.initial;
     _focus.addListener(() {
       if (!_focus.hasFocus) _hideOverlay();
     });
   }
 
   @override
-  void didUpdateWidget(covariant _WaypointField old) {
-    super.didUpdateWidget(old);
-    if (widget.initial != old.initial && widget.initial != _ctrl.text) {
-      _ctrl.text = widget.initial;
-    }
-  }
-
-  @override
   void dispose() {
     _debounce?.cancel();
-    _ctrl.dispose();
     _focus.dispose();
     _hideOverlay();
     super.dispose();
@@ -487,7 +518,7 @@ class _WaypointFieldState extends State<_WaypointField> {
     return CompositedTransformTarget(
       link: _layerLink,
       child: TextField(
-        controller: _ctrl,
+        controller: widget.controller,
         focusNode: _focus,
         style: const TextStyle(color: Colors.white, fontSize: 14),
         decoration: InputDecoration(
@@ -500,19 +531,21 @@ class _WaypointFieldState extends State<_WaypointField> {
           border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(10),
               borderSide: BorderSide.none),
-          suffixIcon: _ctrl.text.isEmpty
+          suffixIcon: widget.controller.text.isEmpty
               ? null
               : IconButton(
                   padding: EdgeInsets.zero,
                   icon: const Icon(Icons.clear, size: 16, color: RColors.inkDim),
                   onPressed: () {
-                    _ctrl.clear();
+                    widget.controller.clear();
                     _hideOverlay();
+                    widget.onTextChanged();
                     setState(() {});
                   },
                 ),
         ),
         onChanged: (q) {
+          widget.onTextChanged();
           _debounce?.cancel();
           _debounce = Timer(const Duration(milliseconds: 350), () async {
             final results = await _dir.geocode(q);
@@ -556,7 +589,7 @@ class _WaypointFieldState extends State<_WaypointField> {
                       maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: RColors.inkDim, fontSize: 11)),
                   onTap: () {
-                    _ctrl.text = r.placeName;
+                    widget.controller.text = r.placeName;
                     widget.onSelected(r);
                     _focus.unfocus();
                     _hideOverlay();

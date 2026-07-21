@@ -4,7 +4,6 @@ import '../ride_controller.dart';
 import '../services/ride_repository.dart';
 import '../services/safety_service.dart';
 import '../theme.dart';
-import '../widgets/rita_fab.dart';
 import 'pre_rodada_screen.dart';
 import 'leader_panel_screen.dart';
 import 'ride_map_screen.dart';
@@ -118,7 +117,6 @@ class _RideraHomeState extends State<RideraHome> {
           backgroundColor: RColors.asphalt,
           elevation: 0,
         ),
-        floatingActionButton: const RitaFab(),
         body: PreRodadaScreen(
           controller: widget.controller,
           repo: widget.repo,
