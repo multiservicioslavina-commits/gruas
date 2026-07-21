@@ -426,16 +426,20 @@ class _DiaryEntryState extends State<_DiaryEntry> {
                               letterSpacing: 1,
                               fontWeight: FontWeight.w600)),
                     ),
-                    GestureDetector(
-                      onTap: widget.onDelete,
-                      child: Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: RColors.sos.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(8),
+                    Material(
+                      color: RColors.sos.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(10),
+                      child: InkWell(
+                        onTap: widget.onDelete,
+                        borderRadius: BorderRadius.circular(10),
+                        child: const Padding(
+                          padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                          child: Row(mainAxisSize: MainAxisSize.min, children: [
+                            Icon(Icons.delete_outline_rounded, size: 20, color: RColors.sos),
+                            SizedBox(width: 4),
+                            Text('Borrar', style: TextStyle(color: RColors.sos, fontSize: 12, fontWeight: FontWeight.w600)),
+                          ]),
                         ),
-                        child: const Icon(Icons.delete_outline_rounded,
-                            size: 16, color: RColors.sos),
                       ),
                     ),
                   ]),
