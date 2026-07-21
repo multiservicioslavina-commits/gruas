@@ -118,6 +118,7 @@ class _RideraHomeState extends State<RideraHome> {
           backgroundColor: RColors.asphalt,
           elevation: 0,
         ),
+        floatingActionButton: const RitaFab(),
         body: PreRodadaScreen(
           controller: widget.controller,
           repo: widget.repo,
