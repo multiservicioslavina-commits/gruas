@@ -5,10 +5,12 @@ export default async () => {
   const BASE_URL = 'https://gruas.ridera.com.co';
   const today = new Date().toISOString().split('T')[0];
 
-  // Páginas estáticas
+  // Páginas estáticas (lastmod = última edición real, no "hoy")
   const staticPages = [
-    { url: '/',              priority: '1.0', freq: 'daily'  },
-    { url: '/grua.html',    priority: '0.5', freq: 'monthly' },
+    { url: '/',                    priority: '1.0', freq: 'daily',   mod: '2026-07-21' },
+    { url: '/grueros',             priority: '0.9', freq: 'daily',   mod: '2026-07-21' },
+    { url: '/app/',                priority: '0.8', freq: 'monthly', mod: '2026-07-21' },
+    { url: '/garage-ridera.html',  priority: '0.7', freq: 'monthly', mod: '2026-07-17' },
   ];
 
   let grueroUrls: { url: string; mod: string; priority: string }[] = [];
@@ -33,7 +35,7 @@ export default async () => {
   const staticEntries = staticPages.map(p => `
   <url>
     <loc>${BASE_URL}${p.url}</loc>
-    <lastmod>${today}</lastmod>
+    <lastmod>${p.mod}</lastmod>
     <changefreq>${p.freq}</changefreq>
     <priority>${p.priority}</priority>
   </url>`).join('');
