@@ -298,7 +298,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       if (wp.lat != null && wp.lon != null) continue;
       final text = _getController(i).text.trim();
       if (text.isEmpty) continue;
-      final results = await _dir.geocode(text, limit: 1);
+      final results = await _dir.geocode(text, limit: 5);
       if (results.isEmpty) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(

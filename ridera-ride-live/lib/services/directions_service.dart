@@ -1,65 +1,58 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
-import '../video_config.dart';
+const _userAgent = 'RideraApp/1.0 (multiservicioslavina@gmail.com)';
 
-/// Cliente de Mapbox Directions + Geocoding.
-/// Devuelve rutas óptimas para moto + instrucciones turn-by-turn.
 class DirectionsService {
-  /// Autocompletar direcciones. Retorna hasta [limit] resultados cercanos a [proximity].
   Future<List<GeocodeResult>> geocode(String query,
       {LatLng? proximity, int limit = 5, String country = 'co'}) async {
     if (query.trim().length < 2) return [];
     final q = Uri.encodeComponent(query.trim());
     final prox = proximity ?? const LatLng(6.25, -75.57);
-    final url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
-        '$q.json?access_token=$kMapboxToken&country=$country&limit=$limit&language=es'
-        '&proximity=${prox.lon},${prox.lat}'
-        '&types=place,locality,neighborhood,address,poi';
-    final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+    final url = 'https://nominatim.openstreetmap.org/search'
+        '?q=$q&format=json&limit=$limit&countrycodes=$country'
+        '&accept-language=es'
+        '&viewbox=${prox.lon - 1},${prox.lat + 1},${prox.lon + 1},${prox.lat - 1}'
+        '&bounded=0';
+    final res = await http.get(Uri.parse(url), headers: {'User-Agent': _userAgent})
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) return [];
-    final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final features = (data['features'] as List?) ?? [];
-    return features.map<GeocodeResult>((f) {
-      final coords = (f['center'] as List).cast<num>();
+    final data = jsonDecode(res.body) as List;
+    return data.map<GeocodeResult>((f) {
       return GeocodeResult(
-        placeName: (f['place_name'] as String?) ?? '',
-        name: (f['text'] as String?) ?? '',
-        lat: coords[1].toDouble(),
-        lon: coords[0].toDouble(),
+        placeName: (f['display_name'] as String?) ?? '',
+        name: (f['name'] as String?) ?? (f['display_name'] as String?) ?? '',
+        lat: double.tryParse(f['lat']?.toString() ?? '') ?? 0,
+        lon: double.tryParse(f['lon']?.toString() ?? '') ?? 0,
       );
     }).toList();
   }
 
   Future<GeocodeResult?> reverseGeocode(double lat, double lon) async {
-    final url = 'https://api.mapbox.com/geocoding/v5/mapbox.places/'
-        '$lon,$lat.json?access_token=$kMapboxToken&language=es&limit=1'
-        '&types=place,locality,neighborhood,address,poi';
-    final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 8));
+    final url = 'https://nominatim.openstreetmap.org/reverse'
+        '?lat=$lat&lon=$lon&format=json&accept-language=es';
+    final res = await http.get(Uri.parse(url), headers: {'User-Agent': _userAgent})
+        .timeout(const Duration(seconds: 8));
     if (res.statusCode != 200) return null;
     final data = jsonDecode(res.body) as Map<String, dynamic>;
-    final features = (data['features'] as List?) ?? [];
-    if (features.isEmpty) return null;
-    final f = features.first;
+    if (data['error'] != null) return null;
     return GeocodeResult(
-      placeName: (f['place_name'] as String?) ?? '',
-      name: (f['text'] as String?) ?? '',
+      placeName: (data['display_name'] as String?) ?? '',
+      name: (data['name'] as String?) ?? (data['display_name'] as String?) ?? '',
       lat: lat,
       lon: lon,
     );
   }
 
-  /// Calcula la ruta óptima entre waypoints. Primero es origen, último es destino.
-  /// Retorna null si no encuentra ruta.
   Future<DirectionsRoute?> route(List<LatLng> waypoints) async {
     if (waypoints.length < 2) return null;
     final coords = waypoints.map((p) => '${p.lon},${p.lat}').join(';');
-    final url = 'https://api.mapbox.com/directions/v5/mapbox/driving-traffic/'
-        '$coords?access_token=$kMapboxToken'
-        '&geometries=geojson&overview=full&steps=true&language=es';
+    final url = 'https://router.project-osrm.org/route/v1/driving/'
+        '$coords?overview=full&geometries=geojson&steps=true';
     final res = await http.get(Uri.parse(url)).timeout(const Duration(seconds: 12));
     if (res.statusCode != 200) return null;
     final data = jsonDecode(res.body) as Map<String, dynamic>;
+    if (data['code'] != 'Ok') return null;
     final routes = (data['routes'] as List?) ?? [];
     if (routes.isEmpty) return null;
     final r = routes.first as Map<String, dynamic>;
@@ -77,8 +70,7 @@ class DirectionsService {
         final maneuver = m['maneuver'] as Map<String, dynamic>? ?? {};
         final loc = (maneuver['location'] as List?)?.cast<num>() ?? [0, 0];
         steps.add(RouteStep(
-          instruction: (maneuver['instruction'] as String?) ??
-              (m['name'] as String?) ?? '',
+          instruction: (m['name'] as String?) ?? '',
           type: (maneuver['type'] as String?) ?? '',
           modifier: (maneuver['modifier'] as String?) ?? '',
           distanceM: ((m['distance'] as num?) ?? 0).toDouble(),
@@ -130,7 +122,6 @@ class DirectionsRoute {
     required this.durationMin,
   });
 
-  /// Serializar a JSON para guardar en Supabase.
   Map<String, dynamic> toGeoJsonLineString() => {
         'type': 'LineString',
         'coordinates': polyline.map((p) => [p.lon, p.lat]).toList(),
@@ -141,10 +132,10 @@ class DirectionsRoute {
 }
 
 class RouteStep {
-  final String instruction; // Ej: "Gira a la derecha en Calle 50"
-  final String type;        // "turn", "arrive", "roundabout", etc.
-  final String modifier;    // "left", "right", "straight", "slight right", etc.
-  final double distanceM;   // Distancia desde el paso anterior
+  final String instruction;
+  final String type;
+  final String modifier;
+  final double distanceM;
   final double durationS;
   final double lat;
   final double lon;
