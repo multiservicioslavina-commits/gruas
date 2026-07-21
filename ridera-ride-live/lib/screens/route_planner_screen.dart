@@ -384,7 +384,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       await downloadProgress.listen((progress) {
         if (mounted) {
           setState(() {
-            _tilesDownloaded = progress.attemptedTiles;
+            _tilesDownloaded = progress.attemptedTilesCount;
             _tileProgress = progress.percentageProgress / 100;
           });
         }
