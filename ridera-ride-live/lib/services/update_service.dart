@@ -5,6 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class UpdateService {
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -121,10 +122,9 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
       final file = File(filePath);
       if (!await file.exists() || await file.length() < 1000000) {
-        setState(() {
-          _downloading = false;
-          _error = 'Descarga incompleta. Intenta de nuevo.';
-        });
+        // Google Drive may return HTML instead of the APK — open in browser
+        await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
+        if (mounted) Navigator.pop(context);
         return;
       }
 
