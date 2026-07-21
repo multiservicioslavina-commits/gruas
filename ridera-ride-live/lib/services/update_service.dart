@@ -5,7 +5,6 @@ import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class UpdateService {
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -87,12 +86,9 @@ class _UpdateDialogState extends State<_UpdateDialog> {
   double _progress = 0;
   String? _error;
 
-  String _fixDriveUrl(String url) {
-    if (!url.contains('drive.google.com')) return url;
+  String? _extractFileId(String url) {
     final uri = Uri.parse(url);
-    final params = Map<String, String>.from(uri.queryParameters);
-    params['confirm'] = 't';
-    return uri.replace(queryParameters: params).toString();
+    return uri.queryParameters['id'];
   }
 
   Future<void> _downloadAndInstall() async {
@@ -108,23 +104,97 @@ class _UpdateDialogState extends State<_UpdateDialog> {
 
       final dio = Dio();
       dio.options.followRedirects = true;
-      dio.options.maxRedirects = 5;
+      dio.options.maxRedirects = 10;
+      dio.options.responseType = ResponseType.bytes;
 
-      await dio.download(
-        _fixDriveUrl(widget.apkUrl),
-        filePath,
-        onReceiveProgress: (received, total) {
-          if (total > 0) {
-            setState(() => _progress = received / total);
+      String downloadUrl = widget.apkUrl;
+      final fileId = _extractFileId(widget.apkUrl);
+
+      if (fileId != null) {
+        // Step 1: GET request to get cookies with confirm token
+        final cookieJar = <String>[];
+        final headResp = await dio.get<List<int>>(
+          'https://drive.google.com/uc?export=download&id=$fileId',
+          options: Options(
+            responseType: ResponseType.bytes,
+            followRedirects: true,
+            maxRedirects: 10,
+            headers: {'Accept': '*/*'},
+          ),
+        );
+
+        // Collect cookies from response
+        final setCookies = headResp.headers['set-cookie'];
+        if (setCookies != null) {
+          for (final c in setCookies) {
+            cookieJar.add(c.split(';').first);
           }
-        },
-      );
+        }
+
+        // Check if we got HTML (virus scan page) or the actual file
+        final isHtml = headResp.data != null &&
+            headResp.data!.length < 1000000 &&
+            String.fromCharCodes(headResp.data!.take(500)).contains('<!DOCTYPE');
+
+        if (isHtml) {
+          // Extract confirm token from HTML or use confirm=t
+          downloadUrl = 'https://drive.google.com/uc?export=download&confirm=t&id=$fileId';
+
+          // Download with cookies
+          await dio.download(
+            downloadUrl,
+            filePath,
+            options: Options(
+              headers: {
+                'Cookie': cookieJar.join('; '),
+              },
+            ),
+            onReceiveProgress: (received, total) {
+              if (total > 0) {
+                setState(() => _progress = received / total);
+              }
+            },
+          );
+        } else if (headResp.data != null && headResp.data!.length > 1000000) {
+          // First request already returned the file
+          await File(filePath).writeAsBytes(headResp.data!);
+        } else {
+          // Try direct download with confirm=t and cookies
+          downloadUrl = 'https://drive.google.com/uc?export=download&confirm=t&id=$fileId';
+          await dio.download(
+            downloadUrl,
+            filePath,
+            options: Options(
+              headers: {
+                'Cookie': cookieJar.join('; '),
+              },
+            ),
+            onReceiveProgress: (received, total) {
+              if (total > 0) {
+                setState(() => _progress = received / total);
+              }
+            },
+          );
+        }
+      } else {
+        // Non-Google-Drive URL — download directly
+        await dio.download(
+          downloadUrl,
+          filePath,
+          onReceiveProgress: (received, total) {
+            if (total > 0) {
+              setState(() => _progress = received / total);
+            }
+          },
+        );
+      }
 
       final file = File(filePath);
       if (!await file.exists() || await file.length() < 1000000) {
-        // Google Drive may return HTML instead of the APK — open in browser
-        await launchUrl(Uri.parse(widget.apkUrl), mode: LaunchMode.externalApplication);
-        if (mounted) Navigator.pop(context);
+        setState(() {
+          _downloading = false;
+          _error = 'No se pudo descargar. Verifica tu conexión.';
+        });
         return;
       }
 
