@@ -44,12 +44,8 @@ class _RitaFabState extends State<RitaFab>
       final url = Uri.parse(
         'https://wa.me/$kRitaWhatsAppNumber?text=${Uri.encodeComponent(kRitaGreeting)}',
       );
-      if (await canLaunchUrl(url)) {
-        await launchUrl(url, mode: LaunchMode.externalApplication);
-      }
-    } catch (e) {
-      debugPrint('Error al abrir Rita: $e');
-    }
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } catch (_) {}
     widget.onPressed?.call();
   }
 
