@@ -1,7 +1,10 @@
+import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class UpdateService {
   static Future<void> checkForUpdate(BuildContext context) async {
@@ -35,50 +38,12 @@ class UpdateService {
       showDialog(
         context: context,
         barrierDismissible: !forceUpdate,
-        builder: (ctx) => AlertDialog(
-          backgroundColor: const Color(0xFF1a1a1a),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Row(
-            children: [
-              Icon(Icons.system_update, color: Color(0xFFE85D20)),
-              SizedBox(width: 10),
-              Text('Nueva versión', style: TextStyle(color: Colors.white)),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Versión $latestVersion disponible (tienes $currentVersion)',
-                style: const TextStyle(color: Colors.white70, fontSize: 14),
-              ),
-              if (releaseNotes != null && releaseNotes.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Text(releaseNotes,
-                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
-              ],
-            ],
-          ),
-          actions: [
-            if (!forceUpdate)
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('Después',
-                    style: TextStyle(color: Colors.white54)),
-              ),
-            FilledButton(
-              onPressed: () {
-                launchUrl(Uri.parse(apkUrl),
-                    mode: LaunchMode.externalApplication);
-                if (!forceUpdate) Navigator.pop(ctx);
-              },
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFE85D20),
-              ),
-              child: const Text('Actualizar'),
-            ),
-          ],
+        builder: (ctx) => _UpdateDialog(
+          latestVersion: latestVersion,
+          currentVersion: currentVersion,
+          releaseNotes: releaseNotes,
+          forceUpdate: forceUpdate,
+          apkUrl: apkUrl,
         ),
       );
     } catch (_) {}
@@ -94,5 +59,141 @@ class UpdateService {
       if (lv < cv) return false;
     }
     return false;
+  }
+}
+
+class _UpdateDialog extends StatefulWidget {
+  const _UpdateDialog({
+    required this.latestVersion,
+    required this.currentVersion,
+    required this.apkUrl,
+    this.releaseNotes,
+    this.forceUpdate = false,
+  });
+
+  final String latestVersion;
+  final String currentVersion;
+  final String apkUrl;
+  final String? releaseNotes;
+  final bool forceUpdate;
+
+  @override
+  State<_UpdateDialog> createState() => _UpdateDialogState();
+}
+
+class _UpdateDialogState extends State<_UpdateDialog> {
+  bool _downloading = false;
+  double _progress = 0;
+  String? _error;
+
+  Future<void> _downloadAndInstall() async {
+    setState(() {
+      _downloading = true;
+      _progress = 0;
+      _error = null;
+    });
+
+    try {
+      final dir = await getTemporaryDirectory();
+      final filePath = '${dir.path}/ridera_${widget.latestVersion}.apk';
+
+      await Dio().download(
+        widget.apkUrl,
+        filePath,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            setState(() => _progress = received / total);
+          }
+        },
+      );
+
+      final file = File(filePath);
+      if (!await file.exists() || await file.length() < 1000000) {
+        setState(() {
+          _downloading = false;
+          _error = 'Descarga incompleta. Intenta de nuevo.';
+        });
+        return;
+      }
+
+      final result = await OpenFilex.open(filePath, type: 'application/vnd.android.package-archive');
+
+      if (result.type != ResultType.done) {
+        setState(() {
+          _downloading = false;
+          _error = 'No se pudo abrir el instalador. Revisa los permisos.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _downloading = false;
+        _error = 'Error al descargar: $e';
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: const Color(0xFF1a1a1a),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      title: const Row(
+        children: [
+          Icon(Icons.system_update, color: Color(0xFFE85D20)),
+          SizedBox(width: 10),
+          Text('Nueva versión', style: TextStyle(color: Colors.white)),
+        ],
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Versión ${widget.latestVersion} disponible (tienes ${widget.currentVersion})',
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+          if (widget.releaseNotes != null && widget.releaseNotes!.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(widget.releaseNotes!,
+                style: const TextStyle(color: Colors.white54, fontSize: 13)),
+          ],
+          if (_downloading) ...[
+            const SizedBox(height: 16),
+            LinearProgressIndicator(
+              value: _progress > 0 ? _progress : null,
+              color: const Color(0xFFE85D20),
+              backgroundColor: Colors.white12,
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _progress > 0
+                  ? 'Descargando… ${(_progress * 100).toInt()}%'
+                  : 'Iniciando descarga…',
+              style: const TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ],
+          if (_error != null) ...[
+            const SizedBox(height: 12),
+            Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 12)),
+          ],
+        ],
+      ),
+      actions: [
+        if (!widget.forceUpdate && !_downloading)
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Después',
+                style: TextStyle(color: Colors.white54)),
+          ),
+        if (!_downloading)
+          FilledButton(
+            onPressed: _downloadAndInstall,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFE85D20),
+            ),
+            child: Text(_error != null ? 'Reintentar' : 'Actualizar'),
+          ),
+      ],
+    );
   }
 }
