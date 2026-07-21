@@ -6,11 +6,8 @@ import 'package:latlong2/latlong.dart' as ll;
 import '../services/directions_service.dart';
 import '../theme.dart';
 
-/// Pantalla para que el líder planee la ruta de la rodada.
-/// Retorna un [PlannedRouteResult] cuando el usuario guarda, o null si cancela.
 class RoutePlannerScreen extends StatefulWidget {
   const RoutePlannerScreen({super.key, this.initialCenter});
-
   final ll.LatLng? initialCenter;
 
   @override
@@ -24,6 +21,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     stores: const {'mapStore': BrowseStoreStrategy.readUpdateCreate},
   );
 
+  // Waypoints: origin + destination + optional stops
   final _waypoints = <_Waypoint>[
     _Waypoint(kind: _WpKind.origin),
     _Waypoint(kind: _WpKind.destination),
@@ -31,22 +29,25 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
 
   DirectionsRoute? _route;
   bool _computing = false;
-  int? _activeWaypoint;
+  bool _showRoute = false; // true after user taps INICIAR
 
   @override
   Widget build(BuildContext context) {
     final center = widget.initialCenter ?? const ll.LatLng(6.25, -75.57);
+    final hasOrigin = _waypoints.first.lat != null;
+    final hasDest = _waypoints.last.lat != null;
+    final canStart = hasOrigin && hasDest;
+
     return Scaffold(
       backgroundColor: RColors.asphalt,
       appBar: AppBar(
         backgroundColor: RColors.asphalt,
         foregroundColor: Colors.white,
         title: const Text('Planear ruta'),
-        actions: const [],
       ),
       body: Column(
         children: [
-          // ─── Lista de waypoints ─────────────────────────────────────
+          // ─── Campos de búsqueda ────────────────────────────────
           Container(
             color: RColors.asphalt2,
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -54,53 +55,20 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
               children: [
                 for (int i = 0; i < _waypoints.length; i++)
                   _waypointRow(i),
-                const SizedBox(height: 6),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: TextButton.icon(
-                    onPressed: _addWaypoint,
-                    icon: const Icon(Icons.add_location_alt_outlined,
-                        color: RColors.brand, size: 20),
-                    label: const Text('Agregar parada',
-                        style: TextStyle(color: RColors.brand)),
-                  ),
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: _addStop,
+                      icon: const Icon(Icons.add_location_alt_outlined,
+                          color: RColors.brand, size: 18),
+                      label: const Text('Agregar parada',
+                          style: TextStyle(color: RColors.brand, fontSize: 13)),
+                    ),
+                  ],
                 ),
-                if (_route != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: RColors.brand.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: RColors.brand.withValues(alpha: 0.4)),
-                    ),
-                    child: Row(children: [
-                      const Icon(Icons.straighten, color: RColors.brand, size: 18),
-                      const SizedBox(width: 6),
-                      Text('${_route!.distanceKm.toStringAsFixed(1)} km',
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-                      const SizedBox(width: 14),
-                      const Icon(Icons.timer_outlined, color: RColors.brand, size: 18),
-                      const SizedBox(width: 6),
-                      Text('${_route!.durationMin} min',
-                          style: const TextStyle(
-                              color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
-                      const SizedBox(width: 14),
-                      const Icon(Icons.alt_route, color: RColors.brand, size: 18),
-                      const SizedBox(width: 6),
-                      Text('${_route!.steps.length} maniobras',
-                          style: const TextStyle(color: RColors.ink, fontSize: 13)),
-                    ]),
-                  ),
-                if (_activeWaypoint != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6),
-                    child: Text(
-                      '👆 Toca el mapa para fijar el punto',
-                      style: TextStyle(color: RColors.brand, fontSize: 12, fontWeight: FontWeight.w600),
-                    ),
-                  ),
+                if (_showRoute && _route != null)
+                  _routeInfoBar(),
                 if (_computing)
                   const Padding(
                     padding: EdgeInsets.only(top: 6),
@@ -111,7 +79,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
             ),
           ),
 
-          // ─── Mapa con la ruta ───────────────────────────────────
+          // ─── Mapa ──────────────────────────────────────────────
           Expanded(
             child: fm.FlutterMap(
               mapController: _mapCtrl,
@@ -126,91 +94,95 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
                   userAgentPackageName: 'co.ridera.ridelive',
                   tileProvider: _tileProvider,
                 ),
-                if (_route != null)
-                  fm.PolylineLayer(
-                    polylines: [
-                      fm.Polyline(
-                        points: _route!.polyline
-                            .map((p) => ll.LatLng(p.lat, p.lon))
-                            .toList(),
-                        color: const Color(0xFF3B82F6),
-                        strokeWidth: 5,
-                      ),
-                    ],
-                  ),
+                if (_showRoute && _route != null)
+                  fm.PolylineLayer(polylines: [
+                    fm.Polyline(
+                      points: _route!.polyline
+                          .map((p) => ll.LatLng(p.lat, p.lon))
+                          .toList(),
+                      color: const Color(0xFF3B82F6),
+                      strokeWidth: 5,
+                    ),
+                  ]),
                 fm.MarkerLayer(markers: _buildMarkers()),
               ],
             ),
           ),
 
-          // ─── Botón confirmar ruta ──────────────────────────────
+          // ─── Botón principal ───────────────────────────────────
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 16),
+            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
             color: RColors.asphalt,
-            child: FilledButton.icon(
-              onPressed: _route != null ? _save : null,
-              icon: const Icon(Icons.check_circle),
-              label: Text(
-                _route != null
-                    ? 'CONFIRMAR RUTA'
-                    : 'Toca el mapa o busca para fijar origen y destino',
-                style: TextStyle(
-                  fontSize: _route != null ? 16 : 13,
-                  fontWeight: _route != null ? FontWeight.w800 : FontWeight.w500,
-                  letterSpacing: _route != null ? 1.5 : 0,
-                ),
-              ),
-              style: FilledButton.styleFrom(
-                backgroundColor: _route != null ? RColors.brand : RColors.asphalt2,
-                disabledBackgroundColor: RColors.asphalt2,
-                disabledForegroundColor: RColors.inkDim,
-                minimumSize: const Size(0, 56),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              ),
-            ),
+            child: _showRoute && _route != null
+                ? FilledButton.icon(
+                    onPressed: _confirm,
+                    icon: const Icon(Icons.check_circle),
+                    label: const Text('CONFIRMAR RUTA',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: const Color(0xFF4ade80),
+                      foregroundColor: Colors.black,
+                      minimumSize: const Size(0, 56),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  )
+                : FilledButton.icon(
+                    onPressed: canStart && !_computing ? _startRoute : null,
+                    icon: const Icon(Icons.navigation_rounded),
+                    label: const Text('INICIAR RUTA',
+                        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: RColors.brand,
+                      disabledBackgroundColor: RColors.asphalt2,
+                      disabledForegroundColor: RColors.inkDim,
+                      minimumSize: const Size(0, 56),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                  ),
           ),
         ],
       ),
     );
   }
 
-  // ─── UI helpers ────────────────────────────────────────────
+  // ─── Route info bar ────────────────────────────────────────
+
+  Widget _routeInfoBar() => Container(
+    margin: const EdgeInsets.only(top: 6),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: RColors.brand.withValues(alpha: 0.15),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: RColors.brand.withValues(alpha: 0.4)),
+    ),
+    child: Row(children: [
+      const Icon(Icons.straighten, color: RColors.brand, size: 18),
+      const SizedBox(width: 6),
+      Text('${_route!.distanceKm.toStringAsFixed(1)} km',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+      const SizedBox(width: 14),
+      const Icon(Icons.timer_outlined, color: RColors.brand, size: 18),
+      const SizedBox(width: 6),
+      Text('${_route!.durationMin} min',
+          style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 15)),
+    ]),
+  );
+
+  // ─── Waypoint row ──────────────────────────────────────────
 
   Widget _waypointRow(int i) {
     final wp = _waypoints[i];
     final isOrigin = i == 0;
     final isDest = i == _waypoints.length - 1;
-    final icon = isOrigin
-        ? Icons.trip_origin
-        : isDest
-            ? Icons.flag
-            : Icons.circle_outlined;
-    final iconColor = isOrigin
-        ? const Color(0xFF4ade80)
-        : isDest
-            ? RColors.brand
-            : Colors.white70;
-    final hint = isOrigin
-        ? 'Origen'
-        : isDest
-            ? 'Destino'
-            : 'Parada intermedia';
-    final isActive = _activeWaypoint == i;
+    final icon = isOrigin ? Icons.trip_origin : isDest ? Icons.flag : Icons.circle_outlined;
+    final iconColor = isOrigin ? const Color(0xFF4ade80) : isDest ? RColors.brand : Colors.white70;
+    final hint = isOrigin ? '¿De dónde sales?' : isDest ? '¿A dónde vas?' : 'Parada intermedia';
+
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4),
       child: Row(children: [
-        GestureDetector(
-          onTap: () => setState(() => _activeWaypoint = isActive ? null : i),
-          child: Container(
-            padding: const EdgeInsets.all(4),
-            decoration: isActive ? BoxDecoration(
-              border: Border.all(color: RColors.brand, width: 2),
-              borderRadius: BorderRadius.circular(8),
-            ) : null,
-            child: Icon(icon, color: isActive ? RColors.brand : iconColor, size: 20),
-          ),
-        ),
+        Icon(icon, color: iconColor, size: 20),
         const SizedBox(width: 8),
         Expanded(child: _WaypointField(
           key: ValueKey('wp_$i'),
@@ -221,7 +193,7 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
         if (!isOrigin && !isDest)
           IconButton(
             icon: const Icon(Icons.close, color: RColors.inkDim, size: 18),
-            onPressed: () => _removeWaypoint(i),
+            onPressed: () => _removeStop(i),
           ),
       ]),
     );
@@ -234,41 +206,25 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       if (wp.lat == null || wp.lon == null) continue;
       final isOrigin = i == 0;
       final isDest = i == _waypoints.length - 1;
-      final color = isOrigin
-          ? const Color(0xFF4ade80)
-          : isDest
-              ? RColors.brand
-              : Colors.white;
+      final color = isOrigin ? const Color(0xFF4ade80) : isDest ? RColors.brand : Colors.white;
       markers.add(fm.Marker(
         point: ll.LatLng(wp.lat!, wp.lon!),
-        width: 40,
-        height: 40,
-        child: Icon(
-          isDest ? Icons.flag : Icons.circle,
-          color: color,
-          size: 32,
-          shadows: const [Shadow(color: Colors.black87, blurRadius: 4)],
-        ),
+        width: 40, height: 40,
+        child: Icon(isDest ? Icons.flag : Icons.circle, color: color, size: 32,
+            shadows: const [Shadow(color: Colors.black87, blurRadius: 4)]),
       ));
     }
     return markers;
   }
 
-  // ─── State handling ────────────────────────────────────────
+  // ─── Actions ───────────────────────────────────────────────
 
   void _onMapTap(ll.LatLng point) async {
-    int target;
-    if (_activeWaypoint != null) {
-      target = _activeWaypoint!;
-    } else {
-      final empty = _waypoints.indexWhere((w) => w.lat == null);
-      if (empty == -1) return;
-      target = empty;
-    }
-    setState(() => _activeWaypoint = null);
+    final empty = _waypoints.indexWhere((w) => w.lat == null);
+    if (empty == -1) return;
     final result = await _dir.reverseGeocode(point.latitude, point.longitude);
     final label = result?.placeName ?? '${point.latitude.toStringAsFixed(4)}, ${point.longitude.toStringAsFixed(4)}';
-    _setWaypoint(target, GeocodeResult(
+    _setWaypoint(empty, GeocodeResult(
       placeName: label,
       name: result?.name ?? label,
       lat: point.latitude,
@@ -276,43 +232,36 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     ));
   }
 
-  void _addWaypoint() {
-    setState(() {
-      _waypoints.insert(_waypoints.length - 1,
-          _Waypoint(kind: _WpKind.stop));
-    });
-  }
-
-  void _removeWaypoint(int i) {
-    setState(() {
-      _waypoints.removeAt(i);
-      _route = null;
-    });
-    _compute();
-  }
-
   void _setWaypoint(int i, GeocodeResult r) {
     setState(() {
-      _waypoints[i] = _Waypoint(
-        kind: _waypoints[i].kind,
-        label: r.placeName,
-        lat: r.lat,
-        lon: r.lon,
-      );
+      _waypoints[i] = _Waypoint(kind: _waypoints[i].kind, label: r.placeName, lat: r.lat, lon: r.lon);
+      _showRoute = false;
+      _route = null;
     });
     _mapCtrl.move(ll.LatLng(r.lat, r.lon), 12);
-    _compute();
   }
 
-  Future<void> _compute() async {
+  void _addStop() {
+    setState(() {
+      _waypoints.insert(_waypoints.length - 1, _Waypoint(kind: _WpKind.stop));
+      _showRoute = false;
+    });
+  }
+
+  void _removeStop(int i) {
+    setState(() {
+      _waypoints.removeAt(i);
+      _showRoute = false;
+      _route = null;
+    });
+  }
+
+  Future<void> _startRoute() async {
     final points = _waypoints
         .where((w) => w.lat != null && w.lon != null)
         .map((w) => LatLng(w.lat!, w.lon!))
         .toList();
-    if (points.length < 2) {
-      setState(() => _route = null);
-      return;
-    }
+    if (points.length < 2) return;
     setState(() => _computing = true);
     try {
       final r = await _dir.route(points);
@@ -320,27 +269,30 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
       setState(() {
         _route = r;
         _computing = false;
+        _showRoute = r != null;
       });
       if (r != null) {
-        _fitBounds(r.polyline);
+        final llPts = r.polyline.map((p) => ll.LatLng(p.lat, p.lon)).toList();
+        final bounds = fm.LatLngBounds.fromPoints(llPts);
+        _mapCtrl.fitCamera(fm.CameraFit.bounds(bounds: bounds, padding: const EdgeInsets.all(60), maxZoom: 15));
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se encontró ruta. Verifica los puntos.'), backgroundColor: RColors.sos),
+          );
+        }
       }
     } catch (_) {
-      if (mounted) setState(() => _computing = false);
+      if (mounted) {
+        setState(() => _computing = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Error al calcular la ruta. Intenta de nuevo.'), backgroundColor: RColors.sos),
+        );
+      }
     }
   }
 
-  void _fitBounds(List<LatLng> pts) {
-    if (pts.isEmpty) return;
-    final llPts = pts.map((p) => ll.LatLng(p.lat, p.lon)).toList();
-    final bounds = fm.LatLngBounds.fromPoints(llPts);
-    _mapCtrl.fitCamera(fm.CameraFit.bounds(
-      bounds: bounds,
-      padding: const EdgeInsets.all(60),
-      maxZoom: 15,
-    ));
-  }
-
-  void _save() {
+  void _confirm() {
     if (_route == null) return;
     final origin = _waypoints.first;
     final dest = _waypoints.last;
@@ -355,6 +307,8 @@ class _RoutePlannerScreenState extends State<RoutePlannerScreen> {
     ));
   }
 }
+
+// ─── Models ──────────────────────────────────────────────────
 
 enum _WpKind { origin, stop, destination }
 
@@ -385,7 +339,7 @@ class PlannedRouteResult {
   });
 }
 
-// ─── Campo de texto con autocompletado ──────────────────────
+// ─── Campo de búsqueda con autocompletado ────────────────────
 
 class _WaypointField extends StatefulWidget {
   const _WaypointField({
@@ -408,7 +362,6 @@ class _WaypointFieldState extends State<_WaypointField> {
   final _focus = FocusNode();
   Timer? _debounce;
   List<GeocodeResult> _suggestions = [];
-  bool _showSuggestions = false;
   final _layerLink = LayerLink();
   OverlayEntry? _overlayEntry;
 
@@ -505,13 +458,11 @@ class _WaypointFieldState extends State<_WaypointField> {
                 final r = _suggestions[i];
                 return ListTile(
                   dense: true,
-                  leading: const Icon(Icons.location_on,
-                      color: RColors.brand, size: 18),
+                  leading: const Icon(Icons.location_on, color: RColors.brand, size: 18),
                   title: Text(r.name,
                       style: const TextStyle(color: Colors.white, fontSize: 13)),
                   subtitle: Text(r.placeName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: RColors.inkDim, fontSize: 11)),
                   onTap: () {
                     _ctrl.text = r.placeName;
