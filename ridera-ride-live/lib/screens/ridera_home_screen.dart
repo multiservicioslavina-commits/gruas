@@ -100,9 +100,9 @@ class _RideraHomeState extends State<RideraHome> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (_, __) {
-        // Botón de atrás bloqueado — usar ícono de salir en el AppBar.
+      canPop: !_started,
+      onPopInvokedWithResult: (didPop, __) {
+        if (didPop) return;
       },
       child: _buildBody(context),
     );
@@ -116,6 +116,10 @@ class _RideraHomeState extends State<RideraHome> {
           automaticallyImplyLeading: false,
           backgroundColor: RColors.asphalt,
           elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Colors.white),
+            onPressed: () => Navigator.of(context).pop(),
+          ),
         ),
         body: PreRodadaScreen(
           controller: widget.controller,
