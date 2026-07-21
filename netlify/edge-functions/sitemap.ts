@@ -7,8 +7,11 @@ export default async () => {
 
   // Páginas estáticas
   const staticPages = [
-    { url: '/',              priority: '1.0', freq: 'daily'  },
-    { url: '/grua.html',    priority: '0.5', freq: 'monthly' },
+    { url: '/',                    priority: '1.0', freq: 'daily'   },
+    { url: '/grueros',             priority: '0.9', freq: 'daily'   },
+    { url: '/app/',                priority: '0.8', freq: 'monthly' },
+    { url: '/garage-ridera.html',  priority: '0.7', freq: 'monthly' },
+    { url: '/grua.html',           priority: '0.5', freq: 'monthly' },
   ];
 
   let grueroUrls: { url: string; mod: string; priority: string }[] = [];

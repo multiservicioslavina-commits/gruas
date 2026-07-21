@@ -2,5 +2,9 @@ User-agent: *
 Allow: /
 Disallow: /login-gruero.html
 Disallow: /mi-cuenta.html
+Disallow: /admin.html
+Disallow: /registro-gruero.html
+Disallow: /aceptar.html
+Disallow: /rider/
 
 Sitemap: https://gruas.ridera.com.co/sitemap.xml
