@@ -2,7 +2,7 @@ const CACHE = "ridera125-v4";
 const ASSETS = [
   "index.html","perfil.html","pasaporte.html","sello.html","album.html",
   "compartir.html","mapa.html","clubes.html","reset.html","privacidad.html",
-  "manifest.json","icon-192.png","icon-512.png","apple-touch-icon.png","og.png"
+  "manifest.json","icon-192.png","icon-512.png","apple-touch-icon.png","favicon.png","og.png"
 ];
 self.addEventListener("install", e=>{
   e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS)).then(()=>self.skipWaiting()).catch(()=>self.skipWaiting()));
