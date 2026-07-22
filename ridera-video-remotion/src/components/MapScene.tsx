@@ -9,10 +9,10 @@ import {
 } from "../lib/geo";
 import type { RideData, Municipality } from "../lib/types";
 
-const T_INTRO = 5.0;
+const T_INTRO = 2.5;
 const T_ROUTE = 40.0;
-const T_STATS = 10.0;
-const T_OUTRO = 5.0;
+const T_STATS = 5.0;
+const T_OUTRO = 2.5;
 const STAMP_SHOW = 2.8;
 
 // How often the static map image updates (every N frames).
@@ -23,7 +23,7 @@ const MAP_UPDATE_EVERY = 4;
 const CAM_BACK_M = 350;
 
 // Zoom level for the satellite image (15 = ~2km viewport)
-const ZOOM = 15;
+const ZOOM = 16;
 
 // Pixel dimensions of the video frame
 const W = 1080;
@@ -174,7 +174,7 @@ export const MapScene: React.FC<{ data: RideData }> = ({ data }) => {
     : 0;
 
   const introOpacity = isIntro
-    ? t < T_INTRO - 0.5 ? 1 : Math.max(0, (T_INTRO - t) / 0.5)
+    ? t < T_INTRO - 0.4 ? 1 : Math.max(0, (T_INTRO - t) / 0.4)
     : 0;
 
   return (
