@@ -1,4 +1,4 @@
-const CACHE = "ridera125-v4";
+const CACHE = "ridera125-v5";
 const ASSETS = [
   "index.html","perfil.html","pasaporte.html","sello.html","album.html",
   "compartir.html","mapa.html","clubes.html","reset.html","privacidad.html",

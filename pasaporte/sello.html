@@ -270,6 +270,24 @@ async function loadData(){
     const cs=localStorage.getItem("ridera_sealed"); if(cs){ try{ sealedSet=new Set(JSON.parse(cs)); }catch(_){} }
   }
   renderList("");
+  const preselect = new URLSearchParams(location.search).get("muni");
+  if(preselect){
+    const m = municipios.find(x=>x.id===preselect);
+    if(m){
+      selected = m;
+      isReplacing = sealedSet.has(m.id);
+      $("pickedName").textContent = m.nombre;
+      if(isReplacing){
+        $("pickedMeta").innerHTML = esc(m.sub) + " \u00b7 <b style='color:var(--copper)'>Ya sellado \u2014 sube una foto mejor para reemplazarla</b>";
+        $("sellarBtn").querySelector(".lbl").textContent = "Reemplazar foto";
+      } else {
+        $("pickedMeta").textContent = m.sub + " \u00b7 +" + m.pts + " puntos" + (m.fluvial?" \u00b7 fluvial":"");
+      }
+      $("picked").classList.add("show");
+      renderList("");
+      updateBtn();
+    }
+  }
 }
 
 function norm(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }

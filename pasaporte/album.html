@@ -521,6 +521,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       cursor: pointer;
       transition: background 0.2s;
     }
+    .btn-cambiar-foto {
+      display:inline-block;width:100%;padding:12px;margin-top:12px;
+      background:transparent;color:var(--orange);border:1px solid var(--orange);
+      border-radius:6px;font-family:'Barlow Condensed',sans-serif;font-size:13px;
+      letter-spacing:2px;text-transform:uppercase;text-align:center;text-decoration:none;
+      cursor:pointer;
+    }
 
     .btn-registrar:hover { background: var(--copper-dim); }
 
@@ -698,6 +705,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div>
         <div class="modal-notas" id="modal-notas" style="display:none"></div>
+        <a class="btn-cambiar-foto" id="modal-cambiar-foto" href="#">📷 Cambiar foto</a>
       </div>
 
       <!-- Link a sello.html para registrar -->
@@ -943,6 +951,8 @@ function abrirModal(muniId) {
     } else {
       el('modal-notas').style.display = 'none';
     }
+
+    el('modal-cambiar-foto').href = 'sello.html?muni=' + encodeURIComponent(muniId);
 
   } else {
     el('modal-sellado-info').style.display = 'none';
