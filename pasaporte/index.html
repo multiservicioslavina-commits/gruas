@@ -249,7 +249,7 @@ $("submitBtn").addEventListener("click", async ()=>{
       if(data.session){
         const { error:e2 } = await sb.from(CONFIG.T_RIDERS).insert({ id:data.user.id, nombre });
         if(e2 && !String(e2.message).includes("duplicate")) throw e2;
-        success("¡Cuenta creada!", "Ahora cuéntanos algo de ti, "+nombre+".", "perfil.html", "Completar mi perfil →");
+        success("¡Cuenta creada!", "Ahora cuéntanos algo de ti, "+nombre+".", "perfil.html", "Completar mi cuenta →");
       } else {
         showMsg("Cuenta creada. Revisa tu correo para confirmar y luego inicia sesión.", "ok");
       }
