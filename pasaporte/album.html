@@ -794,7 +794,7 @@ function renderAlbum() {
       <div class="subregion-header">
         <div class="subregion-num">${String(idx).padStart(2,'0')}</div>
         <div class="subregion-info">
-          <div class="subregion-nombre">${subr.toUpperCase()}</div>
+          <div class="subregion-nombre">${esc(subr).toUpperCase()}</div>
           <div class="subregion-prog"><span>${sellados.length}</span> de ${munis.length} municipios</div>
         </div>
       </div>
@@ -826,10 +826,10 @@ function renderCard(m) {
 
   return `
     <div class="muni-card ${sellado ? 'sellado' : 'pendiente'}"
-         onclick="abrirModal('${m.id}')">
+         data-mid="${esc(String(m.id))}" onclick="abrirModal(this.dataset.mid)">
 
       ${sellado && s.foto_url
-        ? `<img class="muni-foto" src="${s.foto_url}" loading="lazy" />`
+        ? `<img class="muni-foto" src="${esc(s.foto_url)}" loading="lazy" />`
         : `<div class="muni-placeholder">
              <div class="muni-placeholder-icon">🗺️</div>
              <div class="muni-placeholder-num">${esc(m.nombre.substring(0,3).toUpperCase())}</div>
