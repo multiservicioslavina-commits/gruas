@@ -117,6 +117,7 @@ const SUPABASE_URL="https://vzzxsdtsaahhzyctvmhx.supabase.co";
 const SUPABASE_KEY="sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
 const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $=id=>document.getElementById(id);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 let userId=null;
 
 (async function(){
@@ -145,8 +146,8 @@ async function loadMyClubs(){
     const c=m.clubs||{}; const st=sMap[c.id]||{};
     const lider = c.lider_id===userId;
     return '<div class="card">'
-      +'<div class="club-name">'+(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+'</div>'
-      +'<div class="codebox">Código para invitar: <span class="code">'+(c.codigo||"")+'</span></div>'
+      +'<div class="club-name">'+esc(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+'</div>'
+      +'<div class="codebox">Código para invitar: <span class="code">'+esc(c.codigo||"")+'</span></div>'
       + pctBar(st.porcentaje_club)
       +'<div class="stats"><span><b>'+(st.porcentaje_club||0)+'%</b> del mapa</span>'
       +'<span><b>'+(st.municipios_cubiertos||0)+'</b>/125 cubiertos</span>'
@@ -163,7 +164,7 @@ async function loadRanking(){
     if(!data || !data.length){ box.innerHTML='<div class="empty">Aún no hay clubes en el ranking. ¡Sé el primero!</div>'; return; }
     box.innerHTML = data.map((c,i)=>
       '<div class="rank-row"><div class="rank-pos">'+(i+1)+'</div>'
-      +'<div class="rank-info"><div class="n">'+c.nombre+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
+      +'<div class="rank-info"><div class="n">'+esc(c.nombre)+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
       +'<div class="rank-pct">'+(c.porcentaje_club||0)+'%</div></div>'
     ).join("");
   }catch(e){

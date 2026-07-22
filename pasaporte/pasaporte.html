@@ -168,7 +168,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
   @keyframes spin{to{transform:rotate(360deg)}}
   .err{color:#ff8a6b;font-family:"JetBrains Mono",monospace;font-size:14px;margin-top:12px;line-height:1.5;text-align:left;background:#1a0f0a;border:1px solid #3a1d12;border-radius:10px;padding:12px}
-  .demo-flag{margin:14px 16px 0;background:#1a140a;border:1px solid #3a2c12;color:var(--copper);font-family:"JetBrains Mono",monospace;font-size:15px;letter-spacing:.1em;border-radius:10px;padding:10px 12px;text-align:center}
   .hidden{display:none!important}
 
   @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
@@ -189,15 +188,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
-<!-- ====== ESTADO: SIN CONEXIÓN (pedir llave) ====== -->
+<!-- ====== ESTADO: SIN CONEXIÓN ====== -->
 <div id="connectGate" class="gate hidden">
   <div class="inner">
     <div class="eyebrow">Ridera · Pasaporte 125</div>
-    <h2>Conecta tu Supabase</h2>
-    <p>No encontré la llave guardada. Pégala una vez y queda lista (mejor desde el PC).</p>
-    <input id="keyInput" placeholder="sb_publishable_… o eyJ…" autocomplete="off">
-    <button class="cta" id="connectBtn">Conectar</button>
-    <div id="connectErr" class="err hidden"></div>
+    <h2>Sin conexión</h2>
+    <p>No se pudo conectar. Revisa tu internet e inténtalo de nuevo.</p>
+    <button class="cta" id="connectBtn" onclick="location.reload()">Reintentar</button>
   </div>
 </div>
 
@@ -227,7 +224,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </header>
 
-  <div id="demoFlag" class="demo-flag hidden">Vista de muestra — conéctate para ver tus 125 reales</div>
 
   <section class="progress-card">
     <div class="big-count">
@@ -314,49 +310,15 @@ const CONFIG = {
   SUBREGIONES: ["Valle de Aburrá","Oriente","Norte","Nordeste","Bajo Cauca",
                 "Magdalena Medio","Suroeste","Occidente","Urabá"]
 };
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-/* Llaves de localStorage donde la Pantalla 1 pudo guardar la conexión.
-   Probamos varias por si la nombró distinto. */
-const KEY_CANDIDATES = ["ridera_supabase_key","ridera_sb_key","supabase_key","sb_key","ridera125_key"];
-const URL_CANDIDATES = ["ridera_supabase_url","ridera_sb_url","supabase_url","sb_url"];
-
-/* -------- Datos DEMO (solo municipios que conozco con certeza,
-   para ver el diseño sin conexión; los reales vienen de Supabase) -------- */
-const DEMO = [
-  {n:"Medellín",s:"Valle de Aburrá",p:10,sealed:true},
-  {n:"Bello",s:"Valle de Aburrá",p:10,sealed:true},
-  {n:"Envigado",s:"Valle de Aburrá",p:10,sealed:true},
-  {n:"Itagüí",s:"Valle de Aburrá",p:10,sealed:false},
-  {n:"Rionegro",s:"Oriente",p:20,sealed:true},
-  {n:"Guatapé",s:"Oriente",p:20,sealed:true},
-  {n:"El Retiro",s:"Oriente",p:20,sealed:false},
-  {n:"Santa Rosa de Osos",s:"Norte",p:30,sealed:true},
-  {n:"Yarumal",s:"Norte",p:30,sealed:false},
-  {n:"Segovia",s:"Nordeste",p:30,sealed:false},
-  {n:"Caucasia",s:"Bajo Cauca",p:40,sealed:false},
-  {n:"Puerto Berrío",s:"Magdalena Medio",p:40,sealed:false},
-  {n:"Jardín",s:"Suroeste",p:20,sealed:true},
-  {n:"Andes",s:"Suroeste",p:20,sealed:true},
-  {n:"Jericó",s:"Suroeste",p:20,sealed:false},
-  {n:"Santa Fe de Antioquia",s:"Occidente",p:30,sealed:true},
-  {n:"Apartadó",s:"Urabá",p:40,sealed:false},
-  {n:"Murindó",s:"Urabá",p:50,sealed:false,fluvial:true},
-  {n:"Vigía del Fuerte",s:"Urabá",p:50,sealed:false,fluvial:true}
-];
 
 /* ============================================================
    LÓGICA
    ============================================================ */
 let sb = null;
 
-function pick(cands){ for(const k of cands){ const v=localStorage.getItem(k); if(v) return v; } return null; }
 function show(id){ ["loading","connectGate","errorGate","app"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
-
-function getCreds(){
-  const url = pick(URL_CANDIDATES) || (CONFIG.SUPABASE_URL.includes("YOUR-PROJECT")?null:CONFIG.SUPABASE_URL);
-  const key = pick(KEY_CANDIDATES) || (CONFIG.SUPABASE_ANON_KEY && !CONFIG.SUPABASE_ANON_KEY.includes("YOUR")?CONFIG.SUPABASE_ANON_KEY:null);
-  return {url,key};
-}
 
 async function loadData(){
   const m = await sb.from(CONFIG.T_MUNICIPIO).select("*");
@@ -391,8 +353,7 @@ function rankFor(n){
   return {current:r, next};
 }
 
-function render(data, isDemo){
-  document.getElementById("demoFlag").classList.toggle("hidden",!isDemo);
+function render(data){
 
   const sealed = data.filter(d=>d.sealed);
   const total = data.length || 125;
@@ -431,7 +392,7 @@ function render(data, isDemo){
     sec.className="subregion"+(idx===0?" open":"");
     sec.innerHTML = `
       <div class="sub-head" role="button" tabindex="0" aria-expanded="${idx===0}">
-        <span class="sub-name">${name}</span>
+        <span class="sub-name">${esc(name)}</span>
         <span class="sub-frac"><b>${done}</b>/${list.length}</span>
         <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
       </div>
@@ -440,7 +401,7 @@ function render(data, isDemo){
         ${list.map(d=>`
           <div class="muni ${d.sealed?'sealed':''} ${d.fluvial?'fluvial':''}">
             ${d.sealed?'<span class="stamp"></span>':''}
-            <span class="mn">${d.n}</span>
+            <span class="mn">${esc(d.n)}</span>
             ${d.p?`<span class="pts">+${d.p}</span>`:''}
           </div>`).join("")}
       </div></div>`;
@@ -453,8 +414,8 @@ function render(data, isDemo){
     // Insignia
     const b=document.createElement("div");
     b.className="badge"+(complete?" earned":"");
-    b.innerHTML=`<div class="ico">${name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase()}</div>
-                 <div class="bn">${name}</div><div class="bf">${done}/${list.length}</div>`;
+    b.innerHTML=`<div class="ico">${esc(name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase())}</div>
+                 <div class="bn">${esc(name)}</div><div class="bf">${done}/${list.length}</div>`;
     badgeCont.appendChild(b);
   });
 
@@ -483,35 +444,16 @@ function render(data, isDemo){
 
 async function boot(){
   show("loading");
-  const {url,key} = getCreds();
-
-  // Sin llave → modo demo + ofrecer conexión
-  if(!url || !key){
-    render(DEMO, true);
-    document.getElementById("demoFlag").addEventListener("click",()=>show("connectGate"));
-    return;
-  }
   try{
-    sb = supabase.createClient(url,key);
+    sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
     const data = await loadData();
-    if(!data.length){ render(DEMO,true); return; }
-    render(data,false);
+    render(data, false);
   }catch(e){
     document.getElementById("errDetail").textContent = e.message;
     show("errorGate");
   }
 }
 
-/* Conectar manualmente desde el gate */
-document.getElementById("connectBtn").addEventListener("click",()=>{
-  const val=document.getElementById("keyInput").value.trim();
-  const errEl=document.getElementById("connectErr");
-  if(val.startsWith("http")){ errEl.textContent="Eso es la URL. La llave empieza con sb_publishable_… o eyJ…"; errEl.classList.remove("hidden"); return; }
-  if(!val){ errEl.textContent="Pega tu llave anon / publishable."; errEl.classList.remove("hidden"); return; }
-  localStorage.setItem("ridera_supabase_key",val);
-  if(!CONFIG.SUPABASE_URL.includes("YOUR-PROJECT")) localStorage.setItem("ridera_supabase_url",CONFIG.SUPABASE_URL);
-  boot();
-});
 document.getElementById("retryBtn").addEventListener("click",boot);
 document.getElementById("goSeal").addEventListener("click",()=>{
   window.location.href = "sello.html";

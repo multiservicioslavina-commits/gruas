@@ -182,12 +182,15 @@ document.getElementById("deleteAccLink").addEventListener("click", async e=>{
   const btn = document.getElementById("deleteAccLink");
   btn.textContent = "Eliminando...";
   try{
-    // Borrar datos propios (RLS permite al rider borrar sus propios registros)
-    if(user){
-      await sb.from("club_members").delete().eq("rider_id", user.id);
-      await sb.from("sellos").delete().eq("rider_id", user.id);
-      await sb.from("riders").delete().eq("id", user.id);
-    }
+    const { data:sess } = await sb.auth.getSession();
+    const token = sess?.session?.access_token;
+    if(!token) throw new Error("Sin sesión activa");
+    const res = await fetch(SUPABASE_URL + "/functions/v1/delete-account", {
+      method: "POST",
+      headers: { Authorization: "Bearer " + token, apikey: SUPABASE_KEY }
+    });
+    const result = await res.json();
+    if(!result.ok) throw new Error(result.error || "Error del servidor");
     await sb.auth.signOut();
     try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
     alert("Tu cuenta y datos han sido eliminados. ¡Hasta pronto!");

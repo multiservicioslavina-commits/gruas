@@ -19,26 +19,17 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
   <style>
     :root {
-      --negro: #0d0d0d;
-      --negro-2: #161616;
-      --negro-3: #1f1f1f;
-      --negro-4: #2a2a2a;
-      --naranja: #E85D20;
-      --cobre: #c9a84c;
-      --cobre-dim: rgba(201,168,76,0.15);
-      --crema: #F0EBE0;
-      --gris: #5a5a5a;
-      --gris-claro: #888;
-      --blanco: #ffffff;
-      --verde: #4caf7d;
-      --rojo: #e05252;
+      --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;
+      --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;
+      --ink-faint:#a89e90;--copper:#c9a84c;--copper-dim:rgba(201,168,76,0.15);
+      --ok:#5fb86a;--err:#ff8a6b;
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      background: var(--negro);
-      color: var(--crema);
+      background: var(--bg);
+      color: var(--ink);
       font-family: 'DM Sans', sans-serif;
       min-height: 100vh;
     }
@@ -62,10 +53,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Bebas Neue', sans-serif;
       font-size: 22px;
       letter-spacing: 3px;
-      color: var(--cobre);
+      color: var(--copper);
     }
 
-    .nav-logo span { color: var(--naranja); }
+    .nav-logo span { color: var(--orange); }
 
     .nav-links {
       display: flex;
@@ -73,7 +64,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     .nav-links a {
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       text-decoration: none;
       font-size: 12px;
       font-family: 'Barlow Condensed', sans-serif;
@@ -86,13 +77,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     .nav-links a:hover,
     .nav-links a.active {
-      color: var(--cobre);
-      background: var(--cobre-dim);
+      color: var(--copper);
+      background: var(--copper-dim);
     }
 
     /* ── HERO STATS ───────────────────────────── */
     .hero {
-      background: linear-gradient(180deg, #111 0%, var(--negro) 100%);
+      background: linear-gradient(180deg, #111 0%, var(--bg) 100%);
       border-bottom: 1px solid rgba(201,168,76,0.15);
       padding: 32px 20px 28px;
     }
@@ -106,7 +97,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Bebas Neue', sans-serif;
       font-size: clamp(32px, 8vw, 52px);
       letter-spacing: 4px;
-      color: var(--cobre);
+      color: var(--copper);
       line-height: 1;
       margin-bottom: 4px;
     }
@@ -115,7 +106,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 13px;
       letter-spacing: 2px;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       text-transform: uppercase;
       margin-bottom: 28px;
     }
@@ -131,7 +122,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     .stat-card {
-      background: var(--negro-2);
+      background: var(--panel);
       padding: 16px 12px;
       text-align: center;
     }
@@ -139,7 +130,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .stat-num {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 36px;
-      color: var(--naranja);
+      color: var(--orange);
       line-height: 1;
     }
 
@@ -148,7 +139,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-size: 10px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       margin-top: 4px;
     }
 
@@ -164,20 +155,20 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-size: 11px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       margin-bottom: 8px;
     }
 
     .progress-bar {
       height: 6px;
-      background: var(--negro-4);
+      background: var(--line);
       border-radius: 3px;
       overflow: hidden;
     }
 
     .progress-fill {
       height: 100%;
-      background: linear-gradient(90deg, var(--naranja), var(--cobre));
+      background: linear-gradient(90deg, var(--orange), var(--copper));
       border-radius: 3px;
       transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
       width: 0%;
@@ -208,16 +199,16 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       text-transform: uppercase;
       padding: 6px 14px;
       border-radius: 20px;
-      border: 1px solid var(--negro-4);
-      background: var(--negro-2);
-      color: var(--gris-claro);
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink-faint);
       cursor: pointer;
       transition: all 0.2s;
       white-space: nowrap;
     }
 
-    .filtro-btn:hover { border-color: var(--cobre); color: var(--cobre); }
-    .filtro-btn.active { background: var(--cobre-dim); border-color: var(--cobre); color: var(--cobre); }
+    .filtro-btn:hover { border-color: var(--copper); color: var(--copper); }
+    .filtro-btn.active { background: var(--copper-dim); border-color: var(--copper); color: var(--copper); }
 
     /* ── ÁLBUM CONTENT ────────────────────────── */
     .album-wrap {
@@ -254,7 +245,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Bebas Neue', sans-serif;
       font-size: 22px;
       letter-spacing: 3px;
-      color: var(--cobre);
+      color: var(--copper);
       line-height: 1;
     }
 
@@ -263,11 +254,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-size: 11px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       margin-top: 3px;
     }
 
-    .subregion-prog span { color: var(--naranja); }
+    .subregion-prog span { color: var(--orange); }
 
     /* ── GRID MUNICIPIOS ──────────────────────── */
     .muni-grid {
@@ -288,12 +279,12 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       border-radius: 6px;
       overflow: hidden;
       cursor: pointer;
-      background: var(--negro-3);
-      border: 1px solid var(--negro-4);
+      background: var(--panel-2);
+      border: 1px solid var(--line);
       transition: transform 0.2s, border-color 0.2s;
     }
 
-    .muni-card:hover { transform: scale(1.02); border-color: var(--cobre); }
+    .muni-card:hover { transform: scale(1.02); border-color: var(--copper); }
 
     /* Sellado */
     .muni-card.sellado .muni-foto {
@@ -349,18 +340,18 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-weight: 700;
       letter-spacing: 0.5px;
       text-transform: uppercase;
-      color: var(--blanco);
+      color: #fff;
       line-height: 1.2;
     }
 
     .muni-card.pendiente .muni-nombre {
-      color: var(--gris);
+      color: var(--ink-dim);
     }
 
     .muni-fecha {
       font-family: 'DM Sans', sans-serif;
       font-size: 9px;
-      color: var(--cobre);
+      color: var(--copper);
       margin-top: 2px;
     }
 
@@ -372,7 +363,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       z-index: 2;
       width: 24px;
       height: 24px;
-      background: var(--naranja);
+      background: var(--orange);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -383,7 +374,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     /* Estrellas */
     .muni-stars {
       font-size: 8px;
-      color: var(--cobre);
+      color: var(--copper);
       margin-top: 2px;
       letter-spacing: 1px;
     }
@@ -403,7 +394,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .modal-overlay.open { display: flex; align-items: center; justify-content: center; }
 
     .modal {
-      background: var(--negro-2);
+      background: var(--panel);
       border: 1px solid rgba(201,168,76,0.25);
       border-radius: 12px;
       width: 100%;
@@ -415,7 +406,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .modal-foto-wrap {
       position: relative;
       aspect-ratio: 16/9;
-      background: var(--negro-3);
+      background: var(--panel-2);
     }
 
     .modal-foto {
@@ -435,7 +426,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     .modal-foto-empty span { font-size: 40px; opacity: 0.3; }
-    .modal-foto-empty p { font-size: 12px; color: var(--gris-claro); }
+    .modal-foto-empty p { font-size: 12px; color: var(--ink-faint); }
 
     .modal-close {
       position: absolute;
@@ -464,7 +455,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-size: 10px;
       letter-spacing: 2px;
       text-transform: uppercase;
-      color: var(--naranja);
+      color: var(--orange);
       margin-bottom: 6px;
     }
 
@@ -472,14 +463,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Bebas Neue', sans-serif;
       font-size: 28px;
       letter-spacing: 2px;
-      color: var(--blanco);
+      color: #fff;
       line-height: 1;
       margin-bottom: 4px;
     }
 
     .modal-subr {
       font-size: 12px;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       margin-bottom: 16px;
     }
 
@@ -495,117 +486,33 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-size: 9px;
       letter-spacing: 1.5px;
       text-transform: uppercase;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       margin-bottom: 3px;
     }
 
     .modal-meta-item span {
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 14px;
-      color: var(--crema);
+      color: var(--ink);
     }
 
     .modal-notas {
       font-size: 13px;
-      color: var(--gris-claro);
+      color: var(--ink-faint);
       line-height: 1.6;
       padding: 12px;
-      background: var(--negro-3);
+      background: var(--panel-2);
       border-radius: 6px;
-      border-left: 2px solid var(--cobre);
+      border-left: 2px solid var(--copper);
       margin-bottom: 16px;
     }
-
-    /* Form sello en modal */
-    .sello-form { display: none; }
-    .sello-form.open { display: block; }
-
-    .form-label {
-      font-family: 'Barlow Condensed', sans-serif;
-      font-size: 11px;
-      letter-spacing: 1.5px;
-      text-transform: uppercase;
-      color: var(--gris-claro);
-      margin-bottom: 6px;
-      display: block;
-    }
-
-    .form-input, .form-textarea {
-      width: 100%;
-      background: var(--negro-3);
-      border: 1px solid var(--negro-4);
-      border-radius: 6px;
-      color: var(--crema);
-      font-family: 'DM Sans', sans-serif;
-      font-size: 14px;
-      padding: 10px 12px;
-      margin-bottom: 12px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-
-    .form-input:focus, .form-textarea:focus { border-color: var(--cobre); }
-    .form-textarea { resize: vertical; min-height: 80px; }
-
-    .stars-input {
-      display: flex;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
-
-    .star-btn {
-      font-size: 22px;
-      background: none;
-      border: none;
-      cursor: pointer;
-      color: var(--negro-4);
-      transition: color 0.15s, transform 0.15s;
-      line-height: 1;
-    }
-
-    .star-btn.on { color: var(--cobre); }
-    .star-btn:hover { transform: scale(1.2); }
-
-    .foto-upload-label {
-      display: block;
-      border: 1px dashed var(--negro-4);
-      border-radius: 6px;
-      padding: 16px;
-      text-align: center;
-      cursor: pointer;
-      margin-bottom: 12px;
-      transition: border-color 0.2s;
-    }
-
-    .foto-upload-label:hover { border-color: var(--cobre); }
-    .foto-upload-label span { font-size: 24px; display: block; }
-    .foto-upload-label p { font-size: 11px; color: var(--gris-claro); margin-top: 4px; }
-    #foto-preview { max-width: 100%; border-radius: 6px; margin-bottom: 12px; display: none; }
-
-    .btn-sello {
-      width: 100%;
-      padding: 14px;
-      background: var(--naranja);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-family: 'Bebas Neue', sans-serif;
-      font-size: 18px;
-      letter-spacing: 3px;
-      cursor: pointer;
-      transition: opacity 0.2s, transform 0.1s;
-    }
-
-    .btn-sello:hover { opacity: 0.9; }
-    .btn-sello:active { transform: scale(0.99); }
-    .btn-sello:disabled { opacity: 0.4; cursor: not-allowed; }
 
     .btn-registrar {
       width: 100%;
       padding: 12px;
       background: transparent;
-      color: var(--cobre);
-      border: 1px solid var(--cobre);
+      color: var(--copper);
+      border: 1px solid var(--copper);
       border-radius: 6px;
       font-family: 'Barlow Condensed', sans-serif;
       font-size: 13px;
@@ -615,13 +522,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       transition: background 0.2s;
     }
 
-    .btn-registrar:hover { background: var(--cobre-dim); }
+    .btn-registrar:hover { background: var(--copper-dim); }
 
     /* ── LOADING ──────────────────────────────── */
     .loading-screen {
       position: fixed;
       inset: 0;
-      background: var(--negro);
+      background: var(--bg);
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -634,14 +541,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       font-family: 'Bebas Neue', sans-serif;
       font-size: 36px;
       letter-spacing: 6px;
-      color: var(--cobre);
+      color: var(--copper);
     }
 
     .loading-spinner {
       width: 32px;
       height: 32px;
-      border: 2px solid var(--negro-4);
-      border-top-color: var(--naranja);
+      border: 2px solid var(--line);
+      border-top-color: var(--orange);
       border-radius: 50%;
       animation: spin 0.8s linear infinite;
     }
@@ -654,9 +561,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       bottom: 24px;
       left: 50%;
       transform: translateX(-50%) translateY(80px);
-      background: var(--negro-2);
-      border: 1px solid var(--negro-4);
-      color: var(--crema);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--ink);
       padding: 12px 20px;
       border-radius: 8px;
       font-size: 13px;
@@ -666,21 +573,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     .toast.show { transform: translateX(-50%) translateY(0); }
-    .toast.success { border-color: var(--verde); }
-    .toast.error { border-color: var(--rojo); }
+    .toast.success { border-color: var(--ok); }
+    .toast.error { border-color: var(--err); }
 
     /* ── EMPTY STATE ──────────────────────────── */
     .empty-album {
       text-align: center;
       padding: 60px 20px;
-      color: var(--gris);
+      color: var(--ink-dim);
     }
 
     .empty-album h2 {
       font-family: 'Bebas Neue', sans-serif;
       font-size: 28px;
       letter-spacing: 3px;
-      color: var(--negro-4);
+      color: var(--line);
       margin-bottom: 12px;
     }
 
@@ -696,7 +603,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
 <!-- LOADING -->
 <div class="loading-screen" id="loading">
-  <div class="loading-logo">RIDERA<span style="color:var(--naranja)">125</span></div>
+  <div class="loading-logo">RIDERA<span style="color:var(--orange)">125</span></div>
   <div class="loading-spinner"></div>
 </div>
 
@@ -793,37 +700,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="modal-notas" id="modal-notas" style="display:none"></div>
       </div>
 
-      <!-- Form para sellar -->
+      <!-- Link a sello.html para registrar -->
       <div id="modal-pendiente-actions" style="display:none">
-        <button class="btn-registrar" onclick="mostrarForm()">+ REGISTRAR VISITA</button>
-
-        <div class="sello-form" id="sello-form">
-          <br/>
-          <label class="form-label">Fecha de visita</label>
-          <input type="date" class="form-input" id="form-fecha" />
-
-          <label class="form-label">¿Cómo te pareció?</label>
-          <div class="stars-input" id="stars-input">
-            <button class="star-btn" onclick="setStar(1)">★</button>
-            <button class="star-btn" onclick="setStar(2)">★</button>
-            <button class="star-btn" onclick="setStar(3)">★</button>
-            <button class="star-btn" onclick="setStar(4)">★</button>
-            <button class="star-btn" onclick="setStar(5)">★</button>
-          </div>
-
-          <label class="form-label">Tu foto</label>
-          <label class="foto-upload-label" for="form-foto">
-            <span>📷</span>
-            <p>Toca para seleccionar foto</p>
-          </label>
-          <input type="file" id="form-foto" accept="image/*" style="display:none" onchange="previsualizarFoto(event)" />
-          <img id="foto-preview" />
-
-          <label class="form-label">Notas (opcional)</label>
-          <textarea class="form-textarea" id="form-notas" placeholder="¿Qué fue lo mejor del municipio?"></textarea>
-
-          <button class="btn-sello" id="btn-sellar" onclick="guardarSello()">REGISTRAR SELLO ✓</button>
-        </div>
+        <a href="sello.html" class="btn-registrar" style="display:inline-block;text-decoration:none;text-align:center">+ REGISTRAR VISITA EN SELLO</a>
       </div>
 
     </div>
@@ -838,14 +717,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
 const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ── ESTADO GLOBAL ─────────────────────────────────────────────
 let municipios = [];
 let sellos = {};       // { municipio_id: { foto_url, fecha, calificacion, notas } }
 let rider = null;
 let muniActual = null;
-let estrellaActual = 0;
-let fotoBase64 = null;
 let filtroActivo = null;
 
 
@@ -865,7 +743,6 @@ async function init() {
     el.style.opacity = '0';
     setTimeout(() => el.style.display = 'none', 400);
   } catch(e) {
-    console.error(e);
     const el = document.getElementById('loading');
     el.style.opacity = '1';
     el.innerHTML = `
@@ -936,7 +813,7 @@ function renderAlbum() {
         <h2>AÚN NO TIENES SELLOS</h2>
         <p>Empieza a rodar por Antioquia y registra tu primer municipio.</p>
         <br>
-        <a href="sello.html" style="display:inline-block;background:var(--naranja);color:white;padding:14px 28px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;text-decoration:none">+ REGISTRAR MI PRIMER SELLO</a>
+        <a href="sello.html" style="display:inline-block;background:var(--orange);color:white;padding:14px 28px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;text-decoration:none">+ REGISTRAR MI PRIMER SELLO</a>
       </div>`;
   }
 }
@@ -955,14 +832,14 @@ function renderCard(m) {
         ? `<img class="muni-foto" src="${s.foto_url}" loading="lazy" />`
         : `<div class="muni-placeholder">
              <div class="muni-placeholder-icon">🗺️</div>
-             <div class="muni-placeholder-num">${m.nombre.substring(0,3).toUpperCase()}</div>
+             <div class="muni-placeholder-num">${esc(m.nombre.substring(0,3).toUpperCase())}</div>
            </div>`
       }
 
       ${sellado ? '<div class="muni-sello">✓</div>' : ''}
 
       <div class="muni-info">
-        <div class="muni-nombre">${m.nombre}</div>
+        <div class="muni-nombre">${esc(m.nombre)}</div>
         ${fecha ? `<div class="muni-fecha">${fecha}</div>` : ''}
         ${stars ? `<div class="muni-stars">${stars}</div>` : ''}
       </div>
@@ -1068,20 +945,8 @@ function abrirModal(muniId) {
     }
 
   } else {
-    // Municipio pendiente
     el('modal-sellado-info').style.display = 'none';
     el('modal-pendiente-actions').style.display = 'block';
-    el('sello-form').classList.remove('open');
-
-    // Reset form
-    const hoy = new Date().toISOString().split('T')[0];
-    el('form-fecha').value = hoy;
-    el('form-notas').value = '';
-    el('foto-preview').style.display = 'none';
-    el('foto-preview').src = '';
-    fotoBase64 = null;
-    estrellaActual = 0;
-    setStar(0);
   }
 
   el('modal-overlay').classList.add('open');
@@ -1094,96 +959,6 @@ function cerrarModal(e) {
   }
 }
 
-function mostrarForm() {
-  document.getElementById('sello-form').classList.add('open');
-  document.getElementById('modal-pendiente-actions').querySelector('.btn-registrar').style.display = 'none';
-}
-
-// ── ESTRELLAS ─────────────────────────────────────────────────
-function setStar(n) {
-  estrellaActual = n;
-  document.querySelectorAll('.star-btn').forEach((btn, i) => {
-    btn.classList.toggle('on', i < n);
-  });
-}
-
-// ── FOTO ──────────────────────────────────────────────────────
-function previsualizarFoto(e) {
-  const file = e.target.files[0];
-  if (!file) return;
-
-  const reader = new FileReader();
-  reader.onload = ev => {
-    const preview = document.getElementById('foto-preview');
-    preview.src = ev.target.result;
-    preview.style.display = 'block';
-    fotoBase64 = ev.target.result;
-  };
-  reader.readAsDataURL(file);
-}
-
-// ── GUARDAR SELLO ─────────────────────────────────────────────
-async function guardarSello() {
-  if (!muniActual) return;
-
-  const btn = document.getElementById('btn-sellar');
-  btn.disabled = true;
-  btn.textContent = 'GUARDANDO...';
-
-  try {
-    const fecha = document.getElementById('form-fecha').value;
-    const notas = document.getElementById('form-notas').value.trim();
-    let foto_url = null;
-
-    // Subir foto si hay
-    const fotoInput = document.getElementById('form-foto');
-    if (fotoInput.files[0]) {
-      const file = fotoInput.files[0];
-      const ext = file.name.split('.').pop();
-      const path = `${rider.id}/${muniActual.id}.${ext}`;
-
-      const { data: upData, error: upErr } = await sb.storage
-        .from('sellos')
-        .upload(path, file, { upsert: true, contentType: file.type });
-
-      if (upErr) throw upErr;
-
-      const { data: urlData } = sb.storage
-        .from('sellos')
-        .getPublicUrl(path);
-
-      foto_url = urlData?.publicUrl || null;
-    }
-
-    // Guardar en BD
-    const payload = {
-      rider_id: rider.id,
-      municipio_id: muniActual.id,
-      fecha: fecha || null,
-      calificacion: estrellaActual || null,
-      notas: notas || null,
-      foto_url,
-      estado: 'validado'
-    };
-
-    const { error } = await sb.from('sellos').upsert(payload, { onConflict: 'rider_id,municipio_id' });
-    if (error) throw error;
-
-    // Actualizar estado local
-    sellos[muniActual.id] = payload;
-    actualizarStats();
-    renderAlbum();
-    cerrarModal();
-    showToast(`✓ ${muniActual.nombre} sellado`, 'success');
-
-  } catch(e) {
-    console.error(e);
-    showToast('Error al guardar. Intenta de nuevo.', 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'REGISTRAR SELLO ✓';
-  }
-}
 
 // ── TOAST ─────────────────────────────────────────────────────
 function showToast(msg, type = '') {
@@ -1192,9 +967,6 @@ function showToast(msg, type = '') {
   t.className = `toast ${type} show`;
   setTimeout(() => t.classList.remove('show'), 3000);
 }
-
-// ── ID HELPER ─────────────────────────────────────────────────
-function id(s) { return document.getElementById(s); }
 
 // ── START ─────────────────────────────────────────────────────
 init();
