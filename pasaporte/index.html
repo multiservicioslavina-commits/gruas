@@ -77,16 +77,14 @@
   .loading .cta-label{opacity:.6}
 
   #success{display:none;text-align:center}
-  #card,#keyGate{display:none}
+  #card{display:none}
   body.view-card #card{display:block}
-  body.view-key #keyGate{display:block}
   body.done #card{display:none!important}
   body.done #success{display:block}
   .check{width:64px;height:64px;border-radius:50%;border:2px solid var(--ok);color:var(--ok);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
   #success h2{font-family:"Bebas Neue",sans-serif;font-size:34px;margin:0 0 6px;letter-spacing:.5px}
   #success p{color:var(--ink-dim);margin:0 0 20px}
 
-  #keyGate p{color:var(--ink-dim);font-size:14px;text-align:center;margin:0 0 4px}
   .pwrap{position:relative}
   .pwrap > input{padding-right:78px}
   .eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:transparent;border:0;color:var(--orange);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:14px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer;padding:10px 8px}
@@ -99,15 +97,6 @@
     <div class="eyebrow">Pasaporte</div>
     <h1>RIDERA 125</h1>
     <div class="sub">Antioquia</div>
-  </div>
-
-  <!-- Gate: pegar la llave (solo la primera vez) -->
-  <div class="card" id="keyGate">
-    <p>Pega tu llave <b>anon / public</b> de Supabase para conectar (Settings → API). Solo una vez.</p>
-    <label>Llave anon</label>
-    <input id="keyInput" type="text" placeholder="eyJ… o sb_publishable_…" autocomplete="off">
-    <button class="cta" id="keyBtn"><span class="cta-label">Conectar</span></button>
-    <div class="msg" id="keyMsg"></div>
   </div>
 
   <!-- Login / Registro -->
@@ -168,24 +157,9 @@ const CONFIG = {
 const $ = id => document.getElementById(id);
 let sb = null, mode = "login";
 
-function isSecretKey(k){
-  if(!k) return false;
-  if(k.startsWith("sb_secret_")) return true;
-  if(k.startsWith("sb_publishable_")) return false;
-  try{ // JWT antiguo: revisar el claim "role"
-    const payload = JSON.parse(atob(k.split(".")[1]));
-    if(payload && payload.role === "service_role") return true;
-  }catch(e){}
-  return false;
-}
 function resolveKey(){
   if(CONFIG.SUPABASE_ANON_KEY && CONFIG.SUPABASE_ANON_KEY.length > 20) return CONFIG.SUPABASE_ANON_KEY;
   try{ return localStorage.getItem("ridera_supabase_key"); }catch(e){ return null; }
-}
-function showGate(msg){
-  document.body.className = "view-key";
-  const m = $("keyMsg");
-  if(msg){ m.textContent = msg; m.className = "msg show error"; }
 }
 function initClient(key){
   sb = supabase.createClient(CONFIG.SUPABASE_URL, key);
@@ -197,24 +171,11 @@ function initClient(key){
   sb.auth.getSession().then(({data})=>{ if(data.session){ success("Ya estás dentro","Tu pasaporte te espera."); } });
 }
 
-// Arranque: ¿tenemos llave? (y que no sea la secreta)
 (function boot(){
   const k = resolveKey();
-  if(k && isSecretKey(k)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; showGate("La llave guardada era la SECRETA. Pega la anon/publishable."); return; }
   if(k){ initClient(k); }
-  else { document.body.className = "view-key"; }
+  else { document.body.className = "mode-login view-card"; initClient(CONFIG.SUPABASE_ANON_KEY); }
 })();
-
-// Gate de llave
-$("keyBtn").addEventListener("click", ()=>{
-  const v = $("keyInput").value.trim();
-  const m = $("keyMsg");
-  if(v.startsWith("http")){ m.textContent="Eso es la URL. La llave empieza con eyJ… o sb_publishable_…"; m.className="msg show error"; return; }
-  if(v.length < 20){ m.textContent="Pega tu llave anon completa."; m.className="msg show error"; return; }
-  if(isSecretKey(v)){ m.textContent="Esa es la llave SECRETA (service_role). Usa la 'anon public' / 'publishable'."; m.className="msg show error"; return; }
-  m.className="msg";
-  initClient(v);
-});
 
 // Pestañas
 document.querySelectorAll(".tab").forEach(t=>{
