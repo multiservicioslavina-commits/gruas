@@ -895,6 +895,8 @@ function renderAlbum() {
     if (filtroActivo && filtroActivo !== subr) return;
 
     const sellados = munis.filter(m => sellos[m.id]);
+    if (!sellados.length) return;
+
     const block = document.createElement('div');
     block.className = 'subregion-block';
     block.dataset.subr = subr;
@@ -908,13 +910,23 @@ function renderAlbum() {
         </div>
       </div>
       <div class="muni-grid">
-        ${munis.map(m => renderCard(m)).join('')}
+        ${sellados.map(m => renderCard(m)).join('')}
       </div>
     `;
 
     wrap.appendChild(block);
     idx++;
   });
+
+  if (!wrap.children.length) {
+    wrap.innerHTML = `
+      <div class="empty-album">
+        <h2>AÚN NO TIENES SELLOS</h2>
+        <p>Empieza a rodar por Antioquia y registra tu primer municipio.</p>
+        <br>
+        <a href="sello.html" style="display:inline-block;background:var(--naranja);color:white;padding:14px 28px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;text-decoration:none">+ REGISTRAR MI PRIMER SELLO</a>
+      </div>`;
+  }
 }
 
 function renderCard(m) {
