@@ -239,10 +239,10 @@
   // T_ROUTE adaptativo: una vuelta de 5km no necesita 40s de sobrevuelo —
   // menos segundos = menos frames = render más rápido y menos riesgo de OOM.
   const _km = parseFloat(DATA.distanceKm) || 0;
-  const T_INTRO  = 4.0;
+  const T_INTRO  = 2.5;
   const T_ROUTE  = _km < 8 ? 22.0 : _km < 25 ? 32.0 : 40.0;
-  const T_STATS  = 6.0;
-  const T_OUTRO  = 4.0;
+  const T_STATS  = 5.0;
+  const T_OUTRO  = 2.5;
 
   const photos    = (DATA.photos || []).filter(p => p.lat && p.lon).slice(0, 3);
   const photoCount = photos.length;
@@ -258,22 +258,6 @@
   const centerLng = (bounds.getWest() + bounds.getEast()) / 2;
   const centerLat = (bounds.getSouth() + bounds.getNorth()) / 2;
   const photosWithGps = photos.filter(p => p.lat && p.lon);
-
-  // Calcular en qué fracción de la ruta (0-1) está cada foto
-  const photoStops = photos.map((p, idx) => {
-    let bestDist = Infinity, bestCumDist = 0;
-    for (let i = 0; i < coords.length; i++) {
-      const d = haversine(coords[i], [p.lon, p.lat]);
-      if (d < bestDist) { bestDist = d; bestCumDist = cumDist[i]; }
-    }
-    return { ...p, idx, routeFrac: totalDist > 0 ? bestCumDist / totalDist : 0 };
-  }).sort((a, b) => a.routeFrac - b.routeFrac);
-
-  // ── Helpers de UI ─────────────────────────────────────────────────────
-  const show  = id => document.getElementById(id).classList.add('show');
-  const hide  = id => document.getElementById(id).classList.remove('show');
-  const setOp = (id, v) => { document.getElementById(id).style.opacity = v; };
-  const setTr = (id, v) => { document.getElementById(id).style.transform = v; };
 
   // ── Geodesia (sin dependencias): distancias y puntos sobre la ruta ────
   const R_EARTH = 6371000;
@@ -303,6 +287,22 @@
     cumDist.push(cumDist[i-1] + haversine(coords[i-1], coords[i]));
   }
   const totalDist = cumDist[cumDist.length - 1];
+
+  // Calcular en qué fracción de la ruta (0-1) está cada foto
+  const photoStops = photos.map((p, idx) => {
+    let bestDist = Infinity, bestCumDist = 0;
+    for (let i = 0; i < coords.length; i++) {
+      const d = haversine(coords[i], [p.lon, p.lat]);
+      if (d < bestDist) { bestDist = d; bestCumDist = cumDist[i]; }
+    }
+    return { ...p, idx, routeFrac: totalDist > 0 ? bestCumDist / totalDist : 0 };
+  }).sort((a, b) => a.routeFrac - b.routeFrac);
+
+  // ── Helpers de UI ─────────────────────────────────────────────────────
+  const show  = id => document.getElementById(id).classList.add('show');
+  const hide  = id => document.getElementById(id).classList.remove('show');
+  const setOp = (id, v) => { document.getElementById(id).style.opacity = v; };
+  const setTr = (id, v) => { document.getElementById(id).style.transform = v; };
 
   // Punto interpolado a `dist` metros del inicio de la ruta
   function pointAlong(dist) {
@@ -959,7 +959,7 @@
         map.getSource('photo-active').setData({ type: 'FeatureCollection', features: [] });
         show('hudBar');
 
-        const rideZoom = Math.max(15.5, fitZoom + 4);
+        const rideZoom = Math.max(16.5, fitZoom + 4.5);
         const zoomBlend = p < 0.05 ? easeIn(p / 0.05) : p > 0.95 ? 1 - easeIn((p - 0.95) / 0.05) : 1;
         const curZoom = fitZoom + zoomBlend * (rideZoom - fitZoom);
         const cBlend = p < 0.03 ? easeIn(p / 0.03) : p > 0.97 ? 1 - easeIn((p - 0.97) / 0.03) : 1;

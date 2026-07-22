@@ -1,6 +1,6 @@
 const R_EARTH = 6371000;
-const rad = (d: number) => (d * Math.PI) / 180;
-const deg = (r: number) => (r * 180) / Math.PI;
+function rad(d: number): number { return (d * Math.PI) / 180; }
+function deg(r: number): number { return (r * 180) / Math.PI; }
 
 export function haversine(a: [number, number], b: [number, number]): number {
   const dLat = rad(b[1] - a[1]);
