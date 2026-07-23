@@ -226,6 +226,29 @@ tr:hover td { background: rgba(46,204,113,.04); }
       <div class="field"><label class="lbl">Precio del boleto *</label><input type="number" id="mPrecio" placeholder="10000" min="0" step="100"></div>
       <div class="field"><label class="lbl">Total de boletos *</label><input type="number" id="mTotal" placeholder="100" min="1" max="999999"></div>
     </div>
+    <div class="field"><label class="lbl">Lotería con la que se juega *</label>
+      <select id="mLoteria">
+        <option value="">— Selecciona lotería —</option>
+        <option value="Lotería de Boyacá">Lotería de Boyacá</option>
+        <option value="Lotería del Valle">Lotería del Valle</option>
+        <option value="Lotería de Bogotá">Lotería de Bogotá</option>
+        <option value="Lotería de Medellín">Lotería de Medellín</option>
+        <option value="Lotería del Cauca">Lotería del Cauca</option>
+        <option value="Lotería de Santander">Lotería de Santander</option>
+        <option value="Lotería Cruz Roja">Lotería Cruz Roja</option>
+        <option value="Lotería del Risaralda">Lotería del Risaralda</option>
+        <option value="Lotería del Tolima">Lotería del Tolima</option>
+        <option value="Lotería del Quindío">Lotería del Quindío</option>
+        <option value="Lotería de Cundinamarca">Lotería de Cundinamarca</option>
+        <option value="Lotería de Manizales">Lotería de Manizales</option>
+        <option value="Lotería del Meta">Lotería del Meta</option>
+        <option value="Lotería del Huila">Lotería del Huila</option>
+        <option value="Baloto">Baloto</option>
+        <option value="Chance">Chance</option>
+        <option value="otra">Otra (escribir)</option>
+      </select>
+    </div>
+    <div class="field" id="mLoteriaOtraWrap" style="display:none"><label class="lbl">Nombre de la lotería</label><input type="text" id="mLoteriaOtra" placeholder="Ej: Lotería de Nariño"></div>
     <div class="field"><label class="lbl">Fecha del sorteo</label><input type="datetime-local" id="mFecha"></div>
     <div class="field"><label class="lbl">URL de imagen (opcional)</label><input type="url" id="mImagen" placeholder="https://..."></div>
     <div class="field"><label class="lbl">WhatsApp de la rifa (opcional)</label><input type="tel" id="mWhatsApp" placeholder="573001234567"></div>
@@ -244,14 +267,16 @@ tr:hover td { background: rgba(46,204,113,.04); }
   </div>
 </div>
 
-<!-- MODAL SORTEO -->
+<!-- MODAL REGISTRAR GANADOR -->
 <div class="modal-bg" id="modalSorteo">
-  <div class="modal" style="text-align:center">
-    <h2>🎰 Realizar sorteo</h2>
+  <div class="modal">
+    <h2>🏆 Registrar número ganador</h2>
     <p class="sub" id="sorteoInfo"></p>
-    <div id="sorteoResult" style="margin:1.5rem 0"></div>
-    <button class="btn" id="sorteoBtn" onclick="ejecutarSorteo()" style="background:var(--gold);color:#000">🎲 Sortear ahora</button>
-    <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--mu);margin-top:0.5rem" onclick="closeSorteo()">Cerrar</button>
+    <div class="field"><label class="lbl">Número ganador (según la lotería)</label><input type="number" id="sorteoNumero" min="0" placeholder="Ej: 42"></div>
+    <div id="sorteoResult" style="margin:1rem 0"></div>
+    <div class="err" id="sorteoErr"></div>
+    <button class="btn" id="sorteoBtn" onclick="registrarGanador()" style="background:var(--gold);color:#000">🏆 Registrar ganador</button>
+    <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--mu);margin-top:0.5rem" onclick="closeSorteo()">Cancelar</button>
   </div>
 </div>
 
@@ -349,6 +374,7 @@ function renderCards(){
       <span class="estado-badge ${ebCls}">${ebTxt}</span>
       <h3>${esc(r.nombre)}</h3>
       <div class="premio">🏆 ${esc(r.premio)}</div>
+      ${r.loteria ? `<div style="font-size:0.8rem;color:var(--blue);margin-bottom:0.4rem">🎰 Juega con: <b>${esc(r.loteria)}</b></div>` : ''}
       <div class="card-meta">
         <span class="card-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span>
         <span class="card-tag green">Vendidos: <b>${r._pagados}/${r.total_boletos}</b> (${pct}%)</span>
@@ -379,9 +405,11 @@ function openModal(mode, id){
   descuentos = [];
   if(mode==='crear'){
     document.getElementById('modalTitle').textContent='Nueva rifa';
-    ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mTerminos'].forEach(x=>document.getElementById(x).value='');
+    ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mTerminos','mLoteriaOtra'].forEach(x=>document.getElementById(x).value='');
     document.getElementById('mTotal').value='100';
     document.getElementById('mEstado').value='borrador';
+    document.getElementById('mLoteria').value='';
+    document.getElementById('mLoteriaOtraWrap').style.display='none';
   } else {
     const r = allRifas.find(x=>x.id===id); if(!r) return;
     document.getElementById('modalTitle').textContent='Editar rifa';
@@ -396,11 +424,26 @@ function openModal(mode, id){
     document.getElementById('mWhatsApp').value=r.whatsapp||'';
     document.getElementById('mEstado').value=r.estado||'borrador';
     document.getElementById('mTerminos').value=r.terminos||'';
+    const lotSel = document.getElementById('mLoteria');
+    const lotVal = r.loteria||'';
+    const optVals = [...lotSel.options].map(o=>o.value);
+    if(lotVal && !optVals.includes(lotVal)){
+      lotSel.value='otra';
+      document.getElementById('mLoteriaOtra').value=lotVal;
+      document.getElementById('mLoteriaOtraWrap').style.display='block';
+    } else {
+      lotSel.value=lotVal;
+      document.getElementById('mLoteriaOtra').value='';
+      document.getElementById('mLoteriaOtraWrap').style.display='none';
+    }
     descuentos = (r.descuento_volumen||[]).map(d=>({...d}));
   }
   renderDescuentos();
 }
 function closeModal(){ document.getElementById('modalRifa').classList.remove('on'); }
+document.getElementById('mLoteria').addEventListener('change',function(){
+  document.getElementById('mLoteriaOtraWrap').style.display=this.value==='otra'?'block':'none';
+});
 
 function addDescuento(){ descuentos.push({cantidad:5,descuento:10}); renderDescuentos(); }
 function removeDescuento(i){ descuentos.splice(i,1); renderDescuentos(); }
@@ -428,17 +471,20 @@ async function saveRifa(){
   const whatsapp = document.getElementById('mWhatsApp').value.trim() || null;
   const estado = document.getElementById('mEstado').value;
   const terminos = document.getElementById('mTerminos').value.trim() || null;
+  const lotSel = document.getElementById('mLoteria').value;
+  const loteria = lotSel==='otra' ? (document.getElementById('mLoteriaOtra').value.trim()||null) : (lotSel||null);
   const errEl = document.getElementById('mErr');
   errEl.style.display='none';
 
   if(!nombre||!premio){ errEl.textContent='Nombre y premio son obligatorios'; errEl.style.display='block'; return; }
+  if(!loteria){ errEl.textContent='Debes seleccionar una lotería'; errEl.style.display='block'; return; }
   if(!precio_boleto||precio_boleto<=0){ errEl.textContent='Precio debe ser mayor a 0'; errEl.style.display='block'; return; }
   if(!total_boletos||total_boletos<1){ errEl.textContent='Debe tener al menos 1 boleto'; errEl.style.display='block'; return; }
 
   const btn = document.getElementById('mBtn');
   btn.disabled=true; btn.textContent='Guardando…';
 
-  const row = { nombre, premio, descripcion:descripcion||null, precio_boleto, total_boletos, imagen_url, whatsapp, estado, terminos, descuento_volumen: descuentos.length?descuentos:[], updated_at: new Date().toISOString() };
+  const row = { nombre, premio, descripcion:descripcion||null, precio_boleto, total_boletos, imagen_url, whatsapp, estado, terminos, loteria, descuento_volumen: descuentos.length?descuentos:[], updated_at: new Date().toISOString() };
   if(fecha_str) row.fecha_sorteo = new Date(fecha_str).toISOString(); else row.fecha_sorteo = null;
 
   let error;
@@ -531,46 +577,59 @@ async function liberarBoleto(id){
   await sb.from('boletos').delete().eq('id',id); loadBoletos();
 }
 
-// SORTEO
+// REGISTRAR GANADOR (número de lotería)
 let sorteoRifaId = null;
 function openSorteo(id){
   sorteoRifaId=id;
   const rifa=allRifas.find(r=>r.id===id); if(!rifa) return;
-  document.getElementById('sorteoInfo').textContent=`Rifa: ${rifa.nombre} — ${rifa._pagados} boletos pagados`;
+  document.getElementById('sorteoInfo').innerHTML=`Rifa: <b>${esc(rifa.nombre)}</b><br>Lotería: <b>${esc(rifa.loteria||'No definida')}</b><br>Boletos: 0 a ${rifa.total_boletos-1}`;
+  document.getElementById('sorteoNumero').value='';
+  document.getElementById('sorteoNumero').max=rifa.total_boletos-1;
   document.getElementById('sorteoResult').innerHTML='';
+  document.getElementById('sorteoErr').style.display='none';
   document.getElementById('sorteoBtn').disabled=false;
-  document.getElementById('sorteoBtn').textContent='🎲 Sortear ahora';
+  document.getElementById('sorteoBtn').textContent='🏆 Registrar ganador';
   document.getElementById('modalSorteo').classList.add('on');
 }
 function closeSorteo(){ document.getElementById('modalSorteo').classList.remove('on'); sorteoRifaId=null; }
 
-async function ejecutarSorteo(){
+async function registrarGanador(){
   const rifa=allRifas.find(r=>r.id===sorteoRifaId); if(!rifa) return;
-  const { data: bols } = await sb.from('boletos').select('numero,comprador_nombre,comprador_telefono').eq('rifa_id',sorteoRifaId).eq('estado','pagado');
-  if(!bols||!bols.length){ document.getElementById('sorteoResult').innerHTML='<p style="color:var(--danger)">No hay boletos pagados.</p>'; return; }
+  const numInput=document.getElementById('sorteoNumero');
+  const errEl=document.getElementById('sorteoErr');
+  const resEl=document.getElementById('sorteoResult');
+  errEl.style.display='none';
+
+  const num=parseInt(numInput.value);
+  if(isNaN(num)||num<0||num>=rifa.total_boletos){
+    errEl.textContent=`Número debe estar entre 0 y ${rifa.total_boletos-1}`;
+    errEl.style.display='block'; return;
+  }
 
   const btn=document.getElementById('sorteoBtn');
-  btn.disabled=true; btn.textContent='Sorteando…';
-  const resEl=document.getElementById('sorteoResult');
+  btn.disabled=true; btn.textContent='Registrando…';
 
-  let count=0;
-  const anim=setInterval(()=>{
-    const rand=bols[Math.floor(Math.random()*bols.length)].numero;
-    resEl.innerHTML=`<div style="font-size:4rem;font-weight:700;color:var(--gold)">${padNum(rand,rifa.total_boletos)}</div>`;
-    count++;
-    if(count>=20){
-      clearInterval(anim);
-      const winner=bols[Math.floor(Math.random()*bols.length)];
-      resEl.innerHTML=`
-        <div style="font-size:5rem;font-weight:700;color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,.4)">🏆 ${padNum(winner.numero,rifa.total_boletos)}</div>
-        <p style="color:var(--green);font-weight:700;margin-top:0.5rem">${esc(winner.comprador_nombre||'Ganador')}</p>
-      `;
-      Promise.all([
-        sb.from('rifas').update({numero_ganador:winner.numero,estado:'sorteada',updated_at:new Date().toISOString()}).eq('id',sorteoRifaId),
-        sb.from('ganadores').insert({rifa_id:sorteoRifaId,numero:winner.numero,nombre_ganador:winner.comprador_nombre,telefono_ganador:winner.comprador_telefono,premio:rifa.premio,publicado:true})
-      ]).then(()=>{ btn.textContent='✓ Sorteado'; loadAll(); });
-    }
-  },100);
+  const { data: boleto } = await sb.from('boletos').select('numero,comprador_nombre,comprador_telefono,estado').eq('rifa_id',sorteoRifaId).eq('numero',num).maybeSingle();
+
+  let nombre_ganador='(Boleto no vendido)', telefono_ganador='';
+  if(boleto && boleto.comprador_nombre){
+    nombre_ganador=boleto.comprador_nombre;
+    telefono_ganador=boleto.comprador_telefono||'';
+  }
+
+  resEl.innerHTML=`
+    <div style="font-size:4rem;font-weight:700;color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,.4)">🏆 #${padNum(num,rifa.total_boletos)}</div>
+    <p style="color:var(--green);font-weight:700;margin-top:0.5rem">${esc(nombre_ganador)}</p>
+    ${telefono_ganador?`<p style="color:var(--mu);font-size:0.85rem">${esc(telefono_ganador)}</p>`:''}
+    ${!boleto||!boleto.comprador_nombre?`<p style="color:var(--warn);font-size:0.85rem;margin-top:0.5rem">Este boleto no fue vendido</p>`:''}
+  `;
+
+  await Promise.all([
+    sb.from('rifas').update({numero_ganador:num,estado:'sorteada',updated_at:new Date().toISOString()}).eq('id',sorteoRifaId),
+    sb.from('ganadores').insert({rifa_id:sorteoRifaId,numero:num,nombre_ganador,telefono_ganador,premio:rifa.premio,publicado:true})
+  ]);
+  btn.textContent='✓ Registrado';
+  loadAll();
 }
 
 // VENDEDORES

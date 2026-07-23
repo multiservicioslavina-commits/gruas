@@ -221,6 +221,7 @@ footer a{color:var(--accent);text-decoration:none}
       <div class="detalle-header">
         <h2 id="detNombre"></h2>
         <div class="premio-big" id="detPremio"></div>
+        <div id="detLoteria"></div>
         <p class="desc" id="detDesc"></p>
       </div>
       <div class="info-bar" id="detInfo"></div>
@@ -336,7 +337,7 @@ function renderRifas(){
     const ec=r.estado==='activa'?'estado-activa':r.estado==='cerrada'?'estado-cerrada':'estado-sorteada';
     const et=r.estado==='activa'?'Activa':r.estado==='cerrada'?'Cerrada':'Sorteada';
     const img=r.imagen_url?`<img class="rifa-img" src="${esc(r.imagen_url)}" alt="${esc(r.nombre)}" loading="lazy">`:`<div class="rifa-img-placeholder">\u{1F3AB}</div>`;
-    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div></div></div>`
+    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.loteria?`<div style="color:#60a5fa;font-size:0.85rem;font-weight:600;margin:4px 0">\u{1F3B0} Juega con: ${esc(r.loteria)}</div>`:''}${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div></div></div>`
   }).join('');
 }
 
@@ -350,6 +351,7 @@ async function openRifa(id){
   window.scrollTo(0,0);
   document.getElementById('detNombre').textContent=currentRifa.nombre;
   document.getElementById('detPremio').innerHTML='\u{1F3C6} '+esc(currentRifa.premio);
+  document.getElementById('detLoteria').innerHTML=currentRifa.loteria?`<div style="color:#60a5fa;font-weight:700;font-size:1rem;margin:8px 0">\u{1F3B0} Juega con: ${esc(currentRifa.loteria)}</div>`:'';
   document.getElementById('detDesc').textContent=currentRifa.descripcion||'';
   document.getElementById('boletosGrid').innerHTML='<div class="loading-center"><span class="spin"></span></div>';
   const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',id);
