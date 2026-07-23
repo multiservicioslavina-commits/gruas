@@ -1,0 +1,4 @@
+storePassword=TU_PASSWORD_AQUI
+keyPassword=TU_PASSWORD_AQUI
+keyAlias=ridera
+storeFile=../ridera-keystore.jks

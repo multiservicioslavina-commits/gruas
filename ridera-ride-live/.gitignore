@@ -10,3 +10,6 @@ build/
 lib/video_config.dart
 lib/notif_config.dart
 lib/rita_config.dart
+android/key.properties
+*.jks
+*.keystore
