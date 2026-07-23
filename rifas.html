@@ -258,6 +258,8 @@ let selected = new Set();
 function esc(s){ const d=document.createElement('div'); d.textContent=s; return d.innerHTML; }
 function fmtMoney(n){ return '$' + Number(n).toLocaleString('es-CO'); }
 function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'}); }
+function padLen(total){ return String(total-1).length; }
+function padNum(n,total){ return String(n).padStart(padLen(total),'0'); }
 
 async function loadRifas(){
   const { data, error } = await sb.from('rifas').select('*').in('estado',['activa','cerrada','sorteada']).order('created_at',{ascending:false});
@@ -325,11 +327,10 @@ async function openRifa(id){
   `;
 
   if(currentRifa.estado === 'sorteada' && currentRifa.numero_ganador != null){
-    const ganador = boletos.find(b=>b.numero===currentRifa.numero_ganador);
     document.getElementById('ganadorBanner').innerHTML = `
       <div class="ganador-banner">
         <h3>🏆 NÚMERO GANADOR</h3>
-        <div class="numero">${currentRifa.numero_ganador}</div>
+        <div class="numero">${padNum(currentRifa.numero_ganador,currentRifa.total_boletos)}</div>
       </div>`;
   } else {
     document.getElementById('ganadorBanner').innerHTML = '';
@@ -343,7 +344,7 @@ function renderGrid(){
   boletos.forEach(b => bMap[b.numero] = b.estado);
   const grid = document.getElementById('boletosGrid');
   let html = '';
-  for(let i=1; i<=currentRifa.total_boletos; i++){
+  for(let i=0; i<currentRifa.total_boletos; i++){
     const estado = bMap[i] || 'disponible';
     const isSel = selected.has(i);
     let cls = '';
@@ -352,7 +353,7 @@ function renderGrid(){
     else if(isSel) cls='selected';
     if(currentRifa.numero_ganador===i) cls += ' ganador';
     const canClick = estado==='disponible' && currentRifa.estado==='activa';
-    html += `<div class="boleto ${cls}" ${canClick?`onclick="toggleBoleto(${i})"`:''} title="${estado==='apartado'?'Apartado':estado==='pagado'?'Vendido':''}">${String(i).padStart(currentRifa.total_boletos>=100?3:2,'0')}</div>`;
+    html += `<div class="boleto ${cls}" ${canClick?`onclick="toggleBoleto(${i})"`:''} title="${estado==='apartado'?'Apartado':estado==='pagado'?'Vendido':''}">${padNum(i,currentRifa.total_boletos)}</div>`;
   }
   grid.innerHTML = html;
 }
@@ -369,7 +370,7 @@ function updateSeleccion(){
   if(selected.size===0){ wrap.style.display='none'; return; }
   wrap.style.display='block';
   const nums = [...selected].sort((a,b)=>a-b);
-  document.getElementById('selNums').innerHTML = nums.map(n=>`<span class="sel-num">${String(n).padStart(currentRifa.total_boletos>=100?3:2,'0')}</span>`).join('');
+  document.getElementById('selNums').innerHTML = nums.map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
   document.getElementById('selTotal').textContent = fmtMoney(nums.length * currentRifa.precio_boleto);
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -410,13 +411,12 @@ async function apartarBoletos(){
     return;
   }
 
-  const pad = currentRifa.total_boletos>=100?3:2;
-  const numsStr = nums.sort((a,b)=>a-b).map(n=>String(n).padStart(pad,'0')).join(', ');
+  const numsStr = nums.sort((a,b)=>a-b).map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
   const total = fmtMoney(nums.length * currentRifa.precio_boleto);
   const msg = `¡Hola! Aparté ${nums.length} boleto(s) en la rifa *${currentRifa.nombre}*:%0A%0ANúmeros: *${numsStr}*%0ATotal: *${total}*%0ANombre: ${nombre}%0ATeléfono: ${telefono}%0A%0AAdjunto mi comprobante de pago 🧾`;
   document.getElementById('btnWhatsApp').href = `https://wa.me/${WA_NUMERO}?text=${msg}`;
 
-  document.getElementById('successNums').innerHTML = nums.sort((a,b)=>a-b).map(n=>`<span class="sel-num">${String(n).padStart(pad,'0')}</span>`).join('');
+  document.getElementById('successNums').innerHTML = nums.sort((a,b)=>a-b).map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
 
   document.getElementById('seleccionWrap').style.display='none';
   document.getElementById('successWrap').style.display='block';

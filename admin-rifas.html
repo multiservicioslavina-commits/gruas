@@ -188,7 +188,7 @@ tr:hover td { background: rgba(232,93,32,.04); }
       </div>
       <div class="field">
         <label class="lbl">Total de boletos *</label>
-        <input type="number" id="mTotal" placeholder="100" min="1" max="9999">
+        <input type="number" id="mTotal" placeholder="100" min="1" max="999999">
       </div>
     </div>
     <div class="field">
@@ -239,6 +239,8 @@ let boletosFilter = 'todos';
 function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
 function fmtMoney(n){ return '$'+Number(n).toLocaleString('es-CO'); }
 function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function padLen(total){ return String(total-1).length; }
+function padNum(n,total){ return String(n).padStart(padLen(total),'0'); }
 
 // AUTH
 function doLogin(){
@@ -309,7 +311,7 @@ function renderCards(){
         <span class="card-tag" style="color:var(--warn)">Apartados: <b>${r._apartados}</b></span>
       </div>
       ${r.fecha_sorteo ? `<div style="font-size:0.8rem;color:var(--mu)">Sorteo: ${fmtDate(r.fecha_sorteo)}</div>` : ''}
-      ${r.numero_ganador!=null ? `<div style="margin-top:0.5rem;color:var(--gold);font-weight:700">🏆 Ganador: #${r.numero_ganador}</div>` : ''}
+      ${r.numero_ganador!=null ? `<div style="margin-top:0.5rem;color:var(--gold);font-weight:700">🏆 Ganador: #${padNum(r.numero_ganador,r.total_boletos)}</div>` : ''}
       <div class="card-actions">
         <button class="btn-sm" onclick="verBoletos('${r.id}')">Ver boletos</button>
         <button class="btn-sm" onclick="openModal('editar','${r.id}')">Editar</button>
@@ -455,14 +457,13 @@ function renderBoletos(bols){
     return;
   }
   const rifa = allRifas.find(r=>r.id===currentRifaId);
-  const pad = (rifa && rifa.total_boletos>=100) ? 3 : 2;
 
   document.getElementById('boletosTable').innerHTML = `
   <div class="table-wrap"><table>
     <thead><tr><th>#</th><th>Estado</th><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Fecha</th><th>Acciones</th></tr></thead>
     <tbody>
       ${filtered.map(b => `<tr>
-        <td><b>${String(b.numero).padStart(pad,'0')}</b></td>
+        <td><b>${padNum(b.numero,rifa.total_boletos)}</b></td>
         <td><span class="status-dot sd-${b.estado}"></span>${b.estado==='apartado'?'Apartado':b.estado==='pagado'?'Pagado':'Disponible'}</td>
         <td>${esc(b.comprador_nombre)}</td>
         <td>${esc(b.comprador_telefono)}</td>
@@ -530,15 +531,13 @@ async function ejecutarSorteo(){
   const total = 20;
   const anim = setInterval(()=>{
     const rand = boletosP[Math.floor(Math.random()*boletosP.length)].numero;
-    const pad = rifa.total_boletos>=100?3:2;
-    resEl.innerHTML = `<div style="font-size:4rem;font-weight:700;color:var(--gold)">${String(rand).padStart(pad,'0')}</div>`;
+    resEl.innerHTML = `<div style="font-size:4rem;font-weight:700;color:var(--gold)">${padNum(rand,rifa.total_boletos)}</div>`;
     count++;
     if(count>=total){
       clearInterval(anim);
       const ganador = boletosP[Math.floor(Math.random()*boletosP.length)].numero;
-      const pad2 = rifa.total_boletos>=100?3:2;
       resEl.innerHTML = `
-        <div style="font-size:5rem;font-weight:700;color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,.4)">🏆 ${String(ganador).padStart(pad2,'0')}</div>
+        <div style="font-size:5rem;font-weight:700;color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,.4)">🏆 ${padNum(ganador,rifa.total_boletos)}</div>
         <p style="color:var(--green);font-weight:700;margin-top:0.5rem">¡Número ganador!</p>
       `;
       sb.from('rifas').update({ numero_ganador:ganador, estado:'sorteada', updated_at:new Date().toISOString() }).eq('id',sorteoRifaId).then(()=>{
@@ -554,9 +553,8 @@ function exportCSV(){
   const rifa = allRifas.find(r=>r.id===currentRifaId);
   if(!rifa||!currentBoletos.length) return;
   const headers = ['Número','Estado','Nombre','Teléfono','Email','Apartado','Pagado'];
-  const pad = rifa.total_boletos>=100?3:2;
   const csv = [headers, ...currentBoletos.map(b=>[
-    String(b.numero).padStart(pad,'0'), b.estado, b.comprador_nombre||'', b.comprador_telefono||'',
+    padNum(b.numero,rifa.total_boletos), b.estado, b.comprador_nombre||'', b.comprador_telefono||'',
     b.comprador_email||'', b.apartado_at?new Date(b.apartado_at).toLocaleString('es-CO'):'',
     b.pagado_at?new Date(b.pagado_at).toLocaleString('es-CO'):''
   ])].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
