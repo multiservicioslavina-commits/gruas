@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin — Fundaci&oacute;n Ra&iacute;ces Rifas</title>
+<meta name="robots" content="noindex">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
+  --accent: #2ecc71; --accent2: #27ae60; --text: #f0f0f0; --mu: #888;
+  --green: #4ade80; --gold: #f5c518; --warn: #f59e0b; --danger: #f87171; --blue: #60a5fa;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+/* LOGIN */
+#loginWrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+.login-card { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; }
+.login-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--accent); margin-bottom: 0.25rem; }
+.login-card p { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.75rem; }
+.lbl { display: block; font-size: 0.8rem; color: var(--mu); margin-bottom: 0.35rem; margin-top: 1rem; }
+input[type="password"], input[type="text"], input[type="number"], input[type="email"], input[type="tel"], input[type="url"],
+input[type="date"], input[type="datetime-local"], textarea, select {
+  width: 100%; background: #111; border: 1px solid var(--line); border-radius: 8px;
+  color: var(--text); font-size: 1rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.2s; font-family: inherit;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 70px; }
+.btn { display: block; width: 100%; margin-top: 1rem; padding: 0.8rem; background: var(--accent); color: #fff; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s; }
+.btn:hover { background: var(--accent2); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn-sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--mu); cursor: pointer; transition: border-color 0.2s, color 0.2s; display: inline-flex; align-items: center; gap: 4px; }
+.btn-sm:hover { border-color: var(--accent); color: var(--accent); }
+.btn-sm.danger { color: var(--danger); border-color: var(--danger); }
+.btn-sm.danger:hover { background: rgba(248,113,113,.1); }
+.btn-sm.green { color: var(--green); border-color: var(--green); }
+.btn-sm.green:hover { background: rgba(74,222,128,.1); }
+.btn-sm.gold { color: var(--gold); border-color: var(--gold); }
+.btn-sm.gold:hover { background: rgba(245,197,24,.1); }
+.btn-sm.blue { color: var(--blue); border-color: var(--blue); }
+.btn-sm.blue:hover { background: rgba(96,165,250,.1); }
+.err { color: var(--danger); font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+/* PANEL */
+#panel { display: none; }
+nav { background: var(--s); border-bottom: 1px solid var(--line); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+.nav-brand { font-weight: 700; color: var(--accent); font-size: 1.05rem; }
+.nav-right { display: flex; align-items: center; gap: 0.75rem; }
+
+/* TABS */
+.tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); background: var(--s); overflow-x: auto; }
+.tab-btn { padding: 0.65rem 1.2rem; font-size: 0.85rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; white-space: nowrap; }
+.tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+.container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+.page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+/* STATS */
+.stats { display: flex; gap: 0.75rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+.stat { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.1rem; min-width: 100px; flex: 1; }
+.stat .num { font-size: 1.6rem; font-weight: 700; color: var(--accent); }
+.stat .num.green { color: var(--green); }
+.stat .num.gold { color: var(--gold); }
+.stat .num.warn { color: var(--warn); }
+.stat .num.blue { color: var(--blue); }
+.stat .lbl { font-size: 0.72rem; color: var(--mu); margin-top: 0.15rem; }
+
+/* CARDS */
+.rifa-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+.rifa-card { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 1.25rem; }
+.rifa-card h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 0.25rem; }
+.rifa-card .premio { color: var(--gold); font-weight: 600; font-size: 0.85rem; margin-bottom: 0.5rem; }
+.rifa-card .card-meta { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.5rem; }
+.card-tag { font-size: 0.72rem; padding: 0.2rem 0.5rem; border-radius: 4px; background: var(--s2); border: 1px solid var(--line); }
+.card-tag b { color: var(--accent); }
+.card-tag.green b { color: var(--green); }
+.card-tag.gold b { color: var(--gold); }
+.estado-badge { display: inline-block; font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem; }
+.eb-activa { background: rgba(74,222,128,.12); color: var(--green); }
+.eb-borrador { background: rgba(136,136,136,.12); color: var(--mu); }
+.eb-cerrada { background: rgba(245,158,11,.12); color: var(--warn); }
+.eb-sorteada { background: rgba(96,165,250,.12); color: var(--blue); }
+.card-actions { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.75rem; border-top: 1px solid var(--line); padding-top: 0.75rem; }
+
+/* MODAL */
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,.7); z-index: 100; display: none; align-items: flex-start; justify-content: center; padding: 2rem 1rem; overflow-y: auto; }
+.modal-bg.on { display: flex; }
+.modal { background: var(--s); border: 1px solid var(--line); border-radius: 14px; padding: 1.75rem; width: 100%; max-width: 500px; }
+.modal h2 { font-size: 1.2rem; font-weight: 700; color: var(--accent); margin-bottom: 0.25rem; }
+.modal .sub { color: var(--mu); font-size: 0.85rem; margin-bottom: 1.25rem; }
+.field { margin-bottom: 0.85rem; }
+.field-row { display: flex; gap: 0.75rem; }
+.field-row .field { flex: 1; }
+
+/* TABLA */
+.table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 10px; background: var(--s); }
+table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+th { text-align: left; padding: 0.6rem 0.8rem; color: var(--mu); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); background: var(--s2); }
+td { padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: rgba(46,204,113,.04); }
+.status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+.sd-disponible { background: var(--mu); }
+.sd-apartado { background: var(--warn); }
+.sd-pagado { background: var(--green); }
+
+/* DESCUENTO BUILDER */
+.desc-list { display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 0.5rem; }
+.desc-row { display: flex; gap: 0.5rem; align-items: center; }
+.desc-row input { flex: 1; }
+.desc-row button { flex-shrink: 0; }
+
+/* FILTERS */
+.filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+.filter-btn { padding: 0.35rem 0.75rem; font-size: 0.8rem; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; }
+.filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(46,204,113,.08); }
+.search-input { max-width: 220px; padding: 0.4rem 0.75rem; font-size: 0.85rem; }
+
+.spin { width: 18px; height: 18px; border: 2.5px solid rgba(255,255,255,.2); border-top-color: #fff; border-radius: 50%; animation: rot .7s linear infinite; display: inline-block; vertical-align: middle; }
+@keyframes rot { to { transform: rotate(360deg); } }
+.empty { color: var(--mu); font-size: 0.9rem; padding: 2rem; text-align: center; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <h1>🎟️ Admin Rifas</h1>
+    <p>Panel de administración — Fundación Raíces</p>
+    <label class="lbl">Contraseña</label>
+    <input type="password" id="loginPass" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()">
+    <div class="err" id="loginErr"></div>
+    <button class="btn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <nav>
+    <span class="nav-brand">🎟️ Fundación Raíces — Admin</span>
+    <div class="nav-right">
+      <a href="/" class="btn-sm" target="_blank">Ver público</a>
+      <button class="btn-sm danger" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('rifas',this)">Rifas</button>
+    <button class="tab-btn" onclick="switchTab('boletos-detail',this)">Boletos</button>
+    <button class="tab-btn" onclick="switchTab('vendedores',this)">Vendedores</button>
+    <button class="tab-btn" onclick="switchTab('clientes',this)">Clientes</button>
+    <button class="tab-btn" onclick="switchTab('ganadores-tab',this)">Ganadores</button>
+  </div>
+
+  <div class="container">
+    <!-- TAB RIFAS -->
+    <div id="tab-rifas" class="tab-content active">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+        <h1 class="page-title">Rifas</h1>
+        <button class="btn-sm green" onclick="openModal('crear')" style="font-size:0.9rem;padding:0.5rem 1rem">+ Nueva rifa</button>
+      </div>
+      <p class="page-sub">Gestiona tus rifas, boletos y sorteos.</p>
+      <div class="stats" id="globalStats"></div>
+      <div id="rifaCards"><div class="empty"><span class="spin"></span> Cargando…</div></div>
+    </div>
+
+    <!-- TAB BOLETOS -->
+    <div id="tab-boletos-detail" class="tab-content">
+      <h1 class="page-title">Boletos</h1>
+      <p class="page-sub">Selecciona una rifa para ver sus boletos.</p>
+      <select id="rifaSelectBoletos" onchange="verBoletos(this.value)" style="margin-bottom:1rem;max-width:400px"><option value="">— Selecciona una rifa —</option></select>
+      <div id="boletosContent" style="display:none">
+        <div class="stats" id="boletosStats"></div>
+        <div class="filters" id="boletosFilters"></div>
+        <div id="boletosTable"></div>
+      </div>
+    </div>
+
+    <!-- TAB VENDEDORES -->
+    <div id="tab-vendedores" class="tab-content">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;margin-bottom:0.25rem">
+        <h1 class="page-title">Vendedores</h1>
+        <button class="btn-sm green" onclick="openVendedorModal()" style="font-size:0.9rem;padding:0.5rem 1rem">+ Nuevo vendedor</button>
+      </div>
+      <p class="page-sub">Gestiona tu equipo de ventas y comisiones.</p>
+      <div class="stats" id="vendedoresStats"></div>
+      <div id="vendedoresTable"></div>
+    </div>
+
+    <!-- TAB CLIENTES -->
+    <div id="tab-clientes" class="tab-content">
+      <h1 class="page-title">Base de datos de clientes</h1>
+      <p class="page-sub">Todos los compradores registrados en tus rifas.</p>
+      <div class="stats" id="clientesStats"></div>
+      <div class="filters">
+        <input class="search-input" type="text" placeholder="Buscar nombre/tel/email…" oninput="filterClientes(this.value)">
+        <button class="btn-sm" onclick="exportClientesCSV()">↓ Exportar CSV</button>
+      </div>
+      <div id="clientesTable"></div>
+    </div>
+
+    <!-- TAB GANADORES -->
+    <div id="tab-ganadores-tab" class="tab-content">
+      <h1 class="page-title">Ganadores</h1>
+      <p class="page-sub">Historial de ganadores y publicación.</p>
+      <div id="ganadoresAdminTable"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL CREAR/EDITAR RIFA -->
+<div class="modal-bg" id="modalRifa">
+  <div class="modal">
+    <h2 id="modalTitle">Nueva rifa</h2>
+    <p class="sub" id="modalSub">Configura los datos de la rifa.</p>
+    <input type="hidden" id="mRifaId">
+    <div class="field"><label class="lbl">Nombre de la rifa *</label><input type="text" id="mNombre" placeholder="Ej: Rifa Navideña 2026"></div>
+    <div class="field"><label class="lbl">Premio *</label><input type="text" id="mPremio" placeholder="Ej: Moto Honda CB190R 0km"></div>
+    <div class="field"><label class="lbl">Descripción</label><textarea id="mDesc" placeholder="Descripción, reglas, etc."></textarea></div>
+    <div class="field-row">
+      <div class="field"><label class="lbl">Precio del boleto *</label><input type="number" id="mPrecio" placeholder="10000" min="0" step="100"></div>
+      <div class="field"><label class="lbl">Total de boletos *</label><input type="number" id="mTotal" placeholder="100" min="1" max="999999"></div>
+    </div>
+    <div class="field"><label class="lbl">Fecha del sorteo</label><input type="datetime-local" id="mFecha"></div>
+    <div class="field"><label class="lbl">URL de imagen (opcional)</label><input type="url" id="mImagen" placeholder="https://..."></div>
+    <div class="field"><label class="lbl">WhatsApp de la rifa (opcional)</label><input type="tel" id="mWhatsApp" placeholder="573001234567"></div>
+    <div class="field"><label class="lbl">Estado</label>
+      <select id="mEstado"><option value="borrador">Borrador</option><option value="activa">Activa</option><option value="cerrada">Cerrada</option></select>
+    </div>
+    <div class="field">
+      <label class="lbl">Descuentos por volumen</label>
+      <div class="desc-list" id="descList"></div>
+      <button class="btn-sm" onclick="addDescuento()" type="button">+ Agregar descuento</button>
+    </div>
+    <div class="field"><label class="lbl">Términos y condiciones</label><textarea id="mTerminos" placeholder="Términos opcionales…"></textarea></div>
+    <div class="err" id="mErr"></div>
+    <button class="btn" id="mBtn" onclick="saveRifa()">Guardar</button>
+    <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--mu);margin-top:0.5rem" onclick="closeModal()">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL SORTEO -->
+<div class="modal-bg" id="modalSorteo">
+  <div class="modal" style="text-align:center">
+    <h2>🎰 Realizar sorteo</h2>
+    <p class="sub" id="sorteoInfo"></p>
+    <div id="sorteoResult" style="margin:1.5rem 0"></div>
+    <button class="btn" id="sorteoBtn" onclick="ejecutarSorteo()" style="background:var(--gold);color:#000">🎲 Sortear ahora</button>
+    <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--mu);margin-top:0.5rem" onclick="closeSorteo()">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL VENDEDOR -->
+<div class="modal-bg" id="modalVendedor">
+  <div class="modal">
+    <h2 id="mvTitle">Nuevo vendedor</h2>
+    <p class="sub">Agrega un vendedor a tu equipo.</p>
+    <input type="hidden" id="mvId">
+    <div class="field"><label class="lbl">Nombre *</label><input type="text" id="mvNombre" placeholder="Nombre completo"></div>
+    <div class="field"><label class="lbl">Código único *</label><input type="text" id="mvCodigo" placeholder="Ej: JUAN01" style="text-transform:uppercase"></div>
+    <div class="field-row">
+      <div class="field"><label class="lbl">Teléfono</label><input type="tel" id="mvTel" placeholder="3001234567"></div>
+      <div class="field"><label class="lbl">Comisión %</label><input type="number" id="mvComision" placeholder="10" min="0" max="100" step="0.5"></div>
+    </div>
+    <div class="field"><label class="lbl">Email</label><input type="email" id="mvEmail" placeholder="email@ejemplo.com"></div>
+    <div class="err" id="mvErr"></div>
+    <button class="btn" onclick="saveVendedor()">Guardar</button>
+    <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--mu);margin-top:0.5rem" onclick="closeVendedorModal()">Cancelar</button>
+  </div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://pvjfjoaywydsttcmpxna.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2amZqb2F5d3lkc3R0Y21weG5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MzUzNTUsImV4cCI6MjEwMDQxMTM1NX0.-xtn9TPORHrs92xqeI2__A70eR7bFonFE0gJNOumHnE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const ADMIN_PASS = 'raices2026';
+
+let allRifas = [], currentBoletos = [], currentRifaId = null, boletosFilter = 'todos', searchTerm = '';
+let allVendedores = [], allClientes = [], allGanadores = [];
+
+function esc(s){ const d=document.createElement('div'); d.textContent=s||''; return d.innerHTML; }
+function fmtMoney(n){ return '$'+Number(n).toLocaleString('es-CO'); }
+function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}); }
+function padLen(total){ return String(total-1).length; }
+function padNum(n,total){ return String(n).padStart(padLen(total),'0'); }
+
+// AUTH
+function doLogin(){
+  const pass = document.getElementById('loginPass').value;
+  if(pass !== ADMIN_PASS){ const e=document.getElementById('loginErr'); e.textContent='Contraseña incorrecta'; e.style.display='block'; return; }
+  sessionStorage.setItem('raices_auth','1'); showPanel();
+}
+function logout(){ sessionStorage.removeItem('raices_auth'); location.reload(); }
+function showPanel(){ document.getElementById('loginWrap').style.display='none'; document.getElementById('panel').style.display='block'; loadAll(); }
+if(sessionStorage.getItem('raices_auth')==='1') showPanel();
+
+function switchTab(name,btn){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='vendedores') loadVendedores();
+  if(name==='clientes') loadClientes();
+  if(name==='ganadores-tab') loadGanadoresAdmin();
+}
+
+// LOAD ALL
+async function loadAll(){
+  const { data } = await sb.from('rifas').select('*').order('created_at',{ascending:false});
+  allRifas = data || [];
+  for(let r of allRifas){
+    const { data: bols } = await sb.from('boletos').select('estado').eq('rifa_id', r.id);
+    r._boletos = bols || [];
+    r._pagados = r._boletos.filter(b=>b.estado==='pagado').length;
+    r._apartados = r._boletos.filter(b=>b.estado==='apartado').length;
+    r._disponibles = r.total_boletos - r._pagados - r._apartados;
+  }
+  renderStats(); renderCards(); populateRifaSelect();
+}
+
+function renderStats(){
+  const total = allRifas.length;
+  const activas = allRifas.filter(r=>r.estado==='activa').length;
+  const totalBolPagados = allRifas.reduce((s,r)=>s+r._pagados,0);
+  const totalIngresos = allRifas.reduce((s,r)=>s + r._pagados * r.precio_boleto, 0);
+  document.getElementById('globalStats').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Rifas</div></div>
+    <div class="stat"><div class="num green">${activas}</div><div class="lbl">Activas</div></div>
+    <div class="stat"><div class="num gold">${totalBolPagados}</div><div class="lbl">Vendidos</div></div>
+    <div class="stat"><div class="num">${fmtMoney(totalIngresos)}</div><div class="lbl">Ingresos</div></div>
+  `;
+}
+
+function renderCards(){
+  const el = document.getElementById('rifaCards');
+  if(!allRifas.length){ el.innerHTML='<div class="empty">No hay rifas. Crea la primera.</div>'; return; }
+  el.innerHTML = '<div class="rifa-cards">' + allRifas.map(r => {
+    const ebCls = 'eb-'+r.estado;
+    const ebTxt = {borrador:'Borrador',activa:'Activa',cerrada:'Cerrada',sorteada:'Sorteada'}[r.estado]||r.estado;
+    const pct = r.total_boletos ? Math.round(r._pagados/r.total_boletos*100) : 0;
+    return `
+    <div class="rifa-card">
+      <span class="estado-badge ${ebCls}">${ebTxt}</span>
+      <h3>${esc(r.nombre)}</h3>
+      <div class="premio">🏆 ${esc(r.premio)}</div>
+      <div class="card-meta">
+        <span class="card-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span>
+        <span class="card-tag green">Vendidos: <b>${r._pagados}/${r.total_boletos}</b> (${pct}%)</span>
+        <span class="card-tag" style="color:var(--warn)">Apartados: <b>${r._apartados}</b></span>
+      </div>
+      ${r.fecha_sorteo ? `<div style="font-size:0.78rem;color:var(--mu)">Sorteo: ${fmtDate(r.fecha_sorteo)}</div>` : ''}
+      ${r.numero_ganador!=null ? `<div style="margin-top:0.4rem;color:var(--gold);font-weight:700">🏆 Ganador: #${padNum(r.numero_ganador,r.total_boletos)}</div>` : ''}
+      <div class="card-actions">
+        <button class="btn-sm" onclick="switchTab('boletos-detail',document.querySelectorAll('.tab-btn')[1]);document.getElementById('rifaSelectBoletos').value='${r.id}';verBoletos('${r.id}')">Boletos</button>
+        <button class="btn-sm" onclick="openModal('editar','${r.id}')">Editar</button>
+        ${r.estado!=='sorteada' ? `<button class="btn-sm gold" onclick="openSorteo('${r.id}')">🎲 Sortear</button>` : ''}
+        <button class="btn-sm danger" onclick="deleteRifa('${r.id}')">Eliminar</button>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+function populateRifaSelect(){
+  const sel = document.getElementById('rifaSelectBoletos');
+  sel.innerHTML = '<option value="">— Selecciona una rifa —</option>' + allRifas.map(r=>`<option value="${r.id}">${esc(r.nombre)} (${r.estado})</option>`).join('');
+}
+
+// MODAL RIFA
+let descuentos = [];
+function openModal(mode, id){
+  document.getElementById('modalRifa').classList.add('on');
+  document.getElementById('mErr').style.display='none';
+  descuentos = [];
+  if(mode==='crear'){
+    document.getElementById('modalTitle').textContent='Nueva rifa';
+    ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mTerminos'].forEach(x=>document.getElementById(x).value='');
+    document.getElementById('mTotal').value='100';
+    document.getElementById('mEstado').value='borrador';
+  } else {
+    const r = allRifas.find(x=>x.id===id); if(!r) return;
+    document.getElementById('modalTitle').textContent='Editar rifa';
+    document.getElementById('mRifaId').value=r.id;
+    document.getElementById('mNombre').value=r.nombre||'';
+    document.getElementById('mPremio').value=r.premio||'';
+    document.getElementById('mDesc').value=r.descripcion||'';
+    document.getElementById('mPrecio').value=r.precio_boleto||'';
+    document.getElementById('mTotal').value=r.total_boletos||100;
+    document.getElementById('mFecha').value=r.fecha_sorteo ? r.fecha_sorteo.slice(0,16) : '';
+    document.getElementById('mImagen').value=r.imagen_url||'';
+    document.getElementById('mWhatsApp').value=r.whatsapp||'';
+    document.getElementById('mEstado').value=r.estado||'borrador';
+    document.getElementById('mTerminos').value=r.terminos||'';
+    descuentos = (r.descuento_volumen||[]).map(d=>({...d}));
+  }
+  renderDescuentos();
+}
+function closeModal(){ document.getElementById('modalRifa').classList.remove('on'); }
+
+function addDescuento(){ descuentos.push({cantidad:5,descuento:10}); renderDescuentos(); }
+function removeDescuento(i){ descuentos.splice(i,1); renderDescuentos(); }
+function renderDescuentos(){
+  document.getElementById('descList').innerHTML = descuentos.map((d,i)=>`
+    <div class="desc-row">
+      <input type="number" value="${d.cantidad}" min="2" placeholder="Cant." onchange="descuentos[${i}].cantidad=+this.value" style="max-width:80px">
+      <span style="color:var(--mu);font-size:0.85rem">boletos →</span>
+      <input type="number" value="${d.descuento}" min="1" max="99" placeholder="%" onchange="descuentos[${i}].descuento=+this.value" style="max-width:70px">
+      <span style="color:var(--mu);font-size:0.85rem">%</span>
+      <button class="btn-sm danger" onclick="removeDescuento(${i})" type="button">✕</button>
+    </div>
+  `).join('');
+}
+
+async function saveRifa(){
+  const id = document.getElementById('mRifaId').value;
+  const nombre = document.getElementById('mNombre').value.trim();
+  const premio = document.getElementById('mPremio').value.trim();
+  const descripcion = document.getElementById('mDesc').value.trim();
+  const precio_boleto = parseFloat(document.getElementById('mPrecio').value);
+  const total_boletos = parseInt(document.getElementById('mTotal').value);
+  const fecha_str = document.getElementById('mFecha').value;
+  const imagen_url = document.getElementById('mImagen').value.trim() || null;
+  const whatsapp = document.getElementById('mWhatsApp').value.trim() || null;
+  const estado = document.getElementById('mEstado').value;
+  const terminos = document.getElementById('mTerminos').value.trim() || null;
+  const errEl = document.getElementById('mErr');
+  errEl.style.display='none';
+
+  if(!nombre||!premio){ errEl.textContent='Nombre y premio son obligatorios'; errEl.style.display='block'; return; }
+  if(!precio_boleto||precio_boleto<=0){ errEl.textContent='Precio debe ser mayor a 0'; errEl.style.display='block'; return; }
+  if(!total_boletos||total_boletos<1){ errEl.textContent='Debe tener al menos 1 boleto'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('mBtn');
+  btn.disabled=true; btn.textContent='Guardando…';
+
+  const row = { nombre, premio, descripcion:descripcion||null, precio_boleto, total_boletos, imagen_url, whatsapp, estado, terminos, descuento_volumen: descuentos.length?descuentos:[], updated_at: new Date().toISOString() };
+  if(fecha_str) row.fecha_sorteo = new Date(fecha_str).toISOString(); else row.fecha_sorteo = null;
+
+  let error;
+  if(id) ({ error } = await sb.from('rifas').update(row).eq('id',id));
+  else ({ error } = await sb.from('rifas').insert(row));
+
+  btn.disabled=false; btn.textContent='Guardar';
+  if(error){ errEl.textContent='Error: '+error.message; errEl.style.display='block'; return; }
+  closeModal(); loadAll();
+}
+
+async function deleteRifa(id){
+  if(!confirm('¿Eliminar esta rifa y todos sus boletos?')) return;
+  await sb.from('boletos').delete().eq('rifa_id',id);
+  await sb.from('rifas').delete().eq('id',id);
+  loadAll();
+}
+
+// BOLETOS
+async function verBoletos(rifaId){
+  if(!rifaId){ document.getElementById('boletosContent').style.display='none'; return; }
+  currentRifaId = rifaId; boletosFilter = 'todos'; searchTerm='';
+  document.getElementById('boletosContent').style.display='block';
+  await loadBoletos();
+}
+
+async function loadBoletos(){
+  const rifa = allRifas.find(r=>r.id===currentRifaId); if(!rifa) return;
+  const { data } = await sb.from('boletos').select('*,vendedores(nombre,codigo)').eq('rifa_id',currentRifaId).order('numero',{ascending:true});
+  currentBoletos = data || [];
+
+  const pagados = currentBoletos.filter(b=>b.estado==='pagado').length;
+  const apartados = currentBoletos.filter(b=>b.estado==='apartado').length;
+  const disponibles = rifa.total_boletos - pagados - apartados;
+  const ingresos = pagados * rifa.precio_boleto;
+
+  document.getElementById('boletosStats').innerHTML = `
+    <div class="stat"><div class="num green">${disponibles}</div><div class="lbl">Disponibles</div></div>
+    <div class="stat"><div class="num warn">${apartados}</div><div class="lbl">Apartados</div></div>
+    <div class="stat"><div class="num gold">${pagados}</div><div class="lbl">Pagados</div></div>
+    <div class="stat"><div class="num">${fmtMoney(ingresos)}</div><div class="lbl">Recaudado</div></div>
+  `;
+  document.getElementById('boletosFilters').innerHTML = `
+    <button class="filter-btn ${boletosFilter==='todos'?'active':''}" onclick="setFilter('todos')">Todos</button>
+    <button class="filter-btn ${boletosFilter==='apartado'?'active':''}" onclick="setFilter('apartado')">Apartados (${apartados})</button>
+    <button class="filter-btn ${boletosFilter==='pagado'?'active':''}" onclick="setFilter('pagado')">Pagados (${pagados})</button>
+    <input class="search-input" type="text" placeholder="Buscar…" oninput="searchBoletos(this.value)">
+    <button class="btn-sm" onclick="exportCSV()">↓ CSV</button>
+  `;
+  renderBoletos();
+}
+
+function setFilter(f){ boletosFilter=f; searchTerm=''; renderBoletos(); }
+function searchBoletos(v){ searchTerm=v.toLowerCase(); renderBoletos(); }
+
+function renderBoletos(){
+  let filtered = currentBoletos;
+  if(boletosFilter!=='todos') filtered=filtered.filter(b=>b.estado===boletosFilter);
+  if(searchTerm) filtered=filtered.filter(b=>(b.comprador_nombre||'').toLowerCase().includes(searchTerm)||(b.comprador_telefono||'').includes(searchTerm)||(b.codigo_verificacion||'').toLowerCase().includes(searchTerm));
+
+  if(!filtered.length){ document.getElementById('boletosTable').innerHTML='<div class="empty">Sin boletos.</div>'; return; }
+  const rifa = allRifas.find(r=>r.id===currentRifaId);
+
+  document.getElementById('boletosTable').innerHTML = `
+  <div class="table-wrap"><table>
+    <thead><tr><th>#</th><th>Estado</th><th>Nombre</th><th>Teléfono</th><th>Código</th><th>Vendedor</th><th>Fecha</th><th>Acciones</th></tr></thead>
+    <tbody>
+      ${filtered.map(b => `<tr>
+        <td><b>${padNum(b.numero,rifa.total_boletos)}</b></td>
+        <td><span class="status-dot sd-${b.estado}"></span>${b.estado==='apartado'?'Apartado':b.estado==='pagado'?'Pagado':'Disp.'}</td>
+        <td>${esc(b.comprador_nombre)}</td>
+        <td>${esc(b.comprador_telefono)}</td>
+        <td style="color:var(--gold);font-weight:600">${esc(b.codigo_verificacion||'—')}</td>
+        <td>${b.vendedores?esc(b.vendedores.nombre)+' <span style="color:var(--mu)">('+esc(b.vendedores.codigo)+')</span>':'—'}</td>
+        <td style="font-size:0.78rem">${fmtDate(b.apartado_at||b.created_at)}</td>
+        <td style="white-space:nowrap">
+          ${b.estado==='apartado'?`<button class="btn-sm green" onclick="confirmarPago('${b.id}')">✓ Pago</button>`:''}
+          ${b.estado!=='disponible'?`<button class="btn-sm danger" onclick="liberarBoleto('${b.id}')">Liberar</button>`:''}
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+async function confirmarPago(id){
+  await sb.from('boletos').update({estado:'pagado',pagado_at:new Date().toISOString()}).eq('id',id); loadBoletos();
+}
+async function liberarBoleto(id){
+  if(!confirm('¿Liberar este boleto?')) return;
+  await sb.from('boletos').delete().eq('id',id); loadBoletos();
+}
+
+// SORTEO
+let sorteoRifaId = null;
+function openSorteo(id){
+  sorteoRifaId=id;
+  const rifa=allRifas.find(r=>r.id===id); if(!rifa) return;
+  document.getElementById('sorteoInfo').textContent=`Rifa: ${rifa.nombre} — ${rifa._pagados} boletos pagados`;
+  document.getElementById('sorteoResult').innerHTML='';
+  document.getElementById('sorteoBtn').disabled=false;
+  document.getElementById('sorteoBtn').textContent='🎲 Sortear ahora';
+  document.getElementById('modalSorteo').classList.add('on');
+}
+function closeSorteo(){ document.getElementById('modalSorteo').classList.remove('on'); sorteoRifaId=null; }
+
+async function ejecutarSorteo(){
+  const rifa=allRifas.find(r=>r.id===sorteoRifaId); if(!rifa) return;
+  const { data: bols } = await sb.from('boletos').select('numero,comprador_nombre,comprador_telefono').eq('rifa_id',sorteoRifaId).eq('estado','pagado');
+  if(!bols||!bols.length){ document.getElementById('sorteoResult').innerHTML='<p style="color:var(--danger)">No hay boletos pagados.</p>'; return; }
+
+  const btn=document.getElementById('sorteoBtn');
+  btn.disabled=true; btn.textContent='Sorteando…';
+  const resEl=document.getElementById('sorteoResult');
+
+  let count=0;
+  const anim=setInterval(()=>{
+    const rand=bols[Math.floor(Math.random()*bols.length)].numero;
+    resEl.innerHTML=`<div style="font-size:4rem;font-weight:700;color:var(--gold)">${padNum(rand,rifa.total_boletos)}</div>`;
+    count++;
+    if(count>=20){
+      clearInterval(anim);
+      const winner=bols[Math.floor(Math.random()*bols.length)];
+      resEl.innerHTML=`
+        <div style="font-size:5rem;font-weight:700;color:var(--gold);text-shadow:0 0 30px rgba(245,197,24,.4)">🏆 ${padNum(winner.numero,rifa.total_boletos)}</div>
+        <p style="color:var(--green);font-weight:700;margin-top:0.5rem">${esc(winner.comprador_nombre||'Ganador')}</p>
+      `;
+      Promise.all([
+        sb.from('rifas').update({numero_ganador:winner.numero,estado:'sorteada',updated_at:new Date().toISOString()}).eq('id',sorteoRifaId),
+        sb.from('ganadores').insert({rifa_id:sorteoRifaId,numero:winner.numero,nombre_ganador:winner.comprador_nombre,telefono_ganador:winner.comprador_telefono,premio:rifa.premio,publicado:true})
+      ]).then(()=>{ btn.textContent='✓ Sorteado'; loadAll(); });
+    }
+  },100);
+}
+
+// VENDEDORES
+async function loadVendedores(){
+  const { data } = await sb.from('vendedores').select('*').order('created_at',{ascending:false});
+  allVendedores = data || [];
+
+  const activos = allVendedores.filter(v=>v.activo).length;
+  document.getElementById('vendedoresStats').innerHTML=`
+    <div class="stat"><div class="num">${allVendedores.length}</div><div class="lbl">Total</div></div>
+    <div class="stat"><div class="num green">${activos}</div><div class="lbl">Activos</div></div>
+  `;
+
+  if(!allVendedores.length){ document.getElementById('vendedoresTable').innerHTML='<div class="empty">No hay vendedores.</div>'; return; }
+  document.getElementById('vendedoresTable').innerHTML=`
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Código</th><th>Teléfono</th><th>Email</th><th>Comisión</th><th>Estado</th><th>Acciones</th></tr></thead>
+    <tbody>
+      ${allVendedores.map(v=>`<tr>
+        <td><b>${esc(v.nombre)}</b></td>
+        <td style="color:var(--accent);font-weight:600">${esc(v.codigo)}</td>
+        <td>${esc(v.telefono)}</td>
+        <td>${esc(v.email)}</td>
+        <td>${v.comision_pct}%</td>
+        <td>${v.activo?'<span style="color:var(--green)">Activo</span>':'<span style="color:var(--mu)">Inactivo</span>'}</td>
+        <td style="white-space:nowrap">
+          <button class="btn-sm" onclick="editVendedor('${v.id}')">Editar</button>
+          <button class="btn-sm ${v.activo?'danger':'green'}" onclick="toggleVendedor('${v.id}',${!v.activo})">${v.activo?'Desactivar':'Activar'}</button>
+          <button class="btn-sm danger" onclick="deleteVendedor('${v.id}')">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function openVendedorModal(){
+  document.getElementById('modalVendedor').classList.add('on');
+  document.getElementById('mvErr').style.display='none';
+  document.getElementById('mvTitle').textContent='Nuevo vendedor';
+  ['mvId','mvNombre','mvCodigo','mvTel','mvEmail'].forEach(x=>document.getElementById(x).value='');
+  document.getElementById('mvComision').value='0';
+}
+function editVendedor(id){
+  const v=allVendedores.find(x=>x.id===id); if(!v) return;
+  document.getElementById('modalVendedor').classList.add('on');
+  document.getElementById('mvErr').style.display='none';
+  document.getElementById('mvTitle').textContent='Editar vendedor';
+  document.getElementById('mvId').value=v.id;
+  document.getElementById('mvNombre').value=v.nombre||'';
+  document.getElementById('mvCodigo').value=v.codigo||'';
+  document.getElementById('mvTel').value=v.telefono||'';
+  document.getElementById('mvEmail').value=v.email||'';
+  document.getElementById('mvComision').value=v.comision_pct||0;
+}
+function closeVendedorModal(){ document.getElementById('modalVendedor').classList.remove('on'); }
+
+async function saveVendedor(){
+  const id=document.getElementById('mvId').value;
+  const nombre=document.getElementById('mvNombre').value.trim();
+  const codigo=document.getElementById('mvCodigo').value.trim().toUpperCase();
+  const telefono=document.getElementById('mvTel').value.trim()||null;
+  const email=document.getElementById('mvEmail').value.trim()||null;
+  const comision_pct=parseFloat(document.getElementById('mvComision').value)||0;
+  const errEl=document.getElementById('mvErr');
+  errEl.style.display='none';
+
+  if(!nombre||!codigo){ errEl.textContent='Nombre y código son obligatorios'; errEl.style.display='block'; return; }
+  const row={nombre,codigo,telefono,email,comision_pct};
+  let error;
+  if(id) ({ error }=await sb.from('vendedores').update(row).eq('id',id));
+  else ({ error }=await sb.from('vendedores').insert(row));
+  if(error){ errEl.textContent='Error: '+error.message; errEl.style.display='block'; return; }
+  closeVendedorModal(); loadVendedores();
+}
+
+async function toggleVendedor(id,val){ await sb.from('vendedores').update({activo:val}).eq('id',id); loadVendedores(); }
+async function deleteVendedor(id){ if(!confirm('¿Eliminar vendedor?')) return; await sb.from('vendedores').delete().eq('id',id); loadVendedores(); }
+
+// CLIENTES
+let clienteSearch='';
+async function loadClientes(){
+  const { data } = await sb.from('boletos').select('comprador_nombre,comprador_telefono,comprador_email,estado,rifas(nombre)').not('comprador_nombre','is',null).order('created_at',{ascending:false});
+  const raw = data || [];
+  const map = {};
+  raw.forEach(b=>{
+    const key = (b.comprador_telefono||'')+'|'+(b.comprador_nombre||'');
+    if(!map[key]) map[key]={nombre:b.comprador_nombre,telefono:b.comprador_telefono,email:b.comprador_email,boletos:0,pagados:0,rifas:new Set()};
+    map[key].boletos++;
+    if(b.estado==='pagado') map[key].pagados++;
+    if(b.rifas) map[key].rifas.add(b.rifas.nombre);
+  });
+  allClientes = Object.values(map);
+
+  document.getElementById('clientesStats').innerHTML=`
+    <div class="stat"><div class="num">${allClientes.length}</div><div class="lbl">Clientes</div></div>
+    <div class="stat"><div class="num gold">${allClientes.reduce((s,c)=>s+c.pagados,0)}</div><div class="lbl">Boletos pagados</div></div>
+  `;
+  renderClientes();
+}
+
+function filterClientes(v){ clienteSearch=v.toLowerCase(); renderClientes(); }
+
+function renderClientes(){
+  let filtered = allClientes;
+  if(clienteSearch) filtered=filtered.filter(c=>(c.nombre||'').toLowerCase().includes(clienteSearch)||(c.telefono||'').includes(clienteSearch)||(c.email||'').toLowerCase().includes(clienteSearch));
+
+  if(!filtered.length){ document.getElementById('clientesTable').innerHTML='<div class="empty">Sin clientes.</div>'; return; }
+  document.getElementById('clientesTable').innerHTML=`
+  <div class="table-wrap"><table>
+    <thead><tr><th>Nombre</th><th>Teléfono</th><th>Email</th><th>Boletos</th><th>Pagados</th><th>Rifas</th></tr></thead>
+    <tbody>
+      ${filtered.map(c=>`<tr>
+        <td><b>${esc(c.nombre)}</b></td>
+        <td>${esc(c.telefono)}</td>
+        <td>${esc(c.email)}</td>
+        <td>${c.boletos}</td>
+        <td style="color:var(--green);font-weight:600">${c.pagados}</td>
+        <td style="font-size:0.78rem;color:var(--mu)">${[...c.rifas].map(r=>esc(r)).join(', ')}</td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+function exportClientesCSV(){
+  if(!allClientes.length) return;
+  const headers=['Nombre','Teléfono','Email','Boletos','Pagados','Rifas'];
+  const csv=[headers,...allClientes.map(c=>[c.nombre||'',c.telefono||'',c.email||'',c.boletos,c.pagados,[...c.rifas].join('; ')])].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`clientes-rifas-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+
+// GANADORES ADMIN
+async function loadGanadoresAdmin(){
+  const { data } = await sb.from('ganadores').select('*,rifas(nombre,total_boletos)').order('fecha_sorteo',{ascending:false});
+  allGanadores = data || [];
+  if(!allGanadores.length){ document.getElementById('ganadoresAdminTable').innerHTML='<div class="empty">Sin ganadores registrados.</div>'; return; }
+  document.getElementById('ganadoresAdminTable').innerHTML=`
+  <div class="table-wrap"><table>
+    <thead><tr><th>Rifa</th><th>#</th><th>Ganador</th><th>Teléfono</th><th>Premio</th><th>Fecha</th><th>Publicado</th><th>Acciones</th></tr></thead>
+    <tbody>
+      ${allGanadores.map(g=>`<tr>
+        <td><b>${esc(g.rifas?.nombre||'—')}</b></td>
+        <td style="color:var(--gold);font-weight:700">${padNum(g.numero,g.rifas?.total_boletos||100)}</td>
+        <td>${esc(g.nombre_ganador)}</td>
+        <td>${esc(g.telefono_ganador)}</td>
+        <td>${esc(g.premio)}</td>
+        <td style="font-size:0.78rem">${fmtDate(g.fecha_sorteo)}</td>
+        <td>${g.publicado?'<span style="color:var(--green)">Sí</span>':'<span style="color:var(--mu)">No</span>'}</td>
+        <td>
+          <button class="btn-sm ${g.publicado?'':'green'}" onclick="toggleGanador('${g.id}',${!g.publicado})">${g.publicado?'Ocultar':'Publicar'}</button>
+          <button class="btn-sm danger" onclick="deleteGanador('${g.id}')">Eliminar</button>
+        </td>
+      </tr>`).join('')}
+    </tbody>
+  </table></div>`;
+}
+
+async function toggleGanador(id,val){ await sb.from('ganadores').update({publicado:val}).eq('id',id); loadGanadoresAdmin(); }
+async function deleteGanador(id){ if(!confirm('¿Eliminar?')) return; await sb.from('ganadores').delete().eq('id',id); loadGanadoresAdmin(); }
+
+// EXPORT CSV BOLETOS
+function exportCSV(){
+  const rifa=allRifas.find(r=>r.id===currentRifaId);
+  if(!rifa||!currentBoletos.length) return;
+  const headers=['Número','Estado','Nombre','Teléfono','Email','Código','Vendedor','Apartado','Pagado'];
+  const csv=[headers,...currentBoletos.map(b=>[
+    padNum(b.numero,rifa.total_boletos),b.estado,b.comprador_nombre||'',b.comprador_telefono||'',
+    b.comprador_email||'',b.codigo_verificacion||'',b.vendedores?b.vendedores.nombre:'',
+    b.apartado_at?new Date(b.apartado_at).toLocaleString('es-CO'):'',
+    b.pagado_at?new Date(b.pagado_at).toLocaleString('es-CO'):''
+  ])].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`boletos-${rifa.nombre.replace(/\s+/g,'-')}-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
+}
+</script>
+</body>
+</html>

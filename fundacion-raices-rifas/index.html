@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rifas — Fundaci&oacute;n Ra&iacute;ces</title>
+<meta name="description" content="Participa en las rifas de Fundaci&oacute;n Ra&iacute;ces. Escoge tu n&uacute;mero de la suerte y gana premios incre&iacute;bles.">
+<link rel="canonical" href="https://rifas.fundacionraices.co/">
+<meta property="og:title" content="Rifas — Fundaci&oacute;n Ra&iacute;ces">
+<meta property="og:description" content="Escoge tu n&uacute;mero de la suerte y gana premios incre&iacute;bles.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;--surface:#16171b;--surface-2:#1e2026;--line:#2a2c33;
+  --accent:#2ecc71;--accent-2:#27ae60;--accent-soft:rgba(46,204,113,.12);
+  --text:#f3f3f3;--muted:#9a9ca3;--green:#25D366;--danger:#e23b3b;
+  --gold:#f5c518;--blue:#60a5fa;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100dvh;overflow-x:hidden}
+
+.top-bar{height:6px;background:linear-gradient(90deg,var(--accent),var(--gold),var(--accent))}
+
+header{padding:18px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand b{font-family:'Bebas Neue';font-size:22px;letter-spacing:1px;font-weight:400}
+.brand-sub{font-family:'Barlow Condensed';font-size:11px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;text-align:right;line-height:1.2}
+
+.nav-tabs{display:flex;border-bottom:1px solid var(--line);background:var(--surface);overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav-tab{flex:1;min-width:0;padding:14px 12px;text-align:center;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:13px;font-weight:600;color:var(--muted);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:all .15s;white-space:nowrap}
+.nav-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.nav-tab:hover{color:var(--text)}
+
+main{max-width:640px;margin:0 auto;padding:28px 18px 80px}
+.section{display:none}
+.section.active{display:block}
+
+.badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);color:var(--accent);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:13px;font-weight:600;padding:7px 14px;border-radius:999px;margin-bottom:20px}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:p 1.6s infinite}
+@keyframes p{0%{box-shadow:0 0 0 0 rgba(46,204,113,.6)}70%{box-shadow:0 0 0 9px rgba(46,204,113,0)}100%{box-shadow:0 0 0 0 rgba(46,204,113,0)}}
+
+h1{font-family:'Bebas Neue';font-weight:400;font-size:clamp(44px,14vw,64px);line-height:.88;letter-spacing:1px;margin-bottom:16px}
+h1 .em{color:var(--accent)}
+h2.section-title{font-family:'Bebas Neue';font-weight:400;font-size:clamp(36px,10vw,52px);line-height:.9;letter-spacing:.5px;margin-bottom:8px}
+.lead{font-size:16px;line-height:1.5;color:#d6d6d6;max-width:38ch;margin-bottom:28px}
+
+/* LISTA DE RIFAS */
+#rifasList{display:flex;flex-direction:column;gap:18px}
+.rifa-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;overflow:hidden;cursor:pointer;transition:border-color .15s,transform .06s}
+.rifa-card:hover{border-color:var(--accent)}
+.rifa-card:active{transform:scale(.99)}
+.rifa-img{width:100%;height:200px;object-fit:cover;display:block;background:var(--surface-2)}
+.rifa-img-placeholder{width:100%;height:180px;background:linear-gradient(135deg,var(--surface-2),rgba(46,204,113,.06));display:flex;align-items:center;justify-content:center;font-size:60px}
+.rifa-body{padding:18px}
+.rifa-body h3{font-family:'Bebas Neue';font-weight:400;font-size:28px;letter-spacing:.5px;margin-bottom:4px}
+.rifa-body .premio{color:var(--gold);font-weight:700;font-size:15px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.rifa-body .desc{color:var(--muted);font-size:14px;line-height:1.5;margin-bottom:14px}
+.rifa-meta{display:flex;gap:10px;flex-wrap:wrap}
+.meta-tag{background:var(--surface-2);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:13px;font-family:'Barlow Condensed';letter-spacing:.5px;text-transform:uppercase}
+.meta-tag b{color:var(--accent)}
+.meta-tag.gold b{color:var(--gold)}
+.rifa-estado{display:inline-block;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:10px}
+.estado-activa{background:rgba(46,204,113,.1);color:var(--accent)}
+.estado-cerrada{background:rgba(245,158,11,.1);color:#f59e0b}
+.estado-sorteada{background:rgba(96,165,250,.1);color:#60a5fa}
+
+/* DESCUENTOS */
+.descuentos-bar{background:linear-gradient(90deg,rgba(46,204,113,.08),rgba(245,197,24,.08));border:1px solid rgba(46,204,113,.25);border-radius:12px;padding:12px 16px;margin-bottom:18px}
+.descuentos-bar h4{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:12px;color:var(--gold);margin-bottom:8px}
+.descuento-items{display:flex;gap:8px;flex-wrap:wrap}
+.descuento-tag{background:rgba(245,197,24,.1);border:1px solid rgba(245,197,24,.25);border-radius:8px;padding:5px 10px;font-size:12px;font-weight:600;color:var(--gold)}
+
+/* DETALLE */
+#rifaDetalle{display:none}
+.back-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--muted);font-family:'DM Sans';font-size:14px;cursor:pointer;margin-bottom:20px;padding:6px 0;transition:color .15s}
+.back-btn:hover{color:var(--accent)}
+.detalle-header{margin-bottom:22px}
+.detalle-header h2{font-family:'Bebas Neue';font-weight:400;font-size:clamp(36px,10vw,52px);line-height:.9;letter-spacing:.5px;margin-bottom:8px}
+.detalle-header .premio-big{color:var(--gold);font-weight:700;font-size:18px;display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.detalle-header .desc{color:#d6d6d6;font-size:15px;line-height:1.5}
+
+.info-bar{display:flex;gap:10px;margin-bottom:22px;flex-wrap:wrap}
+.info-item{flex:1;min-width:80px;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 14px;text-align:center}
+.info-item .val{font-family:'Bebas Neue';font-size:26px;color:var(--accent);line-height:1}
+.info-item .val.green{color:var(--green)}
+.info-item .val.gold{color:var(--gold)}
+.info-item .lbl{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:10px;color:var(--muted);margin-top:2px}
+
+/* GRID BOLETOS */
+.grid-section{margin-bottom:22px}
+.grid-section h3{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:14px;color:var(--muted);margin-bottom:12px}
+.leyenda{display:flex;gap:14px;margin-bottom:14px;flex-wrap:wrap}
+.leyenda-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:.5px;text-transform:uppercase}
+.leyenda-dot{width:14px;height:14px;border-radius:4px}
+.leyenda-dot.disp{background:var(--surface-2);border:1px solid var(--line)}
+.leyenda-dot.sel{background:var(--accent)}
+.leyenda-dot.apart{background:rgba(245,158,11,.2);border:1px solid #f59e0b}
+.leyenda-dot.pag{background:rgba(37,211,102,.15);border:1px solid var(--green)}
+
+.boletos-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(52px,1fr));gap:6px;max-height:420px;overflow-y:auto;padding:6px;border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.boleto{aspect-ratio:1;display:flex;align-items:center;justify-content:center;background:var(--surface-2);border:1px solid var(--line);border-radius:8px;font-family:'Bebas Neue';font-size:17px;cursor:pointer;transition:all .1s;user-select:none}
+.boleto:hover{border-color:var(--accent);transform:scale(1.05)}
+.boleto.selected{background:var(--accent);border-color:var(--accent);color:#fff}
+.boleto.apartado{background:rgba(245,158,11,.12);border-color:rgba(245,158,11,.4);color:#f59e0b;cursor:not-allowed;pointer-events:none}
+.boleto.pagado{background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:var(--green);cursor:not-allowed;pointer-events:none}
+.boleto.ganador{background:rgba(245,197,24,.15);border:2px solid var(--gold);color:var(--gold);animation:glow 2s infinite}
+@keyframes glow{0%,100%{box-shadow:0 0 6px rgba(245,197,24,.3)}50%{box-shadow:0 0 18px rgba(245,197,24,.5)}}
+.boletos-grid::-webkit-scrollbar{width:6px}
+.boletos-grid::-webkit-scrollbar-track{background:transparent}
+.boletos-grid::-webkit-scrollbar-thumb{background:var(--line);border-radius:3px}
+
+/* SELECCION */
+#seleccionWrap{display:none;margin-top:22px}
+.sel-resumen{background:var(--surface);border:1px solid var(--accent);border-radius:14px;padding:16px 18px;margin-bottom:16px}
+.sel-resumen h4{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:13px;color:var(--muted);margin-bottom:8px}
+.sel-nums{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.sel-num{background:var(--accent);color:#fff;font-family:'Bebas Neue';font-size:18px;padding:6px 12px;border-radius:8px}
+.sel-total{font-size:20px;font-weight:700;color:var(--accent)}
+.sel-descuento{font-size:14px;color:var(--gold);margin-top:4px}
+.sel-ahorro{text-decoration:line-through;color:var(--muted);font-size:14px;margin-right:8px}
+
+/* FORMULARIO */
+.form-wrap{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px}
+.form-wrap h3{font-family:'Bebas Neue';font-weight:400;font-size:26px;letter-spacing:.5px;margin-bottom:4px}
+.form-wrap .sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+.field{margin-bottom:14px}
+label{display:block;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;color:var(--muted);font-size:13px;margin-bottom:7px}
+input,select{width:100%;padding:14px 15px;background:var(--bg);color:var(--text);border:1px solid var(--line);border-radius:11px;font-family:'DM Sans';font-size:16px;transition:border-color .15s}
+input:focus,select:focus{outline:none;border-color:var(--accent)}
+
+.btn{width:100%;border:none;border-radius:14px;padding:18px;font-family:'DM Sans';font-weight:700;cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;gap:10px;transition:transform .06s ease,filter .15s ease}
+.btn:active{transform:scale(.985)}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 8px 26px -10px var(--accent)}
+.btn-primary:hover{filter:brightness(1.05)}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;box-shadow:none}
+.btn-wa{background:var(--green);color:#06210f;box-shadow:0 8px 26px -10px var(--green)}
+.err{color:#f0a0a0;font-size:13px;margin-top:8px;display:none}
+
+/* SUCCESS */
+#successWrap{display:none;text-align:center;padding:14px 6px}
+#successWrap .ring{width:84px;height:84px;border-radius:50%;background:rgba(46,204,113,.1);border:2px solid var(--accent);display:grid;place-items:center;margin:0 auto 18px}
+#successWrap h3{font-family:'Bebas Neue';font-weight:400;font-size:32px;letter-spacing:.5px;margin-bottom:8px}
+#successWrap p{color:#d6d6d6;font-size:15px;line-height:1.5;max-width:34ch;margin:0 auto 14px}
+#successWrap .nums-res{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
+.codigo-box{background:var(--surface);border:1px dashed var(--gold);border-radius:12px;padding:14px;margin:16px 0;text-align:center}
+.codigo-box .lbl{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:4px}
+.codigo-box .code{font-family:'Bebas Neue';font-size:28px;color:var(--gold);letter-spacing:3px}
+
+/* GANADOR BANNER */
+.ganador-banner{background:linear-gradient(135deg,rgba(245,197,24,.12),rgba(46,204,113,.12));border:2px solid var(--gold);border-radius:18px;padding:24px;text-align:center;margin-bottom:22px}
+.ganador-banner h3{font-family:'Bebas Neue';font-size:36px;color:var(--gold);margin-bottom:6px}
+.ganador-banner .numero{font-family:'Bebas Neue';font-size:72px;color:var(--gold);line-height:1}
+
+/* VERIFICADOR */
+.verificador-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 22px;text-align:center}
+.verificador-card h2{font-family:'Bebas Neue';font-weight:400;font-size:36px;margin-bottom:6px}
+.verificador-card .sub{color:var(--muted);font-size:14px;margin-bottom:24px}
+.verificador-input-wrap{display:flex;gap:10px;margin-bottom:16px}
+.verificador-input-wrap input{flex:1}
+.verificador-input-wrap button{flex-shrink:0;padding:14px 24px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-family:'DM Sans';font-weight:700;font-size:16px;cursor:pointer}
+#verificadorResult{margin-top:18px}
+.ticket-card{background:var(--surface-2);border:1px solid var(--line);border-radius:14px;padding:18px;text-align:left}
+.ticket-card .tc-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.ticket-card .tc-rifa{font-family:'Bebas Neue';font-size:22px}
+.ticket-card .tc-estado{font-size:11px;font-weight:700;padding:4px 10px;border-radius:999px;text-transform:uppercase;font-family:'Barlow Condensed';letter-spacing:1px}
+.tc-apartado{background:rgba(245,158,11,.12);color:#f59e0b}
+.tc-pagado{background:rgba(46,204,113,.12);color:var(--accent)}
+.ticket-card .tc-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px}
+.ticket-card .tc-row:last-child{border-bottom:none}
+.ticket-card .tc-label{color:var(--muted)}
+
+/* GANADORES */
+.ganadores-list{display:flex;flex-direction:column;gap:14px}
+.ganador-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px;display:flex;align-items:center;gap:16px}
+.ganador-numero{width:64px;height:64px;background:linear-gradient(135deg,rgba(245,197,24,.15),rgba(46,204,113,.1));border:2px solid var(--gold);border-radius:12px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:26px;color:var(--gold);flex-shrink:0}
+.ganador-info{flex:1;min-width:0}
+.ganador-info h4{font-size:16px;font-weight:700;margin-bottom:2px}
+.ganador-info .premio{color:var(--gold);font-size:14px;font-weight:600}
+.ganador-info .fecha{color:var(--muted);font-size:12px;margin-top:4px;font-family:'Barlow Condensed';letter-spacing:.5px;text-transform:uppercase}
+
+.spin{width:20px;height:20px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite;display:inline-block}
+@keyframes rot{to{transform:rotate(360deg)}}
+.loading-center{display:flex;align-items:center;justify-content:center;padding:60px;color:var(--muted);gap:12px}
+
+footer{text-align:center;padding:24px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:1.5px;text-transform:uppercase;font-size:12px;border-top:1px solid var(--line)}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="top-bar"></div>
+
+<header>
+  <a href="/" class="brand"><b>FUNDACI&Oacute;N RA&Iacute;CES</b></a>
+  <div class="brand-sub">RIFAS<br>SOLIDARIAS</div>
+</header>
+
+<div class="nav-tabs">
+  <button class="nav-tab active" onclick="showSection('rifas')">Rifas</button>
+  <button class="nav-tab" onclick="showSection('verificar')">Verificar tiquete</button>
+  <button class="nav-tab" onclick="showSection('ganadores')">Ganadores</button>
+</div>
+
+<main>
+  <!-- RIFAS -->
+  <section id="secRifas" class="section active">
+    <div id="rifasLista">
+      <div class="badge"><span class="pulse"></span> Rifas activas</div>
+      <h1>ESCOGE TU<br><span class="em">N&Uacute;MERO</span></h1>
+      <p class="lead">Participa en nuestras rifas solidarias. Escoge tu n&uacute;mero de la suerte y gana premios incre&iacute;bles.</p>
+      <div id="rifasList"><div class="loading-center"><span class="spin"></span> Cargando rifas...</div></div>
+    </div>
+
+    <div id="rifaDetalle" style="display:none">
+      <button class="back-btn" onclick="showList()">&larr; Volver a rifas</button>
+      <div id="ganadorBanner"></div>
+      <div class="detalle-header">
+        <h2 id="detNombre"></h2>
+        <div class="premio-big" id="detPremio"></div>
+        <p class="desc" id="detDesc"></p>
+      </div>
+      <div class="info-bar" id="detInfo"></div>
+      <div id="detDescuentos"></div>
+      <div class="grid-section">
+        <h3>Escoge tus n&uacute;meros</h3>
+        <div class="leyenda">
+          <div class="leyenda-item"><div class="leyenda-dot disp"></div> Disponible</div>
+          <div class="leyenda-item"><div class="leyenda-dot sel"></div> Tu selecci&oacute;n</div>
+          <div class="leyenda-item"><div class="leyenda-dot apart"></div> Apartado</div>
+          <div class="leyenda-item"><div class="leyenda-dot pag"></div> Pagado</div>
+        </div>
+        <div class="boletos-grid" id="boletosGrid"></div>
+      </div>
+      <div id="seleccionWrap">
+        <div class="sel-resumen">
+          <h4>Tu selecci&oacute;n</h4>
+          <div class="sel-nums" id="selNums"></div>
+          <div id="selPricing"></div>
+        </div>
+        <div class="form-wrap">
+          <h3>COMPLETA TU COMPRA</h3>
+          <p class="sub">Llena tus datos para apartar tus n&uacute;meros.</p>
+          <div class="field"><label>Tu nombre</label><input type="text" id="fNombre" placeholder="Nombre completo" autocomplete="name"></div>
+          <div class="field"><label>WhatsApp / Tel&eacute;fono</label><input type="tel" id="fTelefono" placeholder="3001234567" autocomplete="tel"></div>
+          <div class="field"><label>Email (opcional)</label><input type="email" id="fEmail" placeholder="tu@email.com" autocomplete="email"></div>
+          <div class="field" id="vendedorField" style="display:none"><label>C&oacute;digo de vendedor (opcional)</label><input type="text" id="fVendedor" placeholder="Ej: JUAN01"></div>
+          <div class="err" id="fErr"></div>
+          <button class="btn btn-primary" id="btnApartar" onclick="apartarBoletos()">&#x1f3ab; Apartar boletos</button>
+        </div>
+      </div>
+      <div id="successWrap">
+        <div class="ring">
+          <svg width="38" height="38" fill="none" stroke="#2ecc71" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 20 17 27 28 13"/></svg>
+        </div>
+        <h3>&iexcl;BOLETOS APARTADOS!</h3>
+        <p>Tus n&uacute;meros han sido reservados. Para confirmar, env&iacute;a tu comprobante de pago por WhatsApp.</p>
+        <div class="nums-res" id="successNums"></div>
+        <div class="codigo-box" id="successCodigo">
+          <div class="lbl">Tu c&oacute;digo de verificaci&oacute;n</div>
+          <div class="code" id="codigoText"></div>
+        </div>
+        <a class="btn btn-wa" id="btnWhatsApp" href="#" target="_blank">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+          Enviar comprobante
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- VERIFICAR -->
+  <section id="secVerificar" class="section">
+    <div class="verificador-card">
+      <h2>VERIFICAR TIQUETE</h2>
+      <p class="sub">Ingresa tu c&oacute;digo de verificaci&oacute;n o n&uacute;mero de tel&eacute;fono para consultar el estado de tus boletos.</p>
+      <div class="verificador-input-wrap">
+        <input type="text" id="vInput" placeholder="C&oacute;digo o tel&eacute;fono..." onkeydown="if(event.key==='Enter')verificarTiquete()">
+        <button onclick="verificarTiquete()">Buscar</button>
+      </div>
+      <div id="verificadorResult"></div>
+    </div>
+  </section>
+
+  <!-- GANADORES -->
+  <section id="secGanadores" class="section">
+    <div class="badge"><span class="pulse"></span> Historial</div>
+    <h2 class="section-title">GANADORES</h2>
+    <p class="lead">Conoce a los afortunados ganadores de nuestras rifas.</p>
+    <div id="ganadoresList"><div class="loading-center"><span class="spin"></span> Cargando...</div></div>
+  </section>
+</main>
+
+<footer>Fundaci&oacute;n Ra&iacute;ces &copy; 2024 &mdash; <a href="https://fundacionraices.co" target="_blank">fundacionraices.co</a></footer>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+const SUPABASE_URL = 'https://pvjfjoaywydsttcmpxna.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InB2amZqb2F5d3lkc3R0Y21weG5hIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ4MzUzNTUsImV4cCI6MjEwMDQxMTM1NX0.-xtn9TPORHrs92xqeI2__A70eR7bFonFE0gJNOumHnE';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+const WA_NUMERO = '573117896717';
+
+let rifas=[],currentRifa=null,boletos=[],selected=new Set(),vendedores=[];
+
+function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
+function fmtMoney(n){return '$'+Number(n).toLocaleString('es-CO')}
+function fmtDate(d){if(!d)return'—';return new Date(d).toLocaleDateString('es-CO',{day:'numeric',month:'short',year:'numeric'})}
+function padLen(t){return String(t-1).length}
+function padNum(n,t){return String(n).padStart(padLen(t),'0')}
+function genCode(){return Math.random().toString(36).substring(2,8).toUpperCase()}
+
+function showSection(name){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('sec'+name.charAt(0).toUpperCase()+name.slice(1)).classList.add('active');
+  event.target.classList.add('active');
+  if(name==='ganadores')loadGanadores();
+}
+
+async function loadRifas(){
+  const[{data:rd},{data:vd}]=await Promise.all([
+    sb.from('rifas').select('*').in('estado',['activa','cerrada','sorteada']).order('created_at',{ascending:false}),
+    sb.from('vendedores').select('id,codigo,nombre').eq('activo',true)
+  ]);
+  rifas=rd||[];vendedores=vd||[];
+  if(vendedores.length>0)document.getElementById('vendedorField').style.display='block';
+  renderRifas();
+}
+
+function renderRifas(){
+  const el=document.getElementById('rifasList');
+  if(!rifas.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:40px 0">No hay rifas activas en este momento.</p>';return}
+  el.innerHTML=rifas.map(r=>{
+    const ec=r.estado==='activa'?'estado-activa':r.estado==='cerrada'?'estado-cerrada':'estado-sorteada';
+    const et=r.estado==='activa'?'Activa':r.estado==='cerrada'?'Cerrada':'Sorteada';
+    const img=r.imagen_url?`<img class="rifa-img" src="${esc(r.imagen_url)}" alt="${esc(r.nombre)}" loading="lazy">`:`<div class="rifa-img-placeholder">\u{1F3AB}</div>`;
+    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div></div></div>`
+  }).join('');
+}
+
+async function openRifa(id){
+  currentRifa=rifas.find(r=>r.id===id);if(!currentRifa)return;
+  selected.clear();
+  document.getElementById('rifasLista').style.display='none';
+  document.getElementById('rifaDetalle').style.display='block';
+  document.getElementById('seleccionWrap').style.display='none';
+  document.getElementById('successWrap').style.display='none';
+  window.scrollTo(0,0);
+  document.getElementById('detNombre').textContent=currentRifa.nombre;
+  document.getElementById('detPremio').innerHTML='\u{1F3C6} '+esc(currentRifa.premio);
+  document.getElementById('detDesc').textContent=currentRifa.descripcion||'';
+  document.getElementById('boletosGrid').innerHTML='<div class="loading-center"><span class="spin"></span></div>';
+  const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',id);
+  boletos=data||[];
+  const v=boletos.filter(b=>b.estado==='pagado').length,a=boletos.filter(b=>b.estado==='apartado').length,d=currentRifa.total_boletos-v-a;
+  document.getElementById('detInfo').innerHTML=`
+    <div class="info-item"><div class="val">${fmtMoney(currentRifa.precio_boleto)}</div><div class="lbl">Precio</div></div>
+    <div class="info-item"><div class="val green">${d}</div><div class="lbl">Disponibles</div></div>
+    <div class="info-item"><div class="val">${v}</div><div class="lbl">Vendidos</div></div>
+    ${currentRifa.fecha_sorteo?`<div class="info-item"><div class="val gold" style="font-size:15px">${fmtDate(currentRifa.fecha_sorteo)}</div><div class="lbl">Sorteo</div></div>`:''}`;
+  const desc=currentRifa.descuento_volumen||[];
+  document.getElementById('detDescuentos').innerHTML=desc.length?`<div class="descuentos-bar"><h4>\u{1F525} Descuentos por volumen</h4><div class="descuento-items">${desc.map(d=>`<span class="descuento-tag">${d.cantidad}+ boletos → ${d.descuento}% OFF</span>`).join('')}</div></div>`:'';
+  if(currentRifa.estado==='sorteada'&&currentRifa.numero_ganador!=null){
+    document.getElementById('ganadorBanner').innerHTML=`<div class="ganador-banner"><h3>\u{1F3C6} NÚMERO GANADOR</h3><div class="numero">${padNum(currentRifa.numero_ganador,currentRifa.total_boletos)}</div></div>`;
+  }else{document.getElementById('ganadorBanner').innerHTML=''}
+  renderGrid();
+}
+
+function renderGrid(){
+  const bMap={};boletos.forEach(b=>bMap[b.numero]=b.estado);
+  const grid=document.getElementById('boletosGrid');let html='';
+  for(let i=0;i<currentRifa.total_boletos;i++){
+    const estado=bMap[i]||'disponible',isSel=selected.has(i);
+    let cls='';
+    if(estado==='apartado')cls='apartado';else if(estado==='pagado')cls='pagado';else if(isSel)cls='selected';
+    if(currentRifa.numero_ganador===i)cls+=' ganador';
+    const canClick=estado==='disponible'&&currentRifa.estado==='activa';
+    html+=`<div class="boleto ${cls}" ${canClick?`onclick="toggleBoleto(${i})"`:''} title="${estado==='apartado'?'Apartado':estado==='pagado'?'Vendido':''}">${padNum(i,currentRifa.total_boletos)}</div>`;
+  }
+  grid.innerHTML=html;
+}
+
+function toggleBoleto(n){if(selected.has(n))selected.delete(n);else selected.add(n);renderGrid();updateSeleccion()}
+
+function calcDescuento(qty){const d=(currentRifa.descuento_volumen||[]).sort((a,b)=>b.cantidad-a.cantidad);for(const x of d){if(qty>=x.cantidad)return x.descuento}return 0}
+
+function updateSeleccion(){
+  const wrap=document.getElementById('seleccionWrap');
+  if(selected.size===0){wrap.style.display='none';return}
+  wrap.style.display='block';
+  const nums=[...selected].sort((a,b)=>a-b);
+  document.getElementById('selNums').innerHTML=nums.map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
+  const qty=nums.length,sub=qty*currentRifa.precio_boleto,dp=calcDescuento(qty),total=sub*(1-dp/100);
+  let html='';
+  if(dp>0)html=`<div><span class="sel-ahorro">${fmtMoney(sub)}</span> <span class="sel-total">${fmtMoney(total)}</span></div><div class="sel-descuento">\u{1F389} ${dp}% de descuento por ${qty} boletos</div>`;
+  else html=`<div>Total: <span class="sel-total">${fmtMoney(total)}</span></div>`;
+  document.getElementById('selPricing').innerHTML=html;
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function apartarBoletos(){
+  const nombre=document.getElementById('fNombre').value.trim(),telefono=document.getElementById('fTelefono').value.trim(),email=document.getElementById('fEmail').value.trim(),vendedorCodigo=document.getElementById('fVendedor').value.trim().toUpperCase(),errEl=document.getElementById('fErr');
+  errEl.style.display='none';
+  if(!nombre){errEl.textContent='Ingresa tu nombre';errEl.style.display='block';return}
+  if(!telefono||telefono.length<7){errEl.textContent='Ingresa un teléfono válido';errEl.style.display='block';return}
+  if(selected.size===0){errEl.textContent='Selecciona al menos un número';errEl.style.display='block';return}
+  let vendedor_id=null;
+  if(vendedorCodigo){const v=vendedores.find(x=>x.codigo===vendedorCodigo);if(!v){errEl.textContent='Código de vendedor no válido';errEl.style.display='block';return}vendedor_id=v.id}
+  const btn=document.getElementById('btnApartar');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Apartando…';
+  const codigo=genCode(),nums=[...selected];
+  const rows=nums.map(n=>({rifa_id:currentRifa.id,numero:n,estado:'apartado',comprador_nombre:nombre,comprador_telefono:telefono,comprador_email:email||null,vendedor_id,codigo_verificacion:codigo,apartado_at:new Date().toISOString()}));
+  const{error}=await sb.from('boletos').upsert(rows,{onConflict:'rifa_id,numero'});
+  if(error){errEl.textContent='Error al apartar. Algunos números pueden haber sido tomados.';errEl.style.display='block';btn.disabled=false;btn.innerHTML='\u{1F3AB} Apartar boletos';return}
+  const numsStr=nums.sort((a,b)=>a-b).map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
+  const qty=nums.length,dp=calcDescuento(qty),total=fmtMoney(qty*currentRifa.precio_boleto*(1-dp/100));
+  const waNum=currentRifa.whatsapp||WA_NUMERO;
+  const msg=`¡Hola! Aparté ${qty} boleto(s) en la rifa *${currentRifa.nombre}*:%0A%0ANúmeros: *${numsStr}*%0ATotal: *${total}*${dp?` (${dp}% desc.)`:''}%0ANombre: ${nombre}%0ATeléfono: ${telefono}%0ACódigo: *${codigo}*%0A%0AAdjunto mi comprobante de pago \u{1F9FE}`;
+  document.getElementById('btnWhatsApp').href=`https://wa.me/${waNum}?text=${msg}`;
+  document.getElementById('successNums').innerHTML=nums.sort((a,b)=>a-b).map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
+  document.getElementById('codigoText').textContent=codigo;
+  document.getElementById('seleccionWrap').style.display='none';
+  document.getElementById('successWrap').style.display='block';
+  document.getElementById('successWrap').scrollIntoView({behavior:'smooth'});
+  selected.clear();btn.disabled=false;btn.innerHTML='\u{1F3AB} Apartar boletos';
+  const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',currentRifa.id);boletos=data||[];renderGrid();
+}
+
+function showList(){document.getElementById('rifaDetalle').style.display='none';document.getElementById('rifasLista').style.display='block';window.scrollTo(0,0)}
+
+async function verificarTiquete(){
+  const q=document.getElementById('vInput').value.trim(),el=document.getElementById('verificadorResult');
+  if(!q){el.innerHTML='<p style="color:var(--danger);margin-top:12px">Ingresa un código o teléfono</p>';return}
+  el.innerHTML='<div class="loading-center"><span class="spin"></span></div>';
+  const{data}=await sb.from('boletos').select('numero,estado,comprador_nombre,comprador_telefono,apartado_at,pagado_at,codigo_verificacion,rifa_id,rifas(nombre,total_boletos,premio)').or(`codigo_verificacion.eq.${q},comprador_telefono.eq.${q}`).order('created_at',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<p style="color:var(--muted);margin-top:16px">No se encontraron boletos.</p>';return}
+  const grouped={};data.forEach(b=>{const k=b.rifa_id;if(!grouped[k])grouped[k]={rifa:b.rifas,boletos:[]};grouped[k].boletos.push(b)});
+  el.innerHTML=Object.values(grouped).map(g=>{const r=g.rifa;return`<div class="ticket-card" style="margin-bottom:12px"><div class="tc-header"><span class="tc-rifa">${esc(r.nombre)}</span></div><div class="tc-row"><span class="tc-label">Premio</span><span>${esc(r.premio)}</span></div>${g.boletos.map(b=>`<div class="tc-row"><span><b>#${padNum(b.numero,r.total_boletos)}</b></span><span class="tc-estado ${b.estado==='pagado'?'tc-pagado':'tc-apartado'}">${b.estado==='pagado'?'Pagado':'Apartado'}</span></div>`).join('')}<div class="tc-row"><span class="tc-label">Nombre</span><span>${esc(g.boletos[0].comprador_nombre)}</span></div><div class="tc-row"><span class="tc-label">Código</span><span style="color:var(--gold);font-weight:600">${esc(g.boletos[0].codigo_verificacion||'—')}</span></div></div>`}).join('');
+}
+
+async function loadGanadores(){
+  const el=document.getElementById('ganadoresList');
+  const{data}=await sb.from('ganadores').select('*,rifas(nombre,total_boletos)').eq('publicado',true).order('fecha_sorteo',{ascending:false});
+  if(!data||!data.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:40px 0">Aún no hay ganadores registrados.</p>';return}
+  el.innerHTML='<div class="ganadores-list">'+data.map(g=>`<div class="ganador-card"><div class="ganador-numero">${padNum(g.numero,g.rifas?.total_boletos||100)}</div><div class="ganador-info"><h4>${esc(g.nombre_ganador||'Ganador')}</h4><div class="premio">\u{1F3C6} ${esc(g.premio||'')}</div><div class="fecha">${fmtDate(g.fecha_sorteo)}</div></div></div>`).join('')+'</div>';
+}
+
+loadRifas();
+</script>
+</body>
+</html>
