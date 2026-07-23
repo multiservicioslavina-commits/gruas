@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../rita_config.dart';
-import '../services/auth_service.dart';
 import '../services/update_service.dart';
 import '../theme.dart';
-import 'login_screen.dart';
 import 'my_history_screen.dart';
 import 'ride_entry_screen.dart';
 import 'profile_screen.dart';
@@ -36,23 +34,11 @@ class _RideHomeScreenState extends State<RideHomeScreen> {
         automaticallyImplyLeading: false,
         actions: [
           IconButton(
-            icon: const Icon(Icons.person_outline, color: RColors.inkDim),
-            tooltip: 'Mi perfil',
+            icon: const Icon(Icons.account_circle_outlined,
+                color: RColors.brand),
+            tooltip: 'Mi cuenta',
             onPressed: () => Navigator.push(context,
                 MaterialPageRoute(builder: (_) => const ProfileScreen())),
-          ),
-          IconButton(
-            icon: const Icon(Icons.logout, color: RColors.inkDim),
-            tooltip: 'Cerrar sesión',
-            onPressed: () async {
-              await AuthService().signOut();
-              if (context.mounted) {
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  (_) => false,
-                );
-              }
-            },
           ),
         ],
       ),
