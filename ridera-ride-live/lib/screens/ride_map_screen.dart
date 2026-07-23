@@ -10,7 +10,6 @@ import '../services/crash_detector.dart';
 import '../services/session_service.dart';
 import '../services/location_service.dart';
 import '../services/mesh_service.dart';
-import '../services/photo_service.dart';
 import '../services/push_dispatcher.dart';
 import '../services/ride_service.dart';
 import '../services/ride_status.dart';
@@ -64,7 +63,6 @@ extension _MapTypeExt on _MapType {
 class _RideMapScreenState extends State<RideMapScreen>
     with WidgetsBindingObserver {
   final _rideService = RideService();
-  final _photoService = PhotoService();
   final _locationService = LocationService();
   final _mesh = MeshService();
   final _crashDetector = CrashDetector();
@@ -79,8 +77,6 @@ class _RideMapScreenState extends State<RideMapScreen>
   StreamSubscription<MeshPeerMessage>? _meshSub;
   StreamSubscription<MeshConnectionEvent>? _meshConnSub;
   int _meshDirectPeers = 0;
-  bool _uploadingPhoto = false;
-
   final Map<String, _RiderData> _riders = {};
   final Map<String, List<LatLng>> _traces = {};
   RealtimeChannel? _channel;
@@ -617,39 +613,6 @@ class _RideMapScreenState extends State<RideMapScreen>
     );
   }
 
-  Future<void> _takePhoto() async {
-    if (_uploadingPhoto) return;
-    setState(() => _uploadingPhoto = true);
-    try {
-      final me = _riders[_uid];
-      final url = await _photoService.captureAndUpload(
-        rideId: widget.rideId,
-        lat: me?.lat,
-        lon: me?.lon,
-      );
-      if (url != null && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Foto guardada en la rodada'),
-            backgroundColor: Color(0xFF1a1a1a),
-            duration: Duration(seconds: 2),
-          ),
-        );
-      }
-    } catch (_) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Error al guardar la foto'),
-            backgroundColor: Color(0xFF3b1111),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _uploadingPhoto = false);
-    }
-  }
-
   bool get _hasSos =>
       _riders.values.any((r) => r.status == RideStatus.sos);
 
@@ -864,19 +827,6 @@ class _RideMapScreenState extends State<RideMapScreen>
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
                           _ActionBtn(
-                            heroTag: 'camera_l',
-                            onPressed: _uploadingPhoto ? null : _takePhoto,
-                            backgroundColor: const Color(0xFF1a1a1a),
-                            child: _uploadingPhoto
-                                ? const SizedBox(
-                                    width: 20,
-                                    height: 20,
-                                    child: CircularProgressIndicator(
-                                        color: Colors.white, strokeWidth: 2))
-                                : const Icon(Icons.camera_alt,
-                                    color: Colors.white),
-                          ),
-                          _ActionBtn(
                             heroTag: 'sos_l',
                             onPressed: _sendSos,
                             backgroundColor: const Color(0xFFef4444),
@@ -940,29 +890,11 @@ class _RideMapScreenState extends State<RideMapScreen>
             ),
           ],
         ),
-        floatingActionButton: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            FloatingActionButton(
-              heroTag: 'camera',
-              onPressed: _uploadingPhoto ? null : _takePhoto,
-              backgroundColor: const Color(0xFF1a1a1a),
-              child: _uploadingPhoto
-                  ? const SizedBox(
-                      width: 22,
-                      height: 22,
-                      child: CircularProgressIndicator(
-                          color: Colors.white, strokeWidth: 2))
-                  : const Icon(Icons.camera_alt, color: Colors.white),
-            ),
-            const SizedBox(height: 12),
-            FloatingActionButton(
-              heroTag: 'sos',
-              onPressed: _sendSos,
-              backgroundColor: const Color(0xFFef4444),
-              child: const Icon(Icons.sos, color: Colors.white, size: 28),
-            ),
-          ],
+        floatingActionButton: FloatingActionButton(
+          heroTag: 'sos',
+          onPressed: _sendSos,
+          backgroundColor: const Color(0xFFef4444),
+          child: const Icon(Icons.sos, color: Colors.white, size: 28),
         ),
       ),
     );
