@@ -10,5 +10,6 @@ Disallow: /califica.html
 Disallow: /seguimiento.html
 Disallow: /mimoto.html
 Disallow: /widget-gruas.html
+Disallow: /admin-rifas.html
 
 Sitemap: https://gruas.ridera.com.co/sitemap.xml
