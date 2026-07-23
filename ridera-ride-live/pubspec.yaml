@@ -17,6 +17,8 @@ dependencies:
   flutter_map: ^8.3.1
   flutter_map_tile_caching: ^10.1.1
   latlong2: ^0.9.1
+  image_picker: ^1.1.2
+  gal: ^1.1.0
   http: ^1.2.2
   wakelock_plus: ^1.2.8
   video_player: ^2.9.2
