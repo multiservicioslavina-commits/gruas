@@ -141,15 +141,45 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .btn-wa{background:var(--green);color:#06210f;box-shadow:0 8px 26px -10px var(--green)}
 .err{color:#f0a0a0;font-size:13px;margin-top:8px;display:none}
 
-/* SUCCESS */
-#successWrap{display:none;text-align:center;padding:14px 6px}
-#successWrap .ring{width:84px;height:84px;border-radius:50%;background:rgba(46,204,113,.1);border:2px solid var(--accent);display:grid;place-items:center;margin:0 auto 18px}
-#successWrap h3{font-family:'Bebas Neue';font-weight:400;font-size:32px;letter-spacing:.5px;margin-bottom:8px}
-#successWrap p{color:#d6d6d6;font-size:15px;line-height:1.5;max-width:34ch;margin:0 auto 14px}
-#successWrap .nums-res{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:16px}
-.codigo-box{background:var(--surface);border:1px dashed var(--gold);border-radius:12px;padding:14px;margin:16px 0;text-align:center}
+/* TIMER */
+.timer-bar{background:linear-gradient(90deg,rgba(245,158,11,.1),rgba(245,197,24,.08));border:1px solid rgba(245,158,11,.3);border-radius:14px;padding:16px;text-align:center;margin-bottom:18px}
+.timer-bar .timer-label{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:12px;color:var(--muted);margin-bottom:6px}
+.timer-bar .timer-count{font-family:'Bebas Neue';font-size:42px;color:#f59e0b;letter-spacing:3px;line-height:1}
+.timer-bar.expired{border-color:var(--danger);background:rgba(226,59,59,.08)}
+.timer-bar.expired .timer-count{color:var(--danger)}
+
+/* PAGO */
+#pagoWrap{display:none}
+.pago-section{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:22px;margin-bottom:16px}
+.pago-section h3{font-family:'Bebas Neue';font-weight:400;font-size:26px;letter-spacing:.5px;margin-bottom:4px}
+.pago-section .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+.pago-metodos{display:flex;flex-direction:column;gap:10px}
+.pago-metodo{background:var(--surface-2);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:12px}
+.pago-metodo .pm-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.pago-metodo .pm-info{flex:1;min-width:0}
+.pago-metodo .pm-name{font-weight:700;font-size:14px;margin-bottom:2px}
+.pago-metodo .pm-detail{color:var(--muted);font-size:13px;word-break:break-all}
+
+/* RECIBO / SUCCESS */
+#reciboWrap{display:none;padding:14px 0}
+.recibo-card{background:var(--surface);border:1px solid var(--accent);border-radius:18px;padding:24px 20px;margin-bottom:18px}
+.recibo-header{text-align:center;margin-bottom:18px}
+.recibo-header .ring{width:72px;height:72px;border-radius:50%;background:rgba(46,204,113,.1);border:2px solid var(--accent);display:grid;place-items:center;margin:0 auto 14px}
+.recibo-header h3{font-family:'Bebas Neue';font-weight:400;font-size:30px;letter-spacing:.5px;margin-bottom:4px}
+.recibo-header p{color:var(--muted);font-size:14px}
+.recibo-row{display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line);font-size:14px}
+.recibo-row:last-child{border-bottom:none}
+.recibo-row .rl{color:var(--muted)}
+.recibo-row .rv{font-weight:600;text-align:right;max-width:60%}
+.recibo-nums{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin:14px 0}
+.codigo-box{background:var(--surface-2);border:1px dashed var(--gold);border-radius:12px;padding:14px;margin:16px 0;text-align:center}
 .codigo-box .lbl{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:4px}
 .codigo-box .code{font-family:'Bebas Neue';font-size:28px;color:var(--gold);letter-spacing:3px}
+.motivacion{background:linear-gradient(135deg,rgba(46,204,113,.08),rgba(245,197,24,.06));border:1px solid rgba(46,204,113,.2);border-radius:14px;padding:20px;text-align:center;margin-bottom:18px}
+.motivacion .emoji{font-size:36px;margin-bottom:8px}
+.motivacion p{color:#d6d6d6;font-size:15px;line-height:1.6;font-style:italic}
+.motivacion .bold{color:var(--accent);font-weight:700;font-style:normal}
+.btn-group{display:flex;flex-direction:column;gap:10px}
 
 /* GANADOR BANNER */
 .ganador-banner{background:linear-gradient(135deg,rgba(245,197,24,.12),rgba(46,204,113,.12));border:2px solid var(--gold);border-radius:18px;padding:24px;text-align:center;margin-bottom:22px}
@@ -253,21 +283,85 @@ footer a{color:var(--accent);text-decoration:none}
           <button class="btn btn-primary" id="btnApartar" onclick="apartarBoletos()">&#x1f3ab; Apartar boletos</button>
         </div>
       </div>
-      <div id="successWrap">
-        <div class="ring">
-          <svg width="38" height="38" fill="none" stroke="#2ecc71" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 20 17 27 28 13"/></svg>
+      <!-- PASO 2: PAGO -->
+      <div id="pagoWrap">
+        <div class="timer-bar" id="timerBar">
+          <div class="timer-label">Tus n&uacute;meros est&aacute;n reservados por</div>
+          <div class="timer-count" id="timerCount">15:00</div>
         </div>
-        <h3>&iexcl;BOLETOS APARTADOS!</h3>
-        <p>Tus n&uacute;meros han sido reservados. Para confirmar, env&iacute;a tu comprobante de pago por WhatsApp.</p>
-        <div class="nums-res" id="successNums"></div>
-        <div class="codigo-box" id="successCodigo">
-          <div class="lbl">Tu c&oacute;digo de verificaci&oacute;n</div>
-          <div class="code" id="codigoText"></div>
+        <div class="pago-section">
+          <h3>REALIZA TU PAGO</h3>
+          <p class="sub">Transfiere el valor total y env&iacute;a tu comprobante por WhatsApp.</p>
+          <div style="background:var(--surface-2);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center">
+            <div style="font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:4px">Total a pagar</div>
+            <div style="font-family:'Bebas Neue';font-size:36px;color:var(--accent);line-height:1" id="pagoTotal"></div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px" id="pagoDetalle"></div>
+          </div>
+          <div class="pago-metodos" id="pagoMetodos">
+            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(150,60,200,.15)">&#x1F4F1;</div><div class="pm-info"><div class="pm-name">Nequi</div><div class="pm-detail" id="pagoNequi"></div></div></div>
+            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(255,80,0,.12)">&#x1F4F2;</div><div class="pm-info"><div class="pm-name">Daviplata</div><div class="pm-detail" id="pagoDaviplata"></div></div></div>
+            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(96,165,250,.12)">&#x1F3E6;</div><div class="pm-info"><div class="pm-name">Transferencia bancaria</div><div class="pm-detail" id="pagoBanco"></div></div></div>
+          </div>
         </div>
-        <a class="btn btn-wa" id="btnWhatsApp" href="#" target="_blank">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
-          Enviar comprobante
-        </a>
+        <div class="sel-resumen" style="border-color:var(--gold)">
+          <h4 style="color:var(--gold)">Tus n&uacute;meros reservados</h4>
+          <div class="sel-nums" id="pagoNums"></div>
+          <div class="codigo-box" style="margin:10px 0 0">
+            <div class="lbl">C&oacute;digo de verificaci&oacute;n</div>
+            <div class="code" id="pagoCodigo"></div>
+          </div>
+        </div>
+        <div class="btn-group" style="margin-top:16px">
+          <a class="btn btn-wa" id="btnPagoWA" href="#" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+            Enviar comprobante de pago
+          </a>
+          <button class="btn btn-primary" onclick="mostrarRecibo()">&#x2705; Ya pagu&eacute; &rarr; Ver mi recibo</button>
+        </div>
+      </div>
+
+      <!-- PASO 3: RECIBO -->
+      <div id="reciboWrap">
+        <div class="recibo-card">
+          <div class="recibo-header">
+            <div class="ring">
+              <svg width="34" height="34" fill="none" stroke="#2ecc71" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="10 18 15 23 25 12"/></svg>
+            </div>
+            <h3>&iexcl;COMPRA REGISTRADA!</h3>
+            <p>Guarda este recibo como comprobante</p>
+          </div>
+          <div class="recibo-row"><span class="rl">Rifa</span><span class="rv" id="recRifa"></span></div>
+          <div class="recibo-row"><span class="rl">Premio</span><span class="rv" id="recPremio"></span></div>
+          <div class="recibo-row"><span class="rl">Loter&iacute;a</span><span class="rv" id="recLoteria" style="color:#60a5fa"></span></div>
+          <div class="recibo-row"><span class="rl">Fecha sorteo</span><span class="rv" id="recFecha"></span></div>
+          <div class="recibo-row"><span class="rl">Comprador</span><span class="rv" id="recNombre"></span></div>
+          <div class="recibo-row"><span class="rl">Tel&eacute;fono</span><span class="rv" id="recTelefono"></span></div>
+          <div class="recibo-row"><span class="rl">Total pagado</span><span class="rv" id="recTotal" style="color:var(--accent);font-size:18px"></span></div>
+          <div style="text-align:center;margin-top:14px">
+            <div style="font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:6px">Tus n&uacute;meros</div>
+            <div class="recibo-nums" id="recNums"></div>
+          </div>
+          <div class="codigo-box">
+            <div class="lbl">C&oacute;digo de verificaci&oacute;n</div>
+            <div class="code" id="recCodigo"></div>
+          </div>
+        </div>
+
+        <div class="motivacion">
+          <div class="emoji">&#x1F340;&#x1F3C6;&#x1F340;</div>
+          <p>&iexcl;Ya tienes tus n&uacute;meros de la suerte!<br>
+          <span class="bold">Conf&iacute;a, cree y prep&aacute;rate para ganar.</span><br>
+          La suerte ya est&aacute; de tu lado. &#x2728;</p>
+        </div>
+
+        <div class="btn-group">
+          <a class="btn btn-wa" id="btnReciboWA" href="#" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+            Recibir recibo por WhatsApp
+          </a>
+          <button class="btn" style="background:var(--surface);border:1px solid var(--line);color:var(--text)" onclick="compartirRecibo()">&#x1F4CB; Copiar recibo</button>
+          <button class="btn" style="background:transparent;border:1px solid var(--line);color:var(--muted)" onclick="showList()">&#x2190; Volver a rifas</button>
+        </div>
       </div>
     </div>
   </section>
@@ -347,7 +441,9 @@ async function openRifa(id){
   document.getElementById('rifasLista').style.display='none';
   document.getElementById('rifaDetalle').style.display='block';
   document.getElementById('seleccionWrap').style.display='none';
-  document.getElementById('successWrap').style.display='none';
+  document.getElementById('pagoWrap').style.display='none';
+  document.getElementById('reciboWrap').style.display='none';
+  if(reservaTimer)clearInterval(reservaTimer);
   window.scrollTo(0,0);
   document.getElementById('detNombre').textContent=currentRifa.nombre;
   document.getElementById('detPremio').innerHTML='\u{1F3C6} '+esc(currentRifa.premio);
@@ -402,6 +498,9 @@ function updateSeleccion(){
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
+let reservaTimer=null,reservaData=null;
+const RESERVA_MINUTOS=15;
+
 async function apartarBoletos(){
   const nombre=document.getElementById('fNombre').value.trim(),telefono=document.getElementById('fTelefono').value.trim(),email=document.getElementById('fEmail').value.trim(),vendedorCodigo=document.getElementById('fVendedor').value.trim().toUpperCase(),errEl=document.getElementById('fErr');
   errEl.style.display='none';
@@ -411,22 +510,82 @@ async function apartarBoletos(){
   let vendedor_id=null;
   if(vendedorCodigo){const v=vendedores.find(x=>x.codigo===vendedorCodigo);if(!v){errEl.textContent='Código de vendedor no válido';errEl.style.display='block';return}vendedor_id=v.id}
   const btn=document.getElementById('btnApartar');btn.disabled=true;btn.innerHTML='<span class="spin"></span> Apartando…';
-  const codigo=genCode(),nums=[...selected];
+  const codigo=genCode(),nums=[...selected].sort((a,b)=>a-b);
   const rows=nums.map(n=>({rifa_id:currentRifa.id,numero:n,estado:'apartado',comprador_nombre:nombre,comprador_telefono:telefono,comprador_email:email||null,vendedor_id,codigo_verificacion:codigo,apartado_at:new Date().toISOString()}));
   const{error}=await sb.from('boletos').upsert(rows,{onConflict:'rifa_id,numero'});
   if(error){errEl.textContent='Error al apartar. Algunos números pueden haber sido tomados.';errEl.style.display='block';btn.disabled=false;btn.innerHTML='\u{1F3AB} Apartar boletos';return}
-  const numsStr=nums.sort((a,b)=>a-b).map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
-  const qty=nums.length,dp=calcDescuento(qty),total=fmtMoney(qty*currentRifa.precio_boleto*(1-dp/100));
+
+  const qty=nums.length,dp=calcDescuento(qty),totalNum=qty*currentRifa.precio_boleto*(1-dp/100),totalStr=fmtMoney(totalNum);
+  const numsStr=nums.map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
   const waNum=currentRifa.whatsapp||WA_NUMERO;
-  const msg=`¡Hola! Aparté ${qty} boleto(s) en la rifa *${currentRifa.nombre}*:%0A%0ANúmeros: *${numsStr}*%0ATotal: *${total}*${dp?` (${dp}% desc.)`:''}%0ANombre: ${nombre}%0ATeléfono: ${telefono}%0ACódigo: *${codigo}*%0A%0AAdjunto mi comprobante de pago \u{1F9FE}`;
-  document.getElementById('btnWhatsApp').href=`https://wa.me/${waNum}?text=${msg}`;
-  document.getElementById('successNums').innerHTML=nums.sort((a,b)=>a-b).map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
-  document.getElementById('codigoText').textContent=codigo;
+
+  reservaData={nombre,telefono,email,codigo,nums,numsStr,qty,dp,totalNum,totalStr,waNum,rifaNombre:currentRifa.nombre,premio:currentRifa.premio,loteria:currentRifa.loteria||'',fechaSorteo:currentRifa.fecha_sorteo,totalBoletos:currentRifa.total_boletos};
+
+  const msgAdmin=`¡Hola! Aparté ${qty} boleto(s) en la rifa *${currentRifa.nombre}*:%0A%0A🎟️ Números: *${numsStr}*%0A💰 Total: *${totalStr}*${dp?` (${dp}% desc.)`:''}%0A👤 Nombre: ${nombre}%0A📱 Teléfono: ${telefono}%0A🔑 Código: *${codigo}*%0A%0AAdjunto mi comprobante de pago 🧾`;
+  document.getElementById('btnPagoWA').href=`https://wa.me/${waNum}?text=${msgAdmin}`;
+
+  document.getElementById('pagoTotal').textContent=totalStr;
+  document.getElementById('pagoDetalle').textContent=`${qty} boleto(s)${dp?` · ${dp}% descuento`:''}`;
+  document.getElementById('pagoNums').innerHTML=nums.map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
+  document.getElementById('pagoCodigo').textContent=codigo;
+
+  const telPago=waNum;
+  document.getElementById('pagoNequi').textContent=telPago;
+  document.getElementById('pagoDaviplata').textContent=telPago;
+  document.getElementById('pagoBanco').textContent='Consultar por WhatsApp';
+
   document.getElementById('seleccionWrap').style.display='none';
-  document.getElementById('successWrap').style.display='block';
-  document.getElementById('successWrap').scrollIntoView({behavior:'smooth'});
+  document.getElementById('pagoWrap').style.display='block';
+  document.getElementById('pagoWrap').scrollIntoView({behavior:'smooth'});
   selected.clear();btn.disabled=false;btn.innerHTML='\u{1F3AB} Apartar boletos';
   const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',currentRifa.id);boletos=data||[];renderGrid();
+
+  iniciarTimer();
+}
+
+function iniciarTimer(){
+  if(reservaTimer)clearInterval(reservaTimer);
+  let segs=RESERVA_MINUTOS*60;
+  const bar=document.getElementById('timerBar'),countEl=document.getElementById('timerCount');
+  bar.classList.remove('expired');
+  function tick(){
+    if(segs<=0){clearInterval(reservaTimer);countEl.textContent='EXPIRADO';bar.classList.add('expired');return}
+    const m=Math.floor(segs/60),s=segs%60;
+    countEl.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    segs--;
+  }
+  tick();
+  reservaTimer=setInterval(tick,1000);
+}
+
+function mostrarRecibo(){
+  if(!reservaData)return;
+  const d=reservaData;
+  document.getElementById('recRifa').textContent=d.rifaNombre;
+  document.getElementById('recPremio').textContent=d.premio;
+  document.getElementById('recLoteria').textContent=d.loteria||'—';
+  document.getElementById('recFecha').textContent=d.fechaSorteo?fmtDate(d.fechaSorteo):'Por definir';
+  document.getElementById('recNombre').textContent=d.nombre;
+  document.getElementById('recTelefono').textContent=d.telefono;
+  document.getElementById('recTotal').textContent=d.totalStr;
+  document.getElementById('recNums').innerHTML=d.nums.map(n=>`<span class="sel-num">${padNum(n,d.totalBoletos)}</span>`).join('');
+  document.getElementById('recCodigo').textContent=d.codigo;
+
+  const reciboMsg=`🎟️ *RECIBO DE COMPRA — FUNDACIÓN RAÍCES*%0A%0A📋 Rifa: *${d.rifaNombre}*%0A🏆 Premio: *${d.premio}*%0A🎰 Lotería: *${d.loteria||'Por definir'}*%0A📅 Sorteo: *${d.fechaSorteo?fmtDate(d.fechaSorteo):'Por definir'}*%0A%0A🎟️ Números: *${d.numsStr}*%0A💰 Total: *${d.totalStr}*%0A🔑 Código: *${d.codigo}*%0A%0A🍀 *¡La suerte ya está de tu lado!*%0AConfía, cree y prepárate para ganar. ✨%0A%0A_Fundación Raíces — Rifas Solidarias_`;
+  document.getElementById('btnReciboWA').href=`https://wa.me/${d.telefono.startsWith('57')?d.telefono:'57'+d.telefono}?text=${reciboMsg}`;
+
+  if(reservaTimer)clearInterval(reservaTimer);
+  document.getElementById('pagoWrap').style.display='none';
+  document.getElementById('reciboWrap').style.display='block';
+  document.getElementById('reciboWrap').scrollIntoView({behavior:'smooth'});
+}
+
+function compartirRecibo(){
+  if(!reservaData)return;
+  const d=reservaData;
+  const txt=`🎟️ RECIBO — FUNDACIÓN RAÍCES\n\n📋 Rifa: ${d.rifaNombre}\n🏆 Premio: ${d.premio}\n🎰 Lotería: ${d.loteria||'Por definir'}\n📅 Sorteo: ${d.fechaSorteo?fmtDate(d.fechaSorteo):'Por definir'}\n\n🎟️ Números: ${d.numsStr}\n💰 Total: ${d.totalStr}\n🔑 Código: ${d.codigo}\n\n🍀 ¡La suerte ya está de tu lado!\nConfía, cree y prepárate para ganar. ✨`;
+  if(navigator.share){navigator.share({title:'Mi recibo de rifa',text:txt}).catch(()=>{})}
+  else{navigator.clipboard.writeText(txt).then(()=>alert('Recibo copiado al portapapeles')).catch(()=>{})}
 }
 
 function showList(){document.getElementById('rifaDetalle').style.display='none';document.getElementById('rifasLista').style.display='block';window.scrollTo(0,0)}
