@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>LaViTecno | Tarjeta Digital</title>
+<meta name="description" content="LaViTecno — Cámaras de seguridad, redes WiFi y tecnología al mejor precio en Medellín." />
+<meta property="og:title" content="LaViTecno" />
+<meta property="og:description" content="Cámaras de seguridad, redes WiFi y soluciones tecnológicas en Medellín." />
+<meta property="og:type" content="website" />
+<meta name="theme-color" content="#0a1628" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<style>
+:root {
+  --bg: #0a1225;
+  --surface: #0f1a30;
+  --surface-2: #142240;
+  --accent: #00b4d8;
+  --accent-light: #48cae4;
+  --accent-dark: #0077b6;
+  --accent-glow: rgba(0,180,216,.12);
+  --accent-glow-2: rgba(0,180,216,.06);
+  --text: #e8edf4;
+  --muted: #6e7d94;
+  --border: #1e2d4a;
+  --radius: 16px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  min-height: 100dvh;
+  display: flex;
+  justify-content: center;
+  padding: 0;
+}
+.card {
+  width: 100%;
+  max-width: 460px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+.accent-line {
+  height: 4px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-dark), transparent);
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  padding: 2.5rem 1.5rem 2rem;
+  background: radial-gradient(ellipse at 50% 0%, var(--accent-glow) 0%, transparent 70%);
+}
+.logo-wrap {
+  width: 120px;
+  height: 120px;
+  margin: 0 auto 1.2rem;
+  border-radius: 20px;
+  border: 2px solid var(--accent-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  box-shadow: 0 0 30px rgba(0,180,216,.15);
+  font-size: 2.8rem;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: -.05em;
+  overflow: hidden;
+}
+.logo-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1;
+}
+.logo-text .lv { font-size: 2.6rem; }
+.logo-text .sub { font-size: .55rem; letter-spacing: .3em; color: var(--muted); margin-top: .2rem; text-transform: uppercase; }
+.brand-name {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.brand-name span { color: var(--accent); }
+.brand-sub {
+  font-size: .85rem;
+  color: var(--muted);
+  margin-top: .3rem;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.brand-loc {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .75rem;
+  color: var(--accent);
+  margin-top: .6rem;
+  background: var(--accent-glow);
+  padding: .3rem .8rem;
+  border-radius: 50px;
+}
+.brand-desc {
+  font-size: .85rem;
+  color: var(--muted);
+  margin-top: 1rem;
+  line-height: 1.5;
+  max-width: 320px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* CTA buttons */
+.cta-row {
+  display: flex;
+  gap: .75rem;
+  padding: 0 1.5rem;
+  margin-top: 1.5rem;
+}
+.cta-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .9rem 1rem;
+  border-radius: 12px;
+  font-size: .95rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all .2s;
+}
+.cta-whatsapp {
+  background: #25D366;
+  color: #fff;
+}
+.cta-whatsapp:active { background: #1da851; }
+.cta-call {
+  background: var(--surface-2);
+  color: var(--accent-light);
+  border: 1px solid var(--border);
+}
+.cta-call:active { background: var(--accent-glow); }
+
+/* Section */
+.section-title {
+  font-size: .7rem;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 1.5rem 1.5rem .75rem;
+}
+
+/* Services */
+.services {
+  display: flex;
+  flex-direction: column;
+  gap: .6rem;
+  padding: 0 1.5rem;
+}
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: .8rem;
+  padding: .9rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  transition: all .2s;
+}
+.service-item:active { border-color: var(--accent-dark); }
+.service-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--accent-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.service-text {
+  flex: 1;
+}
+.service-name {
+  font-size: .9rem;
+  font-weight: 600;
+}
+.service-desc {
+  font-size: .75rem;
+  color: var(--muted);
+  margin-top: .15rem;
+}
+
+/* Contact grid */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: .75rem;
+  padding: 0 1.5rem;
+}
+.grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .5rem;
+  padding: 1rem .5rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  text-decoration: none;
+  color: var(--text);
+  transition: all .2s;
+  cursor: pointer;
+}
+.grid-item:active {
+  background: var(--accent-glow);
+  border-color: var(--accent-dark);
+}
+.grid-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.3rem;
+}
+.grid-icon.facebook { background: rgba(24,119,242,.15); }
+.grid-icon.instagram { background: rgba(225,48,108,.15); }
+.grid-icon.web { background: var(--accent-glow); }
+.grid-icon.ubicacion { background: rgba(52,168,83,.12); }
+.grid-icon.email { background: rgba(234,67,53,.12); }
+.grid-icon.tienda { background: rgba(255,165,0,.12); }
+.grid-label {
+  font-size: .72rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Divider */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem 1.5rem;
+  color: var(--border);
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.divider span { font-size: .6rem; color: var(--accent-dark); }
+
+/* Save contact */
+.save-section {
+  padding: 1.5rem;
+  margin-top: auto;
+}
+.save-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+  width: 100%;
+  padding: 1rem;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent-dark), var(--accent));
+  color: #fff;
+  font-size: .95rem;
+  font-weight: 700;
+  text-decoration: none;
+  border: none;
+  cursor: pointer;
+  transition: all .2s;
+  letter-spacing: .03em;
+}
+.save-btn:active { opacity: .85; }
+
+.footer {
+  text-align: center;
+  padding: 1rem 1.5rem 2rem;
+  font-size: .7rem;
+  color: var(--muted);
+}
+.footer a {
+  color: var(--accent);
+  text-decoration: none;
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="accent-line"></div>
+
+  <!-- Hero -->
+  <div class="hero">
+    <div class="logo-wrap">
+      <div class="logo-text">
+        <span class="lv">LV</span>
+        <span class="sub">tecno</span>
+      </div>
+    </div>
+    <div class="brand-name">La<span>Vi</span>Tecno</div>
+    <div class="brand-sub">Tecnología & Seguridad</div>
+    <div class="brand-loc">
+      <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+      Medellín, Colombia
+    </div>
+    <p class="brand-desc">
+      Cámaras de seguridad, redes WiFi y accesorios tecnológicos.
+      Instalación, soporte y envío rápido.
+    </p>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-row">
+    <a href="https://wa.me/573043011438?text=Hola%2C%20quiero%20cotizar%20un%20producto%20de%20LaViTecno" class="cta-btn cta-whatsapp">
+      <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.015a9.845 9.845 0 01-5.016-1.373l-.36-.213-3.728.978.995-3.635-.235-.374A9.86 9.86 0 012.14 12.01C2.14 6.555 6.565 2.13 12.04 2.13a9.82 9.82 0 016.963 2.884 9.84 9.84 0 012.884 6.963c-.003 5.476-4.429 9.918-9.837 9.918v-.11zM20.52 3.449A11.794 11.794 0 0012.05.002C5.464.002.105 5.336.1 11.948a11.9 11.9 0 001.597 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.586 0 11.946-5.335 11.949-11.896a11.83 11.83 0 00-3.48-8.397z"/></svg>
+      WhatsApp
+    </a>
+    <a href="tel:+573043011438" class="cta-btn cta-call">
+      <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72c.127.96.361 1.903.7 2.81a2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0122 16.92z"/></svg>
+      Llamar
+    </a>
+  </div>
+
+  <div class="section-title">Nuestros servicios</div>
+
+  <!-- Services -->
+  <div class="services">
+    <div class="service-item">
+      <div class="service-icon">
+        <svg width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="service-text">
+        <div class="service-name">Cámaras de seguridad</div>
+        <div class="service-desc">WiFi, DVR, instalación profesional</div>
+      </div>
+    </div>
+    <div class="service-item">
+      <div class="service-icon">
+        <svg width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 12.55a11 11 0 0114.08 0M1.42 9a16 16 0 0121.16 0M8.53 16.11a6 6 0 016.95 0M12 20h.01"/></svg>
+      </div>
+      <div class="service-text">
+        <div class="service-name">Redes WiFi</div>
+        <div class="service-desc">Routers, repetidores, cableado</div>
+      </div>
+    </div>
+    <div class="service-item">
+      <div class="service-icon">
+        <svg width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8m-4-4v4"/></svg>
+      </div>
+      <div class="service-text">
+        <div class="service-name">Soporte técnico</div>
+        <div class="service-desc">Computadores, impresoras, POS</div>
+      </div>
+    </div>
+    <div class="service-item">
+      <div class="service-icon">
+        <svg width="22" height="22" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      </div>
+      <div class="service-text">
+        <div class="service-name">Accesorios tech</div>
+        <div class="service-desc">Cargadores, cables, UPS, audífonos</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><span>&#9672;</span></div>
+
+  <div class="section-title">Encuéntranos</div>
+
+  <!-- Social grid -->
+  <div class="grid">
+    <a href="https://www.facebook.com/" target="_blank" rel="noopener" class="grid-item">
+      <div class="grid-icon facebook">
+        <svg width="22" height="22" fill="#1877F2" viewBox="0 0 24 24"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+      </div>
+      <span class="grid-label">Facebook</span>
+    </a>
+    <a href="https://www.instagram.com/" target="_blank" rel="noopener" class="grid-item">
+      <div class="grid-icon instagram">
+        <svg width="22" height="22" fill="#E1306C" viewBox="0 0 24 24"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/></svg>
+      </div>
+      <span class="grid-label">Instagram</span>
+    </a>
+    <a href="https://lavitecno.com" target="_blank" rel="noopener" class="grid-item">
+      <div class="grid-icon web">
+        <svg width="20" height="20" fill="none" stroke="var(--accent)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      </div>
+      <span class="grid-label">Sitio web</span>
+    </a>
+  </div>
+
+  <!-- Save contact -->
+  <div class="save-section">
+    <button class="save-btn" onclick="saveContact()">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6m3-3h-6"/></svg>
+      Guardar contacto
+    </button>
+  </div>
+
+  <div class="footer">
+    <a href="https://lavitecno.com" target="_blank">lavitecno.com</a> &middot; Medellín, Colombia
+  </div>
+  <div class="accent-line"></div>
+</div>
+
+<script>
+function saveContact() {
+  var vcard = [
+    'BEGIN:VCARD',
+    'VERSION:3.0',
+    'FN:LaViTecno',
+    'ORG:LaViTecno',
+    'TEL;TYPE=CELL:+573043011438',
+    'URL:https://lavitecno.com',
+    'ADR;TYPE=WORK:;;Medellín;Antioquia;;Colombia',
+    'NOTE:Cámaras de seguridad, redes WiFi y accesorios tecnológicos. Instalación, soporte y envío rápido en Medellín.',
+    'END:VCARD'
+  ].join('\n');
+  var blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  a.download = 'LaViTecno.vcf';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+</script>
+</body>
+</html>

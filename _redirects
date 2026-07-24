@@ -8,3 +8,5 @@
 /registro     /registro-gruero.html  301
 /admin        /admin.html            301
 /rider/*      /rider/index.html      200
+/tarjeta/joyeria   /tarjetas/joyeria.html   200
+/tarjeta/lavitecno /tarjetas/lavitecno.html 200
