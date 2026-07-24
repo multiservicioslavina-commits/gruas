@@ -181,6 +181,35 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .motivacion .bold{color:var(--accent);font-weight:700;font-style:normal}
 .btn-group{display:flex;flex-direction:column;gap:10px}
 
+/* PROGRESS BAR */
+.progress-wrap{margin-top:12px}
+.progress-bar-track{width:100%;height:8px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--gold));border-radius:4px;transition:width .3s}
+.progress-text{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:11px;color:var(--muted);margin-top:4px;display:flex;justify-content:space-between}
+
+/* GRID TOOLS */
+.grid-tools{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;align-items:center}
+.grid-tools input{flex:1;min-width:100px;padding:10px 14px;background:var(--surface);border:1px solid var(--line);border-radius:10px;color:var(--text);font-family:'DM Sans';font-size:14px}
+.grid-tools input:focus{outline:none;border-color:var(--accent)}
+.tool-btn{padding:10px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap;transition:border-color .15s,background .15s}
+.tool-btn:hover{border-color:var(--accent);background:var(--accent-soft)}
+.tool-btn.active{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
+
+/* STICKY CART */
+.sticky-cart{position:fixed;bottom:0;left:0;right:0;background:var(--surface);border-top:2px solid var(--accent);padding:12px 18px;z-index:100;transform:translateY(100%);transition:transform .25s ease}
+.sticky-cart.visible{transform:translateY(0)}
+.sc-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px}
+.sc-info{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.sc-count{font-family:'Bebas Neue';font-size:22px;color:var(--accent);background:var(--accent-soft);min-width:38px;height:38px;display:flex;align-items:center;justify-content:center;border-radius:10px;flex-shrink:0}
+.sc-text{font-size:13px;line-height:1.3;min-width:0}
+.sc-text .sc-total{font-weight:700;color:var(--accent);font-size:16px}
+.sc-btn{padding:12px 20px;background:var(--accent);color:#fff;border:none;border-radius:12px;font-family:'DM Sans';font-weight:700;font-size:14px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.sc-btn:active{transform:scale(.97)}
+
+/* SHOW MORE */
+.show-more-btn{width:100%;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;transition:border-color .15s,color .15s}
+.show-more-btn:hover{border-color:var(--accent);color:var(--accent)}
+
 /* GANADOR BANNER */
 .ganador-banner{background:linear-gradient(135deg,rgba(245,197,24,.12),rgba(46,204,113,.12));border:2px solid var(--gold);border-radius:18px;padding:24px;text-align:center;margin-bottom:22px}
 .ganador-banner h3{font-family:'Bebas Neue';font-size:36px;color:var(--gold);margin-bottom:6px}
@@ -264,7 +293,14 @@ footer a{color:var(--accent);text-decoration:none}
           <div class="leyenda-item"><div class="leyenda-dot apart"></div> Apartado</div>
           <div class="leyenda-item"><div class="leyenda-dot pag"></div> Pagado</div>
         </div>
+        <div class="grid-tools">
+          <input type="text" id="searchBoleto" placeholder="Buscar n&uacute;mero..." oninput="filtrarGrid()">
+          <button class="tool-btn" onclick="seleccionarAleatorio()">&#x1F3B2; Aleatorio</button>
+          <button class="tool-btn" id="btnToggleVendidos" onclick="toggleVendidos()">Ocultar vendidos</button>
+        </div>
+        <div id="detProgress"></div>
         <div class="boletos-grid" id="boletosGrid"></div>
+        <button class="show-more-btn" id="showMoreBtn" style="display:none" onclick="showMoreBoletos()"></button>
       </div>
       <div id="seleccionWrap">
         <div class="sel-resumen">
@@ -388,6 +424,16 @@ footer a{color:var(--accent);text-decoration:none}
   </section>
 </main>
 
+<div class="sticky-cart" id="stickyCart">
+  <div class="sc-inner">
+    <div class="sc-info">
+      <div class="sc-count" id="scCount">0</div>
+      <div class="sc-text"><span id="scNums"></span><br><span class="sc-total" id="scTotal"></span></div>
+    </div>
+    <button class="sc-btn" onclick="scrollToForm()">Apartar &rarr;</button>
+  </div>
+</div>
+
 <footer>Fundaci&oacute;n Ra&iacute;ces &copy; 2024 &mdash; <a href="https://fundacionraices.co" target="_blank">fundacionraices.co</a></footer>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -397,7 +443,9 @@ const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFz
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
 const WA_NUMERO = '573117896717';
 
-let rifas=[],currentRifa=null,boletos=[],selected=new Set(),vendedores=[];
+let rifas=[],currentRifa=null,boletos=[],selected=new Set(),vendedores=[],boletoCounts={};
+let gridPage=1,hideVendidos=false,searchQuery='';
+const BOLETOS_PER_PAGE=100;
 
 function esc(s){const d=document.createElement('div');d.textContent=s;return d.innerHTML}
 function fmtMoney(n){return '$'+Number(n).toLocaleString('es-CO')}
@@ -415,11 +463,18 @@ function showSection(name){
 }
 
 async function loadRifas(){
-  const[{data:rd},{data:vd}]=await Promise.all([
+  const[{data:rd},{data:vd},{data:bd}]=await Promise.all([
     sb.from('rifas').select('*').in('estado',['activa','cerrada','sorteada']).order('created_at',{ascending:false}),
-    sb.from('vendedores').select('id,codigo,nombre').eq('activo',true)
+    sb.from('vendedores').select('id,codigo,nombre').eq('activo',true),
+    sb.from('boletos').select('rifa_id,estado')
   ]);
   rifas=rd||[];vendedores=vd||[];
+  boletoCounts={};
+  (bd||[]).forEach(b=>{
+    if(!boletoCounts[b.rifa_id])boletoCounts[b.rifa_id]={v:0,a:0};
+    if(b.estado==='pagado')boletoCounts[b.rifa_id].v++;
+    else if(b.estado==='apartado')boletoCounts[b.rifa_id].a++;
+  });
   if(vendedores.length>0)document.getElementById('vendedorField').style.display='block';
   renderRifas();
 }
@@ -431,13 +486,15 @@ function renderRifas(){
     const ec=r.estado==='activa'?'estado-activa':r.estado==='cerrada'?'estado-cerrada':'estado-sorteada';
     const et=r.estado==='activa'?'Activa':r.estado==='cerrada'?'Cerrada':'Sorteada';
     const img=r.imagen_url?`<img class="rifa-img" src="${esc(r.imagen_url)}" alt="${esc(r.nombre)}" loading="lazy">`:`<div class="rifa-img-placeholder">\u{1F3AB}</div>`;
-    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.loteria?`<div style="color:#60a5fa;font-size:0.85rem;font-weight:600;margin:4px 0">\u{1F3B0} Juega con: ${esc(r.loteria)}</div>`:''}${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div></div></div>`
+    const cnt=boletoCounts[r.id]||{v:0,a:0},sold=cnt.v+cnt.a,pct=r.total_boletos?Math.round((sold/r.total_boletos)*100):0;
+    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.loteria?`<div style="color:#60a5fa;font-size:0.85rem;font-weight:600;margin:4px 0">\u{1F3B0} Juega con: ${esc(r.loteria)}</div>`:''}${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div><div class="progress-wrap"><div class="progress-bar-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>${pct}% vendido</span><span>${sold}/${r.total_boletos}</span></div></div></div></div>`
   }).join('');
 }
 
 async function openRifa(id){
   currentRifa=rifas.find(r=>r.id===id);if(!currentRifa)return;
-  selected.clear();
+  selected.clear();gridPage=1;hideVendidos=false;searchQuery='';
+  document.getElementById('stickyCart').classList.remove('visible');
   document.getElementById('rifasLista').style.display='none';
   document.getElementById('rifaDetalle').style.display='block';
   document.getElementById('seleccionWrap').style.display='none';
@@ -460,6 +517,10 @@ async function openRifa(id){
     ${currentRifa.fecha_sorteo?`<div class="info-item"><div class="val gold" style="font-size:15px">${fmtDate(currentRifa.fecha_sorteo)}</div><div class="lbl">Sorteo</div></div>`:''}`;
   const desc=currentRifa.descuento_volumen||[];
   document.getElementById('detDescuentos').innerHTML=desc.length?`<div class="descuentos-bar"><h4>\u{1F525} Descuentos por volumen</h4><div class="descuento-items">${desc.map(d=>`<span class="descuento-tag">${d.cantidad}+ boletos → ${d.descuento}% OFF</span>`).join('')}</div></div>`:'';
+  const pct=currentRifa.total_boletos?Math.round(((v+a)/currentRifa.total_boletos)*100):0;
+  document.getElementById('detProgress').innerHTML=`<div class="progress-wrap" style="margin-bottom:14px"><div class="progress-bar-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>${pct}% vendido</span><span>${v+a} de ${currentRifa.total_boletos}</span></div></div>`;
+  const searchInput=document.getElementById('searchBoleto');if(searchInput)searchInput.value='';
+  const toggleBtn=document.getElementById('btnToggleVendidos');if(toggleBtn){toggleBtn.textContent='Ocultar vendidos';toggleBtn.classList.remove('active')}
   if(currentRifa.estado==='sorteada'&&currentRifa.numero_ganador!=null){
     document.getElementById('ganadorBanner').innerHTML=`<div class="ganador-banner"><h3>\u{1F3C6} NÚMERO GANADOR</h3><div class="numero">${padNum(currentRifa.numero_ganador,currentRifa.total_boletos)}</div></div>`;
   }else{document.getElementById('ganadorBanner').innerHTML=''}
@@ -468,8 +529,19 @@ async function openRifa(id){
 
 function renderGrid(){
   const bMap={};boletos.forEach(b=>bMap[b.numero]=b.estado);
-  const grid=document.getElementById('boletosGrid');let html='';
-  for(let i=0;i<currentRifa.total_boletos;i++){
+  const grid=document.getElementById('boletosGrid');
+  let nums=[];
+  for(let i=0;i<currentRifa.total_boletos;i++)nums.push(i);
+  if(searchQuery){
+    nums=nums.filter(n=>padNum(n,currentRifa.total_boletos).includes(searchQuery));
+  }
+  if(hideVendidos){
+    nums=nums.filter(n=>{const e=bMap[n]||'disponible';return e==='disponible'||selected.has(n)});
+  }
+  const totalFiltered=nums.length;
+  const visible=searchQuery?nums:nums.slice(0,gridPage*BOLETOS_PER_PAGE);
+  let html='';
+  for(const i of visible){
     const estado=bMap[i]||'disponible',isSel=selected.has(i);
     let cls='';
     if(estado==='apartado')cls='apartado';else if(estado==='pagado')cls='pagado';else if(isSel)cls='selected';
@@ -478,9 +550,16 @@ function renderGrid(){
     html+=`<div class="boleto ${cls}" ${canClick?`onclick="toggleBoleto(${i})"`:''} title="${estado==='apartado'?'Apartado':estado==='pagado'?'Vendido':''}">${padNum(i,currentRifa.total_boletos)}</div>`;
   }
   grid.innerHTML=html;
+  const moreBtn=document.getElementById('showMoreBtn');
+  if(!searchQuery&&visible.length<totalFiltered){
+    moreBtn.style.display='block';
+    moreBtn.textContent=`Mostrar más (${visible.length} de ${totalFiltered})`;
+  }else{
+    moreBtn.style.display='none';
+  }
 }
 
-function toggleBoleto(n){if(selected.has(n))selected.delete(n);else selected.add(n);renderGrid();updateSeleccion()}
+function toggleBoleto(n){if(selected.has(n))selected.delete(n);else selected.add(n);renderGrid();updateSeleccion();updateStickyCart()}
 
 function calcDescuento(qty){const d=(currentRifa.descuento_volumen||[]).sort((a,b)=>b.cantidad-a.cantidad);for(const x of d){if(qty>=x.cantidad)return x.descuento}return 0}
 
@@ -496,6 +575,7 @@ function updateSeleccion(){
   else html=`<div>Total: <span class="sel-total">${fmtMoney(total)}</span></div>`;
   document.getElementById('selPricing').innerHTML=html;
   wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  updateStickyCart();
 }
 
 let reservaTimer=null,reservaData=null;
@@ -538,6 +618,7 @@ async function apartarBoletos(){
   document.getElementById('pagoWrap').style.display='block';
   document.getElementById('pagoWrap').scrollIntoView({behavior:'smooth'});
   selected.clear();btn.disabled=false;btn.innerHTML='\u{1F3AB} Apartar boletos';
+  updateStickyCart();
   const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',currentRifa.id);boletos=data||[];renderGrid();
 
   iniciarTimer();
@@ -588,7 +669,7 @@ function compartirRecibo(){
   else{navigator.clipboard.writeText(txt).then(()=>alert('Recibo copiado al portapapeles')).catch(()=>{})}
 }
 
-function showList(){document.getElementById('rifaDetalle').style.display='none';document.getElementById('rifasLista').style.display='block';window.scrollTo(0,0)}
+function showList(){document.getElementById('rifaDetalle').style.display='none';document.getElementById('rifasLista').style.display='block';document.getElementById('stickyCart').classList.remove('visible');selected.clear();if(reservaTimer)clearInterval(reservaTimer);window.scrollTo(0,0)}
 
 async function verificarTiquete(){
   const q=document.getElementById('vInput').value.trim(),el=document.getElementById('verificadorResult');
@@ -605,6 +686,60 @@ async function loadGanadores(){
   const{data}=await sb.from('ganadores').select('*,rifas(nombre,total_boletos)').eq('publicado',true).order('fecha_sorteo',{ascending:false});
   if(!data||!data.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:40px 0">Aún no hay ganadores registrados.</p>';return}
   el.innerHTML='<div class="ganadores-list">'+data.map(g=>`<div class="ganador-card"><div class="ganador-numero">${padNum(g.numero,g.rifas?.total_boletos||100)}</div><div class="ganador-info"><h4>${esc(g.nombre_ganador||'Ganador')}</h4><div class="premio">\u{1F3C6} ${esc(g.premio||'')}</div><div class="fecha">${fmtDate(g.fecha_sorteo)}</div></div></div>`).join('')+'</div>';
+}
+
+function filtrarGrid(){
+  searchQuery=document.getElementById('searchBoleto').value.trim();
+  gridPage=1;
+  renderGrid();
+}
+
+function seleccionarAleatorio(){
+  if(!currentRifa||currentRifa.estado!=='activa')return;
+  const bMap={};boletos.forEach(b=>bMap[b.numero]=b.estado);
+  const disponibles=[];
+  for(let i=0;i<currentRifa.total_boletos;i++){
+    if(!bMap[i]&&!selected.has(i))disponibles.push(i);
+  }
+  if(!disponibles.length){alert('No hay números disponibles');return}
+  const n=disponibles[Math.floor(Math.random()*disponibles.length)];
+  selected.add(n);
+  renderGrid();
+  updateSeleccion();
+  updateStickyCart();
+}
+
+function toggleVendidos(){
+  hideVendidos=!hideVendidos;
+  const btn=document.getElementById('btnToggleVendidos');
+  btn.textContent=hideVendidos?'Mostrar todos':'Ocultar vendidos';
+  btn.classList.toggle('active',hideVendidos);
+  gridPage=1;
+  renderGrid();
+}
+
+function showMoreBoletos(){
+  gridPage++;
+  renderGrid();
+  document.getElementById('boletosGrid').scrollTop=document.getElementById('boletosGrid').scrollHeight;
+}
+
+function scrollToForm(){
+  const wrap=document.getElementById('seleccionWrap');
+  if(wrap&&wrap.style.display!=='none'){
+    wrap.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+}
+
+function updateStickyCart(){
+  const cart=document.getElementById('stickyCart');
+  if(!currentRifa||selected.size===0){cart.classList.remove('visible');return}
+  cart.classList.add('visible');
+  document.getElementById('scCount').textContent=selected.size;
+  const qty=selected.size,dp=calcDescuento(qty),total=qty*currentRifa.precio_boleto*(1-dp/100);
+  document.getElementById('scTotal').textContent=fmtMoney(total)+(dp?` (${dp}% off)`:'');
+  const numsPrev=[...selected].sort((a,b)=>a-b).slice(0,5).map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
+  document.getElementById('scNums').textContent=(selected.size>5?numsPrev+'…':numsPrev);
 }
 
 loadRifas();
