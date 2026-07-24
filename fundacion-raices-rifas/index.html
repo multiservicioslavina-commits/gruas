@@ -229,6 +229,17 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
   .verificador-input-wrap button{width:100%}
 }
 
+/* PICKER MODE (4+ cifras) */
+.picker-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center;margin-bottom:14px}
+.picker-box .pk-label{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:12px;color:var(--muted);margin-bottom:12px}
+.picker-row{display:flex;gap:8px;max-width:340px;margin:0 auto}
+.picker-row input{flex:1;text-align:center;font-family:'Bebas Neue';font-size:26px;letter-spacing:4px;padding:14px}
+.picker-row button{flex-shrink:0;padding:14px 20px;background:var(--accent);color:#fff;border:none;border-radius:11px;font-family:'DM Sans';font-weight:700;font-size:15px;cursor:pointer}
+.picker-row button:active{transform:scale(.97)}
+.pk-status{margin-top:10px;font-size:13px;min-height:20px}
+.pk-btns{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.cifras-badge{display:inline-block;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:12px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(96,165,250,.1);border:1px solid rgba(96,165,250,.3);color:var(--blue)}
+
 /* SHOW MORE */
 .show-more-btn{width:100%;padding:14px;background:var(--surface);border:1px solid var(--line);border-radius:12px;color:var(--muted);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:13px;font-weight:600;cursor:pointer;margin-top:10px;transition:border-color .15s,color .15s}
 .show-more-btn:hover{border-color:var(--accent);color:var(--accent)}
@@ -324,6 +335,20 @@ footer a{color:var(--accent);text-decoration:none}
         <div id="detProgress"></div>
         <div class="boletos-grid" id="boletosGrid"></div>
         <button class="show-more-btn" id="showMoreBtn" style="display:none" onclick="showMoreBoletos()"></button>
+        <div id="pickerMode" style="display:none">
+          <div class="picker-box">
+            <div class="pk-label">Escribe el n&uacute;mero que deseas</div>
+            <div class="picker-row">
+              <input type="text" id="pickerInput" placeholder="Ej: 0042" inputmode="numeric" onkeydown="if(event.key==='Enter')agregarNumeroPicker()">
+              <button onclick="agregarNumeroPicker()">Agregar</button>
+            </div>
+            <div class="pk-status" id="pickerStatus"></div>
+          </div>
+          <div class="pk-btns">
+            <button class="tool-btn" onclick="seleccionarAleatorio()">&#x1F3B2; N&uacute;mero aleatorio</button>
+            <button class="tool-btn" onclick="buscarDisponibilidad()">&#x1F50D; Verificar n&uacute;mero</button>
+          </div>
+        </div>
       </div>
       <div id="seleccionWrap">
         <div class="sel-resumen">
@@ -510,7 +535,8 @@ function renderRifas(){
     const et=r.estado==='activa'?'Activa':r.estado==='cerrada'?'Cerrada':'Sorteada';
     const img=r.imagen_url?`<img class="rifa-img" src="${esc(r.imagen_url)}" alt="${esc(r.nombre)}" loading="lazy">`:`<div class="rifa-img-placeholder">\u{1F3AB}</div>`;
     const cnt=boletoCounts[r.id]||{v:0,a:0},sold=cnt.v+cnt.a,pct=r.total_boletos?Math.round((sold/r.total_boletos)*100):0;
-    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.loteria?`<div style="color:#60a5fa;font-size:0.85rem;font-weight:600;margin:4px 0">\u{1F3B0} Juega con: ${esc(r.loteria)}</div>`:''}${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div><div class="progress-wrap"><div class="progress-bar-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>${pct}% vendido</span><span>${sold}/${r.total_boletos}</span></div></div></div></div>`
+    const cif=padLen(r.total_boletos);
+    return`<div class="rifa-card" onclick="openRifa('${r.id}')">${img}<div class="rifa-body"><span class="rifa-estado ${ec}">${et}</span> <span class="cifras-badge">${cif} cifra${cif>1?'s':''}</span><h3>${esc(r.nombre)}</h3><div class="premio">\u{1F3C6} ${esc(r.premio)}</div>${r.loteria?`<div style="color:#60a5fa;font-size:0.85rem;font-weight:600;margin:4px 0">\u{1F3B0} Juega con: ${esc(r.loteria)}</div>`:''}${r.descripcion?`<p class="desc">${esc(r.descripcion)}</p>`:''}<div class="rifa-meta"><span class="meta-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span><span class="meta-tag gold">Números: <b>${r.total_boletos.toLocaleString('es-CO')}</b></span>${r.fecha_sorteo?`<span class="meta-tag">Sorteo: <b>${fmtDate(r.fecha_sorteo)}</b></span>`:''}</div><div class="progress-wrap"><div class="progress-bar-track"><div class="progress-fill" style="width:${pct}%"></div></div><div class="progress-text"><span>${pct}% vendido</span><span>${sold.toLocaleString('es-CO')}/${r.total_boletos.toLocaleString('es-CO')}</span></div></div></div></div>`
   }).join('');
 }
 
@@ -533,10 +559,12 @@ async function openRifa(id){
   const{data}=await sb.from('boletos').select('numero,estado').eq('rifa_id',id);
   boletos=data||[];
   const v=boletos.filter(b=>b.estado==='pagado').length,a=boletos.filter(b=>b.estado==='apartado').length,d=currentRifa.total_boletos-v-a;
+  const cif=padLen(currentRifa.total_boletos);
   document.getElementById('detInfo').innerHTML=`
     <div class="info-item"><div class="val">${fmtMoney(currentRifa.precio_boleto)}</div><div class="lbl">Precio</div></div>
-    <div class="info-item"><div class="val green">${d}</div><div class="lbl">Disponibles</div></div>
-    <div class="info-item"><div class="val">${v}</div><div class="lbl">Vendidos</div></div>
+    <div class="info-item"><div class="val" style="color:var(--blue)">${cif}</div><div class="lbl">Cifras</div></div>
+    <div class="info-item"><div class="val green">${d.toLocaleString('es-CO')}</div><div class="lbl">Disponibles</div></div>
+    <div class="info-item"><div class="val">${v.toLocaleString('es-CO')}</div><div class="lbl">Vendidos</div></div>
     ${currentRifa.fecha_sorteo?`<div class="info-item"><div class="val gold" style="font-size:15px">${fmtDate(currentRifa.fecha_sorteo)}</div><div class="lbl">Sorteo</div></div>`:''}`;
   const desc=currentRifa.descuento_volumen||[];
   document.getElementById('detDescuentos').innerHTML=desc.length?`<div class="descuentos-bar"><h4>\u{1F525} Descuentos por volumen</h4><div class="descuento-items">${desc.map(d=>`<span class="descuento-tag">${d.cantidad}+ boletos → ${d.descuento}% OFF</span>`).join('')}</div></div>`:'';
@@ -547,7 +575,14 @@ async function openRifa(id){
   if(currentRifa.estado==='sorteada'&&currentRifa.numero_ganador!=null){
     document.getElementById('ganadorBanner').innerHTML=`<div class="ganador-banner"><h3>\u{1F3C6} NÚMERO GANADOR</h3><div class="numero">${padNum(currentRifa.numero_ganador,currentRifa.total_boletos)}</div></div>`;
   }else{document.getElementById('ganadorBanner').innerHTML=''}
-  renderGrid();
+  const isPickerMode=currentRifa.total_boletos>1000;
+  document.getElementById('boletosGrid').style.display=isPickerMode?'none':'';
+  document.getElementById('showMoreBtn').style.display='none';
+  document.querySelector('.grid-tools').style.display=isPickerMode?'none':'';
+  document.querySelector('.leyenda').style.display=isPickerMode?'none':'';
+  document.getElementById('pickerMode').style.display=isPickerMode?'block':'none';
+  if(isPickerMode){const pi=document.getElementById('pickerInput');if(pi){pi.value='';pi.placeholder='Ej: '+'0'.repeat(padLen(currentRifa.total_boletos))}document.getElementById('pickerStatus').innerHTML=''}
+  else{renderGrid()}
 }
 
 function renderGrid(){
@@ -752,6 +787,41 @@ function scrollToForm(){
   if(wrap&&wrap.style.display!=='none'){
     wrap.scrollIntoView({behavior:'smooth',block:'start'});
   }
+}
+
+function agregarNumeroPicker(){
+  if(!currentRifa)return;
+  const input=document.getElementById('pickerInput'),statusEl=document.getElementById('pickerStatus');
+  const numStr=input.value.trim();
+  if(!numStr){statusEl.innerHTML='<span style="color:var(--danger)">Escribe un número</span>';return}
+  const num=parseInt(numStr);
+  if(isNaN(num)||num<0||num>=currentRifa.total_boletos){
+    statusEl.innerHTML=`<span style="color:var(--danger)">Número fuera de rango (0 - ${(currentRifa.total_boletos-1).toLocaleString('es-CO')})</span>`;return}
+  const bMap={};boletos.forEach(b=>bMap[b.numero]=b.estado);
+  const estado=bMap[num]||'disponible';
+  if(estado==='pagado'){statusEl.innerHTML='<span style="color:var(--danger)">Este número ya fue vendido</span>';return}
+  if(estado==='apartado'){statusEl.innerHTML='<span style="color:var(--danger)">Este número está apartado</span>';return}
+  if(selected.has(num)){statusEl.innerHTML='<span style="color:var(--gold)">Ya tienes este número seleccionado</span>';return}
+  selected.add(num);
+  statusEl.innerHTML=`<span style="color:var(--accent)">&#x2713; #${padNum(num,currentRifa.total_boletos)} agregado</span>`;
+  input.value='';
+  updateSeleccion();updateStickyCart();
+}
+
+function buscarDisponibilidad(){
+  if(!currentRifa)return;
+  const input=document.getElementById('pickerInput'),statusEl=document.getElementById('pickerStatus');
+  const numStr=input.value.trim();
+  if(!numStr){statusEl.innerHTML='<span style="color:var(--muted)">Escribe un número para verificar</span>';return}
+  const num=parseInt(numStr);
+  if(isNaN(num)||num<0||num>=currentRifa.total_boletos){
+    statusEl.innerHTML=`<span style="color:var(--danger)">Número fuera de rango</span>`;return}
+  const bMap={};boletos.forEach(b=>bMap[b.numero]=b.estado);
+  const estado=bMap[num]||'disponible';
+  const pad=padNum(num,currentRifa.total_boletos);
+  if(estado==='disponible')statusEl.innerHTML=`<span style="color:var(--accent)">&#x2705; #${pad} está disponible</span>`;
+  else if(estado==='apartado')statusEl.innerHTML=`<span style="color:#f59e0b">&#x23F3; #${pad} está apartado</span>`;
+  else statusEl.innerHTML=`<span style="color:var(--danger)">&#x274C; #${pad} ya fue vendido</span>`;
 }
 
 function updateStickyCart(){

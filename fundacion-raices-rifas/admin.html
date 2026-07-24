@@ -224,8 +224,18 @@ tr:hover td { background: rgba(46,204,113,.04); }
     <div class="field"><label class="lbl">Descripción</label><textarea id="mDesc" placeholder="Descripción, reglas, etc."></textarea></div>
     <div class="field-row">
       <div class="field"><label class="lbl">Precio del boleto *</label><input type="number" id="mPrecio" placeholder="10000" min="0" step="100"></div>
-      <div class="field"><label class="lbl">Total de boletos *</label><input type="number" id="mTotal" placeholder="100" min="1" max="999999"></div>
+      <div class="field"><label class="lbl">Cifras (d&iacute;gitos) *</label>
+        <select id="mCifras" onchange="updateCifras()">
+          <option value="1">1 cifra</option>
+          <option value="2">2 cifras</option>
+          <option value="3">3 cifras</option>
+          <option value="4">4 cifras</option>
+          <option value="5">5 cifras</option>
+          <option value="6">6 cifras</option>
+        </select>
+      </div>
     </div>
+    <div id="cifrasPreview" style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:10px 14px;margin-bottom:0.85rem;font-size:0.85rem;color:var(--mu);text-align:center">100 n&uacute;meros &middot; Del <b>00</b> al <b>99</b></div>
     <div class="field"><label class="lbl">Lotería con la que se juega *</label>
       <select id="mLoteria">
         <option value="">— Selecciona lotería —</option>
@@ -315,6 +325,9 @@ function fmtDate(d){ if(!d) return '—'; return new Date(d).toLocaleDateString(
 function padLen(total){ return String(total-1).length; }
 function padNum(n,total){ return String(n).padStart(padLen(total),'0'); }
 
+function cifrasFromTotal(t){if(!t||t<=0)return 2;const c=Math.round(Math.log10(t));return Math.max(1,Math.min(6,c||1))}
+function updateCifras(){const c=parseInt(document.getElementById('mCifras').value),t=Math.pow(10,c),f='0'.repeat(c),to=String(t-1).padStart(c,'0');document.getElementById('cifrasPreview').innerHTML=`<b style="color:var(--accent)">${t.toLocaleString('es-CO')}</b> números · Del <b>${f}</b> al <b>${to}</b>`}
+
 // AUTH
 function doLogin(){
   const pass = document.getElementById('loginPass').value;
@@ -377,6 +390,7 @@ function renderCards(){
       ${r.loteria ? `<div style="font-size:0.8rem;color:var(--blue);margin-bottom:0.4rem">🎰 Juega con: <b>${esc(r.loteria)}</b></div>` : ''}
       <div class="card-meta">
         <span class="card-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span>
+        <span class="card-tag">Cifras: <b>${padLen(r.total_boletos)}</b></span>
         <span class="card-tag green">Vendidos: <b>${r._pagados}/${r.total_boletos}</b> (${pct}%)</span>
         <span class="card-tag" style="color:var(--warn)">Apartados: <b>${r._apartados}</b></span>
       </div>
@@ -406,7 +420,7 @@ function openModal(mode, id){
   if(mode==='crear'){
     document.getElementById('modalTitle').textContent='Nueva rifa';
     ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mTerminos','mLoteriaOtra'].forEach(x=>document.getElementById(x).value='');
-    document.getElementById('mTotal').value='100';
+    document.getElementById('mCifras').value='2';updateCifras();
     document.getElementById('mEstado').value='borrador';
     document.getElementById('mLoteria').value='';
     document.getElementById('mLoteriaOtraWrap').style.display='none';
@@ -418,7 +432,7 @@ function openModal(mode, id){
     document.getElementById('mPremio').value=r.premio||'';
     document.getElementById('mDesc').value=r.descripcion||'';
     document.getElementById('mPrecio').value=r.precio_boleto||'';
-    document.getElementById('mTotal').value=r.total_boletos||100;
+    document.getElementById('mCifras').value=cifrasFromTotal(r.total_boletos||100);updateCifras();
     document.getElementById('mFecha').value=r.fecha_sorteo ? r.fecha_sorteo.slice(0,16) : '';
     document.getElementById('mImagen').value=r.imagen_url||'';
     document.getElementById('mWhatsApp').value=r.whatsapp||'';
@@ -465,7 +479,7 @@ async function saveRifa(){
   const premio = document.getElementById('mPremio').value.trim();
   const descripcion = document.getElementById('mDesc').value.trim();
   const precio_boleto = parseFloat(document.getElementById('mPrecio').value);
-  const total_boletos = parseInt(document.getElementById('mTotal').value);
+  const total_boletos = Math.pow(10, parseInt(document.getElementById('mCifras').value));
   const fecha_str = document.getElementById('mFecha').value;
   const imagen_url = document.getElementById('mImagen').value.trim() || null;
   const whatsapp = document.getElementById('mWhatsApp').value.trim() || null;
