@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Rifas Solidarias — Fundaci&oacute;n Ra&iacute;ces</title>
+<meta name="description" content="Participa en las rifas solidarias de Fundaci&oacute;n Ra&iacute;ces. Escoge tu n&uacute;mero de la suerte, apoya una buena causa y gana premios incre&iacute;bles.">
+<meta property="og:title" content="Rifas Solidarias — Fundaci&oacute;n Ra&iacute;ces">
+<meta property="og:description" content="Escoge tu n&uacute;mero, apoya una causa y gana premios incre&iacute;bles.">
+<meta property="og:type" content="website">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d;--surface:#16171b;--surface-2:#1e2026;--line:#2a2c33;
+  --accent:#2ecc71;--accent-2:#27ae60;--accent-soft:rgba(46,204,113,.12);
+  --text:#f3f3f3;--muted:#9a9ca3;--gold:#f5c518;--blue:#60a5fa;
+  --green:#25D366;--danger:#e23b3b;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;overflow-x:hidden}
+
+.top-bar{height:6px;background:linear-gradient(90deg,var(--accent),var(--gold),var(--accent));position:fixed;top:0;left:0;right:0;z-index:50}
+
+/* NAV */
+nav{position:fixed;top:6px;left:0;right:0;z-index:40;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;transition:background .3s,box-shadow .3s}
+nav.scrolled{background:rgba(13,13,13,.95);box-shadow:0 2px 20px rgba(0,0,0,.4);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.nav-brand{font-family:'Bebas Neue';font-size:20px;letter-spacing:1px;color:var(--text);text-decoration:none}
+.nav-cta{padding:10px 22px;background:var(--accent);color:#fff;border:none;border-radius:10px;font-family:'DM Sans';font-weight:700;font-size:14px;cursor:pointer;text-decoration:none;transition:transform .06s,filter .15s}
+.nav-cta:hover{filter:brightness(1.08)}
+.nav-cta:active{transform:scale(.97)}
+
+/* HERO */
+.hero{min-height:100dvh;display:flex;align-items:center;justify-content:center;text-align:center;padding:100px 20px 60px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 30%,rgba(46,204,113,.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 70%,rgba(245,197,24,.05) 0%,transparent 50%)}
+.hero-content{position:relative;max-width:600px}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;border:1px solid var(--accent);color:var(--accent);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:13px;font-weight:600;padding:8px 16px;border-radius:999px;margin-bottom:24px}
+.hero-badge .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(46,204,113,.6)}70%{box-shadow:0 0 0 10px rgba(46,204,113,0)}100%{box-shadow:0 0 0 0 rgba(46,204,113,0)}}
+.hero h1{font-family:'Bebas Neue';font-weight:400;font-size:clamp(52px,16vw,90px);line-height:.88;letter-spacing:1px;margin-bottom:20px}
+.hero h1 .em{color:var(--accent)}
+.hero h1 .gold{color:var(--gold)}
+.hero-sub{font-size:18px;line-height:1.6;color:#d0d0d0;max-width:440px;margin:0 auto 32px}
+.hero-buttons{display:flex;flex-direction:column;gap:12px;align-items:center}
+.btn-hero{display:inline-flex;align-items:center;justify-content:center;gap:10px;padding:18px 36px;border-radius:14px;font-family:'DM Sans';font-weight:700;font-size:17px;text-decoration:none;cursor:pointer;border:none;transition:transform .06s,filter .15s}
+.btn-hero:active{transform:scale(.985)}
+.btn-hero.primary{background:var(--accent);color:#fff;box-shadow:0 10px 30px -10px rgba(46,204,113,.5)}
+.btn-hero.primary:hover{filter:brightness(1.06)}
+.btn-hero.wa{background:var(--green);color:#06210f;box-shadow:0 10px 30px -10px rgba(37,211,102,.4)}
+.btn-hero.outline{background:transparent;border:1px solid var(--line);color:var(--text);padding:16px 32px;font-size:15px}
+.btn-hero.outline:hover{border-color:var(--accent);color:var(--accent)}
+
+.scroll-hint{position:absolute;bottom:30px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:6px;color:var(--muted);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:11px;animation:bob 2s infinite}
+@keyframes bob{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(6px)}}
+
+/* SECTIONS */
+section{padding:80px 20px}
+.section-inner{max-width:700px;margin:0 auto}
+.section-badge{display:inline-flex;align-items:center;gap:6px;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:12px;font-weight:600;color:var(--accent);margin-bottom:16px}
+.section-badge::before{content:'';width:24px;height:2px;background:var(--accent);border-radius:1px}
+.section-title{font-family:'Bebas Neue';font-weight:400;font-size:clamp(38px,10vw,56px);line-height:.9;letter-spacing:.5px;margin-bottom:16px}
+.section-desc{font-size:16px;line-height:1.6;color:#c8c8c8;max-width:500px;margin-bottom:40px}
+
+/* COMO FUNCIONA */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;gap:20px;align-items:flex-start;position:relative;padding-bottom:40px}
+.step:last-child{padding-bottom:0}
+.step-line{position:absolute;left:27px;top:56px;bottom:0;width:2px;background:var(--line)}
+.step:last-child .step-line{display:none}
+.step-num{width:56px;height:56px;flex-shrink:0;border-radius:14px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue';font-size:26px;border:2px solid var(--line);background:var(--surface);position:relative;z-index:1}
+.step:nth-child(1) .step-num{border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.step:nth-child(2) .step-num{border-color:var(--gold);color:var(--gold);background:rgba(245,197,24,.08)}
+.step:nth-child(3) .step-num{border-color:var(--blue);color:var(--blue);background:rgba(96,165,250,.08)}
+.step:nth-child(4) .step-num{border-color:var(--green);color:var(--green);background:rgba(37,211,102,.08)}
+.step-content{padding-top:6px}
+.step-content h3{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:16px;font-weight:700;margin-bottom:6px}
+.step-content p{color:var(--muted);font-size:14px;line-height:1.5}
+
+/* FEATURES */
+.features{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media(max-width:480px){.features{grid-template-columns:1fr}}
+.feature{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 20px;transition:border-color .15s}
+.feature:hover{border-color:var(--accent)}
+.feature-icon{width:48px;height:48px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:24px;margin-bottom:14px}
+.feature h3{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:15px;font-weight:700;margin-bottom:6px}
+.feature p{color:var(--muted);font-size:13px;line-height:1.5}
+
+/* PREMIOS */
+.premios-grid{display:flex;flex-direction:column;gap:16px}
+.premio-card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:28px 24px;text-align:center;position:relative;overflow:hidden;transition:border-color .15s}
+.premio-card:hover{border-color:var(--gold)}
+.premio-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--accent),var(--gold))}
+.premio-emoji{font-size:48px;margin-bottom:14px}
+.premio-card h3{font-family:'Bebas Neue';font-weight:400;font-size:32px;letter-spacing:.5px;margin-bottom:8px;color:var(--gold)}
+.premio-card p{color:var(--muted);font-size:14px;line-height:1.5}
+
+/* TESTIMONIOS */
+.testimonios{display:flex;flex-direction:column;gap:14px}
+.testimonio{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:24px 20px;position:relative}
+.testimonio::before{content:'\201C';position:absolute;top:12px;left:16px;font-size:48px;color:var(--accent);opacity:.2;font-family:Georgia,serif;line-height:1}
+.testimonio p{color:#d0d0d0;font-size:15px;line-height:1.6;font-style:italic;padding-left:8px;margin-bottom:12px}
+.testimonio-author{display:flex;align-items:center;gap:10px;padding-left:8px}
+.testimonio-avatar{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent-soft),rgba(245,197,24,.1));border:1px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:16px}
+.testimonio-name{font-weight:700;font-size:14px}
+.testimonio-loc{color:var(--muted);font-size:12px;font-family:'Barlow Condensed';letter-spacing:.5px}
+
+/* CTA FINAL */
+.cta-section{text-align:center;padding:80px 20px 60px}
+.cta-box{background:linear-gradient(135deg,rgba(46,204,113,.06),rgba(245,197,24,.04));border:1px solid rgba(46,204,113,.2);border-radius:24px;padding:48px 28px;max-width:560px;margin:0 auto}
+.cta-box h2{font-family:'Bebas Neue';font-weight:400;font-size:clamp(40px,12vw,60px);line-height:.9;margin-bottom:12px}
+.cta-box h2 .em{color:var(--accent)}
+.cta-box p{color:#c8c8c8;font-size:16px;line-height:1.6;margin-bottom:28px;max-width:400px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;flex-direction:column;gap:12px;align-items:center}
+
+/* STATS BAR */
+.stats-bar{background:var(--surface);border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:32px 20px}
+.stats-inner{max-width:700px;margin:0 auto;display:flex;justify-content:space-around;gap:20px;flex-wrap:wrap}
+.stat-item{text-align:center;min-width:80px}
+.stat-num{font-family:'Bebas Neue';font-size:clamp(36px,10vw,48px);line-height:1;color:var(--accent)}
+.stat-num.gold{color:var(--gold)}
+.stat-label{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-top:4px}
+
+/* FOOTER */
+footer{text-align:center;padding:28px 20px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:1.5px;text-transform:uppercase;font-size:12px;border-top:1px solid var(--line)}
+footer a{color:var(--accent);text-decoration:none}
+
+/* FLOAT WA */
+.float-wa{position:fixed;bottom:24px;right:24px;width:60px;height:60px;background:var(--green);border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 6px 24px rgba(37,211,102,.4);z-index:30;text-decoration:none;transition:transform .15s}
+.float-wa:hover{transform:scale(1.08)}
+.float-wa:active{transform:scale(.95)}
+.float-wa svg{width:30px;height:30px;fill:#fff}
+
+@media(max-width:420px){
+  .hero{padding:80px 16px 50px}
+  section{padding:60px 16px}
+  .btn-hero{padding:16px 28px;font-size:15px;width:100%}
+  .btn-hero.outline{padding:14px 24px}
+  .cta-box{padding:36px 20px}
+  .stats-inner{gap:10px}
+  .step{gap:14px}
+  .step-num{width:46px;height:46px;font-size:22px}
+}
+</style>
+</head>
+<body>
+
+<div class="top-bar"></div>
+
+<nav id="mainNav">
+  <a href="#" class="nav-brand">FUNDACI&Oacute;N RA&Iacute;CES</a>
+  <a href="https://rifas.fundacionraices.co" class="nav-cta">Ver rifas</a>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge"><span class="dot"></span> Rifas solidarias</div>
+    <h1>TU N&Uacute;MERO<br>DE LA <span class="em">SUERTE</span><br>TE <span class="gold">ESPERA</span></h1>
+    <p class="hero-sub">Participa en nuestras rifas, apoya a la Fundaci&oacute;n Ra&iacute;ces y ll&eacute;vate premios incre&iacute;bles. Escoge tu n&uacute;mero y prep&aacute;rate para ganar.</p>
+    <div class="hero-buttons">
+      <a href="https://rifas.fundacionraices.co" class="btn-hero primary">&#x1F3AB; Escoger mi n&uacute;mero</a>
+      <a href="https://wa.me/573117896717?text=Hola!%20Quiero%20informaci%C3%B3n%20sobre%20las%20rifas%20de%20Fundaci%C3%B3n%20Ra%C3%ADces" class="btn-hero wa" target="_blank">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+        Preguntar por WhatsApp
+      </a>
+    </div>
+  </div>
+  <div class="scroll-hint">
+    <span>Conoce m&aacute;s</span>
+    <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6l4 4 4-4"/></svg>
+  </div>
+</section>
+
+<!-- STATS -->
+<div class="stats-bar">
+  <div class="stats-inner">
+    <div class="stat-item"><div class="stat-num">100%</div><div class="stat-label">Transparente</div></div>
+    <div class="stat-item"><div class="stat-num gold">&#x1F3C6;</div><div class="stat-label">Premios reales</div></div>
+    <div class="stat-item"><div class="stat-num">&#x1F3B0;</div><div class="stat-label">Loter&iacute;a oficial</div></div>
+    <div class="stat-item"><div class="stat-num" style="color:var(--green)">&#x1F4F1;</div><div class="stat-label">100% digital</div></div>
+  </div>
+</div>
+
+<!-- COMO FUNCIONA -->
+<section id="como">
+  <div class="section-inner">
+    <div class="section-badge">C&oacute;mo funciona</div>
+    <h2 class="section-title">PARTICIPA EN<br>4 PASOS</h2>
+    <p class="section-desc">As&iacute; de f&aacute;cil es participar en nuestras rifas solidarias. Sin filas, sin complicaciones.</p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-line"></div>
+        <div class="step-content">
+          <h3>Escoge tu n&uacute;mero</h3>
+          <p>Entra a nuestra p&aacute;gina, elige la rifa que te gusta y selecciona tu n&uacute;mero de la suerte. Puedes buscarlo, elegir uno al azar o navegar la grilla.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-line"></div>
+        <div class="step-content">
+          <h3>Aparta y paga</h3>
+          <p>Llena tus datos, aparta tu n&uacute;mero por 15 minutos y realiza el pago por Nequi, Daviplata o transferencia bancaria.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-line"></div>
+        <div class="step-content">
+          <h3>Recibe tu comprobante</h3>
+          <p>Al confirmar el pago recibes tu recibo digital con c&oacute;digo de verificaci&oacute;n directo a tu WhatsApp. Tu boleto queda registrado.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h3>Espera el sorteo</h3>
+          <p>El ganador se determina seg&uacute;n el resultado de la loter&iacute;a oficial seleccionada. Todo es p&uacute;blico y verificable.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section style="background:var(--surface)">
+  <div class="section-inner">
+    <div class="section-badge">Ventajas</div>
+    <h2 class="section-title">POR QU&Eacute; ELEGIRNOS</h2>
+    <p class="section-desc">Rifas transparentes, seguras y con causa social.</p>
+
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon" style="background:var(--accent-soft)">&#x1F3B0;</div>
+        <h3>Loter&iacute;a oficial</h3>
+        <p>El ganador se define con loter&iacute;as oficiales de Colombia. Sin manipulaci&oacute;n, 100% transparente.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(245,197,24,.08)">&#x1F4B0;</div>
+        <h3>Descuentos por volumen</h3>
+        <p>Entre m&aacute;s boletos compres, m&aacute;s descuento obtienes. Mayor oportunidad de ganar.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(37,211,102,.08)">&#x1F4F2;</div>
+        <h3>Recibo por WhatsApp</h3>
+        <p>Tu comprobante llega directo a tu WhatsApp con c&oacute;digo de verificaci&oacute;n. Todo queda registrado.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(96,165,250,.08)">&#x1F50D;</div>
+        <h3>Verificaci&oacute;n en l&iacute;nea</h3>
+        <p>Consulta el estado de tus boletos en cualquier momento con tu c&oacute;digo o n&uacute;mero de tel&eacute;fono.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(245,158,11,.08)">&#x23F0;</div>
+        <h3>Reserva tu n&uacute;mero</h3>
+        <p>Al apartar, tu n&uacute;mero queda reservado por 15 minutos mientras realizas el pago. Nadie te lo quita.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon" style="background:rgba(226,59,59,.08)">&#x2764;&#xFE0F;</div>
+        <h3>Causa solidaria</h3>
+        <p>Parte de las ganancias apoyan los programas sociales de Fundaci&oacute;n Ra&iacute;ces. Ganas t&uacute; y gana la comunidad.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PREMIOS -->
+<section>
+  <div class="section-inner">
+    <div class="section-badge">Premios</div>
+    <h2 class="section-title">GANA PREMIOS<br><span style="color:var(--gold)">INCRE&Iacute;BLES</span></h2>
+    <p class="section-desc">En cada rifa tenemos premios que cambian vidas. Desde tecnolog&iacute;a hasta veh&iacute;culos.</p>
+
+    <div class="premios-grid">
+      <div class="premio-card">
+        <div class="premio-emoji">&#x1F3CD;&#xFE0F;</div>
+        <h3>MOTOS 0KM</h3>
+        <p>Motos nuevas de las mejores marcas. Tu nuevo medio de transporte te espera.</p>
+      </div>
+      <div class="premio-card">
+        <div class="premio-emoji">&#x1F4F1;</div>
+        <h3>TECNOLOG&Iacute;A</h3>
+        <p>Celulares, tablets, laptops y m&aacute;s. Los &uacute;ltimos modelos del mercado.</p>
+      </div>
+      <div class="premio-card">
+        <div class="premio-emoji">&#x1F4B5;</div>
+        <h3>EFECTIVO</h3>
+        <p>Premios en dinero que puedes usar como quieras. Sin restricciones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TESTIMONIOS -->
+<section style="background:var(--surface)">
+  <div class="section-inner">
+    <div class="section-badge">Testimonios</div>
+    <h2 class="section-title">LO QUE DICEN<br>NUESTROS GANADORES</h2>
+    <p class="section-desc">Personas reales que confiaron en su suerte y ganaron.</p>
+
+    <div class="testimonios">
+      <div class="testimonio">
+        <p>Nunca pens&eacute; que me iba a ganar. Escog&iacute; mi n&uacute;mero de la suerte y a los pocos d&iacute;as me llamaron. Todo fue transparente y r&aacute;pido.</p>
+        <div class="testimonio-author">
+          <div class="testimonio-avatar">&#x1F60A;</div>
+          <div><div class="testimonio-name">Mar&iacute;a C.</div><div class="testimonio-loc">Bogot&aacute;</div></div>
+        </div>
+      </div>
+      <div class="testimonio">
+        <p>Lo que m&aacute;s me gust&oacute; es que se juega con la loter&iacute;a oficial. Uno sabe que no hay trampa. Adem&aacute;s el proceso de compra fue super f&aacute;cil desde el celular.</p>
+        <div class="testimonio-author">
+          <div class="testimonio-avatar">&#x1F4AA;</div>
+          <div><div class="testimonio-name">Carlos A.</div><div class="testimonio-loc">Medell&iacute;n</div></div>
+        </div>
+      </div>
+      <div class="testimonio">
+        <p>Compr&eacute; 5 boletos con el descuento y me gan&eacute; la rifa. El recibo me lleg&oacute; al WhatsApp y todo qued&oacute; registrado. Recomendado.</p>
+        <div class="testimonio-author">
+          <div class="testimonio-avatar">&#x2B50;</div>
+          <div><div class="testimonio-name">Laura M.</div><div class="testimonio-loc">Cali</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA FINAL -->
+<section class="cta-section">
+  <div class="cta-box">
+    <h2>LA SUERTE<br>EST&Aacute; DE <span class="em">TU LADO</span></h2>
+    <p>No dejes pasar la oportunidad. Escoge tu n&uacute;mero ahora y prep&aacute;rate para ganar.</p>
+    <div class="cta-buttons">
+      <a href="https://rifas.fundacionraices.co" class="btn-hero primary" style="width:100%;max-width:340px">&#x1F3AB; Participar ahora</a>
+      <a href="#como" class="btn-hero outline" style="width:100%;max-width:340px">&#x2193; C&oacute;mo funciona</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  Fundaci&oacute;n Ra&iacute;ces &copy; 2024 &mdash; <a href="https://fundacionraices.co" target="_blank">fundacionraices.co</a>
+  <br><span style="margin-top:6px;display:inline-block">Rifas solidarias &middot; Todos los derechos reservados</span>
+</footer>
+
+<!-- WhatsApp flotante -->
+<a class="float-wa" href="https://wa.me/573117896717?text=Hola!%20Quiero%20informaci%C3%B3n%20sobre%20las%20rifas" target="_blank" title="WhatsApp">
+  <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.025.504 3.935 1.393 5.608L0 24l6.587-1.317A11.955 11.955 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 21.75c-1.86 0-3.633-.496-5.18-1.432l-.372-.22-3.858.771.832-3.698-.248-.39A9.712 9.712 0 012.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75z"/></svg>
+</a>
+
+<script>
+window.addEventListener('scroll',function(){
+  document.getElementById('mainNav').classList.toggle('scrolled',window.scrollY>60);
+});
+</script>
+</body>
+</html>
