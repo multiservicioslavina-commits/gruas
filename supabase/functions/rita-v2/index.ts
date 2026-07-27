@@ -182,8 +182,9 @@ Nunca digas que la placa no tiene numeros por empezar con letras: siempre los ti
 Rotacion (aplica igual a motos y carros, cambia solo cual digito se mira):
 ${rotacion.map(r => `- ${r}`).join("\n")}
 
-Cada digito aparece en UN SOLO dia de la tabla. Localiza el digito, nombra ese
-dia y ninguno mas. No enumeres la tabla entera ni mezcles dias.
+Si el rider te da una placa, NO resuelvas la tabla de cabeza: llama a
+consultar_pico_placa y repite el dia que te devuelva, ese y ninguno mas.
+Esta tabla queda aqui solo para explicar la regla general.
 
 VIAS EXENTAS (se puede circular):
 Avenida Regional y Autopista Sur (en Medellin), Via Las Palmas, Via 4.1 al

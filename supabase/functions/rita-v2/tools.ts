@@ -256,6 +256,23 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
+    name: "consultar_pico_placa",
+    description:
+      "Calcula que dia le aplica pico y placa a una placa concreta en Medellin y el Area Metropolitana. Usala SIEMPRE que pregunten por pico y placa de una placa: el calculo es una tabla exacta y no debes resolverlo de memoria. Devuelve el digito que manda, el dia restringido y el horario.",
+    input_schema: {
+      type: "object",
+      properties: {
+        placa: { type: "string", description: "Placa completa. Ej: TQK12F o ABC123" },
+        tipo: {
+          type: "string",
+          enum: ["moto", "carro"],
+          description: "Tipo de vehiculo. Si no lo dicen, deducelo del formato: tres letras + dos numeros + una letra es moto; tres letras + tres numeros es carro.",
+        },
+      },
+      required: ["placa", "tipo"],
+    },
+  },
+  {
     name: "mi_perfil",
     description:
       "Consulta el perfil del rider que esta escribiendo: nombre, moto registrada, ciudad, placa, vencimiento de SOAT y tecnomecanica, pico y placa que le aplica, y cuantos sellos lleva del Pasaporte 125. Usala cuando pregunte por sus datos, su moto, sus documentos o su progreso.",
@@ -482,6 +499,44 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const { data } = await query.order("created_at", { ascending: false }).limit(5);
     if (!data?.length) return { ok: false, data: "No hay motos publicadas que cumplan esos filtros en el marketplace." };
     return { ok: true, data };
+  },
+
+  // Tabla exacta: se resuelve en codigo, no en el modelo. Una respuesta
+  // equivocada aqui le cuesta un comparendo al rider.
+  async consultar_pico_placa(input) {
+    const placa = String(input.placa ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const digitos = placa.replace(/\D/g, "");
+    if (!digitos) {
+      return { ok: false, data: `La placa "${placa}" no trae numeros. Pidele al rider que la revise.` };
+    }
+
+    const tipo = input.tipo === "carro" ? "carro" : "moto";
+    // Moto: manda el primer numero. Carro: manda el ultimo.
+    const digito = Number(tipo === "moto" ? digitos[0] : digitos[digitos.length - 1]);
+
+    const esSegundoSemestre = new Date() >= new Date("2026-08-03T00:00:00-05:00");
+    const tabla: Record<string, number[]> = esSegundoSemestre
+      ? { lunes: [5, 8], martes: [1, 4], miercoles: [0, 2], jueves: [3, 6], viernes: [7, 9] }
+      : { lunes: [1, 7], martes: [0, 3], miercoles: [4, 6], jueves: [5, 9], viernes: [2, 8] };
+
+    const dia = Object.entries(tabla).find(([, ds]) => ds.includes(digito))?.[0] ?? null;
+
+    return {
+      ok: true,
+      data: {
+        placa,
+        tipo,
+        digito_que_manda: digito,
+        regla: tipo === "moto" ? "primer numero de la placa" : "ultimo numero de la placa",
+        dia_restringido: dia,
+        horario: "5:00 a.m. a 8:00 p.m.",
+        fines_de_semana: "Sabados y domingos no aplica pico y placa",
+        vigencia: esSegundoSemestre
+          ? "Rotacion del segundo semestre de 2026"
+          : "Rotacion vigente hasta el 31 de julio de 2026; cambia el 3 de agosto",
+        nota: `Este es el UNICO dia restringido para esta placa. Los demas dias puede circular.`,
+      },
+    };
   },
 
   async mi_perfil(_input, phone) {
