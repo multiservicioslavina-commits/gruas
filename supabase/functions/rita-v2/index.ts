@@ -200,7 +200,16 @@ Fuente: Area Metropolitana del Valle de Aburra / medellin.gov.co`;
 }
 
 // ─── System prompt ──────────────────────────────────────────────
-function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolean }): string {
+function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolean }, conVoz = false): string {
+  const bloqueVoz = conVoz
+    ? `\nMODO VOZ - este mensaje te lo mandaron por audio y tu vas a responder por audio, no por texto:
+- Habla como si estuvieras charlando con el parcero de frente, no como si le leyeras un mensaje escrito.
+- Frases cortas y encadenadas por la idea, no por vinetas. Nunca uses guiones, asteriscos, listas ni encabezados: nada de eso se puede "escuchar".
+- No leas URLs ni links completos en voz alta. Si hay un link que le sirve (una ruta, un tramite), dile que te lo manda tambien por escrito y menciona solo el nombre del sitio, nunca la direccion completa.
+- Maximo 3 a 4 frases. Hablando toma mas tiempo que leyendo, así que ve al grano.
+- Los numeros dilos como se dirian hablando (ej. "ciento treinta y ocho kilometros", no "138 km").\n`
+    : "";
+
   const bloqueConsentimiento = consentimiento.registrado
     ? `El rider ya definio sus preferencias de comunicacion (acepta: ${consentimiento.acepta}). No le vuelvas a preguntar salvo que el saque el tema.`
     : `CONSENTIMIENTO PENDIENTE: este rider todavia no ha dicho si quiere recibir comunicaciones.
@@ -257,7 +266,7 @@ ${bloquePicoPlaca()}
 OTROS TEMAS:
 - Grua o moto varada: gruas.ridera.com.co o el boton SOS de la app Ridera.
 - Rider no registrado: sugierele registrarse cada 3 o 4 intercambios, sin insistir.
-
+${bloqueVoz}
 ${bloqueConsentimiento}`;
 }
 
@@ -300,8 +309,9 @@ async function responder(
   history: { role: string; content: string }[],
   phone: string,
   consentimiento: { registrado: boolean; acepta: boolean },
+  conVoz = false,
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento);
+  const system = buildSystemPrompt(consentimiento, conVoz);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -395,10 +405,26 @@ async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
   return res.json();
 }
 
+// Limpia el markdown de WhatsApp antes de sintetizar: leido en voz alta,
+// "asterisco asterisco" y URLs completas suenan robotico, no conversacional.
+function textoParaVoz(texto: string): string {
+  return texto
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1")
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/[_~`#]/g, "")
+    .replace(/^[-•]\s*/gm, "")
+    .replace(/\n{2,}/g, ". ")
+    .replace(/\n/g, ". ")
+    .replace(/\s{2,}/g, " ")
+    .replace(/\.\s*\./g, ".")
+    .trim();
+}
+
 async function entregar(to: string, texto: string, conVoz: boolean): Promise<void> {
   if (conVoz && puedeHablar()) {
     try {
-      await enviarAudio(to, await sintetizar(texto));
+      await enviarAudio(to, await sintetizar(textoParaVoz(texto)));
       return;
     } catch (e) {
       console.error("Fallo el envio por voz, cae a texto:", e);
@@ -528,7 +554,7 @@ Deno.serve(async (req: Request) => {
 
     let reply = "";
     try {
-      reply = await responder(message, history, from, consentimiento);
+      reply = await responder(message, history, from, consentimiento, conVoz);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
