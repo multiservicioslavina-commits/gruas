@@ -466,6 +466,13 @@ Deno.serve(async (req: Request) => {
         conVoz = true;
       } catch (e) {
         console.error("Transcripcion fallo:", e);
+        await supabase.from("rita_acciones_log").insert({
+          telefono: from,
+          herramienta: "transcripcion_debug",
+          parametros: {},
+          ok: false,
+          error: String(e instanceof Error ? e.message : e).slice(0, 500),
+        });
         await enviarTexto(from, "No pude escuchar ese audio. Me lo repites?");
         return json({ ok: true, error: "transcripcion" });
       }
