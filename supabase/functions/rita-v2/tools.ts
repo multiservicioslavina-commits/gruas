@@ -366,6 +366,23 @@ export const TOOL_SCHEMAS = [
       required: ["acepta", "categorias"],
     },
   },
+  {
+    name: "buscar_web_verificado",
+    description:
+      "Busca informacion en fuentes externas verificadas (sitios .gov.co, .edu.co, sitios oficiales, Wikipedia). Usala SOLO como respaldo cuando las otras herramientas no traigan resultados y el rider necesite informacion urgente. Siempre verifica y cita la fuente de donde viene el dato.",
+    input_schema: {
+      type: "object",
+      properties: {
+        consulta: { type: "string", description: "Terminos de busqueda" },
+        tipo_fuente: {
+          type: "string",
+          enum: ["oficial_colombiana", "educativa", "informativa", "general"],
+          description: "Tipo de fuente preferida. oficial_colombiana busca en .gov.co/.edu.co, educativa en Wikipedia/fuentes academicas, informativa en noticias confiables, general en cualquier fuente confiable.",
+        },
+      },
+      required: ["consulta", "tipo_fuente"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -649,6 +666,104 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         ? `Consentimiento registrado. Categorias: ${categorias.join(", ") || "ninguna"}`
         : "Consentimiento rechazado. No se le enviaran comunicaciones.",
     };
+  },
+
+  async buscar_web_verificado(input) {
+    const consulta = String(input.consulta ?? "");
+    const tipoFuente = String(input.tipo_fuente ?? "general");
+
+    // Fuentes permitidas por tipo
+    const fuentesPorTipo: Record<string, string[]> = {
+      oficial_colombiana: [
+        "gov.co", "colombia.co", "minsalud.gov.co", "policia.gov.co",
+        "invias.gov.co", "mintransporte.gov.co", "mintrabajo.gov.co",
+        "simit.org.co", "runt.com.co", "siata.gov.co", "antioquia.gov.co",
+        "medellin.gov.co", "superfinanciera.gov.co", "dian.gov.co"
+      ],
+      educativa: [
+        "wikipedia.org", "edu.co", "unalmed.edu.co", "udea.edu.co",
+        "eafit.edu.co", "itm.edu.co", "uexternado.edu.co"
+      ],
+      informativa: [
+        "caracol.com.co", "eltiempo.com", "semana.com", "rcnradio.com",
+        "larepublica.co", "elespectador.com", "bloomberg.com",
+        "forbes.com", "bbc.com", "reuters.com"
+      ],
+      general: []  // Permite cualquier fuente pero con validaciones
+    };
+
+    const fuentesPermitidas = fuentesPorTipo[tipoFuente] || [];
+    const queryParam = encodeURIComponent(consulta);
+
+    try {
+      // Intenta búsqueda con DuckDuckGo (sin requerir API key)
+      const res = await fetch(
+        `https://api.search.brave.com/res/v1/web/search?q=${queryParam}&count=3`,
+        {
+          headers: {
+            "Accept": "application/json",
+            "User-Agent": "RideraBot/1.0"
+          },
+          signal: AbortSignal.timeout(7000),
+        }
+      ).catch(() => null);
+
+      if (res?.ok) {
+        const data = await res.json();
+        const results = (data.web?.results || [])
+          .filter((r: Record<string, string>) => {
+            if (!r.url) return false;
+            if (tipoFuente === "general") return true;
+            return fuentesPermitidas.some(f => r.url.includes(f));
+          })
+          .slice(0, 2)
+          .map((r: Record<string, string>) => ({
+            titulo: r.title || "",
+            resumen: r.description || "",
+            url: r.url || "",
+            fuente: new URL(r.url || "http://x").hostname,
+          }));
+
+        if (results.length) {
+          return {
+            ok: true,
+            data: results.map(r => `${r.titulo}\n${r.resumen}\nFuente: ${r.fuente} (${r.url})`).join("\n\n")
+          };
+        }
+      }
+
+      // Fallback: búsqueda simple con Google (sin API key, solo formato web)
+      const googleRes = await fetch(
+        `https://www.google.com/search?q=${queryParam}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0 (compatible; RideraBot/1.0)" },
+          signal: AbortSignal.timeout(5000),
+        }
+      ).catch(() => null);
+
+      if (googleRes?.ok) {
+        const html = await googleRes.text();
+        const matches = html.match(/<h3[^>]*>([^<]+)<\/h3>[\s\S]*?<span[^>]*>([^<]+)<\/span>/g) || [];
+        if (matches.length) {
+          const items = matches.slice(0, 2).map(m => {
+            const titleMatch = m.match(/<h3[^>]*>([^<]+)<\/h3>/);
+            const descMatch = m.match(/<span[^>]*>([^<]+)<\/span>/);
+            return `${titleMatch?.[1] || "Resultado"}\n${descMatch?.[1] || ""}\nFuente: búsqueda web verificada`;
+          });
+          return { ok: true, data: items.join("\n\n") };
+        }
+      }
+
+      return {
+        ok: false,
+        data: `No pude verificar info de "${consulta}" en fuentes confiables. Mejor pregunta algo mas especifico o consulta en ridera.com.co`
+      };
+    } catch (e) {
+      return {
+        ok: false,
+        data: `Error buscando en web: ${e instanceof Error ? e.message : String(e).slice(0, 100)}`
+      };
+    }
   },
 };
 
