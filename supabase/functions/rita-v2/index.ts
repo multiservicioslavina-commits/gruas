@@ -10,11 +10,11 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
+import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
-const OPENAI_KEY    = Deno.env.get("OPENAI_API_KEY") ?? "";
 const VERIFY_TOKEN  = Deno.env.get("RITA_VERIFY_TOKEN") ?? "ridera_rita_2026";
 const SB_URL        = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY        = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -346,29 +346,6 @@ async function descargarMedia(mediaId: string): Promise<Uint8Array> {
   return new Uint8Array(await audioRes.arrayBuffer());
 }
 
-async function transcribir(audio: Uint8Array, mimeType: string): Promise<string> {
-  const ext = mimeType.includes("mp4") ? "m4a" : "ogg";
-  const form = new FormData();
-  form.append("file", new Blob([audio], { type: mimeType }), `audio.${ext}`);
-  form.append("model", "whisper-1");
-  form.append("language", "es");
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${OPENAI_KEY}` },
-    body: form,
-  });
-  return (await res.json())?.text || "";
-}
-
-async function sintetizarVoz(texto: string): Promise<Uint8Array> {
-  const res = await fetch("https://api.openai.com/v1/audio/speech", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ model: "tts-1", voice: "nova", input: texto, response_format: "opus" }),
-  });
-  return new Uint8Array(await res.arrayBuffer());
-}
-
 async function enviarTexto(to: string, texto: string): Promise<unknown> {
   const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
     method: "POST",
@@ -401,9 +378,9 @@ async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
 }
 
 async function entregar(to: string, texto: string, conVoz: boolean): Promise<void> {
-  if (conVoz && OPENAI_KEY) {
+  if (conVoz && puedeHablar()) {
     try {
-      await enviarAudio(to, await sintetizarVoz(texto));
+      await enviarAudio(to, await sintetizar(texto));
       return;
     } catch (e) {
       console.error("Fallo el envio por voz, cae a texto:", e);
@@ -459,9 +436,9 @@ Deno.serve(async (req: Request) => {
     let conVoz = false;
 
     if (msg.type === "audio" && msg.audio) {
-      if (!OPENAI_KEY) {
+      if (!puedeEscuchar()) {
         await enviarTexto(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?");
-        return json({ ok: true, skip: "sin OPENAI_KEY" });
+        return json({ ok: true, skip: "sin proveedor de voz" });
       }
       try {
         message = await transcribir(
