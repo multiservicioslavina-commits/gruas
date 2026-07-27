@@ -402,6 +402,13 @@ async function entregar(to: string, texto: string, conVoz: boolean): Promise<voi
       return;
     } catch (e) {
       console.error("Fallo el envio por voz, cae a texto:", e);
+      await supabase.from("rita_acciones_log").insert({
+        telefono: to,
+        herramienta: "sintesis_debug",
+        parametros: {},
+        ok: false,
+        error: String(e instanceof Error ? e.message : e).slice(0, 500),
+      });
     }
   }
   await enviarTexto(to, texto);
