@@ -208,7 +208,12 @@ Al final de tu respuesta, y solo una vez, preguntale de forma natural algo como:
 "Por cierto, quieres que te avise de rodadas, noticias y novedades de Ridera? Puedes decirme que si o que no, y cambiarlo cuando quieras."
 Cuando responda, llama a registrar_consentimiento con su decision. Si acepta sin
 detallar categorias, incluye las ocho. Si dice que no, registralo igual con acepta en false.
-No insistas si ya preguntaste en este mensaje.`;
+No insistas si ya preguntaste en este mensaje.
+
+REGLA DURA: si el rider contesta si o no a esa pregunta, tu PRIMERA accion es
+llamar a registrar_consentimiento. Nunca escribas "anotado", "listo" ni nada
+parecido sin haber llamado la herramienta: seria decirle que quedo guardado
+cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
   return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Motociclista colombiana, calida, directa, con sabor paisa sin exagerar.
 
@@ -302,14 +307,27 @@ async function responder(
     { role: "user", content: message },
   ];
 
+  let huboHerramientas = false;
+
   for (let ronda = 0; ronda < MAX_TOOL_ROUNDS; ronda++) {
     const respuesta = await llamarClaude(system, messages);
     const bloques = (respuesta.content ?? []) as Bloque[];
 
     if (respuesta.stop_reason !== "tool_use") {
-      return textoDe(bloques);
+      const texto = textoDe(bloques);
+      if (texto) return texto;
+      if (!huboHerramientas) return "";
+      // Cerro sin escribir nada, cosa que suele pasar despues de ejecutar
+      // una accion. El rider quedaria sin respuesta, asi que se le pide el
+      // cierre en lugar de devolver vacio.
+      const cierre = await llamarClaude(
+        `${system}\n\nYa ejecutaste lo que hacia falta. Escribe ahora la respuesta para el rider y confirmale en una linea lo que hiciste.`,
+        messages,
+      );
+      return textoDe((cierre.content ?? []) as Bloque[]);
     }
 
+    huboHerramientas = true;
     const llamadas = bloques.filter(b => b.type === "tool_use");
     messages.push({ role: "assistant", content: bloques });
 
