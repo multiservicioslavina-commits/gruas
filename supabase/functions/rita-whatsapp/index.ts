@@ -1,7 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// ─── Config ─────────────────────────────────────────────────────
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
@@ -13,64 +12,39 @@ const WP_API       = "https://ridera.com.co/wp-json/wp/v2";
 
 const supabase = createClient(SB_URL, SB_KEY);
 
-// ─── Trámites (contexto para Claude, no respuesta hardcodeada) ───
 const TRAMITES: Record<string, { titulo: string; emoji: string; links: { nombre: string; url: string }[] }> = {
-  soat: {
-    titulo: "Comprar SOAT",
-    emoji: "🛡️",
-    links: [
-      { nombre: "Sura", url: "https://www.segurossura.com.co/paginas/soat.aspx" },
-      { nombre: "Bolívar", url: "https://www.segurosbolivar.com/soat" },
-      { nombre: "Liberty", url: "https://www.libertyseguros.co/soat" },
-      { nombre: "Mundial", url: "https://www.mundialseguros.com.co/soat" },
-      { nombre: "Solidaria", url: "https://www.lasolidaria.com.co/soat" },
-    ],
-  },
-  simit: {
-    titulo: "SIMIT – Consulta de multas",
-    emoji: "🚦",
-    links: [
-      { nombre: "Consultar multas y comparendos", url: "https://www.simit.org.co" },
-      { nombre: "Acuerdos de pago", url: "https://www.simit.org.co/acuerdos-de-pago" },
-    ],
-  },
-  runt: {
-    titulo: "RUNT – Historial vehicular",
-    emoji: "📋",
-    links: [
-      { nombre: "Consultar historial", url: "https://www.runt.com.co/consultaCiudadana" },
-    ],
-  },
-  impuestos: {
-    titulo: "Impuestos vehiculares",
-    emoji: "💰",
-    links: [
-      { nombre: "Antioquia", url: "https://impuestos.antioquia.gov.co" },
-      { nombre: "Valle del Cauca", url: "https://www.valledelcauca.gov.co/hacienda/publicaciones/vehiculos" },
-      { nombre: "Cundinamarca", url: "https://impuestos.cundinamarca.gov.co" },
-      { nombre: "Bogotá", url: "https://www.shd.gov.co/shd/vehiculos" },
-      { nombre: "Eje Cafetero (Risaralda)", url: "https://www.risaralda.gov.co/hacienda" },
-    ],
-  },
-  transitos: {
-    titulo: "Tránsitos",
-    emoji: "🏛️",
-    links: [
-      { nombre: "Medellín", url: "https://www.medellin.gov.co/movilidad" },
-      { nombre: "Envigado", url: "https://www.transitoenvigado.gov.co" },
-      { nombre: "Itagüí", url: "https://www.transitoitagui.gov.co" },
-      { nombre: "Bello", url: "https://www.transitobello.gov.co" },
-      { nombre: "Rionegro", url: "https://www.ttrionegro.gov.co" },
-    ],
-  },
-  tecnomecanica: {
-    titulo: "Tecnomecánica – CDAs",
-    emoji: "🔧",
-    links: [
-      { nombre: "Buscar CDA cercano (RUNT)", url: "https://www.runt.com.co/directorio-cda" },
-      { nombre: "Requisitos y precios", url: "https://ridera.com.co/garage-tecnico/" },
-    ],
-  },
+  soat: { titulo: "Comprar SOAT", emoji: "shield", links: [
+    { nombre: "Sura", url: "https://www.segurossura.com.co/paginas/soat.aspx" },
+    { nombre: "Bolívar", url: "https://www.segurosbolivar.com/soat" },
+    { nombre: "Liberty", url: "https://www.libertyseguros.co/soat" },
+    { nombre: "Mundial", url: "https://www.mundialseguros.com.co/soat" },
+    { nombre: "Solidaria", url: "https://www.lasolidaria.com.co/soat" },
+  ]},
+  simit: { titulo: "SIMIT – Multas", emoji: "semaphore", links: [
+    { nombre: "Consultar multas", url: "https://www.simit.org.co" },
+    { nombre: "Acuerdos de pago", url: "https://www.simit.org.co/acuerdos-de-pago" },
+  ]},
+  runt: { titulo: "RUNT – Historial", emoji: "clipboard", links: [
+    { nombre: "Consultar historial", url: "https://www.runt.com.co/consultaCiudadana" },
+  ]},
+  impuestos: { titulo: "Impuestos vehiculares", emoji: "money", links: [
+    { nombre: "Antioquia", url: "https://impuestos.antioquia.gov.co" },
+    { nombre: "Valle del Cauca", url: "https://www.valledelcauca.gov.co/hacienda/publicaciones/vehiculos" },
+    { nombre: "Cundinamarca", url: "https://impuestos.cundinamarca.gov.co" },
+    { nombre: "Bogotá", url: "https://www.shd.gov.co/shd/vehiculos" },
+    { nombre: "Eje Cafetero", url: "https://www.risaralda.gov.co/hacienda" },
+  ]},
+  transitos: { titulo: "Tránsitos", emoji: "building", links: [
+    { nombre: "Medellín", url: "https://www.medellin.gov.co/movilidad" },
+    { nombre: "Envigado", url: "https://www.transitoenvigado.gov.co" },
+    { nombre: "Itagüí", url: "https://www.transitoitagui.gov.co" },
+    { nombre: "Bello", url: "https://www.transitobello.gov.co" },
+    { nombre: "Rionegro", url: "https://www.ttrionegro.gov.co" },
+  ]},
+  tecnomecanica: { titulo: "Tecnomecánica – CDAs", emoji: "wrench", links: [
+    { nombre: "Buscar CDA (RUNT)", url: "https://www.runt.com.co/directorio-cda" },
+    { nombre: "Requisitos y precios", url: "https://ridera.com.co/garage-tecnico/" },
+  ]},
 };
 
 function detectTramites(msg: string): string | null {
@@ -85,7 +59,6 @@ function detectTramites(msg: string): string | null {
   return null;
 }
 
-// ─── Helpers ────────────────────────────────────────────────────
 function norm(s: string): string {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
@@ -94,62 +67,159 @@ const REGION_MAP: Record<string, string[]> = {
   suroeste:   ["jardin","jerico","andes","tamesis","concordia","fredonia"],
   oriente:    ["guatape","san rafael","marinilla","la ceja","rionegro","santuario"],
   norte:      ["santa rosa","don matias","san pedro","entrerrios","yarumal","campamento","belmira"],
-  occidente:  ["santa fe","sopetran","olaya","liborina","buritica","caicedo"],
+  occidente:  ["santa fe","sopetran","olaya","liborina","buritica","caicedo","heliconia"],
   magdalena:  ["puerto berrio","puerto nare","sonson"],
   bajo_cauca: ["caucasia","el bagre","zaragoza","nechi","taraza"],
-  uraba:      ["apartado","turbo","chigorodo","carepa"],
-  nordeste:   ["remedios","segovia","yali","cisneros","amalfi"],
+  uraba:      ["apartado","turbo","chigorodo","carepa","arboletes"],
+  nordeste:   ["remedios","segovia","yali","cisneros","amalfi","yolombo"],
   valle:      ["cali","palmira","buga","tulua","buenaventura"],
   eje:        ["pereira","armenia","manizales","filandia","quimbaya"],
 };
 
-const MARCAS = ["bmw","honda","yamaha","ktm","triumph","ducati","suzuki","kawasaki","aprilia","harley"];
+const MARCAS = ["bmw","honda","yamaha","ktm","triumph","ducati","suzuki","kawasaki","aprilia","harley","royal enfield","bajaj","tvs","hero","benelli","cfmoto","zongshen"];
 
-// ─── Historial de conversación ──────────────────────────────────
+function wmoDesc(code: number): string {
+  if (code === 0) return "Cielo despejado";
+  if (code <= 3) return "Parcialmente nublado";
+  if (code <= 48) return "Niebla/bruma";
+  if (code <= 57) return "Llovizna";
+  if (code <= 67) return "Lluvia";
+  if (code <= 77) return "Precipitacion solida";
+  if (code <= 82) return "Aguacero";
+  if (code <= 86) return "Aguacero fuerte";
+  if (code <= 99) return "Tormenta electrica";
+  return "Sin datos";
+}
+
+function riesgoMoto(code: number, rain: number): string {
+  if (code >= 95) return "PELIGRO: tormenta, no salir";
+  if (code >= 80 || rain > 5) return "PRECAUCION: piso mojado, reduce velocidad";
+  if (code >= 51 || rain > 0) return "LLOVIZNA: ten cuidado con curvas";
+  return "Condiciones OK para rodar";
+}
+
+async function fetchClimaOpenMeteo(lat: number, lon: number, lugar: string): Promise<string | null> {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,precipitation,rain,weathercode,windspeed_10m,relative_humidity_2m&hourly=precipitation_probability&timezone=America%2FBogota&forecast_days=1`;
+    const r = await fetch(url, { signal: AbortSignal.timeout(8000) });
+    if (!r.ok) return null;
+    const data = await r.json();
+    const c = data.current;
+    if (!c) return null;
+    const hora = new Date().getHours();
+    const probLluvia = data.hourly?.precipitation_probability?.[hora] ?? "sin dato";
+    const desc = wmoDesc(c.weathercode);
+    const riesgo = riesgoMoto(c.weathercode, c.rain || 0);
+    return `CLIMA EN ${lugar.toUpperCase()} (tiempo real):\n${desc} | ${c.temperature_2m}C | Lluvia: ${c.rain || 0}mm | Humedad: ${c.relative_humidity_2m}% | Viento: ${c.windspeed_10m}km/h | Prob lluvia: ${probLluvia}%\nRiesgo motero: ${riesgo}`;
+  } catch (e) {
+    console.error("OpenMeteo error:", e);
+    return null;
+  }
+}
+
+async function fetchAlertasSIATA(): Promise<string | null> {
+  const endpoints = [
+    "https://siata.gov.co/siata_nuevo/index.php/alerta/getAlertasActivas",
+    "https://siata.gov.co/descarga/index.php/api/getAlertas",
+    "https://siata.gov.co/siata_nuevo/index.php/ws/getAlerts",
+  ];
+  for (const url of endpoints) {
+    try {
+      const r = await fetch(url, {
+        signal: AbortSignal.timeout(6000),
+        headers: { "Accept": "application/json", "User-Agent": "RideraBot/1.0" },
+      });
+      if (!r.ok) continue;
+      const ct = r.headers.get("content-type") || "";
+      if (ct.includes("json")) {
+        const data = await r.json();
+        if (data && typeof data === "object") {
+          const alerts = Array.isArray(data) ? data : data.alertas || data.data || [];
+          if (alerts.length > 0) {
+            return "SIATA ALERTAS ACTIVAS:\n" + alerts.slice(0, 5).map((a: any) =>
+              `${a.nivel || a.color || ""} ${a.zona || a.municipio || a.nombre || ""}: ${a.descripcion || a.mensaje || ""}`
+            ).join("\n");
+          }
+          return "SIATA: Sin alertas activas en este momento";
+        }
+      }
+      const html = await r.text();
+      if (html.length > 100) {
+        const nivelMatch = html.match(/alerta[\s-]*(amarilla|naranja|roja|verde)/i);
+        if (nivelMatch) return `SIATA: Alerta ${nivelMatch[1].toUpperCase()} activa en Antioquia`;
+        if (/sin alerta|no hay alerta|normalidad/i.test(html)) return "SIATA: Sin alertas activas";
+      }
+    } catch { continue; }
+  }
+  return null;
+}
+
+async function fetchEstadoViasINVIAS(destino: string): Promise<string | null> {
+  const dest = norm(destino);
+  const endpoints = [
+    "https://www.invias.gov.co/index.php/red-vial/estado-de-la-red-vial",
+    "https://www.invias.gov.co/index.php/component/content/article/3-principal/5823-estado-de-vias",
+  ];
+  for (const url of endpoints) {
+    try {
+      const r = await fetch(url, {
+        signal: AbortSignal.timeout(8000),
+        headers: { "User-Agent": "Mozilla/5.0 (compatible; RideraBot/1.0)", "Accept": "text/html,application/xhtml+xml" },
+      });
+      if (!r.ok) continue;
+      const html = await r.text();
+      if (html.length < 500) continue;
+      const scriptRe = new RegExp("<script[^>]*>[\\s\\S]*?</script>", "gi");
+      const styleRe = new RegExp("<style[^>]*>[\\s\\S]*?</style>", "gi");
+      const texto = html
+        .replace(scriptRe, " ")
+        .replace(styleRe, " ")
+        .replace(/<[^>]+>/g, " ")
+        .replace(/\s+/g, " ").trim();
+      const lineas = texto.split(/[.!?\n]/).filter(l => l.trim().length > 20);
+      const relevantes = lineas.filter(l => { const ln = norm(l); return ln.includes(dest) || ln.includes("antioquia") || ln.includes("medellin"); });
+      if (relevantes.length > 0) return "INVIAS estado de vias:\n" + relevantes.slice(0, 4).map(l => l.trim()).join(". ");
+      const alertas = lineas.filter(l => /cierre|derrumbe|restriccion|inhabilitad|intervencion|mantenimiento/.test(norm(l)));
+      if (alertas.length > 0) return "INVIAS alertas:\n" + alertas.slice(0, 3).map(l => l.trim()).join(". ");
+    } catch { continue; }
+  }
+  return `INVIAS: consulta en https://www.invias.gov.co/index.php/red-vial/estado-de-la-red-vial o llama gratis: 018000 910 010`;
+}
+
+async function getCoordsForDestino(mensaje: string): Promise<{ lat: number; lon: number; nombre: string } | null> {
+  const msg2 = norm(mensaje);
+  const stopWords = new Set(["que","me","para","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","ir","quiero","hola","clima","tiempo","lluvia","calor","frio","temperatura","esta","hace"]);
+  const keywords = msg2.split(/[\s,.\-]+/).filter(w => w.length > 2 && !stopWords.has(w));
+  if (!keywords.length) return null;
+  const orFilters = keywords.map(k => `nombre.ilike.%${k}%`).join(",");
+  const { data } = await supabase.from("rita_municipios").select("nombre, coordenadas").or(orFilters).limit(1);
+  const m = data?.[0];
+  if (!m?.coordenadas) return null;
+  return { lat: m.coordenadas.lat, lon: m.coordenadas.lng, nombre: m.nombre };
+}
+
 async function getHistory(phone: string, limit = 10): Promise<{ role: string; content: string }[]> {
-  const { data } = await supabase
-    .from("rita_messages")
-    .select("role, content")
-    .eq("phone", phone)
-    .order("created_at", { ascending: false })
-    .limit(limit);
+  const { data } = await supabase.from("rita_messages").select("role, content").eq("phone", phone).order("created_at", { ascending: false }).limit(limit);
   return (data || []).reverse();
 }
 
 async function saveMessage(phone: string, role: "user" | "assistant", content: string) {
   await supabase.from("rita_messages").insert({ phone, role, content });
-  const { data: old } = await supabase
-    .from("rita_messages")
-    .select("id")
-    .eq("phone", phone)
-    .order("created_at", { ascending: false })
-    .range(20, 999);
-  if (old && old.length > 0) {
-    await supabase.from("rita_messages").delete().in("id", old.map(r => r.id));
-  }
+  const { data: old } = await supabase.from("rita_messages").select("id").eq("phone", phone).order("created_at", { ascending: false }).range(20, 999);
+  if (old?.length) await supabase.from("rita_messages").delete().in("id", old.map(r => r.id));
 }
 
-// ─── Conversation state (registro) ─────────────────────────────
 async function getConvState(phone: string): Promise<{ state: string; data: any }> {
-  const { data } = await supabase
-    .from("rita_conversations")
-    .select("state, data")
-    .eq("phone", phone)
-    .maybeSingle();
+  const { data } = await supabase.from("rita_conversations").select("state, data").eq("phone", phone).maybeSingle();
   return data || { state: "idle", data: {} };
 }
-
 async function setConvState(phone: string, state: string, convData: any = {}) {
-  await supabase.from("rita_conversations").upsert({
-    phone, state, data: convData, updated_at: new Date().toISOString(),
-  }, { onConflict: "phone" });
+  await supabase.from("rita_conversations").upsert({ phone, state, data: convData, updated_at: new Date().toISOString() }, { onConflict: "phone" });
 }
-
 async function clearConvState(phone: string) {
   await supabase.from("rita_conversations").delete().eq("phone", phone);
 }
 
-// ─── Rider lookup ───────────────────────────────────────────────
 async function getRiderContext(phone: string): Promise<any> {
   try {
     const res = await fetch(`${SB_URL}/functions/v1/rita-rider-context`, {
@@ -161,42 +231,26 @@ async function getRiderContext(phone: string): Promise<any> {
   } catch { return { encontrado: false }; }
 }
 
-// ─── Route detail lookup from rita_rutas ────────────────────────
 async function fetchRutaDetail(message: string): Promise<any | null> {
   const msg2 = norm(message);
-  if (!/ruta|viaje|viajar|ir a|destino|recorrido|como llego|llegar/.test(msg2) && msg2.split(/\s+/).length > 6) return null;
-
-  const stopWords = new Set(["que","me","recomiendas","para","rutas","ruta","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se"]);
+  const stopWords = new Set(["que","me","recomiendas","para","rutas","ruta","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se","viajar","llegar","destino","recorrido","viaje"]);
   const keywords = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 2 && !stopWords.has(w));
   if (!keywords.length) return null;
-
   const orFilters = keywords.map(k => `destino.ilike.%${k}%,titulo.ilike.%${k}%,slug.ilike.%${k}%`).join(",");
-  const { data } = await supabase
-    .from("rita_rutas")
-    .select("*")
-    .or(orFilters)
-    .limit(3);
-
-  return data || null;
+  const { data } = await supabase.from("rita_rutas").select("*").or(orFilters).limit(3);
+  return data?.length ? data : null;
 }
 
-// ─── Municipio lookup from Supabase ──────────────────────────────
 async function fetchMunicipioInfo(message: string): Promise<any[]> {
   const msg2 = norm(message);
   const stopWords = new Set(["que","me","recomiendas","para","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se","conocer","visitar","municipio","pueblo","ciudad","info","informacion","sobre"]);
   const keywords = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 2 && !stopWords.has(w));
   if (!keywords.length) return [];
-
   const orFilters = keywords.map(k => `nombre.ilike.%${k}%`).join(",");
-  const { data } = await supabase
-    .from("municipios")
-    .select("nombre, subregion, zona_dificultad, puntos_sello, historia")
-    .or(orFilters)
-    .limit(3);
+  const { data } = await supabase.from("rita_municipios").select("nombre, subregion, altitud_msnm, temperatura_c, distancia_medellin_km, tiempo_medellin, como_llegar, historia, atractivos, gastronomia, festividades, tipo_via, dificultad_moto, tips_moto, notas_adicionales").or(orFilters).limit(3);
   return data || [];
 }
 
-// ─── Talleres lookup from Supabase ───────────────────────────────
 async function fetchTalleres(message: string): Promise<any[]> {
   const msg2 = norm(message);
   if (!/taller|mecanico|mecanic|servicio|reparar|arreglar|revision/.test(msg2)) return [];
@@ -208,70 +262,59 @@ async function fetchTalleres(message: string): Promise<any[]> {
   return data || [];
 }
 
-// ─── Garage motos (datos técnicos verificados) ───────────────────
 async function fetchGarageMoto(marca: string, modelo?: string): Promise<any | null> {
   let query = supabase.from("garage_motos").select("*").ilike("marca", `%${marca}%`);
   if (modelo) query = query.ilike("modelo", `%${modelo}%`);
-  const { data } = await query.limit(1);
-  return data?.[0] || null;
+  const { data } = await query.limit(2);
+  return data?.length ? data : null;
 }
 
-// ─── INVIAS — estado de vías (scraping RSS/API pública) ──────────
-async function fetchEstadoVias(destino: string): Promise<string | null> {
+async function fetchSellosRider(phone: string): Promise<any | null> {
   try {
-    const r = await fetch(
-      `https://www.invias.gov.co/index.php/red-vial/estado-de-la-red-vial`,
-      { signal: AbortSignal.timeout(5000) }
-    );
-    if (!r.ok) return null;
-    const html = await r.text();
-    const dest = norm(destino);
-    const lines = html.replace(/<[^>]+>/g, " ").split(/\n/).filter(l => norm(l).includes(dest));
-    if (lines.length === 0) return null;
-    return lines.slice(0, 3).map(l => l.trim().slice(0, 200)).join(" | ");
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase.from("riders").select("id, nombre").or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`).maybeSingle();
+    if (!rider) return null;
+    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at").eq("rider_id", rider.id);
+    return { nombre: rider.nombre, total: sellos?.length || 0, municipios: sellos?.map(s => s.municipio_id) || [] };
   } catch { return null; }
 }
 
-// ─── Antioquia es Mágica — experiencias/destinos ─────────────────
 async function fetchAntioquiaMagica(searchTerm: string): Promise<any[]> {
   try {
-    const r = await fetch(
-      `https://turismoantioquia.travel/wp-json/wp/v2/posts?search=${encodeURIComponent(searchTerm)}&per_page=3&_fields=title,excerpt,link`,
-      { signal: AbortSignal.timeout(6000) }
-    );
+    const r = await fetch(`https://turismoantioquia.travel/wp-json/wp/v2/posts?search=${encodeURIComponent(searchTerm)}&per_page=3&_fields=title,excerpt,link`, { signal: AbortSignal.timeout(6000) });
     if (!r.ok) return [];
     const items = await r.json();
     return (items || []).map((i: any) => ({
-      fuente: "Antioquia es Mágica",
-      titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "–"),
+      fuente: "Antioquia es Magica",
+      titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "-"),
       resumen: (i.excerpt?.rendered || "").replace(/<[^>]+>/g, "").trim().slice(0, 250),
       link: i.link || "",
     }));
   } catch { return []; }
 }
 
-// ─── Search context ─────────────────────────────────────────────
 async function fetchContext(message: string, phone: string): Promise<any> {
   const msg2 = norm(message);
   let searchTerm = "";
-
-  for (const [_region, keywords] of Object.entries(REGION_MAP)) {
-    const matched = keywords.find(k => msg2.includes(k));
-    if (matched) { searchTerm = matched; break; }
+  for (const [_r, kws] of Object.entries(REGION_MAP)) {
+    const m = kws.find(k => msg2.includes(k));
+    if (m) { searchTerm = m; break; }
   }
   if (!searchTerm) {
     const stop = new Set(["que","me","recomiendas","para","rutas","ruta","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","oye","hey","parce","mira"]);
-    searchTerm = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 3 && !stop.has(w)).slice(0, 4).join(" ");
+    searchTerm = msg2.split(/[\s,.\-]+/).filter(w => w.length > 3 && !stop.has(w)).slice(0, 4).join(" ");
   }
 
-  const isGarageQ = /aceite|filtro|freno|pastilla|cadena|llanta|bateria|abs|suspensi|ecu|mantenimiento|garage|motor|card[aá]n|transmisi|neumat|electri|diagn[oó]stic|taller|mecanico|servicio/.test(msg2);
-  const isViaQ = /via|carretera|estado.*via|como esta.*via|derrumbe|cierre|peaje|paso|transitable/.test(msg2);
-  const isDestinoQ = /municipio|pueblo|visitar|conocer|turismo|que hay en|destino/.test(msg2);
+  const isGarageQ  = /aceite|filtro|freno|pastilla|cadena|llanta|bateria|abs|suspensi|ecu|mantenimiento|garage|motor|card[aá]n|transmisi|neumat|electri|diagn[oó]stic|taller|mecanico|servicio/.test(msg2);
+  const isViaQ     = /\bvia\b|carretera|estado.*via|como esta.*via|derrumbe|cierre|peaje|paso|transitable|invias|condicion.*via/.test(msg2);
+  const isClimaQ   = /clima|tiempo|llueve|lluvia|temperatura|calor|frio|siata|nublado|aguacero|tormenta|niebla|condicion.*clima|va a llover|esta lloviendo/.test(msg2);
   const isSimpleChat = /^(hola|buenos|buenas|hey|ey|que tal|como estas|gracias|ok|dale|listo|chao|nos vemos)/.test(msg2) && msg2.split(/\s+/).length <= 5;
+  const isSellosQ  = /sello|pasaporte|cuantos|llevo|municipio.*llevo|progreso|avance/.test(msg2);
+  const isGrua     = /grua|remolque|averia|varad/.test(msg2);
+  const isPicoPlacaQ = /pico.*placa|placa.*pico|restriccion.*vehic|dia.*sin.*carro|puedo.*circular|no.*circular|exent|via.*exent/.test(msg2);
 
   const fetches: Promise<any>[] = [];
 
-  // WordPress ridera.com.co
   if (!isGarageQ && !isSimpleChat && searchTerm.length > 2) {
     const wpSearch = async (endpoint: string, tipo: string) => {
       try {
@@ -280,7 +323,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
         const items = await r.json();
         return (items || []).map((i: any) => ({
           tipo, fuente: "ridera.com.co",
-          titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "–"),
+          titulo: (i.title?.rendered || "").replace(/&amp;/g, "&").replace(/&#8211;/g, "-"),
           resumen: (i.excerpt?.rendered || "").replace(/<[^>]+>/g, "").trim().slice(0, 300),
           link: i.link || "",
         }));
@@ -293,7 +336,6 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     fetches.push(Promise.resolve([]));
   }
 
-  // Garage search (edge function)
   fetches.push(
     fetch(`${SB_URL}/functions/v1/garage-search`, {
       method: "POST",
@@ -302,27 +344,20 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     }).then(r => r.json()).catch(() => ({ resultados: [] }))
   );
 
-  // Municipios de Supabase
   fetches.push(fetchMunicipioInfo(message));
-
-  // Talleres de Supabase
   fetches.push(fetchTalleres(message));
+  fetches.push(!isSimpleChat && !isGarageQ && searchTerm.length > 2 ? fetchAntioquiaMagica(searchTerm) : Promise.resolve([]));
+  fetches.push(isSellosQ ? fetchSellosRider(phone) : Promise.resolve(null));
+  fetches.push(isClimaQ ? getCoordsForDestino(message).then(async (coords) => {
+    const [climaData, siataData] = await Promise.all([
+      coords ? fetchClimaOpenMeteo(coords.lat, coords.lon, coords.nombre) : fetchClimaOpenMeteo(6.2442, -75.5812, "Medellin"),
+      fetchAlertasSIATA(),
+    ]);
+    return { climaData, siataData };
+  }) : Promise.resolve(null));
+  fetches.push(isViaQ && searchTerm.length > 2 ? fetchEstadoViasINVIAS(searchTerm) : Promise.resolve(null));
 
-  // Antioquia es Mágica (turismo verificado)
-  if (!isSimpleChat && !isGarageQ && searchTerm.length > 2) {
-    fetches.push(fetchAntioquiaMagica(searchTerm));
-  } else {
-    fetches.push(Promise.resolve([]));
-  }
-
-  // INVIAS estado de vías
-  if (isViaQ && searchTerm.length > 2) {
-    fetches.push(fetchEstadoVias(searchTerm));
-  } else {
-    fetches.push(Promise.resolve(null));
-  }
-
-  const [rutas, posts, garageRes, municipiosRes, talleresRes, antioquiaRes, inviasRes] = await Promise.all(fetches);
+  const [rutas, posts, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes] = await Promise.all(fetches);
 
   const resultados = [
     ...(rutas || []),
@@ -333,34 +368,67 @@ async function fetchContext(message: string, phone: string): Promise<any> {
 
   const tramiteKey = detectTramites(message);
   let tramitesCtx = null;
-  if (tramiteKey === "all") {
-    tramitesCtx = TRAMITES;
-  } else if (tramiteKey) {
-    tramitesCtx = { [tramiteKey]: TRAMITES[tramiteKey] };
-  }
+  if (tramiteKey === "all") tramitesCtx = TRAMITES;
+  else if (tramiteKey) tramitesCtx = { [tramiteKey]: TRAMITES[tramiteKey] };
 
   const marcaMencionada = MARCAS.find(m => msg2.includes(m)) || "";
-  const isGrua = /grua|remolque|averia|varad/.test(msg2);
+  let garageMotoData = null;
+  if (marcaMencionada && isGarageQ) {
+    const words = msg2.split(/\s+/);
+    const marcaIdx = words.findIndex(w => w === marcaMencionada.split(" ")[0]);
+    const posibleModelo = words.slice(marcaIdx + 1, marcaIdx + 3).join(" ");
+    garageMotoData = await fetchGarageMoto(marcaMencionada, posibleModelo || undefined);
+  }
 
-  return {
-    resultados,
-    tramitesCtx,
-    marcaMencionada,
-    isGrua,
-    isGarageQ,
-    searchTerm,
-    municipios: municipiosRes,
-    talleres: talleresRes,
-    estadoVias: inviasRes,
-  };
+  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes };
 }
 
-// ─── System prompt — personalidad de Rita ─────────────────────
+function getPicoPlacaPromptBlock(): string {
+  const ahora = new Date();
+  const inicioS2 = new Date("2026-08-03T00:00:00-05:00");
+  const esS2 = ahora >= inicioS2;
+
+  if (esS2) {
+    return `PICO Y PLACA - MEDELLIN Y AREA METROPOLITANA (2do Semestre 2026):
+Rotacion vigente desde lunes 3 de agosto 2026.
+Horario: 5:00 a.m. a 8:00 p.m.
+Carros particulares, camperos, motocarros y cuatrimotos (ULTIMO numero de la placa):
+- Lunes: 5 y 8
+- Martes: 1 y 4
+- Miercoles: 0 y 2
+- Jueves: 3 y 6
+- Viernes: 7 y 9
+Motos de 2 y 4 tiempos, mototriciclos, tricimotos y ciclomotores (PRIMER numero de la placa):
+- Lunes: 5 y 8
+- Martes: 1 y 4
+- Miercoles: 0 y 2
+- Jueves: 3 y 6
+- Viernes: 7 y 9`;
+  }
+
+  return `PICO Y PLACA - MEDELLIN Y AREA METROPOLITANA (1er Semestre 2026):
+Rotacion vigente desde 2 de febrero 2026 hasta 31 de julio 2026.
+NUEVA ROTACION el 3 de agosto 2026.
+Horario: 5:00 a.m. a 8:00 p.m.
+Carros particulares, camperos, motocarros y cuatrimotos (ULTIMO numero de la placa):
+- Lunes: 1 y 7
+- Martes: 0 y 3
+- Miercoles: 4 y 6
+- Jueves: 5 y 9
+- Viernes: 2 y 8
+Motos de 2 y 4 tiempos, mototriciclos, tricimotos y ciclomotores (PRIMER numero de la placa):
+- Lunes: 1 y 7
+- Martes: 0 y 3
+- Miercoles: 4 y 6
+- Jueves: 5 y 9
+- Viernes: 2 y 8`;
+}
+
 function buildSystemPrompt(riderCtx: any): string {
   let riderInfo = "";
   if (riderCtx?.encontrado) {
     const p = riderCtx.perfil || {};
-    const parts = [];
+    const parts: string[] = [];
     if (p.nombre) parts.push(`Se llama ${p.nombre}`);
     if (p.moto) parts.push(`Moto: ${p.moto}`);
     if (p.ciudad) parts.push(`Ciudad: ${p.ciudad}`);
@@ -368,117 +436,119 @@ function buildSystemPrompt(riderCtx: any): string {
     if (riderCtx.pico_placa?.mensaje) parts.push(`Pico y placa: ${riderCtx.pico_placa.mensaje}`);
     if (riderCtx.documentos?.alertas?.length) parts.push(`Alertas docs: ${riderCtx.documentos.alertas.join(", ")}`);
     if (riderCtx.documentos?.soat) parts.push(`SOAT: ${riderCtx.documentos.soat}`);
-    if (riderCtx.documentos?.tecno) parts.push(`Tecnomecánica: ${riderCtx.documentos.tecno}`);
-    if (riderCtx.eventos_proximos?.length) parts.push(`Eventos próximos: ${riderCtx.eventos_proximos.map((e: any) => e.titulo || e).join(", ")}`);
+    if (riderCtx.documentos?.tecno) parts.push(`Tecnomecanica: ${riderCtx.documentos.tecno}`);
+    if (riderCtx.eventos_proximos?.length) parts.push(`Eventos: ${riderCtx.eventos_proximos.map((e: any) => e.titulo || e).join(", ")}`);
     riderInfo = `\n\nDATOS DEL RIDER:\n${parts.join("\n")}`;
   }
 
-  return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Motociclista colombiana, cálida, directa, con sabor paisa sin exagerar.
+  const picoPlacaBlock = getPicoPlacaPromptBlock();
 
-CÓMO HABLAS:
+  return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Motociclista colombiana, calida, directa, con sabor paisa sin exagerar.
+
+COMO HABLAS:
 - WhatsApp entre amigos moteros. Frases cortas, naturales.
 - "parce", "dale", "pilas", "bacano" cuando fluyan natural.
-- 1-3 emojis por mensaje. NO empezar con "¡Hola!" siempre.
-- Máximo 6-8 líneas. Saludo simple: 1-3 líneas.
-- NO listas con viñetas a menos que des links o datos técnicos.
+- 1-3 emojis por mensaje. NO empezar con Hola! siempre.
+- Maximo 6-8 lineas. Saludo simple: 1-3 lineas.
+- NO listas con vinetas a menos que des links o datos tecnicos.
 
-⚠️ REGLA ABSOLUTA — NO INVENTAR:
-- SOLO responde con datos que aparezcan en el CONTEXTO proporcionado abajo.
-- Si NO hay datos en el contexto para responder, di EXACTAMENTE algo como:
-  "Ahí sí no tengo esa info verificada todavía, parce. Puedes consultar en ridera.com.co o escribirme después cuando la tenga actualizada 🙏"
-- NUNCA inventes nombres de talleres, restaurantes, hoteles, precios, distancias, tiempos, horarios ni datos técnicos.
-- NUNCA inventes rutas que no estén en el contexto.
-- NUNCA digas "según mis datos" ni "generalmente" para introducir datos que NO están en el contexto.
-- Si el contexto tiene datos parciales, comparte SOLO lo que hay y aclara qué falta.
-- Prefiere decir "no sé" a inventar. Un dato falso hace más daño que no responder.
+REGLA ABSOLUTA NO INVENTAR:
+- SOLO responde con datos que aparezcan en el CONTEXTO proporcionado.
+- Si no hay datos, di: "Ahi si no tengo esa info verificada todavia, parce. Puedes consultar en ridera.com.co"
+- NUNCA inventes datos tecnicos, precios, distancias, talleres, hoteles, horarios.
+- Si el contexto tiene datos parciales, comparte SOLO lo que hay.
 
-FUENTES QUE CONSULTO (solo estas):
-- Supabase: rutas (rita_rutas), municipios, talleres aprobados, garage_motos (datos técnicos)
-- WordPress: ridera.com.co (artículos y rutas publicadas)
-- Antioquia es Mágica: turismo verificado de turismoantioquia.travel
-- INVIAS: estado de vías (cuando está disponible)
-- Trámites: SOAT, SIMIT, RUNT, impuestos, tecnomecánica (links oficiales)
-- Grúas: gruas.ridera.com.co o botón SOS de la app
+${picoPlacaBlock}
+Sabado y domingo: NO hay pico y placa.
 
-REGLAS DE DATOS:
-- Si hay datos del Garage Técnico en el contexto, comparte dato técnico + tip + link.
-- Si el rider tiene moto registrada y pregunta sin marca, usa SU moto.
-- Grúa → gruas.ridera.com.co y botón SOS.
-- Links de trámites: formatea limpio con nombre y URL.
-- Talleres: SOLO los que aparezcan en el contexto (tabla talleres aprobados).
-- Rider NO registrado: sugerir "quiero registrarme" cada 3-4 intercambios, no siempre.
+VIAS EXENTAS (se puede circular con pico y placa):
+- Avenida Regional (en jurisdiccion de Medellin)
+- Autopista Sur (en jurisdiccion de Medellin)
+- Via Las Palmas
+- Via 4.1 al Occidente Antioqueno (conexion vial Aburra-Rio Cauca)
+- Conexion Avenida 33 entre Autopista Sur y Avenida Las Palmas
+- Calle 10 entre el eje vial del rio y la Terminal del Sur
+- Corregimientos de Medellin
+
+VEHICULOS EXENTOS (no les aplica pico y placa):
+- Vehiculos electricos de cero emisiones
+- Vehiculos dedicados a gas combustible
+- Vehiculos hibridos registrados en el RUNT
+
+Fuente: Area Metropolitana del Valle de Aburra / www.medellin.gov.co
+
+FUENTES:
+- rita_rutas: rutas verificadas con km, duracion, dificultad, tips
+- rita_municipios: info completa de destinos (atractivos, gastronomia, historia, tips moto)
+- garage_motos: datos tecnicos de motos (55 modelos)
+- Open-Meteo: clima en tiempo real por coordenadas GPS
+- SIATA: alertas de lluvia y clima Antioquia (si disponible)
+- INVIAS: estado de carreteras nacionales (si disponible)
+- Talleres: talleres aprobados por Ridera
+- Pasaporte 125: sellos acumulados del rider
+- Tramites: SOAT, SIMIT, RUNT, impuestos, tecnomecanica (links oficiales)
+- Gruas: gruas.ridera.com.co o boton SOS
+
+REGLAS DE RESPUESTA:
+- Rutas: incluir km, duracion, dificultad y link ridera.com.co al final.
+- CLIMA: si hay datos de Open-Meteo, dar temperatura, lluvia y nivel de riesgo para motero. Si hay alerta SIATA, mencionarla primero.
+- INVIAS: si hay datos de vias, compartirlos. Si fallo, dar el enlace directo de INVIAS y el telefono gratuito.
+- Municipios: usar atractivos, gastronomia y tips_moto del contexto.
+- Sellos: si el rider pregunta cuantos lleva, responder con total/125 y animo.
+- Grua -> gruas.ridera.com.co y boton SOS.
+- PICO Y PLACA: usa SIEMPRE la tabla de arriba. Para motos usa el PRIMER digito de la placa. Para carros el ULTIMO. Indica el dia y horario. Si preguntan por vias o vehiculos exentos, usar la info de arriba.
+- Rider NO registrado: sugerir registro cada 3-4 intercambios.
 ${riderInfo}`;
 }
 
-// ─── Claude con historial ─────────────────────────────────────
-async function askClaude(
-  message: string,
-  history: { role: string; content: string }[],
-  context: any,
-  riderCtx: any
-): Promise<string> {
+async function askClaude(message: string, history: { role: string; content: string }[], context: any, riderCtx: any): Promise<string> {
   const systemPrompt = buildSystemPrompt(riderCtx);
-
   let contextBlock = "";
-  const hasAnyData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
-    context.municipios?.length || context.talleres?.length || context.estadoVias || context.rutaDetail;
 
-  if (!hasAnyData && !context.marcaMencionada) {
-    contextBlock += `\nSIN DATOS DISPONIBLES: No se encontró información verificada para esta consulta. NO inventes datos. Responde que no tienes esa información todavía.`;
+  const hasData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
+    context.municipios?.length || context.talleres?.length || context.rutaDetail ||
+    context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ;
+
+  if (!hasData && !context.marcaMencionada) {
+    contextBlock += `\nSIN DATOS DISPONIBLES. NO inventes. Di que no tienes esa info.`;
   }
 
-  if (context.resultados?.length) {
-    contextBlock += `\nRESULTADOS VERIFICADOS (fuentes: ridera.com.co, Antioquia es Mágica):\n${JSON.stringify(context.resultados, null, 0)}`;
+  if (context.isPicoPlacaQ) {
+    contextBlock += `\nPICO Y PLACA: El usuario pregunta sobre pico y placa. Usa la tabla del system prompt para responder. Recuerda: motos usan el PRIMER digito, carros el ULTIMO. Si pregunta por vias exentas o vehiculos exentos, usa esa info tambien.`;
   }
-  if (context.municipios?.length) {
-    contextBlock += `\nMUNICIPIOS (datos Supabase verificados):\n${JSON.stringify(context.municipios, null, 0)}`;
+
+  if (context.clima) {
+    if (context.clima.siataData) contextBlock += `\n${context.clima.siataData}`;
+    if (context.clima.climaData) contextBlock += `\n${context.clima.climaData}`;
+    if (!context.clima.siataData && !context.clima.climaData) contextBlock += `\nCLIMA: Sin datos. Sugiere consultar siata.gov.co`;
   }
-  if (context.talleres?.length) {
-    contextBlock += `\nTALLERES APROBADOS (datos Supabase verificados):\n${JSON.stringify(context.talleres, null, 0)}`;
-  }
-  if (context.estadoVias) {
-    contextBlock += `\nESTADO DE VÍAS (INVIAS):\n${context.estadoVias}`;
-  }
-  if (context.tramitesCtx) {
-    contextBlock += `\nTRÁMITES DISPONIBLES:\n${JSON.stringify(context.tramitesCtx, null, 0)}`;
-  }
-  if (context.isGrua) {
-    contextBlock += `\nEl usuario pregunta por GRÚA. Dirigir a gruas.ridera.com.co o botón SOS en la app Ridera.`;
-  }
-  if (context.marcaMencionada) {
-    contextBlock += `\nMarca mencionada: ${context.marcaMencionada}`;
-  }
+  if (context.estadoVias) contextBlock += `\n${context.estadoVias}`;
+
   if (context.rutaDetail) {
     const rutas = Array.isArray(context.rutaDetail) ? context.rutaDetail : [context.rutaDetail];
     for (const r of rutas) {
-      contextBlock += `\nRUTA VERIFICADA (Supabase rita_rutas):\nDestino: ${r.destino} (${r.departamento})\nDistancia: ${r.km}km | Duración: ${r.duracion} | Dificultad: ${r.dificultad}\nSuperficie: ${r.superficie}\nMejor época: ${r.mejor_epoca}\nMoto recomendada: ${r.moto_recomendada}\nResumen: ${r.resumen}\nTips: ${r.tips}\nGasolina: ${r.gasolina_tip}\nHospedaje: ${r.hospedaje}\nGastronomía: ${r.gastronomia}\nLink: ${r.wp_link}`;
+      contextBlock += `\nRUTA: ${r.titulo} | ${r.km}km | ${r.duracion} | ${r.dificultad} | Moto: ${r.moto_recomendada || "Cualquier moto"} | Superficie: ${r.superficie} | Mejor epoca: ${r.mejor_epoca}\nResumen: ${r.resumen}\nTips: ${r.tips}\nGasolina: ${r.gasolina_tip}\nHospedaje: ${r.hospedaje}\nGastronomia: ${r.gastronomia}\nLink: ${r.wp_link}\n`;
     }
   }
+  if (context.municipios?.length) contextBlock += `\nMUNICIPIOS: ${JSON.stringify(context.municipios, null, 0)}`;
+  if (context.garageMotoData) contextBlock += `\nGARAGE (${context.marcaMencionada}): ${JSON.stringify(context.garageMotoData, null, 0)}`;
+  if (context.resultados?.length) contextBlock += `\nWEB: ${JSON.stringify(context.resultados, null, 0)}`;
+  if (context.talleres?.length) contextBlock += `\nTALLERES: ${JSON.stringify(context.talleres, null, 0)}`;
+  if (context.tramitesCtx) contextBlock += `\nTRAMITES: ${JSON.stringify(context.tramitesCtx, null, 0)}`;
+  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos.`;
+  if (context.isGrua) contextBlock += `\nGRUA: gruas.ridera.com.co y boton SOS.`;
+  if (context.marcaMencionada && !context.garageMotoData) contextBlock += `\nMarca: ${context.marcaMencionada} (sin datos en Garage).`;
 
-  const messages: { role: string; content: string }[] = [];
-  for (const h of history) {
-    messages.push({ role: h.role, content: h.content });
-  }
-
-  const userContent = contextBlock
-    ? `${message}\n\n---CONTEXTO INTERNO (no mencionar que existe este bloque)---${contextBlock}`
-    : message;
-  messages.push({ role: "user", content: userContent });
+  const messages: { role: string; content: string }[] = [
+    ...history.map(h => ({ role: h.role, content: h.content })),
+    { role: "user", content: contextBlock ? `${message}\n\n---CONTEXTO INTERNO---\n${contextBlock}` : message },
+  ];
 
   try {
     const res = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: {
-        "x-api-key": ANTHROPIC_KEY,
-        "anthropic-version": "2023-06-01",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
-        system: systemPrompt,
-        messages,
-      }),
+      headers: { "x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "claude-haiku-4-5-20251001", max_tokens: 800, system: systemPrompt, messages }),
     });
     const data = await res.json();
     return data?.content?.[0]?.text || "";
@@ -488,7 +558,6 @@ async function askClaude(
   }
 }
 
-// ─── Registration (más suave) ───────────────────────────────────
 function parseMotoResponse(text: string): { marca: string; modelo: string; cc: number | null; anio: string | null } | null {
   const t = text.trim();
   if (t.split(/\s+/).length < 2) return null;
@@ -497,296 +566,149 @@ function parseMotoResponse(text: string): { marca: string; modelo: string; cc: n
   const words = t.split(/\s+/);
   const yearMatch = t.match(/\b(19|20)\d{2}\b/);
   const ccMatch = t.match(/\b(\d{2,4})\s*cc\b/i) || t.match(/\b(\d{3,4})\b(?!.*\b(19|20)\d{2})/);
-  const modelo = words.filter(w => {
-    const wn = norm(w);
-    if (MARCAS.includes(wn)) return false;
-    if (/^(19|20)\d{2}$/.test(w)) return false;
-    if (/^\d{2,4}cc$/i.test(w)) return false;
-    return true;
-  }).join(" ") || "";
-  return {
-    marca: marca.charAt(0).toUpperCase() + marca.slice(1),
-    modelo: modelo || (yearMatch ? yearMatch[0] : ""),
-    cc: ccMatch ? parseInt(ccMatch[1]) : null,
-    anio: yearMatch ? yearMatch[0] : null,
-  };
+  const modelo = words.filter(w => { const wn = norm(w); return !MARCAS.some(m => m.split(" ")[0] === wn) && !/^(19|20)\d{2}$/.test(w) && !/^\d{2,4}cc$/i.test(w); }).join(" ") || "";
+  return { marca: marca.charAt(0).toUpperCase() + marca.slice(1), modelo, cc: ccMatch ? parseInt(ccMatch[1]) : null, anio: yearMatch ? yearMatch[0] : null };
 }
 
 async function handleRegistration(from: string, message: string, conv: { state: string; data: any }): Promise<string | null> {
   const msg2 = norm(message);
-
   if (conv.state === "waiting_name") {
-    if (msg2.length < 2 || msg2.length > 60) {
-      return "No pillé bien el nombre, ¿cómo te llamas? 😊";
-    }
+    if (msg2.length < 2 || msg2.length > 60) return "No pille bien el nombre, como te llamas?";
     const nombre = message.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
     await setConvState(from, "waiting_moto", { ...conv.data, nombre });
-    return `¡${nombre}! Buena, parce 🤙\n\n¿Qué moto tienes? Dime marca y modelo, algo como:\nHonda CB500X 2022\nYamaha MT-07 700cc\n\nSi no tienes moto aún, dime "no tengo" y listo.`;
+    return `${nombre}! Buena, parce. Que moto tienes? Dime marca y modelo:\nHonda CB500X 2022\nYamaha MT-07 700cc\n\nSi no tienes moto aun, dime "no tengo" y listo.`;
   }
-
   if (conv.state === "waiting_moto") {
     if (/no tengo|ninguna|no moto|sin moto|todavia no|aun no/.test(msg2)) {
       const nombre = conv.data.nombre || "Piloto";
-      const tel = from.replace(/^57/, "");
-      await supabase.from("riders").insert({
-        id: crypto.randomUUID(),
-        nombre,
-        telefono: tel,
-        created_at: new Date().toISOString(),
-      });
+      await supabase.from("riders").insert({ id: crypto.randomUUID(), nombre, telefono: from.replace(/^57/, ""), created_at: new Date().toISOString() });
       await clearConvState(from);
-      return `Listo ${nombre}, quedaste registrado 🏍️ Cuando tengas moto me cuentas y la agrego. ¿En qué te ayudo?`;
+      return `Listo ${nombre}, quedaste registrado! En que te ayudo?`;
     }
-
-    // Si el usuario claramente NO está respondiendo sobre su moto, salir del flujo
-    const looksLikeMotoAnswer = MARCAS.some(m => msg2.includes(m)) || /\d{3,4}\s*cc/i.test(msg2) || /\b(moto|tiene|tengo|manejo|ando en)\b/.test(msg2);
-    if (!looksLikeMotoAnswer && msg2.split(/\s+/).length > 3) {
-      // Registrar sin moto y dejar que Claude responda
-      const nombre = conv.data.nombre || "Piloto";
-      const tel = from.replace(/^57/, "");
-      await supabase.from("riders").insert({
-        id: crypto.randomUUID(),
-        nombre,
-        telefono: tel,
-        created_at: new Date().toISOString(),
-      });
+    const looksLike = MARCAS.some(m => msg2.includes(m.split(" ")[0])) || /\d{3,4}\s*cc/i.test(msg2);
+    if (!looksLike && msg2.split(/\s+/).length > 3) {
+      await supabase.from("riders").insert({ id: crypto.randomUUID(), nombre: conv.data.nombre || "Piloto", telefono: from.replace(/^57/, ""), created_at: new Date().toISOString() });
       await clearConvState(from);
-      return null; // null = pasar al flujo normal de Claude
+      return null;
     }
-
     const moto = parseMotoResponse(message);
-    if (!moto) {
-      return "No pillé la moto 🤔 Intenta así: Honda CB500X 2022\n\nO si quieres saltarte eso, dime \"no tengo\" y seguimos 🤙";
-    }
-
-    const nombre = conv.data.nombre || "Piloto";
-    const tel = from.replace(/^57/, "");
-    await supabase.from("riders").insert({
-      id: crypto.randomUUID(),
-      nombre,
-      telefono: tel,
-      moto_marca: moto.marca,
-      moto_modelo: moto.anio || moto.modelo,
-      moto_cc: moto.cc,
-      tipo_moto: moto.modelo,
-      created_at: new Date().toISOString(),
-    });
-    await clearConvState(from);
-
+    if (!moto) return "No pille la moto. Intenta: Honda CB500X 2022\n\nO dime no tengo y seguimos";
     const motoStr = [moto.marca, moto.modelo, moto.cc ? `${moto.cc}cc` : "", moto.anio].filter(Boolean).join(" ");
-    return `Quedaste registrado con tu ${motoStr} 🔥\n\nAhora te puedo dar info de mantenimiento para tu moto, alertas de SOAT, pico y placa y más. ¿Qué necesitas?`;
+    await supabase.from("riders").insert({ id: crypto.randomUUID(), nombre: conv.data.nombre || "Piloto", telefono: from.replace(/^57/, ""), moto_marca: moto.marca, moto_modelo: moto.anio || moto.modelo, moto_cc: moto.cc, tipo_moto: moto.modelo, created_at: new Date().toISOString() });
+    await clearConvState(from);
+    return `Quedaste registrado con tu ${motoStr}! Ahora te doy info de mantenimiento, alertas de SOAT y mas. Que necesitas?`;
   }
-
   if (conv.state === "waiting_city") {
     const tel = from.replace(/^57/, "");
-    await supabase.from("riders")
-      .update({ ciudad: message.trim() })
-      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`);
+    await supabase.from("riders").update({ ciudad: message.trim() }).or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`);
     await clearConvState(from);
-    return `Dale, guardé tu ciudad 👍 ¿En qué te ayudo?`;
+    return `Dale, guarde tu ciudad. En que te ayudo?`;
   }
-
   return null;
 }
 
-// ─── Audio: descargar media de WhatsApp ────────────────────────
 async function downloadWhatsAppMedia(mediaId: string): Promise<Uint8Array> {
-  const metaRes = await fetch(`${GRAPH}/${mediaId}`, {
-    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
-  });
+  const metaRes = await fetch(`${GRAPH}/${mediaId}`, { headers: { "Authorization": `Bearer ${WA_TOKEN}` } });
   const meta = await metaRes.json();
-  const audioRes = await fetch(meta.url, {
-    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
-  });
+  const audioRes = await fetch(meta.url, { headers: { "Authorization": `Bearer ${WA_TOKEN}` } });
   return new Uint8Array(await audioRes.arrayBuffer());
 }
-
-// ─── Audio: transcribir con Whisper ────────────────────────────
 async function transcribeAudio(audioBytes: Uint8Array, mimeType: string): Promise<string> {
   const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "ogg";
   const form = new FormData();
   form.append("file", new Blob([audioBytes], { type: mimeType }), `audio.${ext}`);
   form.append("model", "whisper-1");
   form.append("language", "es");
-
-  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", {
-    method: "POST",
-    headers: { "Authorization": `Bearer ${OPENAI_KEY}` },
-    body: form,
-  });
-  const data = await res.json();
-  return data?.text || "";
+  const res = await fetch("https://api.openai.com/v1/audio/transcriptions", { method: "POST", headers: { "Authorization": `Bearer ${OPENAI_KEY}` }, body: form });
+  return (await res.json())?.text || "";
 }
-
-// ─── Audio: texto a voz con OpenAI TTS ─────────────────────────
 async function textToSpeech(text: string): Promise<Uint8Array> {
   const res = await fetch("https://api.openai.com/v1/audio/speech", {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${OPENAI_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      model: "tts-1",
-      voice: "nova",
-      input: text,
-      response_format: "opus",
-    }),
+    headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ model: "tts-1", voice: "nova", input: text, response_format: "opus" }),
   });
   return new Uint8Array(await res.arrayBuffer());
 }
-
-// ─── Audio: subir media y enviar nota de voz por WhatsApp ──────
 async function sendWhatsAppAudio(to: string, audioBytes: Uint8Array): Promise<any> {
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
   form.append("type", "audio/ogg; codecs=opus");
   form.append("file", new Blob([audioBytes], { type: "audio/ogg; codecs=opus" }), "rita.ogg");
-
-  const uploadRes = await fetch(`${GRAPH}/${RITA_PHONE}/media`, {
+  const uploadRes = await fetch(`${GRAPH}/${RITA_PHONE}/media`, { method: "POST", headers: { "Authorization": `Bearer ${WA_TOKEN}` }, body: form });
+  const { id: mediaId } = await uploadRes.json();
+  if (!mediaId) throw new Error("Media upload failed");
+  const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
     method: "POST",
-    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
-    body: form,
+    headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to, type: "audio", audio: { id: mediaId } }),
   });
-  const uploadData = await uploadRes.json();
-  const mediaId = uploadData?.id;
-  if (!mediaId) throw new Error(`Media upload failed: ${JSON.stringify(uploadData)}`);
-
-  const sendRes = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
-    method: "POST",
-    headers: {
-      "Authorization": `Bearer ${WA_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "audio",
-      audio: { id: mediaId },
-    }),
-  });
-  return sendRes.json();
+  return res.json();
 }
-
-// ─── WhatsApp send ──────────────────────────────────────────────
 async function sendWhatsApp(to: string, text: string): Promise<any> {
   const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
     method: "POST",
-    headers: {
-      "Authorization": `Bearer ${WA_TOKEN}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: text },
-    }),
+    headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body: text } }),
   });
   return res.json();
 }
 
-// ─── Main handler ───────────────────────────────────────────────
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
-
   if (req.method === "GET") {
     const mode = url.searchParams.get("hub.mode");
     const token = url.searchParams.get("hub.verify_token");
     const challenge = url.searchParams.get("hub.challenge");
-    if (mode === "subscribe" && token === "ridera_rita_2026") {
-      return new Response(challenge, { status: 200 });
-    }
+    if (mode === "subscribe" && token === "ridera_rita_2026") return new Response(challenge, { status: 200 });
     return new Response("Forbidden", { status: 403 });
   }
-
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" } });
-  }
-
+  if (req.method === "OPTIONS") return new Response(null, { headers: { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers": "*" } });
   if (req.method === "POST") {
     try {
       const body = await req.json();
-      const entry = body?.entry?.[0];
-      const change = entry?.changes?.[0]?.value;
-      const msg = change?.messages?.[0];
-
-      if (!msg) {
-        return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
-      }
+      const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+      if (!msg) return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
 
       const from = msg.from || "";
-      const isAudio = msg.type === "audio";
       let message = "";
       let respondWithVoice = false;
 
-      if (isAudio && msg.audio) {
-        if (!OPENAI_KEY) {
-          await sendWhatsApp(from, "Parce, por ahora no puedo escuchar audios 🎧 ¿Me lo escribes?");
-          return new Response(JSON.stringify({ ok: true, skip: "no_openai_key" }), { status: 200, headers: { "Content-Type": "application/json" } });
-        }
-        try {
-          const audioBytes = await downloadWhatsAppMedia(msg.audio.id);
-          const mimeType = msg.audio.mime_type || "audio/ogg";
-          message = await transcribeAudio(audioBytes, mimeType);
-          respondWithVoice = true;
-        } catch (e) {
-          console.error("Transcription error:", e);
-          await sendWhatsApp(from, "No pude escuchar ese audio 😅 ¿Me lo mandas de nuevo o me escribes?");
-          return new Response(JSON.stringify({ ok: true, error: "transcription_failed" }), { status: 200, headers: { "Content-Type": "application/json" } });
-        }
-        if (!message.trim()) {
-          await sendWhatsApp(from, "Uy, no pillé qué dijiste en el audio 🤔 ¿Me lo repites?");
-          return new Response(JSON.stringify({ ok: true, skip: "empty_transcription" }), { status: 200, headers: { "Content-Type": "application/json" } });
-        }
+      if (msg.type === "audio" && msg.audio) {
+        if (!OPENAI_KEY) { await sendWhatsApp(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+        try { message = await transcribeAudio(await downloadWhatsAppMedia(msg.audio.id), msg.audio.mime_type || "audio/ogg"); respondWithVoice = true; }
+        catch { await sendWhatsApp(from, "No pude escuchar ese audio. Me lo repites?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+        if (!message.trim()) { await sendWhatsApp(from, "Uy, no pille que dijiste. Me lo repites?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
       } else if (msg.text?.body) {
         message = msg.text.body;
       } else {
         return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
       }
 
-      // Guardar mensaje del usuario
       await saveMessage(from, "user", message);
 
-      // ── Check registro en curso ──
       const conv = await getConvState(from);
       if (conv.state !== "idle") {
         const regReply = await handleRegistration(from, message, conv);
         if (regReply) {
           await saveMessage(from, "assistant", regReply);
-          if (respondWithVoice && OPENAI_KEY) {
-            try {
-              const speechBytes = await textToSpeech(regReply);
-              await sendWhatsAppAudio(from, speechBytes);
-            } catch { await sendWhatsApp(from, regReply); }
-          } else {
-            await sendWhatsApp(from, regReply);
-          }
+          respondWithVoice && OPENAI_KEY ? (async () => { try { await sendWhatsAppAudio(from, await textToSpeech(regReply)); } catch { await sendWhatsApp(from, regReply); } })() : await sendWhatsApp(from, regReply);
           return new Response(JSON.stringify({ ok: true, flow: "registration" }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
       }
 
-      // ── Detectar intención de registro voluntario ──
       const msg2 = norm(message);
       if (/quiero registrarme|registrarme|registrame|inscribirme/.test(msg2)) {
         const riderCheck = await getRiderContext(from);
         if (!riderCheck?.encontrado) {
           await setConvState(from, "waiting_name", {});
-          const regStartReply = "¡Dale! Vamos a registrarte para darte info personalizada de tu moto 🏍️ ¿Cómo te llamas?";
-          await saveMessage(from, "assistant", regStartReply);
-          if (respondWithVoice && OPENAI_KEY) {
-            try {
-              const speechBytes = await textToSpeech(regStartReply);
-              await sendWhatsAppAudio(from, speechBytes);
-            } catch { await sendWhatsApp(from, regStartReply); }
-          } else {
-            await sendWhatsApp(from, regStartReply);
-          }
+          const r = "Dale! Vamos a registrarte para darte info personalizada de tu moto. Como te llamas?";
+          await saveMessage(from, "assistant", r);
+          await sendWhatsApp(from, r);
           return new Response(JSON.stringify({ ok: true, flow: "start_registration" }), { status: 200, headers: { "Content-Type": "application/json" } });
         }
       }
 
-      // ── Obtener contexto en paralelo ──
       const [context, riderCtx, history, rutaDetail] = await Promise.all([
         fetchContext(message, from),
         getRiderContext(from),
@@ -794,46 +716,25 @@ Deno.serve(async (req: Request) => {
         fetchRutaDetail(message),
       ]);
 
-      // ── Todo pasa por Claude con historial ──
       if (rutaDetail) context.rutaDetail = rutaDetail;
       let reply = await askClaude(message, history, context, riderCtx);
+      if (!reply) reply = "Uy parce, algo se cruzo. Me lo repites?";
+      if (reply.length > 1600) reply = reply.slice(0, 1580) + "...\n\nMas en ridera.com.co";
 
-      if (!reply) {
-        reply = "Uy parce, algo se cruzó y no pude procesar eso. ¿Me lo repites? 🙏";
-      }
-
-      if (reply.length > 1600) {
-        reply = reply.slice(0, 1580) + "...\n\nMás en ridera.com.co";
-      }
-
-      // Guardar respuesta de Rita
       await saveMessage(from, "assistant", reply);
 
-      let waResult;
       if (respondWithVoice && OPENAI_KEY) {
-        try {
-          const speechBytes = await textToSpeech(reply);
-          waResult = await sendWhatsAppAudio(from, speechBytes);
-        } catch (e) {
-          console.error("TTS/audio send error:", e);
-          waResult = await sendWhatsApp(from, reply);
-        }
+        try { await sendWhatsAppAudio(from, await textToSpeech(reply)); }
+        catch { await sendWhatsApp(from, reply); }
       } else {
-        waResult = await sendWhatsApp(from, reply);
+        await sendWhatsApp(from, reply);
       }
 
-      return new Response(JSON.stringify({ ok: true, wa: waResult }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
     } catch (e) {
       console.error("Rita error:", e);
-      return new Response(JSON.stringify({ ok: false, error: String(e) }), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      });
+      return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
   }
-
   return new Response("Method not allowed", { status: 405 });
 });
