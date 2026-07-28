@@ -75,7 +75,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
 
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
         <script>
-        (function(){
+        document.addEventListener('DOMContentLoaded', function(){
             var map, markers=[], routes=[];
 
             var COORDS={
@@ -103,6 +103,17 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 'cauca':[2.44,-76.61,8],'amazonas':[-0.20,-69.95,8]
             };
 
+            // 1. INICIALIZAR MAPA PRIMERO
+            map = L.map('rmMap',{center:[6.0,-74.8],zoom:6,zoomControl:false});
+            L.control.zoom({position:'topright'}).addTo(map);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+                attribution:'© OpenStreetMap',maxZoom:18
+            }).addTo(map);
+
+            var icon = L.divIcon({className:'',
+                html:'<div style="width:16px;height:16px;background:#E85D20;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px rgba(232,93,32,.7)"></div>',
+                iconSize:[16,16],iconAnchor:[8,8]});
+
             function dest(title){
                 var m=title.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
                 if(m) return m[1].trim();
@@ -110,7 +121,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 return p.length>1?p[p.length-1].trim():title;
             }
 
-            function coord(d){
+            function findCoord(d){
                 var n=d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
                 var keys=Object.keys(COORDS).sort(function(a,b){return b.length-a.length;});
                 for(var i=0;i<keys.length;i++){if(n.indexOf(keys[i])>=0)return COORDS[keys[i]];}
@@ -122,7 +133,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 t=t.replace(/&amp;/g,'&').replace(/&#8211;/g,'–').replace(/&#8212;/g,'—');
                 var ex=(r.excerpt&&r.excerpt.rendered)||'';
                 ex=ex.replace(/<[^>]+>/g,'').trim();
-                var d=dest(t), c=coord(d)||[6.24,-75.58];
+                var d=dest(t), c=findCoord(d)||[6.24,-75.58];
                 var km=ex.match(/(\d+(?:[.,]\d+)?)\s*km/i);
                 var df=ex.match(/(alta|media|baja)/i);
                 return{id:r.id,title:t,link:r.link||'#',excerpt:ex.slice(0,180),
@@ -131,33 +142,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                     lat:c[0],lon:c[1]};
             }
 
-            function load(page,acc){
-                page=page||1;acc=acc||[];
-                var url='/wp-json/wp/v2/rutas?per_page=100&page='+page;
-                fetch(url).then(function(r){
-                    if(!r.ok)throw new Error(r.status);
-                    return r.json();
-                }).then(function(d){
-                    if(!Array.isArray(d)||d.length===0){
-                        routes=acc.map(parse);
-                        build();
-                        return;
-                    }
-                    acc=acc.concat(d);
-                    load(page+1,acc);
-                }).catch(function(e){
-                    console.error('Ridera API error:',e);
-                    document.getElementById('rList').innerHTML='<div class="ridera-msg">Error cargando rutas ('+e.message+')</div>';
-                });
-            }
-
-            function build(){
-                map=L.map('rmMap',{center:[6.0,-74.8],zoom:6,zoomControl:false});
-                L.control.zoom({position:'topright'}).addTo(map);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-                    attribution:'© OpenStreetMap',maxZoom:18
-                }).addTo(map);
-
+            function renderPanel(){
                 var deps={},tkm=0;
                 routes.forEach(function(r){deps[r.dep]=(deps[r.dep]||0)+1;if(r.km)tkm+=r.km;});
                 document.getElementById('sRutas').textContent=routes.length;
@@ -182,10 +167,6 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                     h+='</div></div>';
                 });
                 document.getElementById('rList').innerHTML=h;
-
-                var icon=L.divIcon({className:'',
-                    html:'<div style="width:16px;height:16px;background:#E85D20;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px rgba(232,93,32,.7)"></div>',
-                    iconSize:[16,16],iconAnchor:[8,8]});
 
                 document.querySelectorAll('.ridera-dep-btn').forEach(function(btn){
                     btn.addEventListener('click',function(){
@@ -222,11 +203,48 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 });
             }
 
-            load();
-        })();
+            // 2. CARGAR RUTAS - Intentar múltiples endpoints
+            var endpoints = [
+                '/wp-json/wp/v2/rutas?per_page=100',
+                '/wp-json/wp/v2/ruta?per_page=100',
+                '/wp-json/wp/v2/posts?per_page=100'
+            ];
+            var tried = 0;
+
+            function tryEndpoint(){
+                if(tried >= endpoints.length){
+                    document.getElementById('rList').innerHTML='<div class="ridera-msg">No se encontraron rutas. Verifica el API REST de WordPress.</div>';
+                    return;
+                }
+                var url = endpoints[tried];
+                var xhr = new XMLHttpRequest();
+                xhr.open('GET', url);
+                xhr.onload = function(){
+                    if(xhr.status === 200){
+                        try{
+                            var data = JSON.parse(xhr.responseText);
+                            if(Array.isArray(data) && data.length > 0){
+                                routes = data.map(parse);
+                                renderPanel();
+                                return;
+                            }
+                        }catch(e){}
+                    }
+                    tried++;
+                    tryEndpoint();
+                };
+                xhr.onerror = function(){
+                    tried++;
+                    tryEndpoint();
+                };
+                xhr.send();
+            }
+
+            tryEndpoint();
+        });
         </script>
         <?php
         return ob_get_clean();
     }
-    add_shortcode('ridera_mapa_interactivo','ridera_mapa_interactivo_render');
+    add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_interactivo_render');
 }
