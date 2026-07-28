@@ -1,74 +1,130 @@
 <?php
-if (!function_exists('ridera_mapa_interactivo_render')) {
-    function ridera_mapa_interactivo_render() {
+if (!function_exists('ridera_mapa_v3_render')) {
+    function ridera_mapa_v3_render() {
+        // Cargar rutas directamente desde WordPress (sin REST API)
+        $args = array(
+            'post_type'      => 'rutas',
+            'posts_per_page' => -1,
+            'post_status'    => 'publish',
+        );
+        $query = new WP_Query($args);
+
+        // Si 'rutas' no existe, intentar con 'ruta'
+        if (!$query->have_posts()) {
+            $args['post_type'] = 'ruta';
+            $query = new WP_Query($args);
+        }
+
+        // Si tampoco, intentar con posts normales
+        if (!$query->have_posts()) {
+            $args['post_type'] = 'post';
+            $query = new WP_Query($args);
+        }
+
+        $rutas_data = array();
+        if ($query->have_posts()) {
+            while ($query->have_posts()) {
+                $query->the_post();
+                $rutas_data[] = array(
+                    'id'      => get_the_ID(),
+                    'title'   => html_entity_decode(get_the_title(), ENT_QUOTES, 'UTF-8'),
+                    'link'    => get_permalink(),
+                    'excerpt' => wp_strip_all_tags(get_the_excerpt()),
+                );
+            }
+            wp_reset_postdata();
+        }
+
+        $rutas_json = wp_json_encode($rutas_data, JSON_UNESCAPED_UNICODE);
+
         ob_start();
         ?>
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
         <style>
-        .ridera-app{width:100%;height:88vh;min-height:600px;display:flex;font-family:system-ui,-apple-system,sans-serif;background:#111;color:#eee;position:relative;overflow:hidden}
-        .ridera-map{flex:1;position:relative;z-index:1}
-        .ridera-panel{width:340px;background:#1a1a1a;border-left:1px solid #333;display:flex;flex-direction:column;z-index:2;overflow:hidden}
-        .ridera-panel-head{padding:20px;background:#222;border-bottom:1px solid #333}
-        .ridera-panel-head h2{margin:0 0 4px;font-size:22px;font-weight:800;color:#fff}
-        .ridera-panel-head h2 span{color:#E85D20}
-        .ridera-panel-head p{margin:0;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:2px}
-        .ridera-stats{display:flex;gap:8px;margin-top:14px}
-        .ridera-stat{flex:1;background:#2a2a2a;border:1px solid #3a3a3a;border-radius:6px;padding:8px;text-align:center}
-        .ridera-stat b{display:block;font-size:18px;color:#E85D20}
-        .ridera-stat small{font-size:9px;color:#777;text-transform:uppercase;letter-spacing:1px}
-        .ridera-list{flex:1;overflow-y:auto}
-        .ridera-list::-webkit-scrollbar{width:4px}
-        .ridera-list::-webkit-scrollbar-thumb{background:#444;border-radius:2px}
-        .ridera-dep{border-bottom:1px solid #2a2a2a}
-        .ridera-dep-btn{width:100%;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:none;border:none;cursor:pointer;font-family:inherit;color:#ccc;text-align:left}
-        .ridera-dep-btn:hover{background:#222}
-        .ridera-dep-btn.act{background:rgba(232,93,32,.12);color:#fff}
-        .ridera-dep-left{display:flex;align-items:center;gap:8px}
-        .ridera-dep-dot{width:8px;height:8px;border-radius:50%;background:#E85D20}
-        .ridera-dep-name{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
-        .ridera-dep-cnt{font-size:10px;background:#333;color:#E85D20;padding:2px 8px;border-radius:10px;font-weight:700}
-        .ridera-dep-arr{font-size:11px;color:#555;transition:transform .2s}
-        .ridera-dep-btn.act .ridera-dep-arr{transform:rotate(90deg);color:#E85D20}
-        .ridera-rutas{display:none;background:#151515}
-        .ridera-rutas.open{display:block}
-        .ridera-ruta{padding:10px 16px 10px 34px;border-left:2px solid transparent;cursor:pointer}
-        .ridera-ruta:hover{background:#1e1e1e;border-left-color:rgba(232,93,32,.4)}
-        .ridera-ruta.act{background:rgba(232,93,32,.1);border-left-color:#E85D20}
-        .ridera-ruta-name{font-size:12px;font-weight:600;color:#ddd;margin-bottom:4px}
-        .ridera-ruta-name a{color:inherit;text-decoration:none}
-        .ridera-ruta-name a:hover{color:#E85D20}
-        .ridera-ruta-tags{display:flex;gap:4px}
-        .ridera-tag{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:600}
-        .ridera-tag-km{background:rgba(232,93,32,.15);color:#e8975a}
-        .ridera-tag-alta{background:rgba(239,68,68,.15);color:#f87171}
-        .ridera-tag-media{background:rgba(251,146,60,.15);color:#fb923c}
-        .ridera-tag-baja{background:rgba(34,197,94,.15);color:#86efac}
-        .ridera-popup .leaflet-popup-content-wrapper{background:#222;border:1px solid #444;border-radius:8px;color:#eee;font-family:system-ui,sans-serif}
-        .ridera-popup .leaflet-popup-content{margin:12px;font-size:13px}
-        .ridera-popup .leaflet-popup-tip{background:#222;border:1px solid #444}
-        .ridera-popup a.leaflet-popup-close-button{color:#888}
-        .ridera-msg{padding:16px;font-size:13px;color:#888;text-align:center}
+        .rid{width:100%;height:88vh;min-height:600px;display:flex;font-family:system-ui,-apple-system,sans-serif;background:#0f0f0f;color:#eee;position:relative;overflow:hidden}
+        .rid-map{flex:1;position:relative;z-index:1}
+        .rid-side{width:360px;background:#161616;border-left:1px solid #2a2a2a;display:flex;flex-direction:column;z-index:2;overflow:hidden}
+
+        /* Header */
+        .rid-head{padding:20px;background:linear-gradient(180deg,#1e1e1e,#161616);border-bottom:1px solid #2a2a2a;flex-shrink:0}
+        .rid-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+        .rid-logo h2{margin:0;font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px}
+        .rid-logo h2 i{color:#E85D20;font-style:normal}
+        .rid-logo span{font-size:10px;color:#666;text-transform:uppercase;letter-spacing:2px;border:1px solid #333;padding:2px 8px;border-radius:4px}
+        .rid-counts{display:flex;gap:8px}
+        .rid-count{flex:1;background:#1e1e1e;border:1px solid #2a2a2a;border-radius:8px;padding:10px 8px;text-align:center}
+        .rid-count b{display:block;font-size:20px;color:#E85D20;font-weight:800}
+        .rid-count small{font-size:9px;color:#555;text-transform:uppercase;letter-spacing:1px}
+
+        /* Search */
+        .rid-search{padding:12px 20px;border-bottom:1px solid #2a2a2a;flex-shrink:0}
+        .rid-search input{width:100%;background:#1e1e1e;border:1px solid #333;border-radius:8px;padding:10px 14px;color:#ddd;font-size:13px;font-family:inherit;outline:none}
+        .rid-search input:focus{border-color:#E85D20}
+        .rid-search input::placeholder{color:#555}
+
+        /* Route list */
+        .rid-routes{flex:1;overflow-y:auto}
+        .rid-routes::-webkit-scrollbar{width:4px}
+        .rid-routes::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+        .rid-item{display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid #1e1e1e;cursor:pointer;transition:background .15s}
+        .rid-item:hover{background:#1e1e1e}
+        .rid-item.act{background:rgba(232,93,32,.1);border-left:3px solid #E85D20;padding-left:17px}
+        .rid-dot{width:10px;height:10px;border-radius:50%;background:#E85D20;flex-shrink:0;box-shadow:0 0 6px rgba(232,93,32,.5)}
+        .rid-info{flex:1;min-width:0}
+        .rid-name{font-size:13px;font-weight:700;color:#ddd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+        .rid-meta{display:flex;gap:6px;margin-top:4px}
+        .rid-badge{font-size:9px;padding:2px 7px;border-radius:3px;font-weight:600}
+        .rid-badge-km{background:rgba(232,93,32,.12);color:#e8975a}
+        .rid-badge-alta{background:rgba(239,68,68,.12);color:#f87171}
+        .rid-badge-media{background:rgba(251,146,60,.12);color:#fb923c}
+        .rid-badge-baja{background:rgba(34,197,94,.12);color:#86efac}
+        .rid-go{font-size:10px;color:#555;flex-shrink:0;padding:4px 8px;border:1px solid #333;border-radius:4px;transition:all .15s}
+        .rid-item:hover .rid-go{color:#E85D20;border-color:#E85D20}
+        .rid-msg{padding:20px;font-size:13px;color:#555;text-align:center}
+        .rid-empty{padding:40px 20px;text-align:center;color:#444;font-size:13px}
+
+        /* Popup */
+        .rid-popup .leaflet-popup-content-wrapper{background:#1e1e1e;border:1px solid #3a3a3a;border-radius:10px;color:#eee;font-family:system-ui,sans-serif;box-shadow:0 8px 30px rgba(0,0,0,.6)}
+        .rid-popup .leaflet-popup-content{margin:14px 16px;font-size:13px;line-height:1.5}
+        .rid-popup .leaflet-popup-tip{background:#1e1e1e;border:1px solid #3a3a3a}
+        .rid-popup a.leaflet-popup-close-button{color:#666;font-size:18px}
+        .rid-popup-title{font-size:15px;font-weight:800;color:#fff;margin-bottom:6px}
+        .rid-popup-dest{font-size:12px;color:#999;margin-bottom:8px}
+        .rid-popup-tags{display:flex;gap:4px;margin-bottom:10px}
+        .rid-popup-link{display:inline-block;background:#E85D20;color:#fff;padding:8px 16px;border-radius:6px;text-decoration:none;font-size:12px;font-weight:700;transition:background .15s}
+        .rid-popup-link:hover{background:#f06a2c}
+        .rid-popup-hint{font-size:10px;color:#555;margin-top:8px}
+
+        /* Tooltip on markers */
+        .rid-tooltip{background:#1e1e1e !important;border:1px solid #3a3a3a !important;color:#ddd !important;font-family:system-ui,sans-serif !important;font-size:12px !important;font-weight:600 !important;padding:4px 10px !important;border-radius:6px !important;box-shadow:0 4px 12px rgba(0,0,0,.4) !important}
+        .rid-tooltip::before{border-top-color:#3a3a3a !important}
+
         @media(max-width:900px){
-            .ridera-app{flex-direction:column;height:100vh}
-            .ridera-panel{width:100%;max-height:45vh;border-left:none;border-top:1px solid #333;order:2}
-            .ridera-map{order:1;min-height:55vh}
+            .rid{flex-direction:column;height:100vh}
+            .rid-side{width:100%;max-height:45vh;border-left:none;border-top:1px solid #2a2a2a;order:2}
+            .rid-map{order:1;min-height:55vh}
         }
         </style>
 
-        <div class="ridera-app">
-            <div id="rmMap" class="ridera-map"></div>
-            <div class="ridera-panel">
-                <div class="ridera-panel-head">
-                    <h2>RI<span>DE</span>RA</h2>
-                    <p>Mapa de Rutas</p>
-                    <div class="ridera-stats">
-                        <div class="ridera-stat"><b id="sRutas">-</b><small>Rutas</small></div>
-                        <div class="ridera-stat"><b id="sDeps">-</b><small>Deptos</small></div>
-                        <div class="ridera-stat"><b id="sKm">-</b><small>KM</small></div>
+        <div class="rid">
+            <div id="ridMap" class="rid-map"></div>
+            <div class="rid-side">
+                <div class="rid-head">
+                    <div class="rid-logo">
+                        <h2>R<i>IDE</i>RA</h2>
+                        <span>MAPA</span>
+                    </div>
+                    <div class="rid-counts">
+                        <div class="rid-count"><b id="cRutas">0</b><small>Rutas</small></div>
+                        <div class="rid-count"><b id="cKm">—</b><small>KM</small></div>
+                        <div class="rid-count"><b id="cPuntos">0</b><small>Puntos</small></div>
                     </div>
                 </div>
-                <div class="ridera-list" id="rList">
-                    <div class="ridera-msg">Cargando rutas...</div>
+                <div class="rid-search">
+                    <input type="text" id="ridSearch" placeholder="Buscar ruta o destino...">
+                </div>
+                <div class="rid-routes" id="ridList">
+                    <div class="rid-msg">Cargando rutas...</div>
                 </div>
             </div>
         </div>
@@ -76,7 +132,6 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
         <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function(){
-            var map, markers=[], routes=[];
 
             var COORDS={
                 'abriaquí':[5.78,-75.90],'ayapel':[8.60,-75.63],'guatapé':[6.23,-75.16],
@@ -93,158 +148,172 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 'santa fe de antioquia':[6.56,-75.83],'cañasgordas':[6.75,-76.02],
                 'andes':[5.66,-75.88],'urrao':[6.32,-76.13],'támesis':[5.66,-75.71],
                 'fredonia':[5.93,-75.67],'san carlos':[6.19,-74.99],'san rafael':[6.30,-74.99],
-                'puerto triunfo':[5.88,-74.65],'cisneros':[6.53,-75.09],'cocorná':[6.05,-75.19]
+                'puerto triunfo':[5.88,-74.65],'cisneros':[6.53,-75.09],'cocorná':[6.05,-75.19],
+                'caramanta':[5.55,-75.64],'betania':[5.74,-75.97],'betulia':[6.11,-75.98],
+                'liborina':[6.67,-75.80],'olaya':[6.61,-75.79],'sopetrán':[6.50,-75.74],
+                'san jerónimo':[6.44,-75.73],'ebéjico':[6.33,-75.77],'heliconia':[6.21,-75.73],
+                'titiribí':[6.06,-75.80],'venecia':[5.96,-75.73],'angelópolis':[6.12,-75.71],
+                'amagá':[6.04,-75.70],'concordia':[6.05,-75.90],'salgar':[5.96,-75.98],
+                'ciudad bolívar':[5.85,-76.02],'hispania':[5.80,-75.90],
+                'pueblo rico':[5.24,-76.04],'valparaíso':[5.62,-75.62],'nariño':[5.61,-75.18],
+                'argelia':[5.74,-75.14],'la pintada':[5.74,-75.60],'montebello':[5.95,-75.52],
+                'el retiro':[6.06,-75.50],'la unión':[5.97,-75.36],'el carmen de viboral':[6.08,-75.34],
+                'marinilla':[6.18,-75.34],'el peñol':[6.22,-75.25],'granada':[6.14,-75.18],
+                'alejandría':[6.38,-75.14],'santo domingo':[6.47,-75.17],'yolombó':[6.60,-75.01]
             };
 
-            var DEPCOORDS={
-                'antioquia':[6.25,-75.56,8],'risaralda':[4.81,-75.69,9],'quindío':[4.53,-75.73,9],
-                'caldas':[5.07,-75.52,9],'bolívar':[10.39,-75.51,8],'magdalena':[11.24,-74.22,8],
-                'cundinamarca':[4.71,-74.07,9],'valle del cauca':[3.45,-76.53,8],
-                'cauca':[2.44,-76.61,8],'amazonas':[-0.20,-69.95,8]
-            };
-
-            // 1. INICIALIZAR MAPA PRIMERO
-            map = L.map('rmMap',{center:[6.0,-74.8],zoom:6,zoomControl:false});
+            // Mapa
+            var map = L.map('ridMap',{center:[6.25,-75.5],zoom:7,zoomControl:false});
             L.control.zoom({position:'topright'}).addTo(map);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
                 attribution:'© OpenStreetMap',maxZoom:18
             }).addTo(map);
 
             var icon = L.divIcon({className:'',
-                html:'<div style="width:16px;height:16px;background:#E85D20;border-radius:50%;border:2px solid #fff;box-shadow:0 0 8px rgba(232,93,32,.7)"></div>',
-                iconSize:[16,16],iconAnchor:[8,8]});
+                html:'<div style="width:14px;height:14px;background:#E85D20;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 10px rgba(232,93,32,.6),0 2px 6px rgba(0,0,0,.4);cursor:pointer"></div>',
+                iconSize:[14,14],iconAnchor:[7,7]});
 
-            function dest(title){
-                var m=title.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
+            var iconActive = L.divIcon({className:'',
+                html:'<div style="width:20px;height:20px;background:#ff6b35;border-radius:50%;border:3px solid #fff;box-shadow:0 0 16px rgba(232,93,32,.8),0 3px 10px rgba(0,0,0,.5);cursor:pointer"></div>',
+                iconSize:[20,20],iconAnchor:[10,10]});
+
+            // Parsear rutas desde PHP
+            var rawData = <?php echo $rutas_json; ?>;
+            var routes = [], markers = [], activeMarker = null;
+
+            function extractDest(title){
+                var m = title.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
                 if(m) return m[1].trim();
-                var p=title.split(/[-–—]/);
-                return p.length>1?p[p.length-1].trim():title;
+                var p = title.split(/[-–—]/);
+                return p.length > 1 ? p[p.length-1].trim() : title;
             }
 
             function findCoord(d){
-                var n=d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
-                var keys=Object.keys(COORDS).sort(function(a,b){return b.length-a.length;});
-                for(var i=0;i<keys.length;i++){if(n.indexOf(keys[i])>=0)return COORDS[keys[i]];}
+                var n = d.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+                var keys = Object.keys(COORDS).sort(function(a,b){return b.length - a.length;});
+                for(var i=0; i<keys.length; i++){
+                    var k = keys[i].normalize('NFD').replace(/[̀-ͯ]/g,'');
+                    if(n.indexOf(k) >= 0) return COORDS[keys[i]];
+                }
                 return null;
             }
 
-            function parse(r){
-                var t=(r.title&&r.title.rendered)||'';
-                t=t.replace(/&amp;/g,'&').replace(/&#8211;/g,'–').replace(/&#8212;/g,'—');
-                var ex=(r.excerpt&&r.excerpt.rendered)||'';
-                ex=ex.replace(/<[^>]+>/g,'').trim();
-                var d=dest(t), c=findCoord(d)||[6.24,-75.58];
-                var km=ex.match(/(\d+(?:[.,]\d+)?)\s*km/i);
-                var df=ex.match(/(alta|media|baja)/i);
-                return{id:r.id,title:t,link:r.link||'#',excerpt:ex.slice(0,180),
-                    destino:d,km:km?parseFloat(km[1].replace(',','.')):null,
-                    diff:df?df[1].toLowerCase():'',dep:'Antioquia',
-                    lat:c[0],lon:c[1]};
-            }
+            // Procesar datos
+            var totalKm = 0;
+            rawData.forEach(function(r){
+                var d = extractDest(r.title);
+                var c = findCoord(d);
+                if(!c) return; // Saltar rutas sin coordenadas conocidas
+                var kmMatch = r.excerpt.match(/(\d+(?:[.,]\d+)?)\s*km/i);
+                var km = kmMatch ? parseFloat(kmMatch[1].replace(',','.')) : null;
+                var diffMatch = r.excerpt.match(/(alta|media|baja)/i);
+                var diff = diffMatch ? diffMatch[1].toLowerCase() : '';
+                if(km) totalKm += km;
+                routes.push({id:r.id, title:r.title, link:r.link, destino:d, km:km, diff:diff, lat:c[0], lon:c[1], excerpt:r.excerpt.slice(0,150)});
+            });
 
-            function renderPanel(){
-                var deps={},tkm=0;
-                routes.forEach(function(r){deps[r.dep]=(deps[r.dep]||0)+1;if(r.km)tkm+=r.km;});
-                document.getElementById('sRutas').textContent=routes.length;
-                document.getElementById('sDeps').textContent=Object.keys(deps).length;
-                document.getElementById('sKm').textContent=tkm>0?'+'+Math.round(tkm):'—';
+            // Stats
+            document.getElementById('cRutas').textContent = routes.length;
+            document.getElementById('cKm').textContent = totalKm > 0 ? '+'+Math.round(totalKm) : '—';
+            document.getElementById('cPuntos').textContent = routes.length;
 
-                var h='';
-                Object.keys(deps).sort().forEach(function(dep){
-                    var rs=routes.filter(function(r){return r.dep===dep;});
-                    h+='<div class="ridera-dep"><button class="ridera-dep-btn" data-d="'+dep+'">';
-                    h+='<span class="ridera-dep-left"><span class="ridera-dep-dot"></span><span class="ridera-dep-name">'+dep+'</span></span>';
-                    h+='<span style="display:flex;align-items:center;gap:6px"><span class="ridera-dep-cnt">'+rs.length+'</span><span class="ridera-dep-arr">▸</span></span>';
-                    h+='</button><div class="ridera-rutas">';
-                    rs.forEach(function(r){
-                        h+='<div class="ridera-ruta" data-id="'+r.id+'" data-lat="'+r.lat+'" data-lon="'+r.lon+'">';
-                        h+='<div class="ridera-ruta-name"><a href="'+r.link+'" target="_blank">'+r.title+'</a></div>';
-                        h+='<div class="ridera-ruta-tags">';
-                        if(r.km)h+='<span class="ridera-tag ridera-tag-km">~'+r.km+' km</span>';
-                        if(r.diff)h+='<span class="ridera-tag ridera-tag-'+r.diff+'">'+r.diff+'</span>';
-                        h+='</div></div>';
-                    });
-                    h+='</div></div>';
-                });
-                document.getElementById('rList').innerHTML=h;
+            // Crear TODOS los marcadores en el mapa
+            routes.forEach(function(r, idx){
+                var m = L.marker([r.lat, r.lon], {icon: icon}).addTo(map);
 
-                document.querySelectorAll('.ridera-dep-btn').forEach(function(btn){
-                    btn.addEventListener('click',function(){
-                        var d=btn.dataset.d,rt=btn.nextElementSibling,open=rt.classList.contains('open');
-                        document.querySelectorAll('.ridera-rutas').forEach(function(x){x.classList.remove('open');});
-                        document.querySelectorAll('.ridera-dep-btn').forEach(function(x){x.classList.remove('act');});
-                        markers.forEach(function(m){map.removeLayer(m);});markers=[];
-                        if(!open){
-                            rt.classList.add('open');btn.classList.add('act');
-                            var rs=routes.filter(function(r){return r.dep===d;});
-                            rs.forEach(function(r){
-                                var m=L.marker([r.lat,r.lon],{icon:icon}).addTo(map);
-                                m.bindPopup('<div style="min-width:180px"><b style="color:#E85D20">'+r.title+'</b><br><span style="font-size:12px;color:#aaa">'+r.destino+'</span>'+(r.km?'<br><span style="font-size:12px">~'+r.km+' km</span>':'')+'<br><a href="'+r.link+'" target="_blank" style="color:#E85D20;font-weight:700;font-size:12px">Ver ruta →</a></div>',{className:'ridera-popup'});
-                                m._rid=r.id;markers.push(m);
-                            });
-                            var dc=DEPCOORDS[d.toLowerCase()];
-                            if(dc)map.setView([dc[0],dc[1]],dc[2],{animate:true});
-                            else if(markers.length)map.fitBounds(L.featureGroup(markers).getBounds().pad(.2));
-                        }else{
-                            map.setView([6.0,-74.8],6,{animate:true});
-                        }
-                    });
+                // Tooltip al pasar el mouse
+                m.bindTooltip(r.destino, {className:'rid-tooltip', direction:'top', offset:[0,-10]});
+
+                // Popup
+                var popup = '<div style="min-width:200px">' +
+                    '<div class="rid-popup-title">' + r.title + '</div>' +
+                    '<div class="rid-popup-dest">📍 ' + r.destino + '</div>' +
+                    '<div class="rid-popup-tags">' +
+                    (r.km ? '<span class="rid-badge rid-badge-km">~'+r.km+' km</span>' : '') +
+                    (r.diff ? '<span class="rid-badge rid-badge-'+r.diff+'">'+r.diff+'</span>' : '') +
+                    '</div>' +
+                    '<a href="'+r.link+'" class="rid-popup-link" target="_blank">Ver ruta completa →</a>' +
+                    '<div class="rid-popup-hint">Doble clic para ir a la ruta</div></div>';
+                m.bindPopup(popup, {className:'rid-popup', maxWidth:280});
+
+                // Doble clic → ir a la ruta
+                m.on('dblclick', function(e){
+                    L.DomEvent.stopPropagation(e);
+                    window.open(r.link, '_blank');
                 });
 
-                document.querySelectorAll('.ridera-ruta').forEach(function(c){
-                    c.addEventListener('click',function(e){
-                        if(e.target.tagName==='A')return;
-                        document.querySelectorAll('.ridera-ruta').forEach(function(x){x.classList.remove('act');});
-                        c.classList.add('act');
-                        var lat=parseFloat(c.dataset.lat),lon=parseFloat(c.dataset.lon),id=parseInt(c.dataset.id);
-                        map.setView([lat,lon],12,{animate:true});
-                        markers.forEach(function(m){if(m._rid===id)m.openPopup();});
+                m._rid = r.id;
+                m._idx = idx;
+                markers.push(m);
+            });
+
+            // Renderizar lista
+            function renderList(filter){
+                var filtered = routes;
+                if(filter){
+                    var f = filter.toLowerCase();
+                    filtered = routes.filter(function(r){
+                        return r.title.toLowerCase().indexOf(f) >= 0 || r.destino.toLowerCase().indexOf(f) >= 0;
                     });
-                });
-            }
+                }
 
-            // 2. CARGAR RUTAS - Intentar múltiples endpoints
-            var endpoints = [
-                '/wp-json/wp/v2/rutas?per_page=100',
-                '/wp-json/wp/v2/ruta?per_page=100',
-                '/wp-json/wp/v2/posts?per_page=100'
-            ];
-            var tried = 0;
-
-            function tryEndpoint(){
-                if(tried >= endpoints.length){
-                    document.getElementById('rList').innerHTML='<div class="ridera-msg">No se encontraron rutas. Verifica el API REST de WordPress.</div>';
+                if(filtered.length === 0){
+                    document.getElementById('ridList').innerHTML = '<div class="rid-empty">No se encontraron rutas</div>';
                     return;
                 }
-                var url = endpoints[tried];
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url);
-                xhr.onload = function(){
-                    if(xhr.status === 200){
-                        try{
-                            var data = JSON.parse(xhr.responseText);
-                            if(Array.isArray(data) && data.length > 0){
-                                routes = data.map(parse);
-                                renderPanel();
-                                return;
-                            }
-                        }catch(e){}
-                    }
-                    tried++;
-                    tryEndpoint();
-                };
-                xhr.onerror = function(){
-                    tried++;
-                    tryEndpoint();
-                };
-                xhr.send();
+
+                var h = '';
+                filtered.forEach(function(r, i){
+                    h += '<div class="rid-item" data-idx="'+routes.indexOf(r)+'">';
+                    h += '<div class="rid-dot"></div>';
+                    h += '<div class="rid-info"><div class="rid-name">'+r.title+'</div><div class="rid-meta">';
+                    if(r.km) h += '<span class="rid-badge rid-badge-km">~'+r.km+' km</span>';
+                    if(r.diff) h += '<span class="rid-badge rid-badge-'+r.diff+'">'+r.diff+'</span>';
+                    h += '</div></div>';
+                    h += '<div class="rid-go">→ mapa</div>';
+                    h += '</div>';
+                });
+                document.getElementById('ridList').innerHTML = h;
+
+                // Click en ruta → zoom al punto
+                document.querySelectorAll('.rid-item').forEach(function(el){
+                    el.addEventListener('click', function(){
+                        var idx = parseInt(el.dataset.idx);
+                        var r = routes[idx];
+                        var m = markers[idx];
+
+                        // Desactivar anterior
+                        document.querySelectorAll('.rid-item').forEach(function(x){x.classList.remove('act');});
+                        el.classList.add('act');
+
+                        if(activeMarker) activeMarker.setIcon(icon);
+                        m.setIcon(iconActive);
+                        activeMarker = m;
+
+                        // Zoom al punto
+                        map.setView([r.lat, r.lon], 12, {animate:true, duration:0.8});
+
+                        // Abrir popup después del zoom
+                        setTimeout(function(){ m.openPopup(); }, 400);
+                    });
+                });
             }
 
-            tryEndpoint();
+            renderList();
+
+            // Buscador
+            document.getElementById('ridSearch').addEventListener('input', function(){
+                renderList(this.value);
+            });
+
+            // Si no hay rutas
+            if(routes.length === 0){
+                document.getElementById('ridList').innerHTML = '<div class="rid-empty">No se encontraron rutas con coordenadas conocidas.<br><br><small style="color:#444">Verifica que el post type "rutas" exista en WordPress.</small></div>';
+            }
         });
         </script>
         <?php
         return ob_get_clean();
     }
-    add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_interactivo_render');
+    add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_v3_render');
 }
