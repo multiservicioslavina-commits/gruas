@@ -575,6 +575,12 @@ export const TOOL_SCHEMAS = [
       required: ["sintomas"],
     },
   },
+  {
+    name: "confirmar_recordatorio",
+    description:
+      "Marca el recordatorio mas reciente del rider como confirmado (el rider ya hizo la tarea: cambio el aceite, renovo el SOAT, etc.). Usala cuando el rider responda 'listo', 'ya lo hice', 'listo parce', 'hecho' o similares despues de haber recibido un recordatorio.",
+    input_schema: { type: "object", properties: {}, required: [] },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -1032,6 +1038,21 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         precio: precioStr,
       },
     };
+  },
+
+  async confirmar_recordatorio(_input, phone) {
+    const { data, error } = await supabase
+      .from("rita_seguimiento")
+      .update({ confirmado_rider: true })
+      .eq("telefono", phone)
+      .eq("completado", true)
+      .eq("confirmado_rider", false)
+      .order("fecha_followup", { ascending: false })
+      .limit(1)
+      .select("tipo, nota");
+    if (error) return { ok: false, data: `No se pudo confirmar: ${error.message}` };
+    if (!data?.length) return { ok: false, data: "No encontre un recordatorio reciente pendiente de confirmar." };
+    return { ok: true, data: { confirmado: true, tipo: data[0].tipo, nota: data[0].nota } };
   },
 
   async diagnostico_moto(input) {
