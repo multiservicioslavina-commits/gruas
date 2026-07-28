@@ -5,6 +5,7 @@ import '../rita_config.dart';
 import '../services/update_service.dart';
 import '../theme.dart';
 import 'my_history_screen.dart';
+import 'music_player_screen.dart';
 import 'ride_entry_screen.dart';
 import 'profile_screen.dart';
 
@@ -108,6 +109,18 @@ class _RideHomeScreenState extends State<RideHomeScreen> {
                       'GPS grupal en vivo, detección de caídas y video resumen de cada rodada.\n\n'
                       'https://aventura.ridera.com.co');
                 },
+                dark: true,
+              ),
+              const SizedBox(height: 14),
+              _BigButton(
+                icon: Icons.headphones_rounded,
+                label: 'Música sin internet',
+                sub: 'Reproduce tu música local sin ads',
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const MusicPlayerScreen()),
+                ),
                 dark: true,
               ),
               const SizedBox(height: 14),
