@@ -167,18 +167,39 @@
 .rg-sos-live i{width:6px;height:6px;border-radius:50%;background:#0C0D0F;animation:rgSos 1.3s infinite}
 @keyframes rgSos{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
 
-/* =================== AVENTURA =================== */
-.rg-t.aventura{background:
-  radial-gradient(300px 160px at 15% 90%, rgba(212,175,130,.18),transparent 60%),
-  linear-gradient(160deg,#1A1710,#161412);justify-content:space-between;padding:18px}
-.rg-t.aventura::after{background:linear-gradient(90deg,var(--gold),#C49A6C)}
-.rg-t.aventura::before{background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(212,175,130,.18),transparent 60%)}
-.rg-t.aventura .rg-ic{background:rgba(212,175,130,.12);border-color:rgba(212,175,130,.3)}
-.rg-t.aventura .rg-tag{color:var(--gold)}
-.rg-t.aventura .rg-go{border-color:rgba(212,175,130,.4)}
-.rg-t.aventura:hover .rg-go{border-color:var(--gold);color:var(--gold)}
+/* =================== AVENTURA RIDERA =================== */
+.rg-t.aventura{
+  background:
+    radial-gradient(350px 200px at 80% 0%, rgba(0,210,255,.12),transparent 60%),
+    radial-gradient(250px 150px at 15% 90%, rgba(232,82,10,.10),transparent 60%),
+    linear-gradient(160deg,#0D1A1F,#0F1215);
+  justify-content:space-between;padding:20px;
+  border-color:rgba(0,210,255,.12)}
+.rg-t.aventura::after{background:linear-gradient(90deg,#00D2FF,#00B4D8,var(--orange2))}
+.rg-t.aventura::before{background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(0,210,255,.16),transparent 60%)}
+.rg-t.aventura:hover{border-color:rgba(0,210,255,.25)}
+.rg-t.aventura .rg-ic{background:rgba(0,210,255,.12);border-color:rgba(0,210,255,.3)}
+.rg-t.aventura .rg-tag{color:#00D2FF}
+.rg-t.aventura .rg-go{border-color:rgba(0,210,255,.35)}
+.rg-t.aventura:hover .rg-go{border-color:#00D2FF;color:#00D2FF}
 .rg-t.aventura .rg-name{color:#fff}
 .rg-t.aventura .rg-desc{color:var(--muted)}
+.rg-mesh-badge{display:inline-flex;align-items:center;gap:6px;
+  font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.1em;
+  text-transform:uppercase;color:#00D2FF;font-weight:600;
+  background:rgba(0,210,255,.1);border:.5px solid rgba(0,210,255,.2);
+  padding:4px 10px;border-radius:99px;margin-bottom:auto}
+.rg-mesh-badge i{width:6px;height:6px;border-radius:50%;background:#00D2FF;
+  animation:rgMesh 1.8s infinite;box-shadow:0 0 8px rgba(0,210,255,.5)}
+@keyframes rgMesh{0%,100%{opacity:1;box-shadow:0 0 8px rgba(0,210,255,.5)}50%{opacity:.4;box-shadow:0 0 3px rgba(0,210,255,.2)}}
+.rg-mesh-nodes{display:flex;gap:5px;margin-top:8px}
+.rg-mesh-nodes span{width:8px;height:8px;border-radius:50%;border:1.5px solid rgba(0,210,255,.5);
+  animation:rgNode 2s infinite;opacity:.6}
+.rg-mesh-nodes span:nth-child(2){animation-delay:.3s}
+.rg-mesh-nodes span:nth-child(3){animation-delay:.6s}
+.rg-mesh-nodes span:nth-child(4){animation-delay:.9s}
+.rg-mesh-nodes span:nth-child(5){animation-delay:1.2s}
+@keyframes rgNode{0%,100%{opacity:.4;border-color:rgba(0,210,255,.3)}50%{opacity:1;border-color:#00D2FF;background:rgba(0,210,255,.3)}}
 
 /* =================== RESPONSIVE TABLET =================== */
 @media(max-width:860px){
@@ -360,14 +381,16 @@
       <div class="rg-go">→</div>
     </a>
 
-    <!-- NUEVA: Aventura Ridera (2x2) -->
-    <a href="https://aventura.ridera.com.co/" target="_blank" rel="noopener" class="rg-t big aventura">
+    <!-- NUEVA: Aventura Ridera (2x2) — App grupo + mesh -->
+    <a href="https://ridera.rider.live" target="_blank" rel="noopener" class="rg-t big aventura">
+      <div class="rg-mesh-nodes"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="rg-mesh-badge"><i></i>Sistema Mesh</div>
       <div class="rg-num">11</div>
-      <div class="rg-ic">⛰️</div>
+      <div class="rg-ic">📡</div>
       <div>
-        <span class="rg-tag">Experiencias · Off-Road</span>
+        <span class="rg-tag">Conectividad · Grupo</span>
         <div class="rg-name">Aventura Ridera</div>
-        <p class="rg-desc">Rutas extremas, expediciones grupales y experiencias off-road para los más audaces.</p>
+        <p class="rg-desc">Rodá en grupo con sistema mesh. Comunicación en tiempo real entre motos sin señal celular.</p>
       </div>
       <div class="rg-go">→</div>
     </a>
