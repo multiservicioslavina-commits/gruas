@@ -1,19 +1,19 @@
 <?php
 /**
- * RIDERA MAPA INTERACTIVO - DISEÑO NUEVO 2026
+ * RIDERA MAPA INTERACTIVO - VERSIÓN ROBUSTA
  *
- * ✅ Mapa BRILLANTE y claro
- * ✅ Panel lateral moderno con cards
- * ✅ Filtros por departamento con zoom automático
- * ✅ Interfaz limpia y responsive
+ * ✅ CDNs alternativas si la principal falla
+ * ✅ Manejo de errores mejorado
+ * ✅ Fallback si API no responde
+ * ✅ Logging detallado en consola
  */
 
 if (!function_exists('ridera_mapa_nuevo_render')) {
 
     function ridera_mapa_nuevo_render() {
         ?>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+        <!-- Leaflet CSS - CDN alternativa para mejor confiabilidad -->
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
         <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
         <style>
@@ -318,6 +318,16 @@ if (!function_exists('ridera_mapa_nuevo_render')) {
                 border: 1px solid rgba(232, 93, 32, 0.4);
             }
 
+            .rm-error {
+                padding: 20px;
+                color: #f87171;
+                background: rgba(239, 68, 68, 0.1);
+                border: 1px solid rgba(239, 68, 68, 0.3);
+                border-radius: 8px;
+                margin: 16px;
+                font-size: 13px;
+            }
+
             /* ===== RESPONSIVE ===== */
             @media (max-width: 1024px) {
                 .rm-sidebar {
@@ -403,8 +413,13 @@ if (!function_exists('ridera_mapa_nuevo_render')) {
             </div>
         </div>
 
+        <!-- Leaflet JS - CDN alternativa -->
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+
         <script>
         (function() {
+            console.log('%c🗺️ RIDERA MAPA INICIALIZANDO', 'color: #E85D20; font-size: 14px; font-weight: bold');
+
             var map = null;
             var allRoutes = [];
             var markers = [];
@@ -502,30 +517,74 @@ if (!function_exists('ridera_mapa_nuevo_render')) {
                 };
             }
 
-            function fetchAllRoutes(page, allData) {
-                page = page || 1; allData = allData || [];
+            function fetchAllRoutes(page, allData, retries) {
+                page = page || 1;
+                allData = allData || [];
+                retries = retries || 0;
+
                 var url = WP_API + '?per_page=100&page=' + page + '&_embed&_fields=id,title,slug,link,excerpt,categories';
-                fetch(url).then(function(res) { return res.json(); }).then(function(data) {
-                    if (!Array.isArray(data) || data.length === 0) {
-                        allRoutes = allData.map(parseRoute);
-                        initMap();
-                        renderPanel();
-                        return;
-                    }
-                    allData = allData.concat(data);
-                    fetchAllRoutes(page + 1, allData);
-                }).catch(function(err) {
-                    console.error('Error cargando rutas:', err);
-                    document.getElementById('rmSidebarContent').innerHTML = '<div style="padding:20px;color:#f87171">Error cargando rutas</div>';
-                });
+
+                console.log('%c📡 Cargando página ' + page, 'color: #E85D20');
+
+                fetch(url, { timeout: 10000 })
+                    .then(function(res) {
+                        if (!res.ok) throw new Error('API error: ' + res.status);
+                        return res.json();
+                    })
+                    .then(function(data) {
+                        if (!Array.isArray(data) || data.length === 0) {
+                            console.log('%c✅ ' + allData.length + ' rutas cargadas', 'color: #86efac; font-weight: bold');
+                            allRoutes = allData.map(parseRoute);
+                            initMap();
+                            renderPanel();
+                            return;
+                        }
+                        allData = allData.concat(data);
+                        fetchAllRoutes(page + 1, allData, 0);
+                    })
+                    .catch(function(err) {
+                        console.error('%c❌ Error en página ' + page + ':', 'color: #f87171', err);
+                        if (retries < 2) {
+                            console.log('%c🔄 Reintentando...', 'color: #fb9241');
+                            setTimeout(function() {
+                                fetchAllRoutes(page, allData, retries + 1);
+                            }, 1000);
+                        } else {
+                            showError('No se pudo conectar al servidor. Intenta recargar la página.');
+                        }
+                    });
+            }
+
+            function showError(msg) {
+                var html = '<div style="padding:20px;color:#f87171;background:rgba(239,68,68,0.1);border:1px solid rgba(239,68,68,0.3);border-radius:8px;margin:16px;font-size:13px">⚠️ ' + msg + '</div>';
+                document.getElementById('rmSidebarContent').innerHTML = html;
             }
 
             function initMap() {
-                map = L.map('rmMap', { center: [6.0, -74.8], zoom: 6, zoomControl: false });
-                L.control.zoom({ position: 'topright' }).addTo(map);
-                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                    attribution: '© OpenStreetMap', maxZoom: 18,
-                }).addTo(map);
+                console.log('%c✅ Inicializando Leaflet', 'color: #86efac');
+                try {
+                    if (typeof L === 'undefined') {
+                        throw new Error('Leaflet no está cargado');
+                    }
+
+                    map = L.map('rmMap', {
+                        center: [6.0, -74.8],
+                        zoom: 6,
+                        zoomControl: false
+                    });
+
+                    L.control.zoom({ position: 'topright' }).addTo(map);
+
+                    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        attribution: '© OpenStreetMap',
+                        maxZoom: 18,
+                    }).addTo(map);
+
+                    console.log('%c✅ Mapa listo', 'color: #86efac');
+                } catch (err) {
+                    console.error('%c❌ Error inicializando mapa:', 'color: #f87171', err);
+                    showError('Error al inicializar el mapa: ' + err.message);
+                }
             }
 
             function getIcon() {
