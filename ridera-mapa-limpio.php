@@ -25,8 +25,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 flex: 1;
                 position: relative;
                 z-index: 10;
-                background: linear-gradient(135deg, #2d5a3d 0%, #1f3a2f 100%);
-                filter: brightness(2.1) contrast(1.8) saturate(1.4);
+                background: #e8e0d8;
             }
             .rm-sidebar {
                 position: relative;
@@ -368,11 +367,6 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 var difficulty = diffMatch ? diffMatch[1].toLowerCase() : '';
 
                 var department = 'Antioquia';
-                if (r.categories && r.categories.length > 0) {
-                    var catName = (r._embedded && r._embedded['wp:term'] && r._embedded['wp:term'][0])
-                        ? r._embedded['wp:term'][0][0].name : '';
-                    if (catName) department = catName;
-                }
 
                 return {
                     id: r.id, title: title, slug: r.slug, link: r.link, excerpt: excerpt.slice(0, 200),
@@ -383,7 +377,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
 
             function fetchAllRoutes(page, allData, retries) {
                 page = page || 1; allData = allData || []; retries = retries || 0;
-                var url = WP_API + '?per_page=100&page=' + page + '&_embed&_fields=id,title,slug,link,excerpt,categories';
+                var url = WP_API + '?per_page=100&page=' + page;
                 console.log('%c📡 Cargando página ' + page, 'color: #E85D20');
                 fetch(url, {timeout: 10000})
                     .then(function(res) {
