@@ -701,7 +701,7 @@ if (!function_exists('ridera_mapa_nuevo_render')) {
     }
 
     if (!is_admin()) {
-        add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_nuevo_render');
+        add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_interactivo_render');
     }
 }
 ?>
