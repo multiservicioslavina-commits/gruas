@@ -1,0 +1,397 @@
+<!-- ============================================================
+     RIDERA · "EL ECOSISTEMA"  ·  Bento dinámico (v3 compacto)
+     ============================================================ -->
+<!DOCTYPE html>
+<html lang="es"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500&family=JetBrains+Mono:wght@500;600&display=swap');
+
+.preview-pad{background:#0C0D0F;padding:40px 24px;min-height:100vh}
+
+.rg-eco{
+  --orange:#E8520A; --orange2:#FF6A1A; --orange-dim:rgba(232,82,10,.09);
+  --green:#3DDB74; --gold:#D4AF82;
+  --c1:#0C0D0F; --c2:#141618; --c3:#191C20; --c4:#22262d;
+  --white:#F5F4F0; --muted:rgba(245,244,240,.46); --dim:rgba(245,244,240,.16);
+  --line:rgba(245,244,240,.07); --line-hi:rgba(245,244,240,.13);
+  --r:16px;
+  width:100%; max-width:1180px; margin:0 auto;
+  font-family:'DM Sans',system-ui,sans-serif; color:var(--white);
+  -webkit-font-smoothing:antialiased; position:relative;
+}
+.rg-eco *{box-sizing:border-box}
+
+.rg-eco-head{display:flex;justify-content:space-between;align-items:flex-end;
+  gap:20px;flex-wrap:wrap;margin-bottom:22px}
+.rg-eco-eyebrow{display:inline-flex;align-items:center;gap:8px;
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--orange2);margin-bottom:12px}
+.rg-eco-eyebrow i{width:5px;height:5px;border-radius:50%;background:var(--orange);
+  box-shadow:0 0 0 4px var(--orange-dim);animation:rgBlink 2.2s infinite}
+@keyframes rgBlink{0%,100%{opacity:1}50%{opacity:.35}}
+.rg-eco-title{font-family:'Bebas Neue',sans-serif;font-weight:400;
+  font-size:clamp(30px,4.4vw,50px);line-height:.9;letter-spacing:.5px;margin:0}
+.rg-eco-title em{font-style:normal;color:transparent;-webkit-text-stroke:1.3px var(--orange);
+  text-shadow:0 0 30px rgba(232,82,10,.3)}
+.rg-eco-note{max-width:300px;font-size:13px;color:var(--muted);line-height:1.7;text-align:right}
+.rg-eco-note b{color:var(--white);font-weight:600}
+
+/* =================== BENTO GRID =================== */
+.rg-bento{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  grid-auto-rows:128px;
+  grid-auto-flow:dense;
+  gap:10px;
+}
+.rg-t{grid-column:span 1;grid-row:span 1}
+.rg-t.big{grid-column:span 2;grid-row:span 2}
+.rg-t.tall{grid-column:span 1;grid-row:span 2}
+
+.rg-t{position:relative;overflow:hidden;border-radius:var(--r);
+  background:var(--c3);border:.5px solid var(--line);
+  padding:16px 16px 14px;text-decoration:none;color:inherit;
+  display:flex;flex-direction:column;justify-content:flex-end;
+  cursor:pointer;isolation:isolate;
+  transition:transform .35s cubic-bezier(.2,.7,.25,1),border-color .3s,background .3s;
+  opacity:0;transform:translateY(16px) scale(.98);
+}
+.rg-eco.in .rg-t{opacity:1;transform:none}
+.rg-eco.in .rg-t{transition:opacity .5s ease,transform .5s cubic-bezier(.2,.7,.25,1),border-color .3s,background .3s}
+.rg-t:nth-child(1){transition-delay:.02s}.rg-t:nth-child(2){transition-delay:.06s}
+.rg-t:nth-child(3){transition-delay:.10s}.rg-t:nth-child(4){transition-delay:.14s}
+.rg-t:nth-child(5){transition-delay:.18s}.rg-t:nth-child(6){transition-delay:.22s}
+.rg-t:nth-child(7){transition-delay:.26s}.rg-t:nth-child(8){transition-delay:.30s}
+.rg-t:nth-child(9){transition-delay:.34s}.rg-t:nth-child(10){transition-delay:.38s}
+.rg-t:nth-child(11){transition-delay:.42s}
+
+.rg-t::before{content:'';position:absolute;inset:0;z-index:-1;opacity:0;
+  background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),
+    rgba(232,82,10,.16),transparent 60%);transition:opacity .3s}
+.rg-t:hover::before{opacity:1}
+.rg-t:hover{transform:translateY(-4px);border-color:var(--line-hi);background:var(--c4)}
+.rg-t::after{content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--orange),var(--orange2));
+  transform:scaleX(0);transform-origin:left;transition:transform .35s}
+.rg-t:hover::after{transform:scaleX(1)}
+
+.rg-num{position:absolute;top:6px;right:12px;z-index:-1;
+  font-family:'Bebas Neue',sans-serif;font-size:64px;line-height:1;
+  color:rgba(245,244,240,.03);user-select:none;transition:color .3s,transform .4s}
+.rg-t:hover .rg-num{color:rgba(232,82,10,.1);transform:translateY(2px)}
+.rg-t.big .rg-num{font-size:120px;top:0}
+
+.rg-ic{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;
+  justify-content:center;font-size:18px;margin-bottom:auto;
+  background:var(--orange-dim);border:.5px solid rgba(232,82,10,.22);
+  transition:transform .35s}
+.rg-t:hover .rg-ic{transform:scale(1.08) rotate(-3deg)}
+.rg-t.big .rg-ic{width:48px;height:48px;font-size:24px;border-radius:13px}
+
+.rg-tag{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.12em;
+  text-transform:uppercase;color:var(--orange2);margin-bottom:4px;display:inline-block}
+.rg-name{font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:19px;letter-spacing:.01em;line-height:1.04;text-transform:uppercase;color:#fff;
+  word-break:keep-all;hyphens:none}
+.rg-t.big .rg-name{font-family:'Bebas Neue',sans-serif;font-weight:400;font-size:38px;letter-spacing:.5px}
+.rg-desc{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:5px;max-width:30ch}
+.rg-t:not(.big):not(.wide) .rg-desc{display:none}
+.rg-t.big .rg-desc{font-size:13px;max-width:32ch;margin-top:8px}
+
+.rg-go{position:absolute;bottom:13px;right:13px;width:26px;height:26px;border-radius:50%;
+  border:.5px solid var(--line-hi);display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:var(--dim);transition:all .3s}
+.rg-t:hover .rg-go{border-color:var(--orange);color:var(--orange);transform:translateX(2px)}
+
+/* =================== TARJETAS CON IMAGEN =================== */
+.rg-t.has-img{background-size:cover;background-position:center;
+  transition:transform .35s cubic-bezier(.2,.7,.25,1),border-color .3s,background-size .5s}
+.rg-t.has-img:hover{background-size:114%}
+.rg-t .rg-veil{position:absolute;inset:0;z-index:-1;
+  background:linear-gradient(180deg,rgba(12,13,15,.32) 0%,rgba(12,13,15,.78) 60%,rgba(12,13,15,.95) 100%);
+  transition:background .35s}
+.rg-t.has-img:hover .rg-veil{
+  background:linear-gradient(180deg,rgba(12,13,15,.18) 0%,rgba(12,13,15,.62) 58%,rgba(12,13,15,.9) 100%)}
+.rg-t.has-img .rg-ic{background:rgba(12,13,15,.5);border-color:rgba(245,244,240,.2)}
+.rg-t.has-img .rg-num{color:rgba(245,244,240,.07)}
+.rg-t.has-img:hover .rg-num{color:rgba(245,244,240,.12)}
+
+/* =================== HÉROE: Pasaporte =================== */
+.rg-t.big{
+  background:
+    radial-gradient(360px 200px at 80% 0%, rgba(232,82,10,.12),transparent 60%),
+    linear-gradient(160deg,#1B1410,#141618);
+  justify-content:space-between;padding:20px}
+.rg-t.big .rg-ic{background:rgba(232,82,10,.14)}
+.rg-hero-foot{display:flex;align-items:center;gap:14px;margin-top:10px}
+.rg-chip{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+  border:.5px solid var(--line-hi);border-radius:99px;padding:4px 10px}
+.rg-chip b{color:var(--orange2)}
+
+.rg-t.pass{background:
+  radial-gradient(300px 160px at 85% 10%, rgba(61,219,116,.16),transparent 60%),
+  linear-gradient(160deg,#13201A,#121613);justify-content:space-between;padding:18px}
+.rg-t.pass::after{background:var(--green)}
+.rg-t.pass::before{background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(61,219,116,.16),transparent 60%)}
+.rg-t.pass .rg-ic{background:rgba(61,219,116,.12);border-color:rgba(61,219,116,.3)}
+.rg-t.pass .rg-tag{color:var(--green)}
+.rg-t.pass .rg-go{border-color:rgba(61,219,116,.4)}
+.rg-t.pass:hover .rg-go{border-color:var(--green);color:var(--green)}
+.rg-pass-meter{display:flex;align-items:center;gap:10px;margin-top:10px}
+.rg-pass-bar{flex:1;height:5px;background:rgba(245,244,240,.08);border-radius:99px;overflow:hidden}
+.rg-pass-bar i{display:block;height:100%;width:0;background:var(--green);border-radius:99px;
+  transition:width 1.1s cubic-bezier(.2,.7,.25,1) .4s}
+.rg-eco.in .rg-t.pass .rg-pass-bar i{width:18%}
+.rg-pass-meter span{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green)}
+.rg-t.pass .rg-map{position:absolute;right:-6px;bottom:-6px;width:148px;height:148px;z-index:-1;
+  object-fit:contain;opacity:.9;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5));
+  transition:transform .4s cubic-bezier(.2,.7,.25,1),opacity .3s;pointer-events:none}
+.rg-t.pass:hover .rg-map{transform:scale(1.07) translateY(-2px);opacity:1}
+
+/* =================== SOS =================== */
+.rg-t.sos{background:linear-gradient(150deg,var(--orange2),#C2440A);color:#0C0D0F;
+  justify-content:space-between;padding:18px}
+.rg-t.sos::after{display:none}
+.rg-t.sos::before{background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(255,255,255,.18),transparent 60%)}
+.rg-t.sos .rg-num{color:rgba(12,13,15,.08)}
+.rg-t.sos:hover .rg-num{color:rgba(12,13,15,.14)}
+.rg-t.sos .rg-ic{background:rgba(12,13,15,.16);border-color:rgba(12,13,15,.2)}
+.rg-t.sos .rg-name{color:#0C0D0F}
+.rg-t.sos .rg-desc{color:rgba(12,13,15,.74)}
+.rg-t.sos .rg-go{border-color:rgba(12,13,15,.32);color:rgba(12,13,15,.7)}
+.rg-t.sos:hover .rg-go{border-color:#0C0D0F;color:#0C0D0F}
+.rg-sos-live{display:inline-flex;align-items:center;gap:6px;font-family:'JetBrains Mono',monospace;
+  font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#0C0D0F;font-weight:600;
+  background:rgba(12,13,15,.16);padding:4px 10px;border-radius:99px;margin-bottom:auto}
+.rg-sos-live i{width:6px;height:6px;border-radius:50%;background:#0C0D0F;animation:rgSos 1.3s infinite}
+@keyframes rgSos{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.25;transform:scale(.6)}}
+
+/* =================== AVENTURA =================== */
+.rg-t.aventura{background:
+  radial-gradient(300px 160px at 15% 90%, rgba(212,175,130,.18),transparent 60%),
+  linear-gradient(160deg,#1A1710,#161412);justify-content:space-between;padding:18px}
+.rg-t.aventura::after{background:linear-gradient(90deg,var(--gold),#C49A6C)}
+.rg-t.aventura::before{background:radial-gradient(220px circle at var(--mx,50%) var(--my,50%),rgba(212,175,130,.18),transparent 60%)}
+.rg-t.aventura .rg-ic{background:rgba(212,175,130,.12);border-color:rgba(212,175,130,.3)}
+.rg-t.aventura .rg-tag{color:var(--gold)}
+.rg-t.aventura .rg-go{border-color:rgba(212,175,130,.4)}
+.rg-t.aventura:hover .rg-go{border-color:var(--gold);color:var(--gold)}
+.rg-t.aventura .rg-name{color:#fff}
+.rg-t.aventura .rg-desc{color:var(--muted)}
+
+/* =================== RESPONSIVE TABLET =================== */
+@media(max-width:860px){
+  .rg-bento{grid-template-columns:repeat(2,1fr);grid-auto-rows:120px}
+  .rg-t.big{grid-column:span 2;grid-row:span 2}
+}
+
+/* =================== RESPONSIVE MÓVIL =================== */
+@media(max-width:520px){
+  .rg-bento{
+    grid-template-columns:repeat(2,1fr);
+    grid-auto-rows:auto;
+    gap:8px;
+  }
+
+  .rg-t{
+    min-height:100px;
+    padding:12px 10px 10px;
+    border-radius:12px;
+    justify-content:flex-end;
+  }
+
+  .rg-t.big{
+    grid-column:span 2;
+    grid-row:span 1;
+    min-height:180px;
+    padding:16px;
+  }
+
+  .rg-t .rg-ic{width:30px;height:30px;font-size:14px;border-radius:8px;margin-bottom:6px}
+  .rg-t.big .rg-ic{width:38px;height:38px;font-size:18px}
+
+  .rg-tag{font-size:8px;letter-spacing:.08em;margin-bottom:2px}
+
+  .rg-t:not(.big) .rg-name{
+    font-size:14px;
+    line-height:1.1;
+    white-space:normal;
+    word-break:break-word;
+  }
+  .rg-t.big .rg-name{font-size:26px;line-height:1}
+
+  .rg-num{font-size:44px}
+  .rg-t.big .rg-num{font-size:70px}
+
+  .rg-go{width:22px;height:22px;font-size:10px;bottom:9px;right:9px}
+
+  .rg-t.pass .rg-map{width:100px;height:100px}
+
+  .rg-t.big .rg-desc{font-size:11px;margin-top:5px}
+
+  .rg-pass-meter{margin-top:6px}
+  .rg-pass-meter span{font-size:9px}
+
+  .rg-sos-live{font-size:8.5px;padding:3px 8px}
+
+  .rg-eco-note{text-align:left}
+  .rg-eco-head{gap:12px}
+}
+
+@media(prefers-reduced-motion:reduce){
+  .rg-eco .rg-t{opacity:1!important;transform:none!important}
+  .rg-eco *{animation:none!important}
+}
+</style></head>
+<body>
+<div class="preview-pad">
+
+<section class="rg-eco" id="rgEco">
+
+  <div class="rg-eco-head">
+    <div>
+      <div class="rg-eco-eyebrow"><i></i>El ecosistema · Antioquia +500cc</div>
+      <h2 class="rg-eco-title">Todo lo que el gremio <em>necesita</em></h2>
+    </div>
+    <p class="rg-eco-note">No es un directorio. Es la <b>plataforma central</b> del motociclismo premium en Colombia.</p>
+  </div>
+
+  <div class="rg-bento">
+
+    <!-- HÉROE · Pasaporte 125 (2x2) -->
+    <a href="https://pasaporteridera.netlify.app/" target="_blank" rel="noopener" class="rg-t big pass">
+      <img class="rg-map" src="https://ridera.com.co/wp-content/uploads/2026/06/mapa-3d-ilustracion-departamento-antioquia-colombia_97886-4832.avif" alt="Mapa 3D de Antioquia" loading="lazy">
+      <div class="rg-num">09</div>
+      <div class="rg-ic">🟢</div>
+      <div>
+        <span class="rg-tag">Reto · Antioquia 125</span>
+        <div class="rg-name">Pasaporte Ridera 125</div>
+        <p class="rg-desc">125 municipios · una moto · tú. Recorre toda Antioquia y sella cada pueblo.</p>
+        <div class="rg-pass-meter">
+          <div class="rg-pass-bar"><i></i></div>
+          <span>0 / 125 sellados</span>
+        </div>
+      </div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Rutas -->
+    <a href="https://ridera.com.co/mapa-de-rutas/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/Captura-de-pantalla-982.png')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">01</div>
+      <div class="rg-ic">🗺️</div>
+      <div><span class="rg-tag">Exploración</span><div class="rg-name">Rutas</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Talleres -->
+    <a href="https://ridera.com.co/talleres/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/side-view-man-repairing-motorcycle-1-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">02</div>
+      <div class="rg-ic">🔧</div>
+      <div><span class="rg-tag">Directorio</span><div class="rg-name">Talleres</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Almacenes -->
+    <a href="https://ridera.com.co/almacenes/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/bicycles-accessories-workshop-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">03</div>
+      <div class="rg-ic">🏪</div>
+      <div><span class="rg-tag">Directorio</span><div class="rg-name">Almacenes</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Motos (antes Marketplace) -->
+    <a href="https://ridera.com.co/motos/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/pexels-faruktokluoglu-27916588-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">04</div>
+      <div class="rg-ic">🏍️</div>
+      <div><span class="rg-tag">Premium</span><div class="rg-name">Marketplace</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- SOS · Grúa (2x2) -->
+    <a href="https://gruas.ridera.com.co" target="_blank" rel="noopener" class="rg-t big sos">
+      <div class="rg-num">10</div>
+      <div class="rg-sos-live"><i></i>Disponible ahora</div>
+      <div class="rg-ic">🆘</div>
+      <div>
+        <div class="rg-name">Solicita Grúa Ya</div>
+        <p class="rg-desc">¿Quedaste varado? Comparte tu GPS y conectamos con la grúa más cercana en minutos.</p>
+      </div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Clubes -->
+    <a href="https://ridera.com.co/clubes/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/IMG_20260419_073113-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">05</div>
+      <div class="rg-ic">🏁</div>
+      <div><span class="rg-tag">Comunidad</span><div class="rg-name">Clubes</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Grúas directorio -->
+    <a href="https://ridera.com.co/grua/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/front-view-adult-male-calling-help-fix-motorbike-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">06</div>
+      <div class="rg-ic">🛻</div>
+      <div><span class="rg-tag">Asistencia</span><div class="rg-name">Grúas</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Blog -->
+    <a href="https://ridera.com.co/blog/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/handsome-motorbiker-with-helmet-hands-motorcycle-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">07</div>
+      <div class="rg-ic">✍️</div>
+      <div><span class="rg-tag">Contenido</span><div class="rg-name">Blog</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- Garaje Técnico (antes Mantenimiento) -->
+    <a href="https://ridera.com.co/garaje-tecnico/" class="rg-t has-img" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/06/fixing-custom-motorcycle-standing-repair-shop-instruments-equipment-hobbies-unique-jobs-1-scaled.jpg')">
+      <div class="rg-veil"></div>
+      <div class="rg-num">08</div>
+      <div class="rg-ic">⚙️</div>
+      <div><span class="rg-tag">Garage</span><div class="rg-name">Garaje Técnico</div></div>
+      <div class="rg-go">→</div>
+    </a>
+
+    <!-- NUEVA: Aventura Ridera (2x2) -->
+    <a href="https://aventura.ridera.com.co/" target="_blank" rel="noopener" class="rg-t big aventura">
+      <div class="rg-num">11</div>
+      <div class="rg-ic">⛰️</div>
+      <div>
+        <span class="rg-tag">Experiencias · Off-Road</span>
+        <div class="rg-name">Aventura Ridera</div>
+        <p class="rg-desc">Rutas extremas, expediciones grupales y experiencias off-road para los más audaces.</p>
+      </div>
+      <div class="rg-go">→</div>
+    </a>
+
+  </div>
+</section>
+
+<script>
+(function(){
+  var eco=document.getElementById('rgEco');
+  if(!eco) return;
+  var io=new IntersectionObserver(function(es){
+    es.forEach(function(e){ if(e.isIntersecting){ eco.classList.add('in'); io.disconnect(); } });
+  },{threshold:.18});
+  io.observe(eco);
+  eco.querySelectorAll('.rg-t').forEach(function(t){
+    t.addEventListener('pointermove',function(ev){
+      var r=t.getBoundingClientRect();
+      t.style.setProperty('--mx',(ev.clientX-r.left)+'px');
+      t.style.setProperty('--my',(ev.clientY-r.top)+'px');
+    });
+  });
+})();
+</script>
+
+</div>
+</body></html>
