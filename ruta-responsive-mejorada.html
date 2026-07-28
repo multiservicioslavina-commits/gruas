@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruta en Moto Medellín – Ciénaga de Ayapel | Ridera</title>
+<meta name="description" content="Ruta larga en moto Medellín-Ciénaga de Ayapel (Córdoba): ~335 km. Guía completa con mapa, estado de vía, biodiversidad y consejos para moteros experimentados.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --black:#0e0e0e;
+    --black-soft:#161616;
+    --black-card:#1a1a1a;
+    --orange:#E85D20;
+    --orange-dim:#a5431a;
+    --white:#f5f5f3;
+    --gray:#9a9a94;
+    --gray-line:#2b2b2b;
+    --green:#4caf7d;
+    --yellow:#e0b23c;
+    --red:#d9503f;
+    --f-display:'Bebas Neue', sans-serif;
+    --f-body:'DM Sans', sans-serif;
+    --f-mono:'JetBrains Mono', monospace;
+  }
+
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+
+  body{
+    background:var(--black);
+    color:var(--white);
+    font-family:var(--f-body);
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+
+  img{max-width:100%;display:block;height:auto;}
+  a{color:inherit;text-decoration:none;}
+
+  .wrap{max-width:1100px;margin:0 auto;padding:0 clamp(16px, 4vw, 40px);}
+
+  section{padding:clamp(30px, 5vw, 80px) 0;border-bottom:1px solid var(--gray-line);position:relative;}
+
+  h1,h2,h3,.display{
+    font-family:var(--f-display);
+    letter-spacing:0.02em;
+    line-height:1.05;
+    text-transform:uppercase;
+    word-break:break-word;
+  }
+
+  .eyebrow{
+    font-family:var(--f-mono);
+    color:var(--orange);
+    font-size:clamp(11px, 2vw, 14px);
+    letter-spacing:0.15em;
+    text-transform:uppercase;
+    margin-bottom:10px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:wrap;
+  }
+
+  .eyebrow::before{
+    content:'';
+    width:8px;height:8px;
+    background:var(--orange);
+    border-radius:50%;
+    box-shadow:0 0 0 0 rgba(232,93,32,0.6);
+    animation:pulse 2s infinite;
+    flex-shrink:0;
+  }
+
+  @keyframes pulse{
+    0%{box-shadow:0 0 0 0 rgba(232,93,32,0.55);}
+    70%{box-shadow:0 0 0 8px rgba(232,93,32,0);}
+    100%{box-shadow:0 0 0 0 rgba(232,93,32,0);}
+  }
+
+  h2{font-size:clamp(24px, 5vw, 44px);color:var(--white);margin-bottom:8px;}
+  h2 span{color:var(--orange);}
+
+  h3{font-size:clamp(18px, 4vw, 24px);}
+
+  .lede{color:var(--gray);max-width:640px;font-size:clamp(14px, 2vw, 17px);margin-bottom:clamp(20px, 3vw, 36px);}
+
+  .reveal{opacity:0;transform:translateY(28px);transition:opacity 0.7s cubic-bezier(.2,.7,.3,1), transform 0.7s cubic-bezier(.2,.7,.3,1);}
+  .reveal.in-view{opacity:1;transform:translateY(0);}
+  .reveal-delay-1.in-view{transition-delay:0.08s;}
+  .reveal-delay-2.in-view{transition-delay:0.16s;}
+  .reveal-delay-3.in-view{transition-delay:0.24s;}
+  .reveal-delay-4.in-view{transition-delay:0.32s;}
+
+  /* ---------- HERO ---------- */
+  .hero{
+    position:relative;
+    min-height:clamp(60vh, 90vw, 82vh);
+    display:flex;
+    align-items:flex-end;
+    background:
+      linear-gradient(180deg, rgba(14,14,14,0.3) 0%, rgba(14,14,14,0.6) 45%, var(--black) 100%),
+      radial-gradient(circle at 25% 15%, #2a1b0f 0%, var(--black) 62%);
+    border-bottom:2px solid var(--orange);
+    padding:clamp(40px, 8vw, 100px) 0 0;
+    overflow:hidden;
+  }
+
+  .hero-bg-grid{
+    position:absolute;inset:0;
+    background-image:
+      linear-gradient(rgba(232,93,32,0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(232,93,32,0.05) 1px, transparent 1px);
+    background-size:48px 48px;
+    mask-image:radial-gradient(circle at 30% 20%, black 0%, transparent 70%);
+    animation:driftGrid 30s linear infinite;
+  }
+
+  @keyframes driftGrid{from{background-position:0 0, 0 0;} to{background-position:96px 48px, 48px 96px;}}
+
+  .hero-glow{
+    position:absolute;width:600px;height:600px;
+    background:radial-gradient(circle, rgba(232,93,32,0.18) 0%, transparent 70%);
+    top:-200px; right:-150px;
+    filter:blur(20px);
+    animation:floatGlow 8s ease-in-out infinite;
+    pointer-events:none;
+  }
+
+  @keyframes floatGlow{0%,100%{transform:translate(0,0) scale(1);} 50%{transform:translate(-30px,40px) scale(1.1);}}
+
+  .hero-tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-family:var(--f-mono);font-size:clamp(10px, 1.5vw, 12px);letter-spacing:0.12em;
+    color:var(--orange);border:1px solid var(--orange-dim);
+    padding:6px 14px;border-radius:100px;margin-bottom:20px;
+    background:rgba(232,93,32,0.08);
+    animation:fadeInUp 0.8s ease both;
+    white-space:nowrap;
+  }
+
+  @keyframes fadeInUp{from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:translateY(0);}}
+
+  .hero h1{
+    font-size:clamp(28px, 7vw, 88px);
+    color:var(--white);
+    text-shadow:0 4px 30px rgba(0,0,0,0.6);
+    animation:fadeInUp 0.9s ease 0.1s both;
+    margin-bottom:clamp(10px, 2vw, 20px);
+  }
+
+  .hero h1 em{
+    font-style:normal;color:var(--orange);
+    background:linear-gradient(90deg, var(--orange), #ff8c4d, var(--orange));
+    background-size:200% auto;
+    -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;
+    animation:shimmer 4s linear infinite;
+  }
+
+  @keyframes shimmer{to{background-position:200% center;}}
+
+  .hero-sub{font-size:clamp(14px, 2.5vw, 22px);color:var(--gray);margin-top:10px;max-width:620px;font-weight:500;animation:fadeInUp 0.9s ease 0.2s both;}
+  .hero-text{color:#c9c9c4;max-width:660px;margin-top:clamp(12px, 2vw, 18px);font-size:clamp(13px, 1.8vw, 16px);animation:fadeInUp 0.9s ease 0.3s both;line-height:1.6;}
+
+  .hero-stats{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(100px, 20vw, 140px), 1fr));
+    gap:1px;background:var(--gray-line);border:1px solid var(--gray-line);
+    margin-top:clamp(20px, 4vw, 44px);max-width:820px;
+    animation:fadeInUp 0.9s ease 0.4s both;
+  }
+
+  .stat{background:var(--black-soft);padding:clamp(14px, 2vw, 18px);text-align:left;transition:background 0.25s ease, transform 0.25s ease;}
+  .stat:hover{background:#1e1712;transform:translateY(-3px);}
+  .stat .num{font-family:var(--f-mono);font-size:clamp(16px, 2.5vw, 26px);color:var(--orange);font-weight:700;}
+  .stat .lab{font-size:clamp(9px, 1.5vw, 11px);letter-spacing:0.08em;text-transform:uppercase;color:var(--gray);margin-top:4px;}
+
+  .scroll-cue{
+    display:none;
+    position:absolute;bottom:18px;left:50%;transform:translateX(-50%);
+    font-family:var(--f-mono);font-size:10px;letter-spacing:0.15em;text-transform:uppercase;color:var(--gray);
+    flex-direction:column;align-items:center;gap:6px;
+  }
+
+  @media (min-width: 768px) {
+    .scroll-cue { display:flex; }
+  }
+
+  .scroll-cue .bar{width:1px;height:24px;background:linear-gradient(var(--orange), transparent);animation:scrollDown 1.6s ease-in-out infinite;}
+  @keyframes scrollDown{0%{transform:scaleY(0);transform-origin:top;} 50%{transform:scaleY(1);transform-origin:top;} 50.01%{transform-origin:bottom;} 100%{transform:scaleY(0);transform-origin:bottom;}}
+
+  /* ---------- ALERT ---------- */
+  .alert-box{
+    display:flex;gap:14px;background:rgba(224,178,60,0.08);
+    border:1px solid var(--yellow);border-left:4px solid var(--yellow);
+    padding:clamp(12px, 2vw, 16px) clamp(14px, 2vw, 18px);border-radius:6px;margin-bottom:20px;align-items:flex-start;
+    transition:transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .alert-box:hover{transform:translateX(4px);box-shadow:-4px 0 20px rgba(224,178,60,0.08);}
+  .alert-box.info{background:rgba(232,93,32,0.06);border-color:var(--orange-dim);border-left-color:var(--orange);}
+  .alert-box.info:hover{box-shadow:-4px 0 20px rgba(232,93,32,0.1);}
+  .alert-box.danger{background:rgba(217,80,63,0.08);border-color:var(--red);border-left-color:var(--red);}
+  .alert-box.danger:hover{box-shadow:-4px 0 20px rgba(217,80,63,0.1);}
+  .alert-box .icon{font-size:clamp(18px, 4vw, 20px);line-height:1;flex-shrink:0;}
+  .alert-box p{font-size:clamp(13px, 1.8vw, 14px);color:#d8d8d2;line-height:1.5;}
+  .alert-box strong{color:var(--white);}
+
+  /* ---------- SEGMENT DIAGRAM ---------- */
+  .segment-diagram{display:flex;flex-direction:column;gap:0;margin:clamp(16px,3vw,32px) 0;}
+  .seg-node{display:flex;gap:16px;position:relative;padding-bottom:clamp(20px, 3vw, 28px);}
+  .seg-node:last-child{padding-bottom:0;}
+  .seg-dot-col{display:flex;flex-direction:column;align-items:center;width:20px;}
+  .seg-dot{width:16px;height:16px;border-radius:50%;background:var(--black);border:3px solid var(--orange);flex-shrink:0;position:relative;}
+  .seg-node.end .seg-dot{background:var(--orange);}
+  .seg-dot::after{content:'';position:absolute;inset:-6px;border-radius:50%;border:1px solid rgba(232,93,32,0.4);animation:ripple 2.4s ease-out infinite;}
+  @keyframes ripple{0%{transform:scale(0.6);opacity:1;} 100%{transform:scale(1.8);opacity:0;}}
+  .seg-line{flex:1;width:2px;background:linear-gradient(var(--orange-dim), var(--gray-line));margin-top:2px;position:relative;overflow:hidden;}
+  .seg-line::after{content:'';position:absolute;top:-100%;left:0;width:100%;height:60%;background:linear-gradient(var(--orange), transparent);animation:travelLine 2.5s linear infinite;}
+  @keyframes travelLine{to{top:140%;}}
+  .seg-node:last-child .seg-line{display:none;}
+  .seg-content .place{font-family:var(--f-mono);font-weight:700;font-size:clamp(13px, 2vw, 15px);color:var(--white);text-transform:uppercase;}
+  .seg-content .meta{font-size:clamp(12px, 1.8vw, 13px);color:var(--gray);margin-top:2px;}
+  .seg-content .km-badge{
+    display:inline-block;font-family:var(--f-mono);font-size:clamp(9px, 1.5vw, 11px);color:var(--orange);
+    background:rgba(232,93,32,0.1);border:1px solid var(--orange-dim);
+    padding:2px 8px;border-radius:100px;margin-left:8px;
+    white-space:nowrap;
+  }
+
+  /* ---------- FICHA TECNICA ---------- */
+  .ficha-table{width:100%;border-collapse:collapse;font-size:clamp(12px, 1.8vw, 14px);}
+  .ficha-table tr{border-bottom:1px solid var(--gray-line);transition:background 0.2s ease;}
+  .ficha-table tr:hover{background:rgba(232,93,32,0.04);}
+  .ficha-table td{padding:clamp(10px, 1.5vw, 14px) clamp(8px, 1.5vw, 10px);vertical-align:top;}
+  .ficha-table td:first-child{font-family:var(--f-mono);color:var(--gray);text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(10px, 1.5vw, 12px);width:35%;padding-right:clamp(8px, 1.5vw, 16px);}
+  .ficha-table td:last-child{color:var(--white);font-weight:500;}
+
+  @media (max-width: 640px) {
+    .ficha-table { font-size: 11px; }
+    .ficha-table td { padding: 8px 6px; }
+    .ficha-table td:first-child { width: 40%; font-size: 9px; }
+  }
+
+  /* ---------- QUICK GRID ---------- */
+  .quick-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(120px, 25vw, 160px), 1fr));gap:clamp(8px, 2vw, 12px);}
+  .quick-card{background:var(--black-card);border:1px solid var(--gray-line);border-radius:8px;padding:clamp(12px, 2vw, 16px);transition:transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;}
+  .quick-card:hover{transform:translateY(-4px);border-color:var(--orange-dim);box-shadow:0 10px 30px rgba(0,0,0,0.4);}
+  .quick-card .k{font-family:var(--f-mono);font-size:clamp(9px, 1.5vw, 11px);text-transform:uppercase;letter-spacing:0.08em;color:var(--orange);margin-bottom:6px;}
+  .quick-card .v{font-size:clamp(13px, 2vw, 15px);color:var(--white);font-weight:700;}
+
+  /* ---------- TRAMO CARDS ---------- */
+  .tramo-card{
+    background:var(--black-card);border:1px solid var(--gray-line);border-radius:10px;
+    padding:clamp(14px, 2.5vw, 26px);margin-bottom:18px;position:relative;overflow:hidden;
+    transition:transform 0.25s ease, border-color 0.25s ease;
+  }
+  .tramo-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--orange);transform:scaleY(0);transform-origin:top;transition:transform 0.4s ease;}
+  .tramo-card:hover::before{transform:scaleY(1);}
+  .tramo-card:hover{transform:translateX(4px);border-color:var(--orange-dim);}
+  .tramo-head{display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:12px;}
+  .tramo-head h3{font-size:clamp(16px, 3vw, 24px);color:var(--white);flex:1;min-width:200px;}
+  .badge{font-family:var(--f-mono);font-size:clamp(9px, 1.5vw, 11px);text-transform:uppercase;letter-spacing:0.08em;padding:5px 12px;border-radius:100px;font-weight:700;white-space:nowrap;flex-shrink:0;}
+  .badge.onroad{background:rgba(76,175,125,0.15);color:var(--green);border:1px solid rgba(76,175,125,0.4);}
+  .badge.mixed{background:rgba(224,178,60,0.15);color:var(--yellow);border:1px solid rgba(224,178,60,0.4);}
+  .badge.long{background:rgba(217,80,63,0.15);color:var(--red);border:1px solid rgba(217,80,63,0.4);}
+  .tramo-card p{color:#c9c9c4;font-size:clamp(13px, 1.8vw, 14px);line-height:1.6;}
+  .tramo-card .tramo-km{font-family:var(--f-mono);font-size:clamp(11px, 1.5vw, 12px);color:var(--gray);margin-top:8px;}
+
+  /* ---------- FUEL TABLE ---------- */
+  .fuel-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  .fuel-table{width:100%;border-collapse:collapse;min-width:500px;font-size:clamp(11px, 1.5vw, 13px);}
+  .fuel-table th{font-family:var(--f-mono);text-transform:uppercase;letter-spacing:0.06em;font-size:clamp(9px, 1.3vw, 11px);color:var(--orange);text-align:left;padding:clamp(10px, 1.5vw, 12px) clamp(8px, 1.3vw, 10px);border-bottom:2px solid var(--orange-dim);}
+  .fuel-table td{padding:clamp(10px, 1.5vw, 12px) clamp(8px, 1.3vw, 10px);border-bottom:1px solid var(--gray-line);font-family:var(--f-mono);color:var(--white);transition:color 0.2s ease;}
+  .fuel-table tr{transition:background 0.2s ease;}
+  .fuel-table tr:hover{background:rgba(232,93,32,0.06);}
+  .fuel-table tr:hover td{color:var(--orange);}
+
+  /* ---------- CARD GRID / POI ---------- */
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(180px, 40vw, 240px), 1fr));gap:clamp(12px, 2vw, 16px);}
+  .poi-card{background:var(--black-card);border:1px solid var(--gray-line);border-radius:10px;padding:clamp(16px, 2.5vw, 20px);transition:transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;}
+  .poi-card:hover{transform:translateY(-6px);border-color:var(--orange-dim);box-shadow:0 14px 34px rgba(0,0,0,0.45);}
+  .poi-card .ico{font-size:clamp(20px, 4vw, 22px);margin-bottom:10px;display:inline-block;transition:transform 0.3s ease;}
+  .poi-card:hover .ico{transform:scale(1.2) rotate(-6deg);}
+  .poi-card h4{font-family:var(--f-body);font-weight:700;font-size:clamp(13px, 2vw, 15px);color:var(--white);margin-bottom:6px;}
+  .poi-card p{font-size:clamp(12px, 1.6vw, 13px);color:var(--gray);line-height:1.5;}
+  .poi-card .tag{
+    display:inline-block;margin-top:8px;font-family:var(--f-mono);font-size:clamp(9px, 1.3vw, 10px);
+    color:var(--orange);text-transform:uppercase;letter-spacing:0.06em;
+  }
+
+  /* ---------- TIPS LIST ---------- */
+  .tips-list{list-style:none;}
+  .tips-list li{display:flex;gap:14px;padding:clamp(12px, 2vw, 16px) 0;border-bottom:1px solid var(--gray-line);transition:padding-left 0.25s ease;flex-wrap:wrap;}
+  .tips-list li:hover{padding-left:8px;}
+  .tips-list li:last-child{border-bottom:none;}
+  .tips-list .n{font-family:var(--f-mono);color:var(--orange);font-weight:700;font-size:clamp(12px, 1.8vw, 14px);flex-shrink:0;width:24px;}
+  .tips-list strong{color:var(--white);}
+  .tips-list span{color:#c9c9c4;font-size:clamp(12px, 1.6vw, 14px);line-height:1.5;}
+
+  /* ---------- ITINERARY ---------- */
+  .itin-card{background:var(--black-card);border:1px solid var(--gray-line);border-left:3px solid var(--orange);border-radius:8px;padding:clamp(14px, 2.5vw, 20px);margin-bottom:16px;transition:transform 0.2s ease;}
+  .itin-card:hover{transform:translateX(4px);}
+  .itin-card h4{font-family:var(--f-mono);color:var(--orange);font-size:clamp(11px, 1.8vw, 13px);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:10px;}
+  .itin-card p{font-size:clamp(12px, 1.6vw, 14px);color:#c9c9c4;line-height:1.6;}
+
+  /* ---------- MAPS CTA ---------- */
+  .map-embed{border-radius:10px;overflow:hidden;border:1px solid var(--gray-line);margin-bottom:20px;position:relative;}
+  .map-embed iframe{width:100%;height:clamp(250px, 60vw, 420px);border:0;display:block;filter:grayscale(0.3) contrast(1.05);}
+  .cta-row{display:flex;gap:clamp(10px, 2vw, 14px);flex-wrap:wrap;}
+
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;
+    font-family:var(--f-mono);font-weight:700;font-size:clamp(12px, 1.8vw, 14px);letter-spacing:0.04em;text-transform:uppercase;
+    padding:clamp(12px, 1.8vw, 14px) clamp(18px, 3vw, 26px);border-radius:8px;min-height:44px;cursor:pointer;
+    transition:transform 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
+    position:relative;overflow:hidden;
+    flex:1;
+    min-width:160px;
+  }
+  .btn::after{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(120deg, transparent, rgba(255,255,255,0.25), transparent);transition:left 0.5s ease;}
+  .btn:hover::after{left:100%;}
+  .btn:hover{transform:translateY(-2px);}
+  .btn-primary{background:var(--orange);color:var(--black);border:1px solid var(--orange);}
+  .btn-primary:hover{background:#ff7136;box-shadow:0 8px 24px rgba(232,93,32,0.35);}
+  .btn-outline{background:transparent;color:var(--white);border:1px solid var(--gray-line);}
+  .btn-outline:hover{border-color:var(--orange);color:var(--orange);}
+
+  @media (max-width: 640px) {
+    .btn { flex:1; }
+    .cta-row { flex-direction:column; }
+  }
+
+  /* ---------- HIGHLIGHT BOX ---------- */
+  .highlight-box{
+    background:linear-gradient(135deg, rgba(232,93,32,0.1), rgba(232,93,32,0.02));
+    border:1px solid var(--orange-dim);border-radius:10px;padding:clamp(16px, 3vw, 30px);
+    font-size:clamp(13px, 1.8vw, 15px);color:#e8e8e4;position:relative;overflow:hidden;line-height:1.7;
+  }
+  .highlight-box::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle, rgba(232,93,32,0.08) 0%, transparent 60%);animation:rotateGlow 12s linear infinite;}
+  @keyframes rotateGlow{to{transform:rotate(360deg);}}
+
+  /* ---------- CHECKLIST ---------- */
+  .checklist{
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(160px, 35vw, 220px), 1fr));
+    gap:clamp(8px, 1.5vw, 10px);
+  }
+  .check-item{
+    display:flex;align-items:flex-start;gap:10px;
+    background:var(--black-card);border:1px solid var(--gray-line);
+    border-radius:8px;padding:clamp(10px, 1.5vw, 12px) clamp(12px, 1.8vw, 14px);font-size:clamp(12px, 1.6vw, 13px);color:#d8d8d2;
+    transition:border-color 0.2s ease;
+  }
+  .check-item:hover{border-color:var(--orange-dim);}
+  .check-item .mark{color:var(--green);font-weight:700;flex-shrink:0;}
+
+  /* ---------- COMMUNITY CTA ---------- */
+  .community{
+    text-align:center;padding:clamp(40px, 6vw, 90px) 0;
+    background:radial-gradient(circle at 50% 0%, #201108 0%, var(--black) 60%);
+    border-bottom:none;position:relative;overflow:hidden;
+  }
+  .community::before{
+    content:'';position:absolute;width:2px;height:2px;
+    box-shadow:120px 40px var(--orange), 260px 120px var(--white), 40px 160px var(--orange), 340px 30px var(--white), 180px 220px var(--orange), 400px 180px var(--white);
+    opacity:0.5;animation:twinkle 4s ease-in-out infinite;
+  }
+  @keyframes twinkle{0%,100%{opacity:0.2;} 50%{opacity:0.6;}}
+  .community h2{font-size:clamp(24px, 5vw, 52px);}
+  .community p{color:var(--gray);max-width:540px;margin:clamp(12px, 2vw, 14px) auto clamp(20px, 3vw, 36px);font-size:clamp(13px, 1.8vw, 15px);line-height:1.6;}
+  .community .cta-row{justify-content:center;}
+
+  footer{text-align:center;padding:clamp(20px, 3vw, 30px) 0;color:var(--gray);font-size:clamp(10px, 1.5vw, 12px);font-family:var(--f-mono);}
+  footer .logo{font-family:var(--f-display);font-size:clamp(18px, 3vw, 22px);color:var(--orange);letter-spacing:0.05em;margin-bottom:8px;}
+
+  /* ---------- HERO PHOTO ---------- */
+  .hero-photo{
+    position:absolute;inset:0;z-index:0;
+    background-size:cover;background-position:center 40%;
+    opacity:0.55;
+  }
+  .hero-photo::after{
+    content:'';position:absolute;inset:0;
+    background:
+      linear-gradient(180deg, rgba(14,14,14,0.35) 0%, rgba(14,14,14,0.55) 40%, var(--black) 100%),
+      linear-gradient(90deg, rgba(14,14,14,0.75) 0%, transparent 55%);
+  }
+  .hero .wrap{position:relative;z-index:2;}
+  .hero-bg-grid,.hero-glow{z-index:1;}
+
+  /* ---------- FULL-BLEED PHOTO BREAK ---------- */
+  .photo-break{
+    position:relative;height:clamp(160px, 40vw, 420px);
+    margin:clamp(20px, 4vw, 44px) 0 0;
+    overflow:hidden;border-top:1px solid var(--gray-line);
+  }
+  .photo-break img{
+    width:100%;height:100%;object-fit:cover;
+    filter:grayscale(0.15) contrast(1.05);
+    transition:transform 8s ease;
+  }
+  .photo-break:hover img{transform:scale(1.06);}
+  .photo-break::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg, rgba(14,14,14,0.05) 0%, var(--black) 96%);
+  }
+  .photo-break .cap{
+    position:absolute;left:0;right:0;bottom:16px;
+    text-align:center;font-family:var(--f-mono);font-size:clamp(9px, 1.5vw, 11px);
+    letter-spacing:0.12em;text-transform:uppercase;color:var(--gray);
+    z-index:2;
+  }
+
+  /* ---------- SECTION FEATURE PHOTO ---------- */
+  .section-photo{
+    border-radius:10px;overflow:hidden;border:1px solid var(--gray-line);
+    margin-bottom:clamp(16px, 3vw, 30px);position:relative;
+  }
+  .section-photo img{
+    width:100%;height:clamp(150px, 35vw, 340px);object-fit:cover;
+    filter:grayscale(0.1) contrast(1.05);
+  }
+
+  /* ========== MOBILE BREAKPOINTS ========== */
+
+  @media (max-width: 480px) {
+    .hero { min-height: 55vh; }
+    .wrap { padding: 0 clamp(12px, 3vw, 16px); }
+    section { padding: clamp(24px, 4vw, 40px) 0; }
+
+    .hero-tag { font-size: 9px; padding: 5px 10px; }
+    h1 { font-size: clamp(24px, 6vw, 36px); }
+    h2 { margin-bottom: 6px; }
+
+    .hero-stats { grid-template-columns: repeat(2, 1fr); margin-top: 16px; }
+    .alert-box { gap: 10px; padding: 10px 12px; }
+    .alert-box .icon { font-size: 16px; }
+
+    .quick-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .quick-card { padding: 10px; }
+    .quick-card .k { font-size: 8px; margin-bottom: 4px; }
+    .quick-card .v { font-size: 12px; }
+
+    .card-grid { grid-template-columns: 1fr; }
+    .cta-row { flex-direction: column; }
+    .btn { width: 100%; }
+
+    .seg-content .place { font-size: 12px; }
+    .seg-content .meta { font-size: 11px; }
+
+    .ficha-table { font-size: 10px; }
+    .ficha-table td { padding: 6px 4px; }
+    .ficha-table td:first-child { font-size: 8px; }
+
+    .checklist { grid-template-columns: 1fr; }
+    .tips-list li { gap: 10px; }
+    .tips-list .n { font-size: 11px; }
+  }
+
+  /* ========== TABLET BREAKPOINTS ========== */
+
+  @media (min-width: 641px) and (max-width: 1023px) {
+    .wrap { padding: 0 clamp(20px, 3vw, 32px); }
+    section { padding: clamp(40px, 4vw, 60px) 0; }
+
+    .hero { min-height: 70vh; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 1px; }
+
+    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+    .card-grid { grid-template-columns: repeat(2, 1fr); }
+
+    .cta-row { flex-wrap: wrap; }
+    .btn { flex: 1; min-width: 200px; }
+
+    .checklist { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  /* ========== DESKTOP BREAKPOINTS ========== */
+
+  @media (min-width: 1024px) {
+    .quick-grid { grid-template-columns: repeat(4, 1fr); }
+    .card-grid { grid-template-columns: repeat(3, 1fr); }
+    .checklist { grid-template-columns: repeat(4, 1fr); }
+
+    .cta-row { flex-wrap: nowrap; }
+    .btn { flex: 0; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *{ animation: none !important; transition: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ============ HERO ============ -->
+<header class="hero">
+  <div class="hero-photo" style="background-image:url('https://ridera.com.co/wp-content/uploads/2026/07/images-5-1.jpg');"></div>
+  <div class="hero-bg-grid"></div>
+  <div class="hero-glow"></div>
+  <div class="wrap">
+    <span class="hero-tag">● Ruta larga · On-road · Córdoba</span>
+    <h1>Ciénaga de Ayapel: el gran <em>espejo de agua</em> que pone a prueba tu espíritu rutero</h1>
+    <p class="hero-sub">Más de 330 kilómetros hacia la biodiversidad, la inmensidad de Córdoba y la libertad sobre dos ruedas</p>
+    <p class="hero-text">Esta no es una ruta cualquiera de fin de semana; es un viaje real, exigente y profundamente gratificante hacia uno de los tesoros ecológicos más imponentes de la región caribeña.</p>
+
+    <div class="hero-stats">
+      <div class="stat"><div class="num">335-342</div><div class="lab">Km ida</div></div>
+      <div class="stat"><div class="num">7-9</div><div class="lab">Horas</div></div>
+      <div class="stat"><div class="num">Medio-Alto</div><div class="lab">Dificultad</div></div>
+      <div class="stat"><div class="num">25 m</div><div class="lab">Altitud destino</div></div>
+    </div>
+  </div>
+  <div class="scroll-cue"><span>Desliza</span><span class="bar"></span></div>
+</header>
+
+<!-- ============ FICHA TECNICA ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Ficha técnica</div>
+    <h2 class="reveal">De <span>Medellín</span> a Ayapel</h2>
+    <p class="lede reveal">Ruta larga verificada con puntos intermedios reales de la vía nacional.</p>
+
+    <table class="ficha-table reveal">
+      <tr><td>Punto de salida</td><td>Medellín (Salida norte / Valle de Aburrá)</td></tr>
+      <tr><td>Destino</td><td>Ayapel / Ciénaga de Ayapel (Córdoba)</td></tr>
+      <tr><td>Distancia total ida</td><td>≈ 334 – 345 km</td></tr>
+      <tr><td>Tiempo estimado</td><td>7 – 9 horas</td></tr>
+      <tr><td>Altitud</td><td>Desde 1.500 m hasta ≈ 22-25 m s.n.m.</td></tr>
+      <tr><td>Estado de vía</td><td>ON-ROAD. Corredor nacional vía Caucasia</td></tr>
+      <tr><td>Dificultad</td><td>Medio-Alto (distancia, calor, fatiga)</td></tr>
+      <tr><td>Mejor época</td><td>Temporada seca</td></tr>
+      <tr><td>Moto recomendada</td><td>300 cc en adelante. Preferible 500-650+ cc</td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- ============ ALERTAS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Seguridad</div>
+    <h2 class="reveal">Esto es una <span>ruta larga</span></h2>
+
+    <div class="alert-box danger reveal">
+      <span class="icon">🛑</span>
+      <p><strong>No apta para principiantes:</strong> el desgaste físico acumulado por distancia y calor la hace exigente incluso para moteros con experiencia.</p>
+    </div>
+
+    <div class="alert-box reveal">
+      <span class="icon">⚠️</span>
+      <p><strong>Calor progresivo:</strong> a partir de Caucasia el clima cambia hacia condiciones cálidas y húmedas (32-34°C). Hidrátate riguramente.</p>
+    </div>
+
+    <div class="quick-grid">
+      <div class="quick-card reveal reveal-delay-1"><div class="k">Distancia</div><div class="v">335-342 km</div></div>
+      <div class="quick-card reveal reveal-delay-2"><div class="k">Tiempo</div><div class="v">7-9 h</div></div>
+      <div class="quick-card reveal reveal-delay-3"><div class="k">Tipo de vía</div><div class="v">Asfalto</div></div>
+      <div class="quick-card reveal reveal-delay-4"><div class="k">Clima</div><div class="v">~30-34°C</div></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRAMOS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Descripción</div>
+    <h2 class="reveal">Los <span>tramos</span> de la ruta</h2>
+
+    <div class="tramo-card reveal">
+      <div class="tramo-head">
+        <h3>Medellín → Caucasia</h3>
+        <span class="badge onroad">On-road</span>
+      </div>
+      <p>Salida anticipada del área metropolitana por la Autopista Norte, atravesando el Bajo Cauca antioqueño. Asfalto en buenas condiciones para un tramo largo y fluido.</p>
+      <div class="tramo-km">≈ 285 km</div>
+    </div>
+
+    <div class="tramo-card reveal">
+      <div class="tramo-head">
+        <h3>Caucasia → La Apartada</h3>
+        <span class="badge long">Calor</span>
+      </div>
+      <p>Tramo corto donde el calor empieza a intensificarse notablemente. Vital mantener hidratación rigurosa. En Buenavista está el Zooparque Los Caimanes.</p>
+      <div class="tramo-km">≈ 20 km</div>
+    </div>
+
+    <div class="tramo-card reveal">
+      <div class="tramo-head">
+        <h3>La Apartada → Ayapel</h3>
+        <span class="badge mixed">Ciénaga</span>
+      </div>
+      <p>Tramo final y más corto. El entorno cambia hacia llanuras anfibias y humedales imponentes que anticipan la llegada al espejo de agua.</p>
+      <div class="tramo-km">≈ 40 km</div>
+    </div>
+  </div>
+  <div class="photo-break reveal">
+    <img src="https://ridera.com.co/wp-content/uploads/2026/07/images-3-3.jpg" alt="Carretera hacia la Ciénaga de Ayapel" loading="lazy">
+    <span class="cap">El corredor hacia Córdoba</span>
+  </div>
+</section>
+
+<!-- ============ CHECKLIST TÉCNICO ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Preparación</div>
+    <h2 class="reveal">Check-up antes de <span>salir</span></h2>
+
+    <div class="checklist reveal">
+      <div class="check-item"><span class="mark">✓</span>Neumáticos y presión</div>
+      <div class="check-item"><span class="mark">✓</span>Frenos y arrastre</div>
+      <div class="check-item"><span class="mark">✓</span>Sistema eléctrico</div>
+      <div class="check-item"><span class="mark">✓</span>Tanque lleno</div>
+      <div class="check-item"><span class="mark">✓</span>Agua suficiente</div>
+      <div class="check-item"><span class="mark">✓</span>Bloqueador solar</div>
+      <div class="check-item"><span class="mark">✓</span>Equipo ventilado</div>
+      <div class="check-item"><span class="mark">✓</span>Ruta compartida</div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ PARADAS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Paradas</div>
+    <h2 class="reveal">Puntos <span>clave</span></h2>
+
+    <div class="card-grid">
+      <div class="poi-card reveal reveal-delay-1">
+        <div class="ico">⛽</div>
+        <h4>Tanqueo</h4>
+        <p>Paradas obligatorias cada 100-150 km para evitar sorpresas en tramos solitarios.</p>
+      </div>
+      <div class="poi-card reveal reveal-delay-2">
+        <div class="ico">☕</div>
+        <h4>Descanso</h4>
+        <p>Municipios intermedios para estirar piernas y combatir cansancio por calor.</p>
+      </div>
+      <div class="poi-card reveal reveal-delay-3">
+        <div class="ico">🐊</div>
+        <h4>Zooparque</h4>
+        <p>En Buenavista, Córdoba. Buena excusa para bajarse de la moto.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ MAPA Y CTA ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Mapa</div>
+    <h2 class="reveal">Trázala en tu <span>GPS</span></h2>
+
+    <div class="map-embed reveal">
+      <iframe
+        src="https://www.google.com/maps?saddr=Medell%C3%ADn,+Antioquia,+Colombia&daddr=Caucasia,+Antioquia,+Colombia+to:La+Apartada,+C%C3%B3rdoba,+Colombia+to:Ayapel,+C%C3%B3rdoba,+Colombia&output=embed"
+        loading="lazy" referrerpolicy="no-referrer-when-downgrade" allowfullscreen></iframe>
+    </div>
+
+    <div class="cta-row reveal">
+      <a class="btn btn-primary" href="https://www.google.com/maps/dir/?api=1&destination=Ayapel,Córdoba" target="_blank" rel="noopener">Google Maps</a>
+      <a class="btn btn-outline" href="https://waze.com/ul?q=Ayapel%20Cordoba" target="_blank" rel="noopener">Waze</a>
+    </div>
+  </div>
+</section>
+
+<!-- ============ CONSEJOS ============ -->
+<section>
+  <div class="wrap">
+    <div class="eyebrow reveal">Tips</div>
+    <h2 class="reveal">Antes de <span>salir</span></h2>
+
+    <ul class="tips-list reveal">
+      <li><span class="n">01</span><span><strong>Nivel avanzado:</strong> No recomendada para principiantes.</span></li>
+      <li><span class="n">02</span><span><strong>Check-up:</strong> Inspección profunda antes de partir.</span></li>
+      <li><span class="n">03</span><span><strong>Protección:</strong> Agua, bloqueador y equipo ventilado.</span></li>
+      <li><span class="n">04</span><span><strong>Combustible:</strong> Planifica cada abastecimiento.</span></li>
+      <li><span class="n">05</span><span><strong>Seguridad:</strong> Evita rodar de noche. Viaja en grupo.</span></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ COMUNIDAD CTA ============ -->
+<section class="community">
+  <div class="wrap">
+    <div class="eyebrow reveal" style="justify-content:center;display:flex;">Ridera te respalda</div>
+    <h2 class="reveal">Enciende el motor.<br>Lánzate al <span>corazón de Córdoba</span>.</h2>
+    <p class="reveal">Esta ruta reta tus límites y recompensa tu esfuerzo con el silencio imponente del agua y la inmensidad de la ciénaga.</p>
+    <div class="cta-row reveal">
+      <a class="btn btn-primary" href="https://ridera.com.co/comunidad" target="_blank" rel="noopener">Comunidad</a>
+      <a class="btn btn-outline" href="https://ridera.com.co/rutas" target="_blank" rel="noopener">Ver más rutas</a>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="logo">RIDERA</div>
+    <p>Medellín – Ciénaga de Ayapel · On-road · Ruta larga · 2026</p>
+  </div>
+</footer>
+
+<script>
+  (function(){
+    var els = document.querySelectorAll('.reveal');
+    if(!('IntersectionObserver' in window)){
+      els.forEach(function(el){ el.classList.add('in-view'); });
+      return;
+    }
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(entry){
+        if(entry.isIntersecting){
+          entry.target.classList.add('in-view');
+          io.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+    els.forEach(function(el){ io.observe(el); });
+  })();
+</script>
+
+</body>
+</html>
