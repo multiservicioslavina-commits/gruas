@@ -173,6 +173,7 @@
     function processData(rawData){
         var totalKm = 0;
         routes = []; markers = [];
+        var sinCoord = [];
 
         rawData.forEach(function(r){
             var tit = r.title.rendered || r.title;
@@ -186,7 +187,13 @@
             }
             var d = extractDest(tit);
             var c = findCoord(d);
-            if(!c) return;
+            if(!c){
+                c = findCoord(tit);
+            }
+            if(!c){
+                sinCoord.push(tit);
+                return;
+            }
             var kmMatch = exc.match(/(\d+(?:[.,]\d+)?)\s*km/i);
             var km = kmMatch ? parseFloat(kmMatch[1].replace(",",".")) : null;
             var diffMatch = exc.match(/(alta|media|baja)/i);
@@ -194,6 +201,10 @@
             if(km) totalKm += km;
             routes.push({id:r.id, title:tit, link:r.link, destino:d, km:km, diff:diff, lat:c[0], lon:c[1], excerpt:exc.slice(0,150)});
         });
+
+        if(sinCoord.length > 0){
+            console.warn("Rutas sin coordenadas (" + sinCoord.length + "):", sinCoord);
+        }
 
         document.getElementById("cRutas").textContent = routes.length;
         document.getElementById("cKm").textContent = totalKm > 0 ? "+"+Math.round(totalKm) : "—";
@@ -269,30 +280,39 @@
         renderList(this.value);
     });
 
-    function loadRoutes(postType){
-        fetch("/wp-json/wp/v2/" + postType + "?per_page=100")
+    function loadAllPages(postType, page, allData){
+        if(!page) page = 1;
+        if(!allData) allData = [];
+
+        fetch("/wp-json/wp/v2/" + postType + "?per_page=100&page=" + page)
         .then(function(res){
             if(!res.ok) throw new Error(res.status);
-            return res.json();
+            var totalPages = parseInt(res.headers.get("X-WP-TotalPages")) || 1;
+            return res.json().then(function(data){ return {data:data, totalPages:totalPages}; });
         })
-        .then(function(data){
-            if(data.length === 0 && postType === "rutas"){
-                loadRoutes("ruta");
-                return;
+        .then(function(result){
+            allData = allData.concat(result.data);
+            if(page < result.totalPages){
+                loadAllPages(postType, page + 1, allData);
+            } else {
+                if(allData.length === 0 && postType === "rutas"){
+                    loadAllPages("ruta", 1, []);
+                    return;
+                }
+                processData(allData);
             }
-            processData(data);
         })
         .catch(function(){
             if(postType === "rutas"){
-                loadRoutes("ruta");
+                loadAllPages("ruta", 1, []);
             } else if(postType === "ruta"){
-                loadRoutes("posts");
+                loadAllPages("posts", 1, []);
             } else {
                 document.getElementById("ridList").innerHTML = '<div class="rid-empty">Error al cargar rutas.<br><small style="color:#444">Verifica que el tipo de post "rutas" exista.</small></div>';
             }
         });
     }
 
-    loadRoutes("rutas");
+    loadAllPages("rutas");
 })();
 </script>
