@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 import '../services/music_service.dart';
 import '../theme.dart';
@@ -88,9 +89,9 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
       bottomNavigationBar: StreamBuilder<SequenceState?>(
         stream: _music.player.sequenceStateStream,
         builder: (ctx, snap) {
-          final current = snap.data?.currentSource?.tag as SongModel?;
-          if (current == null) return const SizedBox.shrink();
-          return _MiniPlayer(music: _music, song: current);
+          final tag = snap.data?.currentSource?.tag as MediaItem?;
+          if (tag == null) return const SizedBox.shrink();
+          return _MiniPlayer(music: _music, tag: tag);
         },
       ),
     );
@@ -159,8 +160,8 @@ class _MusicPlayerScreenState extends State<MusicPlayerScreen> {
                 stream: _music.player.sequenceStateStream,
                 builder: (ctx, snap) {
                   final current =
-                      snap.data?.currentSource?.tag as SongModel?;
-                  final isPlaying = current?.id == song.id;
+                      snap.data?.currentSource?.tag as MediaItem?;
+                  final isPlaying = current?.id == song.uri;
                   return _SongTile(
                     song: song,
                     isPlaying: isPlaying,
@@ -236,9 +237,9 @@ class _SongTile extends StatelessWidget {
 }
 
 class _MiniPlayer extends StatelessWidget {
-  const _MiniPlayer({required this.music, required this.song});
+  const _MiniPlayer({required this.music, required this.tag});
   final MusicService music;
-  final SongModel song;
+  final MediaItem tag;
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +276,7 @@ class _MiniPlayer extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    song.title,
+                    tag.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -284,7 +285,7 @@ class _MiniPlayer extends StatelessWidget {
                         fontSize: 13),
                   ),
                   Text(
-                    song.artist ?? 'Artista desconocido',
+                    tag.artist ?? 'Artista desconocido',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
@@ -364,8 +365,8 @@ class _FullPlayerSheetState extends State<_FullPlayerSheet> {
           StreamBuilder<SequenceState?>(
             stream: m.player.sequenceStateStream,
             builder: (ctx, snap) {
-              final song = snap.data?.currentSource?.tag as SongModel?;
-              return _buildSongHeader(song);
+              final tag = snap.data?.currentSource?.tag as MediaItem?;
+              return _buildSongHeader(tag);
             },
           ),
           const SizedBox(height: 28),
@@ -377,7 +378,8 @@ class _FullPlayerSheetState extends State<_FullPlayerSheet> {
     );
   }
 
-  Widget _buildSongHeader(SongModel? song) {
+  Widget _buildSongHeader(MediaItem? tag) {
+    final songId = tag?.extras?['songId'] as int?;
     return Column(
       children: [
         Container(
@@ -388,9 +390,9 @@ class _FullPlayerSheetState extends State<_FullPlayerSheet> {
             borderRadius: BorderRadius.circular(16),
             border: Border.all(color: RColors.brand.withValues(alpha: 0.4)),
           ),
-          child: song != null
+          child: (tag != null && songId != null)
               ? QueryArtworkWidget(
-                  id: song.id,
+                  id: songId,
                   type: ArtworkType.AUDIO,
                   artworkBorderRadius: BorderRadius.circular(16),
                   artworkFit: BoxFit.cover,
@@ -405,7 +407,7 @@ class _FullPlayerSheetState extends State<_FullPlayerSheet> {
         ),
         const SizedBox(height: 20),
         Text(
-          song?.title ?? '—',
+          tag?.title ?? '—',
           textAlign: TextAlign.center,
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -414,7 +416,7 @@ class _FullPlayerSheetState extends State<_FullPlayerSheet> {
         ),
         const SizedBox(height: 4),
         Text(
-          song?.artist ?? 'Artista desconocido',
+          tag?.artist ?? 'Artista desconocido',
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,

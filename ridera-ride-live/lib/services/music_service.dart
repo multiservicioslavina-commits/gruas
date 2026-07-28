@@ -1,4 +1,5 @@
 import 'package:just_audio/just_audio.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:on_audio_query/on_audio_query.dart';
 
 class MusicService {
@@ -37,7 +38,19 @@ class MusicService {
   Future<void> playFrom(List<SongModel> playlist, int index) async {
     _currentPlaylist = List.from(playlist);
     final sources = playlist
-        .map((s) => AudioSource.uri(Uri.parse(s.uri!), tag: s))
+        .map((s) => AudioSource.uri(
+              Uri.parse(s.uri!),
+              tag: MediaItem(
+                id: s.uri!,
+                title: s.title,
+                artist: s.artist ?? 'Artista desconocido',
+                album: s.album,
+                duration: s.duration != null
+                    ? Duration(milliseconds: s.duration!)
+                    : null,
+                extras: {'songId': s.id},
+              ),
+            ))
         .toList();
     await player.setAudioSource(
       ConcatenatingAudioSource(children: sources),

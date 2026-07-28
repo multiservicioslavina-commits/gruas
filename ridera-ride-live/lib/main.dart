@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map_tile_caching/flutter_map_tile_caching.dart';
+import 'package:just_audio_background/just_audio_background.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'services/notification_service.dart';
 import 'supabase_config.dart';
@@ -20,6 +21,18 @@ Future<void> main() async {
   // runZonedGuarded atrapa errores asíncronos no manejados (WebSocket cae, etc)
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    try {
+      await JustAudioBackground.init(
+        androidNotificationChannelId: 'com.ridera.ridelive.audio',
+        androidNotificationChannelName: 'Música',
+        androidNotificationIcon: 'mipmap/ic_launcher',
+        androidNotificationOngoing: true,
+        androidStopForegroundOnPause: true,
+      );
+    } catch (e) {
+      debugPrint('JustAudioBackground init falló: $e');
+    }
 
     try {
       await FMTCObjectBoxBackend().initialise();
