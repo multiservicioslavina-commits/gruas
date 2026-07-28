@@ -1,44 +1,6 @@
-// ============================================================
-// INSTRUCCIONES PARA WPCODE:
-// 1. Tipo de snippet: "PHP Snippet"  (MUY IMPORTANTE)
-// 2. Metodo de insercion: "Shortcode"
-// 3. Usar shortcode: [ridera_mapa_interactivo]
-// 4. NO cambiar el tipo a "Universal" ni "HTML"
-// ============================================================
-
-function ridera_mapa_v3_render() {
-    $args = array(
-        'post_type'      => 'rutas',
-        'posts_per_page' => -1,
-        'post_status'    => 'publish',
-    );
-    $query = new WP_Query($args);
-
-    if (!$query->have_posts()) {
-        $args['post_type'] = 'ruta';
-        $query = new WP_Query($args);
-    }
-
-    $rutas_data = array();
-    if ($query->have_posts()) {
-        while ($query->have_posts()) {
-            $query->the_post();
-            $rutas_data[] = array(
-                'id'      => get_the_ID(),
-                'title'   => html_entity_decode(get_the_title(), ENT_QUOTES, 'UTF-8'),
-                'link'    => get_permalink(),
-                'excerpt' => wp_strip_all_tags(get_the_excerpt()),
-            );
-        }
-        wp_reset_postdata();
-    }
-
-    $rutas_json = wp_json_encode($rutas_data, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_APOS);
-
-$html = <<<RIDERA_HTML
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"/>
 <style>
-.rid{width:100%;height:88vh;min-height:600px;display:flex;font-family:system-ui,-apple-system,sans-serif;background:#0f0f0f;color:#eee;position:relative;overflow:hidden}
+.rid{width:100%;height:88vh;min-height:600px;display:flex;font-family:system-ui,-apple-system,sans-serif;background:#0f0f0f;color:#eee;position:relative;overflow:hidden;box-sizing:border-box}
 .rid *{box-sizing:border-box}
 .rid-map{flex:1;position:relative;z-index:1}
 .rid-side{width:360px;background:#161616;border-left:1px solid #2a2a2a;display:flex;flex-direction:column;z-index:2;overflow:hidden}
@@ -91,6 +53,7 @@ $html = <<<RIDERA_HTML
     .rid-map{order:1;min-height:55vh}
 }
 </style>
+
 <div class="rid">
     <div id="ridMap" class="rid-map"></div>
     <div class="rid-side">
@@ -113,88 +76,89 @@ $html = <<<RIDERA_HTML
         </div>
     </div>
 </div>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
 <script>
-document.addEventListener('DOMContentLoaded', function(){
+(function(){
     var COORDS={
-        'abriaqui':[5.78,-75.90],'ayapel':[8.60,-75.63],'guatape':[6.23,-75.16],
-        'sonson':[5.69,-75.31],'caldas':[6.15,-75.73],'envigado':[6.18,-75.51],
-        'sabaneta':[6.16,-75.49],'la ceja':[6.05,-75.42],'rionegro':[6.13,-75.38],
-        'copacabana':[6.29,-75.51],'girardota':[6.42,-75.48],'barbosa':[6.46,-75.41],
-        'pereira':[4.81,-75.70],'manizales':[5.07,-75.52],'armenia':[4.53,-75.73],
-        'salento':[4.76,-75.57],'filandia':[4.77,-75.68],'pijao':[4.62,-75.67],
-        'cartagena':[10.39,-75.51],'tayrona':[11.29,-73.89],'bogota':[4.71,-74.07],
-        'santa marta':[11.24,-74.22],'minca':[11.22,-74.30],'cali':[3.45,-76.53],
-        'buenaventura':[3.88,-77.27],'popayan':[2.44,-76.61],'san andres':[12.58,-81.72],
-        'providencia':[13.37,-81.38],'leticia':[-0.20,-69.95],'puerto narino':[0.75,-70.36],
-        'medellin':[6.24,-75.58],'jardin':[5.60,-75.82],'jerico':[5.79,-75.78],
-        'santa fe de antioquia':[6.56,-75.83],'canasgordas':[6.75,-76.02],
-        'andes':[5.66,-75.88],'urrao':[6.32,-76.13],'tamesis':[5.66,-75.71],
-        'fredonia':[5.93,-75.67],'san carlos':[6.19,-74.99],'san rafael':[6.30,-74.99],
-        'puerto triunfo':[5.88,-74.65],'cisneros':[6.53,-75.09],'cocorna':[6.05,-75.19],
-        'caramanta':[5.55,-75.64],'betania':[5.74,-75.97],'betulia':[6.11,-75.98],
-        'liborina':[6.67,-75.80],'olaya':[6.61,-75.79],'sopetran':[6.50,-75.74],
-        'san jeronimo':[6.44,-75.73],'ebejico':[6.33,-75.77],'heliconia':[6.21,-75.73],
-        'titiribi':[6.06,-75.80],'venecia':[5.96,-75.73],'angelopolis':[6.12,-75.71],
-        'amaga':[6.04,-75.70],'concordia':[6.05,-75.90],'salgar':[5.96,-75.98],
-        'ciudad bolivar':[5.85,-76.02],'hispania':[5.80,-75.90],
-        'pueblo rico':[5.24,-76.04],'valparaiso':[5.62,-75.62],'narino':[5.61,-75.18],
-        'argelia':[5.74,-75.14],'la pintada':[5.74,-75.60],'montebello':[5.95,-75.52],
-        'el retiro':[6.06,-75.50],'la union':[5.97,-75.36],'el carmen de viboral':[6.08,-75.34],
-        'marinilla':[6.18,-75.34],'el penol':[6.22,-75.25],'granada':[6.14,-75.18],
-        'alejandria':[6.38,-75.14],'santo domingo':[6.47,-75.17],'yolombo':[6.60,-75.01],
-        'nechi':[8.10,-74.77],'caucasia':[7.98,-75.20],'taraza':[7.58,-75.40],
-        'valdivia':[7.30,-75.45],'yarumal':[6.97,-75.42],'ituango':[7.17,-75.77],
-        'turbo':[8.10,-76.73],'apartado':[7.88,-76.63],'chigorodo':[7.67,-76.68],
-        'mutata':[7.24,-76.44],'dabeiba':[7.00,-76.25],'frontino':[6.78,-76.13],
-        'bucaramanga':[7.12,-73.12],'san gil':[6.56,-73.13],'barichara':[6.63,-73.22],
-        'cucuta':[7.89,-72.50],'pamplona':[7.38,-72.65],
-        'tunja':[5.53,-73.36],'villa de leyva':[5.63,-73.52],'paipa':[5.78,-73.11],
-        'sogamoso':[5.71,-72.93],'duitama':[5.83,-73.03],
-        'ibague':[4.44,-75.24],'honda':[5.21,-74.74],'mariquita':[5.20,-74.89],
-        'neiva':[2.93,-75.28],'san agustin':[1.88,-76.27],'garzon':[2.20,-75.63],
-        'pasto':[1.21,-77.28],'ipiales':[0.83,-77.64],'tumaco':[1.80,-78.76],
-        'mocoa':[1.15,-76.65],'sibundoy':[1.19,-76.92],
-        'quibdo':[5.69,-76.66],'nuqui':[5.70,-77.27],'bahia solano':[6.22,-77.39],
-        'villavicencio':[4.15,-73.63],'acacias':[3.99,-73.76],
-        'yopal':[5.34,-72.39],'aguazul':[5.17,-72.55],
-        'florencia':[1.61,-75.61],'inirida':[3.86,-67.92],
-        'mitu':[1.25,-70.23],'puerto carreno':[6.19,-67.49],
-        'arauca':[7.09,-70.76],'riohacha':[11.54,-72.91],
-        'valledupar':[10.47,-73.25],'sincelejo':[9.30,-75.39],
-        'monteria':[8.75,-75.88],'lorica':[9.24,-75.81],
-        'barranquilla':[10.96,-74.78],'soledad':[10.92,-74.77],
-        'magangue':[9.24,-74.75],'mompos':[9.25,-74.43],
-        'girardot':[4.30,-74.80],'melgar':[4.21,-74.64],
-        'zipaquira':[5.02,-74.00],'guaduas':[5.07,-74.60],
-        'la mesa':[4.63,-74.46],'fusagasuga':[4.34,-74.36]
+        "abriaqui":[5.78,-75.90],"ayapel":[8.60,-75.63],"guatape":[6.23,-75.16],
+        "sonson":[5.69,-75.31],"caldas":[6.15,-75.73],"envigado":[6.18,-75.51],
+        "sabaneta":[6.16,-75.49],"la ceja":[6.05,-75.42],"rionegro":[6.13,-75.38],
+        "copacabana":[6.29,-75.51],"girardota":[6.42,-75.48],"barbosa":[6.46,-75.41],
+        "pereira":[4.81,-75.70],"manizales":[5.07,-75.52],"armenia":[4.53,-75.73],
+        "salento":[4.76,-75.57],"filandia":[4.77,-75.68],"pijao":[4.62,-75.67],
+        "cartagena":[10.39,-75.51],"tayrona":[11.29,-73.89],"bogota":[4.71,-74.07],
+        "santa marta":[11.24,-74.22],"minca":[11.22,-74.30],"cali":[3.45,-76.53],
+        "buenaventura":[3.88,-77.27],"popayan":[2.44,-76.61],"san andres":[12.58,-81.72],
+        "providencia":[13.37,-81.38],"leticia":[-0.20,-69.95],"puerto narino":[0.75,-70.36],
+        "medellin":[6.24,-75.58],"jardin":[5.60,-75.82],"jerico":[5.79,-75.78],
+        "santa fe de antioquia":[6.56,-75.83],"canasgordas":[6.75,-76.02],
+        "andes":[5.66,-75.88],"urrao":[6.32,-76.13],"tamesis":[5.66,-75.71],
+        "fredonia":[5.93,-75.67],"san carlos":[6.19,-74.99],"san rafael":[6.30,-74.99],
+        "puerto triunfo":[5.88,-74.65],"cisneros":[6.53,-75.09],"cocorna":[6.05,-75.19],
+        "caramanta":[5.55,-75.64],"betania":[5.74,-75.97],"betulia":[6.11,-75.98],
+        "liborina":[6.67,-75.80],"olaya":[6.61,-75.79],"sopetran":[6.50,-75.74],
+        "san jeronimo":[6.44,-75.73],"ebejico":[6.33,-75.77],"heliconia":[6.21,-75.73],
+        "titiribi":[6.06,-75.80],"venecia":[5.96,-75.73],"angelopolis":[6.12,-75.71],
+        "amaga":[6.04,-75.70],"concordia":[6.05,-75.90],"salgar":[5.96,-75.98],
+        "ciudad bolivar":[5.85,-76.02],"hispania":[5.80,-75.90],
+        "pueblo rico":[5.24,-76.04],"valparaiso":[5.62,-75.62],"narino":[5.61,-75.18],
+        "argelia":[5.74,-75.14],"la pintada":[5.74,-75.60],"montebello":[5.95,-75.52],
+        "el retiro":[6.06,-75.50],"la union":[5.97,-75.36],"el carmen de viboral":[6.08,-75.34],
+        "marinilla":[6.18,-75.34],"el penol":[6.22,-75.25],"granada":[6.14,-75.18],
+        "alejandria":[6.38,-75.14],"santo domingo":[6.47,-75.17],"yolombo":[6.60,-75.01],
+        "nechi":[8.10,-74.77],"caucasia":[7.98,-75.20],"taraza":[7.58,-75.40],
+        "valdivia":[7.30,-75.45],"yarumal":[6.97,-75.42],"ituango":[7.17,-75.77],
+        "turbo":[8.10,-76.73],"apartado":[7.88,-76.63],"chigorodo":[7.67,-76.68],
+        "mutata":[7.24,-76.44],"dabeiba":[7.00,-76.25],"frontino":[6.78,-76.13],
+        "bucaramanga":[7.12,-73.12],"san gil":[6.56,-73.13],"barichara":[6.63,-73.22],
+        "cucuta":[7.89,-72.50],"pamplona":[7.38,-72.65],
+        "tunja":[5.53,-73.36],"villa de leyva":[5.63,-73.52],"paipa":[5.78,-73.11],
+        "sogamoso":[5.71,-72.93],"duitama":[5.83,-73.03],
+        "ibague":[4.44,-75.24],"honda":[5.21,-74.74],"mariquita":[5.20,-74.89],
+        "neiva":[2.93,-75.28],"san agustin":[1.88,-76.27],"garzon":[2.20,-75.63],
+        "pasto":[1.21,-77.28],"ipiales":[0.83,-77.64],"tumaco":[1.80,-78.76],
+        "mocoa":[1.15,-76.65],"sibundoy":[1.19,-76.92],
+        "quibdo":[5.69,-76.66],"nuqui":[5.70,-77.27],"bahia solano":[6.22,-77.39],
+        "villavicencio":[4.15,-73.63],"acacias":[3.99,-73.76],
+        "yopal":[5.34,-72.39],"aguazul":[5.17,-72.55],
+        "florencia":[1.61,-75.61],"inirida":[3.86,-67.92],
+        "mitu":[1.25,-70.23],"puerto carreno":[6.19,-67.49],
+        "arauca":[7.09,-70.76],"riohacha":[11.54,-72.91],
+        "valledupar":[10.47,-73.25],"sincelejo":[9.30,-75.39],
+        "monteria":[8.75,-75.88],"lorica":[9.24,-75.81],
+        "barranquilla":[10.96,-74.78],"soledad":[10.92,-74.77],
+        "magangue":[9.24,-74.75],"mompos":[9.25,-74.43],
+        "girardot":[4.30,-74.80],"melgar":[4.21,-74.64],
+        "zipaquira":[5.02,-74.00],"guaduas":[5.07,-74.60],
+        "la mesa":[4.63,-74.46],"fusagasuga":[4.34,-74.36]
     };
 
-    var map = L.map('ridMap',{center:[6.25,-75.5],zoom:7,zoomControl:false});
-    L.control.zoom({position:'topright'}).addTo(map);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
-        attribution:'OpenStreetMap',maxZoom:18
+    var map = L.map("ridMap",{center:[6.25,-75.5],zoom:7,zoomControl:false});
+    L.control.zoom({position:"topright"}).addTo(map);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{
+        attribution:"OpenStreetMap",maxZoom:18
     }).addTo(map);
 
-    var icon = L.divIcon({className:'',
+    var icon = L.divIcon({className:"",
         html:'<div style="width:14px;height:14px;background:#E85D20;border-radius:50%;border:2.5px solid #fff;box-shadow:0 0 10px rgba(232,93,32,.6),0 2px 6px rgba(0,0,0,.4);cursor:pointer"></div>',
         iconSize:[14,14],iconAnchor:[7,7]});
-    var iconActive = L.divIcon({className:'',
+    var iconActive = L.divIcon({className:"",
         html:'<div style="width:20px;height:20px;background:#ff6b35;border-radius:50%;border:3px solid #fff;box-shadow:0 0 16px rgba(232,93,32,.8),0 3px 10px rgba(0,0,0,.5);cursor:pointer"></div>',
         iconSize:[20,20],iconAnchor:[10,10]});
 
-    var rawData = {$rutas_json};
     var routes = [], markers = [], activeMarker = null;
 
     function extractDest(title){
-        var m = title.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
+        var t = title.rendered || title;
+        var m = t.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
         if(m) return m[1].trim();
-        var p = title.split(/[-–—]/);
-        return p.length > 1 ? p[p.length-1].trim() : title;
+        var p = t.split(/[-–—]/);
+        return p.length > 1 ? p[p.length-1].trim() : t;
     }
 
     function normalize(s){
-        return s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim();
+        return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
     }
 
     function findCoord(d){
@@ -206,40 +170,58 @@ document.addEventListener('DOMContentLoaded', function(){
         return null;
     }
 
-    var totalKm = 0;
-    rawData.forEach(function(r){
-        var d = extractDest(r.title);
-        var c = findCoord(d);
-        if(!c) return;
-        var kmMatch = r.excerpt.match(/(\d+(?:[.,]\d+)?)\s*km/i);
-        var km = kmMatch ? parseFloat(kmMatch[1].replace(',','.')) : null;
-        var diffMatch = r.excerpt.match(/(alta|media|baja)/i);
-        var diff = diffMatch ? diffMatch[1].toLowerCase() : '';
-        if(km) totalKm += km;
-        routes.push({id:r.id, title:r.title, link:r.link, destino:d, km:km, diff:diff, lat:c[0], lon:c[1], excerpt:r.excerpt.slice(0,150)});
-    });
+    function processData(rawData){
+        var totalKm = 0;
+        routes = []; markers = [];
 
-    document.getElementById('cRutas').textContent = routes.length;
-    document.getElementById('cKm').textContent = totalKm > 0 ? '+'+Math.round(totalKm) : '—';
-    document.getElementById('cPuntos').textContent = routes.length;
+        rawData.forEach(function(r){
+            var tit = r.title.rendered || r.title;
+            var exc = "";
+            if(r.excerpt && r.excerpt.rendered){
+                var tmp = document.createElement("div");
+                tmp.innerHTML = r.excerpt.rendered;
+                exc = tmp.textContent || "";
+            } else if(typeof r.excerpt === "string"){
+                exc = r.excerpt;
+            }
+            var d = extractDest(tit);
+            var c = findCoord(d);
+            if(!c) return;
+            var kmMatch = exc.match(/(\d+(?:[.,]\d+)?)\s*km/i);
+            var km = kmMatch ? parseFloat(kmMatch[1].replace(",",".")) : null;
+            var diffMatch = exc.match(/(alta|media|baja)/i);
+            var diff = diffMatch ? diffMatch[1].toLowerCase() : "";
+            if(km) totalKm += km;
+            routes.push({id:r.id, title:tit, link:r.link, destino:d, km:km, diff:diff, lat:c[0], lon:c[1], excerpt:exc.slice(0,150)});
+        });
 
-    routes.forEach(function(r, idx){
-        var m = L.marker([r.lat, r.lon], {icon: icon}).addTo(map);
-        m.bindTooltip(r.destino, {className:'rid-tooltip', direction:'top', offset:[0,-10]});
-        var popup = '<div style="min-width:200px">' +
-            '<div class="rid-popup-title">' + r.title + '</div>' +
-            '<div class="rid-popup-dest">📍 ' + r.destino + '</div>' +
-            '<div class="rid-popup-tags">' +
-            (r.km ? '<span class="rid-badge rid-badge-km">~'+r.km+' km</span>' : '') +
-            (r.diff ? '<span class="rid-badge rid-badge-'+r.diff+'">'+r.diff+'</span>' : '') +
-            '</div>' +
-            '<a href="'+r.link+'" class="rid-popup-link" target="_blank">Ver ruta completa →</a>' +
-            '<div class="rid-popup-hint">Doble clic para ir a la ruta</div></div>';
-        m.bindPopup(popup, {className:'rid-popup', maxWidth:280});
-        m.on('dblclick', function(e){ L.DomEvent.stopPropagation(e); window.open(r.link, '_blank'); });
-        m._idx = idx;
-        markers.push(m);
-    });
+        document.getElementById("cRutas").textContent = routes.length;
+        document.getElementById("cKm").textContent = totalKm > 0 ? "+"+Math.round(totalKm) : "—";
+        document.getElementById("cPuntos").textContent = routes.length;
+
+        routes.forEach(function(r, idx){
+            var m = L.marker([r.lat, r.lon], {icon: icon}).addTo(map);
+            m.bindTooltip(r.destino, {className:"rid-tooltip", direction:"top", offset:[0,-10]});
+            var popup = '<div style="min-width:200px">' +
+                '<div class="rid-popup-title">' + r.title + '</div>' +
+                '<div class="rid-popup-dest">📍 ' + r.destino + '</div>' +
+                '<div class="rid-popup-tags">' +
+                (r.km ? '<span class="rid-badge rid-badge-km">~'+r.km+' km</span>' : '') +
+                (r.diff ? '<span class="rid-badge rid-badge-'+r.diff+'">'+r.diff+'</span>' : '') +
+                '</div>' +
+                '<a href="'+r.link+'" class="rid-popup-link" target="_blank">Ver ruta completa →</a>' +
+                '<div class="rid-popup-hint">Doble clic para ir a la ruta</div></div>';
+            m.bindPopup(popup, {className:"rid-popup", maxWidth:280});
+            m.on("dblclick", function(e){ L.DomEvent.stopPropagation(e); window.open(r.link, "_blank"); });
+            markers.push(m);
+        });
+
+        renderList();
+
+        if(routes.length === 0){
+            document.getElementById("ridList").innerHTML = '<div class="rid-empty">No se encontraron rutas con coordenadas conocidas.</div>';
+        }
+    }
 
     function renderList(filter){
         var filtered = routes;
@@ -250,12 +232,13 @@ document.addEventListener('DOMContentLoaded', function(){
             });
         }
         if(filtered.length === 0){
-            document.getElementById('ridList').innerHTML = '<div class="rid-empty">No se encontraron rutas</div>';
+            document.getElementById("ridList").innerHTML = '<div class="rid-empty">No se encontraron rutas</div>';
             return;
         }
-        var h = '';
+        var h = "";
         filtered.forEach(function(r){
-            h += '<div class="rid-item" data-idx="'+routes.indexOf(r)+'">';
+            var idx = routes.indexOf(r);
+            h += '<div class="rid-item" data-idx="'+idx+'">';
             h += '<div class="rid-dot"></div>';
             h += '<div class="rid-info"><div class="rid-name">'+r.title+'</div><div class="rid-meta">';
             if(r.km) h += '<span class="rid-badge rid-badge-km">~'+r.km+' km</span>';
@@ -264,14 +247,15 @@ document.addEventListener('DOMContentLoaded', function(){
             h += '<div class="rid-go">→ mapa</div>';
             h += '</div>';
         });
-        document.getElementById('ridList').innerHTML = h;
-        document.querySelectorAll('.rid-item').forEach(function(el){
-            el.addEventListener('click', function(){
+        document.getElementById("ridList").innerHTML = h;
+
+        document.querySelectorAll(".rid-item").forEach(function(el){
+            el.addEventListener("click", function(){
                 var idx = parseInt(el.dataset.idx);
                 var r = routes[idx];
                 var m = markers[idx];
-                document.querySelectorAll('.rid-item').forEach(function(x){x.classList.remove('act');});
-                el.classList.add('act');
+                document.querySelectorAll(".rid-item").forEach(function(x){x.classList.remove("act");});
+                el.classList.add("act");
                 if(activeMarker) activeMarker.setIcon(icon);
                 m.setIcon(iconActive);
                 activeMarker = m;
@@ -281,19 +265,34 @@ document.addEventListener('DOMContentLoaded', function(){
         });
     }
 
-    renderList();
-
-    document.getElementById('ridSearch').addEventListener('input', function(){
+    document.getElementById("ridSearch").addEventListener("input", function(){
         renderList(this.value);
     });
 
-    if(routes.length === 0){
-        document.getElementById('ridList').innerHTML = '<div class="rid-empty">No se encontraron rutas.<br><br><small style="color:#444">Verifica que existan publicaciones de tipo "rutas".</small></div>';
+    function loadRoutes(postType){
+        fetch("/wp-json/wp/v2/" + postType + "?per_page=100")
+        .then(function(res){
+            if(!res.ok) throw new Error(res.status);
+            return res.json();
+        })
+        .then(function(data){
+            if(data.length === 0 && postType === "rutas"){
+                loadRoutes("ruta");
+                return;
+            }
+            processData(data);
+        })
+        .catch(function(){
+            if(postType === "rutas"){
+                loadRoutes("ruta");
+            } else if(postType === "ruta"){
+                loadRoutes("posts");
+            } else {
+                document.getElementById("ridList").innerHTML = '<div class="rid-empty">Error al cargar rutas.<br><small style="color:#444">Verifica que el tipo de post "rutas" exista.</small></div>';
+            }
+        });
     }
-});
-</script>
-RIDERA_HTML;
 
-    return $html;
-}
-add_shortcode('ridera_mapa_interactivo', 'ridera_mapa_v3_render');
+    loadRoutes("rutas");
+})();
+</script>
