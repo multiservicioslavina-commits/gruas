@@ -166,6 +166,18 @@ input:focus,select:focus{outline:none;border-color:var(--accent)}
 .pago-metodo .pm-name{font-weight:700;font-size:14px;margin-bottom:2px}
 .pago-metodo .pm-detail{color:var(--muted);font-size:13px;word-break:break-all}
 
+/* BOLD PAYMENT */
+.bold-section{background:linear-gradient(135deg,rgba(61,90,241,.08),rgba(46,204,113,.06));border:2px solid rgba(61,90,241,.35);border-radius:18px;padding:22px;margin-bottom:16px;text-align:center}
+.bold-section h3{font-family:'Bebas Neue';font-weight:400;font-size:26px;letter-spacing:.5px;margin-bottom:4px}
+.bold-section .sub{color:var(--muted);font-size:14px;margin-bottom:16px}
+.btn-bold{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:18px;background:linear-gradient(135deg,#3d5af1,#2a45d1);color:#fff;border:none;border-radius:14px;font-family:'DM Sans';font-weight:700;font-size:17px;cursor:pointer;text-decoration:none;box-shadow:0 8px 26px -10px rgba(61,90,241,.5);transition:transform .06s,filter .15s}
+.btn-bold:hover{filter:brightness(1.08)}
+.btn-bold:active{transform:scale(.985)}
+.bold-badges{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:12px}
+.bold-badge{font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:6px;background:rgba(61,90,241,.1);border:1px solid rgba(61,90,241,.25);color:rgba(61,90,241,.9)}
+.pago-divider{display:flex;align-items:center;gap:12px;margin-bottom:16px;color:var(--muted);font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:2px;font-size:12px}
+.pago-divider::before,.pago-divider::after{content:'';flex:1;height:1px;background:var(--line)}
+
 /* RECIBO / SUCCESS */
 #reciboWrap{display:none;padding:14px 0}
 .recibo-card{background:var(--surface);border:1px solid var(--accent);border-radius:18px;padding:24px 20px;margin-bottom:18px}
@@ -373,7 +385,29 @@ footer a{color:var(--accent);text-decoration:none}
           <div class="timer-label">Tus n&uacute;meros est&aacute;n reservados por</div>
           <div class="timer-count" id="timerCount">15:00</div>
         </div>
-        <div class="pago-section">
+        <!-- BOLD ONLINE PAYMENT -->
+        <div class="bold-section" id="boldPago" style="display:none">
+          <h3>PAGA EN L&Iacute;NEA</h3>
+          <p class="sub">Paga de forma segura con tarjeta, PSE, Nequi o Daviplata.</p>
+          <div style="background:var(--surface-2);border:1px solid rgba(61,90,241,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px">
+            <div style="font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:4px">Total a pagar</div>
+            <div style="font-family:'Bebas Neue';font-size:36px;color:#3d5af1;line-height:1" id="boldTotal"></div>
+          </div>
+          <a class="btn-bold" id="boldLink" href="#" target="_blank">
+            &#x1F4B3; Pagar con Bold
+          </a>
+          <div class="bold-badges">
+            <span class="bold-badge">Visa / Mastercard</span>
+            <span class="bold-badge">PSE</span>
+            <span class="bold-badge">Nequi</span>
+            <span class="bold-badge">Daviplata</span>
+          </div>
+          <p style="color:var(--muted);font-size:12px;margin-top:10px">Se abrir&aacute; la p&aacute;gina de pago seguro de Bold</p>
+        </div>
+
+        <div class="pago-divider" id="pagoDivider" style="display:none">o paga por transferencia</div>
+
+        <div class="pago-section" id="pagoManual">
           <h3>REALIZA TU PAGO</h3>
           <p class="sub">Transfiere el valor total y env&iacute;a tu comprobante por WhatsApp.</p>
           <div style="background:var(--surface-2);border:1px solid var(--accent);border-radius:12px;padding:14px 16px;margin-bottom:16px;text-align:center">
@@ -671,6 +705,20 @@ async function apartarBoletos(){
   document.getElementById('pagoNequi').textContent=telPago;
   document.getElementById('pagoDaviplata').textContent=telPago;
   document.getElementById('pagoBanco').textContent='Consultar por WhatsApp';
+
+  if(currentRifa.bold_link){
+    document.getElementById('boldPago').style.display='block';
+    document.getElementById('pagoDivider').style.display='flex';
+    document.getElementById('boldTotal').textContent=totalStr;
+    document.getElementById('boldLink').href=currentRifa.bold_link;
+    document.getElementById('pagoManual').querySelector('h3').textContent='TAMBIÉN PUEDES TRANSFERIR';
+    document.getElementById('pagoManual').querySelector('.sub').textContent='Si prefieres, transfiere el valor y envía tu comprobante por WhatsApp.';
+  }else{
+    document.getElementById('boldPago').style.display='none';
+    document.getElementById('pagoDivider').style.display='none';
+    document.getElementById('pagoManual').querySelector('h3').textContent='REALIZA TU PAGO';
+    document.getElementById('pagoManual').querySelector('.sub').textContent='Transfiere el valor total y envía tu comprobante por WhatsApp.';
+  }
 
   document.getElementById('seleccionWrap').style.display='none';
   document.getElementById('pagoWrap').style.display='block';
