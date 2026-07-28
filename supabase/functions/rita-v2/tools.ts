@@ -8,9 +8,12 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 
-const SB_URL = Deno.env.get("SUPABASE_URL")!;
-const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-const WP_API = "https://ridera.com.co/wp-json/wp/v2";
+const SB_URL    = Deno.env.get("SUPABASE_URL")!;
+const SB_KEY    = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+const WP_API    = "https://ridera.com.co/wp-json/wp/v2";
+const WA_TOKEN  = (Deno.env.get("WHATSAPP_TOKEN") ?? "").trim();
+const RITA_PHONE = (Deno.env.get("RITA_PHONE_ID") ?? Deno.env.get("WHATSAPP_PHONE_ID") ?? "1238785075974458").trim();
+const GRAPH     = "https://graph.facebook.com/v25.0";
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
 
@@ -897,6 +900,15 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const acepta = Boolean(input.acepta);
     const categorias = Array.isArray(input.categorias) ? input.categorias : [];
     const ahora = new Date().toISOString();
+
+    // Detectar si es la primera vez que acepta (para enviar bienvenida)
+    const { data: existente } = await supabase
+      .from("rita_consentimiento")
+      .select("acepta")
+      .eq("telefono", phone)
+      .maybeSingle();
+    const primeraVezOptIn = !existente && acepta;
+
     const { error } = await supabase.from("rita_consentimiento").upsert({
       telefono: phone,
       acepta,
@@ -907,6 +919,37 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       updated_at: ahora,
     }, { onConflict: "telefono" });
     if (error) return { ok: false, data: `No se pudo registrar: ${error.message}` };
+
+    // Plantilla bienvenida en el primer opt-in (best-effort, no bloquea)
+    if (primeraVezOptIn && WA_TOKEN) {
+      (async () => {
+        try {
+          const tel = phone.replace(/^57/, "");
+          const { data: rider } = await supabase
+            .from("riders")
+            .select("nombre")
+            .or(`telefono.eq.${tel},telefono.eq.57${tel}`)
+            .maybeSingle();
+          const nombre = (rider?.nombre ?? "").split(" ")[0] || "parcero";
+          await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+            method: "POST",
+            headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
+            body: JSON.stringify({
+              messaging_product: "whatsapp",
+              to: phone,
+              type: "template",
+              template: {
+                name: "bienvenida",
+                language: { code: "es" },
+                components: [{ type: "body", parameters: [{ type: "text", text: nombre }] }],
+              },
+            }),
+            signal: AbortSignal.timeout(8000),
+          });
+        } catch { /* best-effort */ }
+      })();
+    }
+
     return {
       ok: true,
       data: acepta
