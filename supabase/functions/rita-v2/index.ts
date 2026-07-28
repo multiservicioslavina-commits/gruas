@@ -243,21 +243,10 @@ function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolea
     ? `El rider ya definio sus preferencias de comunicacion (acepta: ${consentimiento.acepta}). No le vuelvas a preguntar salvo que el saque el tema.
 Cuando quiera cambiar algo (activar, desactivar, elegir categorias o cancelar), llama a registrar_consentimiento con los nuevos valores.
 Si pregunta que tiene activado o como tiene su suscripcion, usa consultar_consentimiento primero.`
-    : `CONSENTIMIENTO PENDIENTE: este rider todavia no ha dicho si quiere recibir comunicaciones de Ridera.
-Al final de tu PRIMERA respuesta de esta conversacion (solo la primera), agrega exactamente este bloque al terminar la respuesta principal:
+    : `CONSENTIMIENTO PENDIENTE: este rider todavia no ha respondido si quiere recibir comunicaciones de Ridera.
+Al final de este mensaje ya se le adjunta automaticamente la pregunta de consentimiento — NO la repitas ni la agregues tu.
 
-"Por cierto, te gustaria que te avise de cosas utiles como:
-• Rodadas cerca de ti
-• Noticias del mundo de las motos
-• Consejos de conduccion
-• Recordatorios de mantenimiento
-• Promociones del Marketplace
-• Talleres y mecanicos
-• Eventos especiales
-
-Escribe *Si* para recibirlas o *No* si prefieres no. Puedes cambiarlo cuando quieras."
-
-Cuando el rider responda:
+Cuando el rider responda si o no a esa pregunta:
 - Si dice si (o positivo): llama a registrar_consentimiento con acepta=true y las diez categorias.
 - Si dice no (o negativo): llama a registrar_consentimiento con acepta=false y categorias=[].
 - Si pide solo algunas categorias: usa solo las que mencione.
@@ -265,8 +254,7 @@ Cuando el rider responda:
 REGLA DURA: si el rider contesta si o no a esa pregunta, tu PRIMERA accion es
 llamar a registrar_consentimiento. Nunca escribas "anotado", "listo", "guardado" ni nada
 parecido sin haber llamado la herramienta primero: seria decirle que quedo registrado
-cuando no quedo nada, y ese consentimiento es un requisito legal, no un detalle.
-No insistas en preguntar si ya lo preguntaste en este mismo mensaje.`;
+cuando no quedo nada, y ese consentimiento es un requisito legal, no un detalle.`;
 
   return `Eres Rita, la parcera motera de Ridera (ridera.com.co). Motociclista colombiana, calida, directa, con sabor paisa sin exagerar.
 
@@ -686,7 +674,15 @@ Deno.serve(async (req: Request) => {
       console.error("El motor fallo:", e);
     }
     if (!reply.trim()) reply = "Uy parce, algo se cruzo por aca. Me lo repites?";
-    if (reply.length > 1600) reply = reply.slice(0, 1580) + ".\\n.\\nMas en ridera.com.co";
+
+    // Adjuntar pregunta de consentimiento si el rider nunca ha respondido.
+    // Lo hace el código, no Claude, para que salga siempre sin importar el historial.
+    if (!consentimiento.registrado) {
+      const CONSENT_BLOCK = `\n\nPor cierto, ¿te gustaría que te avise de cosas útiles como:\n• Rodadas cerca de ti\n• Noticias del mundo de las motos\n• Consejos de conducción\n• Recordatorios de mantenimiento\n• Promociones del Marketplace\n• Talleres y mecánicos\n• Eventos especiales\n\nEscribe *Sí* para recibirlas o *No* si prefieres no. Puedes cambiarlo cuando quieras.`;
+      if (!reply.includes("Escribe *S")) reply += CONSENT_BLOCK;
+    }
+
+    if (reply.length > 1600) reply = reply.slice(0, 1580) + ".\n.\nMas en ridera.com.co";
 
     await saveMessage(from, "assistant", reply);
     await entregar(from, reply, conVoz);
