@@ -2,8 +2,8 @@
 <style>
 .rid{width:100%;height:88vh;min-height:600px;display:flex;font-family:system-ui,-apple-system,sans-serif;background:#0f0f0f;color:#eee;position:relative;overflow:hidden;box-sizing:border-box}
 .rid *{box-sizing:border-box}
-.rid-map{flex:1;position:relative;z-index:1}
-.rid-side{width:360px;background:#161616;border-left:1px solid #2a2a2a;display:flex;flex-direction:column;z-index:2;overflow:hidden}
+.rid-side{width:360px;background:#161616;border-right:1px solid #2a2a2a;display:flex;flex-direction:column;z-index:2;overflow:hidden;order:1}
+.rid-map{flex:1;position:relative;z-index:1;order:2}
 .rid-head{padding:20px;background:linear-gradient(180deg,#1e1e1e,#161616);border-bottom:1px solid #2a2a2a;flex-shrink:0}
 .rid-logo{display:flex;align-items:center;gap:10px;margin-bottom:12px}
 .rid-logo h2{margin:0;font-size:24px;font-weight:800;color:#fff;letter-spacing:-0.5px}
@@ -49,7 +49,7 @@
 .rid-tooltip::before{border-top-color:#3a3a3a !important}
 @media(max-width:900px){
     .rid{flex-direction:column;height:100vh}
-    .rid-side{width:100%;max-height:45vh;border-left:none;border-top:1px solid #2a2a2a;order:2}
+    .rid-side{width:100%;max-height:45vh;border-right:none;border-top:1px solid #2a2a2a;order:2}
     .rid-map{order:1;min-height:55vh}
 }
 </style>
@@ -81,57 +81,84 @@
 <script>
 (function(){
     var COORDS={
-        "abriaqui":[5.78,-75.90],"ayapel":[8.60,-75.63],"guatape":[6.23,-75.16],
-        "sonson":[5.69,-75.31],"caldas":[6.15,-75.73],"envigado":[6.18,-75.51],
-        "sabaneta":[6.16,-75.49],"la ceja":[6.05,-75.42],"rionegro":[6.13,-75.38],
-        "copacabana":[6.29,-75.51],"girardota":[6.42,-75.48],"barbosa":[6.46,-75.41],
+        "medellin":[6.24,-75.58],"bogota":[4.71,-74.07],"cali":[3.45,-76.53],
+        "barranquilla":[10.96,-74.78],"cartagena":[10.39,-75.51],"bucaramanga":[7.12,-73.12],
         "pereira":[4.81,-75.70],"manizales":[5.07,-75.52],"armenia":[4.53,-75.73],
-        "salento":[4.76,-75.57],"filandia":[4.77,-75.68],"pijao":[4.62,-75.67],
-        "cartagena":[10.39,-75.51],"tayrona":[11.29,-73.89],"bogota":[4.71,-74.07],
-        "santa marta":[11.24,-74.22],"minca":[11.22,-74.30],"cali":[3.45,-76.53],
-        "buenaventura":[3.88,-77.27],"popayan":[2.44,-76.61],"san andres":[12.58,-81.72],
-        "providencia":[13.37,-81.38],"leticia":[-0.20,-69.95],"puerto narino":[0.75,-70.36],
-        "medellin":[6.24,-75.58],"jardin":[5.60,-75.82],"jerico":[5.79,-75.78],
-        "santa fe de antioquia":[6.56,-75.83],"canasgordas":[6.75,-76.02],
-        "andes":[5.66,-75.88],"urrao":[6.32,-76.13],"tamesis":[5.66,-75.71],
-        "fredonia":[5.93,-75.67],"san carlos":[6.19,-74.99],"san rafael":[6.30,-74.99],
-        "puerto triunfo":[5.88,-74.65],"cisneros":[6.53,-75.09],"cocorna":[6.05,-75.19],
-        "caramanta":[5.55,-75.64],"betania":[5.74,-75.97],"betulia":[6.11,-75.98],
-        "liborina":[6.67,-75.80],"olaya":[6.61,-75.79],"sopetran":[6.50,-75.74],
-        "san jeronimo":[6.44,-75.73],"ebejico":[6.33,-75.77],"heliconia":[6.21,-75.73],
-        "titiribi":[6.06,-75.80],"venecia":[5.96,-75.73],"angelopolis":[6.12,-75.71],
-        "amaga":[6.04,-75.70],"concordia":[6.05,-75.90],"salgar":[5.96,-75.98],
-        "ciudad bolivar":[5.85,-76.02],"hispania":[5.80,-75.90],
-        "pueblo rico":[5.24,-76.04],"valparaiso":[5.62,-75.62],"narino":[5.61,-75.18],
-        "argelia":[5.74,-75.14],"la pintada":[5.74,-75.60],"montebello":[5.95,-75.52],
-        "el retiro":[6.06,-75.50],"la union":[5.97,-75.36],"el carmen de viboral":[6.08,-75.34],
-        "marinilla":[6.18,-75.34],"el penol":[6.22,-75.25],"granada":[6.14,-75.18],
-        "alejandria":[6.38,-75.14],"santo domingo":[6.47,-75.17],"yolombo":[6.60,-75.01],
-        "nechi":[8.10,-74.77],"caucasia":[7.98,-75.20],"taraza":[7.58,-75.40],
-        "valdivia":[7.30,-75.45],"yarumal":[6.97,-75.42],"ituango":[7.17,-75.77],
-        "turbo":[8.10,-76.73],"apartado":[7.88,-76.63],"chigorodo":[7.67,-76.68],
-        "mutata":[7.24,-76.44],"dabeiba":[7.00,-76.25],"frontino":[6.78,-76.13],
-        "bucaramanga":[7.12,-73.12],"san gil":[6.56,-73.13],"barichara":[6.63,-73.22],
-        "cucuta":[7.89,-72.50],"pamplona":[7.38,-72.65],
-        "tunja":[5.53,-73.36],"villa de leyva":[5.63,-73.52],"paipa":[5.78,-73.11],
-        "sogamoso":[5.71,-72.93],"duitama":[5.83,-73.03],
-        "ibague":[4.44,-75.24],"honda":[5.21,-74.74],"mariquita":[5.20,-74.89],
-        "neiva":[2.93,-75.28],"san agustin":[1.88,-76.27],"garzon":[2.20,-75.63],
-        "pasto":[1.21,-77.28],"ipiales":[0.83,-77.64],"tumaco":[1.80,-78.76],
-        "mocoa":[1.15,-76.65],"sibundoy":[1.19,-76.92],
-        "quibdo":[5.69,-76.66],"nuqui":[5.70,-77.27],"bahia solano":[6.22,-77.39],
-        "villavicencio":[4.15,-73.63],"acacias":[3.99,-73.76],
-        "yopal":[5.34,-72.39],"aguazul":[5.17,-72.55],
-        "florencia":[1.61,-75.61],"inirida":[3.86,-67.92],
-        "mitu":[1.25,-70.23],"puerto carreno":[6.19,-67.49],
-        "arauca":[7.09,-70.76],"riohacha":[11.54,-72.91],
-        "valledupar":[10.47,-73.25],"sincelejo":[9.30,-75.39],
-        "monteria":[8.75,-75.88],"lorica":[9.24,-75.81],
-        "barranquilla":[10.96,-74.78],"soledad":[10.92,-74.77],
-        "magangue":[9.24,-74.75],"mompos":[9.25,-74.43],
-        "girardot":[4.30,-74.80],"melgar":[4.21,-74.64],
-        "zipaquira":[5.02,-74.00],"guaduas":[5.07,-74.60],
-        "la mesa":[4.63,-74.46],"fusagasuga":[4.34,-74.36]
+        "santa marta":[11.24,-74.22],"cucuta":[7.89,-72.50],"ibague":[4.44,-75.24],
+        "neiva":[2.93,-75.28],"pasto":[1.21,-77.28],"villavicencio":[4.15,-73.63],
+        "monteria":[8.75,-75.88],"valledupar":[10.47,-73.25],"tunja":[5.53,-73.36],
+        "popayan":[2.44,-76.61],"quibdo":[5.69,-76.66],
+        "abriaqui":[5.78,-75.90],"abejorral":[5.79,-75.43],"acacias":[3.99,-73.76],
+        "aguazul":[5.17,-72.55],"aguadas":[5.61,-75.46],"amalfi":[6.91,-75.08],
+        "amaga":[6.04,-75.70],"andes":[5.66,-75.88],"angelopolis":[6.12,-75.71],
+        "angostura":[6.88,-75.33],"anori":[7.07,-75.15],"anza":[6.32,-75.87],
+        "apartado":[7.88,-76.63],"arauca":[7.09,-70.76],"arboletes":[8.85,-76.43],
+        "argelia":[5.74,-75.14],"ayapel":[8.60,-75.63],
+        "bahia solano":[6.22,-77.39],"barbosa":[6.46,-75.41],"barichara":[6.63,-73.22],
+        "bello":[6.34,-75.56],"betania":[5.74,-75.97],"betulia":[6.11,-75.98],
+        "briceno":[7.11,-75.55],"buenaventura":[3.88,-77.27],"buritica":[6.73,-75.91],
+        "caceres":[7.58,-75.35],"caicedo":[6.40,-75.98],"caldas":[6.15,-75.73],
+        "campamento":[7.05,-75.29],"canasgordas":[6.75,-76.02],"caracoli":[6.41,-74.76],
+        "caramanta":[5.55,-75.64],"carolina del principe":[6.72,-75.28],
+        "caucasia":[7.98,-75.20],"chigorodo":[7.67,-76.68],
+        "cisneros":[6.53,-75.09],"ciudad bolivar":[5.85,-76.02],
+        "cocorna":[6.05,-75.19],"concepcion":[6.40,-75.25],"concordia":[6.05,-75.90],
+        "copacabana":[6.29,-75.51],
+        "dabeiba":[7.00,-76.25],"don matias":[6.48,-75.43],"duitama":[5.83,-73.03],
+        "ebejico":[6.33,-75.77],"el bagre":[7.59,-74.81],
+        "el carmen de viboral":[6.08,-75.34],"el penol":[6.22,-75.25],
+        "el retiro":[6.06,-75.50],"el santuario":[6.14,-75.27],
+        "entrerrios":[6.57,-75.53],"envigado":[6.18,-75.51],
+        "falan":[5.13,-74.95],"filandia":[4.77,-75.68],"florencia":[1.61,-75.61],
+        "fredonia":[5.93,-75.67],"frontino":[6.78,-76.13],"fusagasuga":[4.34,-74.36],
+        "garzon":[2.20,-75.63],"giraldo":[6.63,-75.94],"girardot":[4.30,-74.80],
+        "girardota":[6.42,-75.48],"gomez plata":[6.69,-75.22],
+        "granada":[6.14,-75.18],"guadalupe":[6.83,-75.24],"guaduas":[5.07,-74.60],
+        "guarne":[6.28,-75.44],"guatape":[6.23,-75.16],
+        "heliconia":[6.21,-75.73],"hispania":[5.80,-75.90],"honda":[5.21,-74.74],
+        "inirida":[3.86,-67.92],"ipiales":[0.83,-77.64],"itagui":[6.17,-75.60],
+        "ituango":[7.17,-75.77],
+        "jardin":[5.60,-75.82],"jerico":[5.79,-75.78],
+        "la ceja":[6.05,-75.42],"la estrella":[6.16,-75.64],"la mesa":[4.63,-74.46],
+        "la pintada":[5.74,-75.60],"la union":[5.97,-75.36],
+        "leticia":[-0.20,-69.95],"liborina":[6.67,-75.80],"lorica":[9.24,-75.81],
+        "maceo":[6.55,-74.79],"magangue":[9.24,-74.75],"manizales":[5.07,-75.52],
+        "marinilla":[6.18,-75.34],"mariquita":[5.20,-74.89],"melgar":[4.21,-74.64],
+        "minca":[11.22,-74.30],"mitu":[1.25,-70.23],"mocoa":[1.15,-76.65],
+        "mompos":[9.25,-74.43],"montebello":[5.95,-75.52],"mutata":[7.24,-76.44],
+        "narino":[5.61,-75.18],"nechi":[8.10,-74.77],"necocli":[8.43,-76.78],
+        "nuqui":[5.70,-77.27],
+        "olaya":[6.61,-75.79],
+        "paipa":[5.78,-73.11],"pamplona":[7.38,-72.65],"peque":[7.01,-75.88],
+        "pijao":[4.62,-75.67],"providencia":[13.37,-81.38],
+        "pueblo rico":[5.24,-76.04],"puerto berrio":[6.49,-74.41],
+        "puerto carreno":[6.19,-67.49],"puerto narino":[0.75,-70.36],
+        "puerto nare":[6.19,-74.59],"puerto triunfo":[5.88,-74.65],
+        "remedios":[7.03,-74.69],"riohacha":[11.54,-72.91],"rionegro":[6.13,-75.38],
+        "sabaneta":[6.16,-75.49],"sabanalarga":[6.85,-75.81],
+        "salento":[4.76,-75.57],"salgar":[5.96,-75.98],
+        "san agustin":[1.88,-76.27],"san andres":[12.58,-81.72],
+        "san andres de cuerquia":[7.09,-75.68],"san carlos":[6.19,-74.99],
+        "san francisco":[5.86,-76.07],"san gil":[6.56,-73.13],
+        "san jeronimo":[6.44,-75.73],"san jose de la montana":[6.85,-75.66],
+        "san juan de uraba":[8.76,-76.53],
+        "san luis":[6.04,-74.99],"san pedro":[6.47,-75.56],
+        "san rafael":[6.30,-74.99],"san roque":[6.48,-74.89],
+        "san vicente":[6.32,-75.34],
+        "santa barbara":[5.88,-75.57],"santa fe de antioquia":[6.56,-75.83],
+        "santa rosa de osos":[6.65,-75.47],"santo domingo":[6.47,-75.17],
+        "segovia":[7.08,-74.70],"sibundoy":[1.19,-76.92],
+        "sincelejo":[9.30,-75.39],"sogamoso":[5.71,-72.93],
+        "soledad":[10.92,-74.77],"sonson":[5.69,-75.31],"sopetran":[6.50,-75.74],
+        "tamesis":[5.66,-75.71],"taraza":[7.58,-75.40],"tayrona":[11.29,-73.89],
+        "titiribi":[6.06,-75.80],"toledo":[7.31,-75.70],"tumaco":[1.80,-78.76],
+        "turbo":[8.10,-76.73],
+        "urrao":[6.32,-76.13],
+        "valdivia":[7.30,-75.45],"valparaiso":[5.62,-75.62],
+        "vegachi":[6.77,-74.80],"venecia":[5.96,-75.73],
+        "villa de leyva":[5.63,-73.52],
+        "yarumal":[6.97,-75.42],"yolombo":[6.60,-75.01],"yopal":[5.34,-72.39],
+        "zaragoza":[7.49,-74.87],"zipaquira":[5.02,-74.00]
     };
 
     var map = L.map("ridMap",{center:[6.25,-75.5],zoom:7,zoomControl:false});
@@ -154,18 +181,35 @@
         var m = t.match(/[-–—]\s*(.+?)(?:\s*[-–—]|\s*$)/);
         if(m) return m[1].trim();
         var p = t.split(/[-–—]/);
-        return p.length > 1 ? p[p.length-1].trim() : t;
+        if(p.length > 1) return p[p.length-1].trim();
+        var words = t.trim().split(/\s+/);
+        if(words.length > 1) return words.slice(1).join(" ");
+        return t;
     }
 
     function normalize(s){
         return s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").trim();
     }
 
+    var ORIGINS = ["medellin","bogota","cali","barranquilla","cartagena","bucaramanga","pereira","manizales","armenia","santa marta","cucuta","ibague","neiva","pasto","villavicencio","monteria","valledupar","tunja","popayan"];
+
     function findCoord(d){
         var n = normalize(d);
         var keys = Object.keys(COORDS).sort(function(a,b){return b.length - a.length;});
         for(var i=0; i<keys.length; i++){
             if(n.indexOf(keys[i]) >= 0) return COORDS[keys[i]];
+        }
+        return null;
+    }
+
+    function findDestCoord(title, dest){
+        var c = findCoord(dest);
+        if(c) return c;
+        var nt = normalize(title);
+        var keys = Object.keys(COORDS).sort(function(a,b){return b.length - a.length;});
+        for(var i=0; i<keys.length; i++){
+            if(ORIGINS.indexOf(keys[i]) >= 0) continue;
+            if(nt.indexOf(keys[i]) >= 0) return COORDS[keys[i]];
         }
         return null;
     }
@@ -186,10 +230,7 @@
                 exc = r.excerpt;
             }
             var d = extractDest(tit);
-            var c = findCoord(d);
-            if(!c){
-                c = findCoord(tit);
-            }
+            var c = findDestCoord(tit, d);
             if(!c){
                 sinCoord.push(tit);
                 return;
