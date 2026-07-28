@@ -99,7 +99,7 @@
   /* ---------- HERO ---------- */
   .hero{
     position:relative;
-    min-height:clamp(60vh, 90vw, 82vh);
+    min-height:clamp(55vh, 90vw, 82vh);
     display:flex;
     align-items:flex-end;
     background:
@@ -231,21 +231,16 @@
   }
 
   /* ---------- FICHA TECNICA ---------- */
-  .ficha-table{width:100%;border-collapse:collapse;font-size:clamp(12px, 1.8vw, 14px);}
+  .ficha-table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:clamp(16px,3vw,24px);}
+  .ficha-table{width:100%;border-collapse:collapse;font-size:clamp(12px, 1.8vw, 14px);min-width:100%;}
   .ficha-table tr{border-bottom:1px solid var(--gray-line);transition:background 0.2s ease;}
   .ficha-table tr:hover{background:rgba(232,93,32,0.04);}
   .ficha-table td{padding:clamp(10px, 1.5vw, 14px) clamp(8px, 1.5vw, 10px);vertical-align:top;}
   .ficha-table td:first-child{font-family:var(--f-mono);color:var(--gray);text-transform:uppercase;letter-spacing:0.04em;font-size:clamp(10px, 1.5vw, 12px);width:35%;padding-right:clamp(8px, 1.5vw, 16px);}
   .ficha-table td:last-child{color:var(--white);font-weight:500;}
 
-  @media (max-width: 640px) {
-    .ficha-table { font-size: 11px; }
-    .ficha-table td { padding: 8px 6px; }
-    .ficha-table td:first-child { width: 40%; font-size: 9px; }
-  }
-
   /* ---------- QUICK GRID ---------- */
-  .quick-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(120px, 25vw, 160px), 1fr));gap:clamp(8px, 2vw, 12px);}
+  .quick-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(100px, 22vw, 140px), 1fr));gap:clamp(8px, 2vw, 12px);}
   .quick-card{background:var(--black-card);border:1px solid var(--gray-line);border-radius:8px;padding:clamp(12px, 2vw, 16px);transition:transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;}
   .quick-card:hover{transform:translateY(-4px);border-color:var(--orange-dim);box-shadow:0 10px 30px rgba(0,0,0,0.4);}
   .quick-card .k{font-family:var(--f-mono);font-size:clamp(9px, 1.5vw, 11px);text-transform:uppercase;letter-spacing:0.08em;color:var(--orange);margin-bottom:6px;}
@@ -279,7 +274,7 @@
   .fuel-table tr:hover td{color:var(--orange);}
 
   /* ---------- CARD GRID / POI ---------- */
-  .card-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(180px, 40vw, 240px), 1fr));gap:clamp(12px, 2vw, 16px);}
+  .card-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(150px, 35vw, 240px), 1fr));gap:clamp(12px, 2vw, 16px);}
   .poi-card{background:var(--black-card);border:1px solid var(--gray-line);border-radius:10px;padding:clamp(16px, 2.5vw, 20px);transition:transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;}
   .poi-card:hover{transform:translateY(-6px);border-color:var(--orange-dim);box-shadow:0 14px 34px rgba(0,0,0,0.45);}
   .poi-card .ico{font-size:clamp(20px, 4vw, 22px);margin-bottom:10px;display:inline-block;transition:transform 0.3s ease;}
@@ -308,7 +303,8 @@
 
   /* ---------- MAPS CTA ---------- */
   .map-embed{border-radius:10px;overflow:hidden;border:1px solid var(--gray-line);margin-bottom:20px;position:relative;}
-  .map-embed iframe{width:100%;height:clamp(250px, 60vw, 420px);border:0;display:block;filter:grayscale(0.3) contrast(1.05);}
+  .map-embed iframe{width:100%;height:clamp(250px, 60vw, 420px);border:0;display:block;filter:brightness(1.1) contrast(1.2) saturate(1.05);transition:filter 0.3s ease;}
+  .map-embed:hover iframe{filter:brightness(1.15) contrast(1.25) saturate(1.1);}
   .cta-row{display:flex;gap:clamp(10px, 2vw, 14px);flex-wrap:wrap;}
 
   .btn{
@@ -328,11 +324,6 @@
   .btn-outline{background:transparent;color:var(--white);border:1px solid var(--gray-line);}
   .btn-outline:hover{border-color:var(--orange);color:var(--orange);}
 
-  @media (max-width: 640px) {
-    .btn { flex:1; }
-    .cta-row { flex-direction:column; }
-  }
-
   /* ---------- HIGHLIGHT BOX ---------- */
   .highlight-box{
     background:linear-gradient(135deg, rgba(232,93,32,0.1), rgba(232,93,32,0.02));
@@ -344,7 +335,7 @@
 
   /* ---------- CHECKLIST ---------- */
   .checklist{
-    display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(160px, 35vw, 220px), 1fr));
+    display:grid;grid-template-columns:repeat(auto-fit, minmax(clamp(130px, 30vw, 200px), 1fr));
     gap:clamp(8px, 1.5vw, 10px);
   }
   .check-item{
@@ -423,68 +414,47 @@
     filter:grayscale(0.1) contrast(1.05);
   }
 
-  /* ========== MOBILE BREAKPOINTS ========== */
-
-  @media (max-width: 480px) {
-    .hero { min-height: 55vh; }
+  /* ========== MOBILE FIRST: < 480px ========== */
+  @media (max-width: 479px) {
     .wrap { padding: 0 clamp(12px, 3vw, 16px); }
     section { padding: clamp(24px, 4vw, 40px) 0; }
-
-    .hero-tag { font-size: 9px; padding: 5px 10px; }
-    h1 { font-size: clamp(24px, 6vw, 36px); }
-    h2 { margin-bottom: 6px; }
-
-    .hero-stats { grid-template-columns: repeat(2, 1fr); margin-top: 16px; }
-    .alert-box { gap: 10px; padding: 10px 12px; }
-    .alert-box .icon { font-size: 16px; }
-
+    .hero { min-height: 55vh; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 1px; }
+    .alert-box { flex-direction: column; gap: 8px; padding: 10px 12px; }
     .quick-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .quick-card { padding: 10px; }
-    .quick-card .k { font-size: 8px; margin-bottom: 4px; }
-    .quick-card .v { font-size: 12px; }
-
     .card-grid { grid-template-columns: 1fr; }
+    .checklist { grid-template-columns: 1fr; }
     .cta-row { flex-direction: column; }
     .btn { width: 100%; }
-
-    .seg-content .place { font-size: 12px; }
-    .seg-content .meta { font-size: 11px; }
-
-    .ficha-table { font-size: 10px; }
-    .ficha-table td { padding: 6px 4px; }
-    .ficha-table td:first-child { font-size: 8px; }
-
-    .checklist { grid-template-columns: 1fr; }
-    .tips-list li { gap: 10px; }
-    .tips-list .n { font-size: 11px; }
+    .ficha-table-wrap { overflow-x: auto; }
   }
 
-  /* ========== TABLET BREAKPOINTS ========== */
-
-  @media (min-width: 641px) and (max-width: 1023px) {
-    .wrap { padding: 0 clamp(20px, 3vw, 32px); }
-    section { padding: clamp(40px, 4vw, 60px) 0; }
-
-    .hero { min-height: 70vh; }
-    .hero-stats { grid-template-columns: repeat(2, 1fr); gap: 1px; }
-
-    .quick-grid { grid-template-columns: repeat(2, 1fr); }
+  /* ========== TABLET: 480px - 768px ========== */
+  @media (min-width: 480px) and (max-width: 767px) {
+    .hero { min-height: 60vh; }
+    .hero-stats { grid-template-columns: repeat(2, 1fr); }
+    .quick-grid { grid-template-columns: repeat(3, 1fr); }
     .card-grid { grid-template-columns: repeat(2, 1fr); }
-
-    .cta-row { flex-wrap: wrap; }
-    .btn { flex: 1; min-width: 200px; }
-
     .checklist { grid-template-columns: repeat(2, 1fr); }
+    .cta-row { flex-wrap: wrap; }
+    .btn { flex: 1; }
   }
 
-  /* ========== DESKTOP BREAKPOINTS ========== */
+  /* ========== TABLET+: 768px - 1023px ========== */
+  @media (min-width: 768px) and (max-width: 1023px) {
+    section { padding: clamp(40px, 4vw, 60px) 0; }
+    .hero { min-height: 70vh; }
+    .hero-stats { grid-template-columns: repeat(4, 1fr); }
+    .quick-grid { grid-template-columns: repeat(4, 1fr); }
+    .card-grid { grid-template-columns: repeat(3, 1fr); }
+    .checklist { grid-template-columns: repeat(3, 1fr); }
+  }
 
+  /* ========== DESKTOP: 1024px+ ========== */
   @media (min-width: 1024px) {
     .quick-grid { grid-template-columns: repeat(4, 1fr); }
     .card-grid { grid-template-columns: repeat(3, 1fr); }
     .checklist { grid-template-columns: repeat(4, 1fr); }
-
-    .cta-row { flex-wrap: nowrap; }
     .btn { flex: 0; }
   }
 
@@ -523,17 +493,19 @@
     <h2 class="reveal">De <span>Medellín</span> a Ayapel</h2>
     <p class="lede reveal">Ruta larga verificada con puntos intermedios reales de la vía nacional.</p>
 
-    <table class="ficha-table reveal">
-      <tr><td>Punto de salida</td><td>Medellín (Salida norte / Valle de Aburrá)</td></tr>
-      <tr><td>Destino</td><td>Ayapel / Ciénaga de Ayapel (Córdoba)</td></tr>
-      <tr><td>Distancia total ida</td><td>≈ 334 – 345 km</td></tr>
-      <tr><td>Tiempo estimado</td><td>7 – 9 horas</td></tr>
-      <tr><td>Altitud</td><td>Desde 1.500 m hasta ≈ 22-25 m s.n.m.</td></tr>
-      <tr><td>Estado de vía</td><td>ON-ROAD. Corredor nacional vía Caucasia</td></tr>
-      <tr><td>Dificultad</td><td>Medio-Alto (distancia, calor, fatiga)</td></tr>
-      <tr><td>Mejor época</td><td>Temporada seca</td></tr>
-      <tr><td>Moto recomendada</td><td>300 cc en adelante. Preferible 500-650+ cc</td></tr>
-    </table>
+    <div class="ficha-table-wrap reveal">
+      <table class="ficha-table">
+        <tr><td>Punto de salida</td><td>Medellín (Salida norte / Valle de Aburrá)</td></tr>
+        <tr><td>Destino</td><td>Ayapel / Ciénaga de Ayapel (Córdoba)</td></tr>
+        <tr><td>Distancia total ida</td><td>≈ 334 – 345 km</td></tr>
+        <tr><td>Tiempo estimado</td><td>7 – 9 horas</td></tr>
+        <tr><td>Altitud</td><td>Desde 1.500 m hasta ≈ 22-25 m s.n.m.</td></tr>
+        <tr><td>Estado de vía</td><td>ON-ROAD. Corredor nacional vía Caucasia</td></tr>
+        <tr><td>Dificultad</td><td>Medio-Alto (distancia, calor, fatiga)</td></tr>
+        <tr><td>Mejor época</td><td>Temporada seca</td></tr>
+        <tr><td>Moto recomendada</td><td>300 cc en adelante. Preferible 500-650+ cc</td></tr>
+      </table>
+    </div>
   </div>
 </section>
 

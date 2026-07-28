@@ -1,12 +1,11 @@
 <?php
 /**
- * RIDERA MAPA INTERACTIVO - PARA WPCODE
+ * RIDERA MAPA INTERACTIVO - MEJORADO
  *
- * ✅ Copia ESTE código completo en WPCode
- * ✅ Crea un nuevo snippet PHP
- * ✅ Pega todo esto
- * ✅ Guarda y activa
- * ✅ El mapa se actualiza automáticamente
+ * ✅ Fetchea TODAS las rutas (sin límite de 100)
+ * ✅ Detecta departamentos desde categorías de WordPress
+ * ✅ Interactividad completa: click en depto → zoom al mapa
+ * ✅ Muestra todos los markers de todas las regiones
  */
 
 if (!function_exists('ridera_mapa_interactivo_render')) {
@@ -83,7 +82,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
             .rm-dep-count { font-size: 11px; color: #5a524a; font-weight: 600; background: rgba(255,255,255,0.05); padding: 2px 10px; border-radius: 10px; }
             .rm-dep-arrow { font-size: 12px; color: #5a524a; transition: transform 0.2s; }
             .rm-dep-btn.active .rm-dep-arrow { transform: rotate(90deg); color: #E85D20; }
-            .rm-dep-routes { display: none; background: rgba(0,0,0,0.2); }
+            .rm-dep-routes { display: none; background: rgba(0,0,0,0.2); max-height: 300px; overflow-y: auto; }
             .rm-dep-routes.open { display: block; }
             .rm-route-card {
                 padding: 12px 18px 12px 36px; border-top: 1px solid rgba(255,255,255,0.03);
@@ -155,10 +154,10 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
 
         <script>
         (function() {
-            var WP_API = '/wp-json/wp/v2/rutas';
             var allRoutes = [];
             var map, markers = [];
 
+            // Coordenadas de destinos en Colombia
             var DEST_COORDS = {
                 'ayapel': [9.2417, -74.4267], 'abriaqui': [6.6131, -75.7578],
                 'abejimarejo': [6.6947, -75.5733], 'abejorral': [5.3417, -74.9406],
@@ -177,20 +176,32 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 'pasto': [1.2136, -77.2811], 'neiva': [2.9273, -75.2819],
                 'ibague': [4.4389, -75.2322], 'girardot': [4.3017, -74.8022],
                 'honda': [5.2072, -74.7364], 'villavicencio': [4.1420, -73.6266],
-                'medellin': [6.2442, -75.5812],
+                'medellin': [6.2442, -75.5812], 'santa fe': [6.5591, -75.8268],
+                'cañasgordas': [6.7497, -76.0258],
             };
 
+            // Coordenadas de departamentos (para zoom/center)
             var DEP_COORDS = {
-                'antioquia': [6.25, -75.56], 'risaralda': [4.81, -75.69],
-                'quindio': [4.54, -75.67], 'valle del cauca': [3.45, -76.52],
-                'bolivar': [10.39, -75.51], 'magdalena': [11.24, -74.20],
-                'cesar': [10.47, -73.25], 'atlantico': [10.96, -74.78],
-                'cordoba': [8.75, -75.88], 'sucre': [9.30, -75.39],
-                'choco': [5.69, -76.66], 'cauca': [2.44, -76.61],
-                'nariño': [1.29, -77.35], 'santander': [7.12, -73.12],
-                'boyaca': [5.53, -73.36], 'cundinamarca': [4.71, -74.07],
-                'tolima': [4.44, -75.23], 'huila': [2.93, -75.28],
-                'meta': [4.15, -73.63], 'caldas': [5.07, -75.52],
+                'antioquia': {center: [6.25, -75.56], zoom: 8},
+                'risaralda': {center: [4.81, -75.69], zoom: 9},
+                'quindio': {center: [4.54, -75.67], zoom: 9},
+                'valle del cauca': {center: [3.45, -76.52], zoom: 8},
+                'bolivar': {center: [10.39, -75.51], zoom: 8},
+                'magdalena': {center: [11.24, -74.20], zoom: 8},
+                'cesar': {center: [10.47, -73.25], zoom: 8},
+                'atlantico': {center: [10.96, -74.78], zoom: 8},
+                'cordoba': {center: [8.75, -75.88], zoom: 8},
+                'sucre': {center: [9.30, -75.39], zoom: 8},
+                'choco': {center: [5.69, -76.66], zoom: 8},
+                'cauca': {center: [2.44, -76.61], zoom: 8},
+                'nariño': {center: [1.29, -77.35], zoom: 8},
+                'santander': {center: [7.12, -73.12], zoom: 8},
+                'boyaca': {center: [5.53, -73.36], zoom: 8},
+                'cundinamarca': {center: [4.71, -74.07], zoom: 8},
+                'tolima': {center: [4.44, -75.23], zoom: 8},
+                'huila': {center: [2.93, -75.28], zoom: 8},
+                'meta': {center: [4.15, -73.63], zoom: 8},
+                'caldas': {center: [5.07, -75.52], zoom: 9},
             };
 
             function extractDestino(titulo) {
@@ -222,34 +233,50 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 var diffMatch = excerpt.match(/(alta|media|baja)/i);
                 var difficulty = diffMatch ? diffMatch[1].toLowerCase() : '';
 
+                // Detectar departamento desde categorías
+                var department = 'antioquia'; // default
+                if (r.categories && r.categories.length > 0) {
+                    var catName = (r._embedded && r._embedded['wp:term'] && r._embedded['wp:term'][0])
+                        ? r._embedded['wp:term'][0][0].name : '';
+                    if (catName) department = catName.toLowerCase();
+                }
+
                 return {
                     id: r.id, title: title, slug: r.slug, link: r.link,
                     excerpt: excerpt.slice(0, 200), destino: destino, km: km,
-                    difficulty: difficulty, department: 'antioquia',
+                    difficulty: difficulty, department: department,
                     lat: coords[0], lon: coords[1],
                 };
             }
 
-            function fetchRoutes(page, acc) {
-                page = page || 1; acc = acc || [];
-                var url = WP_API + '?per_page=100&page=' + page + '&_fields=id,title,slug,link,excerpt';
-                var xhr = new XMLHttpRequest();
-                xhr.open('GET', url);
-                xhr.onload = function() {
-                    if (xhr.status === 200) {
-                        var data = JSON.parse(xhr.responseText);
-                        acc = acc.concat(data);
-                        var total = parseInt(xhr.getResponseHeader('X-WP-TotalPages') || '1');
-                        if (page < total) fetchRoutes(page + 1, acc);
-                        else { allRoutes = acc.map(parseRoute); initMap(); renderPanel(); }
-                    } else {
-                        document.getElementById('rmDepList').innerHTML = '<div class="rm-loading">Error cargando rutas.</div>';
-                    }
-                };
-                xhr.onerror = function() {
-                    document.getElementById('rmDepList').innerHTML = '<div class="rm-loading">Error de conexión.</div>';
-                };
-                xhr.send();
+            // Fetchear TODAS las rutas sin límite
+            function fetchAllRoutes(callback) {
+                var allData = [];
+                var page = 1;
+
+                function fetchPage() {
+                    var url = '/wp-json/wp/v2/rutas?per_page=100&page=' + page +
+                              '&_embed&_fields=id,title,slug,link,excerpt,categories';
+
+                    fetch(url)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (!Array.isArray(data) || data.length === 0) {
+                                // Se acabaron las rutas
+                                callback(allData.map(parseRoute));
+                                return;
+                            }
+                            allData = allData.concat(data);
+                            page++;
+                            fetchPage();
+                        })
+                        .catch(err => {
+                            console.error('Error fetcheando rutas:', err);
+                            document.getElementById('rmDepList').innerHTML = '<div class="rm-loading">Error cargando rutas.</div>';
+                        });
+                }
+
+                fetchPage();
             }
 
             function initMap() {
@@ -279,7 +306,8 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
 
             function showMarkersForDep(dep) {
                 clearMarkers();
-                var routes = allRoutes.filter(function(r) { return r.department === dep; });
+                var routes = allRoutes.filter(function(r) { return r.department.toLowerCase() === dep.toLowerCase(); });
+
                 routes.forEach(function(r) {
                     var m = L.marker([r.lat, r.lon], { icon: getIcon() }).addTo(map);
                     var popupHtml = '<div style="min-width:200px">' +
@@ -295,7 +323,12 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                     m._routeId = r.id;
                     markers.push(m);
                 });
-                if (markers.length > 0) {
+
+                // Zoom a la región del departamento
+                var depConfig = DEP_COORDS[dep.toLowerCase()];
+                if (depConfig && markers.length > 0) {
+                    map.setView(depConfig.center, depConfig.zoom, { animate: true, duration: 0.8 });
+                } else if (markers.length > 0) {
                     var group = L.featureGroup(markers);
                     map.fitBounds(group.getBounds().pad(0.2));
                 }
@@ -304,8 +337,11 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
             function renderPanel() {
                 var deps = {};
                 var totalKm = 0;
+
                 allRoutes.forEach(function(r) {
-                    deps[r.department] = (deps[r.department] || 0) + 1;
+                    var dep = r.department.toLowerCase();
+                    if (!deps[dep]) deps[dep] = [];
+                    deps[dep].push(r);
                     if (r.km) totalKm += r.km;
                 });
 
@@ -316,9 +352,9 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 var html = '';
                 var sortedDeps = Object.keys(deps).sort();
                 sortedDeps.forEach(function(dep) {
-                    var routes = allRoutes.filter(function(r) { return r.department === dep; });
+                    var routes = deps[dep];
                     html += '<div class="rm-dep-item" data-dep="' + dep + '">';
-                    html += '<button class="rm-dep-btn"><span class="rm-dep-btn-left"><span class="rm-dep-dot"></span><span class="rm-dep-name">' + dep + '</span></span>';
+                    html += '<button class="rm-dep-btn"><span class="rm-dep-btn-left"><span class="rm-dep-dot"></span><span class="rm-dep-name">' + dep.toUpperCase() + '</span></span>';
                     html += '<span style="display:flex;align-items:center;gap:8px"><span class="rm-dep-count">' + routes.length + '</span><span class="rm-dep-arrow">▸</span></span></button>';
                     html += '<div class="rm-dep-routes">';
                     routes.forEach(function(r) {
@@ -333,6 +369,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                 });
                 document.getElementById('rmDepList').innerHTML = html;
 
+                // Event listeners para departamentos
                 document.querySelectorAll('#ridera-mapa-container .rm-dep-btn').forEach(function(btn) {
                     btn.addEventListener('click', function() {
                         var item = btn.closest('.rm-dep-item');
@@ -354,6 +391,7 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                     });
                 });
 
+                // Event listeners para rutas individuales
                 document.querySelectorAll('#ridera-mapa-container .rm-route-card').forEach(function(card) {
                     card.addEventListener('click', function(e) {
                         if (e.target.tagName === 'A') return;
@@ -363,14 +401,21 @@ if (!function_exists('ridera_mapa_interactivo_render')) {
                         document.querySelectorAll('#ridera-mapa-container .rm-route-card').forEach(function(c) { c.classList.remove('active'); });
                         card.classList.add('active');
                         if (map) {
-                            map.setView([lat, lon], 11, { animate: true, duration: 0.8 });
-                            markers.forEach(function(m) { if (m._routeId === id) m.openPopup(); });
+                            map.setView([lat, lon], 12, { animate: true, duration: 0.8 });
+                            setTimeout(function() {
+                                markers.forEach(function(m) { if (m._routeId === id) m.openPopup(); });
+                            }, 400);
                         }
                     });
                 });
             }
 
-            fetchRoutes();
+            // Iniciar
+            initMap();
+            fetchAllRoutes(function(routes) {
+                allRoutes = routes;
+                renderPanel();
+            });
         })();
         </script>
         <?php
