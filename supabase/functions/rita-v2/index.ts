@@ -349,6 +349,14 @@ CONFIRMACION DE RECORDATORIOS:
 - Cuando el rider responda "listo", "ya lo hice", "hecho", "listo parce" o similar despues de un recordatorio, llama a confirmar_recordatorio.
 - Confirmaselo con naturalidad: "Bacano parce, anotado!" o similar. No hagas ceremonia.
 
+IMAGENES:
+- Si el rider te manda una foto la puedes ver directamente.
+- Identifica que es: moto, lugar, documento, tablero de instrumentos, senial.
+- Si reconoces la moto (marca, modelo, cc aproximado), diselo con seguridad.
+- Si es un paisaje o pueblo, mencionalo y conectalo con rutas si aplica.
+- Si es un documento (SOAT, tecnomecanica), lee lo que veas y comenta lo util.
+- Responde en el mismo tono natural, sin herramientas para esto, solo lo que ves.
+
 RIDER NO REGISTRADO:
 - Sugierele registrarse cada 3 o 4 intercambios, sin insistir ni repetirlo seguido.
 
@@ -395,11 +403,15 @@ async function responder(
   phone: string,
   consentimiento: { registrado: boolean; acepta: boolean },
   conVoz = false,
+  imagenBloque?: Bloque,
 ): Promise<string> {
   const system = buildSystemPrompt(consentimiento, conVoz);
+  const userContent: string | Bloque[] = imagenBloque
+    ? [imagenBloque, { type: "text", text: message || "¿Qué ves en esta imagen?" }]
+    : message;
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: "user", content: message },
+    { role: "user", content: userContent },
   ];
 
   let huboHerramientas = false;
@@ -457,6 +469,15 @@ async function descargarMedia(mediaId: string): Promise<Uint8Array> {
   const meta = await metaRes.json();
   const audioRes = await fetch(meta.url, { headers: { "Authorization": `Bearer ${WA_TOKEN}` } });
   return new Uint8Array(await audioRes.arrayBuffer());
+}
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 8192;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
 }
 
 async function enviarTexto(to: string, texto: string): Promise<unknown> {
@@ -570,8 +591,25 @@ Deno.serve(async (req: Request) => {
     const from = String(msg.from ?? "");
     let message = "";
     let conVoz = false;
+    let imagenBloque: Bloque | undefined = undefined;
 
-    if (msg.type === "audio" && msg.audio) {
+    if (msg.type === "image" && msg.image) {
+      const caption = String(msg.image.caption || "");
+      try {
+        const bytes = await descargarMedia(msg.image.id);
+        const validMimes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+        const mime = validMimes.includes(msg.image.mime_type) ? msg.image.mime_type : "image/jpeg";
+        imagenBloque = {
+          type: "image",
+          source: { type: "base64", media_type: mime, data: bytesToBase64(bytes) },
+        };
+        message = caption || "¿Qué ves en esta imagen?";
+      } catch (e) {
+        console.error("Descarga imagen fallo:", e);
+        await enviarTexto(from, "No pude abrir esa imagen parce. Me lo describes?");
+        return json({ ok: true, error: "imagen_descarga" });
+      }
+    } else if (msg.type === "audio" && msg.audio) {
       if (!puedeEscuchar()) {
         await enviarTexto(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?");
         return json({ ok: true, skip: "sin proveedor de voz" });
@@ -602,6 +640,10 @@ Deno.serve(async (req: Request) => {
       message = msg.text.body;
     } else {
       return json({ ok: true, skip: "tipo no soportado" });
+    }
+
+    if (!message.trim() && !imagenBloque) {
+      return json({ ok: true, skip: "mensaje vacio" });
     }
 
     await saveMessage(from, "user", message);
@@ -639,7 +681,7 @@ Deno.serve(async (req: Request) => {
 
     let reply = "";
     try {
-      reply = await responder(message, history, from, consentimiento, conVoz);
+      reply = await responder(message, history, from, consentimiento, conVoz, imagenBloque);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
