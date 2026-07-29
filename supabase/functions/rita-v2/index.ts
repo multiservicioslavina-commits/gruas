@@ -356,6 +356,13 @@ RIDER NO REGISTRADO:
 ${bloqueConsentimiento}`;
 }
 
+// Las mismas diez del enum de registrar_consentimiento en tools.ts. El bloque
+// de consentimiento las ofrece todas juntas, asi que un "si" las acepta todas.
+const CATEGORIAS_CONSENTIMIENTO = [
+  "noticias", "rodadas", "marketplace", "eventos", "mantenimiento",
+  "seguridad_vial", "talleres", "consejos_motociclistas", "promociones", "novedades",
+];
+
 // ─── Bucle agentico ─────────────────────────────────────────────
 type Bloque = { type: string; [k: string]: unknown };
 type Mensaje = { role: string; content: string | Bloque[] };
@@ -691,9 +698,11 @@ Deno.serve(async (req: Request) => {
       const dijoNo = /^(no+|nop|no gracias|no quiero|ahorita no|ahora no|por ahora no|prefiero no|mejor no)$/.test(r);
 
       if (preguntaPendiente && (dijoSi || dijoNo)) {
+        // El bloque ofrece todo en bloque, asi que un "si" son las diez
+        // categorias. Sin esto quedaba aceptando con la lista vacia.
         await ejecutarHerramienta(
           "registrar_consentimiento",
-          { acepta: dijoSi } as unknown as Record<string, never>,
+          { acepta: dijoSi, categorias: dijoSi ? CATEGORIAS_CONSENTIMIENTO : [] } as unknown as Record<string, never>,
           from,
         );
         const respuesta = dijoSi
