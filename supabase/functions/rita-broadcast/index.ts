@@ -205,34 +205,15 @@ async function doWeeklyTips() {
 }
 
 // ─── SEGUIMIENTO FOLLOW-UPS ───────────────────────────────────────────────────
-async function doSeguimientos() {
-  const now = new Date().toISOString();
-
-  const { data: items } = await supabase
-    .from("rita_seguimiento")
-    .select("id, telefono, nota")
-    .eq("completado", false)
-    .lte("fecha_followup", now)
-    .limit(50);
-
-  if (!items?.length) return;
-
-  for (const item of items) {
-    const { data: rider } = await supabase
-      .from("riders")
-      .select("nombre")
-      .or(`telefono.eq.${item.telefono}`)
-      .maybeSingle();
-    const nombre = rider?.nombre?.split(" ")[0] || "parcero";
-
-    const msg = `Ey ${nombre} 👋 Rita aquí. La última vez que hablamos me contaste: "${item.nota}" — ¿cómo quedó eso? ¿Pudiste resolverlo? 🏍️`;
-    const ok  = await sendWA(item.telefono, msg);
-    if (ok) {
-      await supabase.from("rita_seguimiento").update({ completado: true }).eq("id", item.id);
-      await logNotif(item.telefono, "seguimiento", msg);
-    }
-  }
-}
+//
+// Retirado a proposito. rita_seguimiento la despacha rita-recordatorios, que
+// es un superset de lo que hacia esta funcion: respeta el consentimiento
+// revocado, reintenta los fallos transitorios y cae a la plantilla
+// recordatorio_soat_promo cuando el rider esta fuera de la ventana de 24h.
+//
+// Cuando los tres crons (rita-broadcast, rita-push y rita-recordatorios)
+// leian la misma cola, el recordatorio salia por el que corriera primero y
+// el camino con plantilla casi nunca se ejecutaba. Un solo despachador.
 
 // ─── COMMUNITY MATCHING ───────────────────────────────────────────────────────
 async function doCommunityMatch() {
@@ -298,8 +279,9 @@ Deno.serve(async (req: Request) => {
 
   try { await doDocReminders();    results.doc_reminders   = "ok"; } catch (e) { results.doc_reminders   = String(e); }
   try { await doWeeklyTips();      results.weekly_tips     = "ok"; } catch (e) { results.weekly_tips     = String(e); }
-  try { await doSeguimientos();    results.seguimientos    = "ok"; } catch (e) { results.seguimientos    = String(e); }
   try { await doCommunityMatch();  results.community_match = "ok"; } catch (e) { results.community_match = String(e); }
+
+  results.seguimientos = "lo despacha rita-recordatorios";
 
   return new Response(JSON.stringify({ ok: true, results }), {
     headers: { "Content-Type": "application/json" },
