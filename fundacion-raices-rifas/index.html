@@ -13,6 +13,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<script src="https://checkout.bold.co/library/boldPaymentButton.js"></script>
 <style>
 :root{
   --bg:#0d0d0d;--surface:#16171b;--surface-2:#1e2026;--line:#2a2c33;
@@ -392,17 +393,16 @@ footer a{color:var(--accent);text-decoration:none}
           <div style="background:var(--surface-2);border:1px solid rgba(61,90,241,.3);border-radius:12px;padding:14px 16px;margin-bottom:16px">
             <div style="font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:11px;color:var(--muted);margin-bottom:4px">Total a pagar</div>
             <div style="font-family:'Bebas Neue';font-size:36px;color:#3d5af1;line-height:1" id="boldTotal"></div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px" id="boldDetalle"></div>
           </div>
-          <a class="btn-bold" id="boldLink" href="#" target="_blank">
-            &#x1F4B3; Pagar con Bold
-          </a>
+          <div id="boldButtonContainer" style="margin-bottom:12px"></div>
           <div class="bold-badges">
             <span class="bold-badge">Visa / Mastercard</span>
             <span class="bold-badge">PSE</span>
             <span class="bold-badge">Nequi</span>
             <span class="bold-badge">Daviplata</span>
           </div>
-          <p style="color:var(--muted);font-size:12px;margin-top:10px">Se abrir&aacute; la p&aacute;gina de pago seguro de Bold</p>
+          <p style="color:var(--muted);font-size:12px;margin-top:10px">Pago procesado de forma segura por Bold</p>
         </div>
 
         <div class="pago-divider" id="pagoDivider" style="display:none">o paga por transferencia</div>
@@ -706,13 +706,14 @@ async function apartarBoletos(){
   document.getElementById('pagoDaviplata').textContent=telPago;
   document.getElementById('pagoBanco').textContent='Consultar por WhatsApp';
 
-  if(currentRifa.bold_link){
+  if(currentRifa.bold_api_key){
     document.getElementById('boldPago').style.display='block';
     document.getElementById('pagoDivider').style.display='flex';
     document.getElementById('boldTotal').textContent=totalStr;
-    document.getElementById('boldLink').href=currentRifa.bold_link;
+    document.getElementById('boldDetalle').textContent=`${qty} boleto(s)${dp?` · ${dp}% descuento`:''}`;
     document.getElementById('pagoManual').querySelector('h3').textContent='TAMBIÉN PUEDES TRANSFERIR';
     document.getElementById('pagoManual').querySelector('.sub').textContent='Si prefieres, transfiere el valor y envía tu comprobante por WhatsApp.';
+    renderBoldButton(currentRifa.bold_api_key, `Rifa ${currentRifa.nombre} - ${qty} boleto(s) - ${numsStr}`, codigo);
   }else{
     document.getElementById('boldPago').style.display='none';
     document.getElementById('pagoDivider').style.display='none';
@@ -881,6 +882,19 @@ function updateStickyCart(){
   document.getElementById('scTotal').textContent=fmtMoney(total)+(dp?` (${dp}% off)`:'');
   const numsPrev=[...selected].sort((a,b)=>a-b).slice(0,5).map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
   document.getElementById('scNums').textContent=(selected.size>5?numsPrev+'…':numsPrev);
+}
+
+function renderBoldButton(apiKey, description, orderId){
+  const container=document.getElementById('boldButtonContainer');
+  container.innerHTML='';
+  const s=document.createElement('script');
+  s.setAttribute('data-bold-button','');
+  s.setAttribute('data-api-key',apiKey);
+  s.setAttribute('data-description',description);
+  s.setAttribute('data-order-id','RIFA-'+orderId);
+  s.setAttribute('data-redirection-url',window.location.origin+'/?pago=exitoso');
+  s.src='https://checkout.bold.co/library/boldPaymentButton.js';
+  container.appendChild(s);
 }
 
 loadRifas();
