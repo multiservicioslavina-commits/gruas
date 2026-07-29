@@ -24,6 +24,13 @@
 -- Nota: se usa clock_timestamp() y no now(). now() devuelve la hora de inicio
 -- de la transaccion, asi que dentro de una misma transaccion el reloj del
 -- throttle no avanzaba y bloqueaba escrituras legitimas.
+--
+-- Nota 2: la guarda OLD.last_seen <= clock_timestamp() cubre el reloj del
+-- telefono adelantado. El INSERT no pasa por este trigger, asi que una fila
+-- puede nacer con last_seen en el futuro; sin la guarda, la resta seria
+-- negativa, siempre menor que el intervalo, y ese rider quedaria congelado
+-- hasta que la hora real alcanzara a su telefono. Con la guarda el ping se
+-- acepta y last_seen se reancla a hora de servidor: se corrige solo.
 
 CREATE OR REPLACE FUNCTION public.members_throttle_posicion()
 RETURNS trigger
@@ -54,12 +61,13 @@ BEGIN
 
   -- Desde aqui es solo un ping de posicion (lat/lon/speed_kmh/last_seen)
   IF OLD.last_seen IS NOT NULL
+     AND OLD.last_seen <= clock_timestamp()                          -- reloj sano
      AND clock_timestamp() - OLD.last_seen < INTERVALO_POSICION
   THEN
     RETURN NULL;  -- se descarta: sin WAL, sin mensaje realtime
   END IF;
 
-  -- Se acepta: se ancla el reloj del throttle
+  -- Se acepta: se ancla el reloj del throttle a hora de servidor
   NEW.last_seen := clock_timestamp();
   RETURN NEW;
 END;
