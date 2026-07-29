@@ -167,9 +167,14 @@ function bloqueFechaHora(): string {
   const hora = new Intl.DateTimeFormat("es-CO", {
     timeZone: "America/Bogota", hour: "numeric", minute: "2-digit", hour12: true,
   }).format(ahora);
+  // en-CA da YYYY-MM-DD. Se lo damos ya convertido porque pasar la fecha larga
+  // en espanol a ISO es justo donde el modelo se equivocaba de ano.
+  const iso = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(ahora);
 
   return `FECHA Y HORA ACTUAL EN COLOMBIA:
 Hoy es ${fecha}. Son las ${hora}.
+Hoy en formato ISO es ${iso}. El ano en curso es ${iso.slice(0, 4)}.
+Cuando llames a crear_recordatorio copia el ano de esta linea, no lo escribas de memoria.
 Si te preguntan que dia es hoy o que hora es, responde directo con este dato, nunca digas que no sabes.
 Usalo tambien para: pico y placa de hoy sin que te den placa (identifica el dia de la
 semana aqui y busca esa fila en la tabla de rotacion), y para calcular fechas relativas
@@ -667,6 +672,39 @@ Deno.serve(async (req: Request) => {
       estadoConsentimiento(from),
     ]);
 
+    // getHistory corre despues de guardar el mensaje del rider, asi que la
+    // ultima entrada es ese mismo mensaje y responder() lo vuelve a adjuntar:
+    // Claude lo recibia dos veces seguidas. Se quita el duplicado.
+    if (history.length && history[history.length - 1].role === "user") history.pop();
+
+    // Respuesta al bloque de consentimiento.
+    //
+    // La pregunta la adjunta el código, así que la respuesta la resuelve el
+    // código también. Dejársela al modelo era frágil: un "Si" suelto no
+    // siempre disparaba registrar_consentimiento, y como más abajo se volvía
+    // a adjuntar el bloque, el rider recibía la misma pregunta otra vez.
+    if (!consentimiento.registrado) {
+      const ultimaDeRita = [...history].reverse().find(h => h.role === "assistant");
+      const preguntaPendiente = ultimaDeRita?.content.includes("Escribe *S") ?? false;
+      const r = norm(message).replace(/[.,!¡?¿]/g, "").trim();
+      const dijoSi = /^(si+|claro|dale|listo|bueno|ok|oki|obvio|acepto|de una|hagale|hazlo|por supuesto|si quiero|dale pues)$/.test(r);
+      const dijoNo = /^(no+|nop|no gracias|no quiero|ahorita no|ahora no|por ahora no|prefiero no|mejor no)$/.test(r);
+
+      if (preguntaPendiente && (dijoSi || dijoNo)) {
+        await ejecutarHerramienta(
+          "registrar_consentimiento",
+          { acepta: dijoSi } as unknown as Record<string, never>,
+          from,
+        );
+        const respuesta = dijoSi
+          ? "Listo parce, quedaste apuntado. Te aviso de rodadas, mantenimiento y lo que salga bueno. Si algún día no lo quieres, me dices \"no más avisos\" y listo."
+          : "Bueno parce, no te mando nada de eso. Aquí sigo para lo que necesites, y si cambias de opinión me dices.";
+        await saveMessage(from, "assistant", respuesta);
+        await entregar(from, respuesta, conVoz);
+        return json({ ok: true, flujo: "consentimiento", acepta: dijoSi });
+      }
+    }
+
     let reply = "";
     try {
       reply = await responder(message, history, from, consentimiento, conVoz, imagenBloque);
@@ -677,7 +715,14 @@ Deno.serve(async (req: Request) => {
 
     // Adjuntar pregunta de consentimiento si el rider nunca ha respondido.
     // Lo hace el código, no Claude, para que salga siempre sin importar el historial.
-    if (!consentimiento.registrado) {
+    //
+    // Se relee el estado: la foto de arriba se tomó antes del bucle de
+    // herramientas, así que si Claude acabó de registrar el consentimiento
+    // esa foto ya está vencida y volveríamos a preguntar lo mismo.
+    const consentAhora = consentimiento.registrado
+      ? consentimiento
+      : await estadoConsentimiento(from);
+    if (!consentAhora.registrado) {
       const CONSENT_BLOCK = `\n\nPor cierto, ¿te gustaría que te avise de cosas útiles como:\n• Rodadas cerca de ti\n• Noticias del mundo de las motos\n• Consejos de conducción\n• Recordatorios de mantenimiento\n• Promociones del Marketplace\n• Talleres y mecánicos\n• Eventos especiales\n\nEscribe *Sí* para recibirlas o *No* si prefieres no. Puedes cambiarlo cuando quieras.`;
       if (!reply.includes("Escribe *S")) reply += CONSENT_BLOCK;
     }

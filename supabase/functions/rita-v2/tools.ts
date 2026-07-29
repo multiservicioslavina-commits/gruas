@@ -461,7 +461,19 @@ export const TOOL_SCHEMAS = [
           description: "Categoria del recordatorio",
         },
         nota: { type: "string", description: "Que hay que recordarle, en sus propias palabras" },
-        fecha: { type: "string", description: "Fecha del recordatorio en formato YYYY-MM-DD" },
+        fecha: {
+          type: "string",
+          description:
+            "Fecha del recordatorio en formato YYYY-MM-DD. Copia el ano del bloque FECHA Y HORA ACTUAL, "
+            + "no lo escribas de memoria. Debe ser hoy o despues; una fecha pasada se rechaza.",
+        },
+        hora: {
+          type: "string",
+          description:
+            "Hora del recordatorio en formato HH:MM de 24 horas, hora de Colombia. "
+            + "Usala siempre que el rider diga una hora ('a las 8 de la manana' -> 08:00). "
+            + "Si no dijo ninguna, omitela y se usara la 1 pm.",
+        },
       },
       required: ["tipo", "nota", "fecha"],
     },
@@ -855,15 +867,38 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) {
       return { ok: false, data: "La fecha debe venir en formato YYYY-MM-DD. Preguntale al rider para que fecha la quiere." };
     }
+
+    // La hora que pidio el rider. Antes se ignoraba y todo caia a la 1 pm.
+    const horaPedida = String(input.hora ?? "").trim();
+    const hora = /^([01]\d|2[0-3]):[0-5]\d$/.test(horaPedida) ? horaPedida : "13:00";
+
+    // Guardia contra fechas pasadas. El modelo escribia el ano anterior al
+    // pasar la fecha larga en espanol a ISO, y el recordatorio nacia vencido:
+    // el despachador lo tomaba en la siguiente corrida y lo enviaba de una,
+    // en vez de esperar al dia pedido.
+    const cuando = new Date(`${fecha}T${hora}:00-05:00`);
+    const hoyISO = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota" }).format(new Date());
+    if (Number.isNaN(cuando.getTime())) {
+      return { ok: false, data: `Fecha invalida: ${fecha}. Hoy en Colombia es ${hoyISO}.` };
+    }
+    if (cuando.getTime() <= Date.now()) {
+      return {
+        ok: false,
+        data: `Esa fecha ya paso: ${fecha} a las ${hora}. Hoy en Colombia es ${hoyISO}. `
+            + `Vuelve a llamar la herramienta con la fecha correcta y revisa sobre todo el ano, `
+            + `que debe ser ${hoyISO.slice(0, 4)} o posterior.`,
+      };
+    }
+
     const { error } = await supabase.from("rita_seguimiento").insert({
       telefono: phone,
       tipo: String(input.tipo),
       nota: String(input.nota),
-      fecha_followup: `${fecha}T13:00:00-05:00`,
+      fecha_followup: `${fecha}T${hora}:00-05:00`,
       completado: false,
     });
     if (error) return { ok: false, data: `No se pudo guardar el recordatorio: ${error.message}` };
-    return { ok: true, data: `Recordatorio guardado para el ${fecha}.` };
+    return { ok: true, data: `Recordatorio guardado para el ${fecha} a las ${hora} (hora de Colombia).` };
   },
 
   async guardar_preferencia(input, phone) {
