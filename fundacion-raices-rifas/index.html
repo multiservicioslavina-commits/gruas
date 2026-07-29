@@ -415,11 +415,7 @@ footer a{color:var(--accent);text-decoration:none}
             <div style="font-family:'Bebas Neue';font-size:36px;color:var(--accent);line-height:1" id="pagoTotal"></div>
             <div style="font-size:13px;color:var(--muted);margin-top:4px" id="pagoDetalle"></div>
           </div>
-          <div class="pago-metodos" id="pagoMetodos">
-            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(150,60,200,.15)">&#x1F4F1;</div><div class="pm-info"><div class="pm-name">Nequi</div><div class="pm-detail" id="pagoNequi"></div></div></div>
-            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(255,80,0,.12)">&#x1F4F2;</div><div class="pm-info"><div class="pm-name">Daviplata</div><div class="pm-detail" id="pagoDaviplata"></div></div></div>
-            <div class="pago-metodo"><div class="pm-icon" style="background:rgba(96,165,250,.12)">&#x1F3E6;</div><div class="pm-info"><div class="pm-name">Transferencia bancaria</div><div class="pm-detail" id="pagoBanco"></div></div></div>
-          </div>
+          <div class="pago-metodos" id="pagoMetodos"></div>
         </div>
         <div class="sel-resumen" style="border-color:var(--gold)">
           <h4 style="color:var(--gold)">Tus n&uacute;meros reservados</h4>
@@ -691,7 +687,7 @@ async function apartarBoletos(){
   const numsStr=nums.map(n=>padNum(n,currentRifa.total_boletos)).join(', ');
   const waNum=currentRifa.whatsapp||WA_NUMERO;
 
-  reservaData={nombre,telefono,email,codigo,nums,numsStr,qty,dp,totalNum,totalStr,waNum,rifaNombre:currentRifa.nombre,premio:currentRifa.premio,loteria:currentRifa.loteria||'',fechaSorteo:currentRifa.fecha_sorteo,totalBoletos:currentRifa.total_boletos};
+  reservaData={nombre,telefono,email,codigo,nums,numsStr,qty,dp,totalNum,totalStr,waNum,rifaNombre:currentRifa.nombre,premio:currentRifa.premio,loteria:currentRifa.loteria||'',fechaSorteo:currentRifa.fecha_sorteo,totalBoletos:currentRifa.total_boletos,nequi:currentRifa.nequi||'',daviplata:currentRifa.daviplata||'',cuentaBanco:currentRifa.cuenta_banco||''};
 
   const msgAdmin=`¡Hola! Aparté ${qty} boleto(s) en la rifa *${currentRifa.nombre}*:%0A%0A🎟️ Números: *${numsStr}*%0A💰 Total: *${totalStr}*${dp?` (${dp}% desc.)`:''}%0A👤 Nombre: ${nombre}%0A📱 Teléfono: ${telefono}%0A🔑 Código: *${codigo}*%0A%0AAdjunto mi comprobante de pago 🧾`;
   document.getElementById('btnPagoWA').href=`https://wa.me/${waNum}?text=${msgAdmin}`;
@@ -701,22 +697,28 @@ async function apartarBoletos(){
   document.getElementById('pagoNums').innerHTML=nums.map(n=>`<span class="sel-num">${padNum(n,currentRifa.total_boletos)}</span>`).join('');
   document.getElementById('pagoCodigo').textContent=codigo;
 
-  const telPago=waNum;
-  document.getElementById('pagoNequi').textContent=telPago;
-  document.getElementById('pagoDaviplata').textContent=telPago;
-  document.getElementById('pagoBanco').textContent='Consultar por WhatsApp';
+  let metodos='';
+  const nq=currentRifa.nequi, dv=currentRifa.daviplata, bk=currentRifa.cuenta_banco;
+  if(nq) metodos+=`<div class="pago-metodo"><div class="pm-icon" style="background:rgba(150,60,200,.15)">\u{1F4F1}</div><div class="pm-info"><div class="pm-name">Nequi</div><div class="pm-detail">${esc(nq)}</div></div></div>`;
+  if(dv) metodos+=`<div class="pago-metodo"><div class="pm-icon" style="background:rgba(255,80,0,.12)">\u{1F4F2}</div><div class="pm-info"><div class="pm-name">Daviplata</div><div class="pm-detail">${esc(dv)}</div></div></div>`;
+  if(bk) metodos+=`<div class="pago-metodo"><div class="pm-icon" style="background:rgba(96,165,250,.12)">\u{1F3E6}</div><div class="pm-info"><div class="pm-name">Transferencia bancaria</div><div class="pm-detail">${esc(bk)}</div></div></div>`;
+  if(!metodos) metodos=`<div class="pago-metodo"><div class="pm-icon" style="background:rgba(37,211,102,.12)">\u{1F4AC}</div><div class="pm-info"><div class="pm-name">Consultar por WhatsApp</div><div class="pm-detail">Pide los datos de pago por WhatsApp</div></div></div>`;
+  document.getElementById('pagoMetodos').innerHTML=metodos;
 
+  const hasManualMethods=!!(currentRifa.nequi||currentRifa.daviplata||currentRifa.cuenta_banco);
   if(currentRifa.bold_api_key){
     document.getElementById('boldPago').style.display='block';
-    document.getElementById('pagoDivider').style.display='flex';
+    document.getElementById('pagoDivider').style.display=hasManualMethods?'flex':'none';
     document.getElementById('boldTotal').textContent=totalStr;
     document.getElementById('boldDetalle').textContent=`${qty} boleto(s)${dp?` · ${dp}% descuento`:''}`;
+    document.getElementById('pagoManual').style.display=hasManualMethods?'block':'none';
     document.getElementById('pagoManual').querySelector('h3').textContent='TAMBIÉN PUEDES TRANSFERIR';
     document.getElementById('pagoManual').querySelector('.sub').textContent='Si prefieres, transfiere el valor y envía tu comprobante por WhatsApp.';
     renderBoldButton(currentRifa.bold_api_key, `Rifa ${currentRifa.nombre} - ${qty} boleto(s) - ${numsStr}`, codigo, totalNum);
   }else{
     document.getElementById('boldPago').style.display='none';
     document.getElementById('pagoDivider').style.display='none';
+    document.getElementById('pagoManual').style.display='block';
     document.getElementById('pagoManual').querySelector('h3').textContent='REALIZA TU PAGO';
     document.getElementById('pagoManual').querySelector('.sub').textContent='Transfiere el valor total y envía tu comprobante por WhatsApp.';
   }

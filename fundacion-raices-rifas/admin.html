@@ -262,7 +262,13 @@ tr:hover td { background: rgba(46,204,113,.04); }
     <div class="field"><label class="lbl">Fecha del sorteo</label><input type="datetime-local" id="mFecha"></div>
     <div class="field"><label class="lbl">URL de imagen (opcional)</label><input type="url" id="mImagen" placeholder="https://..."></div>
     <div class="field"><label class="lbl">WhatsApp de la rifa (opcional)</label><input type="tel" id="mWhatsApp" placeholder="573001234567"></div>
-    <div class="field"><label class="lbl">Llave de identidad Bold (opcional)</label><input type="text" id="mBoldKey" placeholder="Ej: AaBbCcDdEeFfGgHh..."><p style="font-size:0.75rem;color:var(--mu);margin-top:4px">Pega tu llave de identidad de Bold (Integraciones → Llaves → Bot&oacute;n de pagos) para habilitar pagos en l&iacute;nea con tarjeta, PSE, Nequi y Daviplata</p></div>
+    <div class="field"><label class="lbl">Llave de identidad Bold (opcional)</label><input type="text" id="mBoldKey" placeholder="Ej: AaBbCcDdEeFfGgHh..."><p style="font-size:0.75rem;color:var(--mu);margin-top:4px">Pega tu llave de identidad de Bold (Integraciones &rarr; Llaves &rarr; Bot&oacute;n de pagos) para habilitar pagos en l&iacute;nea con tarjeta, PSE, Nequi y Daviplata</p></div>
+    <div style="border-top:1px solid var(--line);margin:0.75rem 0;padding-top:0.75rem"><label class="lbl" style="color:var(--accent);font-size:0.85rem;margin-bottom:0.5rem">M&eacute;todos de pago por transferencia</label></div>
+    <div class="field-row">
+      <div class="field"><label class="lbl">Nequi (n&uacute;mero)</label><input type="tel" id="mNequi" placeholder="3001234567"></div>
+      <div class="field"><label class="lbl">Daviplata (n&uacute;mero)</label><input type="tel" id="mDaviplata" placeholder="3001234567"></div>
+    </div>
+    <div class="field"><label class="lbl">Cuenta bancaria (info completa)</label><input type="text" id="mCuentaBanco" placeholder="Ej: Bancolombia · Ahorros · 123-456789-00 · CC 1234567890"></div>
     <div class="field"><label class="lbl">Estado</label>
       <select id="mEstado"><option value="borrador">Borrador</option><option value="activa">Activa</option><option value="cerrada">Cerrada</option></select>
     </div>
@@ -390,6 +396,7 @@ function renderCards(){
       <div class="premio">🏆 ${esc(r.premio)}</div>
       ${r.loteria ? `<div style="font-size:0.8rem;color:var(--blue);margin-bottom:0.4rem">🎰 Juega con: <b>${esc(r.loteria)}</b></div>` : ''}
       ${r.bold_api_key ? `<div style="font-size:0.8rem;color:#3d5af1;margin-bottom:0.4rem">💳 <b>Bold activado</b></div>` : ''}
+      ${r.nequi||r.daviplata||r.cuenta_banco ? `<div style="font-size:0.8rem;color:var(--green);margin-bottom:0.4rem">💰 Pagos: ${[r.nequi?'Nequi':null,r.daviplata?'Daviplata':null,r.cuenta_banco?'Banco':null].filter(Boolean).join(' · ')}</div>` : ''}
       <div class="card-meta">
         <span class="card-tag">Boleto: <b>${fmtMoney(r.precio_boleto)}</b></span>
         <span class="card-tag">Cifras: <b>${padLen(r.total_boletos)}</b></span>
@@ -421,7 +428,7 @@ function openModal(mode, id){
   descuentos = [];
   if(mode==='crear'){
     document.getElementById('modalTitle').textContent='Nueva rifa';
-    ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mBoldKey','mTerminos','mLoteriaOtra'].forEach(x=>document.getElementById(x).value='');
+    ['mRifaId','mNombre','mPremio','mDesc','mPrecio','mFecha','mImagen','mWhatsApp','mBoldKey','mNequi','mDaviplata','mCuentaBanco','mTerminos','mLoteriaOtra'].forEach(x=>document.getElementById(x).value='');
     document.getElementById('mCifras').value='2';updateCifras();
     document.getElementById('mEstado').value='borrador';
     document.getElementById('mLoteria').value='';
@@ -439,6 +446,9 @@ function openModal(mode, id){
     document.getElementById('mImagen').value=r.imagen_url||'';
     document.getElementById('mWhatsApp').value=r.whatsapp||'';
     document.getElementById('mBoldKey').value=r.bold_api_key||'';
+    document.getElementById('mNequi').value=r.nequi||'';
+    document.getElementById('mDaviplata').value=r.daviplata||'';
+    document.getElementById('mCuentaBanco').value=r.cuenta_banco||'';
     document.getElementById('mEstado').value=r.estado||'borrador';
     document.getElementById('mTerminos').value=r.terminos||'';
     const lotSel = document.getElementById('mLoteria');
@@ -487,6 +497,9 @@ async function saveRifa(){
   const imagen_url = document.getElementById('mImagen').value.trim() || null;
   const whatsapp = document.getElementById('mWhatsApp').value.trim() || null;
   const bold_api_key = document.getElementById('mBoldKey').value.trim() || null;
+  const nequi = document.getElementById('mNequi').value.trim() || null;
+  const daviplata = document.getElementById('mDaviplata').value.trim() || null;
+  const cuenta_banco = document.getElementById('mCuentaBanco').value.trim() || null;
   const estado = document.getElementById('mEstado').value;
   const terminos = document.getElementById('mTerminos').value.trim() || null;
   const lotSel = document.getElementById('mLoteria').value;
@@ -502,7 +515,7 @@ async function saveRifa(){
   const btn = document.getElementById('mBtn');
   btn.disabled=true; btn.textContent='Guardando…';
 
-  const row = { nombre, premio, descripcion:descripcion||null, precio_boleto, total_boletos, imagen_url, whatsapp, bold_api_key, estado, terminos, loteria, descuento_volumen: descuentos.length?descuentos:[], updated_at: new Date().toISOString() };
+  const row = { nombre, premio, descripcion:descripcion||null, precio_boleto, total_boletos, imagen_url, whatsapp, bold_api_key, nequi, daviplata, cuenta_banco, estado, terminos, loteria, descuento_volumen: descuentos.length?descuentos:[], updated_at: new Date().toISOString() };
   if(fecha_str) row.fecha_sorteo = new Date(fecha_str).toISOString(); else row.fecha_sorteo = null;
 
   let error;
