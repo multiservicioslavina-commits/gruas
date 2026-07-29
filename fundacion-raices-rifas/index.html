@@ -713,7 +713,7 @@ async function apartarBoletos(){
     document.getElementById('boldDetalle').textContent=`${qty} boleto(s)${dp?` · ${dp}% descuento`:''}`;
     document.getElementById('pagoManual').querySelector('h3').textContent='TAMBIÉN PUEDES TRANSFERIR';
     document.getElementById('pagoManual').querySelector('.sub').textContent='Si prefieres, transfiere el valor y envía tu comprobante por WhatsApp.';
-    renderBoldButton(currentRifa.bold_api_key, `Rifa ${currentRifa.nombre} - ${qty} boleto(s) - ${numsStr}`, codigo);
+    renderBoldButton(currentRifa.bold_api_key, `Rifa ${currentRifa.nombre} - ${qty} boleto(s) - ${numsStr}`, codigo, totalNum);
   }else{
     document.getElementById('boldPago').style.display='none';
     document.getElementById('pagoDivider').style.display='none';
@@ -884,17 +884,31 @@ function updateStickyCart(){
   document.getElementById('scNums').textContent=(selected.size>5?numsPrev+'…':numsPrev);
 }
 
-function renderBoldButton(apiKey, description, orderId){
+async function renderBoldButton(apiKey, description, orderId, amount){
   const container=document.getElementById('boldButtonContainer');
-  container.innerHTML='';
-  const s=document.createElement('script');
-  s.setAttribute('data-bold-button','');
-  s.setAttribute('data-api-key',apiKey);
-  s.setAttribute('data-description',description);
-  s.setAttribute('data-order-id','RIFA-'+orderId);
-  s.setAttribute('data-redirection-url',window.location.origin+'/?pago=exitoso');
-  s.src='https://checkout.bold.co/library/boldPaymentButton.js';
-  container.appendChild(s);
+  container.innerHTML='<div class="loading-center"><span class="spin"></span> Preparando pago…</div>';
+  const orderIdFull='RIFA-'+orderId+'-'+Date.now();
+  const amountInt=Math.round(amount);
+  const currency='COP';
+  try{
+    const res=await fetch('/.netlify/functions/generar-hash',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({orderId:orderIdFull,amount:String(amountInt),currency})});
+    const{hash}=await res.json();
+    if(!hash)throw new Error('No hash');
+    container.innerHTML='';
+    const s=document.createElement('script');
+    s.setAttribute('data-bold-button','');
+    s.setAttribute('data-api-key',apiKey);
+    s.setAttribute('data-order-id',orderIdFull);
+    s.setAttribute('data-currency',currency);
+    s.setAttribute('data-amount',String(amountInt));
+    s.setAttribute('data-integrity-signature',hash);
+    s.setAttribute('data-description',description);
+    s.setAttribute('data-redirection-url',window.location.origin+'/?pago=exitoso');
+    s.src='https://checkout.bold.co/library/boldPaymentButton.js';
+    container.appendChild(s);
+  }catch(e){
+    container.innerHTML='<a class="btn-bold" href="https://checkout.bold.co" target="_blank">&#x1F4B3; Pagar con Bold</a><p style="color:var(--muted);font-size:12px;margin-top:6px">Si el botón no carga, contacta por WhatsApp</p>';
+  }
 }
 
 loadRifas();
