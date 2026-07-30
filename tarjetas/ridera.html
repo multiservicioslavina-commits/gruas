@@ -3,10 +3,10 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-<title>Ridera | Grúa para motos 24h en Medellín</title>
-<meta name="description" content="Ridera — Grúa para motos en Medellín las 24 horas. Pide tu grúa en segundos y te conectamos con el gruero más cercano." />
-<meta property="og:title" content="Ridera — Grúa para motos 24h" />
-<meta property="og:description" content="Pide una grúa para tu moto en segundos. Te conectamos directo con el gruero disponible más cercano en Medellín, las 24 horas." />
+<title>Ridera | Ecosistema Motero</title>
+<meta name="description" content="Ridera — Ecosistema motero. Grúas 24h, Pasaporte 125 municipios, Garage Técnico, Clubes, Blog y más. Todo para motociclistas en Antioquia." />
+<meta property="og:title" content="Ridera — Ecosistema Motero" />
+<meta property="og:description" content="Todo lo que un motociclista necesita: Grúas 24h, Pasaporte 125 municipios de Antioquia, Garage Técnico, Clubes y más." />
 <meta property="og:image" content="https://gruas.ridera.com.co/og-home.png" />
 <meta property="og:type" content="website" />
 <meta name="theme-color" content="#0d0d0d" />
@@ -52,7 +52,6 @@ body {
   background: repeating-linear-gradient(45deg, var(--orange) 0 14px, var(--bg) 14px 28px);
 }
 
-/* Hero */
 .hero {
   text-align: center;
   padding: 2.5rem 1.5rem 1.5rem;
@@ -97,32 +96,22 @@ body {
   margin-top: .8rem;
   padding: .35rem 1rem;
   border-radius: 50px;
-  background: rgba(37,211,102,.12);
+  background: var(--orange-glow);
   font-size: .75rem;
   font-weight: 600;
-  color: var(--green);
-}
-.badge-dot {
-  width: 8px; height: 8px;
-  border-radius: 50%;
-  background: var(--green);
-  animation: pulse 2s infinite;
-}
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: .4; }
+  color: var(--orange-light);
+  border: 1px solid rgba(232,93,32,.25);
 }
 .brand-desc {
   font-size: .85rem;
   color: var(--muted);
   margin-top: .8rem;
   line-height: 1.5;
-  max-width: 320px;
+  max-width: 340px;
   margin-left: auto;
   margin-right: auto;
 }
 
-/* CTA buttons */
 .cta-row {
   display: flex;
   gap: .75rem;
@@ -142,18 +131,17 @@ body {
   text-decoration: none;
   transition: all .2s;
 }
-.cta-pedir {
+.cta-web {
   background: var(--orange);
   color: #fff;
 }
-.cta-pedir:active { background: var(--orange-dark); }
+.cta-web:active { background: var(--orange-dark); }
 .cta-whatsapp {
   background: var(--green);
   color: #fff;
 }
 .cta-whatsapp:active { background: #1da851; }
 
-/* Section */
 .section-title {
   font-size: .7rem;
   letter-spacing: .2em;
@@ -162,14 +150,13 @@ body {
   padding: 1.5rem 1.5rem .75rem;
 }
 
-/* Services */
-.services {
+.ecosystem {
   display: flex;
   flex-direction: column;
   gap: .6rem;
   padding: 0 1.5rem;
 }
-.service-item {
+.eco-item {
   display: flex;
   align-items: center;
   gap: .8rem;
@@ -177,30 +164,63 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
+  text-decoration: none;
+  color: var(--text);
+  transition: all .2s;
 }
-.service-icon {
-  width: 42px;
-  height: 42px;
-  border-radius: 10px;
+.eco-item:active {
   background: var(--orange-glow);
+  border-color: var(--orange-dark);
+}
+.eco-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.4rem;
+  font-size: 1.5rem;
   flex-shrink: 0;
 }
-.service-text { flex: 1; }
-.service-name {
+.eco-icon.gruas { background: rgba(232,93,32,.15); }
+.eco-icon.pasaporte { background: rgba(76,175,80,.12); }
+.eco-icon.garage { background: rgba(33,150,243,.12); }
+.eco-icon.mimoto { background: rgba(156,39,176,.12); }
+.eco-icon.clubes { background: rgba(255,193,7,.12); }
+.eco-icon.blog { background: rgba(244,67,54,.12); }
+.eco-text { flex: 1; min-width: 0; }
+.eco-name {
   font-size: .9rem;
   font-weight: 600;
 }
-.service-desc {
-  font-size: .75rem;
+.eco-desc {
+  font-size: .73rem;
   color: var(--muted);
   margin-top: .15rem;
+  line-height: 1.3;
+}
+.eco-arrow {
+  flex-shrink: 0;
+  color: var(--muted);
+  opacity: .5;
 }
 
-/* Contact grid */
+.divider {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+  padding: .5rem 1.5rem;
+  color: var(--border);
+}
+.divider::before, .divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), transparent);
+}
+.divider span { font-size: .7rem; color: var(--orange-dark); }
+
 .grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -245,52 +265,6 @@ body {
   text-align: center;
 }
 
-/* Divider */
-.divider {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: .5rem;
-  padding: .5rem 1.5rem;
-  color: var(--border);
-}
-.divider::before, .divider::after {
-  content: '';
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, var(--border), transparent);
-}
-.divider span { font-size: .7rem; color: var(--orange-dark); }
-
-/* Coverage area */
-.coverage {
-  margin: 0 1.5rem;
-  padding: 1rem 1.2rem;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-}
-.coverage-title {
-  font-size: .8rem;
-  font-weight: 700;
-  color: var(--orange-light);
-  margin-bottom: .5rem;
-}
-.coverage-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: .4rem;
-}
-.coverage-tag {
-  padding: .3rem .7rem;
-  border-radius: 50px;
-  background: var(--surface-2);
-  border: 1px solid var(--border);
-  font-size: .7rem;
-  color: var(--muted);
-}
-
-/* Save contact */
 .save-section {
   padding: 1.5rem;
   margin-top: auto;
@@ -328,99 +302,106 @@ body {
 <div class="card">
   <div class="hazard"></div>
 
-  <!-- Hero -->
   <div class="hero">
     <div class="logo-wrap">
       <img src="logo-ridera.png" alt="Ridera" />
     </div>
     <div class="brand-name">Ridera</div>
-    <div class="brand-sub">Grúa para motos · 24h</div>
+    <div class="brand-sub">Ecosistema Motero</div>
     <div class="brand-badge">
-      <span class="badge-dot"></span>
-      Disponible ahora
+      <svg width="16" height="16" fill="none" stroke="var(--orange-light)" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      Antioquia, Colombia
     </div>
     <p class="brand-desc">
-      Pide una grúa para tu moto en segundos.
-      Te conectamos con el gruero más cercano en Medellín, las 24 horas.
+      Todo lo que un motociclista necesita en un solo lugar: grúas, rutas, garage técnico, clubes y comunidad motera.
     </p>
   </div>
 
-  <!-- CTA -->
   <div class="cta-row">
-    <a href="https://gruas.ridera.com.co" class="cta-btn cta-pedir">
-      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      Pedir grúa
+    <a href="https://ridera.com.co" target="_blank" rel="noopener" class="cta-btn cta-web">
+      <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
+      ridera.com.co
     </a>
-    <a href="https://wa.me/573117896717?text=Hola%2C%20necesito%20una%20gr%C3%BAa%20para%20mi%20moto" class="cta-btn cta-whatsapp">
+    <a href="https://wa.me/573226857835?text=Hola%20Ridera%2C%20quiero%20informaci%C3%B3n" class="cta-btn cta-whatsapp">
       <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.015a9.845 9.845 0 01-5.016-1.373l-.36-.213-3.728.978.995-3.635-.235-.374A9.86 9.86 0 012.14 12.01C2.14 6.555 6.565 2.13 12.04 2.13a9.82 9.82 0 016.963 2.884 9.84 9.84 0 012.884 6.963c-.003 5.476-4.429 9.918-9.837 9.918v-.11zM20.52 3.449A11.794 11.794 0 0012.05.002C5.464.002.105 5.336.1 11.948a11.9 11.9 0 001.597 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.586 0 11.946-5.335 11.949-11.896a11.83 11.83 0 00-3.48-8.397z"/></svg>
       WhatsApp
     </a>
   </div>
 
-  <div class="section-title">Nuestros servicios</div>
+  <div class="section-title">Ecosistema</div>
 
-  <!-- Services -->
-  <div class="services">
-    <div class="service-item">
-      <div class="service-icon">
-        <svg width="24" height="24" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 17h2m10 0h2M2 9l3-6h14l3 6M2 9h20M2 9v8a1 1 0 001 1h1m16 0h1a1 1 0 001-1V9"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
+  <div class="ecosystem">
+    <a href="https://gruas.ridera.com.co" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon gruas">
+        <svg width="26" height="26" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M5 17h2m10 0h2M2 9l3-6h14l3 6M2 9h20M2 9v8a1 1 0 001 1h1m16 0h1a1 1 0 001-1V9"/><circle cx="7" cy="17" r="2"/><circle cx="17" cy="17" r="2"/></svg>
       </div>
-      <div class="service-text">
-        <div class="service-name">Grúa para motos</div>
-        <div class="service-desc">Recogemos tu moto donde estés, 24/7</div>
+      <div class="eco-text">
+        <div class="eco-name">Grúas para Motos 24h</div>
+        <div class="eco-desc">Pide una grúa en segundos. Te conectamos con el gruero más cercano, las 24 horas.</div>
       </div>
-    </div>
-    <div class="service-item">
-      <div class="service-icon">
-        <svg width="24" height="24" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-      </div>
-      <div class="service-text">
-        <div class="service-name">Disponibilidad 24 horas</div>
-        <div class="service-desc">Día y noche, fines de semana y festivos</div>
-      </div>
-    </div>
-    <div class="service-item">
-      <div class="service-icon">
-        <svg width="24" height="24" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-      </div>
-      <div class="service-text">
-        <div class="service-name">Gruero más cercano</div>
-        <div class="service-desc">Te conectamos con el disponible más cerca</div>
-      </div>
-    </div>
-    <div class="service-item">
-      <div class="service-icon">
-        <svg width="24" height="24" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      </div>
-      <div class="service-text">
-        <div class="service-name">Servicio seguro</div>
-        <div class="service-desc">Grueros verificados y seguimiento en vivo</div>
-      </div>
-    </div>
-  </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
 
-  <div class="divider"><span>&#9670;</span></div>
+    <a href="https://pasaporte.ridera.com.co" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon pasaporte">
+        <svg width="26" height="26" fill="none" stroke="#4CAF50" stroke-width="1.8" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="12" cy="10" r="3"/><path d="M7 20v-1a5 5 0 0110 0v1"/><path d="M16 4v2M8 4v2"/></svg>
+      </div>
+      <div class="eco-text">
+        <div class="eco-name">Pasaporte Ridera 125</div>
+        <div class="eco-desc">Sella los 125 municipios de Antioquia en moto. Rutas, álbum de sellos y ranking.</div>
+      </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
 
-  <div class="section-title">Cobertura</div>
-  <div class="coverage">
-    <div class="coverage-title">Área Metropolitana de Medellín</div>
-    <div class="coverage-list">
-      <span class="coverage-tag">Medellín</span>
-      <span class="coverage-tag">Envigado</span>
-      <span class="coverage-tag">Itagüí</span>
-      <span class="coverage-tag">Bello</span>
-      <span class="coverage-tag">Sabaneta</span>
-      <span class="coverage-tag">La Estrella</span>
-      <span class="coverage-tag">Copacabana</span>
-      <span class="coverage-tag">Caldas</span>
-    </div>
+    <a href="https://ridera.com.co/garage-ridera" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon garage">
+        <svg width="26" height="26" fill="none" stroke="#2196F3" stroke-width="1.8" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      </div>
+      <div class="eco-text">
+        <div class="eco-name">Garage Técnico</div>
+        <div class="eco-desc">Fichas técnicas de motos 650cc+. Especificaciones, comparativas y datos.</div>
+      </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+
+    <a href="https://ridera.com.co/mimoto" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon mimoto">
+        <svg width="26" height="26" fill="none" stroke="#9C27B0" stroke-width="1.8" viewBox="0 0 24 24"><path d="M9 17H5a2 2 0 01-2-2V5a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2h-4"/><path d="M12 15l-3 6h6l-3-6z"/></svg>
+      </div>
+      <div class="eco-text">
+        <div class="eco-name">Mi Moto</div>
+        <div class="eco-desc">Registra tu moto con ficha técnica, fotos y datos de tu máquina.</div>
+      </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+
+    <a href="https://pasaporte.ridera.com.co/clubes" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon clubes">
+        <svg width="26" height="26" fill="none" stroke="#FFC107" stroke-width="1.8" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+      </div>
+      <div class="eco-text">
+        <div class="eco-name">Clubes Moteros</div>
+        <div class="eco-desc">Encuentra clubes de motos en Antioquia. Rodadas, eventos y comunidad.</div>
+      </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
+
+    <a href="https://ridera.com.co/blog" target="_blank" rel="noopener" class="eco-item">
+      <div class="eco-icon blog">
+        <svg width="26" height="26" fill="none" stroke="#F44336" stroke-width="1.8" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+      </div>
+      <div class="eco-text">
+        <div class="eco-name">Blog Ridera</div>
+        <div class="eco-desc">Contenido para motociclistas: rutas, consejos, salud y mecánica.</div>
+      </div>
+      <svg class="eco-arrow" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg>
+    </a>
   </div>
 
   <div class="divider"><span>&#9670;</span></div>
 
   <div class="section-title">Contacto</div>
 
-  <!-- Contact grid -->
   <div class="grid">
     <a href="tel:+573226857835" class="grid-item">
       <div class="grid-icon phone">
@@ -428,7 +409,7 @@ body {
       </div>
       <span class="grid-label">Llamar</span>
     </a>
-    <a href="https://gruas.ridera.com.co" target="_blank" rel="noopener" class="grid-item">
+    <a href="https://ridera.com.co" target="_blank" rel="noopener" class="grid-item">
       <div class="grid-icon web">
         <svg width="20" height="20" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 014 10 15.3 15.3 0 01-4 10 15.3 15.3 0 01-4-10 15.3 15.3 0 014-10z"/></svg>
       </div>
@@ -440,7 +421,7 @@ body {
       </div>
       <span class="grid-label">Ubicación</span>
     </a>
-    <a href="https://wa.me/573117896717" target="_blank" rel="noopener" class="grid-item">
+    <a href="https://wa.me/573226857835" target="_blank" rel="noopener" class="grid-item">
       <div class="grid-icon whatsapp">
         <svg width="22" height="22" fill="#25D366" viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347zM12.05 21.785h-.015a9.845 9.845 0 01-5.016-1.373l-.36-.213-3.728.978.995-3.635-.235-.374A9.86 9.86 0 012.14 12.01C2.14 6.555 6.565 2.13 12.04 2.13a9.82 9.82 0 016.963 2.884 9.84 9.84 0 012.884 6.963c-.003 5.476-4.429 9.918-9.837 9.918v-.11zM20.52 3.449A11.794 11.794 0 0012.05.002C5.464.002.105 5.336.1 11.948a11.9 11.9 0 001.597 5.945L0 24l6.304-1.654a11.88 11.88 0 005.683 1.448h.005c6.586 0 11.946-5.335 11.949-11.896a11.83 11.83 0 00-3.48-8.397z"/></svg>
       </div>
@@ -452,7 +433,7 @@ body {
       </div>
       <span class="grid-label">Compartir</span>
     </button>
-    <a href="https://gruas.ridera.com.co" class="grid-item">
+    <a href="https://ridera.com.co" class="grid-item">
       <div class="grid-icon instalar">
         <svg width="20" height="20" fill="none" stroke="var(--orange)" stroke-width="1.8" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3"/></svg>
       </div>
@@ -460,7 +441,6 @@ body {
     </a>
   </div>
 
-  <!-- Save contact -->
   <div class="save-section">
     <button class="save-btn" onclick="saveContact()">
       <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6m3-3h-6"/></svg>
@@ -469,7 +449,7 @@ body {
   </div>
 
   <div class="footer">
-    <a href="https://gruas.ridera.com.co" target="_blank">Ridera</a> &middot; Comunidad motera de Antioquia
+    <a href="https://ridera.com.co" target="_blank">ridera.com.co</a> &middot; Ecosistema motero de Antioquia
   </div>
   <div class="hazard"></div>
 </div>
@@ -479,26 +459,26 @@ function saveContact() {
   var vcard = [
     'BEGIN:VCARD',
     'VERSION:3.0',
-    'FN:Ridera - Grúa para Motos',
+    'FN:Ridera — Ecosistema Motero',
     'ORG:Ridera',
     'TEL;TYPE=CELL:+573226857835',
-    'URL:https://gruas.ridera.com.co',
+    'URL:https://ridera.com.co',
     'ADR;TYPE=WORK:;;Medellín;Antioquia;;Colombia',
-    'NOTE:Grúa para motos en Medellín 24 horas. Pide tu grúa en segundos.',
+    'NOTE:Ecosistema motero: Grúas 24h\\, Pasaporte 125 municipios\\, Garage Técnico\\, Clubes y Blog. ridera.com.co',
     'END:VCARD'
   ].join('\n');
   var blob = new Blob([vcard], { type: 'text/vcard;charset=utf-8' });
   var url = URL.createObjectURL(blob);
   var a = document.createElement('a');
   a.href = url;
-  a.download = 'Ridera-Grua-Motos.vcf';
+  a.download = 'Ridera-Ecosistema-Motero.vcf';
   a.click();
   URL.revokeObjectURL(url);
 }
 
 function shareCard() {
   var url = 'https://gruas.ridera.com.co/tarjeta/ridera';
-  var texto = 'Ridera — Grúa para motos 24h en Medellín. Pide tu grúa en segundos.';
+  var texto = 'Ridera — Ecosistema Motero. Grúas 24h, Pasaporte 125 municipios, Garage Técnico, Clubes y más.';
   if (navigator.share) {
     navigator.share({ title: 'Ridera', text: texto, url: url }).catch(function(){});
   } else {
