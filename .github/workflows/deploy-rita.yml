@@ -1,0 +1,67 @@
+# Despliegue de las funciones de Rita a Supabase
+#
+# Corre solo cuando cambia algo dentro de supabase/functions, y tambien a mano
+# desde la pestana Actions (Run workflow), que sirve para desplegar una rama
+# sin necesidad de fusionarla.
+#
+# Requisito unico: el secreto SUPABASE_ACCESS_TOKEN en
+# Settings -> Secrets and variables -> Actions.
+# El token se genera en https://supabase.com/dashboard/account/tokens
+
+name: Desplegar funciones de Rita
+
+on:
+  push:
+    paths:
+      - "supabase/functions/**"
+  workflow_dispatch:
+    inputs:
+      funcion:
+        description: "Que desplegar: 'todas' o el nombre de una funcion"
+        required: false
+        default: "todas"
+
+env:
+  PROJECT_REF: vzzxsdtsaahhzyctvmhx
+
+jobs:
+  desplegar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verificar que compilan antes de subir nada
+        run: |
+          npx --yes esbuild@0.24.0 \
+            supabase/functions/rita-v2/index.ts \
+            --bundle --format=esm \
+            --external:jsr:* --external:https://* --external:npm:* \
+            --outfile=/dev/null
+
+      - name: Desplegar
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -euo pipefail
+          objetivo="${{ github.event.inputs.funcion || 'todas' }}"
+
+          if [ "$objetivo" != "todas" ]; then
+            echo "Desplegando solo $objetivo"
+            supabase functions deploy "$objetivo" \
+              --project-ref "$PROJECT_REF" --no-verify-jwt
+            exit 0
+          fi
+
+          for dir in supabase/functions/*/; do
+            nombre="$(basename "$dir")"
+            case "$nombre" in
+              _*) continue ;;   # carpetas compartidas, no son funciones
+            esac
+            echo "── Desplegando $nombre"
+            supabase functions deploy "$nombre" \
+              --project-ref "$PROJECT_REF" --no-verify-jwt
+          done
