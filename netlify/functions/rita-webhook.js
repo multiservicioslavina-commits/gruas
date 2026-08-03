@@ -1,14 +1,23 @@
 // netlify/functions/rita-webhook.js
 //
-// RITA — 100% Haiku (económico) + Tool Use + detección de errores
+// Core de Rita de Ridera. Maneja:
+//  - GET  -> verificacion del webhook de WhatsApp Cloud API (Meta)
+//  - POST -> mensajes entrantes: enruta intencion, busca contexto si aplica,
+//            llama a Claude, responde por WhatsApp y guarda el historial.
 //
 // Variables de entorno requeridas:
-//   WHATSAPP_VERIFY_TOKEN, WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID
-//   ANTHROPIC_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY
-//   GRUA_RIDERA_PHONE, RITA_DAILY_MESSAGE_LIMIT (opcional, default 40)
+//   WHATSAPP_VERIFY_TOKEN   -> el que configuras en Meta App > Webhooks
+//   WHATSAPP_ACCESS_TOKEN
+//   WHATSAPP_PHONE_NUMBER_ID
+//   ANTHROPIC_API_KEY
+//   CLAUDE_MODEL             (opcional, default claude-haiku-4-5-20251001)
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_KEY
+//   GRUA_RIDERA_PHONE         (opcional, numero de contacto para emergencias)
 
 const { sendWhatsAppMessage, extractIncomingMessage } = require("./lib/whatsapp");
 const {
+  searchDirectory,
   logMessage,
   getRecentHistory,
   countMessagesToday,
@@ -17,50 +26,35 @@ const {
   getContact,
   setPreferredName,
 } = require("./lib/supabase");
-const { classifyIntent, EMERGENCY_REPLY } = require("./lib/router");
-const { TOOLS_DEFINITION, executeTool } = require("./lib/tools");
+const { askClaude } = require("./lib/claude");
+const { classifyIntent, extractSearchTerm, EMERGENCY_REPLY } = require("./lib/router");
+const { getTierConfig } = require("./lib/tiers");
 const { detectsError, logErrorAlert, getErrorAcknowledgmentResponse } = require("./lib/error-detection");
 
-const RIDERA_SYSTEM_PROMPT = `Eres Rita, la asistente virtual de Ridera, un ecosistema de motociclismo en Colombia.
-
-TU PERSONALIDAD:
-- Tono cercano, amigable y motero, pero SIN usar "parce" ni frases genéricas
-- Eres la asistente confiable de alguien que ama las motos
-- Hablas como si fueras una amiga de confianza del mundo del motociclismo
-- Claro, breve (máximo 3-4 frases salvo que pidan más detalle)
-
-INFORMACIÓN QUE OFRECES:
-- Directorio de talleres, almacenes y grúas en Colombia
-- El reto Pasaporte Ridera 125 (visita los 125 municipios de Antioquia)
-- Ridera Aventuras (rutas, eventos)
-
-REGLAS IMPORTANTES:
-1. Cuando el usuario comparta su nombre, úsalo de forma natural en las respuestas.
-2. NO repitas el nombre en cada frase - sé natural, como amigos hablando
-3. Si no tienes información, sé honesto: "No tengo esa info en el directorio, pero puedo ayudarte en..."
-4. Nunca inventes direcciones, teléfonos ni precios
-5. Mantén un tono motivador cuando hables de motos, rutas o aventuras
-6. Sé útil: ofrece alternativas si lo que buscan no existe
-
-HERRAMIENTAS (usa cuando sea útil):
-- Buscar talleres/almacenes (search_taller, search_almacen)
-- Crear citas de servicio (create_cita)
-- Reportar errores de información (report_error)
-- Obtener eventos cercanos (get_events)
-- Guardar/obtener ubicación del usuario (set_user_location, get_user_location)
-- Buscar grúas de emergencia (search_grua)
-
-No inventes datos que no vengan de las herramientas.`;
+const RIDERA_SYSTEM_PROMPT = `Eres Rita, la asistente virtual de Ridera, un ecosistema
+de motociclismo en Colombia (directorio de talleres/almacenes/grúas, el reto
+Pasaporte Ridera 125, y Ridera Aventuras). Respondes por WhatsApp: tono cercano,
+amigable y motero, pero SIN usar "parce" ni frases genéricas. Claro y breve
+(máximo 3-4 frases salvo que te pidan más detalle).
+Cuando el usuario comparta su nombre, úsalo de forma natural en tus respuestas,
+sin repetirlo en cada frase.
+Si no tienes información suficiente para responder algo específico, dilo
+honestamente y sugiere que la persona visite ridera.com.co o contacte soporte.
+No inventes direcciones, teléfonos ni precios que no te hayan dado como contexto.`;
 
 exports.handler = async (event) => {
   if (event.httpMethod === "GET") {
     return handleVerification(event);
   }
+
   if (event.httpMethod === "POST") {
     return handleIncomingMessage(event);
   }
+
   return { statusCode: 405, body: "Method not allowed" };
 };
+
+// --- Verificación del webhook (Meta) ---------------------------------
 
 function handleVerification(event) {
   const params = event.queryStringParameters || {};
@@ -71,8 +65,11 @@ function handleVerification(event) {
   if (mode === "subscribe" && token === process.env.WHATSAPP_VERIFY_TOKEN) {
     return { statusCode: 200, body: challenge };
   }
+
   return { statusCode: 403, body: "Forbidden" };
 }
+
+// --- Mensajes entrantes ------------------------------------------------
 
 async function handleIncomingMessage(event) {
   let body;
@@ -83,6 +80,8 @@ async function handleIncomingMessage(event) {
   }
 
   const incoming = extractIncomingMessage(body);
+
+  // No es un mensaje de texto nuevo (status update, etc.) -> ack silencioso
   if (!incoming) {
     return { statusCode: 200, body: "ignored" };
   }
@@ -90,7 +89,10 @@ async function handleIncomingMessage(event) {
   const { from, text, unsupportedType } = incoming;
 
   if (unsupportedType) {
-    await sendWhatsAppMessage(from, "Por ahora solo puedo leer mensajes de texto 🙏 ¿me lo escribes?");
+    await sendWhatsAppMessage(
+      from,
+      "Por ahora solo puedo leer mensajes de texto 🙏 ¿me lo escribes?"
+    );
     return { statusCode: 200, body: "ok" };
   }
 
@@ -98,24 +100,27 @@ async function handleIncomingMessage(event) {
     const existingContact = await getContact(from);
     await upsertContact(from); // crea el contacto si no existe / actualiza last_seen
 
-    // Primera vez que este número escribe -> preguntar el nombre
+    // Caso 1: es la primera vez que este número le escribe a Rita -> preguntar el nombre
     if (!existingContact) {
-      await sendWhatsAppMessage(from, "¡Hola! Soy Rita, la asistente de Ridera 🏍️ ¿Cómo te llamas?");
+      await sendWhatsAppMessage(
+        from,
+        "¡Hola! Soy Rita, la asistente de Ridera 🏍️ ¿Cómo te llamas?"
+      );
       return { statusCode: 200, body: "asked name" };
     }
 
-    // Ya le preguntamos el nombre y este mensaje es la respuesta
+    // Caso 2: ya le preguntamos el nombre y este mensaje es la respuesta
     if (existingContact.awaiting_name) {
       const name = sanitizeName(text);
       await setPreferredName(from, name);
       await sendWhatsAppMessage(
         from,
-        `¡Un gusto, ${name}! 🛵 Ya quedaste registrado. Cuéntame en qué te ayudo — talleres, almacenes, grúas, o el Pasaporte 125.`
+        `¡Un gusto, ${name}! Ya quedaste registrado. Cuéntame en qué te ayudo — talleres, almacenes, el Pasaporte Ridera 125, o lo que necesites 🛵`
       );
       return { statusCode: 200, body: "name saved" };
     }
 
-    // Opt-out de broadcasts
+    // Palabra clave para darse de baja de broadcasts (no de Rita en general)
     if (/^\s*(baja|stop|no\s*más)\s*$/i.test(text)) {
       await setOptOut(from, false);
       await sendWhatsAppMessage(from, "Listo, no te volveré a enviar avisos masivos. Sigues pudiendo escribirme cuando quieras 🙂");
@@ -139,12 +144,12 @@ async function handleIncomingMessage(event) {
     const usedToday = await countMessagesToday(from);
 
     let reply;
-    if (intent === "emergency") {
-      reply = EMERGENCY_REPLY;
-    } else if (usedToday > dailyLimit) {
-      reply = "Hoy ya hablamos bastante 😅 Para cuidar el servicio, tengo un límite diario de mensajes por persona. ¡Escríbeme mañana y seguimos!";
+    if (usedToday > dailyLimit) {
+      // No llamamos a Claude: cortamos el gasto antes de generar la respuesta
+      reply =
+        "Hoy ya hablamos bastante 😅 Para cuidar el servicio, tengo un límite diario de mensajes por persona. ¡Escríbeme mañana y seguimos!";
     } else {
-      reply = await buildReplyWithHaikuToolUse(from, from, text, existingContact.preferred_name);
+      reply = await buildReply(from, text, intent, existingContact.preferred_name);
     }
 
     await sendWhatsAppMessage(from, reply);
@@ -153,118 +158,86 @@ async function handleIncomingMessage(event) {
     return { statusCode: 200, body: "ok" };
   } catch (err) {
     console.error("Rita error:", err);
+    // Intentamos avisarle al usuario aunque algo haya fallado internamente
     try {
-      await sendWhatsAppMessage(from, "Tuve un problema respondiendo tu mensaje 😕 intenta de nuevo en un momento.");
+      await sendWhatsAppMessage(
+        from,
+        "Tuve un problema respondiendo tu mensaje 😕 intenta de nuevo en un momento."
+      );
     } catch (_) {}
     return { statusCode: 200, body: "error handled" };
   }
 }
 
-// ============================================================================
-// FLUJO 100% HAIKU: decide herramientas -> las ejecuta -> redacta respuesta
-// ============================================================================
+// --- Construcción de la respuesta según intención -----------------------
 
-async function buildReplyWithHaikuToolUse(contactId, whatsappNumber, userText, preferredName) {
-  const history = await getRecentHistory(whatsappNumber, 4);
+async function buildReply(from, text, intent, preferredName) {
+  const tier = getTierConfig();
 
-  const systemBlocks = [
-    { type: "text", text: RIDERA_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
-  ];
-  if (preferredName) {
-    systemBlocks.push({
-      type: "text",
-      text: `Este usuario se llama ${preferredName}. Salúdalo naturalmente sin repetir el nombre en cada frase.`,
-    });
+  if (intent === "emergency") {
+    return EMERGENCY_REPLY;
   }
 
-  const messages = [
-    ...history.map((h) => ({ role: h.role, content: h.content })),
-    { role: "user", content: userText },
-  ];
+  if (intent === "taller_search" || intent === "almacen_search") {
+    const type = intent === "taller_search" ? "taller" : "almacen";
+    const term = extractSearchTerm(text, intent);
+    const results = term ? await searchDirectory(type, term) : [];
 
-  const toolResponse = await fetch("https://api.anthropic.com/v1/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-api-key": process.env.ANTHROPIC_API_KEY,
-      "anthropic-version": "2023-06-01",
-    },
-    body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 500,
-      system: systemBlocks,
-      tools: TOOLS_DEFINITION,
-      messages,
-    }),
-  });
+    const context = results.length
+      ? results
+          .map((r) => `- ${stripHtml(r.title)}: ${stripHtml(r.excerpt || r.content).slice(0, 200)} (${r.link})`)
+          .join("\n")
+      : "No se encontraron resultados en el directorio para ese término.";
 
-  if (!toolResponse.ok) {
-    throw new Error(`Claude API failed: ${await toolResponse.text()}`);
-  }
-
-  const toolData = await toolResponse.json();
-
-  let toolResults = [];
-  for (const content of toolData.content) {
-    if (content.type === "tool_use") {
-      try {
-        const result = await executeTool(contactId, content.name, content.input);
-        toolResults.push({ type: "tool_result", tool_use_id: content.id, content: JSON.stringify(result) });
-      } catch (err) {
-        toolResults.push({ type: "tool_result", tool_use_id: content.id, content: `Error: ${err.message}`, is_error: true });
-      }
-    } else if (content.type === "text" && toolResults.length === 0) {
-      return content.text;
-    }
-  }
-
-  if (toolResults.length > 0) {
-    const finalMessages = [
-      ...messages,
-      { role: "assistant", content: toolData.content },
-      { role: "user", content: toolResults },
+    const history = await getRecentHistory(from, tier.historyMessages);
+    const messages = [
+      ...history.map((h) => ({ role: h.role, content: h.content })),
+      {
+        role: "user",
+        content: `Pregunta del usuario: "${text}"\n\nResultados del directorio de Ridera:\n${context}\n\nResponde usando SOLO esta información. Si no hay resultados útiles, dilo y sugiere buscar en ridera.com.co.`,
+      },
     ];
 
-    const finalResponse = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-api-key": process.env.ANTHROPIC_API_KEY,
-        "anthropic-version": "2023-06-01",
-      },
-      body: JSON.stringify({
-        model: "claude-haiku-4-5-20251001",
-        max_tokens: 500,
-        system: systemBlocks,
-        messages: finalMessages,
-      }),
-    });
-
-    if (!finalResponse.ok) {
-      throw new Error(`Claude API failed: ${await finalResponse.text()}`);
-    }
-
-    const finalData = await finalResponse.json();
-    const textBlock = finalData.content?.find((b) => b.type === "text");
-    return textBlock?.text || "No pude generar una respuesta.";
+    return askClaude(RIDERA_SYSTEM_PROMPT, messages, { model: tier.searchModel, userName: preferredName });
   }
 
-  return "No entendí bien, ¿puedes ser más específico?";
+  if (intent === "pasaporte") {
+    const history = await getRecentHistory(from, tier.historyMessages);
+    const messages = [
+      ...history.map((h) => ({ role: h.role, content: h.content })),
+      {
+        role: "user",
+        content: `${text}\n\n(Contexto: el usuario pregunta sobre el Pasaporte Ridera 125, el reto de visitar los 125 municipios de Antioquia en moto y sellar el pasaporte digital.)`,
+      },
+    ];
+    return askClaude(RIDERA_SYSTEM_PROMPT, messages, { userName: preferredName });
+  }
+
+  // general — aquí es donde más se nota la diferencia de tier (razonamiento, tono, matices)
+  const history = await getRecentHistory(from, tier.historyMessages);
+  const messages = [...history.map((h) => ({ role: h.role, content: h.content })), { role: "user", content: text }];
+  return askClaude(RIDERA_SYSTEM_PROMPT, messages, { userName: preferredName });
 }
 
+// Limpia lo que la persona respondió a "¿cómo te llamas?"
+// para que quede como un nombre presentable (sin frases completas raras).
 function sanitizeName(rawText) {
   const cleaned = rawText
-    .replace(/[^\p{L}\s]/gu, "")
+    .replace(/[^\p{L}\s]/gu, "") // solo letras y espacios
     .trim()
     .split(/\s+/)
-    .slice(0, 2)
+    .slice(0, 2) // máximo dos palabras (nombre + uno más)
     .join(" ");
 
-  if (!cleaned) return "amigo";
+  if (!cleaned) return "amigo"; // fallback si mandó algo raro (emoji, número, etc.)
 
   return cleaned
     .toLowerCase()
     .split(" ")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+function stripHtml(html = "") {
+  return html.replace(/<[^>]*>/g, "").trim();
 }
