@@ -4,11 +4,14 @@
 // y lo registra como ALERTA para el admin
 //
 
-const { createClient } = require("@supabase/supabase-js");
-
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+const headers = {
+  "Content-Type": "application/json",
+  apikey: SUPABASE_SERVICE_KEY,
+  Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+};
 
 // Palabras clave que indican un error/corrección
 const ERROR_KEYWORDS = [
@@ -45,9 +48,11 @@ function detectsError(text) {
 // Registrar el error como ALERTA CRÍTICA para el admin
 async function logErrorAlert(contactId, whatsappNumber, userMessage, context = {}) {
   try {
-    const { data, error } = await supabase
-      .from("rita_errores_reportados")
-      .insert({
+    const url = `${SUPABASE_URL}/rest/v1/rita_errores_reportados`;
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { ...headers, Prefer: "return=representation" },
+      body: JSON.stringify({
         contact_id: contactId || null,
         whatsapp_number: whatsappNumber,
         tipo_error: "reporte_usuario",
@@ -55,12 +60,12 @@ async function logErrorAlert(contactId, whatsappNumber, userMessage, context = {
         estado: "pendiente_revision",
         prioridad: 1, // CRÍTICA - requiere revisión inmediata
         contexto: context,
-        created_at: new Date(),
-      })
-      .select();
+        created_at: new Date().toISOString(),
+      }),
+    });
 
-    if (error) {
-      console.error("Error logging alert:", error);
+    if (!res.ok) {
+      console.error("Error logging alert:", await res.text());
       return null;
     }
 
@@ -72,6 +77,7 @@ async function logErrorAlert(contactId, whatsappNumber, userMessage, context = {
     //   prioridad: "ALTA"
     // });
 
+    const data = await res.json();
     return data?.[0];
   } catch (err) {
     console.error("Error en logErrorAlert:", err);
