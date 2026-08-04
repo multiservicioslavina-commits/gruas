@@ -18,6 +18,7 @@
 const { sendWhatsAppMessage, extractIncomingMessage } = require("./lib/whatsapp");
 const {
   searchDirectory,
+  searchProductos,
   logMessage,
   getRecentHistory,
   countMessagesToday,
@@ -181,20 +182,39 @@ async function buildReply(from, text, intent, preferredName) {
   if (intent === "taller_search" || intent === "almacen_search") {
     const type = intent === "taller_search" ? "taller" : "almacen";
     const term = extractSearchTerm(text, intent);
-    const results = term ? await searchDirectory(type, term) : [];
+    const dirResults = term ? await searchDirectory(type, term) : [];
 
-    const context = results.length
-      ? results
+    let context = "";
+    if (intent === "almacen_search") {
+      const productResults = term ? await searchProductos(term) : [];
+      if (productResults.length) {
+        context += "Productos encontrados en almacenes Ridera:\n";
+        context += productResults
+          .map((p) => `- ${p.nombre} (${p.categoria}): $${formatPrice(p.precio)} | ${p.almacen} en ${p.ciudad} | ${p.telefono}`)
+          .join("\n");
+      }
+      if (dirResults.length) {
+        if (productResults.length) context += "\n\nTambién hay almacenes en el directorio:\n";
+        context += dirResults
           .map((r) => `- ${stripHtml(r.title)}: ${stripHtml(r.excerpt || r.content).slice(0, 200)} (${r.link})`)
-          .join("\n")
-      : "No se encontraron resultados en el directorio para ese término.";
+          .join("\n");
+      }
+    } else {
+      context = dirResults.length
+        ? dirResults
+            .map((r) => `- ${stripHtml(r.title)}: ${stripHtml(r.excerpt || r.content).slice(0, 200)} (${r.link})`)
+            .join("\n")
+        : "No se encontraron resultados en el directorio para ese término.";
+    }
+
+    if (!context) context = "No se encontraron resultados para ese término.";
 
     const history = await getRecentHistory(from, tier.historyMessages);
     const messages = [
       ...history.map((h) => ({ role: h.role, content: h.content })),
       {
         role: "user",
-        content: `Pregunta del usuario: "${text}"\n\nResultados del directorio de Ridera:\n${context}\n\nResponde usando SOLO esta información. Si no hay resultados útiles, dilo y sugiere buscar en ridera.com.co.`,
+        content: `Pregunta del usuario: "${text}"\n\nResultados disponibles:\n${context}\n\nResponde usando SOLO esta información. Si no hay resultados útiles, dilo y sugiere buscar en ridera.com.co.`,
       },
     ];
 
@@ -270,4 +290,8 @@ function sanitizeName(rawText) {
 
 function stripHtml(html = "") {
   return html.replace(/<[^>]*>/g, "").trim();
+}
+
+function formatPrice(price) {
+  return parseFloat(price).toLocaleString("es-CO", { minimumFractionDigits: 0 });
 }

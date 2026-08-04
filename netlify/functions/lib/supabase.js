@@ -24,6 +24,31 @@ async function searchDirectory(type, term) {
   return res.json();
 }
 
+// Busca productos en almacenes Supabase por nombre, categoria o descripcion.
+// Retorna lista de {nombre, categoria, precio, stock, almacen_nombre, ciudad, telefono}.
+async function searchProductos(term, limit = 8) {
+  const url =
+    `${SUPABASE_URL}/rest/v1/almacen_productos` +
+    `?select=nombre,categoria,precio,stock,almacen_id,almacenes(nombre,ciudad,telefono)` +
+    `&almacenes.status=eq.activo` +
+    `&or=(nombre.ilike.*${encodeURIComponent(term)}*,categoria.ilike.*${encodeURIComponent(term)}*,descripcion.ilike.*${encodeURIComponent(term)}*)` +
+    `&limit=${limit}`;
+
+  const res = await fetch(url, { headers });
+  if (!res.ok) return [];
+
+  const rows = await res.json();
+  return rows.map((p) => ({
+    nombre: p.nombre,
+    categoria: p.categoria,
+    precio: p.precio,
+    stock: p.stock !== null ? p.stock : "disponible",
+    almacen: p.almacenes?.[0]?.nombre || "Almacén",
+    ciudad: p.almacenes?.[0]?.ciudad || "",
+    telefono: p.almacenes?.[0]?.telefono || "",
+  }));
+}
+
 async function logMessage(phoneNumber, role, content, intent = null) {
   const url = `${SUPABASE_URL}/rest/v1/rita_messages`;
   const res = await fetch(url, {
@@ -74,6 +99,7 @@ async function countMessagesToday(phoneNumber) {
 
 module.exports = {
   searchDirectory,
+  searchProductos,
   logMessage,
   getRecentHistory,
   countMessagesToday,
