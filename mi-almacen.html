@@ -83,6 +83,28 @@ textarea { resize: vertical; min-height: 80px; }
 
 .empty { text-align: center; padding: 2rem 1rem; color: var(--muted); }
 .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+.modal-content.wide { max-width: 640px; }
+.source-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; }
+.source-tab { flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid var(--border); background: var(--surface2); color: var(--muted); cursor: pointer; font-size: 0.85rem; font-weight: 600; }
+.source-tab.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.source-panel { display: none; }
+.source-panel.active { display: block; }
+.file-drop { border: 1.5px dashed var(--border); border-radius: 10px; padding: 1.5rem; text-align: center; cursor: pointer; color: var(--muted); font-size: 0.85rem; }
+.file-drop:hover { border-color: var(--accent); }
+.file-drop input { display: none; }
+.file-name { margin-top: 0.5rem; font-size: 0.85rem; color: var(--text); }
+.catalogo-status { font-size: 0.85rem; padding: 0.6rem 0.8rem; border-radius: 8px; margin-bottom: 1rem; border-left: 3px solid; display: none; }
+.catalogo-status.visible { display: block; }
+.catalogo-status.loading { background: rgba(232,93,32,0.08); border-color: var(--accent); color: var(--muted); }
+.catalogo-status.error { background: rgba(248,113,113,0.1); border-color: #f87171; color: #fca5a5; }
+.catalogo-status.warn { background: rgba(245,158,11,0.1); border-color: #f59e0b; color: #fcd34d; }
+.preview-list { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.5rem; margin-bottom: 1rem; }
+.preview-item { display: flex; align-items: flex-start; gap: 0.6rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.75rem; }
+.preview-item input[type=checkbox] { margin-top: 0.2rem; }
+.preview-item .pi-name { font-weight: 600; font-size: 0.88rem; }
+.preview-item .pi-meta { font-size: 0.78rem; color: var(--muted); margin-top: 0.15rem; }
+.preview-count { font-size: 0.82rem; color: var(--muted); margin-bottom: 0.75rem; }
 </style>
 </head>
 <body>
@@ -124,7 +146,10 @@ textarea { resize: vertical; min-height: 80px; }
       <div class="card">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
           <h3 class="card-title">Mis productos</h3>
-          <button class="btn primary" onclick="openModalNuevo()">+ Nuevo producto</button>
+          <div style="display:flex;gap:0.5rem;">
+            <button class="btn secondary" onclick="openModalCatalogo()">📄 Cargar catálogo</button>
+            <button class="btn primary" onclick="openModalNuevo()">+ Nuevo producto</button>
+          </div>
         </div>
         <div id="productList" class="product-grid"></div>
         <div id="emptyProducts" class="empty" style="display: none;">
@@ -243,9 +268,66 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- Modal para cargar catálogo (URL o archivo) -->
+<div class="modal" id="catalogoModal">
+  <div class="modal-content wide">
+    <div class="modal-header">
+      <h2>Cargar catálogo</h2>
+      <button class="modal-close" onclick="closeModalCatalogo()">✕</button>
+    </div>
+
+    <div id="catalogoStep1">
+      <p style="color: var(--muted); font-size: 0.85rem; margin-bottom: 1.25rem;">
+        Pega el link de tu página o catálogo, o sube un archivo de texto/CSV con tus productos. Rita lo lee y te arma la lista para que la revises antes de publicar.
+      </p>
+
+      <div class="source-tabs">
+        <button type="button" class="source-tab active" id="tabUrl" onclick="switchCatalogoSource('url')">🔗 Link de mi página</button>
+        <button type="button" class="source-tab" id="tabFile" onclick="switchCatalogoSource('file')">📎 Subir archivo</button>
+      </div>
+
+      <div class="source-panel active" id="panelUrl">
+        <div class="form-group">
+          <label>URL de tu catálogo o página de productos</label>
+          <input type="url" id="catalogoUrl" placeholder="https://miTienda.com/productos">
+        </div>
+      </div>
+
+      <div class="source-panel" id="panelFile">
+        <div class="form-group">
+          <label>Archivo (.txt o .csv) o pega el texto de tu lista de precios</label>
+          <div class="file-drop" onclick="document.getElementById('catalogoFile').click()">
+            <input type="file" id="catalogoFile" accept=".txt,.csv,text/plain,text/csv">
+            📎 Haz clic para elegir un archivo
+            <div class="file-name" id="catalogoFileName"></div>
+          </div>
+          <textarea id="catalogoTexto" placeholder="...o pega aquí tu lista de productos (nombre, precio, etc.)" style="margin-top:0.75rem;min-height:100px;"></textarea>
+        </div>
+      </div>
+
+      <div class="catalogo-status" id="catalogoStatus"></div>
+
+      <div style="display: flex; gap: 0.75rem; margin-top: 1rem;">
+        <button type="button" class="btn secondary" style="flex: 1;" onclick="closeModalCatalogo()">Cancelar</button>
+        <button type="button" class="btn primary" style="flex: 1;" id="btnAnalizar" onclick="handleAnalizarCatalogo()">Analizar</button>
+      </div>
+    </div>
+
+    <div id="catalogoStep2" style="display:none;">
+      <div class="preview-count" id="previewCount"></div>
+      <div class="preview-list" id="previewList"></div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn secondary" style="flex: 1;" onclick="volverCatalogoStep1()">← Atrás</button>
+        <button type="button" class="btn primary" style="flex: 1;" id="btnImportar" onclick="handleImportarCatalogo()">Importar seleccionados</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+const EXTRAER_CATALOGO_URL = 'https://gruas.ridera.com.co/.netlify/functions/extraer-catalogo';
 
 let sbClient = null;
 let currentUser = null;
@@ -420,6 +502,165 @@ async function openModalEditar(id) {
 function closeModal() {
   document.getElementById('productModal').classList.remove('visible');
   editingProductId = null;
+}
+
+// --- Cargar catálogo (URL o archivo, leído por Rita) ---
+
+let catalogoFileText = '';
+let catalogoExtraidos = [];
+
+function openModalCatalogo() {
+  document.getElementById('catalogoStep1').style.display = 'block';
+  document.getElementById('catalogoStep2').style.display = 'none';
+  document.getElementById('catalogoUrl').value = '';
+  document.getElementById('catalogoTexto').value = '';
+  document.getElementById('catalogoFileName').textContent = '';
+  document.getElementById('catalogoFile').value = '';
+  catalogoFileText = '';
+  catalogoExtraidos = [];
+  hideCatalogoStatus();
+  switchCatalogoSource('url');
+  document.getElementById('catalogoModal').classList.add('visible');
+}
+
+function closeModalCatalogo() {
+  document.getElementById('catalogoModal').classList.remove('visible');
+}
+
+function switchCatalogoSource(source) {
+  document.getElementById('tabUrl').classList.toggle('active', source === 'url');
+  document.getElementById('tabFile').classList.toggle('active', source === 'file');
+  document.getElementById('panelUrl').classList.toggle('active', source === 'url');
+  document.getElementById('panelFile').classList.toggle('active', source === 'file');
+}
+
+document.getElementById('catalogoFile')?.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  document.getElementById('catalogoFileName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (ev) => { catalogoFileText = ev.target.result || ''; };
+  reader.readAsText(file);
+});
+
+function setCatalogoStatus(state, msg) {
+  const el = document.getElementById('catalogoStatus');
+  el.className = 'catalogo-status visible ' + state;
+  el.textContent = msg;
+}
+
+function hideCatalogoStatus() {
+  document.getElementById('catalogoStatus').className = 'catalogo-status';
+}
+
+async function handleAnalizarCatalogo() {
+  const usandoUrl = document.getElementById('tabUrl').classList.contains('active');
+  const url = document.getElementById('catalogoUrl').value.trim();
+  const textoPegado = document.getElementById('catalogoTexto').value.trim();
+  const texto = catalogoFileText || textoPegado;
+
+  if (usandoUrl && !url) {
+    setCatalogoStatus('error', 'Pega el link de tu página o catálogo.');
+    return;
+  }
+  if (!usandoUrl && !texto) {
+    setCatalogoStatus('error', 'Sube un archivo o pega el texto de tu lista de productos.');
+    return;
+  }
+
+  const btn = document.getElementById('btnAnalizar');
+  btn.disabled = true;
+  setCatalogoStatus('loading', 'Rita está leyendo tu catálogo, un momento...');
+
+  try {
+    const res = await fetch(EXTRAER_CATALOGO_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(usandoUrl ? { url } : { texto }),
+    });
+    const data = await res.json();
+
+    if (!res.ok) throw new Error(data.error || 'No se pudo procesar el catálogo.');
+
+    if (!data.productos || !data.productos.length) {
+      setCatalogoStatus('warn', data.warning || 'No encontré productos ahí. Prueba con otro link o texto más detallado.');
+      btn.disabled = false;
+      return;
+    }
+
+    catalogoExtraidos = data.productos;
+    hideCatalogoStatus();
+    btn.disabled = false;
+    mostrarPreviewCatalogo();
+  } catch (err) {
+    setCatalogoStatus('error', err.message || 'Error al analizar el catálogo.');
+    btn.disabled = false;
+  }
+}
+
+function mostrarPreviewCatalogo() {
+  document.getElementById('catalogoStep1').style.display = 'none';
+  document.getElementById('catalogoStep2').style.display = 'block';
+  document.getElementById('previewCount').textContent = `Encontré ${catalogoExtraidos.length} producto(s). Desmarca los que no quieras importar.`;
+
+  document.getElementById('previewList').innerHTML = catalogoExtraidos.map((p, i) => `
+    <label class="preview-item">
+      <input type="checkbox" checked data-idx="${i}">
+      <div>
+        <div class="pi-name">${escapeHtml(p.nombre)}</div>
+        <div class="pi-meta">${escapeHtml(p.categoria)}${p.precio != null ? ' · $' + p.precio.toLocaleString('es-CO') : ' · sin precio'}${p.stock != null ? ' · stock: ' + p.stock : ''}</div>
+      </div>
+    </label>
+  `).join('');
+}
+
+function volverCatalogoStep1() {
+  document.getElementById('catalogoStep1').style.display = 'block';
+  document.getElementById('catalogoStep2').style.display = 'none';
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+async function handleImportarCatalogo() {
+  const checks = document.querySelectorAll('#previewList input[type=checkbox]:checked');
+  if (!checks.length) {
+    alert('Selecciona al menos un producto para importar.');
+    return;
+  }
+
+  const btn = document.getElementById('btnImportar');
+  btn.disabled = true;
+  btn.textContent = 'Importando...';
+
+  const seleccionados = Array.from(checks).map((chk) => catalogoExtraidos[parseInt(chk.dataset.idx)]);
+
+  const filas = seleccionados.map((p) => ({
+    almacen_id: currentAlmacen.id,
+    nombre: p.nombre,
+    categoria: p.categoria || 'General',
+    descripcion: p.descripcion || null,
+    precio: p.precio != null ? p.precio : 0,
+    stock: p.stock != null ? p.stock : null,
+    created_at: new Date().toISOString(),
+  }));
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.from('almacen_productos').insert(filas);
+    if (error) throw error;
+
+    closeModalCatalogo();
+    loadProductos();
+    loadEstadisticas();
+  } catch (err) {
+    alert('Error al importar: ' + err.message);
+    btn.disabled = false;
+    btn.textContent = 'Importar seleccionados';
+  }
 }
 
 async function handleGuardarProducto(e) {
