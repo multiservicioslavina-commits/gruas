@@ -571,6 +571,67 @@ input[type="file"] { display: none; }
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ═══════════ CONTEXT MENU ═══════════ */
+.ctx-menu {
+  position: fixed; z-index: 80;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 8px 32px rgba(0,0,0,.5);
+  min-width: 200px;
+  padding: 6px 0;
+  display: none;
+  animation: ctxIn .15s ease;
+}
+.ctx-menu.open { display: block; }
+@keyframes ctxIn { from { opacity: 0; transform: scale(.95); } to { opacity: 1; transform: scale(1); } }
+.ctx-menu-header {
+  padding: 10px 16px 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 4px;
+}
+.ctx-menu-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ctx-menu-artist { font-size: 11px; color: var(--muted); }
+.ctx-opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 11px 16px; cursor: pointer;
+  font-size: 13px; transition: background .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.ctx-opt:hover { background: rgba(255,255,255,.06); }
+.ctx-opt svg { flex-shrink: 0; }
+.ctx-opt.danger { color: var(--red); }
+.ctx-overlay {
+  position: fixed; inset: 0; z-index: 79;
+  display: none;
+}
+.ctx-overlay.open { display: block; }
+
+/* ═══════════ FP EQUALIZER VIZ ═══════════ */
+.fp-eq-viz {
+  display: flex; align-items: flex-end; justify-content: center;
+  gap: 3px; height: 24px; margin-top: 8px;
+  position: relative; z-index: 1;
+  opacity: 0; transition: opacity .3s;
+}
+.full-player.playing .fp-eq-viz { opacity: 1; }
+.fp-eq-viz span {
+  width: 4px; border-radius: 2px;
+  background: var(--accent);
+  opacity: .6;
+  animation: fpEq .6s ease-in-out infinite alternate;
+}
+.fp-eq-viz span:nth-child(1) { height: 6px; animation-delay: 0s; }
+.fp-eq-viz span:nth-child(2) { height: 14px; animation-delay: .08s; }
+.fp-eq-viz span:nth-child(3) { height: 9px; animation-delay: .16s; }
+.fp-eq-viz span:nth-child(4) { height: 18px; animation-delay: .24s; }
+.fp-eq-viz span:nth-child(5) { height: 11px; animation-delay: .32s; }
+.fp-eq-viz span:nth-child(6) { height: 20px; animation-delay: .4s; }
+.fp-eq-viz span:nth-child(7) { height: 8px; animation-delay: .48s; }
+.fp-eq-viz span:nth-child(8) { height: 15px; animation-delay: .56s; }
+.fp-eq-viz span:nth-child(9) { height: 6px; animation-delay: .64s; }
+@keyframes fpEq { 0% { height: 4px; } 100% { height: 24px; } }
+
 /* ═══════════ SLEEP TIMER ═══════════ */
 .timer-sheet {
   position: fixed; inset: 0; z-index: 65;
@@ -833,6 +894,10 @@ input[type="file"] { display: none; }
     </button>
   </div>
 
+  <div class="fp-eq-viz">
+    <span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span>
+  </div>
+
   <div class="fp-volume">
     <button class="fp-vol-icon" onclick="toggleMute()">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" id="volIcon"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/></svg>
@@ -922,6 +987,31 @@ input[type="file"] { display: none; }
       </div>
       <div id="plModalList"></div>
     </div>
+  </div>
+</div>
+
+<!-- ═══════════ CONTEXT MENU ═══════════ -->
+<div class="ctx-overlay" id="ctxOverlay" onclick="closeCtxMenu()"></div>
+<div class="ctx-menu" id="ctxMenu">
+  <div class="ctx-menu-header">
+    <div class="ctx-menu-name" id="ctxName"></div>
+    <div class="ctx-menu-artist" id="ctxArtist"></div>
+  </div>
+  <div class="ctx-opt" id="ctxPlayNext" onclick="ctxPlayNext()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5,3 19,12 5,21" fill="currentColor"/><line x1="21" y1="4" x2="21" y2="20"/></svg>
+    Reproducir siguiente
+  </div>
+  <div class="ctx-opt" id="ctxFav" onclick="ctxToggleFav()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+    <span id="ctxFavLabel">Agregar a favoritos</span>
+  </div>
+  <div class="ctx-opt" onclick="ctxAddToPl()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Agregar a playlist
+  </div>
+  <div class="ctx-opt danger" onclick="ctxDelete()">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+    Eliminar
   </div>
 </div>
 
@@ -1343,7 +1433,7 @@ function songItemHTML(t, idx, opts) {
   const extra = (opts && opts.plId)
     ? `<button class="song-fav" onclick="event.stopPropagation();removeFromPlaylist('${opts.plId}','${t.id}')" title="Quitar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
     : '';
-  return `<div class="song-item${isActive?' active':''}${isActive&&isPlaying?' is-playing':''}" onclick="loadTrack(${idx});play()">
+  return `<div class="song-item${isActive?' active':''}${isActive&&isPlaying?' is-playing':''}" onclick="loadTrack(${idx});play()" oncontextmenu="event.preventDefault();openCtxMenu(${idx},event.clientX,event.clientY)" data-idx="${idx}">
     <div class="song-art"><span class="song-art-ph">&#127925;</span><div class="eq-bars"><span></span><span></span><span></span></div></div>
     <div class="song-info"><div class="song-title">${esc(t.name)}</div><div class="song-artist">${esc(t.artist)}</div></div>
     <div class="song-meta">
@@ -1353,6 +1443,9 @@ function songItemHTML(t, idx, opts) {
           ? '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>'
           : '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>'
         }
+      </button>
+      <button class="song-fav" onclick="event.stopPropagation();openCtxMenu(${idx},event.clientX,event.clientY)" title="Mas opciones" style="color:var(--muted2)">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="5" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="12" cy="19" r="2"/></svg>
       </button>
       ${extra}
     </div>
@@ -1556,6 +1649,24 @@ document.addEventListener('touchend', () => { seekDragging = false; });
 document.getElementById('fileHome').addEventListener('change', e => addFiles(e.target.files));
 document.getElementById('fileFab').addEventListener('change', e => addFiles(e.target.files));
 
+// ── Long press for context menu (mobile) ────────────────────────────
+document.addEventListener('touchstart', e => {
+  const item = e.target.closest('.song-item[data-idx]');
+  if (!item) return;
+  const idx = parseInt(item.dataset.idx, 10);
+  longPressTimer = setTimeout(() => {
+    const touch = e.touches[0];
+    openCtxMenu(idx, touch.clientX, touch.clientY);
+    item._longPressed = true;
+  }, 500);
+}, { passive: true });
+document.addEventListener('touchmove', () => { clearTimeout(longPressTimer); }, { passive: true });
+document.addEventListener('touchend', e => {
+  clearTimeout(longPressTimer);
+  const item = e.target.closest('.song-item[data-idx]');
+  if (item && item._longPressed) { e.preventDefault(); item._longPressed = false; }
+});
+
 // ── Drag & Drop ─────────────────────────────────────────────────────
 let dragCounter = 0;
 document.addEventListener('dragenter', e => {
@@ -1718,6 +1829,77 @@ function updateTimerUI() {
     cd.style.display = 'none';
   }
 }
+
+// ── Context Menu ────────────────────────────────────────────────────
+let ctxIdx = -1;
+let longPressTimer = null;
+
+window.openCtxMenu = function(idx, x, y) {
+  if (idx < 0 || idx >= tracks.length) return;
+  ctxIdx = idx;
+  const t = tracks[idx];
+  document.getElementById('ctxName').textContent = t.name;
+  document.getElementById('ctxArtist').textContent = t.artist;
+  document.getElementById('ctxFavLabel').textContent = favorites.has(t.id) ? 'Quitar de favoritos' : 'Agregar a favoritos';
+
+  const menu = document.getElementById('ctxMenu');
+  const vw = window.innerWidth, vh = window.innerHeight;
+  menu.style.left = Math.min(x, vw - 220) + 'px';
+  menu.style.top = Math.min(y, vh - 260) + 'px';
+  menu.classList.add('open');
+  document.getElementById('ctxOverlay').classList.add('open');
+};
+
+window.closeCtxMenu = function() {
+  document.getElementById('ctxMenu').classList.remove('open');
+  document.getElementById('ctxOverlay').classList.remove('open');
+  ctxIdx = -1;
+};
+
+window.ctxPlayNext = function() {
+  if (ctxIdx < 0) return;
+  const pos = currentIdx >= 0 ? currentIdx + 1 : 0;
+  queue.splice(pos, 0, ctxIdx);
+  toast('"' + tracks[ctxIdx].name + '" se reproducira despues');
+  closeCtxMenu();
+};
+
+window.ctxToggleFav = function() {
+  if (ctxIdx >= 0) toggleFav(ctxIdx);
+  closeCtxMenu();
+};
+
+window.ctxAddToPl = function() {
+  if (ctxIdx < 0) return;
+  closeCtxMenu();
+  openAddToPlaylistIdx(ctxIdx);
+};
+
+window.ctxDelete = function() {
+  if (ctxIdx < 0) return;
+  const t = tracks[ctxIdx];
+  const wasPlaying = ctxIdx === currentIdx;
+
+  if (t.url && t.url.startsWith('blob:')) URL.revokeObjectURL(t.url);
+  favorites.delete(t.id);
+  recentIds = recentIds.filter(r => r !== t.id);
+  playlists.forEach(pl => { pl.trackIds = pl.trackIds.filter(id => id !== t.id); dbPutPl(pl); });
+
+  tracks.splice(ctxIdx, 1);
+  queue = queue.filter(q => q !== ctxIdx).map(q => q > ctxIdx ? q - 1 : q);
+  if (currentIdx === ctxIdx) { currentIdx = -1; audio.pause(); audio.src = ''; isPlaying = false; updatePlayIcons(); }
+  else if (currentIdx > ctxIdx) currentIdx--;
+
+  buildShuffleOrder();
+  saveFavorites();
+  saveRecents();
+
+  if (!tracks.length) document.getElementById('miniPlayer').classList.remove('visible');
+  renderAll();
+  toast('"' + t.name + '" eliminada');
+  closeCtxMenu();
+  notifyFlutter('tracksChanged', { count: tracks.length });
+};
 
 // ── Shuffle All ─────────────────────────────────────────────────────
 window.shuffleAll = function() {
