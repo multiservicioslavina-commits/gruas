@@ -278,7 +278,7 @@ async function init() {
     document.getElementById('navName').textContent = currentAlmacen.nombre;
     document.getElementById('almacenNombre').textContent = currentAlmacen.nombre;
     document.getElementById('almacenCiudad').textContent = currentAlmacen.ciudad;
-    document.getElementById('linkPublico').href = `/almacen.html?slug=${encodeURIComponent(currentAlmacen.nombre.toLowerCase().replace(/\s+/g, '-'))}`;
+    document.getElementById('linkPublico').href = `/almacen/${currentAlmacen.slug || currentAlmacen.nombre.toLowerCase().replace(/\s+/g, '-')}`;
 
     loadProductos();
     loadEstadisticas();
