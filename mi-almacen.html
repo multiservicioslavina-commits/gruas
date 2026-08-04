@@ -137,6 +137,7 @@ textarea { resize: vertical; min-height: 80px; }
     <!-- Tabs -->
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab('productos')">Productos</button>
+      <button class="tab-btn" onclick="showTab('promociones')">Promociones</button>
       <button class="tab-btn" onclick="showTab('estadisticas')">Estadísticas</button>
       <button class="tab-btn" onclick="showTab('perfil')">Mi Perfil</button>
     </div>
@@ -148,13 +149,27 @@ textarea { resize: vertical; min-height: 80px; }
           <h3 class="card-title">Mis productos</h3>
           <div style="display:flex;gap:0.5rem;">
             <button class="btn secondary" onclick="openModalCatalogo()">📄 Cargar catálogo</button>
-            <button class="btn primary" onclick="openModalNuevo()">+ Nuevo producto</button>
           </div>
         </div>
         <div id="productList" class="product-grid"></div>
         <div id="emptyProducts" class="empty" style="display: none;">
           <div class="empty-icon">📦</div>
           <p>No hay productos. ¡Comienza a subir tu catálogo!</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROMOCIONES TAB -->
+    <div id="tabPromociones" style="display: none;">
+      <div class="card">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+          <h3 class="card-title">Mis promociones</h3>
+          <button class="btn primary" onclick="openModalPromo()">+ Crear promoción</button>
+        </div>
+        <div id="promoList" class="product-grid"></div>
+        <div id="emptyPromos" class="empty" style="display: none;">
+          <div class="empty-icon">🎉</div>
+          <p>Crea una promoción para compartirla por WhatsApp o redes.</p>
         </div>
       </div>
     </div>
@@ -324,6 +339,38 @@ textarea { resize: vertical; min-height: 80px; }
   </div>
 </div>
 
+<!-- Modal para crear promoción -->
+<div class="modal" id="promoModal">
+  <div class="modal-content">
+    <div class="modal-header">
+      <h2>Crear promoción</h2>
+      <button class="modal-close" onclick="closeModalPromo()">✕</button>
+    </div>
+    <form id="promoForm" onsubmit="handleGuardarPromo(event)">
+      <div class="form-group">
+        <label>Título <span style="color: var(--accent)">*</span></label>
+        <input type="text" id="promoTitulo" required placeholder="Ej: 20% en cascos esta semana">
+      </div>
+      <div class="form-group">
+        <label>Descripción</label>
+        <textarea id="promoDescripcion" placeholder="Detalles de la promoción..."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Imagen (URL)</label>
+        <input type="url" id="promoImagen" placeholder="https://ejemplo.com/foto.jpg">
+      </div>
+      <div class="form-group">
+        <label>Válida hasta</label>
+        <input type="date" id="promoFechaFin">
+      </div>
+      <div style="display: flex; gap: 0.75rem;">
+        <button type="button" class="btn secondary" style="flex: 1;" onclick="closeModalPromo()">Cancelar</button>
+        <button type="submit" class="btn primary" style="flex: 1;">Crear</button>
+      </div>
+    </form>
+  </div>
+</div>
+
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
@@ -445,10 +492,12 @@ async function loadPerfil() {
 
 function showTab(tab) {
   document.getElementById('tabProductos').style.display = tab === 'productos' ? 'block' : 'none';
+  document.getElementById('tabPromociones').style.display = tab === 'promociones' ? 'block' : 'none';
   document.getElementById('tabEstadisticas').style.display = tab === 'estadisticas' ? 'block' : 'none';
   document.getElementById('tabPerfil').style.display = tab === 'perfil' ? 'block' : 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
+  if (tab === 'promociones') loadPromociones();
 }
 
 function openModalNuevo() {
@@ -717,6 +766,101 @@ document.getElementById('perfilForm').addEventListener('submit', async (e) => {
   alert('Perfil actualizado');
   location.reload();
 });
+
+// --- Promociones ---
+
+function openModalPromo() {
+  document.getElementById('promoForm').reset();
+  document.getElementById('promoModal').classList.add('visible');
+}
+
+function closeModalPromo() {
+  document.getElementById('promoModal').classList.remove('visible');
+}
+
+async function handleGuardarPromo(e) {
+  e.preventDefault();
+  const sb = await initSupabase();
+
+  const data = {
+    almacen_id: currentAlmacen.id,
+    titulo: document.getElementById('promoTitulo').value.trim(),
+    descripcion: document.getElementById('promoDescripcion').value.trim() || null,
+    imagen_url: document.getElementById('promoImagen').value.trim() || null,
+    fecha_fin: document.getElementById('promoFechaFin').value || null,
+  };
+
+  try {
+    const { error } = await sb.from('almacen_promociones').insert(data);
+    if (error) throw error;
+    closeModalPromo();
+    loadPromociones();
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
+async function loadPromociones() {
+  const sb = await initSupabase();
+  const { data, error } = await sb
+    .from('almacen_promociones')
+    .select('*')
+    .eq('almacen_id', currentAlmacen.id)
+    .order('created_at', { ascending: false });
+
+  if (error) {
+    console.error(error);
+    return;
+  }
+
+  const list = document.getElementById('promoList');
+  const empty = document.getElementById('emptyPromos');
+
+  if (!data || data.length === 0) {
+    list.style.display = 'none';
+    empty.style.display = 'block';
+    return;
+  }
+
+  list.style.display = 'grid';
+  empty.style.display = 'none';
+
+  list.innerHTML = data.map(p => `
+    <div class="product-card">
+      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.titulo}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
+      <h4>${p.titulo}</h4>
+      <div class="desc">${p.descripcion || 'Sin descripción'}</div>
+      ${p.fecha_fin ? `<div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem;">Válida hasta ${new Date(p.fecha_fin + 'T00:00:00').toLocaleDateString('es-CO')}</div>` : ''}
+      <div class="product-actions">
+        <button class="btn secondary" onclick="compartirPromo('${p.id}', '${(p.titulo || '').replace(/'/g, "\\'")}')">🔗 Compartir</button>
+        <button class="btn danger" onclick="eliminarPromo('${p.id}')">Borrar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function compartirPromo(id, titulo) {
+  const url = `https://gruas.ridera.com.co/promo/${id}`;
+  const texto = `${titulo} — ${currentAlmacen.nombre}`;
+
+  if (navigator.share) {
+    navigator.share({ title: texto, url }).catch(() => {});
+    return;
+  }
+
+  navigator.clipboard?.writeText(url).then(() => {
+    alert('Link copiado:\n' + url);
+  }).catch(() => {
+    prompt('Copia este link para compartir:', url);
+  });
+}
+
+async function eliminarPromo(id) {
+  if (!confirm('¿Eliminar esta promoción?')) return;
+  const sb = await initSupabase();
+  await sb.from('almacen_promociones').delete().eq('id', id);
+  loadPromociones();
+}
 
 async function handleLogout() {
   const sb = await initSupabase();

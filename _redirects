@@ -3,6 +3,7 @@
 /seguimiento                /seguimiento.html                  200
 /grua/*                     /grua.html?slug=:splat             200
 /almacen/*                  /almacen.html?slug=:splat          200
+/promo/*                    /promo.html?id=:splat              200
 /califica                   /califica.html                     200
 /aceptar                    /aceptar.html                      200
 /mi-cuenta                  /mi-cuenta.html                    301
