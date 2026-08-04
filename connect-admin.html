@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridera Connect — Admin</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3345;
+    --text: #e8e9ed;
+    --text2: #8b8fa3;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .header .club-name { color: var(--text2); font-size: 14px; margin-left: auto; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--surface); border-radius: 10px; padding: 4px; margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: var(--text2); transition: all .2s;
+  }
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 4px; }
+  .card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+  textarea {
+    width: 100%; min-height: 160px; padding: 12px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea::placeholder { color: var(--text2); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+    border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+    border: none; transition: all .2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+  .btn-outline:hover { border-color: var(--text2); color: var(--text); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+
+  .preview-table {
+    width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px;
+  }
+  .preview-table th {
+    text-align: left; padding: 8px 12px; color: var(--text2); font-weight: 500;
+    border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .preview-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .preview-table tr:last-child td { border-bottom: none; }
+  .preview-table .remove-btn {
+    color: var(--red); cursor: pointer; background: none; border: none; font-size: 16px;
+  }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .stat .number { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  }
+  .badge-pending { background: rgba(251,146,60,.15); color: var(--accent2); }
+  .badge-linked { background: rgba(34,197,94,.15); color: var(--green); }
+
+  .member-list { list-style: none; }
+  .member-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .member-item:last-child { border-bottom: none; }
+  .member-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
+    color: var(--accent);
+  }
+  .member-info { flex: 1; }
+  .member-name { font-size: 14px; font-weight: 500; }
+  .member-phone { font-size: 12px; color: var(--text2); }
+  .member-date { font-size: 11px; color: var(--text2); }
+
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .room-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; cursor: pointer; transition: all .2s;
+  }
+  .room-card:hover { border-color: var(--accent); }
+  .room-icon { font-size: 28px; margin-bottom: 8px; }
+  .room-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .room-desc { font-size: 12px; color: var(--text2); }
+  .room-msgs { font-size: 11px; color: var(--text2); margin-top: 8px; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .3s; pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  .search-bar {
+    width: 100%; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text); font-size: 14px; margin-bottom: 16px;
+  }
+  .search-bar:focus { outline: none; border-color: var(--accent); }
+
+  #preview-section, #tab-members, #tab-rooms { display: none; }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .tabs { font-size: 12px; }
+    .rooms-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1><span>Ridera</span> Connect</h1>
+  <div class="club-name" id="club-name">Cargando...</div>
+</div>
+
+<div class="container">
+  <div class="stats" id="stats">
+    <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
+    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
+    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Pendientes</div></div>
+    <div class="stat"><div class="number" id="stat-rooms">-</div><div class="label">Salas</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('add')">Agregar miembros</div>
+    <div class="tab" onclick="switchTab('members')">Miembros</div>
+    <div class="tab" onclick="switchTab('rooms')">Salas</div>
+  </div>
+
+  <!-- TAB: Agregar miembros -->
+  <div id="tab-add">
+    <div class="card">
+      <h2>Agregar miembros al club</h2>
+      <p>Pega la lista de miembros, un miembro por línea. Formato: <strong>Nombre, Teléfono</strong></p>
+      <textarea id="members-input" placeholder="Juan Pérez, 3101234567
+María López, 3209876543
+Carlos Ruiz, 3158765432
+
+También funciona separado por tabs o guiones:
+Pedro Gómez - 3176543210"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="parseMembers()">Previsualizar</button>
+        <button class="btn btn-outline" onclick="document.getElementById('members-input').value=''; hidePreview()">Limpiar</button>
+      </div>
+    </div>
+
+    <div id="preview-section" class="card">
+      <h2>Previsualización (<span id="preview-count">0</span> miembros)</h2>
+      <p>Revisa que los datos estén correctos antes de agregar</p>
+      <div style="overflow-x:auto">
+        <table class="preview-table">
+          <thead><tr><th>Nombre</th><th>Teléfono</th><th></th></tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-confirm" onclick="addMembers()">Agregar al club</button>
+        <button class="btn btn-outline" onclick="hidePreview()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Lista de miembros -->
+  <div id="tab-members">
+    <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
+    <div class="card" id="members-card">
+      <div class="empty" id="members-empty">
+        <div class="icon">👥</div>
+        <p>No hay miembros aún</p>
+      </div>
+      <ul class="member-list" id="members-list"></ul>
+    </div>
+  </div>
+
+  <!-- TAB: Salas -->
+  <div id="tab-rooms">
+    <div class="rooms-grid" id="rooms-grid"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let clubId = null;
+let parsedMembers = [];
+let allMembers = [];
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (opts.method === 'DELETE') return [];
+  return res.json();
+}
+
+async function init() {
+  const clubs = await sb('clubs?select=id,nombre&limit=1');
+  if (!clubs.length) return;
+  clubId = clubs[0].id;
+  document.getElementById('club-name').textContent = clubs[0].nombre;
+  await Promise.all([loadStats(), loadMembers(), loadRooms()]);
+}
+
+async function loadStats() {
+  const members = await sb(`connect_members?club_id=eq.${clubId}&select=estado`);
+  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=id`);
+  const total = members.length;
+  const linked = members.filter(m => m.estado === 'vinculado').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-linked').textContent = linked;
+  document.getElementById('stat-pending').textContent = total - linked;
+  document.getElementById('stat-rooms').textContent = rooms.length;
+}
+
+async function loadMembers() {
+  allMembers = await sb(`connect_members?club_id=eq.${clubId}&select=*&order=created_at.desc`);
+  renderMembers(allMembers);
+}
+
+function renderMembers(members) {
+  const list = document.getElementById('members-list');
+  const empty = document.getElementById('members-empty');
+  if (!members.length) { list.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = members.map(m => {
+    const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const badge = m.estado === 'vinculado'
+      ? '<span class="badge badge-linked">Vinculado</span>'
+      : '<span class="badge badge-pending">Pendiente</span>';
+    const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    return `<li class="member-item">
+      <div class="member-avatar">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${m.nombre} ${badge}</div>
+        <div class="member-phone">${m.telefono}</div>
+      </div>
+      <div class="member-date">${date}</div>
+      <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function filterMembers(q) {
+  q = q.toLowerCase();
+  const filtered = allMembers.filter(m =>
+    m.nombre.toLowerCase().includes(q) || m.telefono.includes(q)
+  );
+  renderMembers(filtered);
+}
+
+async function loadRooms() {
+  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=*&order=orden`);
+  const grid = document.getElementById('rooms-grid');
+  if (!rooms.length) {
+    grid.innerHTML = '<div class="empty"><div class="icon">💬</div><p>No hay salas creadas</p></div>';
+    return;
+  }
+  grid.innerHTML = rooms.map(r => `
+    <div class="room-card">
+      <div class="room-icon">${r.icono}</div>
+      <div class="room-name">${r.nombre}</div>
+      <div class="room-desc">${r.descripcion || ''}</div>
+    </div>
+  `).join('');
+}
+
+function normalizePhone(raw) {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('57') && digits.length === 12) digits = digits.slice(2);
+  if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+  if (digits.startsWith('57') && digits.length === 12) return digits;
+  return digits;
+}
+
+function parseMembers() {
+  const input = document.getElementById('members-input').value.trim();
+  if (!input) return;
+  const lines = input.split('\n').filter(l => l.trim());
+  parsedMembers = [];
+  for (const line of lines) {
+    const parts = line.split(/[,\t\-–—]+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length < 2) continue;
+    const last = parts[parts.length - 1];
+    const phone = last.replace(/\D/g, '');
+    if (phone.length < 7) continue;
+    const name = parts.slice(0, -1).join(' ');
+    parsedMembers.push({ nombre: name, telefono: normalizePhone(phone) });
+  }
+  if (!parsedMembers.length) { toast('No se encontraron miembros válidos', true); return; }
+  renderPreview();
+}
+
+function renderPreview() {
+  document.getElementById('preview-section').style.display = '';
+  document.getElementById('preview-count').textContent = parsedMembers.length;
+  document.getElementById('preview-body').innerHTML = parsedMembers.map((m, i) => `
+    <tr>
+      <td>${m.nombre}</td>
+      <td>${m.telefono}</td>
+      <td><button class="remove-btn" onclick="removeFromPreview(${i})">✕</button></td>
+    </tr>
+  `).join('');
+}
+
+function removeFromPreview(i) {
+  parsedMembers.splice(i, 1);
+  if (!parsedMembers.length) { hidePreview(); return; }
+  renderPreview();
+}
+
+function hidePreview() {
+  document.getElementById('preview-section').style.display = 'none';
+  parsedMembers = [];
+}
+
+async function addMembers() {
+  if (!parsedMembers.length || !clubId) return;
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true; btn.textContent = 'Agregando...';
+  const body = parsedMembers.map(m => ({
+    club_id: clubId,
+    nombre: m.nombre,
+    telefono: m.telefono,
+    estado: 'pendiente'
+  }));
+  try {
+    await sb('connect_members', {
+      method: 'POST',
+      body,
+      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
+    });
+    toast(`${parsedMembers.length} miembros agregados`);
+    document.getElementById('members-input').value = '';
+    hidePreview();
+    await Promise.all([loadStats(), loadMembers()]);
+  } catch (e) {
+    toast('Error al agregar: ' + e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Agregar al club';
+}
+
+async function removeMember(id) {
+  if (!confirm('¿Eliminar este miembro?')) return;
+  await sb(`connect_members?id=eq.${id}`, { method: 'DELETE' });
+  toast('Miembro eliminado');
+  await Promise.all([loadStats(), loadMembers()]);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['add', 'members', 'rooms'][i] === tab);
+  });
+  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
+  document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
+  document.getElementById('tab-rooms').style.display = tab === 'rooms' ? '' : 'none';
+}
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+init();
+</script>
+</body>
+</html>
