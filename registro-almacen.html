@@ -160,6 +160,7 @@ footer a{color:var(--orange);text-decoration:none}
         <div class="form-group">
           <label>Email <span class="req">*</span> <span class="hint">— con esto inicias sesión</span></label>
           <input type="email" id="a-email" placeholder="tu@almacen.com" required>
+          <span class="hint">¿Ya tienes cuenta en Ridera (Pasaporte, Talleres, etc.)? Usa ese mismo correo y contraseña — solo vinculamos tu almacén a ella.</span>
         </div>
         <div class="form-row">
           <div class="form-group">
@@ -467,10 +468,37 @@ async function handleSubmit(e) {
   try {
     const sb = await initSupabase();
 
+    let userId = null;
     const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
-    if (signUpError) throw signUpError;
-    const userId = signUpData.user ? signUpData.user.id : null;
-    if (!userId) throw new Error('No se pudo crear la cuenta. Intenta con otro email.');
+
+    if (signUpError) {
+      const yaExiste = /already registered|already exists/i.test(signUpError.message || '');
+      if (!yaExiste) throw signUpError;
+
+      // Ridera comparte una sola cuenta por correo (Pasaporte, Talleres, Grúas, etc.).
+      // En vez de bloquear, intentamos entrar con la contraseña que acaba de escribir
+      // por si es la de esa cuenta existente, y le vinculamos el almacén ahí.
+      setStatus('loading', 'Ese correo ya tiene una cuenta en Ridera. Verificando...');
+      const { data: signInData, error: signInError } = await sb.auth.signInWithPassword({ email, password });
+
+      if (signInError) {
+        setStatus('error', 'Ese correo ya tiene una cuenta en Ridera (Pasaporte, Talleres u otra sección) con OTRA contraseña. Escribe la contraseña de esa cuenta aquí arriba, o recupérala en "¿Olvidaste tu contraseña?" desde Iniciar sesión.');
+        btn.disabled = false;
+        return;
+      }
+
+      userId = signInData.user.id;
+
+      const { data: existingAlmacen } = await sb.from('almacenes').select('id, slug').eq('auth_id', userId).maybeSingle();
+      if (existingAlmacen) {
+        setStatus('error', 'Esta cuenta ya tiene un almacén registrado. Entra a tu panel desde "Iniciar sesión" para administrarlo.');
+        btn.disabled = false;
+        return;
+      }
+    } else {
+      userId = signUpData.user ? signUpData.user.id : null;
+      if (!userId) throw new Error('No se pudo crear la cuenta. Intenta con otro email.');
+    }
 
     const baseSlug = generateSlug(nombre);
     const slug = await ensureUniqueSlug(sb, baseSlug);
