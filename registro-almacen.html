@@ -46,6 +46,11 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(232,93,32
 input::placeholder,textarea::placeholder{color:var(--text-dim)}
 textarea{resize:vertical;min-height:80px;line-height:1.55}
 
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.pw-toggle:hover{color:var(--orange)}
+
 .check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
 .check-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,0.75);background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:99px;padding:9px 15px;cursor:pointer;transition:all .18s;user-select:none}
 .check-chip input{display:none}
@@ -159,11 +164,17 @@ footer a{color:var(--orange);text-decoration:none}
         <div class="form-row">
           <div class="form-group">
             <label>Contraseña <span class="req">*</span></label>
-            <input type="password" id="a-password" placeholder="Mínimo 8 caracteres" required minlength="8">
+            <div class="pw-wrap">
+              <input type="password" id="a-password" placeholder="Mínimo 8 caracteres" required minlength="8">
+              <button type="button" class="pw-toggle" onclick="togglePw('a-password',this)" aria-label="Mostrar contraseña">👁</button>
+            </div>
           </div>
           <div class="form-group">
             <label>Confirmar contraseña <span class="req">*</span></label>
-            <input type="password" id="a-password-confirm" placeholder="Repite la contraseña" required minlength="8">
+            <div class="pw-wrap">
+              <input type="password" id="a-password-confirm" placeholder="Repite la contraseña" required minlength="8">
+              <button type="button" class="pw-toggle" onclick="togglePw('a-password-confirm',this)" aria-label="Mostrar contraseña">👁</button>
+            </div>
           </div>
         </div>
         <div class="form-group">
@@ -385,6 +396,13 @@ function getRadio(name) {
   return r ? r.value : '';
 }
 
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
 function generateSlug(nombre) {
   return nombre.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
 }
@@ -476,11 +494,11 @@ async function handleSubmit(e) {
 
     const categorias = getChecked('a-categorias');
     const datos = {
-      marcas: getChecked('a-marcas'),
+      marcas: getChecked('a-marcas').join(', '),
       domicilio: getRadio('a-domicilio'),
       hora_abre: document.getElementById('a-hora-abre').value,
       hora_cierra: document.getElementById('a-hora-cierra').value,
-      dias: getChecked('a-dias'),
+      dias: getChecked('a-dias').join(', '),
       descripcion: document.getElementById('a-descripcion').value.trim(),
     };
 

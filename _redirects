@@ -8,6 +8,7 @@
 /mi-cuenta                  /mi-cuenta.html                    301
 /mi-almacen                 /mi-almacen.html                   301
 /login-almacen              /login-almacen.html                301
+/reset-password              /reset-password.html               200
 /login                      /login-gruero.html                 301
 /registro                   /registro-gruero.html              301
 /registro-almacen           /registro-almacen.html             200
