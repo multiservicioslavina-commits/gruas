@@ -82,6 +82,11 @@ textarea { resize: vertical; min-height: 80px; }
 .modal-close:hover { color: var(--text); }
 
 .empty { text-align: center; padding: 2rem 1rem; color: var(--muted); }
+.resena-row { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.resena-row-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.resena-row-autor { font-weight: 700; font-size: 0.9rem; }
+.resena-row-stars { color: var(--accent); font-size: 0.9rem; }
+.resena-row-texto { color: var(--muted); font-size: 0.88rem; line-height: 1.5; margin-bottom: 0.75rem; }
 .empty-icon { font-size: 3rem; margin-bottom: 1rem; }
 
 .modal-content.wide { max-width: 640px; }
@@ -138,6 +143,7 @@ textarea { resize: vertical; min-height: 80px; }
     <div class="tabs">
       <button class="tab-btn active" onclick="showTab('productos')">Productos</button>
       <button class="tab-btn" onclick="showTab('promociones')">Promociones</button>
+      <button class="tab-btn" onclick="showTab('resenas')">Reseñas</button>
       <button class="tab-btn" onclick="showTab('estadisticas')">Estadísticas</button>
       <button class="tab-btn" onclick="showTab('perfil')">Mi Perfil</button>
     </div>
@@ -170,6 +176,24 @@ textarea { resize: vertical; min-height: 80px; }
         <div id="emptyPromos" class="empty" style="display: none;">
           <div class="empty-icon">🎉</div>
           <p>Crea una promoción para compartirla por WhatsApp o redes.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- RESEÑAS TAB -->
+    <div id="tabResenas" style="display: none;">
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:1rem;">Pendientes por aprobar</h3>
+        <div id="resenasPendientesList"></div>
+        <div id="emptyResenasPendientes" class="empty" style="display:none;">
+          <p>No tienes reseñas pendientes.</p>
+        </div>
+      </div>
+      <div class="card">
+        <h3 class="card-title" style="margin-bottom:1rem;">Publicadas</h3>
+        <div id="resenasAprobadasList"></div>
+        <div id="emptyResenasAprobadas" class="empty" style="display:none;">
+          <p>Todavía no tienes reseñas publicadas.</p>
         </div>
       </div>
     </div>
@@ -493,11 +517,13 @@ async function loadPerfil() {
 function showTab(tab) {
   document.getElementById('tabProductos').style.display = tab === 'productos' ? 'block' : 'none';
   document.getElementById('tabPromociones').style.display = tab === 'promociones' ? 'block' : 'none';
+  document.getElementById('tabResenas').style.display = tab === 'resenas' ? 'block' : 'none';
   document.getElementById('tabEstadisticas').style.display = tab === 'estadisticas' ? 'block' : 'none';
   document.getElementById('tabPerfil').style.display = tab === 'perfil' ? 'block' : 'none';
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   event.target.classList.add('active');
   if (tab === 'promociones') loadPromociones();
+  if (tab === 'resenas') loadResenasAdmin();
 }
 
 function openModalNuevo() {
@@ -860,6 +886,64 @@ async function eliminarPromo(id) {
   const sb = await initSupabase();
   await sb.from('almacen_promociones').delete().eq('id', id);
   loadPromociones();
+}
+
+// --- Reseñas ---
+
+async function loadResenasAdmin() {
+  const sb = await initSupabase();
+  const { data, error } = await sb
+    .from('almacen_resenas')
+    .select('*')
+    .eq('almacen_id', currentAlmacen.id)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  const pendientes = (data || []).filter(r => !r.aprobado);
+  const aprobadas = (data || []).filter(r => r.aprobado);
+
+  renderResenaLista('resenasPendientesList', 'emptyResenasPendientes', pendientes, true);
+  renderResenaLista('resenasAprobadasList', 'emptyResenasAprobadas', aprobadas, false);
+}
+
+function renderResenaLista(listId, emptyId, resenas, pendiente) {
+  const list = document.getElementById(listId);
+  const empty = document.getElementById(emptyId);
+
+  if (!resenas.length) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = resenas.map(r => `
+    <div class="resena-row">
+      <div class="resena-row-head">
+        <span class="resena-row-autor">${escapeHtml(r.nombre_autor)}</span>
+        <span class="resena-row-stars">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
+      </div>
+      ${r.comentario ? `<div class="resena-row-texto">${escapeHtml(r.comentario)}</div>` : ''}
+      <div class="product-actions">
+        ${pendiente ? `<button class="btn primary" onclick="aprobarResena('${r.id}')">Publicar</button>` : ''}
+        <button class="btn danger" onclick="eliminarResenaAdmin('${r.id}')">Borrar</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+async function aprobarResena(id) {
+  const sb = await initSupabase();
+  await sb.from('almacen_resenas').update({ aprobado: true }).eq('id', id);
+  loadResenasAdmin();
+}
+
+async function eliminarResenaAdmin(id) {
+  if (!confirm('¿Eliminar esta reseña?')) return;
+  const sb = await initSupabase();
+  await sb.from('almacen_resenas').delete().eq('id', id);
+  loadResenasAdmin();
 }
 
 async function handleLogout() {
