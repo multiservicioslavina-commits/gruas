@@ -18,4 +18,7 @@
 /connect-admin              /connect-admin.html                200
 /connect                    /connect.html                      200
 /connect/*                  /connect.html                      200
+
+# Subdomain connect.ridera.com.co
+https://connect.ridera.com.co/*  /connect.html  200!
 /rider/*                    /rider/index.html                  200
