@@ -501,6 +501,7 @@ async function handleSubmit(e) {
       datos: datos,
       slug: slug,
       status: 'activo',
+      aprobado: true,
     }]);
 
     if (insertError) throw insertError;
