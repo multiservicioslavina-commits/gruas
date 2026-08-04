@@ -136,9 +136,11 @@ async function handleLogin(e) {
 
   try {
     const sb = await initSupabase();
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) throw error;
-    window.location.href = '/mi-almacen.html';
+
+    const { data: almacen } = await sb.from('almacenes').select('id').eq('auth_id', data.user.id).maybeSingle();
+    window.location.href = almacen ? '/mi-almacen.html' : '/registro-almacen.html';
   } catch (err) {
     setStatus('error', err.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : (err.message || 'Error al iniciar sesión.'));
     btn.disabled = false;
