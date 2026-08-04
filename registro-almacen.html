@@ -109,6 +109,7 @@ footer a{color:var(--orange);text-decoration:none}
   <span class="hero-eyebrow">Vende repuestos a toda Antioquia</span>
   <h1 class="hero-headline">Registra tu <em>almacén Ridera</em></h1>
   <p class="hero-sub">Llena este formulario una vez. Al terminar tendrás tu cuenta activa y acceso para administrar tu catálogo de productos. Tu tarjeta aparece en el directorio en cuanto Ridera verifique tus datos.</p>
+  <p class="hero-sub" style="margin-top:10px;font-size:14px;">¿Ya tienes cuenta? <a href="/login-almacen" style="color:var(--orange)">Inicia sesión</a></p>
 </section>
 
 <div class="form-zone">
@@ -512,7 +513,10 @@ async function handleSubmit(e) {
     document.getElementById('successCard').classList.add('visible');
   } catch (err) {
     console.error(err);
-    setStatus('error', err.message || 'Error en el registro. Intenta de nuevo.');
+    const already = /already registered|already exists/i.test(err.message || '');
+    setStatus('error', already
+      ? 'Ese correo ya tiene una cuenta en Ridera. Si es tuya, entra por Iniciar sesión. Si no, usa otro correo.'
+      : (err.message || 'Error en el registro. Intenta de nuevo.'));
     btn.disabled = false;
   }
 }
