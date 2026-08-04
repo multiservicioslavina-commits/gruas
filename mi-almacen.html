@@ -265,7 +265,7 @@ async function init() {
     const sb = await initSupabase();
     const { data: { user }, error: userError } = await sb.auth.getUser();
     if (userError || !user) {
-      window.location.href = '/registro-almacen.html';
+      window.location.href = '/login-almacen.html';
       return;
     }
     currentUser = user;
