@@ -1,7 +1,7 @@
 {
-  "name": "Ridera Connect",
-  "short_name": "Connect",
-  "description": "Chat exclusivo para clubes de Ridera",
+  "name": "Ridera Club",
+  "short_name": "Club",
+  "description": "El espacio de tu club en Ridera",
   "start_url": "/connect",
   "display": "standalone",
   "background_color": "#0f1117",
