@@ -280,7 +280,6 @@ input[type="file"] { display: none; }
 .full-player.open { transform: translateY(0); }
 .full-player-bg {
   position: absolute; inset: 0;
-  background: radial-gradient(ellipse at 50% 30%, var(--accent-glow) 0%, var(--void) 70%);
   opacity: 0; transition: opacity .8s;
 }
 .full-player.playing .full-player-bg { opacity: 1; }
@@ -322,8 +321,15 @@ input[type="file"] { display: none; }
 }
 .fp-title {
   font-size: 20px; font-weight: 700; line-height: 1.3;
-  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden;
   max-width: 320px; margin: 0 auto;
+  position: relative;
+}
+.fp-title.marquee { animation: marqueeScroll 8s linear infinite; }
+@keyframes marqueeScroll {
+  0%,10% { transform: translateX(0); }
+  45%,55% { transform: translateX(calc(-100% + 300px)); }
+  90%,100% { transform: translateX(0); }
 }
 .fp-artist {
   font-size: 14px; color: var(--muted); margin-top: 4px;
@@ -570,6 +576,46 @@ input[type="file"] { display: none; }
   cursor: pointer; padding: 6px;
   -webkit-tap-highlight-color: transparent;
 }
+
+/* ═══════════ DOUBLE-TAP SEEK ═══════════ */
+.fp-seek-hint {
+  position: absolute; top: 50%; transform: translateY(-50%);
+  background: rgba(255,255,255,.12);
+  padding: 8px 14px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  pointer-events: none; opacity: 0;
+  transition: opacity .2s;
+  z-index: 5;
+}
+.fp-seek-hint.show { opacity: 1; }
+.fp-seek-hint.left { left: 30px; }
+.fp-seek-hint.right { right: 30px; }
+
+/* ═══════════ CONFIRM DIALOG ═══════════ */
+.confirm-dialog {
+  position: fixed; inset: 0; z-index: 90;
+  display: none; align-items: center; justify-content: center;
+  background: rgba(0,0,0,.7);
+}
+.confirm-dialog.open { display: flex; }
+.confirm-box {
+  background: var(--surface);
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 300px; width: 90%;
+  text-align: center;
+  animation: ctxIn .15s ease;
+}
+.confirm-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+.confirm-msg { font-size: 13px; color: var(--muted); margin-bottom: 20px; line-height: 1.5; }
+.confirm-actions { display: flex; gap: 10px; justify-content: center; }
+.confirm-btn {
+  flex: 1; padding: 10px; border: none; border-radius: 10px;
+  font-family: var(--font-body); font-size: 14px; font-weight: 600;
+  cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.confirm-btn.cancel { background: var(--card); color: var(--ink); }
+.confirm-btn.danger { background: var(--red); color: #fff; }
 
 /* ═══════════ CONTEXT MENU ═══════════ */
 .ctx-menu {
@@ -842,10 +888,12 @@ input[type="file"] { display: none; }
   </div>
 
   <div class="fp-art-wrap">
+    <div class="fp-seek-hint left" id="seekHintL">-10s</div>
     <div class="fp-art">
       <img id="fpArtImg" src="" alt="">
       <span class="fp-art-ph">&#127925;</span>
     </div>
+    <div class="fp-seek-hint right" id="seekHintR">+10s</div>
   </div>
 
   <div class="fp-info">
@@ -1015,6 +1063,18 @@ input[type="file"] { display: none; }
   </div>
 </div>
 
+<!-- ═══════════ CONFIRM DIALOG ═══════════ -->
+<div class="confirm-dialog" id="confirmDialog">
+  <div class="confirm-box">
+    <div class="confirm-title" id="confirmTitle">Eliminar</div>
+    <div class="confirm-msg" id="confirmMsg"></div>
+    <div class="confirm-actions">
+      <button class="confirm-btn cancel" onclick="closeConfirm()">Cancelar</button>
+      <button class="confirm-btn danger" id="confirmOk" onclick="confirmAction()">Eliminar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ TOAST ═══════════ -->
 <div class="toast" id="toast"></div>
 
@@ -1117,6 +1177,13 @@ function fmt(sec) {
 function esc(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 function cleanName(fn) { return fn.replace(/\.[^.]+$/, '').replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim(); }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+function hashColor(str) {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  const hue = ((h % 360) + 360) % 360;
+  return `hsl(${hue}, 55%, 35%)`;
+}
+
 function toast(msg) {
   const el = document.getElementById('toast');
   el.textContent = msg;
@@ -1400,7 +1467,7 @@ function renderQueue() {
   if (!tracks.length) { list.innerHTML = '<div class="lib-empty"><div class="lib-empty-icon">&#128247;</div><div class="lib-empty-text">Cola vacia</div></div>'; return; }
   list.innerHTML = tracks.map((t, i) => `
     <div class="song-item${i===currentIdx?' active':''}${i===currentIdx&&isPlaying?' is-playing':''}" onclick="loadTrack(${i});play();renderQueue()">
-      <div class="song-art"><span class="song-art-ph">&#127925;</span><div class="eq-bars"><span></span><span></span><span></span></div></div>
+      <div class="song-art" style="background:${hashColor(t.name)}"><span class="song-art-ph">&#127925;</span><div class="eq-bars"><span></span><span></span><span></span></div></div>
       <div class="song-info"><div class="song-title">${esc(t.name)}</div><div class="song-artist">${esc(t.artist)}</div></div>
       <div class="song-dur">${fmt(t.duration)}</div>
     </div>
@@ -1415,9 +1482,20 @@ function updateNowPlaying() {
   const t = tracks[currentIdx];
   document.getElementById('miniTitle').textContent = t.name;
   document.getElementById('miniArtist').textContent = t.artist;
-  document.getElementById('fpTitle').textContent = t.name;
+  const titleEl = document.getElementById('fpTitle');
+  titleEl.textContent = t.name;
   document.getElementById('fpArtist').textContent = t.artist;
   document.getElementById('fpTimeTotal').textContent = fmt(t.duration);
+
+  titleEl.classList.remove('marquee');
+  if (titleEl.scrollWidth > titleEl.clientWidth + 10) {
+    titleEl.classList.add('marquee');
+  }
+
+  const c = hashColor(t.name + t.artist);
+  document.querySelector('.full-player-bg').style.background =
+    `radial-gradient(ellipse at 50% 30%, ${c} 0%, var(--void) 70%)`;
+
   updateFavIcon();
 }
 
@@ -1434,7 +1512,7 @@ function songItemHTML(t, idx, opts) {
     ? `<button class="song-fav" onclick="event.stopPropagation();removeFromPlaylist('${opts.plId}','${t.id}')" title="Quitar"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`
     : '';
   return `<div class="song-item${isActive?' active':''}${isActive&&isPlaying?' is-playing':''}" onclick="loadTrack(${idx});play()" oncontextmenu="event.preventDefault();openCtxMenu(${idx},event.clientX,event.clientY)" data-idx="${idx}">
-    <div class="song-art"><span class="song-art-ph">&#127925;</span><div class="eq-bars"><span></span><span></span><span></span></div></div>
+    <div class="song-art" style="background:${hashColor(t.name)}"><span class="song-art-ph">&#127925;</span><div class="eq-bars"><span></span><span></span><span></span></div></div>
     <div class="song-info"><div class="song-title">${esc(t.name)}</div><div class="song-artist">${esc(t.artist)}</div></div>
     <div class="song-meta">
       <div class="song-dur">${fmt(t.duration)}</div>
@@ -1465,7 +1543,7 @@ function renderHome() {
     recEl.innerHTML = '<div class="recent-grid">' + recentTracks.map(t => {
       const idx = tracks.indexOf(t);
       return `<div class="recent-item" onclick="loadTrack(${idx});play()">
-        <div class="recent-art">&#127925;</div>
+        <div class="recent-art" style="background:${hashColor(t.name)}">&#127925;</div>
         <div class="recent-name">${esc(t.name)}</div>
       </div>`;
     }).join('') + '</div>';
@@ -1736,6 +1814,52 @@ fp.addEventListener('touchend', e => {
   if (dy > 80) closeFullPlayer();
 });
 
+// ── Confirm Dialog ──────────────────────────────────────────────────
+let pendingConfirmFn = null;
+window.showConfirm = function(title, msg, okLabel, fn) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmMsg').textContent = msg;
+  document.getElementById('confirmOk').textContent = okLabel;
+  pendingConfirmFn = fn;
+  document.getElementById('confirmDialog').classList.add('open');
+};
+window.closeConfirm = function() {
+  document.getElementById('confirmDialog').classList.remove('open');
+  pendingConfirmFn = null;
+};
+window.confirmAction = function() {
+  if (pendingConfirmFn) pendingConfirmFn();
+  closeConfirm();
+};
+
+// ── Double-tap seek (full player art area) ──────────────────────────
+let lastTapTime = 0;
+let lastTapX = 0;
+const artWrap = document.querySelector('.fp-art-wrap');
+artWrap.addEventListener('click', e => {
+  const now = Date.now();
+  if (now - lastTapTime < 350) {
+    if (!audio.duration) return;
+    const rect = artWrap.getBoundingClientRect();
+    const midX = rect.left + rect.width / 2;
+    if (e.clientX < midX) {
+      audio.currentTime = Math.max(0, audio.currentTime - 10);
+      const hint = document.getElementById('seekHintL');
+      hint.classList.add('show');
+      setTimeout(() => hint.classList.remove('show'), 600);
+    } else {
+      audio.currentTime = Math.min(audio.duration, audio.currentTime + 10);
+      const hint = document.getElementById('seekHintR');
+      hint.classList.add('show');
+      setTimeout(() => hint.classList.remove('show'), 600);
+    }
+    lastTapTime = 0;
+  } else {
+    lastTapTime = now;
+    lastTapX = e.clientX;
+  }
+});
+
 // ── Time-based greeting ─────────────────────────────────────────────
 function updateGreeting() {
   const h = new Date().getHours();
@@ -1877,18 +2001,24 @@ window.ctxAddToPl = function() {
 
 window.ctxDelete = function() {
   if (ctxIdx < 0) return;
-  const t = tracks[ctxIdx];
-  const wasPlaying = ctxIdx === currentIdx;
+  const idx = ctxIdx;
+  const name = tracks[idx].name;
+  closeCtxMenu();
+  showConfirm('Eliminar cancion', 'Se eliminara "' + name + '" de tu biblioteca y todas las playlists.', 'Eliminar', () => doDeleteTrack(idx));
+};
 
+function doDeleteTrack(idx) {
+  if (idx < 0 || idx >= tracks.length) return;
+  const t = tracks[idx];
   if (t.url && t.url.startsWith('blob:')) URL.revokeObjectURL(t.url);
   favorites.delete(t.id);
   recentIds = recentIds.filter(r => r !== t.id);
   playlists.forEach(pl => { pl.trackIds = pl.trackIds.filter(id => id !== t.id); dbPutPl(pl); });
 
-  tracks.splice(ctxIdx, 1);
-  queue = queue.filter(q => q !== ctxIdx).map(q => q > ctxIdx ? q - 1 : q);
-  if (currentIdx === ctxIdx) { currentIdx = -1; audio.pause(); audio.src = ''; isPlaying = false; updatePlayIcons(); }
-  else if (currentIdx > ctxIdx) currentIdx--;
+  tracks.splice(idx, 1);
+  queue = queue.filter(q => q !== idx).map(q => q > idx ? q - 1 : q);
+  if (currentIdx === idx) { currentIdx = -1; audio.pause(); audio.src = ''; isPlaying = false; updatePlayIcons(); }
+  else if (currentIdx > idx) currentIdx--;
 
   buildShuffleOrder();
   saveFavorites();
@@ -1897,9 +2027,8 @@ window.ctxDelete = function() {
   if (!tracks.length) document.getElementById('miniPlayer').classList.remove('visible');
   renderAll();
   toast('"' + t.name + '" eliminada');
-  closeCtxMenu();
   notifyFlutter('tracksChanged', { count: tracks.length });
-};
+}
 
 // ── Shuffle All ─────────────────────────────────────────────────────
 window.shuffleAll = function() {
