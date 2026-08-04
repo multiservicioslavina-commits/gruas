@@ -394,10 +394,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <!-- Contacts -->
       <div class="rita-sub">
         Contactos
-        <input class="search-input" id="ritaSearchContacts" type="text" placeholder="Buscar nombre o teléfono…" oninput="searchRitaContacts()" style="margin-left:auto;width:200px">
+        <button class="btn-export" onclick="exportRitaContacts()" style="margin-left:auto">↓ Exportar CSV</button>
+        <input class="search-input" id="ritaSearchContacts" type="text" placeholder="Buscar nombre o teléfono…" oninput="searchRitaContacts()" style="width:200px">
       </div>
       <div class="contact-list" id="ritaContactList"></div>
       <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:1rem" id="ritaPagination"></div>
+
+      <!-- Error Reports -->
+      <div class="rita-sub">
+        Errores reportados
+        <select class="search-input" id="errorFilter" onchange="loadErrorReports()" style="margin-left:auto;width:160px;font-size:0.78rem">
+          <option value="">Todos</option>
+          <option value="pendiente_revision" selected>Pendientes</option>
+          <option value="revisado">Revisados</option>
+          <option value="corregido">Corregidos</option>
+        </select>
+      </div>
+      <div id="errorList" class="contact-list" style="margin-bottom:1.5rem"></div>
 
       <!-- Broadcast -->
       <div class="rita-sub">Enviar broadcast</div>
@@ -475,7 +488,7 @@ function showTab(tab, btn) {
   if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
   if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
   if (tab === 'rita' && !ritaLoaded) loadRitaAnalytics();
-  if (tab === 'rita') loadRitaContacts();
+  if (tab === 'rita') { loadRitaContacts(); loadErrorReports(); }
 }
 
 async function loadSolicitudesStats() {
@@ -998,6 +1011,7 @@ const INTENT_COLORS = {
   almacen_search: '#a78bfa',
   pasaporte: '#4ade80',
   error_report: '#f59e0b',
+  cita: '#f472b6',
 };
 
 const INTENT_LABELS = {
@@ -1007,6 +1021,7 @@ const INTENT_LABELS = {
   almacen_search: 'Almacenes',
   pasaporte: 'Pasaporte',
   error_report: 'Error reportado',
+  cita: 'Citas',
 };
 
 function renderIntentBars(counts) {
@@ -1136,6 +1151,70 @@ async function openConversation(phone, name) {
     </div>`;
   }).join('');
   body.scrollTop = body.scrollHeight;
+}
+
+// ── Error reports ──────────────────────────────────────────────────────
+
+async function loadErrorReports() {
+  const estado = document.getElementById('errorFilter').value;
+  const data = await callRita({ action: 'error_reports', estado }).catch(() => ({ ok: false }));
+  const el = document.getElementById('errorList');
+
+  if (!data.ok || !data.reports || !data.reports.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:1.5rem">Sin reportes de errores.</div>';
+    return;
+  }
+
+  const estadoStyles = {
+    pendiente_revision: { bg: '#2a2000', color: '#f59e0b', label: 'Pendiente' },
+    revisado: { bg: '#0a1e2e', color: '#60a5fa', label: 'Revisado' },
+    corregido: { bg: '#0e2a1a', color: '#4ade80', label: 'Corregido' },
+  };
+
+  el.innerHTML = data.reports.map(r => {
+    const s = estadoStyles[r.estado] || estadoStyles.pendiente_revision;
+    const phone = r.whatsapp_number || '';
+    const masked = phone.length > 6 ? '…' + phone.slice(-4) : phone;
+    const nombre = r.contexto?.preferred_name || masked;
+    const time = r.created_at ? relTime(r.created_at) : '';
+    return `<div class="ct-row" style="cursor:default;flex-wrap:wrap">
+      <div class="ct-avatar" style="background:${s.bg};color:${s.color};font-size:0.7rem">⚠</div>
+      <div class="ct-info" style="min-width:0">
+        <div class="ct-name">${esc(nombre)}</div>
+        <div class="ct-phone" style="white-space:normal;max-width:400px">${esc(r.descripcion)}</div>
+      </div>
+      <div class="ct-meta" style="display:flex;align-items:center;gap:0.5rem">
+        <span class="ct-time">${time}</span>
+        <span class="ct-opt" style="background:${s.bg};color:${s.color}">${s.label}</span>
+        ${r.estado === 'pendiente_revision' ? `
+          <button class="act-btn" onclick="markError('${jsq(r.id)}','revisado',this)" style="font-size:0.72rem">Revisar</button>
+          <button class="act-btn aprobar" onclick="markError('${jsq(r.id)}','corregido',this)" style="font-size:0.72rem">Corregido</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markError(id, estado, btn) {
+  if (btn) btn.disabled = true;
+  await callRita({ action: 'update_error', id, estado }).catch(() => {});
+  loadErrorReports();
+}
+
+// ── Export contacts ────────────────────────────────────────────────────
+
+async function exportRitaContacts() {
+  const data = await callRita({ action: 'export_contacts' }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.contacts) { alert('Error al exportar'); return; }
+  const headers = ['Teléfono','Nombre','Última actividad','Suscrito','Registrado'];
+  const csv = [headers, ...data.contacts.map(c => [
+    c.phone_number || '',
+    c.preferred_name || '',
+    c.last_seen_at ? new Date(c.last_seen_at).toLocaleString('es-CO') : '',
+    c.opted_in ? 'Sí' : 'No',
+    c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '',
+  ])].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿' + csv, `rita-contactos-${new Date().toISOString().slice(0,10)}.csv`);
 }
 
 // ── Broadcast ──────────────────────────────────────────────────────────

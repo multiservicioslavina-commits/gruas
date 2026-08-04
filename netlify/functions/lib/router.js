@@ -22,6 +22,9 @@ function classifyIntent(text) {
   if (/\b(pasaporte|sello|municipio|reto|challenge)\b/.test(t)) {
     return "pasaporte";
   }
+  if (/\b(cita|agendar|reserv|turno|disponibilidad|horario)\b/.test(t)) {
+    return "cita";
+  }
   return "general";
 }
 

@@ -150,6 +150,36 @@ async function getConversation(phoneNumber) {
   return { ok: true, messages: msgs.reverse() };
 }
 
+// ── Error reports ──────────────────────────────────────────────────────
+
+async function getErrorReports(limit = 30, estado = '') {
+  let filter = `rita_errores_reportados?select=id,whatsapp_number,descripcion,estado,prioridad,contexto,created_at&order=created_at.desc&limit=${limit}`;
+  if (estado) filter += `&estado=eq.${encodeURIComponent(estado)}`;
+  const reports = await sbGet(filter);
+  return { ok: true, reports };
+}
+
+async function updateErrorReport(id, estado) {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/rita_errores_reportados?id=eq.${encodeURIComponent(id)}`,
+    {
+      method: 'PATCH',
+      headers: { ...sbHeaders, Prefer: 'return=minimal' },
+      body: JSON.stringify({ estado, updated_at: new Date().toISOString() }),
+    }
+  );
+  return { ok: res.ok };
+}
+
+// ── Export contacts ────────────────────────────────────────────────────
+
+async function exportContacts() {
+  const contacts = await sbGet(
+    'rita_contacts?select=phone_number,preferred_name,last_seen_at,opted_in,created_at&order=last_seen_at.desc&limit=5000'
+  );
+  return { ok: true, contacts };
+}
+
 // ── Broadcast ──────────────────────────────────────────────────────────
 
 async function sendBroadcast(templateName, languageCode, bodyParams) {
@@ -253,6 +283,16 @@ exports.handler = async (event) => {
 
     case 'broadcast':
       return json(await sendBroadcast(body.template, body.language || 'es_CO', body.params || []));
+
+    case 'error_reports':
+      return json(await getErrorReports(body.limit, body.estado));
+
+    case 'update_error':
+      if (!body.id || !body.estado) return json({ ok: false, error: 'Faltan id y estado' });
+      return json(await updateErrorReport(body.id, body.estado));
+
+    case 'export_contacts':
+      return json(await exportContacts());
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

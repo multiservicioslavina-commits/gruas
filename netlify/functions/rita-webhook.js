@@ -213,7 +213,37 @@ async function buildReply(from, text, intent, preferredName) {
     return askClaude(RIDERA_SYSTEM_PROMPT, messages, { userName: preferredName });
   }
 
-  // general — aquí es donde más se nota la diferencia de tier (razonamiento, tono, matices)
+  if (intent === "cita") {
+    const term = extractSearchTerm(text, "taller_search");
+    const results = term ? await searchDirectory("taller", term) : [];
+
+    const context = results.length
+      ? results
+          .map((r) => `- ${stripHtml(r.title)}: ${stripHtml(r.excerpt || r.content).slice(0, 200)} (${r.link})`)
+          .join("\n")
+      : "";
+
+    const citaContext = `Pregunta del usuario: "${text}"
+
+El usuario quiere agendar una cita o consultar disponibilidad en un taller.
+${context ? `\nTalleres encontrados en el directorio:\n${context}` : "\nNo se encontraron talleres específicos."}
+
+Ayúdalo de forma práctica:
+1. Si mencionó un taller específico y lo encontraste en el directorio, dale el enlace y sugiere que los contacte directamente para agendar.
+2. Si no especificó taller, pregúntale en qué ciudad está o qué tipo de servicio necesita para buscar opciones.
+3. Si no hay resultados, sugiérele buscar en ridera.com.co/talleres.
+No inventes horarios ni disponibilidad — esos datos los tiene cada taller.`;
+
+    const history = await getRecentHistory(from, tier.historyMessages);
+    const messages = [
+      ...history.map((h) => ({ role: h.role, content: h.content })),
+      { role: "user", content: citaContext },
+    ];
+
+    return askClaude(RIDERA_SYSTEM_PROMPT, messages, { model: tier.searchModel, userName: preferredName });
+  }
+
+  // general
   const history = await getRecentHistory(from, tier.historyMessages);
   const messages = [...history.map((h) => ({ role: h.role, content: h.content })), { role: "user", content: text }];
   return askClaude(RIDERA_SYSTEM_PROMPT, messages, { userName: preferredName });
