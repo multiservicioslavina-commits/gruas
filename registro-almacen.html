@@ -108,7 +108,7 @@ footer a{color:var(--orange);text-decoration:none}
 <section class="hero">
   <span class="hero-eyebrow">Vende repuestos a toda Antioquia</span>
   <h1 class="hero-headline">Registra tu <em>almacén Ridera</em></h1>
-  <p class="hero-sub">Llena este formulario una vez. Al terminar tendrás tu cuenta activa, tu tarjeta en el directorio y acceso para administrar tu catálogo de productos.</p>
+  <p class="hero-sub">Llena este formulario una vez. Al terminar tendrás tu cuenta activa y acceso para administrar tu catálogo de productos. Tu tarjeta aparece en el directorio en cuanto Ridera verifique tus datos.</p>
 </section>
 
 <div class="form-zone">
@@ -291,7 +291,7 @@ footer a{color:var(--orange);text-decoration:none}
       </div>
 
       <div class="submit-area">
-        <button type="submit" class="btn-submit">Crear mi cuenta y publicar</button>
+        <button type="submit" class="btn-submit">Crear mi cuenta</button>
         <p class="form-note">Tu contraseña es privada. Con ella entras a tu panel para subir productos que Rita podrá recomendar por WhatsApp.</p>
       </div>
     </form>
@@ -299,7 +299,7 @@ footer a{color:var(--orange);text-decoration:none}
     <div class="success-card" id="successCard">
       <div class="check">✓</div>
       <h3>¡Registrado!</h3>
-      <p>Tu almacén ya está publicado en el <a href="/almacenes" style="color:var(--orange)">directorio de Ridera</a>. Ahora entra a tu panel para cargar tus productos.</p>
+      <p>Tu cuenta ya está lista. Ridera revisará tus datos y tu almacén aparecerá en el <a href="/almacenes" style="color:var(--orange)">directorio</a> en menos de 48 horas. Mientras tanto, entra a tu panel para cargar tu catálogo.</p>
       <a href="/mi-almacen.html" class="btn-portal" id="btnPortal">Ir a mi catálogo</a>
     </div>
   </div>
@@ -501,7 +501,7 @@ async function handleSubmit(e) {
       datos: datos,
       slug: slug,
       status: 'activo',
-      aprobado: true,
+      aprobado: false,
     }]);
 
     if (insertError) throw insertError;
