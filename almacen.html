@@ -218,6 +218,7 @@ function renderProducts(products) {
     const stockClass = p.stock === 0 ? 'out' : p.stock && p.stock < 5 ? 'low' : '';
     const stockText = p.stock === null ? 'Disponible' : p.stock === 0 ? 'Agotado' : `${p.stock} en stock`;
     return `<div class="product-card">
+      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">` : ''}
       <div class="cat">${p.categoria}</div>
       <h3>${p.nombre}</h3>
       ${p.descripcion ? `<p class="desc">${p.descripcion}</p>` : ''}

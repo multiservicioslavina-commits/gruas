@@ -228,6 +228,13 @@ textarea { resize: vertical; min-height: 80px; }
         <label>Stock disponible</label>
         <input type="number" id="prodStock" min="0" placeholder="Unidades">
       </div>
+      <div class="form-group">
+        <label>Foto del producto (URL)</label>
+        <input type="url" id="prodImagen" placeholder="https://ejemplo.com/foto.jpg">
+        <div id="prodImagePreview" style="margin-top: 0.75rem; display: none;">
+          <img id="previewImg" style="max-width: 100%; max-height: 150px; border-radius: 8px; border: 1px solid var(--border);">
+        </div>
+      </div>
       <div style="display: flex; gap: 0.75rem;">
         <button type="button" class="btn secondary" style="flex: 1;" onclick="closeModal()">Cancelar</button>
         <button type="submit" class="btn primary" style="flex: 1;">Guardar</button>
@@ -319,6 +326,7 @@ async function loadProductos() {
 
   list.innerHTML = data.map(p => `
     <div class="product-card">
+      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
       <div class="cat">${p.categoria}</div>
       <h4>${p.nombre}</h4>
       <div class="price">$${parseFloat(p.precio).toLocaleString('es-CO')}</div>
@@ -365,8 +373,24 @@ function openModalNuevo() {
   editingProductId = null;
   document.getElementById('modalTitle').textContent = 'Nuevo producto';
   document.getElementById('productoForm').reset();
+  document.getElementById('prodImagePreview').style.display = 'none';
   document.getElementById('productModal').classList.add('visible');
 }
+
+document.getElementById('prodImagen')?.addEventListener('change', (e) => {
+  const url = e.target.value.trim();
+  if (url) {
+    document.getElementById('previewImg').src = url;
+    document.getElementById('previewImg').onerror = () => {
+      document.getElementById('prodImagePreview').style.display = 'none';
+    };
+    document.getElementById('previewImg').onload = () => {
+      document.getElementById('prodImagePreview').style.display = 'block';
+    };
+  } else {
+    document.getElementById('prodImagePreview').style.display = 'none';
+  }
+});
 
 async function openModalEditar(id) {
   const sb = await initSupabase();
@@ -381,6 +405,15 @@ async function openModalEditar(id) {
   document.getElementById('prodDescripcion').value = prod.descripcion || '';
   document.getElementById('prodPrecio').value = prod.precio;
   document.getElementById('prodStock').value = prod.stock || '';
+  document.getElementById('prodImagen').value = prod.imagen_url || '';
+
+  if (prod.imagen_url) {
+    document.getElementById('previewImg').src = prod.imagen_url;
+    document.getElementById('prodImagePreview').style.display = 'block';
+  } else {
+    document.getElementById('prodImagePreview').style.display = 'none';
+  }
+
   document.getElementById('productModal').classList.add('visible');
 }
 
@@ -393,12 +426,14 @@ async function handleGuardarProducto(e) {
   e.preventDefault();
   const sb = await initSupabase();
 
+  const imagenUrl = document.getElementById('prodImagen').value.trim();
   const data = {
     nombre: document.getElementById('prodNombre').value,
     categoria: document.getElementById('prodCategoria').value,
     descripcion: document.getElementById('prodDescripcion').value,
     precio: parseFloat(document.getElementById('prodPrecio').value),
     stock: document.getElementById('prodStock').value ? parseInt(document.getElementById('prodStock').value) : null,
+    imagen_url: imagenUrl || null,
     updated_at: new Date().toISOString()
   };
 
