@@ -199,9 +199,38 @@
     display: none;
   }
   .typing-indicator.show { display: block; }
+
+  /* ── Club directory ── */
+  .directory { display: none; flex-direction: column; align-items: center; min-height: 100%; padding: 32px 16px; overflow-y: auto; }
+  .directory.active { display: flex; }
+  .dir-logo { font-size: 48px; margin-bottom: 8px; }
+  .dir-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .dir-title span { color: var(--accent); }
+  .dir-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+  .dir-list { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+  .dir-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; cursor: pointer; transition: border-color .2s, transform .1s;
+    text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 16px;
+  }
+  .dir-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .dir-card-icon { font-size: 36px; flex-shrink: 0; }
+  .dir-card-info { flex: 1; }
+  .dir-card-name { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .dir-card-members { font-size: 13px; color: var(--text2); }
+  .dir-card-arrow { color: var(--text2); font-size: 20px; }
+  .dir-empty { color: var(--text2); font-size: 14px; text-align: center; margin-top: 24px; }
 </style>
 </head>
 <body>
+
+<!-- CLUB DIRECTORY -->
+<div class="directory" id="directory">
+  <div class="dir-logo">🏍️</div>
+  <div class="dir-title"><span>Ridera</span> Club</div>
+  <div class="dir-sub">Elige tu club</div>
+  <div class="dir-list" id="dir-list"></div>
+</div>
 
 <!-- LOGIN -->
 <div class="login-screen" id="login-screen">
@@ -286,21 +315,37 @@ function normalizePhone(raw) {
 
 // ── Init: check URL for club slug ──
 async function init() {
-  const slug = location.pathname.split('/').filter(Boolean).pop();
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const slug = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+  const isHome = !slug || slug === 'connect';
   const saved = localStorage.getItem('connect_session');
 
-  // Load club from slug or first available
+  // No slug → show club directory
+  if (isHome && !saved) {
+    return showDirectory();
+  }
+
+  // Load club from slug
   let clubs;
   if (slug && slug !== 'connect') {
     clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
   }
+
+  // If saved session, try to restore that club
+  if ((!clubs || !clubs.length) && saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (s.clubId) {
+        clubs = await sb(`clubs?id=eq.${s.clubId}&select=id,nombre,codigo&limit=1`);
+      }
+    } catch {}
+  }
+
+  // Still nothing → show directory
   if (!clubs || !clubs.length) {
-    clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
+    return showDirectory();
   }
-  if (!clubs.length) {
-    document.getElementById('login-club-name').textContent = 'No hay clubes disponibles';
-    return;
-  }
+
   state.club = clubs[0];
   document.getElementById('login-club-name').textContent = state.club.nombre;
 
@@ -563,6 +608,30 @@ function logout() {
   localStorage.removeItem('connect_session');
   if (state.pollInterval) clearInterval(state.pollInterval);
   location.reload();
+}
+
+async function showDirectory() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('directory').classList.add('active');
+  const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre');
+  const list = document.getElementById('dir-list');
+  if (!clubs.length) {
+    list.innerHTML = '<div class="dir-empty">No hay clubs disponibles aún</div>';
+    return;
+  }
+  const counts = {};
+  const members = await sb('connect_members?select=club_id');
+  members.forEach(m => { counts[m.club_id] = (counts[m.club_id] || 0) + 1; });
+  list.innerHTML = clubs.map(c => `
+    <a class="dir-card" href="/${c.codigo || c.id}">
+      <div class="dir-card-icon">🏍️</div>
+      <div class="dir-card-info">
+        <div class="dir-card-name">${c.nombre}</div>
+        <div class="dir-card-members">${counts[c.id] || 0} miembros</div>
+      </div>
+      <div class="dir-card-arrow">›</div>
+    </a>
+  `).join('');
 }
 
 // Phone input formatting
