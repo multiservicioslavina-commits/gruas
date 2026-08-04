@@ -16,6 +16,7 @@
 /registrar-almacen          /registro-almacen.html             200
 /admin                      /admin.html                        301
 /connect-admin              /connect-admin.html                200
+/connect-admin/*            /connect-admin.html                200
 /connect                    /connect.html                      200
 /connect/*                  /connect.html                      200
 

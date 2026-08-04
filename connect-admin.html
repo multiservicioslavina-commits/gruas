@@ -256,8 +256,18 @@ async function sb(path, opts = {}) {
 }
 
 async function init() {
-  const clubs = await sb('clubs?select=id,nombre&limit=1');
-  if (!clubs.length) return;
+  const slug = location.pathname.split('/').filter(Boolean).pop();
+  let clubs;
+  if (slug && slug !== 'connect-admin') {
+    clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
+  }
+  if (!clubs || !clubs.length) {
+    clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
+  }
+  if (!clubs.length) {
+    document.getElementById('club-name').textContent = 'No hay clubes';
+    return;
+  }
   clubId = clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   await Promise.all([loadStats(), loadMembers(), loadRooms()]);
@@ -340,7 +350,10 @@ function parseMembers() {
   const lines = input.split('\n').filter(l => l.trim());
   parsedMembers = [];
   for (const line of lines) {
-    const parts = line.split(/[,\t\-–—]+/).map(p => p.trim()).filter(Boolean);
+    let parts = line.split(/[,\t\-–—]+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length < 2) {
+      parts = line.trim().split(/\s+/);
+    }
     if (parts.length < 2) continue;
     const last = parts[parts.length - 1];
     const phone = last.replace(/\D/g, '');
