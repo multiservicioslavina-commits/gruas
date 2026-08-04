@@ -229,7 +229,7 @@ async function getProductCount(almacenId) {
 
 function buildCard(a, productCount) {
   const categorias = (typeof a.categorias === 'string' ? a.categorias.split(',').map(c => c.trim()) : a.categorias || []).filter(Boolean);
-  const catalogLink = `/almacen/${(a.nombre || '').replace(/\s+/g, '-').toLowerCase()}`;
+  const catalogLink = `/almacen/${a.slug || (a.nombre || '').replace(/\s+/g, '-').toLowerCase()}`;
 
   const inner = `
     <div class="card-header">

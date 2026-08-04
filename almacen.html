@@ -142,7 +142,7 @@ async function init() {
   const { data: almacen, error: almError } = await sb
     .from('almacenes')
     .select('*')
-    .eq('slug', decodeURIComponent(slug).replace(/-/g, ' '))
+    .eq('slug', decodeURIComponent(slug))
     .eq('status', 'activo')
     .single();
 

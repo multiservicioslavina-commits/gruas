@@ -206,7 +206,7 @@ footer a{color:var(--orange);text-decoration:none}
     <div class="success-card" id="successCard">
       <div class="check">✓</div>
       <h3>¡Registrado!</h3>
-      <p>Tu almacén está en Ridera. Ahora inicia sesión para crear tu catálogo.</p>
+      <p>Tu almacén está en Ridera. Ahora inicia sesión para crear tu catálogo. También aparecerás en <a href="/almacenes" style="color:var(--orange)">el directorio de almacenes</a>.</p>
       <a href="/mi-almacen.html" class="btn-portal">Ir a mi catálogo</a>
     </div>
   </div>
@@ -228,6 +228,14 @@ async function initSupabase() {
     sbClient = module.createClient(SB_URL, ANON_KEY);
   }
   return sbClient;
+}
+
+function generateSlug(nombre) {
+  return nombre
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '');
 }
 
 async function handleSubmit(e) {
@@ -253,6 +261,8 @@ async function handleSubmit(e) {
 
     if (signUpError) throw signUpError;
 
+    const slug = generateSlug(form.nombre.value);
+
     const { data: almacen, error: insertError } = await sb
       .from('almacenes')
       .insert([{
@@ -264,7 +274,8 @@ async function handleSubmit(e) {
         ubicacion: form.ubicacion.value,
         contacto: form.contacto.value,
         categorias: form.categorias.value,
-        creado_at: new Date().toISOString()
+        slug: slug,
+        status: 'activo'
       }])
       .select();
 
