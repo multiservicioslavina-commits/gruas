@@ -571,6 +571,60 @@ input[type="file"] { display: none; }
   -webkit-tap-highlight-color: transparent;
 }
 
+/* ═══════════ SLEEP TIMER ═══════════ */
+.timer-sheet {
+  position: fixed; inset: 0; z-index: 65;
+  display: flex; flex-direction: column;
+  justify-content: flex-end;
+  pointer-events: none; opacity: 0;
+  transition: opacity .25s;
+}
+.timer-sheet.open { pointer-events: auto; opacity: 1; }
+.timer-sheet-overlay { position: absolute; inset: 0; background: rgba(0,0,0,.6); }
+.timer-sheet-body {
+  position: relative; background: var(--surface);
+  border-radius: 20px 20px 0 0;
+  transform: translateY(100%);
+  transition: transform .35s cubic-bezier(.32,.72,0,1);
+  padding: 20px 20px calc(20px + var(--safe-bottom));
+}
+.timer-sheet.open .timer-sheet-body { transform: translateY(0); }
+.timer-sheet-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; text-align: center; }
+.timer-opt {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 8px; cursor: pointer;
+  border-radius: 10px; transition: background .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.timer-opt:hover { background: rgba(255,255,255,.04); }
+.timer-opt.active { color: var(--accent); }
+.timer-opt-icon { font-size: 18px; width: 28px; text-align: center; }
+.timer-opt-label { font-size: 14px; flex: 1; }
+.timer-opt-check { color: var(--accent); display: none; }
+.timer-opt.active .timer-opt-check { display: block; }
+.timer-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent); display: none;
+}
+.timer-badge.on { display: block; }
+
+/* ═══════════ SORT BAR ═══════════ */
+.sort-bar {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.sort-bar-label { font-size: 12px; color: var(--muted); }
+.sort-btn {
+  font-size: 12px; background: none; border: 1px solid var(--line);
+  border-radius: 14px; padding: 4px 12px;
+  color: var(--muted); cursor: pointer;
+  font-family: var(--font-body);
+  -webkit-tap-highlight-color: transparent;
+  transition: all .15s;
+}
+.sort-btn.active { border-color: var(--accent); color: var(--accent); }
+
 /* ═══════════ TOAST ═══════════ */
 .toast {
   position: fixed; bottom: calc(var(--mini-h) + var(--bottom-nav) + var(--safe-bottom) + 16px);
@@ -592,6 +646,12 @@ input[type="file"] { display: none; }
 <!-- ═══════════ HEADER ═══════════ -->
 <div class="app-header">
   <div class="brand">RIDERA<small>Music</small></div>
+  <div class="header-actions">
+    <button class="icon-btn" id="timerBtn" onclick="openTimerSheet()" title="Temporizador" style="position:relative">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/><path d="M5 3l2 2"/><path d="M19 3l-2 2"/><line x1="12" y1="1" x2="12" y2="3"/></svg>
+      <div class="timer-badge" id="timerBadge"></div>
+    </button>
+  </div>
 </div>
 
 <!-- ═══════════ SCREENS ═══════════ -->
@@ -609,9 +669,17 @@ input[type="file"] { display: none; }
         <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
         Favoritos
       </div>
+      <div class="quick-chip" onclick="shuffleAll()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg>
+        Mezclar todo
+      </div>
       <div class="quick-chip" onclick="openQueue()">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="18" y2="18"/></svg>
         Cola
+      </div>
+      <div class="quick-chip" onclick="openTimerSheet()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2"/></svg>
+        Timer
       </div>
     </div>
 
@@ -785,6 +853,50 @@ input[type="file"] { display: none; }
   </div>
 </div>
 
+<!-- ═══════════ SLEEP TIMER ═══════════ -->
+<div class="timer-sheet" id="timerSheet">
+  <div class="timer-sheet-overlay" onclick="closeTimerSheet()"></div>
+  <div class="timer-sheet-body">
+    <div class="timer-sheet-title">Temporizador de sueno</div>
+    <div id="timerCountdown" style="text-align:center;font-size:24px;font-family:var(--font-display);letter-spacing:2px;color:var(--accent);display:none;margin-bottom:12px"></div>
+    <div class="timer-opt" data-mins="0" onclick="setSleepTimer(0)">
+      <div class="timer-opt-icon">&#10060;</div>
+      <div class="timer-opt-label">Desactivado</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="5" onclick="setSleepTimer(5)">
+      <div class="timer-opt-icon">&#9201;</div>
+      <div class="timer-opt-label">5 minutos</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="15" onclick="setSleepTimer(15)">
+      <div class="timer-opt-icon">&#128164;</div>
+      <div class="timer-opt-label">15 minutos</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="30" onclick="setSleepTimer(30)">
+      <div class="timer-opt-icon">&#127769;</div>
+      <div class="timer-opt-label">30 minutos</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="45" onclick="setSleepTimer(45)">
+      <div class="timer-opt-icon">&#127770;</div>
+      <div class="timer-opt-label">45 minutos</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="60" onclick="setSleepTimer(60)">
+      <div class="timer-opt-icon">&#127771;</div>
+      <div class="timer-opt-label">1 hora</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+    <div class="timer-opt" data-mins="end" onclick="setSleepTimer(-1)">
+      <div class="timer-opt-icon">&#127908;</div>
+      <div class="timer-opt-label">Al terminar esta cancion</div>
+      <svg class="timer-opt-check" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+    </div>
+  </div>
+</div>
+
 <!-- ═══════════ DROP OVERLAY ═══════════ -->
 <div class="drop-overlay" id="dropOverlay">
   <div class="drop-border"></div>
@@ -833,6 +945,10 @@ let recentIds = [];
 let currentLibTab = 'all';
 let playlists = [];
 let addToPlTrackIdx = -1;
+let sleepTimerId = null;
+let sleepTimerEnd = 0;
+let sleepTimerMode = 0; // 0=off, >0=minutes, -1=end of track
+let sortMode = 'default'; // default, name, artist, recent
 
 const audio = new Audio();
 audio.preload = 'metadata';
@@ -1268,7 +1384,9 @@ function renderHome() {
   if (!tracks.length) {
     allEl.innerHTML = '<div class="lib-empty"><div class="lib-empty-icon">&#127925;</div><div class="lib-empty-text">Agrega musica para comenzar<br><span style="font-size:12px;color:var(--muted2)">Arrastra archivos o usa el boton +</span></div></div>';
   } else {
-    allEl.innerHTML = tracks.map((t, i) => songItemHTML(t, i)).join('');
+    const sorted = getSortedTracks();
+    const sortLabels = { default: 'Orden', name: 'Nombre', artist: 'Artista' };
+    allEl.innerHTML = `<div class="sort-bar"><span class="sort-bar-label">${tracks.length} canciones</span><button class="sort-btn${sortMode!=='default'?' active':''}" onclick="cycleSort()">${sortLabels[sortMode]} &#9660;</button></div>` + sorted.map(({ t, i }) => songItemHTML(t, i)).join('');
   }
 }
 
@@ -1300,7 +1418,9 @@ function renderLibrary() {
 
   if (currentLibTab === 'all') {
     if (!tracks.length) { el.innerHTML = '<div class="lib-empty"><div class="lib-empty-icon">&#127925;</div><div class="lib-empty-text">Sin canciones.<br>Agrega musica con el boton +</div></div>'; return; }
-    el.innerHTML = `<div style="font-size:12px;color:var(--muted);margin-bottom:12px">${tracks.length} canciones</div>` + tracks.map((t,i) => songItemHTML(t,i)).join('');
+    const sorted = getSortedTracks();
+    const sortLabels = { default: 'Orden', name: 'Nombre', artist: 'Artista' };
+    el.innerHTML = `<div class="sort-bar"><span class="sort-bar-label">${tracks.length} canciones</span><button class="sort-btn${sortMode!=='default'?' active':''}" onclick="cycleSort()">${sortLabels[sortMode]} &#9660;</button></div>` + sorted.map(({ t, i }) => songItemHTML(t, i)).join('');
   } else if (currentLibTab === 'favorites') {
     const favTracks = tracks.filter(t => favorites.has(t.id));
     if (!favTracks.length) { el.innerHTML = '<div class="lib-empty"><div class="lib-empty-icon">&#10084;&#65039;</div><div class="lib-empty-text">Sin favoritos.<br>Toca el corazon en una cancion para agregarla.</div></div>'; return; }
@@ -1410,8 +1530,6 @@ audio.addEventListener('loadedmetadata', () => {
   if (currentIdx >= 0) { tracks[currentIdx].duration = audio.duration; renderAll(); }
 });
 
-audio.addEventListener('ended', () => window.nextTrack());
-
 audio.addEventListener('error', () => {
   if (currentIdx >= 0) toast('Error al reproducir: ' + tracks[currentIdx].name);
 });
@@ -1506,6 +1624,124 @@ fp.addEventListener('touchend', e => {
   const dy = e.changedTouches[0].clientY - touchStartY;
   if (dy > 80) closeFullPlayer();
 });
+
+// ── Time-based greeting ─────────────────────────────────────────────
+function updateGreeting() {
+  const h = new Date().getHours();
+  let g;
+  if (h >= 5 && h < 12) g = 'Buenos dias';
+  else if (h >= 12 && h < 19) g = 'Buenas tardes';
+  else g = 'Buenas noches';
+  const el = document.querySelector('.home-greeting');
+  if (el) el.innerHTML = g + ', <span>Rider</span>';
+}
+updateGreeting();
+setInterval(updateGreeting, 60000);
+
+// ── Sleep Timer ─────────────────────────────────────────────────────
+window.openTimerSheet = function() {
+  updateTimerUI();
+  document.getElementById('timerSheet').classList.add('open');
+};
+window.closeTimerSheet = function() { document.getElementById('timerSheet').classList.remove('open'); };
+
+window.setSleepTimer = function(mins) {
+  clearInterval(sleepTimerId);
+  sleepTimerId = null;
+  if (mins === 0) {
+    sleepTimerMode = 0;
+    sleepTimerEnd = 0;
+    document.getElementById('timerBadge').classList.remove('on');
+    toast('Timer desactivado');
+  } else if (mins === -1) {
+    sleepTimerMode = -1;
+    sleepTimerEnd = 0;
+    document.getElementById('timerBadge').classList.add('on');
+    toast('Parara al terminar esta cancion');
+  } else {
+    sleepTimerMode = mins;
+    sleepTimerEnd = Date.now() + mins * 60000;
+    document.getElementById('timerBadge').classList.add('on');
+    sleepTimerId = setInterval(tickTimer, 1000);
+    toast('Timer: ' + mins + ' minutos');
+  }
+  updateTimerUI();
+};
+
+function tickTimer() {
+  const remaining = sleepTimerEnd - Date.now();
+  if (remaining <= 0) {
+    clearInterval(sleepTimerId);
+    sleepTimerId = null;
+    sleepTimerMode = 0;
+    sleepTimerEnd = 0;
+    document.getElementById('timerBadge').classList.remove('on');
+    pause();
+    toast('Timer: musica pausada');
+    updateTimerUI();
+    return;
+  }
+  const cd = document.getElementById('timerCountdown');
+  if (cd.style.display !== 'none') {
+    const m = Math.floor(remaining / 60000);
+    const s = Math.floor((remaining % 60000) / 1000);
+    cd.textContent = m + ':' + String(s).padStart(2, '0');
+  }
+}
+
+const origNextTrack = window.nextTrack;
+const wrappedNext = function() {
+  if (sleepTimerMode === -1) {
+    sleepTimerMode = 0;
+    document.getElementById('timerBadge').classList.remove('on');
+    toast('Timer: musica pausada');
+    updateTimerUI();
+    return;
+  }
+  origNextTrack();
+};
+window.nextTrack = wrappedNext;
+audio.removeEventListener('ended', origNextTrack);
+audio.addEventListener('ended', () => wrappedNext());
+
+function updateTimerUI() {
+  document.querySelectorAll('.timer-opt').forEach(opt => {
+    const m = opt.dataset.mins;
+    if (m === 'end') opt.classList.toggle('active', sleepTimerMode === -1);
+    else opt.classList.toggle('active', sleepTimerMode === Number(m));
+  });
+  const cd = document.getElementById('timerCountdown');
+  if (sleepTimerMode > 0) {
+    cd.style.display = 'block';
+    tickTimer();
+  } else {
+    cd.style.display = 'none';
+  }
+}
+
+// ── Shuffle All ─────────────────────────────────────────────────────
+window.shuffleAll = function() {
+  if (!tracks.length) { toast('Agrega musica primero'); return; }
+  shuffleOn = true;
+  document.getElementById('fpShuffle').classList.add('active');
+  buildShuffleOrder();
+  loadTrack(shuffleOrder[0]);
+  play();
+  toast('Reproduciendo en aleatorio');
+};
+
+// ── Sort ────────────────────────────────────────────────────────────
+window.cycleSort = function() {
+  const modes = ['default', 'name', 'artist'];
+  sortMode = modes[(modes.indexOf(sortMode) + 1) % modes.length];
+  renderAll();
+};
+function getSortedTracks() {
+  const indexed = tracks.map((t, i) => ({ t, i }));
+  if (sortMode === 'name') indexed.sort((a, b) => a.t.name.localeCompare(b.t.name));
+  else if (sortMode === 'artist') indexed.sort((a, b) => a.t.artist.localeCompare(b.t.artist));
+  return indexed;
+}
 
 // ── Flutter / WebView Bridge ────────────────────────────────────────
 function notifyFlutter(event, data) {
