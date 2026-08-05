@@ -367,7 +367,7 @@ function parseMembers() {
 
 function renderPreview() {
   const section = document.getElementById('preview-section');
-  section.style.display = '';
+  section.style.display = 'block';
   document.getElementById('preview-count').textContent = parsedMembers.length;
   document.getElementById('preview-body').innerHTML = parsedMembers.map((m, i) => `
     <tr>
@@ -387,7 +387,8 @@ function removeFromPreview(i) {
 }
 
 function hidePreview() {
-  document.getElementById('preview-section').style.display = 'none';
+  const section = document.getElementById('preview-section');
+  section.style.display = 'none';
   parsedMembers = [];
 }
 
