@@ -395,7 +395,6 @@
 <div class="rita-modal" id="rita-modal">
   <div class="rita-modal-header">
     <div class="rita-modal-title">🤖 Pregunta a Rita</div>
-    <button class="rita-modal-close" onclick="closeRitaModal()">✕</button>
   </div>
   <div class="rita-messages" id="rita-messages"></div>
   <div class="rita-input-bar">
@@ -998,7 +997,16 @@ function handleRitaKey(e) {
     e.preventDefault();
     sendRitaQuestion();
   }
+  if (e.key === 'Escape') {
+    closeRitaModal();
+  }
 }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape' && document.getElementById('rita-modal-overlay').classList.contains('open')) {
+    closeRitaModal();
+  }
+});
 
 // Upload modal
 function openUploadModal() {
