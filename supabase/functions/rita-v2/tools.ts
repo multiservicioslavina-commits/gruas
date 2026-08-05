@@ -18,6 +18,88 @@ export function norm(s: string): string {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
+// ─── Teléfonos de Emergencia ────────────────────────────────────
+const TELEFONOS_EMERGENCIA: Record<string, Record<string, string | Record<string, string>>> = {
+  policia_vial: {
+    nacional: "0120 (desde celular) o 123 (Policía Nacional)",
+    medellin: "127",
+    bogota: "121",
+    descripcion: "Policía de Tránsito y Transporte"
+  },
+  policia_nacional: {
+    nacional: "123",
+    emergencia: "112 (celular)",
+    descripcion: "Policía Nacional de Colombia"
+  },
+  bomberos: {
+    nacional: "119",
+    medellin: "119",
+    bogota: "119",
+    descripcion: "Cuerpo de Bomberos"
+  },
+  ambulancia: {
+    nacional: "122 o 123",
+    medellin: "125 (Cruz Roja Seccional Antioquia)",
+    bogota: "123 (Ambulancias PickMed)",
+    descripcion: "Servicios de Ambulancia"
+  },
+  grua: {
+    ridera: "https://gruas.ridera.com.co (app SOS)",
+    nacional: "Consulta operador de grúas local"
+  }
+};
+
+// ─── Primeros Auxilios ──────────────────────────────────────────
+const PRIMEROS_AUXILIOS: Record<string, string> = {
+  fractura: `FRACTURA SOSPECHADA:
+1. Inmoviliza la zona lesionada
+2. Aplica hielo (15 min cada hora)
+3. Eleva la zona si es posible
+4. No muevas innecesariamente
+5. LLAMA AMBULANCIA (122)
+Signos: dolor intenso, deformidad, hinchazón, imposibilidad de movimiento`,
+
+  herida: `HERIDA ABIERTA:
+1. Detén la hemorragia: presión con gasa/tela limpia
+2. Mantén presión 5-10 minutos
+3. Lava con agua limpia si es superficial
+4. Cubre con vendaje estéril
+5. Si sangra mucho: LLAMA AMBULANCIA (122)
+Peligro: heridas profundas, en cara/cuello, hemorragia incontrolable`,
+
+  hemorragia: `HEMORRAGIA SEVERA:
+1. PRESIÓN DIRECTA con gasa/tela limpia
+2. NO retires la gasa, agrega más si es necesario
+3. Eleva la extremidad por encima del corazón
+4. Si persiste: TORNIQUETE encima de la herida (marca la hora)
+5. LLAMADA URGENTE AL 122 - AMBULANCIA YA
+Tiempo crítico: cada minuto cuenta`,
+
+  quemadura: `QUEMADURA:
+1. Retira del calor inmediatamente
+2. Enfría con agua fría (NO hielo) durante 10-20 min
+3. Retira ropa si no está adherida
+4. Cubre con vendaje limpio y seco
+5. NO uses ungüentos caseros
+Quemaduras graves: AMBULANCIA 122
+Signos graves: amplia, profunda, humo inhalado`,
+
+  conmocion: `CONMOCIÓN/TRAUMATISMO CRANEAL:
+1. Acuesta a la persona
+2. NO muevas la cabeza/cuello si hay sospecha de fractura
+3. Monitorea consciencia y respiración
+4. AMBULANCIA 122 - ES URGENCIA
+Peligro: pérdida de consciencia, náuseas, mareos, confusión, amnesia`,
+
+  posicion_seguridad: `POSICIÓN DE SEGURIDAD (persona inconsciente pero respira):
+1. Inclina la cabeza hacia atrás (vía aérea abierta)
+2. Gira cuerpo hacia un lado
+3. Coloca brazo superior bajo la cabeza
+4. Dobla rodilla superior para estabilidad
+5. LLAMADA URGENTE: 122
+Así se previene que se ahogue con su propia lengua`
+};
+
 // ─── Tramites: datos estaticos oficiales ────────────────────────
 const TRAMITES: Record<string, { titulo: string; links: { nombre: string; url: string }[] }> = {
   soat: {
@@ -407,6 +489,90 @@ export const TOOL_SCHEMAS = [
         region: { type: "string", description: "Región específica (Colombia, Antioquia, Latinoamérica, etc.). Opcional." },
       },
       required: ["tema"],
+    },
+  },
+  {
+    name: "primeros_auxilios",
+    description:
+      "Guía de primeros auxilios para accidentes motociclísticos: fractures, heridas, hemorragias, quemaduras, shock, posición de seguridad. Usala cuando pregunten qué hacer en caso de accidente o lesión.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo_lesion: { type: "string", description: "Tipo de lesión: fractura, herida, hemorragia, quemadura, conmoción, otro" },
+      },
+      required: ["tipo_lesion"],
+    },
+  },
+  {
+    name: "emergencia_telefonos",
+    description:
+      "Teléfonos de emergencia: policía vial, policía nacional, bomberos, ambulancia, grúa, asesoría legal. Devuelve números de contacto verificados por región/ciudad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        servicio: {
+          type: "string",
+          enum: ["policia_vial", "policia_nacional", "bomberos", "ambulancia", "grua", "todos"],
+          description: "Tipo de servicio de emergencia"
+        },
+        ciudad: { type: "string", description: "Ciudad o región (Medellin, Bogota, etc.). Si se omite usa datos nacionales." },
+      },
+      required: ["servicio"],
+    },
+  },
+  {
+    name: "asesoria_legal",
+    description:
+      "Información legal para motociclistas: derechos, deberes, multas, comparendos, qué hacer en accidente, seguros, responsabilidad. Usala cuando pregunten sobre leyes, derechos o cómo actuar legalmente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tema: {
+          type: "string",
+          enum: ["derechos_deberes", "multas", "accidente", "seguros", "responsabilidad", "general"],
+          description: "Tema legal de interés"
+        },
+      },
+      required: ["tema"],
+    },
+  },
+  {
+    name: "codigo_transito",
+    description:
+      "Código Nacional de Tránsito Colombiano: artículos, regulaciones, prohibiciones, sanciones. Usala cuando pregunten sobre leyes de tránsito específicas, límites de velocidad, documentos requeridos, etc.",
+    input_schema: {
+      type: "object",
+      properties: {
+        consulta: { type: "string", description: "Pregunta sobre regulaciones de tránsito. Ej: límite de velocidad, documentos requeridos, prohibiciones" },
+      },
+      required: ["consulta"],
+    },
+  },
+  {
+    name: "tendencias_motos",
+    description:
+      "Últimas tendencias, lanzamientos de marcas, nuevos modelos, tecnologías emergentes en motos. Busca en fuentes verificadas noticias de motociclismo.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tema: { type: "string", description: "Tema: últimas tendencias, lanzamientos 2024-2025, nuevos modelos, marcas emergentes, tecnología, accesorios" },
+        marca: { type: "string", description: "Marca específica (Honda, Yamaha, KTM, etc.). Opcional." },
+      },
+      required: ["tema"],
+    },
+  },
+  {
+    name: "referencias_motos",
+    description:
+      "Catálogo completo de motos: todas las marcas, modelos, especificaciones técnicas, precios, disponibilidad. Busca en bases de datos y WordPress.",
+    input_schema: {
+      type: "object",
+      properties: {
+        marca: { type: "string", description: "Marca de moto (Honda, Yamaha, BMW, KTM, etc.)" },
+        modelo: { type: "string", description: "Modelo específico. Opcional." },
+        tipo: { type: "string", description: "Tipo de moto: deportiva, cruiser, touring, scooter, aventura. Opcional." },
+      },
+      required: ["marca"],
     },
   },
 ] as const;
@@ -911,6 +1077,326 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     return {
       ok: false,
       data: `No tengo información sobre "${tema}" en cultura motera. Intenta otro tema o consulta ridera.com.co`
+    };
+  },
+
+  async primeros_auxilios(input) {
+    const tipoLesion = String(input.tipo_lesion ?? "general").toLowerCase();
+    const guia = PRIMEROS_AUXILIOS[tipoLesion] || PRIMEROS_AUXILIOS.posicion_seguridad;
+
+    return {
+      ok: true,
+      data: {
+        lesion: tipoLesion,
+        guia: guia,
+        URGENCIA: "EN CASO DE DUDA, LLAMAR 122 (AMBULANCIA)",
+        nota: "Esta es información básica. Sigue instrucciones del personal médico."
+      }
+    };
+  },
+
+  async emergencia_telefonos(input) {
+    const servicio = String(input.servicio ?? "todos");
+    const ciudad = String(input.ciudad ?? "nacional");
+
+    if (servicio === "todos") {
+      return {
+        ok: true,
+        data: {
+          policia_vial: TELEFONOS_EMERGENCIA.policia_vial,
+          policia_nacional: TELEFONOS_EMERGENCIA.policia_nacional,
+          bomberos: TELEFONOS_EMERGENCIA.bomberos,
+          ambulancia: TELEFONOS_EMERGENCIA.ambulancia,
+          grua: TELEFONOS_EMERGENCIA.grua,
+          nota: "En caso de emergencia desde celular: 112. Números alternativos: 123, 119, 122"
+        }
+      };
+    }
+
+    const telefonos = TELEFONOS_EMERGENCIA[servicio];
+    if (!telefonos) {
+      return { ok: false, data: `Servicio "${servicio}" no reconocido. Intenta: policia_vial, policia_nacional, bomberos, ambulancia, grua` };
+    }
+
+    return {
+      ok: true,
+      data: {
+        servicio: servicio,
+        ...telefonos
+      }
+    };
+  },
+
+  async asesoria_legal(input) {
+    const tema = String(input.tema ?? "general");
+
+    const asesorias: Record<string, string> = {
+      derechos_deberes: `DERECHOS Y DEBERES DEL MOTOCICLISTA:
+DERECHOS:
+- Vía segura y mantenida
+- Acceso a documentación oficial
+- Defensa legal ante multas injustas
+- Asistencia médica en accidente
+
+DEBERES:
+- Licencia de conducción vigente
+- Documentos del vehículo actualizados
+- Equipamiento de seguridad (casco, chalecos)
+- Respetar señales y límites de velocidad
+- Mantener vehículo en buen estado
+
+IMPORTANTE: Consulta a un abogado especializado en tránsito ante multas o accidentes`,
+
+      multas: `MULTAS Y COMPARENDOS - GUÍA RÁPIDA:
+INFRACCIONES COMUNES:
+- Conducir sin licencia: hasta $1,550,000
+- Exceso de velocidad: $500,000 - $1,100,000
+- No usar casco: $1,000,000
+- Documentos vencidos: $500,000
+- No ceder paso: $500,000
+
+QUÉ HACER SI TE DETIENEN:
+1. Solicita por escrito los motivos
+2. No firmes nada bajo presión
+3. Pide copia del acta
+4. Consulta a abogado antes de pagar
+5. Tienes 10 días para impugnar
+
+CONTACTA: www.simit.org.co para consultar tus multas`,
+
+      accidente: `SI TIENES ACCIDENTE:
+INMEDIATO:
+1. LLAMA 122 (ambulancia) si hay lesionados
+2. LLAMA 123 (policía) para levantar acta
+3. NO muevas los vehículos si hay heridos
+4. Documenta todo (fotos, testigos, números)
+
+DOCUMENTOS NECESARIOS:
+- Cédula tuya y del otro involucrado
+- Licencia de conducción
+- SOAT vigente
+- Documentos del vehículo
+- Póliza de seguros (si tienes)
+
+PASOS LEGALES:
+1. Obtén copia del acta de policía
+2. Notifica a tu aseguradora
+3. CONSULTA ABOGADO especializado
+4. Recopila evidencia médica si hay lesiones
+
+IMPORTANTE: No admitas culpa, solo hechos verificables`,
+
+      seguros: `SEGUROS Y PÓLIZAS MOTOCICLISTAS:
+COBERTURA OBLIGATORIA (SOAT):
+- Lesiones a terceros: $90,000,000
+- Daños a bienes: $23,000,000
+- Dónde comprar: www.segurossura.com.co, etc.
+
+SEGUROS ADICIONALES RECOMENDADOS:
+- Robo y hurto
+- Colisión y volcamiento
+- Responsabilidad civil (ampliada)
+- Asistencia vial 24/7
+- Gastos médicos personales
+
+COSTO APROXIMADO: $150,000 - $500,000/año (SOAT básico)
+
+CONSULTA: Tu aseguradora antes de cualquier servicio
+TRAMITA: En www.simit.org.co cualquier consulta legal`,
+
+      responsabilidad: `RESPONSABILIDAD EN ACCIDENTES:
+RESPONSABILIDAD CIVIL:
+- Civiles: por daños causados a terceros
+- Penales: si hay lesiones o muertes
+- Administrativas: infracciones de tránsito
+
+PROCEDIMIENTO:
+1. Policía levanta acta del accidente
+2. Fiscalía investiga si hay delito
+3. Demandante puede demandar civiles
+4. Juzgado civil determina indemnización
+
+INDEMNIZACIÓN TÍPICA:
+- Daños al vehículo: valor real
+- Lucro cesante: ingresos dejados de percibir
+- Daño moral: análisis caso por caso
+- Gastos médicos: comprobables
+
+PROTECCIÓN: Seguro de responsabilidad civil ampliada
+CONTACTO: Abogado especializado en responsabilidad civil`
+    };
+
+    const respuesta = asesorias[tema] || asesorias.general;
+    return {
+      ok: true,
+      data: {
+        tema: tema,
+        informacion: respuesta,
+        CONTACTO_LEGAL: "Abogado especializado en tránsito",
+        urgencia: "Si necesitas asesoría urgente, contacta policía o bomberos"
+      }
+    };
+  },
+
+  async codigo_transito(input) {
+    const consulta = String(input.consulta ?? "");
+
+    try {
+      // Búsqueda en Wikipedia sobre código colombiano
+      const res = await fetch(
+        `https://es.wikipedia.org/w/api.php?action=query&srsearch=codigo+transito+colombia&prop=extracts&explaintext=true&format=json`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const results = (data.query.search || []).slice(0, 2);
+        if (results.length) {
+          return {
+            ok: true,
+            data: {
+              consulta: consulta,
+              resultados: results.map((r: Record<string, string>) =>
+                `${r.title}: ${r.snippet.replace(/<[^>]*>/g, "").slice(0, 400)}`
+              ).join("\n\n"),
+              fuente: "Wikipedia - Código Nacional de Tránsito Colombiano",
+              recurso_oficial: "https://www.mintransporte.gov.co"
+            }
+          };
+        }
+      }
+    } catch { /* fallthrough */ }
+
+    return {
+      ok: true,
+      data: {
+        consulta: consulta,
+        info: "Código Nacional de Tránsito Colombiano (Ley 769 de 2002) regula toda la conducción en Colombia",
+        temas_comunes: [
+          "Límites de velocidad: 60 km/h zona urbana, 100-120 km/h carretera",
+          "Documentos requeridos: Licencia, SOAT, documentos vehículo, cédula",
+          "Equipamiento: Casco obligatorio, chalecos reflectivos, botiquín",
+          "Prohibiciones: Conducir bajo influencia, exceso velocidad, documentos vencidos",
+          "Multas y comparendos: Varían $500k - $1.5M según infracción"
+        ],
+        recurso_oficial: "https://www.mintransporte.gov.co o consulta SIMIT"
+      }
+    };
+  },
+
+  async tendencias_motos(input) {
+    const tema = String(input.tema ?? "últimas tendencias");
+    const marca = String(input.marca ?? "");
+
+    try {
+      const query = encodeURIComponent(`motos ${tema} ${marca} 2024 2025`);
+
+      // Búsqueda en WordPress/Ridera
+      const res = await fetch(
+        `${WP_API}/posts?search=${query}&per_page=5&_fields=title,excerpt,link`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (res.ok) {
+        const posts = await res.json();
+        if (posts.length) {
+          return {
+            ok: true,
+            data: {
+              tema: tema,
+              marca: marca || "todas",
+              noticias: posts.map((p: Record<string, Record<string, string>>) =>
+                `${(p.title?.rendered || "").replace(/&amp;/g, "&")}\n${(p.excerpt?.rendered || "").replace(/<[^>]*>/g, "").slice(0, 250)}`
+              ).join("\n\n"),
+              fuente: "Ridera.com.co"
+            }
+          };
+        }
+      }
+    } catch { /* fallthrough */ }
+
+    return {
+      ok: true,
+      data: {
+        tema: tema,
+        marca: marca || "todas las marcas",
+        info: "Últimas tendencias en motos 2024-2025",
+        tendencias_generales: [
+          "Motos eléctricas: Mayor autonomía y modelos accesibles",
+          "Conectividad: Apps, GPS integrado, telemetría",
+          "Seguridad: ABS, control de tracción, frenado automático",
+          "Aerodinámica: Diseños más aerodinámicos y ligeros",
+          "Sostenibilidad: Menos emisiones, motores híbridos"
+        ],
+        contacto: "Consulta ridera.com.co para noticias detalladas"
+      }
+    };
+  },
+
+  async referencias_motos(input) {
+    const marca = String(input.marca ?? "");
+    const modelo = String(input.modelo ?? "");
+    const tipo = String(input.tipo ?? "");
+
+    // Primero intenta base de datos local (garage_motos)
+    let query = supabase.from("garage_motos");
+
+    if (marca) {
+      query = query.like("marca_norm", `%${norm(marca)}%`);
+    }
+    if (modelo) {
+      query = query.like("modelo_norm", `%${norm(modelo)}%`);
+    }
+
+    const { data } = await query.limit(10);
+
+    if (data?.length) {
+      return {
+        ok: true,
+        data: {
+          marca: marca,
+          modelo: modelo,
+          motos: data.map((m: Record<string, unknown>) => ({
+            marca: m.marca,
+            modelo: m.modelo,
+            aceite: m.aceite_ml,
+            mantenimiento: m.mantenimiento,
+            especificaciones: m.cilindros
+          })),
+          fuente: "Garage Técnico Ridera",
+          total: data.length
+        }
+      };
+    }
+
+    // Fallback: búsqueda en WordPress
+    try {
+      const res = await fetch(
+        `${WP_API}/posts?search=${encodeURIComponent(marca + " " + modelo)}&per_page=5&_fields=title,excerpt,link`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (res.ok) {
+        const posts = await res.json();
+        if (posts.length) {
+          return {
+            ok: true,
+            data: {
+              marca: marca,
+              modelo: modelo,
+              referencias: posts.map((p: Record<string, Record<string, string>>) =>
+                `${(p.title?.rendered || "").replace(/&amp;/g, "&")}`
+              ),
+              fuente: "Ridera.com.co"
+            }
+          };
+        }
+      }
+    } catch { /* fallthrough */ }
+
+    return {
+      ok: false,
+      data: `No encuentro referencias de motos con marca="${marca}" modelo="${modelo}". Intenta con el nombre exacto de la marca o modelo.`
     };
   },
 };
