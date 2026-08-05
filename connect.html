@@ -926,12 +926,12 @@ async function showDirectory() {
 }
 
 // Rita private chat
-async function openRitaModal() {
+function openRitaModal() {
   if (!state.member) return;
   document.getElementById('rita-modal-overlay').classList.add('open');
   document.getElementById('rita-modal').classList.add('open');
-  await loadRitaMessages();
-  scrollRitaToBottom();
+  document.getElementById('rita-input').focus();
+  setTimeout(() => loadRitaMessages().catch(e => console.error('Error loading messages:', e)), 100);
 }
 
 function closeRitaModal() {
@@ -941,9 +941,14 @@ function closeRitaModal() {
 }
 
 async function loadRitaMessages() {
-  const msgs = await sb(`connect_rita_dms?member_id=eq.${state.member.id}&select=*&order=created_at.asc`);
-  if (!Array.isArray(msgs)) return;
-  renderRitaMessages(msgs);
+  try {
+    const msgs = await sb(`connect_rita_dms?member_id=eq.${state.member.id}&select=*&order=created_at.asc`);
+    if (Array.isArray(msgs)) {
+      renderRitaMessages(msgs);
+    }
+  } catch (e) {
+    console.error('Error loading Rita messages:', e);
+  }
 }
 
 function renderRitaMessages(msgs) {
@@ -982,10 +987,10 @@ async function sendRitaQuestion() {
       }
     });
     input.value = '';
-    await loadRitaMessages();
-    scrollRitaToBottom();
+    loadRitaMessages().catch(e => console.error('Error reloading:', e));
   } catch (e) {
-    console.error('Error:', e);
+    console.error('Error sending question:', e);
+    alert('Error al enviar pregunta: ' + e.message);
   }
 
   input.disabled = false;
