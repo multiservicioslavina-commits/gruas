@@ -1391,13 +1391,13 @@ CONTACTO: Abogado especializado en responsabilidad civil`
             mantenimiento: m.mantenimiento,
             especificaciones: m.cilindros
           })),
-          fuente: "Garage Técnico Ridera",
+          fuente: "Garage Técnico Ridera (verificado)",
           total: data.length
         }
       };
     }
 
-    // Fallback: búsqueda en WordPress
+    // Fallback 1: búsqueda en WordPress Ridera
     try {
       const res = await fetch(
         `${WP_API}/posts?search=${encodeURIComponent(marca + " " + modelo)}&per_page=5&_fields=title,excerpt,link`,
@@ -1415,16 +1415,44 @@ CONTACTO: Abogado especializado en responsabilidad civil`
               referencias: posts.map((p: Record<string, Record<string, string>>) =>
                 `${(p.title?.rendered || "").replace(/&amp;/g, "&")}`
               ),
-              fuente: "Ridera.com.co"
+              fuente: "Ridera.com.co (verificado)"
             }
           };
         }
       }
     } catch { /* fallthrough */ }
 
+    // Fallback 2: búsqueda web verificada (Wikipedia, fuentes confiables)
+    try {
+      const busqueda = modelo ? `${marca} ${modelo} moto especificaciones` : `${marca} motocicleta`;
+      const res = await fetch(
+        `https://es.wikipedia.org/w/api.php?action=query&format=json&list=search&srsearch=${encodeURIComponent(busqueda)}&utf8=1`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (res.ok) {
+        const resultado = await res.json();
+        if (resultado.query?.search?.length) {
+          const info = resultado.query.search.map((r: Record<string, string>) => r.title).join(", ");
+          if (info) {
+            return {
+              ok: true,
+              data: {
+                marca: marca,
+                modelo: modelo,
+                referencias: [info],
+                fuente: "Wikipedia (FUERA DE RIDERA - Sujeto a verificación)",
+                advertencia: "Esta información es de fuentes externas, no verificada por Ridera. Consulta el manual del propietario, taller oficial de la marca, o múltiples fuentes para confirmar especificaciones exactas de aceite, filtros e intervalos de mantenimiento."
+              }
+            };
+          }
+        }
+      }
+    } catch { /* fallthrough */ }
+
     return {
       ok: false,
-      data: `No encuentro referencias de motos con marca="${marca}" modelo="${modelo}". Intenta con el nombre exacto de la marca o modelo.`
+      data: `No encuentro referencias verificadas de ${marca}${modelo ? ` ${modelo}` : ""} en Ridera ni en fuentes externas. Te recomiendo confirmar con el manual del propietario o un taller autorizado de la marca para especificaciones exactas.`
     };
   },
 

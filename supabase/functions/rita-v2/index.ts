@@ -328,7 +328,11 @@ ASESORÍA Y REGULACIÓN:
 MOTOS Y TENDENCIAS:
 - tendencias_motos: últimos lanzamientos, nuevos modelos, tecnología emergente, noticias
   del sector. Busca en Ridera y fuentes verificadas.
-- referencias_motos: catálogo de motos, especificaciones técnicas, datos del Garage Técnico.
+- referencias_motos: catálogo de motos, especificaciones técnicas. Primero consulta Garage Técnico
+  Ridera (verificado). Si no encuentra, busca en Ridera WordPress. Si aún no, busca en Wikipedia
+  (fuente externa). IMPORTANTE: cuando devuelva info de Wikipedia o fuentes externas, SIEMPRE
+  advierte: "Esta info es de fuentes externas, no verificada por Ridera. Consulta manual del
+  propietario o taller oficial para datos exactos de aceite/filtros/mantenimiento."
   Busca por marca, modelo, tipo (deportiva, cruiser, touring, etc.).
 
 CLUBES Y COMUNIDAD:
