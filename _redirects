@@ -23,6 +23,6 @@
 /connect/*                  /connect.html                      200
 
 # Subdomain club.ridera.com.co
-https://club.ridera.com.co/app/player.html  /app/player.html  200!
+https://club.ridera.com.co/music  /app/player.html  200!
 https://club.ridera.com.co/*  /connect.html  200!
 /rider/*                    /rider/index.html                  200
