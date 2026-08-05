@@ -94,6 +94,7 @@
   .drawer-room .r-name { font-size: 14px; font-weight: 500; }
   .drawer-room .r-desc { font-size: 11px; color: var(--text2); }
   .drawer-room.active .r-desc { color: rgba(255,255,255,.7); }
+  .unread-badge { background: var(--red); color: #fff; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-left: auto; }
   .drawer-footer {
     padding: 12px 16px; border-top: 1px solid var(--border);
     font-size: 12px; color: var(--text2);
@@ -416,7 +417,10 @@ async function enterApp() {
 }
 
 function renderDrawerRooms() {
-  document.getElementById('d-rooms').innerHTML = state.rooms.map(r => `
+  const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+  document.getElementById('d-rooms').innerHTML = state.rooms.map(r => {
+    const count = unread[r.id] || 0;
+    return `
     <div class="drawer-room ${state.currentRoom?.id === r.id ? 'active' : ''}"
          onclick="switchRoom('${r.id}'); toggleDrawer();">
       <div class="r-icon">${r.icono}</div>
@@ -424,12 +428,13 @@ function renderDrawerRooms() {
         <div class="r-name">${r.nombre}</div>
         <div class="r-desc">${r.descripcion || ''}</div>
       </div>
+      ${count > 0 ? `<div class="unread-badge">${count}</div>` : ''}
     </div>
-  `).join('');
+  `;
+  }).join('');
 }
 
 async function switchRoom(roomId) {
-  // Unsubscribe from previous room
   if (state.realtimeChannel) {
     state.realtimeChannel.unsubscribe();
   }
@@ -440,6 +445,11 @@ async function switchRoom(roomId) {
   document.getElementById('messages').style.display = '';
 
   document.getElementById('h-room').innerHTML = `<span class="room-icon">${state.currentRoom.icono}</span>${state.currentRoom.nombre}`;
+
+  // Clear unread badge for this room
+  const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+  delete unread[roomId];
+  localStorage.setItem('connect_unread', JSON.stringify(unread));
   renderDrawerRooms();
 
   // Load messages
@@ -453,6 +463,9 @@ async function switchRoom(roomId) {
 
 function subscribeToRoom(roomId) {
   if (state.pollInterval) clearInterval(state.pollInterval);
+  if (state.globalPollInterval) clearInterval(state.globalPollInterval);
+
+  // Poll current room
   state.pollInterval = setInterval(async () => {
     const msgs = await sb(
       `connect_messages?room_id=eq.${roomId}&select=*,connect_members(nombre)&order=created_at.asc`
@@ -463,6 +476,32 @@ function subscribeToRoom(roomId) {
       scrollToBottom();
     }
   }, 1000);
+
+  // Poll other rooms for unread indicators
+  state.globalPollInterval = setInterval(async () => {
+    const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+    const roomMsgCounts = JSON.parse(localStorage.getItem('connect_msg_counts') || '{}');
+    let changed = false;
+
+    for (const room of state.rooms) {
+      if (room.id === roomId) continue;
+      const msgs = await sb(`connect_messages?room_id=eq.${room.id}&select=id`);
+      const count = msgs?.length || 0;
+      const lastKnown = roomMsgCounts[room.id] || 0;
+
+      if (count > lastKnown) {
+        unread[room.id] = (unread[room.id] || 0) + (count - lastKnown);
+        roomMsgCounts[room.id] = count;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      localStorage.setItem('connect_unread', JSON.stringify(unread));
+      localStorage.setItem('connect_msg_counts', JSON.stringify(roomMsgCounts));
+      renderDrawerRooms();
+    }
+  }, 3000);
 }
 
 function renderMessages() {
