@@ -887,11 +887,12 @@ async function showDirectory() {
 }
 
 // Rita private chat
-async function openRitaModal() {
+function openRitaModal() {
   if (!state.member) return;
   document.getElementById('rita-modal-overlay').classList.add('open');
   document.getElementById('rita-modal').classList.add('open');
-  loadRitaMessages().catch(e => console.error('Error loading messages:', e));
+  document.getElementById('rita-input').focus();
+  setTimeout(() => loadRitaMessages().catch(e => console.error('Error loading messages:', e)), 100);
 }
 
 function closeRitaModal() {
