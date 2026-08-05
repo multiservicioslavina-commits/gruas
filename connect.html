@@ -259,6 +259,9 @@
   <div class="cards-panel" id="cards-panel"></div>
 
   <div class="input-bar">
+    <button class="send-btn" id="file-btn" onclick="document.getElementById('file-input').click()" title="Archivo" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
+    <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+    <button class="send-btn" id="voice-btn" onclick="toggleVoiceRecording()" title="Voz" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">🎤</button>
     <textarea id="msg-input" rows="1" placeholder="Escribe un mensaje..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
   </div>
@@ -632,6 +635,47 @@ async function toggleCards() {
   } else {
     panel.classList.remove('active');
     msgs.style.display = '';
+  }
+}
+
+function sendFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  alert(`Archivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)\n\nFunción en desarrollo. Pronto podrás compartir archivos.`);
+  document.getElementById('file-input').value = '';
+}
+
+let isRecording = false;
+let mediaRecorder;
+let audioChunks = [];
+
+async function toggleVoiceRecording() {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: 'audio/wav' });
+        const msg = `🎙️ Nota de voz (${(blob.size/1024).toFixed(0)} KB)`;
+        document.getElementById('msg-input').value = msg;
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('voice-btn').style.color = 'var(--red)';
+      document.getElementById('voice-btn').textContent = '⏹️';
+    } catch (e) {
+      alert('No se pudo acceder al micrófono');
+    }
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('voice-btn').style.color = 'var(--text2)';
+    document.getElementById('voice-btn').textContent = '🎤';
   }
 }
 
