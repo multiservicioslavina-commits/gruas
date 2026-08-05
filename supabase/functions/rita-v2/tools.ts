@@ -383,6 +383,32 @@ export const TOOL_SCHEMAS = [
       required: ["consulta", "tipo_fuente"],
     },
   },
+  {
+    name: "consultar_historia_poblacion",
+    description:
+      "Consulta la historia, origen y datos culturales de un municipio o población (Antioquia, Colombia o Latinoamérica). Devuelve: fecha de fundación, historia, personajes notables, hechos históricos, tradiciones. Usala cuando pregunten por historia de un lugar.",
+    input_schema: {
+      type: "object",
+      properties: {
+        poblacion: { type: "string", description: "Nombre del municipio o población" },
+        region: { type: "string", description: "Región/país (Antioquia, Bogota, Mexico, Peru, etc.). Opcional, si se omite asume Colombia." },
+      },
+      required: ["poblacion"],
+    },
+  },
+  {
+    name: "cultura_motera",
+    description:
+      "Información sobre cultura motera, historia del motociclismo, anécdotas, leyendas urbanas de rutas famosas, tradiciones de riders, eventos moteros. Usala cuando pregunten sobre la cultura, historia o tradiciones de la comunidad motera.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tema: { type: "string", description: "Tema de cultura motera. Ej: historia del motociclismo, leyendas de rutas, tradiciones, eventos famosos, personajes moteros" },
+        region: { type: "string", description: "Región específica (Colombia, Antioquia, Latinoamérica, etc.). Opcional." },
+      },
+      required: ["tema"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -764,6 +790,128 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         data: `Error buscando en web: ${e instanceof Error ? e.message : String(e).slice(0, 100)}`
       };
     }
+  },
+
+  async consultar_historia_poblacion(input) {
+    const poblacion = String(input.poblacion ?? "");
+    const region = String(input.region ?? "Colombia");
+
+    // Primero intenta en rita_municipios (si es Antioquia)
+    if (region.toLowerCase().includes("antioquia") || region === "Colombia") {
+      const { data } = await supabase
+        .from("rita_municipios")
+        .select("nombre, historia, atractivos, festividades, subregion")
+        .like("nombre_norm", `%${norm(poblacion)}%`)
+        .limit(1);
+
+      if (data?.length) {
+        const m = data[0];
+        return {
+          ok: true,
+          data: {
+            nombre: m.nombre,
+            historia: m.historia || "Historia no disponible aún",
+            atractivos: m.atractivos,
+            festividades: m.festividades,
+            subregion: m.subregion,
+            fuente: "Pasaporte Motero Ridera"
+          }
+        };
+      }
+    }
+
+    // Fallback: búsqueda en Wikipedia y fuentes verificadas
+    try {
+      const query = encodeURIComponent(`${poblacion} ${region} historia`);
+      const res = await fetch(
+        `https://es.wikipedia.org/w/api.php?action=query&titles=${encodeURIComponent(poblacion)}&prop=extracts&explaintext=true&format=json`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const pages = data.query.pages;
+        const page = Object.values(pages)[0] as Record<string, string>;
+        if (page.extract) {
+          return {
+            ok: true,
+            data: {
+              nombre: poblacion,
+              historia: page.extract.slice(0, 500),
+              region: region,
+              fuente: "Wikipedia"
+            }
+          };
+        }
+      }
+    } catch { /* fallthrough */ }
+
+    return {
+      ok: false,
+      data: `No encuentro información de historia sobre "${poblacion}". Intenta con el nombre exacto del municipio.`
+    };
+  },
+
+  async cultura_motera(input) {
+    const tema = String(input.tema ?? "");
+    const region = String(input.region ?? "Colombia");
+
+    // Búsqueda en fuentes verificadas (Wikipedia, ridera.com.co, etc.)
+    try {
+      const query = encodeURIComponent(`cultura motera ${tema} ${region}`);
+
+      // Intenta Wikipedia primero
+      const wikiRes = await fetch(
+        `https://es.wikipedia.org/w/api.php?action=query&srsearch=${encodeURIComponent(tema)}&prop=extracts&explaintext=true&format=json`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (wikiRes.ok) {
+        const data = await wikiRes.json();
+        const results = data.query.search || [];
+        if (results.length) {
+          return {
+            ok: true,
+            data: {
+              tema: tema,
+              region: region,
+              informacion: results.slice(0, 2).map((r: Record<string, string>) =>
+                `${r.title}: ${r.snippet.replace(/<[^>]*>/g, "").slice(0, 300)}`
+              ).join("\n\n"),
+              fuente: "Wikipedia"
+            }
+          };
+        }
+      }
+
+      // Fallback: búsqueda en Ridera
+      const rideraRes = await fetch(
+        `${WP_API}/posts?search=${query}&per_page=3&_fields=title,excerpt,link`,
+        { signal: AbortSignal.timeout(5000) }
+      );
+
+      if (rideraRes.ok) {
+        const posts = await rideraRes.json();
+        if (posts.length) {
+          return {
+            ok: true,
+            data: {
+              tema: tema,
+              region: region,
+              informacion: posts.map((p: Record<string, Record<string, string>>) =>
+                `${(p.title?.rendered || "").replace(/&amp;/g, "&")}: ${(p.excerpt?.rendered || "").replace(/<[^>]*>/g, "").slice(0, 200)}`
+              ).join("\n\n"),
+              fuente: "Ridera.com.co"
+            }
+          };
+        }
+      }
+    } catch { /* fallthrough */ }
+
+    return {
+      ok: false,
+      data: `No tengo información sobre "${tema}" en cultura motera. Intenta otro tema o consulta ridera.com.co`
+    };
   },
 };
 
