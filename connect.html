@@ -465,7 +465,7 @@ function subscribeToRoom(roomId) {
   if (state.pollInterval) clearInterval(state.pollInterval);
   if (state.globalPollInterval) clearInterval(state.globalPollInterval);
 
-  // Poll current room
+  // Poll current room (500ms for faster updates)
   state.pollInterval = setInterval(async () => {
     const msgs = await sb(
       `connect_messages?room_id=eq.${roomId}&select=*,connect_members(nombre)&order=created_at.asc`
@@ -475,7 +475,7 @@ function subscribeToRoom(roomId) {
       renderMessages();
       scrollToBottom();
     }
-  }, 1000);
+  }, 500);
 
   // Poll other rooms for unread indicators
   state.globalPollInterval = setInterval(async () => {
