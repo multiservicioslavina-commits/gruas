@@ -181,6 +181,17 @@
   <!-- TAB: Agregar miembros -->
   <div id="tab-add">
     <div class="card">
+      <h2>Logo del club</h2>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
+          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
+        </div>
+        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Compartir link de invitación</h2>
       <p>Comparte este link con los miembros para que se registren directamente</p>
       <div style="display: flex; gap: 8px; margin-top: 12px;">
@@ -282,7 +293,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadRooms()]);
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo()]);
 }
 
 async function loadStats() {
@@ -459,6 +470,59 @@ function copyInviteLink() {
   link.select();
   document.execCommand('copy');
   toast('Link copiado al portapapeles');
+}
+
+async function uploadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Archivo muy grande. Máximo 2MB', true);
+    return;
+  }
+
+  const btn = document.querySelector('#logo-input');
+  btn.disabled = true;
+
+  try {
+    const filename = `${clubId}-logo.${file.name.split('.').pop()}`;
+    const path = `club-logos/${filename}`;
+
+    const res = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/connect-files/${path}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        },
+        body: file
+      }
+    );
+
+    if (!res.ok) throw new Error('Upload failed');
+
+    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/connect-files/${path}`;
+
+    await sb(`clubs?id=eq.${clubId}`, {
+      method: 'PATCH',
+      body: { logo_url: logoUrl }
+    });
+
+    document.getElementById('logo-preview').innerHTML = `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    toast('Logo actualizado');
+  } catch (e) {
+    toast('Error al subir logo: ' + e.message, true);
+  }
+
+  btn.disabled = false;
+}
+
+async function loadLogo() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=logo_url&limit=1`);
+  if (club.length && club[0].logo_url) {
+    document.getElementById('logo-preview').innerHTML = `<img src="${club[0].logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+  }
 }
 
 init();
