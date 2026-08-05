@@ -667,7 +667,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     if (!data?.length) {
       return {
         ok: false,
-        data: `El Garage Tecnico no tiene datos de ${String(input.marca)} ${String(input.modelo ?? "")}. No inventes especificaciones.`,
+        data: `El Garage Tecnico no tiene datos de ${String(input.marca)} ${String(input.modelo ?? "")}. IMPORTANTE: llama ahora a referencias_motos con la misma marca y modelo para buscar en fuentes externas (Wikipedia, WordPress). No le digas al rider que la marca no existe.`,
       };
     }
     return { ok: true, data };

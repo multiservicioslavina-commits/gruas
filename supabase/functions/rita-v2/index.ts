@@ -50,7 +50,7 @@ async function saveMessage(phone: string, role: "user" | "assistant", content: s
 }
 
 // ─── Registro guiado ────────────────────────────────────────────
-const MARCAS = ["bmw","honda","yamaha","ktm","triumph","ducati","suzuki","kawasaki","aprilia","harley","royal enfield","bajaj","tvs","hero","benelli","cfmoto","zongshen"];
+const MARCAS = ["bmw","honda","yamaha","ktm","triumph","ducati","suzuki","kawasaki","aprilia","harley","royal enfield","bajaj","tvs","hero","benelli","cfmoto","zongshen","voge","loncin","kymco","sym","akt","auteco","pulsar","italika","keeway","qingqi","shineray","haojue","lifan","corven"];
 
 async function getConvState(phone: string): Promise<{ state: string; data: Record<string, string> }> {
   const { data } = await supabase
