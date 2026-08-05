@@ -498,19 +498,19 @@ function renderMessages() {
     } else if (m.es_rita) {
       html += `<div class="msg msg-rita">
         <div class="msg-sender">🤖 Rita</div>
-        ${m.contenido}
+        ${formatMessage(m.contenido)}
         <div class="msg-time">${time}</div>
       </div>`;
     } else if (isMine) {
       html += `<div class="msg msg-mine">
-        ${m.contenido}
+        ${formatMessage(m.contenido)}
         <div class="msg-time">${time}</div>
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
       html += `<div class="msg msg-other">
         <div class="msg-sender">${sender}</div>
-        ${m.contenido}
+        ${formatMessage(m.contenido)}
         <div class="msg-time">${time}</div>
       </div>`;
     }
@@ -518,6 +518,14 @@ function renderMessages() {
 
   container.innerHTML = html;
   scrollToBottom();
+}
+
+function formatMessage(text) {
+  // Convert URLs to clickable links
+  return text.replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank" style="color: var(--blue); text-decoration: underline;">$1</a>'
+  );
 }
 
 function scrollToBottom() {
@@ -599,10 +607,46 @@ async function toggleCards() {
   }
 }
 
-function sendFile(event) {
+async function sendFile(event) {
   const file = event.target.files[0];
   if (!file) return;
-  alert(`Archivo: ${file.name} (${(file.size/1024).toFixed(1)} KB)\n\nFunción en desarrollo. Pronto podrás compartir archivos.`);
+
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    alert('Archivo muy grande. Máximo 10MB');
+    return;
+  }
+
+  try {
+    const filename = `${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, '_')}`;
+    const path = `${state.club.id}/${state.currentRoom.id}/${filename}`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(
+      `${SB_URL}/storage/v1/object/connect-files/${path}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SB_KEY}`,
+          'apikey': SB_KEY
+        },
+        body: file
+      }
+    );
+
+    if (!res.ok) throw new Error('Upload failed');
+
+    const fileUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+    const msg = `📎 ${file.name} (${(file.size/1024).toFixed(0)} KB)\n${fileUrl}`;
+
+    document.getElementById('msg-input').value = msg;
+    document.getElementById('msg-input').focus();
+  } catch (e) {
+    alert('Error al subir archivo: ' + e.message);
+  }
+
   document.getElementById('file-input').value = '';
 }
 
