@@ -274,6 +274,37 @@
     cursor: pointer; padding: 4px; line-height: 1;
   }
   .rita-header-btn:hover { color: var(--text); }
+
+  /* ── Upload Modal ── */
+  .upload-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .upload-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .upload-modal {
+    position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+    background: var(--surface); z-index: 101;
+    display: flex; flex-direction: column; border-radius: 24px 24px 0 0;
+    animation: slideUp .3s ease; padding: 20px;
+  }
+  .upload-modal-header { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .upload-options {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;
+  }
+  .upload-option {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 20px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; transition: border-color .2s;
+  }
+  .upload-option:hover { border-color: var(--accent); }
+  .upload-option-icon { font-size: 32px; }
+  .upload-option-label { font-size: 13px; font-weight: 500; text-align: center; }
+  .upload-modal-close {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: border-color .2s;
+  }
+  .upload-modal-close:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -313,8 +344,7 @@
   <div class="cards-panel" id="cards-panel"></div>
 
   <div class="input-bar">
-    <button class="send-btn" id="file-btn" onclick="document.getElementById('file-input').click()" title="Archivo" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
-    <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+    <button class="send-btn" id="file-btn" onclick="openUploadModal()" title="Agregar contenido" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
     <button class="send-btn" id="voice-btn" onclick="toggleVoiceRecording()" title="Voz" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">🎤</button>
     <textarea id="msg-input" rows="1" placeholder="Escribe un mensaje..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
@@ -333,6 +363,31 @@
     <button class="drawer-logout" onclick="logout()">Cerrar sesión</button>
   </div>
 </div>
+
+<!-- UPLOAD MODAL -->
+<div class="upload-modal-overlay" id="upload-modal-overlay" onclick="closeUploadModal()"></div>
+<div class="upload-modal" id="upload-modal">
+  <div class="upload-modal-header">Agregar contenido</div>
+  <div class="upload-options">
+    <div class="upload-option" onclick="openCamera()">
+      <div class="upload-option-icon">📷</div>
+      <div class="upload-option-label">Cámara</div>
+    </div>
+    <div class="upload-option" onclick="openPhotos()">
+      <div class="upload-option-icon">🖼️</div>
+      <div class="upload-option-label">Fotos</div>
+    </div>
+    <div class="upload-option" onclick="openFiles()">
+      <div class="upload-option-icon">📁</div>
+      <div class="upload-option-label">Archivo</div>
+    </div>
+  </div>
+  <button class="upload-modal-close" onclick="closeUploadModal()">Cancelar</button>
+</div>
+
+<input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
+<input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
+<input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
 
 <!-- RITA MODAL -->
 <div class="rita-modal-overlay" id="rita-modal-overlay" onclick="closeRitaModal()"></div>
@@ -903,6 +958,32 @@ function handleRitaKey(e) {
     e.preventDefault();
     sendRitaQuestion();
   }
+}
+
+// Upload modal
+function openUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.add('open');
+  document.getElementById('upload-modal').classList.add('open');
+}
+
+function closeUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.remove('open');
+  document.getElementById('upload-modal').classList.remove('open');
+}
+
+function openCamera() {
+  document.getElementById('camera-input').click();
+  closeUploadModal();
+}
+
+function openPhotos() {
+  document.getElementById('photo-input').click();
+  closeUploadModal();
+}
+
+function openFiles() {
+  document.getElementById('file-input').click();
+  closeUploadModal();
 }
 
 // Phone input formatting
