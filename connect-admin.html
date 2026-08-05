@@ -181,6 +181,15 @@
   <!-- TAB: Agregar miembros -->
   <div id="tab-add">
     <div class="card">
+      <h2>Compartir link de invitación</h2>
+      <p>Comparte este link con los miembros para que se registren directamente</p>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
+        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
+      </div>
+    </div>
+
+    <div class="card">
       <h2>Agregar miembros al club</h2>
       <p>Pega la lista de miembros, un miembro por línea. Formato: <strong>Nombre, Teléfono</strong></p>
       <textarea id="members-input" placeholder="Juan Pérez, 3101234567
@@ -236,6 +245,7 @@ const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
 
 let clubId = null;
+let clubCode = null;
 let parsedMembers = [];
 let allMembers = [];
 
@@ -269,7 +279,9 @@ async function init() {
     return;
   }
   clubId = clubs[0].id;
+  clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
+  document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
   await Promise.all([loadStats(), loadMembers(), loadRooms()]);
 }
 
@@ -440,6 +452,13 @@ function toast(msg, isError) {
   el.style.background = isError ? 'var(--red)' : 'var(--green)';
   el.classList.add('show');
   setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function copyInviteLink() {
+  const link = document.getElementById('invite-link');
+  link.select();
+  document.execCommand('copy');
+  toast('Link copiado al portapapeles');
 }
 
 init();
