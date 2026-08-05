@@ -366,7 +366,8 @@ function parseMembers() {
 }
 
 function renderPreview() {
-  document.getElementById('preview-section').style.display = '';
+  const section = document.getElementById('preview-section');
+  section.style.display = '';
   document.getElementById('preview-count').textContent = parsedMembers.length;
   document.getElementById('preview-body').innerHTML = parsedMembers.map((m, i) => `
     <tr>
@@ -375,6 +376,8 @@ function renderPreview() {
       <td><button class="remove-btn" onclick="removeFromPreview(${i})">✕</button></td>
     </tr>
   `).join('');
+  toast(`${parsedMembers.length} miembro(s) listos para agregar`);
+  setTimeout(() => section.scrollIntoView({ behavior: 'smooth' }), 100);
 }
 
 function removeFromPreview(i) {
