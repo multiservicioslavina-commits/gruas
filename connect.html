@@ -338,7 +338,6 @@
       <div class="header-room" id="h-room"></div>
     </div>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
-    <button class="rita-header-btn" onclick="openRitaModal()" title="Pregunta a Rita">🤖</button>
   </div>
 
   <div class="messages" id="messages"></div>
@@ -390,18 +389,6 @@
 <input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
 <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
 
-<!-- RITA MODAL -->
-<div class="rita-modal-overlay" id="rita-modal-overlay" onclick="closeRitaModal()"></div>
-<div class="rita-modal" id="rita-modal">
-  <div class="rita-modal-header">
-    <div class="rita-modal-title">🤖 Pregunta a Rita</div>
-  </div>
-  <div class="rita-messages" id="rita-messages"></div>
-  <div class="rita-input-bar">
-    <textarea id="rita-input" placeholder="Escribe tu pregunta..." rows="1" onkeydown="handleRitaKey(event)"></textarea>
-    <button class="rita-btn" id="rita-send-btn" onclick="sendRitaQuestion()">➤</button>
-  </div>
-</div>
 
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
@@ -920,93 +907,6 @@ async function showDirectory() {
   `).join('');
 }
 
-// Rita private chat
-function openRitaModal() {
-  if (!state.member) return;
-  document.getElementById('rita-modal-overlay').classList.add('open');
-  document.getElementById('rita-modal').classList.add('open');
-  document.getElementById('rita-input').focus();
-  setTimeout(() => loadRitaMessages().catch(e => console.error('Error loading messages:', e)), 100);
-}
-
-function closeRitaModal() {
-  document.getElementById('rita-modal-overlay').classList.remove('open');
-  document.getElementById('rita-modal').classList.remove('open');
-  document.getElementById('rita-input').value = '';
-}
-
-async function loadRitaMessages() {
-  try {
-    const msgs = await sb(`connect_rita_dms?member_id=eq.${state.member.id}&select=*&order=created_at.asc`);
-    if (Array.isArray(msgs)) {
-      renderRitaMessages(msgs);
-    }
-  } catch (e) {
-    console.error('Error loading Rita messages:', e);
-  }
-}
-
-function renderRitaMessages(msgs) {
-  const container = document.getElementById('rita-messages');
-  container.innerHTML = msgs.map(m => {
-    const time = new Date(m.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
-    if (m.sender === 'user') {
-      return `<div class="rita-msg rita-msg-user">${m.content}<br><small style="opacity:.7;">${time}</small></div>`;
-    } else {
-      return `<div class="rita-msg rita-msg-response"><strong>Rita:</strong> ${m.content}<br><small style="opacity:.7;">${time}</small></div>`;
-    }
-  }).join('');
-}
-
-function scrollRitaToBottom() {
-  const container = document.getElementById('rita-messages');
-  setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
-}
-
-async function sendRitaQuestion() {
-  const input = document.getElementById('rita-input');
-  const text = input.value.trim();
-  if (!text || !state.member) return;
-
-  input.disabled = true;
-  document.getElementById('rita-send-btn').disabled = true;
-
-  try {
-    await sb('connect_rita_dms', {
-      method: 'POST',
-      body: {
-        member_id: state.member.id,
-        club_id: state.club.id,
-        sender: 'user',
-        content: text
-      }
-    });
-    input.value = '';
-    loadRitaMessages().catch(e => console.error('Error reloading:', e));
-  } catch (e) {
-    console.error('Error sending question:', e);
-    alert('Error al enviar pregunta: ' + e.message);
-  }
-
-  input.disabled = false;
-  document.getElementById('rita-send-btn').disabled = false;
-}
-
-function handleRitaKey(e) {
-  if (e.key === 'Enter' && !e.shiftKey) {
-    e.preventDefault();
-    sendRitaQuestion();
-  }
-  if (e.key === 'Escape') {
-    closeRitaModal();
-  }
-}
-
-document.addEventListener('keydown', e => {
-  if (e.key === 'Escape' && document.getElementById('rita-modal-overlay').classList.contains('open')) {
-    closeRitaModal();
-  }
-});
 
 // Upload modal
 function openUploadModal() {
