@@ -221,6 +221,91 @@
   .dir-card-members { font-size: 13px; color: var(--text2); }
   .dir-card-arrow { color: var(--text2); font-size: 20px; }
   .dir-empty { color: var(--text2); font-size: 14px; text-align: center; margin-top: 24px; }
+
+  /* ── Rita Modal ── */
+  .rita-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .rita-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .rita-modal {
+    position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+    height: 70vh; background: var(--surface); z-index: 101;
+    display: flex; flex-direction: column; border-radius: 24px 24px 0 0;
+    animation: slideUp .3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .rita-modal-header {
+    padding: 16px 20px; border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .rita-modal-title { font-size: 18px; font-weight: 700; }
+  .rita-modal-close {
+    background: none; border: none; color: var(--text2); font-size: 24px;
+    cursor: pointer; padding: 0; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .rita-modal-close:hover { color: var(--text); }
+  .rita-messages {
+    flex: 1; overflow-y: auto; padding: 12px 16px; display: flex;
+    flex-direction: column; gap: 8px;
+  }
+  .rita-input-bar {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    display: flex; gap: 8px; align-items: flex-end;
+  }
+  .rita-input-bar textarea {
+    flex: 1; padding: 10px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    font-family: inherit; resize: none; max-height: 80px; line-height: 1.4; outline: none;
+  }
+  .rita-input-bar textarea:focus { border-color: var(--accent); }
+  .rita-msg { padding: 10px 14px; border-radius: 16px; font-size: 13px; line-height: 1.45; max-width: 80%; }
+  .rita-msg-user { align-self: flex-end; background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+  .rita-msg-response { align-self: flex-start; background: var(--surface2); border-bottom-left-radius: 4px; }
+  .rita-btn {
+    width: 36px; height: 36px; border-radius: 50%; border: none;
+    background: var(--accent); color: #fff; font-size: 16px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .rita-btn:hover { background: var(--accent2); }
+  .rita-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .rita-header-btn {
+    background: none; border: none; color: var(--text2); font-size: 20px;
+    cursor: pointer; padding: 4px; line-height: 1;
+  }
+  .rita-header-btn:hover { color: var(--text); }
+
+  /* ── Upload Modal ── */
+  .upload-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .upload-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .upload-modal {
+    position: fixed; bottom: 0; left: 0; right: 0; width: 100%; max-width: 100%;
+    background: var(--surface); z-index: 101;
+    display: flex; flex-direction: column; border-radius: 24px 24px 0 0;
+    animation: slideUp .3s ease; padding: 20px;
+  }
+  .upload-modal-header { font-size: 18px; font-weight: 700; margin-bottom: 20px; }
+  .upload-options {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px;
+  }
+  .upload-option {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 12px; padding: 20px; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 12px; cursor: pointer; transition: border-color .2s;
+  }
+  .upload-option:hover { border-color: var(--accent); }
+  .upload-option-icon { font-size: 32px; }
+  .upload-option-label { font-size: 13px; font-weight: 500; text-align: center; }
+  .upload-modal-close {
+    width: 100%; padding: 12px; border-radius: 8px; border: 1px solid var(--border);
+    background: transparent; color: var(--text); font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: border-color .2s;
+  }
+  .upload-modal-close:hover { border-color: var(--accent); color: var(--accent); }
 </style>
 </head>
 <body>
@@ -253,14 +338,14 @@
       <div class="header-room" id="h-room"></div>
     </div>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
+    <button class="rita-header-btn" onclick="openRitaModal()" title="Pregunta a Rita">🤖</button>
   </div>
 
   <div class="messages" id="messages"></div>
   <div class="cards-panel" id="cards-panel"></div>
 
   <div class="input-bar">
-    <button class="send-btn" id="file-btn" onclick="document.getElementById('file-input').click()" title="Archivo" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
-    <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+    <button class="send-btn" id="file-btn" onclick="openUploadModal()" title="Agregar contenido" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
     <button class="send-btn" id="voice-btn" onclick="toggleVoiceRecording()" title="Voz" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">🎤</button>
     <textarea id="msg-input" rows="1" placeholder="Escribe un mensaje..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
     <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
@@ -280,6 +365,45 @@
   </div>
 </div>
 
+<!-- UPLOAD MODAL -->
+<div class="upload-modal-overlay" id="upload-modal-overlay" onclick="closeUploadModal()"></div>
+<div class="upload-modal" id="upload-modal">
+  <div class="upload-modal-header">Agregar contenido</div>
+  <div class="upload-options">
+    <div class="upload-option" onclick="openCamera()">
+      <div class="upload-option-icon">📷</div>
+      <div class="upload-option-label">Cámara</div>
+    </div>
+    <div class="upload-option" onclick="openPhotos()">
+      <div class="upload-option-icon">🖼️</div>
+      <div class="upload-option-label">Fotos</div>
+    </div>
+    <div class="upload-option" onclick="openFiles()">
+      <div class="upload-option-icon">📁</div>
+      <div class="upload-option-label">Archivo</div>
+    </div>
+  </div>
+  <button class="upload-modal-close" onclick="closeUploadModal()">Cancelar</button>
+</div>
+
+<input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
+<input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
+<input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+
+<!-- RITA MODAL -->
+<div class="rita-modal-overlay" id="rita-modal-overlay" onclick="closeRitaModal()"></div>
+<div class="rita-modal" id="rita-modal">
+  <div class="rita-modal-header">
+    <div class="rita-modal-title">🤖 Pregunta a Rita</div>
+    <button class="rita-modal-close" onclick="closeRitaModal()">✕</button>
+  </div>
+  <div class="rita-messages" id="rita-messages"></div>
+  <div class="rita-input-bar">
+    <textarea id="rita-input" placeholder="Escribe tu pregunta..." rows="1" onkeydown="handleRitaKey(event)"></textarea>
+    <button class="rita-btn" id="rita-send-btn" onclick="sendRitaQuestion()">➤</button>
+  </div>
+</div>
+
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
@@ -293,6 +417,10 @@ let state = {
   realtimeChannel: null,
   showingCards: false
 };
+
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
@@ -702,9 +830,53 @@ async function toggleVoiceRecording() {
 
       mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/wav' });
-        const msg = `🎙️ Nota de voz (${(blob.size/1024).toFixed(0)} KB)`;
-        document.getElementById('msg-input').value = msg;
+        const blob = new Blob(audioChunks, { type: 'audio/mp4' });
+        const duration = mediaRecorder.stream.getTracks()[0]?.getCapabilities ? '?' : '0:00';
+
+        // Enviar el audio como un mensaje de voz
+        const formData = new FormData();
+        formData.append('file', blob, `voice-${Date.now()}.mp4`);
+
+        const voiceBtn = document.getElementById('voice-btn');
+        voiceBtn.disabled = true;
+
+        try {
+          // Subir audio a Supabase Storage
+          const filename = `voice-${state.member.id}-${Date.now()}.mp4`;
+          const path = `voices/${filename}`;
+
+          const uploadRes = await fetch(`${SB_URL}/storage/v1/object/connect-files/${path}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SB_KEY}`,
+              'apikey': SB_KEY
+            },
+            body: blob
+          });
+
+          if (uploadRes.ok) {
+            const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+            const msg = `🎙️ [Nota de voz](${voiceUrl})`;
+
+            // Enviar como mensaje
+            await sb('connect_messages', {
+              method: 'POST',
+              body: {
+                room_id: state.currentRoom,
+                member_id: state.member.id,
+                content: msg
+              }
+            });
+
+            document.getElementById('msg-input').value = '';
+            await subscribeToRoom(state.currentRoom);
+            scrollToBottom();
+          }
+        } catch (e) {
+          console.error('Error subiendo voz:', e);
+        }
+
+        voiceBtn.disabled = false;
         stream.getTracks().forEach(t => t.stop());
       };
 
@@ -751,6 +923,106 @@ async function showDirectory() {
       <div class="dir-card-arrow">›</div>
     </a>
   `).join('');
+}
+
+// Rita private chat
+async function openRitaModal() {
+  if (!state.member) return;
+  document.getElementById('rita-modal-overlay').classList.add('open');
+  document.getElementById('rita-modal').classList.add('open');
+  await loadRitaMessages();
+  scrollRitaToBottom();
+}
+
+function closeRitaModal() {
+  document.getElementById('rita-modal-overlay').classList.remove('open');
+  document.getElementById('rita-modal').classList.remove('open');
+  document.getElementById('rita-input').value = '';
+}
+
+async function loadRitaMessages() {
+  const msgs = await sb(`connect_rita_dms?member_id=eq.${state.member.id}&select=*&order=created_at.asc`);
+  if (!Array.isArray(msgs)) return;
+  renderRitaMessages(msgs);
+}
+
+function renderRitaMessages(msgs) {
+  const container = document.getElementById('rita-messages');
+  container.innerHTML = msgs.map(m => {
+    const time = new Date(m.created_at).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    if (m.sender === 'user') {
+      return `<div class="rita-msg rita-msg-user">${m.content}<br><small style="opacity:.7;">${time}</small></div>`;
+    } else {
+      return `<div class="rita-msg rita-msg-response"><strong>Rita:</strong> ${m.content}<br><small style="opacity:.7;">${time}</small></div>`;
+    }
+  }).join('');
+}
+
+function scrollRitaToBottom() {
+  const container = document.getElementById('rita-messages');
+  setTimeout(() => { container.scrollTop = container.scrollHeight; }, 50);
+}
+
+async function sendRitaQuestion() {
+  const input = document.getElementById('rita-input');
+  const text = input.value.trim();
+  if (!text || !state.member) return;
+
+  input.disabled = true;
+  document.getElementById('rita-send-btn').disabled = true;
+
+  try {
+    await sb('connect_rita_dms', {
+      method: 'POST',
+      body: {
+        member_id: state.member.id,
+        club_id: state.club.id,
+        sender: 'user',
+        content: text
+      }
+    });
+    input.value = '';
+    await loadRitaMessages();
+    scrollRitaToBottom();
+  } catch (e) {
+    console.error('Error:', e);
+  }
+
+  input.disabled = false;
+  document.getElementById('rita-send-btn').disabled = false;
+}
+
+function handleRitaKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendRitaQuestion();
+  }
+}
+
+// Upload modal
+function openUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.add('open');
+  document.getElementById('upload-modal').classList.add('open');
+}
+
+function closeUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.remove('open');
+  document.getElementById('upload-modal').classList.remove('open');
+}
+
+function openCamera() {
+  document.getElementById('camera-input').click();
+  closeUploadModal();
+}
+
+function openPhotos() {
+  document.getElementById('photo-input').click();
+  closeUploadModal();
+}
+
+function openFiles() {
+  document.getElementById('file-input').click();
+  closeUploadModal();
 }
 
 // Phone input formatting
