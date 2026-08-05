@@ -713,6 +713,29 @@ async function sendMessage() {
   renderMessages();
 
   await sb('connect_messages', { method: 'POST', body: msg });
+
+  // Si es la sala de Rita, generar respuesta automática
+  if (state.currentRoom.slug === 'rita') {
+    try {
+      const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/rita-respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY },
+        body: JSON.stringify({ record: { content: text, member_id: state.member.id, club_id: state.club.id, sender: 'user' } })
+      });
+      const data = await res.json();
+      if (data.answer) {
+        await sb('connect_messages', { method: 'POST', body: {
+          room_id: state.currentRoom.id,
+          member_id: state.member.id,
+          contenido: data.answer,
+          tipo: 'text',
+          es_rita: true
+        }});
+      }
+    } catch (e) {
+      console.error('Rita error:', e);
+    }
+  }
 }
 
 function handleKey(e) {
