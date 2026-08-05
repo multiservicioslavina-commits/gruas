@@ -575,6 +575,34 @@ export const TOOL_SCHEMAS = [
       required: ["marca"],
     },
   },
+  {
+    name: "consultar_clubes_moteros",
+    description:
+      "Busca clubes y grupos moteros de Antioquia por ciudad, nombre o tipo. Devuelve contacto, redes sociales, descripción. Usala cuando el usuario pregunte por clubs, rodadas, grupos, comunidades moteras.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ciudad: { type: "string", description: "Ciudad del club. Ej: Medellin, Bogota, Armenia. Opcional." },
+        nombre: { type: "string", description: "Nombre del club. Opcional." },
+        tipo: { type: "string", enum: ["recreativo", "competencia", "caridad", "touring", "custom"], description: "Tipo de club. Opcional." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "programar_recordatorio_avanzado",
+    description:
+      "Crea recordatorios con fecha/hora específicas. Intenta usar Google Calendar si hay token, sino guarda localmente y Rita envia alerta por WhatsApp. Usala cuando el usuario pida: 'recordame...', 'ponme una alarma...', 'agendar...'",
+    input_schema: {
+      type: "object",
+      properties: {
+        asunto: { type: "string", description: "Qué recordar. Ej: 'Cambio de aceite', 'Viaje a Medellín'" },
+        fecha_hora: { type: "string", description: "Fecha y hora en formato ISO 8601. Ej: '2026-08-10T14:30:00-05:00'" },
+        descripcion: { type: "string", description: "Detalles adicionales. Opcional." },
+      },
+      required: ["asunto", "fecha_hora"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -1398,6 +1426,62 @@ CONTACTO: Abogado especializado en responsabilidad civil`
       ok: false,
       data: `No encuentro referencias de motos con marca="${marca}" modelo="${modelo}". Intenta con el nombre exacto de la marca o modelo.`
     };
+  },
+
+  async consultar_clubes_moteros(input) {
+    let query = supabase.from("clubes_moteros_antioquia").select("nombre, ciudad, tipo, telefono, whatsapp, facebook, instagram, sitio_web, descripcion, ubicacion").eq("activo", true);
+
+    if (input.ciudad) {
+      query = query.like("ciudad_norm", `%${norm(String(input.ciudad))}%`);
+    }
+    if (input.nombre) {
+      query = query.like("nombre", `%${String(input.nombre)}%`);
+    }
+    if (input.tipo) {
+      query = query.eq("tipo", String(input.tipo));
+    }
+
+    const { data } = await query.limit(10);
+    if (!data?.length) {
+      return {
+        ok: false,
+        data: input.ciudad
+          ? `No encontre clubes moteros en ${String(input.ciudad)}.`
+          : "No hay clubes moteros registrados aun."
+      };
+    }
+    return { ok: true, data };
+  },
+
+  async programar_recordatorio_avanzado(input, phone) {
+    const asunto = String(input.asunto ?? "");
+    const fechaHora = String(input.fecha_hora ?? "");
+    const descripcion = String(input.descripcion ?? "");
+
+    // Validar formato ISO 8601
+    let fecha: Date;
+    try {
+      fecha = new Date(fechaHora);
+      if (isNaN(fecha.getTime())) throw new Error();
+    } catch {
+      return { ok: false, data: "La fecha debe estar en formato ISO 8601. Ej: '2026-08-10T14:30:00-05:00'" };
+    }
+
+    // Guardar en Supabase como recordatorio local
+    const { error } = await supabase.from("recordatorios_programados").insert({
+      telefono: phone,
+      asunto: asunto,
+      descripcion: descripcion,
+      fecha_hora: fecha.toISOString(),
+      tipo: "local",
+      recordatorio_minutos: 30,
+      enviado: false,
+    });
+
+    if (error) return { ok: false, data: `No se pudo guardar el recordatorio: ${error.message}` };
+
+    const fechaFormato = fecha.toLocaleDateString("es-CO") + " a las " + fecha.toLocaleTimeString("es-CO");
+    return { ok: true, data: `✓ Recordatorio programado para ${fechaFormato}: "${asunto}"` };
   },
 };
 
