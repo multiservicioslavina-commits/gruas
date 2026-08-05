@@ -817,10 +817,6 @@ async function sendFile(event) {
   document.getElementById('file-input').value = '';
 }
 
-let isRecording = false;
-let mediaRecorder;
-let audioChunks = [];
-
 async function toggleVoiceRecording() {
   if (!isRecording) {
     try {
