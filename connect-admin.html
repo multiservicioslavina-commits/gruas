@@ -148,7 +148,24 @@
   }
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
-  #preview-section, #tab-members, #tab-rooms { display: none; }
+  #preview-section, #tab-members, #tab-rooms, #tab-rita { display: none; }
+
+  .rita-question {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .rita-q-header {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
+  }
+  .rita-q-member { font-weight: 600; font-size: 14px; }
+  .rita-q-time { font-size: 11px; color: var(--text2); }
+  .rita-q-text { font-size: 14px; margin-bottom: 12px; line-height: 1.45; }
+  .rita-q-response { background: var(--surface); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
+  .rita-q-response-label { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .rita-q-response-text { font-size: 13px; }
+  .rita-q-input { width: 100%; min-height: 80px; padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; resize: vertical; }
+  .rita-q-input:focus { outline: none; border-color: var(--accent); }
+  .rita-q-actions { display: flex; gap: 8px; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -176,6 +193,7 @@
     <div class="tab active" onclick="switchTab('add')">Agregar miembros</div>
     <div class="tab" onclick="switchTab('members')">Miembros</div>
     <div class="tab" onclick="switchTab('rooms')">Salas</div>
+    <div class="tab" onclick="switchTab('rita')">Preguntas a Rita</div>
   </div>
 
   <!-- TAB: Agregar miembros -->
@@ -247,6 +265,17 @@ Pedro Gómez - 3176543210"></textarea>
   <div id="tab-rooms">
     <div class="rooms-grid" id="rooms-grid"></div>
   </div>
+
+  <!-- TAB: Preguntas a Rita -->
+  <div id="tab-rita">
+    <div class="card" id="rita-card">
+      <div class="empty" id="rita-empty">
+        <div class="icon">🤖</div>
+        <p>No hay preguntas sin responder</p>
+      </div>
+      <div id="rita-questions"></div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -293,7 +322,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo()]);
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
 }
 
 async function loadStats() {
@@ -450,11 +479,13 @@ async function removeMember(id) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['add', 'members', 'rooms'][i] === tab);
+    t.classList.toggle('active', ['add', 'members', 'rooms', 'rita'][i] === tab);
   });
   document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
   document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
   document.getElementById('tab-rooms').style.display = tab === 'rooms' ? '' : 'none';
+  document.getElementById('tab-rita').style.display = tab === 'rita' ? '' : 'none';
+  if (tab === 'rita') loadRitaQuestions();
 }
 
 function toast(msg, isError) {
@@ -523,6 +554,74 @@ async function loadLogo() {
   if (club.length && club[0].logo_url) {
     document.getElementById('logo-preview').innerHTML = `<img src="${club[0].logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
   }
+}
+
+async function loadRitaQuestions() {
+  const questions = await sb(`connect_rita_dms?club_id=eq.${clubId}&sender=eq.user&select=*,connect_members(nombre,telefono)&order=created_at.desc`);
+  renderRitaQuestions(questions || []);
+}
+
+function renderRitaQuestions(questions) {
+  const container = document.getElementById('rita-questions');
+  const empty = document.getElementById('rita-empty');
+
+  if (!questions.length) {
+    container.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.innerHTML = questions.map(q => {
+    const time = new Date(q.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const memberName = q.connect_members ? q.connect_members.nombre : 'Usuario';
+    const hasResponse = questions.some(m => m.member_id === q.member_id && m.sender === 'rita' && m.id !== q.id);
+
+    return `<div class="rita-question">
+      <div class="rita-q-header">
+        <div>
+          <div class="rita-q-member">${memberName}</div>
+          <div class="rita-q-time">${time}</div>
+        </div>
+      </div>
+      <div class="rita-q-text">${q.content}</div>
+      ${hasResponse ? `<div class="rita-q-response">
+        <div class="rita-q-response-label">Respuesta enviada</div>
+        <div class="rita-q-response-text">✓ Ya respondida</div>
+      </div>` : `<div>
+        <textarea class="rita-q-input" id="resp-${q.id}" placeholder="Escribe la respuesta de Rita..."></textarea>
+        <div class="rita-q-actions">
+          <button class="btn btn-primary" onclick="sendRitaResponse('${q.id}', '${q.member_id}')">Enviar respuesta</button>
+        </div>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+async function sendRitaResponse(questionId, memberId) {
+  const textarea = document.getElementById(`resp-${questionId}`);
+  const response = textarea.value.trim();
+  if (!response) return;
+
+  textarea.disabled = true;
+
+  try {
+    await sb('connect_rita_dms', {
+      method: 'POST',
+      body: {
+        member_id: memberId,
+        club_id: clubId,
+        sender: 'rita',
+        content: response
+      }
+    });
+    toast('Respuesta enviada');
+    await loadRitaQuestions();
+  } catch (e) {
+    toast('Error al enviar: ' + e.message, true);
+  }
+
+  textarea.disabled = false;
 }
 
 init();
