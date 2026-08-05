@@ -362,6 +362,10 @@ let state = {
   showingCards: false
 };
 
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
 async function sb(path, opts = {}) {
   const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
     headers: {
@@ -732,9 +736,53 @@ async function toggleVoiceRecording() {
 
       mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/wav' });
-        const msg = `🎙️ Nota de voz (${(blob.size/1024).toFixed(0)} KB)`;
-        document.getElementById('msg-input').value = msg;
+        const blob = new Blob(audioChunks, { type: 'audio/mp4' });
+        const duration = mediaRecorder.stream.getTracks()[0]?.getCapabilities ? '?' : '0:00';
+
+        // Enviar el audio como un mensaje de voz
+        const formData = new FormData();
+        formData.append('file', blob, `voice-${Date.now()}.mp4`);
+
+        const voiceBtn = document.getElementById('voice-btn');
+        voiceBtn.disabled = true;
+
+        try {
+          // Subir audio a Supabase Storage
+          const filename = `voice-${state.member.id}-${Date.now()}.mp4`;
+          const path = `voices/${filename}`;
+
+          const uploadRes = await fetch(`${SB_URL}/storage/v1/object/connect-files/${path}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SB_KEY}`,
+              'apikey': SB_KEY
+            },
+            body: blob
+          });
+
+          if (uploadRes.ok) {
+            const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+            const msg = `🎙️ [Nota de voz](${voiceUrl})`;
+
+            // Enviar como mensaje
+            await sb('connect_messages', {
+              method: 'POST',
+              body: {
+                room_id: state.currentRoom,
+                member_id: state.member.id,
+                content: msg
+              }
+            });
+
+            document.getElementById('msg-input').value = '';
+            await subscribeToRoom(state.currentRoom);
+            scrollToBottom();
+          }
+        } catch (e) {
+          console.error('Error subiendo voz:', e);
+        }
+
+        voiceBtn.disabled = false;
         stream.getTracks().forEach(t => t.stop());
       };
 
