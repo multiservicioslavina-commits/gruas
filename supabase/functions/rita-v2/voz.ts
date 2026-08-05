@@ -86,7 +86,7 @@ export async function sintetizar(texto: string): Promise<Uint8Array> {
         body: JSON.stringify({
           text: texto,
           model_id: "eleven_multilingual_v2",
-          voice_settings: { stability: 0.5, similarity_boost: 0.75 },
+          voice_settings: { stability: 0.30, similarity_boost: 0.60, style: 0.45, use_speaker_boost: true },
         }),
       },
     );

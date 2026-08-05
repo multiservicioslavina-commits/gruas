@@ -226,12 +226,19 @@ Fuente: Area Metropolitana del Valle de Aburra / medellin.gov.co`;
 // ─── System prompt ──────────────────────────────────────────────
 function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolean }, conVoz = false): string {
   const bloqueEstilo = conVoz
-    ? `COMO HABLAS (MODO VOZ - esta conversacion es por audio, tu respuesta se convierte a voz):
-- Esta es la regla mas importante de este mensaje: NUNCA uses asteriscos, guiones, vinetas, encabezados ni URLs en tu respuesta. Nada de eso se puede escuchar, y si lo escribes se lee literal ("asterisco", "guion") sonando fatal.
-- Escribe como si estuvieras charlando de frente con el parcero, en frases cortas y corridas, una idea detras de otra.
-- Si hay un link que le sirve (ruta, tramite), no lo escribas: dile que te lo manda tambien por escrito y nombra solo el sitio (ej. "te lo mando por ridera.com.co"), nunca la direccion completa.
-- Maximo 3 a 4 frases. Hablando toma mas tiempo que leyendo.
-- Los numeros dilos como se dirian hablando (ej. "ciento treinta y ocho kilometros", no "138 km").`
+    ? `COMO HABLAS (MODO VOZ - tu respuesta se convierte a audio, el rider la ESCUCHA):
+- REGLA #1: NUNCA uses asteriscos, guiones, vinetas, encabezados, URLs ni emojis.
+  Nada de eso se puede escuchar y el sintetizador los lee literal.
+- Habla como si estuvieras de frente con el parcero tomando un tinto.
+  Usa muletillas naturales: "mirá", "oí", "pues", "vos sabés", "ome".
+  Mete pausas con comas y puntos, no frases largas corridas.
+- Responde en 2 a 3 oraciones cortas. Si hay mas info, dile "si querés te cuento mas".
+- Numeros: dilos en palabras ("ciento treinta y ocho kilómetros", no "138 km").
+  Valores de plata: "como quinientos mil pesos", no "$500.000".
+- Links: no los digas. Solo menciona el sitio ("buscalo en ridera punto com punto co").
+- NO repitas la pregunta del rider ni hagas introduccion. Ve al grano.
+- Varía el tono: a veces empieza con "ey", otras con "mirá", otras directo al dato.
+  Nunca suenes como locutor de radio ni como asistente virtual.`
     : `COMO HABLAS:
 - WhatsApp entre amigos moteros. Frases cortas, naturales.
 - "parce", "dale", "pilas", "bacano" cuando fluyan natural.
@@ -505,19 +512,22 @@ async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
   return res.json();
 }
 
-// Limpia el markdown de WhatsApp antes de sintetizar: leido en voz alta,
-// "asterisco asterisco" y URLs completas suenan robotico, no conversacional.
 function textoParaVoz(texto: string): string {
   return texto
     .replace(/\*\*(.+?)\*\*/g, "$1")
     .replace(/\*(.+?)\*/g, "$1")
     .replace(/https?:\/\/\S+/g, "")
     .replace(/[_~`#]/g, "")
+    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, "")
     .replace(/^[-•]\s*/gm, "")
-    .replace(/\n{2,}/g, ". ")
-    .replace(/\n/g, ". ")
+    .replace(/(\d+)\s*km\b/gi, (_m, n) => `${n} kilómetros`)
+    .replace(/(\d+)\s*cc\b/gi, (_m, n) => `${n} centímetros cúbicos`)
+    .replace(/\$\s*([\d.,]+)/g, (_m, n) => `${n} pesos`)
+    .replace(/\n{2,}/g, "... ")
+    .replace(/\n/g, ", ")
     .replace(/\s{2,}/g, " ")
     .replace(/\.\s*\./g, ".")
+    .replace(/,\s*,/g, ",")
     .trim();
 }
 
