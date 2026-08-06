@@ -17,6 +17,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     :root {
       --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
       --or: #E85D20; --text: #f0f0f0; --mu: #888;
+      --sidebar-w: 220px;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -45,9 +46,67 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .btn-sm:hover { border-color: var(--or); color: var(--or); }
     .btn-sm.danger:hover { border-color: #f87171; color: #f87171; }
 
+    /* SIDEBAR LAYOUT */
+    .admin-layout { display: flex; min-height: calc(100vh - 56px); }
+
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: #111; border-right: 1px solid var(--line);
+      position: sticky; top: 56px; height: calc(100vh - 56px);
+      overflow-y: auto; flex-shrink: 0; z-index: 5;
+    }
+
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 1.25rem 1rem 1rem; font-weight: 700; font-size: 0.95rem;
+      border-bottom: 1px solid var(--line); margin-bottom: 0.5rem;
+    }
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px; background: var(--or);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+
+    .sidebar-item {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.6rem 1rem; margin: 0.15rem 0.5rem; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 500; color: var(--mu);
+      cursor: pointer; transition: background 0.12s, color 0.12s;
+      position: relative; user-select: none;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-item.active { background: rgba(232,93,32,0.1); color: var(--or); font-weight: 600; }
+    .sidebar-item .sb-icon { font-size: 1rem; width: 1.2rem; text-align: center; flex-shrink: 0; }
+    .sidebar-item .sb-badge {
+      margin-left: auto; font-size: 0.68rem; font-weight: 700;
+      background: rgba(232,93,32,0.15); color: var(--or);
+      padding: 0.1rem 0.45rem; border-radius: 10px; min-width: 1.3rem;
+      text-align: center;
+    }
+
+    .content-area { flex: 1; min-width: 0; overflow-x: hidden; }
+
     .container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
     .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
     .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    /* Mobile sidebar: horizontal scrollable strip */
+    @media (max-width: 768px) {
+      .admin-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; min-width: 100%; height: auto;
+        position: sticky; top: 56px;
+        display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+        border-right: none; border-bottom: 1px solid var(--line);
+        padding: 0 0.5rem; gap: 0;
+      }
+      .sidebar-brand { display: none; }
+      .sidebar-item {
+        flex-shrink: 0; white-space: nowrap; margin: 0.35rem 0.15rem;
+        padding: 0.45rem 0.75rem; font-size: 0.78rem;
+      }
+      .content-area { width: 100%; }
+    }
 
     /* STATS */
     .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -58,7 +117,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .stat .num.blue { color: #60a5fa; }
     .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
 
-    /* TABS */
+    /* TABS (kept for any inner use, but main tabs replaced by sidebar) */
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
@@ -174,7 +233,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .modal-err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
     .hide { display: none !important; }
 
-    /* ── RITA TAB ─────────────────────────────────────────────── */
+    /* RITA TAB */
     .rita-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
     .rita-sub { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); margin: 1.5rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
     .rita-sub:first-child { margin-top: 0; }
@@ -237,6 +296,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .bc-result { margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; }
     .bc-result.ok { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
     .bc-result.err { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
+
+    /* NEW SECTION: section header */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+    .section-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .section-loading { color: var(--mu); font-size: 0.85rem; text-align: center; padding: 3rem; }
+
+    /* Thumbnail in tables */
+    .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--s2); }
   </style>
 </head>
 <body>
@@ -260,7 +327,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- PANEL -->
 <div id="panel">
   <nav>
-    <span class="nav-brand">Ridera Grúas · Admin</span>
+    <span class="nav-brand">Ridera · Admin</span>
     <div class="nav-right">
       <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
       <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
@@ -268,160 +335,304 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="page-title">Panel de administración</div>
-    <div class="page-sub" id="lastUpdated">Cargando…</div>
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">R</div>
+        <div><span style="color:var(--or)">Ridera</span> ADMIN</div>
+      </div>
+      <div class="sidebar-item" data-tab="despacho" onclick="showTab('despacho')">
+        <span class="sb-icon">📡</span> Despacho
+      </div>
+      <div class="sidebar-item" data-tab="sellos" onclick="showTab('sellos')">
+        <span class="sb-icon">🏷️</span> Sellos <span class="sb-badge" id="badgeSellos" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item active" data-tab="grueros" onclick="showTab('grueros')">
+        <span class="sb-icon">🔧</span> Grueros <span class="sb-badge" id="badgeGrueros" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="riders" onclick="showTab('riders')">
+        <span class="sb-icon">🏍️</span> Riders <span class="sb-badge" id="badgeRiders" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="clubs" onclick="showTab('clubs')">
+        <span class="sb-icon">🏁</span> Clubs <span class="sb-badge" id="badgeClubs" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="motos" onclick="showTab('motos')">
+        <span class="sb-icon">⚙️</span> Motos <span class="sb-badge" id="badgeMotos" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="talleres" onclick="showTab('talleres')">
+        <span class="sb-icon">🔩</span> Talleres <span class="sb-badge" id="badgeTalleres" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="almacenes" onclick="showTab('almacenes')">
+        <span class="sb-icon">🛒</span> Almacenes <span class="sb-badge" id="badgeAlmacenes" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
+        <span class="sb-icon">💬</span> Rita
+      </div>
+    </aside>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('grueros',this)">Grueros</button>
-      <button class="tab-btn" onclick="showTab('solicitudes',this)">Solicitudes</button>
-      <button class="tab-btn" onclick="showTab('rita',this)">Rita</button>
-    </div>
+    <!-- CONTENT -->
+    <main class="content-area">
+      <div class="container">
+        <div class="page-title">Panel de administración</div>
+        <div class="page-sub" id="lastUpdated">Cargando...</div>
 
-    <!-- GRUEROS TAB -->
-    <div id="tabGrueros">
-    <div class="stats" id="statsRow"></div>
+        <!-- DESPACHO (was Solicitudes) -->
+        <div id="tabDespacho" style="display:none">
 
-    <div class="filters">
-      <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
-      <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
-      <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
-      <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
-      <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
-      <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad…" oninput="renderTable()">
-      <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
-    </div>
+          <!-- DESPACHO EN VIVO -->
+          <div class="dispatch-bar">
+            <span class="dispatch-title">📡 Despacho en vivo</span>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
+              <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+            </div>
+          </div>
+          <div id="pendingGrid" class="pending-grid">
+            <div class="dispatch-empty">Cargando solicitudes pendientes...</div>
+          </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre / Email</th>
-            <th>Ciudad</th>
-            <th>Teléfono</th>
-            <th>Aprobado</th>
-            <th>Disponible</th>
-            <th>Registrado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    </div><!-- /tabGrueros -->
+          <div class="sol-stats" id="solStats">
+            <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
+            <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
+            <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
+            <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
+            <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
+            <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
+          </div>
 
-    <!-- SOLICITUDES TAB -->
-    <div id="tabSolicitudes" style="display:none">
+          <div class="sol-grid">
+            <div class="sol-card">
+              <div class="sc-label">Por estado</div>
+              <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+            </div>
+            <div class="sol-card">
+              <div class="sc-label">Top municipios</div>
+              <ul class="muni-list" id="muniList"></ul>
+            </div>
+          </div>
 
-      <!-- DESPACHO EN VIVO -->
-      <div class="dispatch-bar">
-        <span class="dispatch-title">📡 Despacho en vivo</span>
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
-          <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+          <div class="sol-card" style="margin-bottom:1.5rem">
+            <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
+            <div class="recientes-list" id="recientesList"></div>
+          </div>
+
+          <!-- HISTORIAL POR GRUERO -->
+          <div class="gh-bar">
+            <label>Historial por gruero:</label>
+            <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
+              <option value="">— Seleccionar gruero —</option>
+            </select>
+          </div>
+          <div id="grueroHistorial" style="display:none">
+            <div class="gh-section-title">Servicios del gruero</div>
+            <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
+            <div class="table-wrap" id="ghTableWrap"></div>
+          </div>
+
+        </div><!-- /tabDespacho -->
+
+        <!-- SELLOS -->
+        <div id="tabSellos" style="display:none">
+          <div class="section-header">
+            <h2>🏷️ Sellos del Pasaporte</h2>
+          </div>
+          <div class="filters" id="sellosFilters">
+            <button class="filter-btn active" onclick="setSelloFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setSelloFilter('pendiente',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setSelloFilter('aprobado',this)">Aprobados</button>
+            <button class="filter-btn" onclick="setSelloFilter('rechazado',this)">Rechazados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Rider</th><th>Municipio</th><th>Fecha</th><th>Manada</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="sellosBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabSellos -->
+
+        <!-- GRUEROS TAB -->
+        <div id="tabGrueros" style="display:none">
+        <div class="stats" id="statsRow"></div>
+
+        <div class="filters">
+          <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+          <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
+          <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
+          <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
+          <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
+          <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad..." oninput="renderTable()">
+          <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
         </div>
-      </div>
-      <div id="pendingGrid" class="pending-grid">
-        <div class="dispatch-empty">Cargando solicitudes pendientes…</div>
-      </div>
 
-      <div class="sol-stats" id="solStats">
-        <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
-        <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
-        <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
-        <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
-        <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
-        <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
-      </div>
-
-      <div class="sol-grid">
-        <div class="sol-card">
-          <div class="sc-label">Por estado</div>
-          <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre / Email</th>
+                <th>Ciudad</th>
+                <th>Teléfono</th>
+                <th>Aprobado</th>
+                <th>Disponible</th>
+                <th>Registrado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
         </div>
-        <div class="sol-card">
-          <div class="sc-label">Top municipios</div>
-          <ul class="muni-list" id="muniList"></ul>
-        </div>
-      </div>
+        </div><!-- /tabGrueros -->
 
-      <div class="sol-card" style="margin-bottom:1.5rem">
-        <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
-        <div class="recientes-list" id="recientesList"></div>
-      </div>
+        <!-- RIDERS -->
+        <div id="tabRiders" style="display:none">
+          <div class="section-header">
+            <h2>🏍️ Riders</h2>
+            <input class="search-input" id="ridersSearch" type="text" placeholder="Buscar rider..." oninput="filterRidersTable()">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Moto</th><th>Teléfono</th><th>SOAT vence</th><th>Registrado</th>
+              </tr></thead>
+              <tbody id="ridersBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabRiders -->
 
-      <!-- HISTORIAL POR GRUERO -->
-      <div class="gh-bar">
-        <label>Historial por gruero:</label>
-        <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
-          <option value="">— Seleccionar gruero —</option>
-        </select>
-      </div>
-      <div id="grueroHistorial" style="display:none">
-        <div class="gh-section-title">Servicios del gruero</div>
-        <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
-        <div class="table-wrap" id="ghTableWrap"></div>
-      </div>
+        <!-- CLUBS -->
+        <div id="tabClubs" style="display:none">
+          <div class="section-header">
+            <h2>🏁 Clubs</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Código</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="clubsBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabClubs -->
 
-    </div><!-- /tabSolicitudes -->
+        <!-- MOTOS -->
+        <div id="tabMotos" style="display:none">
+          <div class="section-header">
+            <h2>⚙️ Motos en venta</h2>
+          </div>
+          <div class="filters" id="motosFilters">
+            <button class="filter-btn active" onclick="setMotosFilter('all',this)">Todas</button>
+            <button class="filter-btn" onclick="setMotosFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setMotosFilter('aprobadas',this)">Aprobadas</button>
+            <button class="filter-btn" onclick="setMotosFilter('vendidas',this)">Vendidas</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Foto</th><th>Título</th><th>Marca/Modelo</th><th>Precio</th><th>Ciudad</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="motosBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabMotos -->
 
-    <!-- RITA TAB -->
-    <div id="tabRita" style="display:none">
+        <!-- TALLERES -->
+        <div id="tabTalleres" style="display:none">
+          <div class="section-header">
+            <h2>🔩 Talleres</h2>
+          </div>
+          <div class="filters" id="talleresFilters">
+            <button class="filter-btn active" onclick="setTalleresFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setTalleresFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setTalleresFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Teléfono</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="talleresBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabTalleres -->
 
-      <!-- Analytics -->
-      <div class="rita-sub">Resumen</div>
-      <div class="rita-grid" id="ritaStats">
-        <div class="stat"><div class="num" id="rContacts">—</div><div class="lbl">Contactos</div></div>
-        <div class="stat"><div class="num green" id="rOptedIn">—</div><div class="lbl">Suscritos</div></div>
-        <div class="stat"><div class="num" id="rActiveToday">—</div><div class="lbl">Activos hoy</div></div>
-        <div class="stat"><div class="num" id="rMsgsToday">—</div><div class="lbl">Msgs hoy</div></div>
-        <div class="stat"><div class="num blue" id="rMsgsWeek">—</div><div class="lbl">Msgs semana</div></div>
-        <div class="stat"><div class="num" id="rMsgsMonth">—</div><div class="lbl">Msgs mes</div></div>
-      </div>
+        <!-- ALMACENES -->
+        <div id="tabAlmacenes" style="display:none">
+          <div class="section-header">
+            <h2>🛒 Almacenes</h2>
+          </div>
+          <div class="filters" id="almacenesFilters">
+            <button class="filter-btn active" onclick="setAlmacenesFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setAlmacenesFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setAlmacenesFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Teléfono</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="almacenesBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabAlmacenes -->
 
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
-        <div class="sol-card">
-          <div class="sc-label">Intenciones (últimos 30 días)</div>
-          <div class="intent-bars" id="ritaIntents"></div>
-        </div>
-        <div class="sol-card">
-          <div class="sc-label">Mensajes por día (última semana)</div>
-          <div class="day-chart" id="ritaDayChart"></div>
-        </div>
-      </div>
+        <!-- RITA TAB -->
+        <div id="tabRita" style="display:none">
 
-      <!-- Contacts -->
-      <div class="rita-sub">
-        Contactos
-        <button class="btn-export" onclick="exportRitaContacts()" style="margin-left:auto">↓ Exportar CSV</button>
-        <input class="search-input" id="ritaSearchContacts" type="text" placeholder="Buscar nombre o teléfono…" oninput="searchRitaContacts()" style="width:200px">
-      </div>
-      <div class="contact-list" id="ritaContactList"></div>
-      <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:1rem" id="ritaPagination"></div>
+          <!-- Analytics -->
+          <div class="rita-sub">Resumen</div>
+          <div class="rita-grid" id="ritaStats">
+            <div class="stat"><div class="num" id="rContacts">—</div><div class="lbl">Contactos</div></div>
+            <div class="stat"><div class="num green" id="rOptedIn">—</div><div class="lbl">Suscritos</div></div>
+            <div class="stat"><div class="num" id="rActiveToday">—</div><div class="lbl">Activos hoy</div></div>
+            <div class="stat"><div class="num" id="rMsgsToday">—</div><div class="lbl">Msgs hoy</div></div>
+            <div class="stat"><div class="num blue" id="rMsgsWeek">—</div><div class="lbl">Msgs semana</div></div>
+            <div class="stat"><div class="num" id="rMsgsMonth">—</div><div class="lbl">Msgs mes</div></div>
+          </div>
 
-      <!-- Error Reports -->
-      <div class="rita-sub">
-        Errores reportados
-        <select class="search-input" id="errorFilter" onchange="loadErrorReports()" style="margin-left:auto;width:160px;font-size:0.78rem">
-          <option value="">Todos</option>
-          <option value="pendiente_revision" selected>Pendientes</option>
-          <option value="revisado">Revisados</option>
-          <option value="corregido">Corregidos</option>
-        </select>
-      </div>
-      <div id="errorList" class="contact-list" style="margin-bottom:1.5rem"></div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+            <div class="sol-card">
+              <div class="sc-label">Intenciones (últimos 30 días)</div>
+              <div class="intent-bars" id="ritaIntents"></div>
+            </div>
+            <div class="sol-card">
+              <div class="sc-label">Mensajes por día (última semana)</div>
+              <div class="day-chart" id="ritaDayChart"></div>
+            </div>
+          </div>
 
-      <!-- Campañas rápidas -->
-      <div class="rita-sub">Campañas</div>
-      <div class="bc-form" style="margin-bottom:1.5rem">
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campStats">
-          <div class="sol-card"><div class="sc-label">Sin nombre</div><div class="sc-val" id="campSinNombre">—</div></div>
-          <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campTotal">—</div></div>
-        </div>
-        <div class="bc-field">
-          <label>Mensaje que se enviará a contactos sin nombre:</label>
-          <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)" id="campPreviewMsg">
+          <!-- Contacts -->
+          <div class="rita-sub">
+            Contactos
+            <button class="btn-export" onclick="exportRitaContacts()" style="margin-left:auto">↓ Exportar CSV</button>
+            <input class="search-input" id="ritaSearchContacts" type="text" placeholder="Buscar nombre o teléfono..." oninput="searchRitaContacts()" style="width:200px">
+          </div>
+          <div class="contact-list" id="ritaContactList"></div>
+          <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:1rem" id="ritaPagination"></div>
+
+          <!-- Error Reports -->
+          <div class="rita-sub">
+            Errores reportados
+            <select class="search-input" id="errorFilter" onchange="loadErrorReports()" style="margin-left:auto;width:160px;font-size:0.78rem">
+              <option value="">Todos</option>
+              <option value="pendiente_revision" selected>Pendientes</option>
+              <option value="revisado">Revisados</option>
+              <option value="corregido">Corregidos</option>
+            </select>
+          </div>
+          <div id="errorList" class="contact-list" style="margin-bottom:1.5rem"></div>
+
+          <!-- Campañas rápidas -->
+          <div class="rita-sub">Campañas</div>
+          <div class="bc-form" style="margin-bottom:1.5rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campStats">
+              <div class="sol-card"><div class="sc-label">Sin nombre</div><div class="sc-val" id="campSinNombre">—</div></div>
+              <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campTotal">—</div></div>
+            </div>
+            <div class="bc-field">
+              <label>Mensaje que se enviará a contactos sin nombre:</label>
+              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)" id="campPreviewMsg">
 ¡Hola! 🏍️ Soy *Rita*, la asistente de *Ridera*.
 
 Te recuerdo que puedo ayudarte con:
@@ -434,50 +645,52 @@ Te recuerdo que puedo ayudarte con:
 Escríbeme cuando necesites algo, estoy aquí para ayudarte.
 
 Y cuéntame: *¿cómo te gustaría que te llame?* 😊</div>
-        </div>
-        <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
-          <button class="bc-send" id="campSendBtn" onclick="enviarCampanaNombre()" style="flex:1">
-            Enviar recordatorio + pedir nombre
-          </button>
-        </div>
-        <div id="campResult" style="display:none"></div>
-        <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
-          Solo se envía a contactos que no tienen nombre registrado. Los que están fuera de la ventana de 24h de WhatsApp pueden no recibirlo — les pediremos el nombre cuando escriban de nuevo.
-        </div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+              <button class="bc-send" id="campSendBtn" onclick="enviarCampanaNombre()" style="flex:1">
+                Enviar recordatorio + pedir nombre
+              </button>
+            </div>
+            <div id="campResult" style="display:none"></div>
+            <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
+              Solo se envía a contactos que no tienen nombre registrado. Los que están fuera de la ventana de 24h de WhatsApp pueden no recibirlo — les pediremos el nombre cuando escriban de nuevo.
+            </div>
+          </div>
+
+          <!-- Broadcast -->
+          <div class="rita-sub">Enviar broadcast</div>
+          <div class="bc-form">
+            <div class="bc-field">
+              <label>Nombre del template (aprobado en Meta)</label>
+              <input type="text" id="bcTemplate" placeholder="ej: promo_talleres">
+            </div>
+            <div class="bc-field">
+              <label>Idioma</label>
+              <select id="bcLang">
+                <option value="es_CO">Español (Colombia)</option>
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="bc-field">
+              <label>Parámetros del body (variables {{1}}, {{2}}, etc.)</label>
+              <div class="bc-params" id="bcParams"></div>
+              <button class="bc-add-param" onclick="addBcParam()">+ Agregar parámetro</button>
+              <div style="font-size:0.72rem;color:var(--mu);margin-top:0.4rem">Usa <code>{{nombre}}</code> como valor para insertar el nombre del contacto automáticamente.</div>
+            </div>
+            <div class="bc-preview" id="bcPreview">
+              Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
+            </div>
+            <button class="bc-send" id="bcSendBtn" onclick="sendBroadcast()">
+              Enviar broadcast
+            </button>
+            <div id="bcResult" style="display:none"></div>
+          </div>
+
+        </div><!-- /tabRita -->
+
       </div>
-
-      <!-- Broadcast -->
-      <div class="rita-sub">Enviar broadcast</div>
-      <div class="bc-form">
-        <div class="bc-field">
-          <label>Nombre del template (aprobado en Meta)</label>
-          <input type="text" id="bcTemplate" placeholder="ej: promo_talleres">
-        </div>
-        <div class="bc-field">
-          <label>Idioma</label>
-          <select id="bcLang">
-            <option value="es_CO">Español (Colombia)</option>
-            <option value="es">Español</option>
-            <option value="en">English</option>
-          </select>
-        </div>
-        <div class="bc-field">
-          <label>Parámetros del body (variables {{1}}, {{2}}, etc.)</label>
-          <div class="bc-params" id="bcParams"></div>
-          <button class="bc-add-param" onclick="addBcParam()">+ Agregar parámetro</button>
-          <div style="font-size:0.72rem;color:var(--mu);margin-top:0.4rem">Usa <code>{{nombre}}</code> como valor para insertar el nombre del contacto automáticamente.</div>
-        </div>
-        <div class="bc-preview" id="bcPreview">
-          Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
-        </div>
-        <button class="bc-send" id="bcSendBtn" onclick="sendBroadcast()">
-          Enviar broadcast
-        </button>
-        <div id="bcResult" style="display:none"></div>
-      </div>
-
-    </div><!-- /tabRita -->
-
+    </main>
   </div>
 </div>
 
@@ -513,17 +726,61 @@ function jsq(x) {
 let solStatsLoaded = false;
 let ritaLoaded = false;
 
-function showTab(tab, btn) {
-  document.getElementById('tabGrueros').style.display     = tab === 'grueros'     ? 'block' : 'none';
-  document.getElementById('tabSolicitudes').style.display = tab === 'solicitudes' ? 'block' : 'none';
-  document.getElementById('tabRita').style.display        = tab === 'rita'        ? 'block' : 'none';
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
-  if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
-  if (tab === 'rita' && !ritaLoaded) loadRitaAnalytics();
-  if (tab === 'rita') { loadRitaContacts(); loadErrorReports(); loadCampanaStats(); }
+// ── Sidebar navigation ───────────────────────────────────────────────
+
+const ALL_TABS = ['despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','rita'];
+const TAB_ID_MAP = {
+  despacho: 'tabDespacho',
+  sellos: 'tabSellos',
+  grueros: 'tabGrueros',
+  riders: 'tabRiders',
+  clubs: 'tabClubs',
+  motos: 'tabMotos',
+  talleres: 'tabTalleres',
+  almacenes: 'tabAlmacenes',
+  rita: 'tabRita',
+};
+
+// Track which sections have been loaded at least once
+const sectionLoaded = {};
+
+function showTab(tab) {
+  // Hide all tab panels
+  ALL_TABS.forEach(t => {
+    const el = document.getElementById(TAB_ID_MAP[t]);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === tab);
+  });
+
+  // Lazy-load section data
+  if (tab === 'despacho') {
+    if (!solStatsLoaded) loadSolicitudesStats();
+    loadPendingDispatch();
+    populateGrueroSelect();
+  }
+  if (tab === 'grueros') {
+    renderStats();
+    renderTable();
+  }
+  if (tab === 'sellos' && !sectionLoaded.sellos) loadSellos();
+  if (tab === 'riders' && !sectionLoaded.riders) loadRiders();
+  if (tab === 'clubs' && !sectionLoaded.clubs) loadClubs();
+  if (tab === 'motos' && !sectionLoaded.motos) loadMotos();
+  if (tab === 'talleres' && !sectionLoaded.talleres) loadTalleres();
+  if (tab === 'almacenes' && !sectionLoaded.almacenes) loadAlmacenes();
+  if (tab === 'rita') {
+    if (!ritaLoaded) loadRitaAnalytics();
+    loadRitaContacts();
+    loadErrorReports();
+    loadCampanaStats();
+  }
 }
+
+// ── Solicitudes stats (Despacho) ─────────────────────────────────────
 
 async function loadSolicitudesStats() {
   const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
@@ -670,7 +927,7 @@ async function toggleDespacho(solId, municipio) {
   if (!el) return;
   if (el.style.display !== 'none') { el.style.display = 'none'; return; }
   el.style.display = 'flex';
-  el.innerHTML = '<span class="gd-empty">Buscando grueros…</span>';
+  el.innerHTML = '<span class="gd-empty">Buscando grueros...</span>';
 
   const data = await callAdmin({ action: 'despacho_grueros', municipio }).catch(() => ({ ok: false }));
   if (!data.ok || !data.grueros || !data.grueros.length) {
@@ -719,6 +976,8 @@ async function doLogin() {
     renderStats();
     renderTable();
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+    // Default to grueros tab on login
+    showTab('grueros');
   } else {
     errEl.style.display = 'block';
     adminKey = '';
@@ -744,6 +1003,10 @@ async function reloadList() {
 function logout() {
   adminKey = '';
   allGrueros = [];
+  // Reset lazy-load flags
+  solStatsLoaded = false;
+  ritaLoaded = false;
+  Object.keys(sectionLoaded).forEach(k => delete sectionLoaded[k]);
   document.getElementById('loginWrap').style.display = 'flex';
   document.getElementById('panel').style.display = 'none';
   document.getElementById('pwdInput').value = '';
@@ -767,11 +1030,14 @@ function renderStats() {
   // Highlight pending filter button if there are pending grueros
   const pBtn = document.getElementById('filterPend');
   pBtn.textContent = `Pendientes${pendientes ? ' (' + pendientes + ')' : ''}`;
+
+  // Update sidebar badge
+  updateBadge('badgeGrueros', total);
 }
 
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => {
+  document.querySelectorAll('#tabGrueros .filter-btn').forEach(b => {
     b.classList.remove('active', 'warn-active');
     if (b === btn) b.classList.add(f === 'pend' ? 'warn-active' : 'active');
   });
@@ -836,7 +1102,7 @@ async function doAprobar(id, nombre, email, btn) {
     : `¿Aprobar a "${nombre}"?\n⚠️ No tiene correo registrado — no se creará cuenta de acceso.`;
   if (!confirm(msg)) return;
   btn.disabled = true;
-  btn.textContent = '…';
+  btn.textContent = '...';
   const res = await callAdmin({ action: 'approve', id }).catch(() => ({ ok: false }));
 
   if (res.ok) {
@@ -897,7 +1163,7 @@ function exportGruerosCSV() {
 
 async function exportSolicitudesCSV() {
   const btn = document.getElementById('btnExportSols');
-  if (btn) { btn.disabled = true; btn.textContent = 'Exportando…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Exportando...'; }
   const data = await callAdmin({ action: 'export_solicitudes' }).catch(() => ({ ok: false }));
   if (btn) { btn.disabled = false; btn.textContent = '↓ Exportar CSV'; }
   if (!data.ok) { alert('Error al exportar'); return; }
@@ -939,7 +1205,7 @@ async function loadGrueroHistorial() {
   const wrap = document.getElementById('grueroHistorial');
   if (!gruero_id) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando…</div>';
+  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando...</div>';
   document.getElementById('ghTableWrap').innerHTML = '';
 
   const data = await callAdmin({ action: 'historial_gruero', gruero_id }).catch(() => ({ ok: false }));
@@ -1165,7 +1431,7 @@ async function openConversation(phone, name) {
         <button class="conv-close" onclick="this.closest('.conv-overlay').remove()">✕</button>
       </div>
       <div class="conv-body" id="convBody">
-        <div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:2rem">Cargando…</div>
+        <div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:2rem">Cargando...</div>
       </div>
     </div>`;
   document.body.appendChild(overlay);
@@ -1208,7 +1474,7 @@ async function loadErrorReports() {
   el.innerHTML = data.reports.map(r => {
     const s = estadoStyles[r.estado] || estadoStyles.pendiente_revision;
     const phone = r.whatsapp_number || '';
-    const masked = phone.length > 6 ? '…' + phone.slice(-4) : phone;
+    const masked = phone.length > 6 ? '...' + phone.slice(-4) : phone;
     const nombre = r.contexto?.preferred_name || masked;
     const time = r.created_at ? relTime(r.created_at) : '';
     return `<div class="ct-row" style="cursor:default;flex-wrap:wrap">
@@ -1293,7 +1559,7 @@ async function enviarCampanaNombre() {
 
   const btn = document.getElementById('campSendBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Enviando…';
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
   const resultEl = document.getElementById('campResult');
   resultEl.style.display = 'none';
 
@@ -1339,7 +1605,7 @@ async function sendBroadcast() {
 
   const btn = document.getElementById('bcSendBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spin"></span> Enviando…';
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
   resultEl.style.display = 'none';
 
   const data = await callRita({ action: 'broadcast', template, language: lang, params }).catch(() => ({ ok: false }));
@@ -1352,13 +1618,385 @@ async function sendBroadcast() {
     resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
     if (data.errorDetails && data.errorDetails.length) {
       resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">Errores: ' +
-        data.errorDetails.map(e => `…${esc(e.phone)}`).join(', ') + '</span>';
+        data.errorDetails.map(e => `...${esc(e.phone)}`).join(', ') + '</span>';
     }
   } else {
     resultEl.className = 'bc-result err';
     resultEl.textContent = data.error || 'Error al enviar broadcast.';
   }
   resultEl.style.display = 'block';
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NEW SECTIONS — Sellos, Riders, Clubs, Motos, Talleres, Almacenes
+// ═══════════════════════════════════════════════════════════════════════
+
+// Helper: update sidebar badge
+function updateBadge(id, count) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (count > 0) {
+    el.textContent = count;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── SELLOS ─────────────────────────────────────────────────────────────
+
+let allSellos = [];
+let selloFilter = 'all';
+
+async function loadSellos() {
+  const data = await callRita({ action: 'list_sellos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('sellosBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar sellos.</td></tr>';
+    return;
+  }
+  sectionLoaded.sellos = true;
+  allSellos = data.sellos || [];
+  const pendCount = allSellos.filter(s => s.estado === 'pendiente').length;
+  updateBadge('badgeSellos', pendCount);
+  renderSellosTable();
+}
+
+function setSelloFilter(f, btn) {
+  selloFilter = f;
+  document.querySelectorAll('#sellosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSellosTable();
+}
+
+function renderSellosTable() {
+  let rows = allSellos;
+  if (selloFilter !== 'all') rows = rows.filter(s => s.estado === selloFilter);
+
+  const tbody = document.getElementById('sellosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin sellos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(s => {
+    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : (s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—');
+    const estadoCls = s.estado === 'aprobado' ? 'badge-on' : s.estado === 'rechazado' ? 'badge-off' : 'badge-pend';
+    const estadoLbl = s.estado === 'aprobado' ? '✓ Aprobado' : s.estado === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
+    const riderName = s.riders?.nombre || s.rider_id || '—';
+    return `<tr>
+      <td>${esc(riderName)}</td>
+      <td>${esc(s.municipio_id || '—')}</td>
+      <td class="tel">${fecha}</td>
+      <td>${s.en_manada ? '<span class="badge badge-apro">Si</span>' : '<span class="badge badge-off">No</span>'}</td>
+      <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
+      <td>
+        <div class="actions-cell">
+          ${s.estado === 'pendiente' ? `
+            <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
+            <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
+          ` : '—'}
+          ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateSello(id, estado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callRita({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    const s = allSellos.find(x => x.id === id);
+    if (s) s.estado = estado;
+    const pendCount = allSellos.filter(x => x.estado === 'pendiente').length;
+    updateBadge('badgeSellos', pendCount);
+    renderSellosTable();
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
+
+// ── RIDERS ─────────────────────────────────────────────────────────────
+
+let allRiders = [];
+
+async function loadRiders() {
+  const data = await callRita({ action: 'list_riders' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar riders.</td></tr>';
+    return;
+  }
+  sectionLoaded.riders = true;
+  allRiders = data.riders || [];
+  updateBadge('badgeRiders', allRiders.length);
+  renderRidersTable();
+}
+
+function filterRidersTable() {
+  renderRidersTable();
+}
+
+function renderRidersTable() {
+  const q = (document.getElementById('ridersSearch')?.value || '').toLowerCase();
+  let rows = allRiders;
+  if (q) rows = rows.filter(r =>
+    (r.nombre||'').toLowerCase().includes(q) ||
+    (r.apellido||'').toLowerCase().includes(q) ||
+    (r.ciudad||'').toLowerCase().includes(q) ||
+    (r.telefono||'').includes(q)
+  );
+
+  const tbody = document.getElementById('ridersBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin riders que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+    const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+    const soat = r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—';
+    const fecha = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—';
+    // Warn if SOAT expires within 30 days
+    const soatWarn = r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000;
+    return `<tr>
+      <td><strong>${esc(nombre)}</strong>${r.slug ? `<br><span class="tel">${esc(r.slug)}</span>` : ''}</td>
+      <td>${esc(r.ciudad || '—')}</td>
+      <td class="tel">${esc(moto)}</td>
+      <td class="tel">${esc(r.telefono || '—')}</td>
+      <td><span style="${soatWarn ? 'color:#f59e0b;font-weight:600' : ''}">${soat}</span></td>
+      <td class="tel">${fecha}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CLUBS ──────────────────────────────────────────────────────────────
+
+let allClubs = [];
+
+async function loadClubs() {
+  const data = await callRita({ action: 'list_clubs' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('clubsBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar clubs.</td></tr>';
+    return;
+  }
+  sectionLoaded.clubs = true;
+  allClubs = data.clubs || [];
+  updateBadge('badgeClubs', allClubs.length);
+  renderClubsTable();
+}
+
+function renderClubsTable() {
+  const tbody = document.getElementById('clubsBody');
+  if (!allClubs.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin clubs registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = allClubs.map(c => {
+    const apro = !!c.aprobado;
+    return `<tr>
+      <td><strong>${esc(c.nombre || '—')}</strong>${c.logo_url ? ` <img class="tbl-thumb" src="${esc(c.logo_url)}" alt="" style="vertical-align:middle;margin-left:0.5rem">` : ''}</td>
+      <td>${esc(c.ciudad || '—')}</td>
+      <td class="tel">${esc(c.codigo || '—')}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MOTOS ──────────────────────────────────────────────────────────────
+
+let allMotos = [];
+let motosFilter = 'all';
+
+async function loadMotos() {
+  const data = await callRita({ action: 'list_motos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('motosBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar motos.</td></tr>';
+    return;
+  }
+  sectionLoaded.motos = true;
+  allMotos = data.motos || [];
+  const pendCount = allMotos.filter(m => !m.aprobado && !m.vendido).length;
+  updateBadge('badgeMotos', pendCount || allMotos.length);
+  renderMotosTable();
+}
+
+function setMotosFilter(f, btn) {
+  motosFilter = f;
+  document.querySelectorAll('#motosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMotosTable();
+}
+
+function renderMotosTable() {
+  let rows = allMotos;
+  if (motosFilter === 'pendientes') rows = rows.filter(m => !m.aprobado && !m.vendido);
+  else if (motosFilter === 'aprobadas') rows = rows.filter(m => m.aprobado && !m.vendido);
+  else if (motosFilter === 'vendidas') rows = rows.filter(m => m.vendido);
+
+  const tbody = document.getElementById('motosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin motos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(m => {
+    const precio = m.precio ? '$' + Number(m.precio).toLocaleString('es-CO') : '—';
+    const marcaModelo = [m.marca, m.modelo].filter(Boolean).join(' ') || '—';
+    let estadoBadge;
+    if (m.vendido) estadoBadge = '<span class="badge badge-off">Vendida</span>';
+    else if (m.aprobado) estadoBadge = '<span class="badge badge-on">Aprobada</span>';
+    else estadoBadge = '<span class="badge badge-pend">Pendiente</span>';
+
+    return `<tr>
+      <td>${m.foto1_url ? `<img class="tbl-thumb" src="${esc(m.foto1_url)}" alt="">` : '—'}</td>
+      <td><strong>${esc(m.titulo || '—')}</strong>${m.anio ? `<br><span class="tel">${m.anio}</span>` : ''}${m.kilometraje ? ` <span class="tel">${Number(m.kilometraje).toLocaleString('es-CO')} km</span>` : ''}</td>
+      <td>${esc(marcaModelo)}${m.cilindraje ? `<br><span class="tel">${m.cilindraje}cc</span>` : ''}</td>
+      <td style="font-weight:600">${precio}</td>
+      <td>${esc(m.ciudad || '—')}</td>
+      <td>${estadoBadge}</td>
+      <td>
+        <div class="actions-cell">
+          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
+          ${m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── TALLERES ───────────────────────────────────────────────────────────
+
+let allTalleres = [];
+let talleresFilter = 'all';
+
+async function loadTalleres() {
+  const data = await callRita({ action: 'list_talleres' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('talleresBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar talleres.</td></tr>';
+    return;
+  }
+  sectionLoaded.talleres = true;
+  allTalleres = data.talleres || [];
+  const pendCount = allTalleres.filter(t => !t.aprobado).length;
+  updateBadge('badgeTalleres', pendCount || allTalleres.length);
+  renderTalleresTable();
+}
+
+function setTalleresFilter(f, btn) {
+  talleresFilter = f;
+  document.querySelectorAll('#talleresFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTalleresTable();
+}
+
+function renderTalleresTable() {
+  let rows = allTalleres;
+  if (talleresFilter === 'pendientes') rows = rows.filter(t => !t.aprobado);
+  else if (talleresFilter === 'aprobados') rows = rows.filter(t => !!t.aprobado);
+
+  const tbody = document.getElementById('talleresBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin talleres que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(t => {
+    const apro = !!t.aprobado;
+    return `<tr>
+      <td><strong>${esc(t.nombre || '—')}</strong>${t.direccion ? `<br><span class="tel">${esc(t.direccion)}${t.barrio ? ', ' + esc(t.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(t.ciudad || '—')}</td>
+      <td class="tel">${esc(t.telefono || '—')}${t.email ? `<br><span class="tel">${esc(t.email)}</span>` : ''}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('talleres','${jsq(t.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ALMACENES ──────────────────────────────────────────────────────────
+
+let allAlmacenes = [];
+let almacenesFilter = 'all';
+
+async function loadAlmacenes() {
+  const data = await callRita({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('almacenesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar almacenes.</td></tr>';
+    return;
+  }
+  sectionLoaded.almacenes = true;
+  allAlmacenes = data.almacenes || [];
+  const pendCount = allAlmacenes.filter(a => !a.aprobado).length;
+  updateBadge('badgeAlmacenes', pendCount || allAlmacenes.length);
+  renderAlmacenesTable();
+}
+
+function setAlmacenesFilter(f, btn) {
+  almacenesFilter = f;
+  document.querySelectorAll('#almacenesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAlmacenesTable();
+}
+
+function renderAlmacenesTable() {
+  let rows = allAlmacenes;
+  if (almacenesFilter === 'pendientes') rows = rows.filter(a => !a.aprobado);
+  else if (almacenesFilter === 'aprobados') rows = rows.filter(a => !!a.aprobado);
+
+  const tbody = document.getElementById('almacenesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin almacenes que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => {
+    const apro = !!a.aprobado;
+    return `<tr>
+      <td><strong>${esc(a.nombre || '—')}</strong>${a.direccion ? `<br><span class="tel">${esc(a.direccion)}${a.barrio ? ', ' + esc(a.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(a.ciudad || '—')}</td>
+      <td class="tel">${esc(a.telefono || '—')}${a.email ? `<br><span class="tel">${esc(a.email)}</span>` : ''}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('almacenes','${jsq(a.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SHARED: Toggle approval for talleres, almacenes, clubs, motos ────
+
+async function toggleApproval(table, id, aprobado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callRita({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    // Reload the section
+    if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
+    else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
+    else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
+    else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
 }
 </script>
 </body>
