@@ -14,26 +14,21 @@ const GRAPH = 'https://graph.facebook.com/v25.0'
 
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
 
-const MSG_RECORDATORIO = `¡Hola! 🏍️ Soy *Rita*, la asistente de *Ridera*.
-
-Te recuerdo que puedo ayudarte con:
-🔧 Buscar talleres y almacenes de motos
-📍 Planear rutas y aventuras
-🏆 Info sobre el Pasaporte Ridera 125
-🆘 Emergencias en carretera
-🏪 Encontrar repuestos y accesorios
-
-Escríbeme cuando necesites algo, estoy aquí para ayudarte.
-
-Y cuéntame: *¿cómo te gustaría que te llame?* 😊`
-
-async function sendWA(to: string, text: string): Promise<{ ok: boolean; error?: string }> {
+async function sendWATemplate(to: string, name: string, language: string, bodyParams: string[]): Promise<{ ok: boolean; error?: string }> {
   if (!waToken || !waPhoneId) return { ok: false, error: 'Faltan credenciales WhatsApp' }
   try {
+    const components = bodyParams.length
+      ? [{ type: 'body', parameters: bodyParams.map((t) => ({ type: 'text', text: t })) }]
+      : []
     const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } }),
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to,
+        type: 'template',
+        template: { name, language: { code: language }, ...(components.length ? { components } : {}) },
+      }),
     })
     if (res.ok) return { ok: true }
     let msg = `HTTP ${res.status}`
@@ -269,7 +264,7 @@ Deno.serve(async (req) => {
       const errorDetails = []
 
       for (const c of targets) {
-        const result = await sendWA(c.phone_number, MSG_RECORDATORIO)
+        const result = await sendWATemplate(c.phone_number, 'pedir_nombre_rita', 'es_CO', [])
         if (result.ok) sent++
         else {
           errors++
@@ -283,9 +278,62 @@ Deno.serve(async (req) => {
       })
     }
 
+    // CAMPANA PREVIEW EMAIL - contacts with a name but no email
+    if (action === 'campana_preview_email') {
+      const { data: contacts } = await sbClient
+        .from('rita_contacts')
+        .select('phone_number, preferred_name, email')
+
+      const total = contacts?.length || 0
+      const sinEmail = (contacts || []).filter((c) => c.preferred_name && !c.email).length
+
+      return new Response(JSON.stringify({ ok: true, total, sinEmail }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CAMPANA ENVIAR EMAIL - ask named contacts without an email to share one
+    if (action === 'campana_enviar_email') {
+      const { data: contacts } = await sbClient
+        .from('rita_contacts')
+        .select('phone_number, preferred_name, email')
+
+      const targets = (contacts || []).filter((c) => c.preferred_name && !c.email)
+
+      let sent = 0,
+        errors = 0
+      const errorDetails = []
+
+      for (const c of targets) {
+        const result = await sendWATemplate(c.phone_number, 'pedir_email_rita', 'es_CO', [c.preferred_name])
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ phone: '...' + (c.phone_number || '').slice(-4), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 200))
+      }
+
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: targets.length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // GENERIC GRAPH GET (diagnostic)
+    if (action === 'graph_get') {
+      const path = body.path || ''
+      const res = await fetch(`${GRAPH}/${path}`, {
+        headers: { Authorization: `Bearer ${waToken}` },
+      })
+      const data = await res.json()
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // LIST TEMPLATES (diagnostic)
     if (action === 'list_templates') {
-      const waba = body.waba_id || '1555848765887202'
+      const waba = body.waba_id || '1406061330395268'
       const res = await fetch(`${GRAPH}/${waba}/message_templates?fields=name,status,category,language,components&limit=200`, {
         headers: { Authorization: `Bearer ${waToken}` },
       })
@@ -298,7 +346,7 @@ Deno.serve(async (req) => {
     // CREATE TEMPLATE
     if (action === 'create_template') {
       const { name, category, language, components } = body
-      const waba = body.waba_id || '1555848765887202'
+      const waba = body.waba_id || '1406061330395268'
       const res = await fetch(`${GRAPH}/${waba}/message_templates`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },

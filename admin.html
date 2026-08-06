@@ -637,29 +637,45 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campTotal">—</div></div>
             </div>
             <div class="bc-field">
-              <label>Mensaje que se enviará a contactos sin nombre:</label>
-              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)" id="campPreviewMsg">
-¡Hola! 🏍️ Soy *Rita*, la asistente de *Ridera*.
+              <label>Plantilla aprobada por Meta: <code>pedir_nombre_rita</code></label>
+              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)">
+¡Hola! 🏍️ Soy Rita, la asistente de Ridera. Puedo ayudarte a buscar talleres, planear rutas, avisarte del vencimiento del SOAT y mucho más.
 
-Te recuerdo que puedo ayudarte con:
-🔧 Buscar talleres y almacenes de motos
-📍 Planear rutas y aventuras
-🏆 Info sobre el Pasaporte Ridera 125
-🆘 Emergencias en carretera
-🏪 Encontrar repuestos y accesorios
-
-Escríbeme cuando necesites algo, estoy aquí para ayudarte.
-
-Y cuéntame: *¿cómo te gustaría que te llame?* 😊</div>
+¿Cómo te gustaría que te llame? 😊</div>
             </div>
             <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
               <button class="bc-send" id="campSendBtn" onclick="enviarCampanaNombre()" style="flex:1">
-                Enviar recordatorio + pedir nombre
+                Enviar plantilla + pedir nombre
               </button>
             </div>
             <div id="campResult" style="display:none"></div>
             <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
-              Solo se envía a contactos que no tienen nombre registrado. Los que están fuera de la ventana de 24h de WhatsApp pueden no recibirlo — les pediremos el nombre cuando escriban de nuevo.
+              Solo se envía a contactos que no tienen nombre registrado. Al usar una plantilla aprobada llega incluso fuera de la ventana de 24h de WhatsApp.
+            </div>
+          </div>
+
+          <!-- Campaña pedir email -->
+          <div class="rita-sub">Campaña: pedir email</div>
+          <div class="bc-form" style="margin-bottom:1.5rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campEmailStats">
+              <div class="sol-card"><div class="sc-label">Con nombre, sin email</div><div class="sc-val" id="campSinEmail">—</div></div>
+              <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campEmailTotal">—</div></div>
+            </div>
+            <div class="bc-field">
+              <label>Plantilla aprobada por Meta: <code>pedir_email_rita</code></label>
+              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)">
+¡Hola {{nombre}}! 🏍️ Soy Rita, de Ridera. Quiero enviarte tips de mantenimiento, promos y novedades directo a tu correo.
+
+¿Me compartes tu email? 📧</div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+              <button class="bc-send" id="campEmailSendBtn" onclick="enviarCampanaEmail()" style="flex:1">
+                Enviar plantilla + pedir email
+              </button>
+            </div>
+            <div id="campEmailResult" style="display:none"></div>
+            <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
+              Solo se envía a contactos que ya tienen nombre registrado pero no email.
             </div>
           </div>
 
@@ -826,6 +842,7 @@ function showTab(tab) {
     loadRitaContacts();
     loadErrorReports();
     loadCampanaStats();
+    loadCampanaEmailStats();
     loadEmailStats();
   }
 }
@@ -1635,7 +1652,7 @@ async function enviarCampanaNombre() {
   const data = await callAdmin({ action: 'campana_enviar_nombre' }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
-  btn.innerHTML = 'Enviar recordatorio + pedir nombre';
+  btn.innerHTML = 'Enviar plantilla + pedir nombre';
 
   if (data.ok) {
     resultEl.className = 'bc-result ok';
@@ -1646,6 +1663,49 @@ async function enviarCampanaNombre() {
     }
     loadCampanaStats();
     loadRitaAnalytics();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar campaña.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Campaña pedir email ─────────────────────────────────────────────────
+
+async function loadCampanaEmailStats() {
+  const data = await callAdmin({ action: 'campana_preview_email' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('campSinEmail').textContent = data.sinEmail;
+  document.getElementById('campEmailTotal').textContent = data.total;
+}
+
+async function enviarCampanaEmail() {
+  const sinEmail = document.getElementById('campSinEmail').textContent;
+  if (sinEmail === '0' || sinEmail === '—') {
+    alert('Todos los contactos con nombre ya tienen email registrado.');
+    return;
+  }
+  if (!confirm(`¿Enviar la plantilla a ${sinEmail} contactos con nombre pero sin email?`)) return;
+
+  const btn = document.getElementById('campEmailSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  const resultEl = document.getElementById('campEmailResult');
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'campana_enviar_email' }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar plantilla + pedir email';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    if (data.errorDetails && data.errorDetails.length) {
+      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
+        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
+    }
+    loadCampanaEmailStats();
   } else {
     resultEl.className = 'bc-result err';
     resultEl.textContent = data.error || 'Error al enviar campaña.';
