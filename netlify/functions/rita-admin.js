@@ -246,6 +246,68 @@ async function sendBroadcast(templateName, languageCode, bodyParams) {
   return { ok: true, sent, errors, total: contacts.length, errorDetails };
 }
 
+// ── Directory sections ─────────────────────────────────────────────────
+
+async function listSellos() {
+  const rows = await sbGet(
+    'sellos?select=id,rider_id,municipio_id,foto_url,fecha,estado,en_manada,created_at,riders(nombre)&order=created_at.desc&limit=200'
+  );
+  return { ok: true, sellos: rows };
+}
+
+async function listRiders() {
+  const rows = await sbGet(
+    'riders?select=id,nombre,apellido,ciudad,moto_marca,moto_modelo,moto_cc,telefono,correo,slug,created_at,placa,soat_vence,tecno_vence,notif_activa&order=created_at.desc&limit=200'
+  );
+  return { ok: true, riders: rows };
+}
+
+async function listClubs() {
+  const rows = await sbGet(
+    'clubs?select=id,nombre,codigo,logo_url,ciudad,aprobado,created_at,datos&order=created_at.desc&limit=100'
+  );
+  return { ok: true, clubs: rows };
+}
+
+async function listMotos() {
+  const rows = await sbGet(
+    'motos_venta?select=id,titulo,precio,ciudad,marca,modelo,anio,kilometraje,cilindraje,telefono,aprobado,destacado,vendido,foto1_url,created_at&order=created_at.desc&limit=200'
+  );
+  return { ok: true, motos: rows };
+}
+
+async function listTalleres() {
+  const rows = await sbGet(
+    'talleres?select=id,nombre,ciudad,telefono,email,instagram,direccion,barrio,aprobado,logo_url,created_at&order=created_at.desc&limit=200'
+  );
+  return { ok: true, talleres: rows };
+}
+
+async function listAlmacenes() {
+  const rows = await sbGet(
+    'almacenes?select=id,nombre,ciudad,telefono,email,direccion,barrio,aprobado,logo_url,slug,status,created_at&order=created_at.desc&limit=200'
+  );
+  return { ok: true, almacenes: rows };
+}
+
+async function toggleApproval(table, id, aprobado) {
+  const allowed = ['talleres', 'almacenes', 'clubs', 'motos_venta'];
+  if (!allowed.includes(table)) return { ok: false, error: 'Tabla no válida' };
+  const res = await fetch(
+    `${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,
+    { method: 'PATCH', headers: { ...sbHeaders, Prefer: 'return=minimal' }, body: JSON.stringify({ aprobado }) }
+  );
+  return { ok: res.ok };
+}
+
+async function updateSelloEstado(id, estado) {
+  const res = await fetch(
+    `${SB_URL}/rest/v1/sellos?id=eq.${encodeURIComponent(id)}`,
+    { method: 'PATCH', headers: { ...sbHeaders, Prefer: 'return=minimal' }, body: JSON.stringify({ estado }) }
+  );
+  return { ok: res.ok };
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -292,6 +354,32 @@ exports.handler = async (event) => {
 
     case 'export_contacts':
       return json(await exportContacts());
+
+    case 'list_sellos':
+      return json(await listSellos());
+
+    case 'list_riders':
+      return json(await listRiders());
+
+    case 'list_clubs':
+      return json(await listClubs());
+
+    case 'list_motos':
+      return json(await listMotos());
+
+    case 'list_talleres':
+      return json(await listTalleres());
+
+    case 'list_almacenes':
+      return json(await listAlmacenes());
+
+    case 'toggle_approval':
+      if (!body.table || !body.id) return json({ ok: false, error: 'Faltan table e id' });
+      return json(await toggleApproval(body.table, body.id, body.aprobado ?? true));
+
+    case 'update_sello':
+      if (!body.id || !body.estado) return json({ ok: false, error: 'Faltan id y estado' });
+      return json(await updateSelloEstado(body.id, body.estado));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });
