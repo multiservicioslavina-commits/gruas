@@ -69,7 +69,7 @@ async function sendEmailViaResend(to: string, subject: string, html: string, fro
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        from: `${from_name} <onboarding@resend.dev>`,
+        from: `${from_name} <noticias@ridera.com.co>`,
         to,
         subject,
         html,
@@ -193,7 +193,7 @@ Deno.serve(async (req) => {
         subject,
         body_html: emailHtml,
         from_name: 'Ridera',
-        from_email: 'onboarding@resend.dev',
+        from_email: 'noticias@ridera.com.co',
         sent_count: sent,
         error_count: errors,
         total_recipients: contacts.length,
