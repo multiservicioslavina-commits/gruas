@@ -657,8 +657,8 @@ Y cuéntame: *¿cómo te gustaría que te llame?* 😊</div>
             </div>
           </div>
 
-          <!-- Broadcast -->
-          <div class="rita-sub">Enviar broadcast</div>
+          <!-- Broadcast WhatsApp -->
+          <div class="rita-sub">Broadcast WhatsApp</div>
           <div class="bc-form">
             <div class="bc-field">
               <label>Nombre del template (aprobado en Meta)</label>
@@ -685,6 +685,49 @@ Y cuéntame: *¿cómo te gustaría que te llame?* 😊</div>
               Enviar broadcast
             </button>
             <div id="bcResult" style="display:none"></div>
+          </div>
+
+          <!-- Email Marketing -->
+          <div class="rita-sub">Email Marketing</div>
+          <div class="bc-form">
+            <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1rem">
+              <div class="sol-card"><div class="sc-label">Con email</div><div class="sc-val" id="emConEmail">—</div></div>
+              <div class="sol-card"><div class="sc-label">Campañas enviadas</div><div class="sc-val" id="emCampanas">—</div></div>
+              <div class="sol-card"><div class="sc-label">Último envío</div><div class="sc-val" id="emUltimo" style="font-size:0.82rem">—</div></div>
+            </div>
+
+            <div class="bc-field">
+              <label>Asunto del email</label>
+              <input type="text" id="emSubject" placeholder="ej: Tips de mantenimiento para tu moto">
+            </div>
+            <div class="bc-field">
+              <label>Contenido del email</label>
+              <textarea id="emBody" rows="10" style="width:100%;font-family:inherit;font-size:0.85rem;padding:0.75rem;border:1px solid var(--line);border-radius:8px;background:var(--s2);color:var(--fg);resize:vertical" placeholder="Escribe el contenido del newsletter...&#10;&#10;Puedes usar:&#10;{{nombre}} - nombre del contacto&#10;**texto** - negrita&#10;[texto](url) - enlace"></textarea>
+              <div style="font-size:0.72rem;color:var(--mu);margin-top:0.3rem">Formato: <code>**negrita**</code> · <code>[enlace](url)</code> · <code>{{nombre}}</code> para personalizar. Se convierte a HTML automáticamente.</div>
+            </div>
+            <div class="bc-field">
+              <label>Vista previa</label>
+              <div id="emPreviewBox" style="background:#fff;color:#333;border:1px solid var(--line);border-radius:8px;padding:1rem;font-size:0.85rem;line-height:1.6;min-height:60px;max-height:300px;overflow-y:auto">
+                <span style="color:#999">Escribe arriba para ver la vista previa...</span>
+              </div>
+            </div>
+            <div class="bc-preview">
+              Destinatarios: <strong id="emAudience">—</strong> contactos con email registrado
+            </div>
+            <div style="display:flex;gap:0.75rem">
+              <button class="bc-send" id="emSendBtn" onclick="sendEmailCampaign()" style="flex:1">
+                Enviar newsletter
+              </button>
+              <button class="btn-sm" onclick="sendEmailTest()" style="padding:0.5rem 1rem;font-size:0.82rem;border:1px solid var(--line);border-radius:8px;background:var(--s2);cursor:pointer;color:var(--fg)">
+                Enviar prueba
+              </button>
+            </div>
+            <div id="emResult" style="display:none"></div>
+
+            <div style="margin-top:1.2rem">
+              <div style="font-size:0.82rem;font-weight:600;margin-bottom:0.5rem;color:var(--fg)">Historial de campañas</div>
+              <div id="emHistory" style="font-size:0.82rem;color:var(--mu)">Cargando...</div>
+            </div>
           </div>
 
         </div><!-- /tabRita -->
@@ -777,6 +820,7 @@ function showTab(tab) {
     loadRitaContacts();
     loadErrorReports();
     loadCampanaStats();
+    loadEmailStats();
   }
 }
 
@@ -1627,6 +1671,105 @@ async function sendBroadcast() {
     resultEl.textContent = data.error || 'Error al enviar broadcast.';
   }
   resultEl.style.display = 'block';
+}
+
+// ── Email Marketing ───────────────────────────────────────────────────
+
+function mdToHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color:#E85D2A;text-decoration:underline">$1</a>')
+    .replace(/\{\{nombre\}\}/g, '<em style="color:#E85D2A">[nombre]</em>')
+    .replace(/\n\n/g, '</p><p style="margin:0 0 12px">')
+    .replace(/\n/g, '<br>');
+}
+
+const emBodyEl = () => document.getElementById('emBody');
+if (emBodyEl()) {
+  emBodyEl().addEventListener('input', () => {
+    const raw = emBodyEl().value;
+    document.getElementById('emPreviewBox').innerHTML = raw.trim()
+      ? '<p style="margin:0 0 12px">' + mdToHtml(raw) + '</p>'
+      : '<span style="color:#999">Escribe arriba para ver la vista previa...</span>';
+  });
+}
+
+async function loadEmailStats() {
+  const data = await callAdmin({ action: 'email_stats' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('emConEmail').textContent = data.conEmail || 0;
+  document.getElementById('emAudience').textContent = data.conEmail || 0;
+  document.getElementById('emCampanas').textContent = data.totalCampanas || 0;
+  document.getElementById('emUltimo').textContent = data.ultimoEnvio
+    ? new Date(data.ultimoEnvio).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+    : 'Nunca';
+
+  const histEl = document.getElementById('emHistory');
+  if (!data.campanas || !data.campanas.length) {
+    histEl.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--mu)">No hay campañas enviadas aún.</div>';
+    return;
+  }
+  histEl.innerHTML = data.campanas.map(c => {
+    const date = new Date(c.sent_at || c.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:500;color:var(--fg)">${esc(c.subject)}</div>
+        <div style="font-size:0.72rem;color:var(--mu)">${date}</div>
+      </div>
+      <div style="text-align:right;font-size:0.78rem">
+        <span style="color:var(--ok)">${c.sent_count} enviados</span>
+        ${c.error_count ? `<span style="color:var(--err);margin-left:0.4rem">${c.error_count} errores</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function sendEmailCampaign() {
+  const subject = document.getElementById('emSubject').value.trim();
+  const body = emBodyEl().value.trim();
+  const resultEl = document.getElementById('emResult');
+
+  if (!subject) { resultEl.className = 'bc-result err'; resultEl.textContent = 'Escribe el asunto del email.'; resultEl.style.display = 'block'; return; }
+  if (!body) { resultEl.className = 'bc-result err'; resultEl.textContent = 'Escribe el contenido del email.'; resultEl.style.display = 'block'; return; }
+
+  const audience = document.getElementById('emAudience').textContent;
+  if (audience === '0' || audience === '—') { alert('No hay contactos con email registrado.'); return; }
+  if (!confirm(`¿Enviar newsletter "${subject}" a ${audience} contactos?\n\nEsta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('emSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'email_send', subject, body_md: body }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar newsletter';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    document.getElementById('emSubject').value = '';
+    emBodyEl().value = '';
+    document.getElementById('emPreviewBox').innerHTML = '<span style="color:#999">Escribe arriba para ver la vista previa...</span>';
+    loadEmailStats();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar el newsletter.';
+  }
+  resultEl.style.display = 'block';
+}
+
+async function sendEmailTest() {
+  const subject = document.getElementById('emSubject').value.trim();
+  const body = emBodyEl().value.trim();
+  if (!subject || !body) { alert('Escribe asunto y contenido primero.'); return; }
+  const email = prompt('Email de prueba:');
+  if (!email || !email.includes('@')) return;
+
+  const data = await callAdmin({ action: 'email_test', subject, body_md: body, test_email: email }).catch(() => ({ ok: false }));
+  if (data.ok) alert('Email de prueba enviado a ' + email);
+  else alert(data.error || 'Error al enviar prueba.');
 }
 
 // ═══════════════════════════════════════════════════════════════════════
