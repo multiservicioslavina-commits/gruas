@@ -114,6 +114,14 @@ Deno.serve(async (req) => {
       })
     }
 
+    // LIST ACTION - for login validation
+    if (action === 'list') {
+      const { data: grueros } = await sbClient.from('grueros').select('*')
+      return new Response(JSON.stringify({ ok: true, grueros: grueros || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // TEST ACTION (no key required)
     if (action === 'test') {
       return new Response(JSON.stringify({ ok: true, message: 'Edge function is working' }), {
