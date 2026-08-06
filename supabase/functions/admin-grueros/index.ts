@@ -55,9 +55,18 @@ function html_email_template(body: string, preheader: string = ''): string {
 
 async function validateKey(key: string): Promise<boolean> {
   try {
-    const { data: admin } = await sbClient.from('grueros_admins').select('id').eq('api_key', key).single()
-    return !!admin
-  } catch {
+    const { data, error } = await sbClient
+      .from('grueros_admins')
+      .select('id')
+      .eq('api_key', key)
+      .maybeSingle()
+    if (error) {
+      console.error('validateKey error:', error)
+      return false
+    }
+    return !!data
+  } catch (err) {
+    console.error('validateKey exception:', err)
     return false
   }
 }
