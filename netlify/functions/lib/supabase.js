@@ -54,7 +54,7 @@ async function logMessage(phoneNumber, role, content, intent = null) {
   const res = await fetch(url, {
     method: "POST",
     headers,
-    body: JSON.stringify({ phone_number: phoneNumber, role, content, intent }),
+    body: JSON.stringify({ phone: phoneNumber, role, content }),
   });
   if (!res.ok) {
     // No detenemos el flujo si falla el log, solo lo reportamos
@@ -65,7 +65,7 @@ async function logMessage(phoneNumber, role, content, intent = null) {
 async function getRecentHistory(phoneNumber, limit = 6) {
   const url =
     `${SUPABASE_URL}/rest/v1/rita_messages` +
-    `?phone_number=eq.${encodeURIComponent(phoneNumber)}` +
+    `?phone=eq.${encodeURIComponent(phoneNumber)}` +
     `&select=role,content&order=created_at.desc&limit=${limit}`;
 
   const res = await fetch(url, { headers });
@@ -82,7 +82,7 @@ async function countMessagesToday(phoneNumber) {
 
   const url =
     `${SUPABASE_URL}/rest/v1/rita_messages` +
-    `?phone_number=eq.${encodeURIComponent(phoneNumber)}` +
+    `?phone=eq.${encodeURIComponent(phoneNumber)}` +
     `&role=eq.user` +
     `&created_at=gte.${startOfDay.toISOString()}` +
     `&select=id`;
@@ -145,7 +145,11 @@ async function upsertContact(phoneNumber) {
   const res = await fetch(url, {
     method: "POST",
     headers: { ...headers, Prefer: "resolution=merge-duplicates" },
-    body: JSON.stringify({ phone_number: phoneNumber, last_seen_at: new Date().toISOString() }),
+    body: JSON.stringify({
+      whatsapp_number: phoneNumber,
+      phone_number: phoneNumber,
+      last_seen_at: new Date().toISOString(),
+    }),
   });
   if (!res.ok) {
     console.error("No se pudo registrar contacto:", await res.text());

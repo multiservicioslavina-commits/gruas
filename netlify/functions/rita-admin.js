@@ -90,16 +90,15 @@ async function getAnalytics() {
   ]);
 
   const [intentRows, dailyRows, activeTodayRows, recentContacts] = await Promise.all([
-    sbGet(`rita_messages?role=eq.user&created_at=gte.${thirtyDaysAgo}&select=intent&limit=2000`),
+    sbGet(`rita_messages?role=eq.user&created_at=gte.${thirtyDaysAgo}&select=content&limit=2000`),
     sbGet(`rita_messages?role=eq.user&created_at=gte.${sevenDaysAgo}&select=created_at&order=created_at.asc&limit=3000`),
-    sbGet(`rita_messages?role=eq.user&created_at=gte.${startOfDay.toISOString()}&select=phone_number&limit=1000`),
+    sbGet(`rita_messages?role=eq.user&created_at=gte.${startOfDay.toISOString()}&select=phone&limit=1000`),
     sbGet('rita_contacts?select=phone_number,preferred_name,last_seen_at,opted_in&order=last_seen_at.desc&limit=25'),
   ]);
 
   const intentCounts = {};
   for (const r of intentRows) {
-    const i = r.intent || 'general';
-    intentCounts[i] = (intentCounts[i] || 0) + 1;
+    intentCounts['general'] = (intentCounts['general'] || 0) + 1;
   }
 
   const perDay = {};
@@ -108,7 +107,7 @@ async function getAnalytics() {
     perDay[day] = (perDay[day] || 0) + 1;
   }
 
-  const activeToday = new Set(activeTodayRows.map(r => r.phone_number)).size;
+  const activeToday = new Set(activeTodayRows.map(r => r.phone)).size;
 
   return {
     ok: true,
@@ -145,7 +144,7 @@ async function getContacts(limit = 50, offset = 0, search = '') {
 
 async function getConversation(phoneNumber) {
   const msgs = await sbGet(
-    `rita_messages?phone_number=eq.${encodeURIComponent(phoneNumber)}&select=role,content,intent,created_at&order=created_at.desc&limit=50`
+    `rita_messages?phone=eq.${encodeURIComponent(phoneNumber)}&select=role,content,created_at&order=created_at.desc&limit=50`
   );
   return { ok: true, messages: msgs.reverse() };
 }
