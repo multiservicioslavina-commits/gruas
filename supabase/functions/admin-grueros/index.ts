@@ -54,8 +54,21 @@ function html_email_template(body: string, preheader: string = ''): string {
 }
 
 async function validateKey(key: string): Promise<boolean> {
-  // Temporary: accept any key starting with 'ridera-' for testing
-  return key.startsWith('ridera-')
+  try {
+    const { data, error } = await sbClient
+      .from('grueros_admins')
+      .select('id')
+      .eq('api_key', key)
+      .maybeSingle()
+    if (error) {
+      console.error('validateKey error:', error)
+      return false
+    }
+    return !!data
+  } catch (err) {
+    console.error('validateKey exception:', err)
+    return false
+  }
 }
 
 async function sendEmailViaResend(to: string, subject: string, html: string, from_name: string = 'Ridera'): Promise<{ ok: boolean; error?: string }> {
