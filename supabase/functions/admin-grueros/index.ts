@@ -343,6 +343,21 @@ Deno.serve(async (req) => {
       })
     }
 
+    // DELETE TEMPLATE
+    if (action === 'delete_template') {
+      const name = body.name
+      const waba = body.waba_id || '1406061330395268'
+      const res = await fetch(`${GRAPH}/${waba}/message_templates?name=${encodeURIComponent(name)}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${waToken}` },
+      })
+      const data = await res.json()
+      return new Response(JSON.stringify(data), {
+        status: res.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // CREATE TEMPLATE
     if (action === 'create_template') {
       const { name, category, language, components } = body
