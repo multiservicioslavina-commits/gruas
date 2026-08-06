@@ -1104,7 +1104,7 @@ const audio = new Audio();
 audio.preload = 'metadata';
 
 const DB_NAME = 'ridera_music';
-const DB_VER = 2;
+const DB_VER = 3;
 let db = null;
 
 // ── IndexedDB ───────────────────────────────────────────────────────
@@ -1115,6 +1115,7 @@ function openDB() {
       const d = e.target.result;
       if (!d.objectStoreNames.contains('state')) d.createObjectStore('state');
       if (!d.objectStoreNames.contains('playlists')) d.createObjectStore('playlists', { keyPath: 'id' });
+      if (!d.objectStoreNames.contains('tracks')) d.createObjectStore('tracks', { keyPath: 'id' });
     };
     req.onsuccess = e => { db = e.target.result; resolve(db); };
     req.onerror = () => resolve(null);
@@ -1153,6 +1154,29 @@ function dbDeletePl(id) {
   const tx = db.transaction('playlists','readwrite');
   tx.objectStore('playlists').delete(id);
 }
+function dbSaveTrack(trackData) {
+  return new Promise(resolve => {
+    if (!db) return resolve();
+    const tx = db.transaction('tracks','readwrite');
+    tx.objectStore('tracks').put(trackData);
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => resolve();
+  });
+}
+function dbGetAllTracks() {
+  return new Promise(resolve => {
+    if (!db) return resolve([]);
+    const tx = db.transaction('tracks','readonly');
+    const req = tx.objectStore('tracks').getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => resolve([]);
+  });
+}
+function dbRemoveTrack(id) {
+  if (!db) return;
+  const tx = db.transaction('tracks','readwrite');
+  tx.objectStore('tracks').delete(id);
+}
 async function loadState() {
   await openDB();
   const favs = await dbGet('favorites');
@@ -1162,6 +1186,19 @@ async function loadState() {
   const vol = await dbGet('volume');
   if (vol !== null) { audio.volume = vol; document.getElementById('volSlider').value = vol * 100; }
   playlists = await dbGetAllPl();
+
+  const saved = await dbGetAllTracks();
+  for (const s of saved) {
+    const blob = new Blob([s.data], { type: s.mimeType || 'audio/mpeg' });
+    const url = URL.createObjectURL(blob);
+    tracks.push({ id: s.id, name: s.name, artist: s.artist, url, duration: s.duration || 0, artUrl: null });
+    queue.push(tracks.length - 1);
+  }
+  if (tracks.length) {
+    buildShuffleOrder();
+    document.getElementById('miniPlayer').classList.add('visible');
+    renderAll();
+  }
 }
 function saveFavorites() { dbSet('favorites', [...favorites]); }
 function saveRecents() { dbSet('recents', recentIds.slice(0, 30)); }
@@ -1193,7 +1230,7 @@ function toast(msg) {
 }
 
 // ── File handling ───────────────────────────────────────────────────
-function addFiles(files) {
+async function addFiles(files) {
   let added = 0;
   for (const file of files) {
     if (!file.type.startsWith('audio/') && !/\.(mp3|aac|wav|flac|ogg|m4a|wma|opus|webm)$/i.test(file.name)) continue;
@@ -1203,10 +1240,12 @@ function addFiles(files) {
     let name, artist;
     if (parts.length >= 2) { artist = parts[0]; name = parts.slice(1).join(' - '); }
     else { name = cleanName(file.name); artist = 'Archivo local'; }
-    tracks.push({ id, name, artist, url, file, duration: 0, artUrl: null });
+    tracks.push({ id, name, artist, url, duration: 0, artUrl: null });
     queue.push(tracks.length - 1);
     added++;
     extractMeta(tracks[tracks.length - 1]);
+    const buf = await file.arrayBuffer();
+    await dbSaveTrack({ id, name, artist, mimeType: file.type, data: buf, duration: 0 });
   }
   if (!added) return;
   buildShuffleOrder();
@@ -1221,8 +1260,13 @@ function extractMeta(track) {
   const a = new Audio();
   a.preload = 'metadata';
   a.src = track.url;
-  a.addEventListener('loadedmetadata', () => {
+  a.addEventListener('loadedmetadata', async () => {
     track.duration = a.duration;
+    if (db) {
+      const tx = db.transaction('tracks','readonly');
+      const req = tx.objectStore('tracks').get(track.id);
+      req.onsuccess = () => { if (req.result) { req.result.duration = a.duration; dbSaveTrack(req.result); } };
+    }
     renderAll();
   }, { once: true });
 }
@@ -2011,6 +2055,7 @@ function doDeleteTrack(idx) {
   if (idx < 0 || idx >= tracks.length) return;
   const t = tracks[idx];
   if (t.url && t.url.startsWith('blob:')) URL.revokeObjectURL(t.url);
+  dbRemoveTrack(t.id);
   favorites.delete(t.id);
   recentIds = recentIds.filter(r => r !== t.id);
   playlists.forEach(pl => { pl.trackIds = pl.trackIds.filter(id => id !== t.id); dbPutPl(pl); });
