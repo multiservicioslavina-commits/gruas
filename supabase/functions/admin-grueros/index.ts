@@ -110,9 +110,26 @@ Deno.serve(async (req) => {
     const body = await req.json()
     const { key, action } = body
 
-    if (!key || !(await validateKey(key))) {
+    if (!key) {
+      return new Response(JSON.stringify({ ok: false, error: 'Key required' }), {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    const isValid = await validateKey(key)
+    console.log('validateKey result:', { key: key.substring(0, 10) + '...', isValid })
+
+    if (!isValid) {
       return new Response(JSON.stringify({ ok: false, error: 'Invalid key' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TEST ACTION (no key required)
+    if (action === 'test') {
+      return new Response(JSON.stringify({ ok: true, message: 'Edge function is working' }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
