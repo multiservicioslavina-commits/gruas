@@ -283,6 +283,34 @@ Deno.serve(async (req) => {
       })
     }
 
+    // LIST TEMPLATES (diagnostic)
+    if (action === 'list_templates') {
+      const waba = body.waba_id || '1555848765887202'
+      const res = await fetch(`${GRAPH}/${waba}/message_templates?fields=name,status,category,language,components&limit=200`, {
+        headers: { Authorization: `Bearer ${waToken}` },
+      })
+      const data = await res.json()
+      return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CREATE TEMPLATE
+    if (action === 'create_template') {
+      const { name, category, language, components } = body
+      const waba = body.waba_id || '1555848765887202'
+      const res = await fetch(`${GRAPH}/${waba}/message_templates`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, category, language, components }),
+      })
+      const data = await res.json()
+      return new Response(JSON.stringify(data), {
+        status: res.status,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // EMAIL TEST
     if (action === 'email_test') {
       const { subject, body_md, test_email } = body
