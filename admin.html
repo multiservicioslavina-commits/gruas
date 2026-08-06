@@ -412,6 +412,40 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div id="errorList" class="contact-list" style="margin-bottom:1.5rem"></div>
 
+      <!-- Campañas rápidas -->
+      <div class="rita-sub">Campañas</div>
+      <div class="bc-form" style="margin-bottom:1.5rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campStats">
+          <div class="sol-card"><div class="sc-label">Sin nombre</div><div class="sc-val" id="campSinNombre">—</div></div>
+          <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campTotal">—</div></div>
+        </div>
+        <div class="bc-field">
+          <label>Mensaje que se enviará a contactos sin nombre:</label>
+          <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)" id="campPreviewMsg">
+¡Hola! 🏍️ Soy *Rita*, la asistente de *Ridera*.
+
+Te recuerdo que puedo ayudarte con:
+🔧 Buscar talleres y almacenes de motos
+📍 Planear rutas y aventuras
+🏆 Info sobre el Pasaporte Ridera 125
+🆘 Emergencias en carretera
+🏪 Encontrar repuestos y accesorios
+
+Escríbeme cuando necesites algo, estoy aquí para ayudarte.
+
+Y cuéntame: *¿cómo te gustaría que te llame?* 😊</div>
+        </div>
+        <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+          <button class="bc-send" id="campSendBtn" onclick="enviarCampanaNombre()" style="flex:1">
+            Enviar recordatorio + pedir nombre
+          </button>
+        </div>
+        <div id="campResult" style="display:none"></div>
+        <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
+          Solo se envía a contactos que no tienen nombre registrado. Los que están fuera de la ventana de 24h de WhatsApp pueden no recibirlo — les pediremos el nombre cuando escriban de nuevo.
+        </div>
+      </div>
+
       <!-- Broadcast -->
       <div class="rita-sub">Enviar broadcast</div>
       <div class="bc-form">
@@ -488,7 +522,7 @@ function showTab(tab, btn) {
   if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
   if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
   if (tab === 'rita' && !ritaLoaded) loadRitaAnalytics();
-  if (tab === 'rita') { loadRitaContacts(); loadErrorReports(); }
+  if (tab === 'rita') { loadRitaContacts(); loadErrorReports(); loadCampanaStats(); }
 }
 
 async function loadSolicitudesStats() {
@@ -1228,6 +1262,63 @@ function addBcParam() {
     <button onclick="this.parentElement.remove()">✕</button>`;
   container.appendChild(row);
 }
+
+// ── Campañas rápidas ───────────────────────────────────────────────────
+
+const FN_CAMPANA = '/.netlify/functions/rita-campana';
+
+async function callCampana(body) {
+  const res = await fetch(FN_CAMPANA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: adminKey, ...body }),
+  });
+  return res.json();
+}
+
+async function loadCampanaStats() {
+  const data = await callCampana({ action: 'preview' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('campSinNombre').textContent = data.sinNombre;
+  document.getElementById('campTotal').textContent = data.total;
+}
+
+async function enviarCampanaNombre() {
+  const sinNombre = document.getElementById('campSinNombre').textContent;
+  if (sinNombre === '0' || sinNombre === '—') {
+    alert('Todos los contactos ya tienen nombre registrado.');
+    return;
+  }
+  if (!confirm(`¿Enviar el recordatorio a ${sinNombre} contactos sin nombre?\n\nSe les pedirá que digan cómo quieren que los llamen.`)) return;
+
+  const btn = document.getElementById('campSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando…';
+  const resultEl = document.getElementById('campResult');
+  resultEl.style.display = 'none';
+
+  const data = await callCampana({ action: 'enviar_recordatorio' }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar recordatorio + pedir nombre';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    if (data.errorDetails && data.errorDetails.length) {
+      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
+        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
+    }
+    loadCampanaStats();
+    loadRitaAnalytics();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar campaña.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Broadcast ──────────────────────────────────────────────────────────
 
 async function sendBroadcast() {
   const template = document.getElementById('bcTemplate').value.trim();
