@@ -103,6 +103,16 @@
     background: none; border: none; color: var(--red); font-size: 13px;
     cursor: pointer; padding: 8px 0;
   }
+  .drawer-app-link {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    color: var(--text); font-size: 13px; font-weight: 500;
+    text-decoration: none; border-radius: 8px; transition: opacity .15s;
+  }
+  .drawer-app-link:hover { opacity: .8; }
+  .drawer-app-link .app-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
 
   /* Messages area */
   .messages {
@@ -307,6 +317,10 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
+    <a class="drawer-app-link" href="https://gruas.ridera.com.co/music" target="_blank">
+      <div class="app-icon">🎵</div>
+      Ridera Music
+    </a>
     <button class="drawer-logout" onclick="logout()">Cerrar sesión</button>
   </div>
 </div>
