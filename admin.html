@@ -1288,7 +1288,7 @@ async function callRita(body) {
 // ── Analytics ──────────────────────────────────────────────────────────
 
 async function loadRitaAnalytics() {
-  const data = await callRita({ action: 'analytics' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'analytics' }).catch(() => ({ ok: false }));
   if (!data.ok) return;
   ritaLoaded = true;
 
@@ -1372,7 +1372,7 @@ function searchRitaContacts() {
 
 async function loadRitaContacts() {
   const search = (document.getElementById('ritaSearchContacts')?.value || '').trim();
-  const data = await callRita({
+  const data = await callAdmin({
     action: 'contacts',
     limit: RITA_PAGE_SIZE,
     offset: ritaContactsPage * RITA_PAGE_SIZE,
@@ -1436,7 +1436,7 @@ async function openConversation(phone, name) {
     </div>`;
   document.body.appendChild(overlay);
 
-  const data = await callRita({ action: 'conversation', phone }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'conversation', phone }).catch(() => ({ ok: false }));
   const body = document.getElementById('convBody');
   if (!data.ok || !data.messages.length) {
     body.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:2rem">Sin mensajes.</div>';
@@ -1457,7 +1457,7 @@ async function openConversation(phone, name) {
 
 async function loadErrorReports() {
   const estado = document.getElementById('errorFilter').value;
-  const data = await callRita({ action: 'error_reports', estado }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'error_reports', estado }).catch(() => ({ ok: false }));
   const el = document.getElementById('errorList');
 
   if (!data.ok || !data.reports || !data.reports.length) {
@@ -1497,14 +1497,14 @@ async function loadErrorReports() {
 
 async function markError(id, estado, btn) {
   if (btn) btn.disabled = true;
-  await callRita({ action: 'update_error', id, estado }).catch(() => {});
+  await callAdmin({ action: 'update_error', id, estado }).catch(() => {});
   loadErrorReports();
 }
 
 // ── Export contacts ────────────────────────────────────────────────────
 
 async function exportRitaContacts() {
-  const data = await callRita({ action: 'export_contacts' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'export_contacts' }).catch(() => ({ ok: false }));
   if (!data.ok || !data.contacts) { alert('Error al exportar'); return; }
   const headers = ['Teléfono','Nombre','Última actividad','Suscrito','Registrado'];
   const csv = [headers, ...data.contacts.map(c => [
@@ -1608,7 +1608,7 @@ async function sendBroadcast() {
   btn.innerHTML = '<span class="spin"></span> Enviando...';
   resultEl.style.display = 'none';
 
-  const data = await callRita({ action: 'broadcast', template, language: lang, params }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'broadcast', template, language: lang, params }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast';
@@ -1649,7 +1649,7 @@ let allSellos = [];
 let selloFilter = 'all';
 
 async function loadSellos() {
-  const data = await callRita({ action: 'list_sellos' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_sellos' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('sellosBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar sellos.</td></tr>';
     return;
@@ -1704,7 +1704,7 @@ function renderSellosTable() {
 
 async function updateSello(id, estado, btn) {
   if (btn) btn.disabled = true;
-  const data = await callRita({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
   if (data.ok) {
     const s = allSellos.find(x => x.id === id);
     if (s) s.estado = estado;
@@ -1722,7 +1722,7 @@ async function updateSello(id, estado, btn) {
 let allRiders = [];
 
 async function loadRiders() {
-  const data = await callRita({ action: 'list_riders' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_riders' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar riders.</td></tr>';
     return;
@@ -1776,7 +1776,7 @@ function renderRidersTable() {
 let allClubs = [];
 
 async function loadClubs() {
-  const data = await callRita({ action: 'list_clubs' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_clubs' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('clubsBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar clubs.</td></tr>';
     return;
@@ -1818,7 +1818,7 @@ let allMotos = [];
 let motosFilter = 'all';
 
 async function loadMotos() {
-  const data = await callRita({ action: 'list_motos' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_motos' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('motosBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar motos.</td></tr>';
     return;
@@ -1880,7 +1880,7 @@ let allTalleres = [];
 let talleresFilter = 'all';
 
 async function loadTalleres() {
-  const data = await callRita({ action: 'list_talleres' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_talleres' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('talleresBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar talleres.</td></tr>';
     return;
@@ -1934,7 +1934,7 @@ let allAlmacenes = [];
 let almacenesFilter = 'all';
 
 async function loadAlmacenes() {
-  const data = await callRita({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('almacenesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar almacenes.</td></tr>';
     return;
@@ -1986,7 +1986,7 @@ function renderAlmacenesTable() {
 
 async function toggleApproval(table, id, aprobado, btn) {
   if (btn) btn.disabled = true;
-  const data = await callRita({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
   if (data.ok) {
     // Reload the section
     if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
