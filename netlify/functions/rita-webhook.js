@@ -26,6 +26,8 @@ const {
   setOptOut,
   getContact,
   setPreferredName,
+  checkConsent,
+  saveConsent,
 } = require("./lib/supabase");
 const { askClaude } = require("./lib/claude");
 const { classifyIntent, extractSearchTerm, EMERGENCY_REPLY } = require("./lib/router");
@@ -35,10 +37,10 @@ const { detectsError, logErrorAlert, getErrorAcknowledgmentResponse } = require(
 const RIDERA_SYSTEM_PROMPT = `Eres Rita, la asistente virtual de Ridera, un ecosistema
 de motociclismo en Colombia (directorio de talleres/almacenes/grúas, el reto
 Pasaporte Ridera 125, y Ridera Aventuras). Respondes por WhatsApp: tono cercano,
-amigable y motero, pero SIN usar "parce" ni frases genéricas. Claro y breve
-(máximo 3-4 frases salvo que te pidan más detalle).
-Cuando el usuario comparta su nombre, úsalo de forma natural en tus respuestas,
-sin repetirlo en cada frase.
+amigable y motero. Claro y breve (máximo 3-4 frases salvo que te pidan más detalle).
+IMPORTANTE: Cuando conozcas el nombre del usuario, úsalo naturalmente en vez de
+genéricos como "parce", "parcero", "amigo" o similares. El nombre se pasa como
+contexto — úsalo con naturalidad, sin repetirlo en cada frase.
 Si no tienes información suficiente para responder algo específico, dilo
 honestamente y sugiere que la persona visite ridera.com.co o contacte soporte.
 No inventes direcciones, teléfonos ni precios que no te hayan dado como contexto.`;
@@ -116,9 +118,28 @@ async function handleIncomingMessage(event) {
       await setPreferredName(from, name);
       await sendWhatsAppMessage(
         from,
-        `¡Un gusto, ${name}! Ya quedaste registrado. Cuéntame en qué te ayudo — talleres, almacenes, el Pasaporte Ridera 125, o lo que necesites 🛵`
+        `¡Un gusto, ${name}! Ya quedaste registrado 🏍️\n\nPuedo ayudarte con talleres, almacenes, rutas, el Pasaporte Ridera 125 y más.\n\n¿Aceptas recibir info útil de Ridera (eventos, promos, rutas)? Responde *SÍ* o *NO*.\n\n(Puedes darte de baja cuando quieras escribiendo BAJA)`
       );
       return { statusCode: 200, body: "name saved" };
+    }
+
+    // Caso 2.5: respuesta al consentimiento (SÍ/NO después de dar el nombre)
+    if (/^\s*(si|sí|yes|ok|dale|claro|vale)\s*$/i.test(text)) {
+      const hasConsent = await checkConsent(from);
+      if (hasConsent === null) {
+        await saveConsent(from, true);
+        await sendWhatsAppMessage(from, `¡Perfecto, ${existingContact.preferred_name || 'amigo'}! Te mantendré al tanto de lo mejor del mundo motero 🛵\n\nCuéntame, ¿en qué te ayudo hoy?`);
+        return { statusCode: 200, body: "consent accepted" };
+      }
+    }
+    if (/^\s*(no|nel|nop|nah)\s*$/i.test(text)) {
+      const hasConsent = await checkConsent(from);
+      if (hasConsent === null) {
+        await saveConsent(from, false);
+        await setOptOut(from, false);
+        await sendWhatsAppMessage(from, `Entendido, no te enviaré mensajes masivos. Pero puedes seguir escribiéndome cuando necesites algo 🙂`);
+        return { statusCode: 200, body: "consent denied" };
+      }
     }
 
     // Palabra clave para darse de baja de broadcasts (no de Rita en general)

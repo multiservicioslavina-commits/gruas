@@ -108,6 +108,8 @@ module.exports = {
   setOptOut,
   getContact,
   setPreferredName,
+  checkConsent,
+  saveConsent,
 };
 
 // Trae el contacto tal como esta ANTES de tocarlo (util para saber si es
@@ -165,6 +167,44 @@ async function setOptOut(phoneNumber, optedIn) {
     headers,
     body: JSON.stringify({ opted_in: optedIn }),
   });
+}
+
+async function checkConsent(phoneNumber) {
+  const url =
+    `${SUPABASE_URL}/rest/v1/rita_consentimiento` +
+    `?telefono=eq.${encodeURIComponent(phoneNumber)}` +
+    `&select=acepta`;
+  const res = await fetch(url, { headers });
+  if (!res.ok) return null;
+  const rows = await res.json();
+  if (!rows.length) return null;
+  return rows[0].acepta;
+}
+
+async function saveConsent(phoneNumber, acepta) {
+  const now = new Date().toISOString();
+  const body = {
+    telefono: phoneNumber,
+    acepta,
+    canal: 'whatsapp',
+    categorias: acepta ? ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'promociones', 'novedades'] : [],
+    fecha_consentimiento: acepta ? now : null,
+    fecha_revocacion: acepta ? null : now,
+    updated_at: now,
+  };
+  const url = `${SUPABASE_URL}/rest/v1/rita_consentimiento?on_conflict=telefono`;
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { ...headers, Prefer: 'resolution=merge-duplicates' },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) console.error('saveConsent failed:', await res.text());
+
+  // Sync opted_in in rita_contacts
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/rita_contacts?phone_number=eq.${encodeURIComponent(phoneNumber)}`,
+    { method: 'PATCH', headers, body: JSON.stringify({ opted_in: acepta }) },
+  );
 }
 
 async function listOptedInContacts() {
