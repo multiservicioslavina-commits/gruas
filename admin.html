@@ -1401,6 +1401,7 @@ async function loadRitaContacts() {
       </div>
       <div class="ct-meta">
         <div class="ct-time">${timeAgo}</div>
+        ${c.email ? `<div class="ct-email" style="font-size:0.72rem;color:var(--mu);overflow:hidden;text-overflow:ellipsis;max-width:140px" title="${esc(c.email)}">${esc(c.email)}</div>` : ''}
         <div class="ct-opt ${c.opted_in ? 'ct-opt-in' : 'ct-opt-out'}">${c.opted_in ? 'Suscrito' : 'Baja'}</div>
       </div>
     </div>`;
@@ -1506,10 +1507,11 @@ async function markError(id, estado, btn) {
 async function exportRitaContacts() {
   const data = await callAdmin({ action: 'export_contacts' }).catch(() => ({ ok: false }));
   if (!data.ok || !data.contacts) { alert('Error al exportar'); return; }
-  const headers = ['Teléfono','Nombre','Última actividad','Suscrito','Registrado'];
+  const headers = ['Teléfono','Nombre','Email','Última actividad','Suscrito','Registrado'];
   const csv = [headers, ...data.contacts.map(c => [
     c.phone_number || '',
     c.preferred_name || '',
+    c.email || '',
     c.last_seen_at ? new Date(c.last_seen_at).toLocaleString('es-CO') : '',
     c.opted_in ? 'Sí' : 'No',
     c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '',
