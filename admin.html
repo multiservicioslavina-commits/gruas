@@ -1611,19 +1611,8 @@ function addBcParam() {
 
 // ── Campañas rápidas ───────────────────────────────────────────────────
 
-const FN_CAMPANA = '/.netlify/functions/rita-campana';
-
-async function callCampana(body) {
-  const res = await fetch(FN_CAMPANA, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ key: adminKey, ...body }),
-  });
-  return res.json();
-}
-
 async function loadCampanaStats() {
-  const data = await callCampana({ action: 'preview' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'campana_preview' }).catch(() => ({ ok: false }));
   if (!data.ok) return;
   document.getElementById('campSinNombre').textContent = data.sinNombre;
   document.getElementById('campTotal').textContent = data.total;
@@ -1643,7 +1632,7 @@ async function enviarCampanaNombre() {
   const resultEl = document.getElementById('campResult');
   resultEl.style.display = 'none';
 
-  const data = await callCampana({ action: 'enviar_recordatorio' }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'campana_enviar_nombre' }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
   btn.innerHTML = 'Enviar recordatorio + pedir nombre';

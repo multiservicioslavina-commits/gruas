@@ -8,8 +8,44 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const resendApiKey = Deno.env.get('RESEND_API_KEY')
+const waToken = Deno.env.get('WHATSAPP_TOKEN') || ''
+const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '1238785075974458'
+const GRAPH = 'https://graph.facebook.com/v25.0'
 
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
+
+const MSG_RECORDATORIO = `¡Hola! 🏍️ Soy *Rita*, la asistente de *Ridera*.
+
+Te recuerdo que puedo ayudarte con:
+🔧 Buscar talleres y almacenes de motos
+📍 Planear rutas y aventuras
+🏆 Info sobre el Pasaporte Ridera 125
+🆘 Emergencias en carretera
+🏪 Encontrar repuestos y accesorios
+
+Escríbeme cuando necesites algo, estoy aquí para ayudarte.
+
+Y cuéntame: *¿cómo te gustaría que te llame?* 😊`
+
+async function sendWA(to: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!waToken || !waPhoneId) return { ok: false, error: 'Faltan credenciales WhatsApp' }
+  try {
+    const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to, type: 'text', text: { body: text } }),
+    })
+    if (res.ok) return { ok: true }
+    let msg = `HTTP ${res.status}`
+    try {
+      const d = await res.json()
+      msg = d?.error?.message || msg
+    } catch { /* ignore */ }
+    return { ok: false, error: msg }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
 
 function mdToHtml(text: string): string {
   return text
@@ -202,6 +238,47 @@ Deno.serve(async (req) => {
       })
 
       return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CAMPANA PREVIEW - contacts missing a name
+    if (action === 'campana_preview') {
+      const { data: contacts } = await sbClient
+        .from('rita_contacts')
+        .select('phone_number, preferred_name')
+
+      const total = contacts?.length || 0
+      const sinNombre = (contacts || []).filter((c) => !c.preferred_name).length
+
+      return new Response(JSON.stringify({ ok: true, total, sinNombre }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CAMPANA ENVIAR NOMBRE - ask contacts without a name to introduce themselves
+    if (action === 'campana_enviar_nombre') {
+      const { data: contacts } = await sbClient
+        .from('rita_contacts')
+        .select('phone_number, preferred_name')
+
+      const targets = (contacts || []).filter((c) => !c.preferred_name)
+
+      let sent = 0,
+        errors = 0
+      const errorDetails = []
+
+      for (const c of targets) {
+        const result = await sendWA(c.phone_number, MSG_RECORDATORIO)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ phone: '...' + (c.phone_number || '').slice(-4), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 200))
+      }
+
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: targets.length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
