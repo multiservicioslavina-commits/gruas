@@ -525,6 +525,7 @@ REGLAS DE RESPUESTA:
 - Grua -> gruas.ridera.com.co y boton SOS.
 - PICO Y PLACA: usa SIEMPRE la tabla de arriba. Para motos usa el PRIMER digito de la placa. Para carros el ULTIMO. Indica el dia y horario. Si preguntan por vias o vehiculos exentos, usar la info de arriba.
 - Rider NO registrado: sugerir registro cada 3-4 intercambios.
+- Si el mensaje empieza con "[Foto recibida]": es una descripcion de una imagen que el usuario mando. Responde de forma natural sobre lo que se ve (documento, moto, daño, ruta) como si tu la hubieras visto, sin mencionar que "recibiste una descripcion".
 ${riderInfo}`;
 }
 
@@ -640,6 +641,46 @@ async function downloadWhatsAppMedia(mediaId: string): Promise<Uint8Array> {
   const audioRes = await fetch(meta.url, { headers: { "Authorization": `Bearer ${WA_TOKEN}` } });
   return new Uint8Array(await audioRes.arrayBuffer());
 }
+function toBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunkSize = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function describeImage(imageBytes: Uint8Array, mimeType: string): Promise<string> {
+  const base64 = toBase64(imageBytes);
+  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      model: "gpt-4o-mini",
+      max_tokens: 400,
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "Describe esta imagen en español para una motociclista colombiana llamada Rita. " +
+                "Si es un documento (SOAT, tecnomecánica, licencia, factura, multa), extrae fecha de vencimiento, " +
+                "numero de placa, valores y cualquier dato clave visible. Si es una moto o un daño/problema mecánico, " +
+                "describe qué se ve, la parte afectada y cualquier sintoma visible (fugas, oxido, desgaste, piezas rotas). " +
+                "Si es una ruta, paisaje o lugar, describelo brevemente. Se conciso, maximo 5 lineas.",
+            },
+            { type: "image_url", image_url: { url: `data:${mimeType};base64,${base64}` } },
+          ],
+        },
+      ],
+    }),
+    signal: AbortSignal.timeout(20000),
+  });
+  const data = await res.json();
+  return data?.choices?.[0]?.message?.content?.trim() || "";
+}
+
 async function transcribeAudio(audioBytes: Uint8Array, mimeType: string): Promise<string> {
   const ext = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "m4a" : "ogg";
   const form = new FormData();
@@ -701,11 +742,29 @@ Deno.serve(async (req: Request) => {
       let message = "";
       let respondWithVoice = false;
 
+      const imageMedia = msg.type === "image" && msg.image
+        ? { id: msg.image.id, mime_type: msg.image.mime_type || "image/jpeg", caption: msg.image.caption }
+        : msg.type === "document" && msg.document && (msg.document.mime_type || "").startsWith("image/")
+        ? { id: msg.document.id, mime_type: msg.document.mime_type, caption: msg.document.caption }
+        : null;
+
       if (msg.type === "audio" && msg.audio) {
         if (!OPENAI_KEY) { await sendWhatsApp(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
         try { message = await transcribeAudio(await downloadWhatsAppMedia(msg.audio.id), msg.audio.mime_type || "audio/ogg"); respondWithVoice = true; }
         catch { await sendWhatsApp(from, "No pude escuchar ese audio. Me lo repites?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
         if (!message.trim()) { await sendWhatsApp(from, "Uy, no pille que dijiste. Me lo repites?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+      } else if (imageMedia) {
+        if (!OPENAI_KEY) { await sendWhatsApp(from, "Parce, por ahora no puedo ver fotos. Cuentame que necesitas por texto?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+        let description = "";
+        try { description = await describeImage(await downloadWhatsAppMedia(imageMedia.id), imageMedia.mime_type); }
+        catch { await sendWhatsApp(from, "No pude ver bien esa foto. Me la mandas de nuevo o me cuentas por texto?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+        if (!description.trim()) { await sendWhatsApp(from, "No distingui bien esa foto, parce. Me la mandas con mas luz o me cuentas por texto?"); return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } }); }
+        message = imageMedia.caption
+          ? `[Foto recibida] ${description}\n\nMensaje junto a la foto: "${imageMedia.caption}"`
+          : `[Foto recibida] ${description}`;
+      } else if (msg.type === "document" && msg.document) {
+        await sendWhatsApp(from, "Por ahora no puedo leer PDFs directamente, parce. Si me mandas una foto de lo que necesitas (SOAT, factura, tecnomecanica) si te ayudo.");
+        return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
       } else if (msg.text?.body) {
         message = msg.text.body;
       } else {
