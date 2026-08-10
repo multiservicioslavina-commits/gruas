@@ -85,8 +85,15 @@ function html_email_template(body: string, preheader: string = ''): string {
 }
 
 async function validateKey(key: string): Promise<boolean> {
-  // Accept the admin key
-  return key === 'mipadre2816'
+  const { data } = await sbClient.from('admin_config').select('password').eq('id', 1).maybeSingle()
+  const current = data?.password || 'mipadre2816'
+  return key === current
+}
+
+function toSlug(s: string, suffix = ''): string {
+  const base = s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'gruero'
+  return suffix ? `${base}-${suffix}` : base
 }
 
 async function sendEmailViaResend(to: string, subject: string, html: string, from_name: string = 'Ridera'): Promise<{ ok: boolean; error?: string }> {
@@ -541,6 +548,422 @@ Deno.serve(async (req) => {
       const result = await sendEmailViaResend(test_email, subject, emailHtml)
 
       return new Response(JSON.stringify(result), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // STATS (Despacho dashboard)
+    if (action === 'stats') {
+      const { data: all } = await sbClient
+        .from('solicitudes')
+        .select('id, estado, municipio, calificacion, created_at, asignada_at')
+
+      const rows = all || []
+      const now = Date.now()
+      const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+      const startWeek = new Date(now - 7 * 86400000)
+      const startMonth = new Date(now - 30 * 86400000)
+
+      const total = rows.length
+      const hoy = rows.filter((s) => new Date(s.created_at) >= startToday).length
+      const semana = rows.filter((s) => new Date(s.created_at) >= startWeek).length
+      const mes = rows.filter((s) => new Date(s.created_at) >= startMonth).length
+
+      const cals = rows.map((s) => s.calificacion).filter((c): c is number => typeof c === 'number')
+      const avgCal = cals.length ? Math.round((cals.reduce((a, b) => a + b, 0) / cals.length) * 10) / 10 : null
+
+      const respTimes = rows
+        .filter((s) => s.asignada_at)
+        .map((s) => (new Date(s.asignada_at).getTime() - new Date(s.created_at).getTime()) / 60000)
+      const avgRespuestaMin = respTimes.length ? Math.round(respTimes.reduce((a, b) => a + b, 0) / respTimes.length) : null
+
+      const byEstado: Record<string, number> = {}
+      for (const s of rows) byEstado[s.estado] = (byEstado[s.estado] || 0) + 1
+
+      const muniCounts: Record<string, number> = {}
+      for (const s of rows) if (s.municipio) muniCounts[s.municipio] = (muniCounts[s.municipio] || 0) + 1
+      const topMunicipios = Object.entries(muniCounts)
+        .sort((a, b) => b[1] - a[1]).slice(0, 5)
+        .map(([municipio, total]) => ({ municipio, total }))
+
+      const recientes = [...rows]
+        .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+        .slice(0, 10)
+        .map((s) => ({ estado: s.estado, municipio: s.municipio, calificacion: s.calificacion, created_at: s.created_at }))
+
+      return new Response(JSON.stringify({ ok: true, total, hoy, semana, mes, avgCal, avgRespuestaMin, byEstado, topMunicipios, recientes }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // PENDING DISPATCH
+    if (action === 'pending_dispatch') {
+      const { data: sols, error } = await sbClient
+        .from('solicitudes')
+        .select('id, cliente_nombre, created_at, municipio, ubicacion, estado, asignada_at, gruero_asignado')
+        .in('estado', ['pendiente', 'asignada'])
+        .order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const ids = [...new Set((sols || []).map((s) => s.gruero_asignado).filter(Boolean))]
+      const nombres: Record<string, string> = {}
+      if (ids.length) {
+        const { data: gs } = await sbClient.from('grueros').select('id, nombre').in('id', ids)
+        for (const g of gs || []) nombres[g.id] = g.nombre
+      }
+      const solicitudes = (sols || []).map((s) => ({ ...s, gruero_nombre: s.gruero_asignado ? nombres[s.gruero_asignado] || null : null }))
+      return new Response(JSON.stringify({ ok: true, solicitudes }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CANCEL DISPATCH - return the solicitud to the queue for re-dispatch
+    if (action === 'cancel_dispatch') {
+      const { id } = body
+      const { error } = await sbClient.from('solicitudes')
+        .update({ estado: 'pendiente', gruero_asignado: null, asignada_at: null })
+        .eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // DESPACHO GRUEROS - available grueros for a municipio
+    if (action === 'despacho_grueros') {
+      const municipio = String(body.municipio || '').toLowerCase()
+      const { data: grueros, error } = await sbClient
+        .from('grueros')
+        .select('id, nombre, telefono, ciudad, municipios')
+        .eq('aprobado', 'SI')
+        .eq('disponible', true)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const filtered = (grueros || []).filter((g) =>
+        (g.ciudad && g.ciudad.toLowerCase() === municipio) ||
+        (Array.isArray(g.municipios) && g.municipios.some((m: string) => (m || '').toLowerCase() === municipio))
+      )
+      return new Response(JSON.stringify({
+        ok: true,
+        grueros: filtered.map((g) => ({ id: g.id, nombre: g.nombre, telefono: g.telefono, datos: { ciudad: g.ciudad, municipios: g.municipios } })),
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // APPROVE GRUERO
+    if (action === 'approve') {
+      const { id } = body
+      const { data: gruero } = await sbClient.from('grueros').select('id, nombre, email, slug, auth_id').eq('id', id).maybeSingle()
+      if (!gruero) {
+        return new Response(JSON.stringify({ ok: false, error: 'Gruero no encontrado' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      let slug = gruero.slug || toSlug(gruero.nombre)
+      if (!gruero.slug) {
+        const { data: ex } = await sbClient.from('grueros').select('id').eq('slug', slug).neq('id', gruero.id).maybeSingle()
+        if (ex) slug = toSlug(gruero.nombre, String(Date.now()).slice(-4))
+      }
+
+      let auth_id = gruero.auth_id
+      let auth_created = false
+      if (gruero.email && gruero.email.includes('@') && !auth_id) {
+        const { data: inv, error: invErr } = await sbClient.auth.admin.inviteUserByEmail(gruero.email, {
+          data: { nombre: gruero.nombre, gruero_id: gruero.id },
+          redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html',
+        })
+        if (!invErr && inv?.user) {
+          auth_id = inv.user.id
+          auth_created = true
+        }
+      }
+
+      await sbClient.from('grueros').update({ aprobado: 'SI', disponible: true, slug, auth_id: auth_id ?? null }).eq('id', gruero.id)
+
+      return new Response(JSON.stringify({ ok: true, auth_created, slug }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SET (toggle gruero disponibilidad)
+    if (action === 'set') {
+      const { id, disponible } = body
+      const { error } = await sbClient.from('grueros').update({ disponible }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // DELETE GRUERO
+    if (action === 'delete') {
+      const { id } = body
+      const { error } = await sbClient.from('grueros').delete().eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // EXPORT SOLICITUDES (CSV data)
+    if (action === 'export_solicitudes') {
+      const { data: sols, error } = await sbClient
+        .from('solicitudes')
+        .select('id, estado, cliente_nombre, cliente_telefono, municipio, ubicacion, calificacion, comentario_cliente, created_at, asignada_at, llego_at, finalizada_at, gruero_asignado')
+        .order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const ids = [...new Set((sols || []).map((s) => s.gruero_asignado).filter(Boolean))]
+      const nombres: Record<string, string> = {}
+      if (ids.length) {
+        const { data: gs } = await sbClient.from('grueros').select('id, nombre').in('id', ids)
+        for (const g of gs || []) nombres[g.id] = g.nombre
+      }
+      const solicitudes = (sols || []).map((s) => ({ ...s, gruero_nombre: s.gruero_asignado ? nombres[s.gruero_asignado] || null : null }))
+      return new Response(JSON.stringify({ ok: true, solicitudes }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // HISTORIAL POR GRUERO
+    if (action === 'historial_gruero') {
+      const { gruero_id } = body
+      const { data: sols, error } = await sbClient
+        .from('solicitudes')
+        .select('id, estado, cliente_nombre, municipio, calificacion, created_at')
+        .eq('gruero_asignado', gruero_id)
+        .order('created_at', { ascending: false })
+        .limit(100)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const rows = sols || []
+      const startMonth = new Date(Date.now() - 30 * 86400000)
+      const total = rows.length
+      const mes = rows.filter((s) => new Date(s.created_at) >= startMonth).length
+      const finalizadas = rows.filter((s) => s.estado === 'finalizada').length
+      const cals = rows.map((s) => s.calificacion).filter((c): c is number => typeof c === 'number')
+      const avgCal = cals.length ? Math.round((cals.reduce((a, b) => a + b, 0) / cals.length) * 10) / 10 : null
+      return new Response(JSON.stringify({ ok: true, stats: { total, mes, avgCal, finalizadas }, solicitudes: rows }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CHANGE ADMIN PASSWORD
+    if (action === 'change_password') {
+      const nueva = String(body.new || '')
+      if (nueva.length < 4) {
+        return new Response(JSON.stringify({ ok: false, error: 'Mínimo 4 caracteres' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('admin_config').update({ password: nueva, updated_at: new Date().toISOString() }).eq('id', 1)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RITA ANALYTICS
+    if (action === 'analytics') {
+      const { data: contacts } = await sbClient.from('rita_contacts').select('opted_in, last_seen_at')
+      const totalContacts = contacts?.length || 0
+      const optedIn = (contacts || []).filter((c) => c.opted_in).length
+
+      const startToday = new Date(); startToday.setHours(0, 0, 0, 0)
+      const startWeek = new Date(Date.now() - 7 * 86400000)
+      const startMonth = new Date(Date.now() - 30 * 86400000)
+
+      const activeToday = (contacts || []).filter((c) => c.last_seen_at && new Date(c.last_seen_at) >= startToday).length
+
+      const { data: msgs } = await sbClient.from('rita_messages').select('created_at').gte('created_at', startMonth.toISOString())
+      const rows = msgs || []
+      const msgsToday = rows.filter((m) => new Date(m.created_at) >= startToday).length
+      const msgsWeek = rows.filter((m) => new Date(m.created_at) >= startWeek).length
+      const msgsMonth = rows.length
+
+      const perDay: Record<string, number> = {}
+      for (const m of rows) {
+        const day = String(m.created_at).slice(0, 10)
+        perDay[day] = (perDay[day] || 0) + 1
+      }
+
+      return new Response(JSON.stringify({
+        ok: true, totalContacts, optedIn, activeToday, msgsToday, msgsWeek, msgsMonth, intentCounts: {}, perDay,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RITA CONTACTS (paginated + search)
+    if (action === 'contacts') {
+      const limit = Math.min(Number(body.limit) || 20, 100)
+      const offset = Math.max(Number(body.offset) || 0, 0)
+      const search = String(body.search || '').replace(/[,()%]/g, '').trim()
+
+      let query = sbClient.from('rita_contacts').select('phone_number, preferred_name, opted_in, last_seen_at, email', { count: 'exact' })
+      if (search) query = query.or(`preferred_name.ilike.%${search}%,phone_number.ilike.%${search}%`)
+      query = query.order('last_seen_at', { ascending: false, nullsFirst: false }).range(offset, offset + limit - 1)
+
+      const { data, count, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, contacts: data || [], total: count || 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CONVERSATION VIEWER
+    if (action === 'conversation') {
+      const phone = String(body.phone || '')
+      const { data: messages, error } = await sbClient
+        .from('rita_messages')
+        .select('role, content, created_at')
+        .or(`phone.eq.${phone},phone_number.eq.${phone}`)
+        .order('created_at', { ascending: true })
+        .limit(300)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, messages: messages || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ERROR REPORTS
+    if (action === 'error_reports') {
+      let query = sbClient.from('rita_errores_reportados').select('*').order('created_at', { ascending: false }).limit(200)
+      if (body.estado) query = query.eq('estado', body.estado)
+      const { data, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, reports: data || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // UPDATE ERROR REPORT STATE
+    if (action === 'update_error') {
+      const { id, estado } = body
+      const { error } = await sbClient.from('rita_errores_reportados').update({ estado }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // EXPORT RITA CONTACTS (CSV data)
+    if (action === 'export_contacts') {
+      const { data: contacts, error } = await sbClient
+        .from('rita_contacts')
+        .select('phone_number, preferred_name, email, last_seen_at, opted_in, created_at')
+        .order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, contacts: contacts || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // BROADCAST (WhatsApp template to opted-in contacts)
+    if (action === 'broadcast') {
+      const { template, language, params } = body
+      if (!template) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+
+      let sent = 0, errors = 0
+      const errorDetails: { phone: string; error?: string }[] = []
+
+      for (const c of contacts || []) {
+        const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
+        const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ phone: '...' + (c.phone_number || '').slice(-4), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 200))
+      }
+
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST SELLOS
+    if (action === 'list_sellos') {
+      const { data: sellos, error } = await sbClient
+        .from('sellos')
+        .select('*, riders(nombre)')
+        .order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, sellos: sellos || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // UPDATE SELLO (approve/reject)
+    if (action === 'update_sello') {
+      const { id, estado } = body
+      const { error } = await sbClient.from('sellos').update({ estado }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
