@@ -1,3 +1,7 @@
+# club.ridera.com.co/admin -> panel admin del club (debe ir primero)
+https://club.ridera.com.co/admin        /connect-admin.html   200!
+https://club.ridera.com.co/admin/*      /connect-admin.html   200!
+
 /music                      /app/player.html                   200
 /lyrapp                     /app/lyrapp.apk                    200
 /grueros                    /grueros.html                      200

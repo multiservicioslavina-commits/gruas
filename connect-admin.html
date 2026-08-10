@@ -308,7 +308,7 @@ async function sb(path, opts = {}) {
 async function init() {
   const slug = location.pathname.split('/').filter(Boolean).pop();
   let clubs;
-  if (slug && slug !== 'connect-admin') {
+  if (slug && slug !== 'connect-admin' && slug !== 'admin') {
     clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
   }
   if (!clubs || !clubs.length) {
