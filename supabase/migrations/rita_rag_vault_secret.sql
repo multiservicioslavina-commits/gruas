@@ -34,3 +34,20 @@ as $function$
   order by embedding <=> query_embedding
   limit match_count;
 $function$;
+
+-- Keep ridera_content fresh: every 6h, sync up to 30 changed/new WP items
+-- (posts/pages/rutas) and re-embed them. wp-content-sync is incremental
+-- and idempotent, so this just drip-processes whatever changed since the
+-- last run.
+select cron.schedule(
+  'wp-content-sync-6h',
+  '0 */6 * * *',
+  $$
+  select net.http_post(
+    url := 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/wp-content-sync?limit=30',
+    headers := jsonb_build_object('Content-Type','application/json','x-ridera-cron','rid3ra_cron_2026'),
+    body := '{}'::jsonb,
+    timeout_milliseconds := 120000
+  );
+  $$
+);
