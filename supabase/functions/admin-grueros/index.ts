@@ -153,6 +153,158 @@ Deno.serve(async (req) => {
       })
     }
 
+    // LIST RIDERS
+    if (action === 'list_riders') {
+      const { data: riders, error } = await sbClient.from('riders').select('*').order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, riders: riders || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST CLUBS
+    if (action === 'list_clubs') {
+      const { data: clubs, error } = await sbClient.from('clubs').select('*').order('nombre', { ascending: true })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, clubs: clubs || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST MOTOS
+    if (action === 'list_motos') {
+      const { data: motos, error } = await sbClient.from('motos_venta').select('*').order('created_at', { ascending: false })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, motos: motos || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST TALLERES
+    if (action === 'list_talleres') {
+      const { data: talleres, error } = await sbClient.from('talleres').select('*').order('nombre', { ascending: true })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, talleres: talleres || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST ALMACENES
+    if (action === 'list_almacenes') {
+      const { data: almacenes, error } = await sbClient.from('almacenes').select('*').order('nombre', { ascending: true })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, almacenes: almacenes || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TOGGLE APPROVAL (talleres, almacenes, clubs, motos_venta)
+    if (action === 'toggle_approval') {
+      const { table, id, aprobado } = body
+      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta']
+      if (!allowedTables.includes(table)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Tabla no permitida' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from(table).update({ aprobado }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // REJECT RECORD (talleres, almacenes, clubs, motos_venta) - deletes the submission
+    if (action === 'reject_record') {
+      const { table, id } = body
+      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta']
+      if (!allowedTables.includes(table)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Tabla no permitida' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from(table).delete().eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // UPDATE RECORD (talleres, almacenes, clubs, motos_venta) - edit allowed fields
+    if (action === 'update_record') {
+      const { table, id, fields } = body
+      const editableFields: Record<string, string[]> = {
+        clubs: ['nombre', 'ciudad', 'codigo'],
+        talleres: ['nombre', 'ciudad', 'telefono', 'email', 'instagram', 'direccion', 'barrio'],
+        almacenes: ['nombre', 'ciudad', 'telefono', 'email', 'direccion', 'barrio', 'categorias'],
+        motos_venta: ['titulo', 'precio', 'ciudad', 'barrio', 'telefono', 'email', 'marca', 'modelo', 'anio', 'kilometraje', 'cilindraje', 'color', 'descripcion'],
+      }
+      const allowed = editableFields[table]
+      if (!allowed) {
+        return new Response(JSON.stringify({ ok: false, error: 'Tabla no permitida' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const update: Record<string, unknown> = {}
+      for (const key of allowed) {
+        if (fields && Object.prototype.hasOwnProperty.call(fields, key)) update[key] = fields[key]
+      }
+      if (Object.keys(update).length === 0) {
+        return new Response(JSON.stringify({ ok: false, error: 'Sin campos para actualizar' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from(table).update(update).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // TEST ACTION (no key required)
     if (action === 'test') {
       return new Response(JSON.stringify({ ok: true, message: 'Edge function is working' }), {

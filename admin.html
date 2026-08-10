@@ -759,6 +759,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- EDIT RECORD MODAL -->
+<div class="modal-overlay hide" id="editModal">
+  <div class="modal" style="max-width:420px">
+    <h2 id="editModalTitle">Modificar</h2>
+    <div id="editModalFields" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+    <div class="modal-err" id="editModalErr"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideEditModal()">Cancelar</button>
+      <button class="btn-ok" onclick="saveEditModal()">Guardar</button>
+    </div>
+  </div>
+</div>
+
 <!-- CHANGE PASSWORD MODAL -->
 <div class="modal-overlay hide" id="pwdModal">
   <div class="modal">
@@ -2034,6 +2047,8 @@ function renderClubsTable() {
           <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
+          <button class="act-btn" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
+          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('clubs','${jsq(c.id)}',this)">✕ Rechazar</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -2096,6 +2111,8 @@ function renderMotosTable() {
         <div class="actions-cell">
           ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
           ${m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
+          <button class="act-btn" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
+          ${!m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="rejectRecord('motos_venta','${jsq(m.id)}',this)">✕ Rechazar</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -2150,6 +2167,8 @@ function renderTalleresTable() {
           <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('talleres','${jsq(t.id)}',${!apro},this)">
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
+          <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
+          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('talleres','${jsq(t.id)}',this)">✕ Rechazar</button>` : ''}
         </div>
       </td>
     </tr>`;
@@ -2204,26 +2223,132 @@ function renderAlmacenesTable() {
           <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('almacenes','${jsq(a.id)}',${!apro},this)">
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
+          <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
+          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('almacenes','${jsq(a.id)}',this)">✕ Rechazar</button>` : ''}
         </div>
       </td>
     </tr>`;
   }).join('');
 }
 
-// ── SHARED: Toggle approval for talleres, almacenes, clubs, motos ────
+// ── SHARED: Toggle approval / reject / edit for talleres, almacenes, clubs, motos ────
+
+function reloadSectionTable(table) {
+  if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
+  else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
+  else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
+  else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+}
 
 async function toggleApproval(table, id, aprobado, btn) {
   if (btn) btn.disabled = true;
   const data = await callAdmin({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
   if (data.ok) {
-    // Reload the section
-    if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
-    else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
-    else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
-    else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+    reloadSectionTable(table);
   } else {
     if (btn) btn.disabled = false;
     alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
+
+async function rejectRecord(table, id, btn) {
+  if (!confirm('¿Rechazar y eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'reject_record', table, id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo rechazar'));
+  }
+}
+
+const EDIT_FIELDS = {
+  clubs: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'codigo', label: 'Código', type: 'text' },
+  ],
+  talleres: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'instagram', label: 'Instagram', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+  ],
+  almacenes: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'categorias', label: 'Categorías', type: 'text' },
+  ],
+  motos_venta: [
+    { key: 'titulo', label: 'Título', type: 'text' },
+    { key: 'precio', label: 'Precio', type: 'number' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'marca', label: 'Marca', type: 'text' },
+    { key: 'modelo', label: 'Modelo', type: 'text' },
+    { key: 'anio', label: 'Año', type: 'number' },
+    { key: 'kilometraje', label: 'Kilometraje', type: 'number' },
+    { key: 'cilindraje', label: 'Cilindraje', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+};
+
+let editModalState = { table: null, id: null };
+
+function openEditModalFor(table, id) {
+  const map = { clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos };
+  const list = map[table] || [];
+  const record = list.find(r => String(r.id) === String(id));
+  if (record) openEditModal(table, record);
+}
+
+function openEditModal(table, record) {
+  editModalState = { table, id: record.id };
+  const fields = EDIT_FIELDS[table] || [];
+  document.getElementById('editModalTitle').textContent = 'Modificar ' + (record.nombre || record.titulo || '');
+  const container = document.getElementById('editModalFields');
+  container.innerHTML = fields.map(f => {
+    const val = record[f.key] ?? '';
+    if (f.type === 'textarea') {
+      return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><textarea data-field="${f.key}" rows="3" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem">${esc(val)}</textarea></div>`;
+    }
+    return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><input type="${f.type}" data-field="${f.key}" value="${esc(val)}" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem"></div>`;
+  }).join('');
+  document.getElementById('editModalErr').style.display = 'none';
+  document.getElementById('editModal').classList.remove('hide');
+}
+
+function hideEditModal() {
+  document.getElementById('editModal').classList.add('hide');
+}
+
+async function saveEditModal() {
+  const { table, id } = editModalState;
+  const container = document.getElementById('editModalFields');
+  const fields = {};
+  container.querySelectorAll('[data-field]').forEach(el => {
+    fields[el.dataset.field] = el.type === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value;
+  });
+  const errEl = document.getElementById('editModalErr');
+  errEl.style.display = 'none';
+  const data = await callAdmin({ action: 'update_record', table, id, fields }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    hideEditModal();
+    reloadSectionTable(table);
+  } else {
+    errEl.textContent = data.error || 'No se pudo guardar.';
+    errEl.style.display = 'block';
   }
 }
 </script>
