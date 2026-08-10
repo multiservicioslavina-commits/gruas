@@ -500,9 +500,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="table-wrap">
             <table>
               <thead><tr>
-                <th>Nombre</th><th>Ciudad</th><th>Moto</th><th>Teléfono</th><th>SOAT vence</th><th>Registrado</th>
+                <th>Nombre</th><th>Ciudad</th><th>Moto</th><th>Teléfono</th><th>SOAT vence</th><th>Registrado</th><th>Acciones</th>
               </tr></thead>
-              <tbody id="ridersBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+              <tbody id="ridersBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
             </table>
           </div>
         </div><!-- /tabRiders -->
@@ -1196,7 +1196,8 @@ function renderTable() {
         <div class="actions-cell">
           ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
           ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
-          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">Eliminar</button>
+          <button class="act-btn" onclick="openEditModalFor('grueros','${jsq(g.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -1935,7 +1936,8 @@ function renderSellosTable() {
           ${s.estado === 'pendiente' ? `
             <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
             <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
-          ` : '—'}
+          ` : ''}
+          <button class="act-btn del" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
           ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
         </div>
       </td>
@@ -1965,7 +1967,7 @@ let allRiders = [];
 async function loadRiders() {
   const data = await callAdmin({ action: 'list_riders' }).catch(() => ({ ok: false }));
   if (!data.ok) {
-    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar riders.</td></tr>';
+    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar riders.</td></tr>';
     return;
   }
   sectionLoaded.riders = true;
@@ -1990,7 +1992,7 @@ function renderRidersTable() {
 
   const tbody = document.getElementById('ridersBody');
   if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin riders que mostrar.</td></tr>';
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin riders que mostrar.</td></tr>';
     return;
   }
 
@@ -2008,6 +2010,12 @@ function renderRidersTable() {
       <td class="tel">${esc(r.telefono || '—')}</td>
       <td><span style="${soatWarn ? 'color:#f59e0b;font-weight:600' : ''}">${soat}</span></td>
       <td class="tel">${fecha}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
     </tr>`;
   }).join('');
 }
@@ -2048,7 +2056,7 @@ function renderClubsTable() {
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
           <button class="act-btn" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
-          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('clubs','${jsq(c.id)}',this)">✕ Rechazar</button>` : ''}
+          <button class="act-btn del" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2112,7 +2120,7 @@ function renderMotosTable() {
           ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
           ${m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
           <button class="act-btn" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
-          ${!m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="rejectRecord('motos_venta','${jsq(m.id)}',this)">✕ Rechazar</button>` : ''}
+          <button class="act-btn del" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2168,7 +2176,7 @@ function renderTalleresTable() {
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
           <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
-          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('talleres','${jsq(t.id)}',this)">✕ Rechazar</button>` : ''}
+          <button class="act-btn del" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2224,7 +2232,7 @@ function renderAlmacenesTable() {
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
           <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
-          ${!apro ? `<button class="act-btn del" onclick="rejectRecord('almacenes','${jsq(a.id)}',this)">✕ Rechazar</button>` : ''}
+          <button class="act-btn del" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2238,6 +2246,9 @@ function reloadSectionTable(table) {
   else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
   else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
   else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+  else if (table === 'riders') { sectionLoaded.riders = false; loadRiders(); }
+  else if (table === 'sellos') { sectionLoaded.sellos = false; loadSellos(); }
+  else if (table === 'grueros') { reloadList(); }
 }
 
 async function toggleApproval(table, id, aprobado, btn) {
@@ -2251,19 +2262,35 @@ async function toggleApproval(table, id, aprobado, btn) {
   }
 }
 
-async function rejectRecord(table, id, btn) {
-  if (!confirm('¿Rechazar y eliminar esta solicitud? Esta acción no se puede deshacer.')) return;
+async function deleteRecord(table, id, btn) {
+  if (!confirm('¿Borrar este registro permanentemente? Esta acción no se puede deshacer.')) return;
   if (btn) btn.disabled = true;
   const data = await callAdmin({ action: 'reject_record', table, id }).catch(() => ({ ok: false }));
   if (data.ok) {
     reloadSectionTable(table);
   } else {
     if (btn) btn.disabled = false;
-    alert('Error: ' + (data.error || 'No se pudo rechazar'));
+    alert('Error: ' + (data.error || 'No se pudo borrar'));
   }
 }
 
 const EDIT_FIELDS = {
+  grueros: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'zona', label: 'Zona', type: 'text' },
+  ],
+  riders: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'apellido', label: 'Apellido', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'correo', label: 'Correo', type: 'text' },
+    { key: 'moto_marca', label: 'Marca de moto', type: 'text' },
+    { key: 'moto_modelo', label: 'Modelo de moto', type: 'text' },
+  ],
   clubs: [
     { key: 'nombre', label: 'Nombre', type: 'text' },
     { key: 'ciudad', label: 'Ciudad', type: 'text' },
@@ -2307,7 +2334,7 @@ const EDIT_FIELDS = {
 let editModalState = { table: null, id: null };
 
 function openEditModalFor(table, id) {
-  const map = { clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos };
+  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos };
   const list = map[table] || [];
   const record = list.find(r => String(r.id) === String(id));
   if (record) openEditModal(table, record);
