@@ -172,16 +172,55 @@
     .tabs { font-size: 12px; }
     .rooms-grid { grid-template-columns: 1fr; }
   }
+
+  .gate-overlay {
+    position: fixed; inset: 0; background: var(--bg); z-index: 200;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  .gate-box {
+    width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px 24px; text-align: center;
+  }
+  .gate-box h1 { font-size: 18px; margin-bottom: 4px; }
+  .gate-box h1 span { color: var(--accent); }
+  .gate-club { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
+  .gate-box input {
+    width: 100%; padding: 12px; border-radius: 8px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text); font-size: 15px; margin-bottom: 10px;
+    text-align: center;
+  }
+  .gate-box input:focus { outline: none; border-color: var(--accent); }
+  .gate-box .btn { width: 100%; justify-content: center; margin-top: 4px; }
+  .gate-hint { font-size: 12px; color: var(--text2); margin-top: 14px; line-height: 1.5; }
+  .gate-error { font-size: 13px; color: var(--red); margin-bottom: 10px; min-height: 16px; }
+  .change-pass-link {
+    font-size: 12px; color: var(--text2); cursor: pointer; margin-left: auto;
+  }
+  .change-pass-link:hover { color: var(--text); }
 </style>
 </head>
 <body>
 
-<div class="header">
-  <h1><span>Ridera</span> Club</h1>
-  <div class="club-name" id="club-name">Cargando...</div>
+<div class="gate-overlay" id="gate-overlay">
+  <div class="gate-box">
+    <h1><span>Ridera</span> Club</h1>
+    <div class="gate-club" id="gate-club-name">Cargando club…</div>
+    <div class="gate-error" id="gate-error"></div>
+    <input type="password" id="gate-password" placeholder="Clave del club" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitGate()">
+    <input type="password" id="gate-password2" placeholder="Confirma la clave" autocomplete="new-password" style="display:none" onkeydown="if(event.key==='Enter') submitGate()">
+    <button class="btn btn-primary" id="gate-btn" onclick="submitGate()">Entrar</button>
+    <div class="gate-hint" id="gate-hint"></div>
+    <div class="gate-hint" id="gate-cancel" style="display:none; cursor:pointer; text-decoration:underline;" onclick="cancelGate()">Cancelar</div>
+  </div>
 </div>
 
-<div class="container">
+<div class="header" style="display:none" id="app-header">
+  <h1><span>Ridera</span> Club</h1>
+  <div class="club-name" id="club-name">Cargando...</div>
+  <div class="change-pass-link" onclick="openChangePass()">Cambiar clave</div>
+</div>
+
+<div class="container" id="app-container" style="display:none">
   <div class="stats" id="stats">
     <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
     <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
@@ -286,6 +325,8 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let clubId = null;
 let clubCode = null;
+let clubToken = null;
+let gateMode = 'login'; // 'login' | 'set' | 'change'
 let parsedMembers = [];
 let allMembers = [];
 
@@ -293,7 +334,11 @@ async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      // Con clave de club válida, mandamos ESE token (no la llave pública) —
+      // así las políticas RLS de connect_rita_dms saben a qué club pertenece
+      // quien pregunta. Sin token todavía (login/lectura pública de clubs),
+      // se usa la llave anónima normal.
+      'Authorization': `Bearer ${clubToken || SUPABASE_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': opts.prefer || 'return=representation',
       ...opts.headers
@@ -303,6 +348,33 @@ async function sb(path, opts = {}) {
   });
   if (opts.method === 'DELETE') return [];
   return res.json();
+}
+
+async function clubAuth(action, extra = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/club-auth`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
+    body: JSON.stringify({ action, clubId, ...extra })
+  });
+  return res.json();
+}
+
+function tokenStorageKey(id) { return `club_auth_token_${id}`; }
+
+function loadSavedToken(id) {
+  try {
+    const raw = localStorage.getItem(tokenStorageKey(id));
+    if (!raw) return null;
+    const saved = JSON.parse(raw);
+    // El token dura 12h en el servidor; lo damos por vencido a las 11h
+    // localmente para no arriesgarnos a usar uno ya expirado.
+    if (Date.now() - saved.at > 11 * 60 * 60 * 1000) return null;
+    return saved.token;
+  } catch (_) { return null; }
+}
+
+function saveToken(id, token) {
+  localStorage.setItem(tokenStorageKey(id), JSON.stringify({ token, at: Date.now() }));
 }
 
 async function init() {
@@ -315,14 +387,118 @@ async function init() {
     clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
   }
   if (!clubs.length) {
-    document.getElementById('club-name').textContent = 'No hay clubes';
+    document.getElementById('gate-club-name').textContent = 'No hay clubes';
     return;
   }
   clubId = clubs[0].id;
   clubCode = clubs[0].codigo || clubs[0].id;
+  document.getElementById('gate-club-name').textContent = clubs[0].nombre;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+
+  const saved = loadSavedToken(clubId);
+  if (saved) {
+    clubToken = saved;
+    enterApp();
+    return;
+  }
+
+  const estado = await clubAuth('estado');
+  if (!estado.ok) {
+    document.getElementById('gate-error').textContent = estado.error || 'No se pudo verificar el club';
+    return;
+  }
+  gateMode = estado.tienePass ? 'login' : 'set';
+  renderGate();
+}
+
+function renderGate() {
+  const pass2 = document.getElementById('gate-password2');
+  const hint = document.getElementById('gate-hint');
+  const btn = document.getElementById('gate-btn');
+  document.getElementById('gate-password').value = '';
+  pass2.value = '';
+  document.getElementById('gate-error').textContent = '';
+  document.getElementById('gate-cancel').style.display = gateMode === 'change' ? '' : 'none';
+  if (gateMode === 'set') {
+    pass2.style.display = '';
+    hint.textContent = 'Este club aún no tiene clave. Crea una (mínimo 4 caracteres) para proteger el panel de administración.';
+    btn.textContent = 'Crear clave y entrar';
+  } else if (gateMode === 'change') {
+    pass2.style.display = '';
+    document.getElementById('gate-password').placeholder = 'Clave actual';
+    pass2.placeholder = 'Clave nueva';
+    hint.textContent = 'Cambia la clave de administración de este club.';
+    btn.textContent = 'Cambiar clave';
+  } else {
+    pass2.style.display = 'none';
+    document.getElementById('gate-password').placeholder = 'Clave del club';
+    hint.textContent = '';
+    btn.textContent = 'Entrar';
+  }
+}
+
+async function submitGate() {
+  const btn = document.getElementById('gate-btn');
+  const errEl = document.getElementById('gate-error');
+  const pass = document.getElementById('gate-password').value;
+  const pass2 = document.getElementById('gate-password2').value;
+  errEl.textContent = '';
+
+  if (gateMode === 'set') {
+    if (pass.length < 4) return errEl.textContent = 'Mínimo 4 caracteres';
+    if (pass !== pass2) return errEl.textContent = 'Las claves no coinciden';
+    btn.disabled = true;
+    const r = await clubAuth('set', { password: pass });
+    btn.disabled = false;
+    if (!r.ok) return errEl.textContent = r.error || 'Error al crear la clave';
+    clubToken = r.token;
+    saveToken(clubId, r.token);
+    enterApp();
+    return;
+  }
+
+  if (gateMode === 'change') {
+    if (pass2.length < 4) return errEl.textContent = 'Mínimo 4 caracteres';
+    btn.disabled = true;
+    const r = await clubAuth('change', { password: pass, newPassword: pass2 });
+    btn.disabled = false;
+    if (!r.ok) return errEl.textContent = r.error || 'Clave actual incorrecta';
+    clubToken = r.token;
+    saveToken(clubId, r.token);
+    toast('Clave actualizada');
+    enterApp();
+    return;
+  }
+
+  // login
+  btn.disabled = true;
+  const r = await clubAuth('login', { password: pass });
+  btn.disabled = false;
+  if (!r.ok) return errEl.textContent = 'Clave incorrecta';
+  clubToken = r.token;
+  saveToken(clubId, r.token);
+  enterApp();
+}
+
+function openChangePass() {
+  gateMode = 'change';
+  renderGate();
+  document.getElementById('gate-overlay').style.display = 'flex';
+  document.getElementById('app-header').style.display = 'none';
+  document.getElementById('app-container').style.display = 'none';
+}
+
+function cancelGate() {
+  gateMode = 'login';
+  enterApp();
+}
+
+function enterApp() {
+  document.getElementById('gate-overlay').style.display = 'none';
+  document.getElementById('app-header').style.display = '';
+  document.getElementById('app-container').style.display = '';
+  Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
 }
 
 async function loadStats() {
