@@ -323,7 +323,10 @@ async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: {
       'apikey': SUPABASE_KEY,
-      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      // Con sesion de club activa mandamos SU token (trae el club_id como
+      // claim firmado) en vez de la llave publica -- las politicas RLS de
+      // connect_rita_dms dependen de que llegue este token, no la llave.
+      'Authorization': `Bearer ${window.__authToken || SUPABASE_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': opts.prefer || 'return=representation',
       ...opts.headers
@@ -726,8 +729,9 @@ async function doAdminLogin() {
       : await callAuth({ action: 'set', clubId: id, password: pass });
     btn.disabled = false; btn.textContent = prev;
     if (res.ok) {
-      sessionStorage.setItem('club_admin', JSON.stringify({ id: res.clubId, nombre: res.nombre, codigo: res.codigo }));
+      sessionStorage.setItem('club_admin', JSON.stringify({ id: res.clubId, nombre: res.nombre, codigo: res.codigo, token: res.token }));
       window.__authClubId = res.clubId;
+      window.__authToken = res.token;
       document.getElementById('admin-login').style.display = 'none';
       init();
     } else {
@@ -752,8 +756,16 @@ async function changePass() {
   const newp = prompt('Nueva clave (mínimo 4 caracteres):');
   if (newp === null) return;
   const res = await callAuth({ action: 'change', clubId: clubId, password: oldp, newPassword: newp });
-  if (res.ok) toast('Clave actualizada');
-  else toast(res.error || 'No se pudo cambiar la clave', true);
+  if (res.ok) {
+    // La clave cambio -> el token viejo sigue siendo valido (no depende de
+    // la clave), pero guardamos el nuevo igual para mantener todo fresco.
+    window.__authToken = res.token;
+    const saved = JSON.parse(sessionStorage.getItem('club_admin') || '{}');
+    sessionStorage.setItem('club_admin', JSON.stringify({ ...saved, token: res.token }));
+    toast('Clave actualizada');
+  } else {
+    toast(res.error || 'No se pudo cambiar la clave', true);
+  }
 }
 
 function logoutAdmin() {
@@ -772,6 +784,7 @@ async function bootAdmin() {
     try {
       const c = JSON.parse(saved);
       window.__authClubId = c.id;
+      window.__authToken = c.token;
       document.getElementById('admin-login').style.display = 'none';
       await init();
       return;
