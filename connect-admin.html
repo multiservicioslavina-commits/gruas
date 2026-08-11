@@ -172,55 +172,46 @@
     .tabs { font-size: 12px; }
     .rooms-grid { grid-template-columns: 1fr; }
   }
-
-  .gate-overlay {
-    position: fixed; inset: 0; background: var(--bg); z-index: 200;
-    display: flex; align-items: center; justify-content: center; padding: 20px;
-  }
-  .gate-box {
-    width: 100%; max-width: 340px; background: var(--surface); border: 1px solid var(--border);
-    border-radius: 14px; padding: 28px 24px; text-align: center;
-  }
-  .gate-box h1 { font-size: 18px; margin-bottom: 4px; }
-  .gate-box h1 span { color: var(--accent); }
-  .gate-club { font-size: 13px; color: var(--text2); margin-bottom: 20px; }
-  .gate-box input {
-    width: 100%; padding: 12px; border-radius: 8px; background: var(--surface2);
-    border: 1px solid var(--border); color: var(--text); font-size: 15px; margin-bottom: 10px;
-    text-align: center;
-  }
-  .gate-box input:focus { outline: none; border-color: var(--accent); }
-  .gate-box .btn { width: 100%; justify-content: center; margin-top: 4px; }
-  .gate-hint { font-size: 12px; color: var(--text2); margin-top: 14px; line-height: 1.5; }
-  .gate-error { font-size: 13px; color: var(--red); margin-bottom: 10px; min-height: 16px; }
-  .change-pass-link {
-    font-size: 12px; color: var(--text2); cursor: pointer; margin-left: auto;
-  }
-  .change-pass-link:hover { color: var(--text); }
 </style>
 </head>
 <body>
 
-<div class="gate-overlay" id="gate-overlay">
-  <div class="gate-box">
-    <h1><span>Ridera</span> Club</h1>
-    <div class="gate-club" id="gate-club-name">Cargando club…</div>
-    <div class="gate-error" id="gate-error"></div>
-    <input type="password" id="gate-password" placeholder="Clave del club" autocomplete="current-password" onkeydown="if(event.key==='Enter') submitGate()">
-    <input type="password" id="gate-password2" placeholder="Confirma la clave" autocomplete="new-password" style="display:none" onkeydown="if(event.key==='Enter') submitGate()">
-    <button class="btn btn-primary" id="gate-btn" onclick="submitGate()">Entrar</button>
-    <div class="gate-hint" id="gate-hint"></div>
-    <div class="gate-hint" id="gate-cancel" style="display:none; cursor:pointer; text-decoration:underline;" onclick="cancelGate()">Cancelar</div>
+<!-- LOGIN DEL CLUB -->
+<div id="admin-login" style="position:fixed;inset:0;background:#0f1117;display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem">
+  <div style="background:#1a1d27;border:1px solid #2e3345;border-radius:14px;padding:2rem;width:100%;max-width:360px">
+    <div style="font-weight:700;font-size:1.25rem;margin-bottom:.25rem"><span style="color:#f97316">Ridera</span> Club — Admin</div>
+    <div id="login-sub" style="color:#8b8fa3;font-size:.85rem;margin-bottom:1.25rem">Elige tu club para entrar</div>
+
+    <label style="display:block;font-size:.78rem;color:#8b8fa3;margin-bottom:.35rem">Tu club</label>
+    <select id="login-club" onchange="onClubSelect()" style="width:100%;background:#242836;border:1px solid #2e3345;border-radius:8px;color:#e8e9ed;padding:.65rem .8rem;font-size:.95rem;outline:none">
+      <option value="">Cargando clubes…</option>
+    </select>
+
+    <div id="login-pass-wrap" style="display:none">
+      <label id="login-pass-label" style="display:block;font-size:.78rem;color:#8b8fa3;margin:.9rem 0 .35rem">Clave</label>
+      <div style="position:relative">
+        <input id="login-pass" type="password" placeholder="Tu clave" style="width:100%;background:#242836;border:1px solid #2e3345;border-radius:8px;color:#e8e9ed;padding:.7rem 2.6rem .7rem .9rem;font-size:1rem;outline:none" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        <button type="button" id="login-eye" onclick="togglePass()" title="Ver clave" style="position:absolute;right:.4rem;top:50%;transform:translateY(-50%);background:none;border:none;color:#8b8fa3;cursor:pointer;font-size:1.15rem;padding:.2rem">👁️</button>
+      </div>
+    </div>
+
+    <div id="login-error" style="color:#ef4444;font-size:.83rem;margin-top:.6rem;display:none"></div>
+    <button id="login-btn" onclick="doAdminLogin()" style="display:none;width:100%;margin-top:1rem;padding:.75rem;background:#f97316;color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:1rem">Entrar</button>
+    <button id="login-forgot" onclick="forgotPass()" style="display:none;width:100%;margin-top:.6rem;background:none;border:none;color:#8b8fa3;cursor:pointer;font-size:.82rem;text-decoration:underline">¿Olvidaste tu clave?</button>
   </div>
 </div>
 
-<div class="header" style="display:none" id="app-header">
+<div class="header">
   <h1><span>Ridera</span> Club</h1>
   <div class="club-name" id="club-name">Cargando...</div>
-  <div class="change-pass-link" onclick="openChangePass()">Cambiar clave</div>
+  <div style="display:flex;gap:8px;margin-left:16px">
+    <button class="btn btn-outline btn-sm" onclick="refreshPanel()">↻ Actualizar</button>
+    <button class="btn btn-outline btn-sm" onclick="changePass()">🔑 Cambiar clave</button>
+    <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">Cerrar sesión</button>
+  </div>
 </div>
 
-<div class="container" id="app-container" style="display:none">
+<div class="container">
   <div class="stats" id="stats">
     <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
     <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
@@ -325,8 +316,6 @@ const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
 let clubId = null;
 let clubCode = null;
-let clubToken = null;
-let gateMode = 'login'; // 'login' | 'set' | 'change'
 let parsedMembers = [];
 let allMembers = [];
 
@@ -334,11 +323,10 @@ async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: {
       'apikey': SUPABASE_KEY,
-      // Con clave de club válida, mandamos ESE token (no la llave pública) —
-      // así las políticas RLS de connect_rita_dms saben a qué club pertenece
-      // quien pregunta. Sin token todavía (login/lectura pública de clubs),
-      // se usa la llave anónima normal.
-      'Authorization': `Bearer ${clubToken || SUPABASE_KEY}`,
+      // Con sesion de club activa mandamos SU token (trae el club_id como
+      // claim firmado) en vez de la llave publica -- las politicas RLS de
+      // connect_rita_dms dependen de que llegue este token, no la llave.
+      'Authorization': `Bearer ${window.__authToken || SUPABASE_KEY}`,
       'Content-Type': 'application/json',
       'Prefer': opts.prefer || 'return=representation',
       ...opts.headers
@@ -350,155 +338,28 @@ async function sb(path, opts = {}) {
   return res.json();
 }
 
-async function clubAuth(action, extra = {}) {
-  const res = await fetch(`${SUPABASE_URL}/functions/v1/club-auth`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY },
-    body: JSON.stringify({ action, clubId, ...extra })
-  });
-  return res.json();
-}
-
-function tokenStorageKey(id) { return `club_auth_token_${id}`; }
-
-function loadSavedToken(id) {
-  try {
-    const raw = localStorage.getItem(tokenStorageKey(id));
-    if (!raw) return null;
-    const saved = JSON.parse(raw);
-    // El token dura 12h en el servidor; lo damos por vencido a las 11h
-    // localmente para no arriesgarnos a usar uno ya expirado.
-    if (Date.now() - saved.at > 11 * 60 * 60 * 1000) return null;
-    return saved.token;
-  } catch (_) { return null; }
-}
-
-function saveToken(id, token) {
-  localStorage.setItem(tokenStorageKey(id), JSON.stringify({ token, at: Date.now() }));
-}
-
 async function init() {
-  const slug = location.pathname.split('/').filter(Boolean).pop();
   let clubs;
-  if (slug && slug !== 'connect-admin') {
-    clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
-  }
-  if (!clubs || !clubs.length) {
-    clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
+  if (window.__authClubId) {
+    clubs = await sb(`clubs?id=eq.${window.__authClubId}&select=id,nombre,codigo&limit=1`);
+  } else {
+    const slug = location.pathname.split('/').filter(Boolean).pop();
+    if (slug && slug !== 'connect-admin' && slug !== 'admin') {
+      clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
+    }
+    if (!clubs || !clubs.length) {
+      clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
+    }
   }
   if (!clubs.length) {
-    document.getElementById('gate-club-name').textContent = 'No hay clubes';
+    document.getElementById('club-name').textContent = 'No hay clubes';
     return;
   }
   clubId = clubs[0].id;
   clubCode = clubs[0].codigo || clubs[0].id;
-  document.getElementById('gate-club-name').textContent = clubs[0].nombre;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-
-  const saved = loadSavedToken(clubId);
-  if (saved) {
-    clubToken = saved;
-    enterApp();
-    return;
-  }
-
-  const estado = await clubAuth('estado');
-  if (!estado.ok) {
-    document.getElementById('gate-error').textContent = estado.error || 'No se pudo verificar el club';
-    return;
-  }
-  gateMode = estado.tienePass ? 'login' : 'set';
-  renderGate();
-}
-
-function renderGate() {
-  const pass2 = document.getElementById('gate-password2');
-  const hint = document.getElementById('gate-hint');
-  const btn = document.getElementById('gate-btn');
-  document.getElementById('gate-password').value = '';
-  pass2.value = '';
-  document.getElementById('gate-error').textContent = '';
-  document.getElementById('gate-cancel').style.display = gateMode === 'change' ? '' : 'none';
-  if (gateMode === 'set') {
-    pass2.style.display = '';
-    hint.textContent = 'Este club aún no tiene clave. Crea una (mínimo 4 caracteres) para proteger el panel de administración.';
-    btn.textContent = 'Crear clave y entrar';
-  } else if (gateMode === 'change') {
-    pass2.style.display = '';
-    document.getElementById('gate-password').placeholder = 'Clave actual';
-    pass2.placeholder = 'Clave nueva';
-    hint.textContent = 'Cambia la clave de administración de este club.';
-    btn.textContent = 'Cambiar clave';
-  } else {
-    pass2.style.display = 'none';
-    document.getElementById('gate-password').placeholder = 'Clave del club';
-    hint.textContent = '';
-    btn.textContent = 'Entrar';
-  }
-}
-
-async function submitGate() {
-  const btn = document.getElementById('gate-btn');
-  const errEl = document.getElementById('gate-error');
-  const pass = document.getElementById('gate-password').value;
-  const pass2 = document.getElementById('gate-password2').value;
-  errEl.textContent = '';
-
-  if (gateMode === 'set') {
-    if (pass.length < 4) return errEl.textContent = 'Mínimo 4 caracteres';
-    if (pass !== pass2) return errEl.textContent = 'Las claves no coinciden';
-    btn.disabled = true;
-    const r = await clubAuth('set', { password: pass });
-    btn.disabled = false;
-    if (!r.ok) return errEl.textContent = r.error || 'Error al crear la clave';
-    clubToken = r.token;
-    saveToken(clubId, r.token);
-    enterApp();
-    return;
-  }
-
-  if (gateMode === 'change') {
-    if (pass2.length < 4) return errEl.textContent = 'Mínimo 4 caracteres';
-    btn.disabled = true;
-    const r = await clubAuth('change', { password: pass, newPassword: pass2 });
-    btn.disabled = false;
-    if (!r.ok) return errEl.textContent = r.error || 'Clave actual incorrecta';
-    clubToken = r.token;
-    saveToken(clubId, r.token);
-    toast('Clave actualizada');
-    enterApp();
-    return;
-  }
-
-  // login
-  btn.disabled = true;
-  const r = await clubAuth('login', { password: pass });
-  btn.disabled = false;
-  if (!r.ok) return errEl.textContent = 'Clave incorrecta';
-  clubToken = r.token;
-  saveToken(clubId, r.token);
-  enterApp();
-}
-
-function openChangePass() {
-  gateMode = 'change';
-  renderGate();
-  document.getElementById('gate-overlay').style.display = 'flex';
-  document.getElementById('app-header').style.display = 'none';
-  document.getElementById('app-container').style.display = 'none';
-}
-
-function cancelGate() {
-  gateMode = 'login';
-  enterApp();
-}
-
-function enterApp() {
-  document.getElementById('gate-overlay').style.display = 'none';
-  document.getElementById('app-header').style.display = '';
-  document.getElementById('app-container').style.display = '';
-  Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
 }
 
 async function loadStats() {
@@ -800,7 +661,139 @@ async function sendRitaResponse(questionId, memberId) {
   textarea.disabled = false;
 }
 
-init();
+// ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
+const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
+const RIDERA_WA = '573104717982'; // WhatsApp de soporte para recuperar clave
+let loginClubTienePass = false;
+
+async function callAuth(payload) {
+  const r = await fetch(CLUB_AUTH, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  return r.json();
+}
+
+function togglePass() {
+  const i = document.getElementById('login-pass');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  document.getElementById('login-eye').textContent = i.type === 'password' ? '👁️' : '🙈';
+}
+
+async function loadClubsForLogin() {
+  const sel = document.getElementById('login-club');
+  const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre.asc');
+  if (!clubs || !clubs.length) { sel.innerHTML = '<option value="">No hay clubes</option>'; return; }
+  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
+}
+
+async function onClubSelect() {
+  const id = document.getElementById('login-club').value;
+  const passWrap = document.getElementById('login-pass-wrap');
+  const btn = document.getElementById('login-btn');
+  const forgot = document.getElementById('login-forgot');
+  const sub = document.getElementById('login-sub');
+  const label = document.getElementById('login-pass-label');
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  document.getElementById('login-pass').value = '';
+  if (!id) { passWrap.style.display = 'none'; btn.style.display = 'none'; forgot.style.display = 'none'; return; }
+  const est = await callAuth({ action: 'estado', clubId: id });
+  loginClubTienePass = !!est.tienePass;
+  passWrap.style.display = 'block';
+  btn.style.display = 'block';
+  if (loginClubTienePass) {
+    sub.textContent = 'Ingresa la clave de tu club';
+    label.textContent = 'Clave';
+    document.getElementById('login-pass').placeholder = 'Tu clave';
+    btn.textContent = 'Entrar';
+    forgot.style.display = 'block';
+  } else {
+    sub.textContent = 'Tu club aún no tiene clave — créala ahora';
+    label.textContent = 'Crea una clave (mínimo 4 caracteres)';
+    document.getElementById('login-pass').placeholder = 'Nueva clave';
+    btn.textContent = 'Crear clave y entrar';
+    forgot.style.display = 'none';
+  }
+}
+
+async function doAdminLogin() {
+  const id = document.getElementById('login-club').value;
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  if (!id) { err.textContent = 'Elige tu club.'; err.style.display = 'block'; return; }
+  if (!pass) { err.textContent = 'Escribe la clave.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Un momento…';
+  try {
+    const res = loginClubTienePass
+      ? await callAuth({ action: 'login', clubId: id, password: pass })
+      : await callAuth({ action: 'set', clubId: id, password: pass });
+    btn.disabled = false; btn.textContent = prev;
+    if (res.ok) {
+      sessionStorage.setItem('club_admin', JSON.stringify({ id: res.clubId, nombre: res.nombre, codigo: res.codigo, token: res.token }));
+      window.__authClubId = res.clubId;
+      window.__authToken = res.token;
+      document.getElementById('admin-login').style.display = 'none';
+      init();
+    } else {
+      err.textContent = res.error || 'Clave incorrecta.'; err.style.display = 'block';
+    }
+  } catch (e) { btn.disabled = false; btn.textContent = prev; err.textContent = 'Error de conexión.'; err.style.display = 'block'; }
+}
+
+function forgotPass() {
+  if (confirm('Para recuperar tu clave escríbele a Ridera por WhatsApp. ¿Abrir el chat?')) {
+    const club = document.getElementById('login-club');
+    const nombre = club.options[club.selectedIndex]?.text || '';
+    const txt = encodeURIComponent(`Hola, olvidé la clave del panel de administración del club ${nombre}.`);
+    window.open(`https://wa.me/${RIDERA_WA}?text=${txt}`, '_blank');
+  }
+}
+
+async function changePass() {
+  if (!clubId) return;
+  const oldp = prompt('Clave actual:');
+  if (oldp === null) return;
+  const newp = prompt('Nueva clave (mínimo 4 caracteres):');
+  if (newp === null) return;
+  const res = await callAuth({ action: 'change', clubId: clubId, password: oldp, newPassword: newp });
+  if (res.ok) {
+    // La clave cambio -> el token viejo sigue siendo valido (no depende de
+    // la clave), pero guardamos el nuevo igual para mantener todo fresco.
+    window.__authToken = res.token;
+    const saved = JSON.parse(sessionStorage.getItem('club_admin') || '{}');
+    sessionStorage.setItem('club_admin', JSON.stringify({ ...saved, token: res.token }));
+    toast('Clave actualizada');
+  } else {
+    toast(res.error || 'No se pudo cambiar la clave', true);
+  }
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem('club_admin');
+  location.reload();
+}
+
+async function refreshPanel() {
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  toast('Actualizado');
+}
+
+async function bootAdmin() {
+  const saved = sessionStorage.getItem('club_admin');
+  if (saved) {
+    try {
+      const c = JSON.parse(saved);
+      window.__authClubId = c.id;
+      window.__authToken = c.token;
+      document.getElementById('admin-login').style.display = 'none';
+      await init();
+      return;
+    } catch (e) { /* cae al login */ }
+  }
+  await loadClubsForLogin();
+}
+
+bootAdmin();
 </script>
 </body>
 </html>
