@@ -7,6 +7,7 @@ https://club.ridera.com.co/admin/*      /connect-admin.html   200!
 /grueros                    /grueros.html                      200
 /almacenes                  /almacenes.html                    200
 /seguimiento                /seguimiento.html                  200
+/privacidad                 /politica-privacidad-gruas.html     200
 /grua/*                     /grua.html?slug=:splat             200
 /almacen/*                  /almacen.html?slug=:splat          200
 /promo/*                    /promo.html?id=:splat              200
