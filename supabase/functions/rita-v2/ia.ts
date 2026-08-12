@@ -283,7 +283,18 @@ export async function responderConOrquestador(
   try {
     resultado = await ejecutarConversacion("claude", system, messages, phone, "normal");
   } catch (e) {
-    console.error("Claude fallo en el orquestador, cae a OpenAI:", e);
+    const mensaje = e instanceof Error ? e.message : String(e);
+    console.error("Claude fallo en el orquestador, cae a OpenAI:", mensaje);
+    // Log temporal de diagnostico: por que fallo Claude en el orquestador.
+    try {
+      await supabase.from("rita_acciones_log").insert({
+        telefono: phone,
+        herramienta: "orquestador_claude_fallo",
+        parametros: {},
+        ok: false,
+        error: mensaje.slice(0, 500),
+      });
+    } catch { /* no interrumpe el flujo por un fallo de auditoria */ }
     if (!OPENAI_KEY) {
       throw new Error("Claude fallo y no hay OPENAI_API_KEY configurada para el fallback");
     }
