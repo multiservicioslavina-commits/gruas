@@ -16,6 +16,11 @@ const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const VERIFY_TOKEN  = Deno.env.get("RITA_VERIFY_TOKEN") ?? "ridera_rita_2026";
+// App Secret de la app de Meta (Configuracion basica > Clave secreta de la app).
+// NO es el mismo valor que WHATSAPP_TOKEN. Meta firma el body del webhook con
+// este secreto; sin el configurado la validacion de firma queda deshabilitada
+// (fail-open) para no romper el webhook real.
+const APP_SECRET    = Deno.env.get("WHATSAPP_APP_SECRET") ?? "";
 const SB_URL        = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY        = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GRAPH         = "https://graph.facebook.com/v25.0";
@@ -24,6 +29,63 @@ const MODEL = "claude-haiku-4-5-20251001";
 const MAX_TOOL_ROUNDS = 4;
 
 const supabase = createClient(SB_URL, SB_KEY);
+
+// ─── Validacion de integridad: HMAC-SHA256 ──────────────────────
+// Meta firma el body crudo del webhook con el App Secret. Si WHATSAPP_APP_SECRET
+// no esta configurado todavia, no bloqueamos el trafico real (fail-open) para
+// no repetir el incidente de webhooks rechazados; una vez seteado el secreto
+// en Supabase, la validacion queda activa de forma automatica.
+async function validarSignatura(body: string, signature: string): Promise<boolean> {
+  if (!APP_SECRET) {
+    console.warn("WHATSAPP_APP_SECRET no configurado: validacion de firma deshabilitada");
+    return true;
+  }
+  if (!signature) return false;
+  try {
+    const enc = new TextEncoder();
+    const key = await crypto.subtle.importKey(
+      "raw",
+      enc.encode(APP_SECRET),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["sign"],
+    );
+    const expected = await crypto.subtle.sign("HMAC", key, enc.encode(body));
+    const expectedHex = Array.from(new Uint8Array(expected))
+      .map(b => b.toString(16).padStart(2, "0"))
+      .join("");
+    const signatureClean = signature.replace(/^sha256=/, "");
+    if (signatureClean.length !== expectedHex.length) return false;
+    let diff = 0;
+    for (let i = 0; i < expectedHex.length; i++) {
+      diff |= expectedHex.charCodeAt(i) ^ signatureClean.charCodeAt(i);
+    }
+    return diff === 0;
+  } catch (e) {
+    console.error("Error validando HMAC:", e);
+    return false;
+  }
+}
+
+// ─── Rate limiting: max 5 requests por minuto por telefono ───────
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+function verificarRateLimit(phone: string): boolean {
+  const ahora = Date.now();
+  const limite = rateLimitMap.get(phone);
+
+  if (!limite || ahora > limite.resetAt) {
+    rateLimitMap.set(phone, { count: 1, resetAt: ahora + 60000 });
+    return true;
+  }
+
+  if (limite.count >= 5) {
+    console.warn(`Rate limit exceeded para ${phone}`);
+    return false;
+  }
+
+  limite.count++;
+  return true;
+}
 
 // ─── Memoria de conversacion ────────────────────────────────────
 async function getHistory(phone: string, limit = 10): Promise<{ role: string; content: string }[]> {
@@ -575,7 +637,18 @@ Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response("Method not allowed", { status: 405 });
 
   try {
-    const body = await req.json();
+    const rawBody = await req.text();
+    const signature = req.headers.get("x-hub-signature-256") || "";
+
+    // Validar que el webhook viene realmente de Meta (no en modo prueba)
+    if (!rawBody.includes('"test":true')) {
+      if (!await validarSignatura(rawBody, signature)) {
+        console.warn("Firma HMAC invalida:", signature.slice(0, 20) + "...");
+        return json({ ok: false, error: "invalid_signature" }, 401);
+      }
+    }
+
+    const body = JSON.parse(rawBody);
 
     // Modo prueba: permite ejercitar el motor sin pasar por WhatsApp.
     if (body?.test === true) {
@@ -593,6 +666,11 @@ Deno.serve(async (req: Request) => {
     if (!msg) return json({ ok: true, skip: "sin mensaje" });
 
     const from = String(msg.from ?? "");
+
+    // Rate limiting
+    if (!verificarRateLimit(from)) {
+      return json({ ok: false, error: "rate_limit_exceeded" }, 429);
+    }
     let message = "";
     let conVoz = false;
 

@@ -945,7 +945,10 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       fecha_followup: `${fecha}T13:00:00-05:00`,
       completado: false,
     });
-    if (error) return { ok: false, data: `No se pudo guardar el recordatorio: ${error.message}` };
+    if (error) {
+      console.error("Error guardando recordatorio:", error);
+      return { ok: false, data: "No se pudo guardar el recordatorio. Intenta de nuevo." };
+    }
     return { ok: true, data: `Recordatorio guardado para el ${fecha}.` };
   },
 
@@ -956,7 +959,10 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       valor: String(input.valor),
       updated_at: new Date().toISOString(),
     }, { onConflict: "telefono,clave" });
-    if (error) return { ok: false, data: `No se pudo guardar: ${error.message}` };
+    if (error) {
+      console.error("Error guardando preferencia:", error);
+      return { ok: false, data: "No se pudo guardar tus preferencias. Intenta de nuevo." };
+    }
     return { ok: true, data: `Guardado: ${String(input.clave)} = ${String(input.valor)}` };
   },
 
@@ -982,7 +988,10 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       fecha_revocacion: acepta ? null : ahora,
       updated_at: ahora,
     }, { onConflict: "telefono" });
-    if (error) return { ok: false, data: `No se pudo registrar: ${error.message}` };
+    if (error) {
+      console.error("Error registrando consentimiento:", error);
+      return { ok: false, data: "No se pudo registrar tu preferencia. Intenta de nuevo." };
+    }
     return {
       ok: true,
       data: acepta
@@ -1609,7 +1618,10 @@ CONTACTO: Abogado especializado en responsabilidad civil`
       enviado: false,
     });
 
-    if (error) return { ok: false, data: `No se pudo guardar el recordatorio: ${error.message}` };
+    if (error) {
+      console.error("Error guardando recordatorio:", error);
+      return { ok: false, data: "No se pudo guardar el recordatorio. Intenta de nuevo." };
+    }
 
     const fechaFormato = fecha.toLocaleDateString("es-CO") + " a las " + fecha.toLocaleTimeString("es-CO");
     return { ok: true, data: `✓ Recordatorio programado para ${fechaFormato}: "${asunto}"` };
