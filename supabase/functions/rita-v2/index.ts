@@ -11,6 +11,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
+import { responderConOrquestador } from "./ia.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -85,6 +86,19 @@ function verificarRateLimit(phone: string): boolean {
 
   limite.count++;
   return true;
+}
+
+// ─── Nombre del rider: se resuelve una vez y se pasa al prompt ──
+// Sin esto Rita solo sabia el nombre si decidia llamar a mi_perfil,
+// asi que en la practica solo lo usaba cuando se lo pedian explicitamente.
+async function getRiderNombre(phone: string): Promise<string | null> {
+  const tel = phone.replace(/^57/, "");
+  const { data } = await supabase
+    .from("riders")
+    .select("nombre")
+    .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+    .maybeSingle();
+  return data?.nombre ?? null;
 }
 
 // ─── Memoria de conversacion ────────────────────────────────────
@@ -286,7 +300,17 @@ Fuente: Area Metropolitana del Valle de Aburra / medellin.gov.co`;
 }
 
 // ─── System prompt ──────────────────────────────────────────────
-function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolean }, conVoz = false): string {
+function buildSystemPrompt(
+  consentimiento: { registrado: boolean; acepta: boolean },
+  conVoz = false,
+  nombreRider: string | null = null,
+): string {
+  const bloqueNombre = nombreRider
+    ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
+  de vez en cuando (por ejemplo al saludar o cuando la respuesta se sienta mas personal),
+  sin que sea en cada mensaje ni suene forzado o repetitivo.`
+    : "";
+
   const bloqueEstilo = conVoz
     ? `COMO HABLAS (MODO VOZ - tu respuesta se convierte a audio, el rider la ESCUCHA):
 - REGLA #1: NUNCA uses asteriscos, guiones, vinetas, encabezados, URLs ni emojis.
@@ -300,13 +324,13 @@ function buildSystemPrompt(consentimiento: { registrado: boolean; acepta: boolea
 - Links: no los digas. Solo menciona el sitio ("buscalo en ridera punto com punto co").
 - NO repitas la pregunta del rider ni hagas introduccion. Ve al grano.
 - Varía el tono: a veces empieza con "ey", otras con "mirá", otras directo al dato.
-  Nunca suenes como locutor de radio ni como asistente virtual.`
+  Nunca suenes como locutor de radio ni como asistente virtual.${bloqueNombre}`
     : `COMO HABLAS:
 - WhatsApp entre amigos moteros. Frases cortas, naturales.
 - "parce", "dale", "pilas", "bacano" cuando fluyan natural.
 - 1 a 3 emojis por mensaje. NO empieces siempre con "Hola".
 - Maximo 6 a 8 lineas. Un saludo simple se responde en 1 a 3 lineas.
-- Nada de listas con vinetas salvo que estes dando links o datos tecnicos.`;
+- Nada de listas con vinetas salvo que estes dando links o datos tecnicos.${bloqueNombre}`;
 
   const bloqueConsentimiento = consentimiento.registrado
     ? `El rider ya definio sus preferencias de comunicacion (acepta: ${consentimiento.acepta}). No le vueltas a preguntar salvo que el saque el tema.`
@@ -479,8 +503,9 @@ async function responder(
   phone: string,
   consentimiento: { registrado: boolean; acepta: boolean },
   conVoz = false,
+  nombreRider: string | null = null,
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -531,6 +556,27 @@ async function responder(
     messages,
   );
   return textoDe((cierre.content ?? []) as Bloque[]);
+}
+
+// ─── Orquestador de IA (Claude + OpenAI): apagado por defecto ───
+// Mismo prompt y mensajes que responder(), pero delega la ejecucion a
+// ia.ts, que decide el motor (fallback) y compara respuestas en temas
+// criticos. Solo se usa si RITA_ORQUESTADOR=true (trafico real) o si
+// el modo prueba lo pide explicitamente con {orquestador:true}.
+async function responderOrquestado(
+  message: string,
+  history: { role: string; content: string }[],
+  phone: string,
+  consentimiento: { registrado: boolean; acepta: boolean },
+  conVoz = false,
+  nombreRider: string | null = null,
+): Promise<string> {
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
+  const messages: Mensaje[] = [
+    ...history.map(h => ({ role: h.role, content: h.content })),
+    { role: "user", content: message },
+  ];
+  return await responderConOrquestador(system, messages, phone);
 }
 
 // ─── WhatsApp: entrada y salida ─────────────────────────────────
@@ -654,12 +700,16 @@ Deno.serve(async (req: Request) => {
     if (body?.test === true) {
       const phone = String(body.phone ?? "573000000000");
       const texto = String(body.message ?? "");
-      const [history, consentimiento] = await Promise.all([
+      const [history, consentimiento, nombreRider] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
+        getRiderNombre(phone),
       ]);
-      const reply = await responder(texto, history, phone, consentimiento);
-      return json({ ok: true, reply });
+      const usarOrquestador = body.orquestador === true;
+      const reply = usarOrquestador
+        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider)
+        : await responder(texto, history, phone, consentimiento, false, nombreRider);
+      return json({ ok: true, reply, motor: usarOrquestador ? "orquestador" : "claude_directo" });
     }
 
     const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
@@ -735,14 +785,17 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const [history, consentimiento] = await Promise.all([
+    const [history, consentimiento, nombreRider] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
+      getRiderNombre(from),
     ]);
 
     let reply = "";
     try {
-      reply = await responder(message, history, from, consentimiento, conVoz);
+      reply = Deno.env.get("RITA_ORQUESTADOR") === "true"
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
