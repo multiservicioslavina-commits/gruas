@@ -63,6 +63,19 @@ const HERRAMIENTAS_CRITICAS = new Set([
 export type Bloque = { type: string; [k: string]: unknown };
 export type Mensaje = { role: string; content: string | Bloque[] };
 
+// Respaldo de HERRAMIENTAS_CRITICAS: si el motor que respondio no llamo
+// ninguna herramienta (p.ej. OpenAI en un fallback contesta de memoria
+// sin consultar nada), esto igual detecta el tema por palabras clave en
+// el mensaje del rider para no perder la comparacion en casos criticos.
+const PALABRAS_CRITICAS =
+  /accidente|herid[oa]|sangr|primeros auxilios|choqu|me ca[ií]|atropell|ambulanc|emergencia|bomberos|polic[ií]a|codigo de transito|comparendo|multa|infracci[oó]n|abogado|demanda|denuncia|responsabilidad civil|pico y placa|restricci[oó]n vehicular/i;
+
+function esTemaCriticoPorTexto(messages: Mensaje[]): boolean {
+  const ultimo = messages[messages.length - 1];
+  if (!ultimo || typeof ultimo.content !== "string") return false;
+  return PALABRAS_CRITICAS.test(ultimo.content);
+}
+
 async function auditarIA(
   phone: string,
   proveedor: string,
@@ -302,7 +315,8 @@ export async function responderConOrquestador(
     resultado = await ejecutarConversacion("openai", system, messages, phone, "fallback");
   }
 
-  const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h));
+  const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
+    || esTemaCriticoPorTexto(messages);
   if (!esCritico || !OPENAI_KEY) return resultado.texto;
 
   // 2) Comparacion: solo para temas criticos. Generamos una segunda
