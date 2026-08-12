@@ -12,6 +12,7 @@ const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WP_API = "https://ridera.com.co/wp-json/wp/v2";
 const VOYAGE_API_KEY = (Deno.env.get("VOYAGE_API_KEY") ?? "").trim();
+const OPENAI_KEY = (Deno.env.get("OPENAI_API_KEY") ?? "").trim();
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
 
@@ -22,6 +23,22 @@ async function embedQueryVoyage(query: string): Promise<number[] | null> {
       method: "POST",
       headers: { Authorization: `Bearer ${VOYAGE_API_KEY}`, "Content-Type": "application/json" },
       body: JSON.stringify({ input: [query], model: "voyage-3", input_type: "query" }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data?.[0]?.embedding ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function embedQueryOpenAI(query: string): Promise<number[] | null> {
+  if (!OPENAI_KEY) return null;
+  try {
+    const res = await fetch("https://api.openai.com/v1/embeddings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ input: query, model: "text-embedding-3-small" }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -817,38 +834,75 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
 
   async buscar_en_ridera(input) {
     const consulta = String(input.consulta ?? "");
-    const queryEmbedding = await embedQueryVoyage(consulta);
 
-    if (queryEmbedding) {
+    // Búsqueda semántica dual: Voyage AI + OpenAI
+    const [voyageEmbedding, openaiEmbedding] = await Promise.all([
+      embedQueryVoyage(consulta),
+      embedQueryOpenAI(consulta),
+    ]);
+
+    const semanticResults: Record<string, unknown>[] = [];
+    const seen = new Set<string>();
+
+    // Intenta búsqueda con Voyage AI
+    if (voyageEmbedding) {
       try {
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
-          query_embedding: queryEmbedding,
+          query_embedding: voyageEmbedding,
           match_count: 5,
           match_threshold: 0.3,
         });
 
         if (!error && matches && matches.length > 0) {
-          const seen = new Set();
-          const results = [];
           for (const match of matches) {
             const key = `${match.url}#${match.titulo}`;
             if (!seen.has(key)) {
               seen.add(key);
-              results.push({
+              semanticResults.push({
                 tipo: match.categoria || "contenido",
                 titulo: match.titulo || "Sin título",
                 resumen: match.chunk_text.slice(0, 300),
                 link: match.url || "",
+                score: match.similarity || 0,
               });
             }
-          }
-          if (results.length > 0) {
-            return { ok: true, data: results };
           }
         }
       } catch { }
     }
 
+    // Intenta búsqueda con OpenAI (complementario)
+    if (openaiEmbedding && semanticResults.length < 3) {
+      try {
+        const { data: matches, error } = await supabase.rpc("match_ridera_content", {
+          query_embedding: openaiEmbedding,
+          match_count: 5,
+          match_threshold: 0.3,
+        });
+
+        if (!error && matches && matches.length > 0) {
+          for (const match of matches) {
+            const key = `${match.url}#${match.titulo}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              semanticResults.push({
+                tipo: match.categoria || "contenido",
+                titulo: match.titulo || "Sin título",
+                resumen: match.chunk_text.slice(0, 300),
+                link: match.url || "",
+                score: match.similarity || 0,
+              });
+            }
+          }
+        }
+      } catch { }
+    }
+
+    if (semanticResults.length > 0) {
+      return { ok: true, data: semanticResults.slice(0, 5) };
+    }
+
+    // Fallback: búsqueda por keywords si nada semántico funcionó
     const buscar = async (endpoint: string, tipo: string) => {
       try {
         const r = await fetch(
