@@ -11,8 +11,25 @@ import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WP_API = "https://ridera.com.co/wp-json/wp/v2";
+const VOYAGE_API_KEY = (Deno.env.get("VOYAGE_API_KEY") ?? "").trim();
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
+
+async function embedQueryVoyage(query: string): Promise<number[] | null> {
+  if (!VOYAGE_API_KEY) return null;
+  try {
+    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${VOYAGE_API_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ input: [query], model: "voyage-3", input_type: "query" }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.data?.[0]?.embedding ?? null;
+  } catch {
+    return null;
+  }
+}
 
 export function norm(s: string): string {
   return (s || "").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
@@ -800,6 +817,38 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
 
   async buscar_en_ridera(input) {
     const consulta = String(input.consulta ?? "");
+    const queryEmbedding = await embedQueryVoyage(consulta);
+
+    if (queryEmbedding) {
+      try {
+        const { data: matches, error } = await supabase.rpc("match_ridera_content", {
+          query_embedding: queryEmbedding,
+          match_count: 5,
+          match_threshold: 0.3,
+        });
+
+        if (!error && matches && matches.length > 0) {
+          const seen = new Set();
+          const results = [];
+          for (const match of matches) {
+            const key = `${match.url}#${match.titulo}`;
+            if (!seen.has(key)) {
+              seen.add(key);
+              results.push({
+                tipo: match.categoria || "contenido",
+                titulo: match.titulo || "Sin título",
+                resumen: match.chunk_text.slice(0, 300),
+                link: match.url || "",
+              });
+            }
+          }
+          if (results.length > 0) {
+            return { ok: true, data: results };
+          }
+        }
+      } catch { }
+    }
+
     const buscar = async (endpoint: string, tipo: string) => {
       try {
         const r = await fetch(
