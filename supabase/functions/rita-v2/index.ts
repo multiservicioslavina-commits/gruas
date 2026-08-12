@@ -93,10 +93,15 @@ function verificarRateLimit(phone: string): boolean {
 // asi que en la practica solo lo usaba cuando se lo pedian explicitamente.
 async function getRiderNombre(phone: string): Promise<string | null> {
   const tel = phone.replace(/^57/, "");
+  // .limit(1) antes de .maybeSingle(): si el rider quedo registrado mas de
+  // una vez con el mismo telefono (pasa con reintentos del flujo de
+  // registro), maybeSingle() solo sin limit revienta con "multiple rows".
   const { data } = await supabase
     .from("riders")
     .select("nombre")
     .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   return data?.nombre ?? null;
 }
@@ -775,6 +780,7 @@ Deno.serve(async (req: Request) => {
         .from("riders")
         .select("id")
         .or(`telefono.eq.${from.replace(/^57/, "")},telefono.eq.${from}`)
+        .limit(1)
         .maybeSingle();
       if (!yaExiste) {
         await setConvState(from, "waiting_name", {});

@@ -644,10 +644,14 @@ type ToolResult = { ok: boolean; data: unknown };
 
 async function riderIdPorTelefono(phone: string): Promise<{ id: string; nombre: string } | null> {
   const tel = phone.replace(/^57/, "");
+  // .limit(1) antes de .maybeSingle(): igual que en index.ts, un telefono
+  // con mas de un registro haria que maybeSingle() sola reviente.
   const { data } = await supabase
     .from("riders")
     .select("id, nombre")
     .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
   return data ?? null;
 }
