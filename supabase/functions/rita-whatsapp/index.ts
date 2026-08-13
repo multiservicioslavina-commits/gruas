@@ -235,9 +235,17 @@ async function fetchRutaDetail(message: string): Promise<any | null> {
   const stopWords = new Set(["que","me","recomiendas","para","rutas","ruta","hay","el","la","los","las","una","un","de","en","por","como","cual","donde","puedo","ir","quiero","hola","rita","buenos","dias","buenas","tardes","noches","gracias","a","se","viajar","llegar","destino","recorrido","viaje"]);
   const keywords = msg2.split(/[\s,.\-]+/).map(w => w.trim()).filter(w => w.length > 2 && !stopWords.has(w));
   if (!keywords.length) return null;
-  const orFilters = keywords.map(k => `destino.ilike.%${k}%,titulo.ilike.%${k}%,slug.ilike.%${k}%`).join(",");
-  const { data } = await supabase.from("rita_rutas").select("*").or(orFilters).limit(3);
-  return data?.length ? data : null;
+
+  // Buscar todas las rutas y filtrar localmente con normalización
+  const { data: allRutas } = await supabase.from("rita_rutas").select("*").limit(50);
+  if (!allRutas?.length) return null;
+
+  const matches = allRutas.filter(ruta => {
+    const rutaText = norm([ruta.titulo, ruta.destino, ruta.slug, ruta.resumen].filter(Boolean).join(" "));
+    return keywords.some(k => rutaText.includes(k));
+  });
+
+  return matches.length ? matches.slice(0, 3) : null;
 }
 
 async function fetchMunicipioInfo(message: string): Promise<any[]> {

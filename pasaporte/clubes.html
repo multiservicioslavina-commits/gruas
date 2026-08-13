@@ -91,15 +91,34 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="msg" id="joinMsg"></div>
     </div>
 
-    <h2>Crear un club</h2>
-    <button class="toggle" id="toggleCreate">➕ Soy líder, quiero crear mi club</button>
+    <h2>Registrar mi club</h2>
+    <button class="toggle" id="toggleCreate">➕ Soy líder, quiero registrar mi club</button>
     <div class="card hidden" id="createBox">
-      <label>Nombre del club</label>
+      <label>Nombre del club *</label>
       <input id="clubName" placeholder="Ej: Touring Bikers Colombia">
-      <label>Código (el que compartirás con tus miembros)</label>
+      <label>Ciudad *</label>
+      <input id="clubCiudad" placeholder="Ej: Medellín">
+      <label>Código para invitar miembros *</label>
       <input id="clubCode" placeholder="Ej: TBC2026" autocapitalize="characters">
-      <button class="btn" id="createBtn">Crear club</button>
+      <label>Nombre del líder / presidente</label>
+      <input id="clubLider" placeholder="Tu nombre">
+      <label>WhatsApp de contacto</label>
+      <input id="clubWhatsapp" placeholder="3001234567" type="tel">
+      <label>Email del club</label>
+      <input id="clubEmail" placeholder="miclub@email.com" type="email">
+      <label>Año de fundación</label>
+      <input id="clubFundacion" placeholder="Ej: 2018" type="number" min="1900" max="2030">
+      <label>Descripción del club</label>
+      <input id="clubDesc" placeholder="Cuéntanos sobre su club…">
+      <label>Instagram (opcional)</label>
+      <input id="clubInsta" placeholder="https://instagram.com/tuclub" type="url">
+      <label>Facebook (opcional)</label>
+      <input id="clubFb" placeholder="https://facebook.com/tuclub" type="url">
+      <button class="btn" id="createBtn">Enviar solicitud de registro</button>
       <div class="msg" id="createMsg"></div>
+      <p style="font-size:13px;color:var(--ink-faint);margin-top:10px;line-height:1.5">
+        ⏳ Tu club quedará pendiente de revisión. El equipo Ridera lo aprobará en 24–48 horas y se creará la tarjeta oficial en ridera.com.co.
+      </p>
     </div>
 
     <h2>Ranking de clubes 🏁</h2>
@@ -132,10 +151,10 @@ let userId=null;
 function pctBar(p){ return '<div class="bar"><i style="width:'+Math.min(100,p||0)+'%"></i></div>'; }
 
 async function loadMyClubs(){
-  const { data:mem } = await sb.from("club_members").select("club_id, clubs(id,nombre,codigo,lider_id)").eq("rider_id",userId);
+  const { data:mem } = await sb.from("club_members").select("club_id, clubs(id,nombre,codigo,lider_id,aprobado,ciudad)").eq("rider_id",userId);
   const box=$("myClubs");
   if(!mem || !mem.length){
-    box.innerHTML='<div class="empty">Todavía no perteneces a ningún club. Únete con un código abajo, o crea el tuyo si eres líder. 🏍️</div>';
+    box.innerHTML='<div class="empty">Todavía no perteneces a ningún club. Únete con un código abajo, o registra el tuyo si eres líder. 🏍️</div>';
     return;
   }
   const ids=mem.map(m=>m.club_id);
@@ -144,13 +163,21 @@ async function loadMyClubs(){
   box.innerHTML = mem.map(m=>{
     const c=m.clubs||{}; const st=sMap[c.id]||{};
     const lider = c.lider_id===userId;
+    const pendiente = !c.aprobado;
+    const pendBadge = pendiente
+      ? '<span style="font-family:\'JetBrains Mono\',monospace;font-size:11px;font-weight:700;color:#f59e0b;border:1px solid #f59e0b;border-radius:6px;padding:2px 8px;margin-left:8px;vertical-align:middle">⏳ PENDIENTE</span>'
+      : '';
+    const codigoBox = c.codigo
+      ? '<div class="codebox">Código para invitar: <span class="code">'+c.codigo+'</span></div>'
+      : '';
     return '<div class="card">'
-      +'<div class="club-name">'+esc(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+'</div>'
-      +'<div class="codebox">Código para invitar: <span class="code">'+esc(c.codigo||"")+'</span></div>'
-      + pctBar(st.porcentaje_club)
-      +'<div class="stats"><span><b>'+(st.porcentaje_club||0)+'%</b> del mapa</span>'
-      +'<span><b>'+(st.municipios_cubiertos||0)+'</b>/125 cubiertos</span>'
-      +'<span><b>'+(st.miembros||0)+'</b> miembros</span></div>'
+      +'<div class="club-name">'+esc(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+pendBadge+'</div>'
+      +(pendiente
+        ? '<p style="font-size:13px;color:var(--ink-faint);margin:8px 0 0;line-height:1.5">Tu club está en revisión. El equipo Ridera lo aprobará en 24–48 horas.</p>'
+        : codigoBox + pctBar(st.porcentaje_club)
+          +'<div class="stats"><span><b>'+(st.porcentaje_club||0)+'%</b> del mapa</span>'
+          +'<span><b>'+(st.municipios_cubiertos||0)+'</b>/125 cubiertos</span>'
+          +'<span><b>'+(st.miembros||0)+'</b> miembros</span></div>')
       +'</div>';
   }).join("");
 }
@@ -178,8 +205,9 @@ $("joinBtn").addEventListener("click", async ()=>{
   if(!code){ msg.className="msg err"; msg.textContent="Escribe el código del club."; return; }
   $("joinBtn").disabled=true;
   try{
-    const { data:club } = await sb.from("clubs").select("id,nombre").eq("codigo",code).maybeSingle();
+    const { data:club } = await sb.from("clubs").select("id,nombre,aprobado").eq("codigo",code).maybeSingle();
     if(!club){ msg.className="msg err"; msg.textContent="No existe un club con ese código."; return; }
+    if(!club.aprobado){ msg.className="msg err"; msg.textContent="Este club aún está pendiente de aprobación. Intenta más tarde."; return; }
     const { error } = await sb.from("club_members").insert({ club_id:club.id, rider_id:userId });
     if(error){
       if(/duplicate|unique/i.test(error.message)){ msg.className="msg err"; msg.textContent="Ya perteneces a "+club.nombre+"."; }
@@ -196,24 +224,48 @@ $("joinBtn").addEventListener("click", async ()=>{
 // Mostrar/ocultar crear
 $("toggleCreate").addEventListener("click", ()=>{ $("createBox").classList.toggle("hidden"); });
 
-// Crear club
+// Registrar club
+const FN_REGISTRAR_CLUB = "https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/registrar-club";
 $("createBtn").addEventListener("click", async ()=>{
   const nombre=($("clubName").value||"").trim();
+  const ciudad=($("clubCiudad").value||"").trim();
   const code=($("clubCode").value||"").trim().toUpperCase();
   const msg=$("createMsg"); msg.className="msg";
   if(!nombre){ msg.className="msg err"; msg.textContent="Ponle un nombre al club."; return; }
+  if(!ciudad){ msg.className="msg err"; msg.textContent="Escribe la ciudad del club."; return; }
   if(!code || code.length<3){ msg.className="msg err"; msg.textContent="El código debe tener al menos 3 caracteres."; return; }
   $("createBtn").disabled=true;
   try{
-    const { data:club, error } = await sb.from("clubs").insert({ nombre, codigo:code, lider_id:userId }).select("id,nombre").single();
-    if(error){
-      if(/duplicate|unique/i.test(error.message)){ msg.className="msg err"; msg.textContent="Ese código ya existe, elige otro."; return; }
-      throw error;
+    const payload = {
+      nombre, ciudad, codigo: code, lider_id: userId,
+      lider: ($("clubLider").value||"").trim(),
+      lider_tel: ($("clubWhatsapp").value||"").trim(),
+      whatsapp: ($("clubWhatsapp").value||"").trim(),
+      email: ($("clubEmail").value||"").trim(),
+      fundacion: ($("clubFundacion").value||"").trim(),
+      descripcion: ($("clubDesc").value||"").trim(),
+      instagram: ($("clubInsta").value||"").trim(),
+      facebook: ($("clubFb").value||"").trim(),
+    };
+    const res = await fetch(FN_REGISTRAR_CLUB, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if(!data.ok){
+      if(/duplicate|unique/i.test(data.error||"")){ msg.className="msg err"; msg.textContent="Ese código ya existe, elige otro."; }
+      else { msg.className="msg err"; msg.textContent="Error: "+(data.error||"No se pudo registrar"); }
+      return;
     }
-    await sb.from("club_members").insert({ club_id:club.id, rider_id:userId });
-    msg.className="msg ok"; msg.textContent="¡Club "+club.nombre+" creado! Comparte el código "+code+" con tus miembros.";
-    $("clubName").value=""; $("clubCode").value="";
-    await loadMyClubs(); await loadRanking();
+    // También agregamos el lider como miembro
+    if(data.id && userId){
+      await sb.from("club_members").insert({ club_id: data.id, rider_id: userId }).catch(()=>{});
+    }
+    msg.className="msg ok";
+    msg.textContent="✅ ¡Solicitud enviada! Tu club \""+nombre+"\" está pendiente de aprobación (24–48 horas).";
+    ["clubName","clubCiudad","clubCode","clubLider","clubWhatsapp","clubEmail","clubFundacion","clubDesc","clubInsta","clubFb"]
+      .forEach(id=>{ $( id).value=""; });
+    await loadMyClubs();
   }catch(e){ msg.className="msg err"; msg.textContent="Error: "+(e.message||e); }
   finally{ $("createBtn").disabled=false; }
 });
