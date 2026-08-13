@@ -790,17 +790,20 @@ async function loadSellos(){
     if(!data.length){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">No hay sellos registrados.</td></tr>'; return; }
     const bdg = $id('bdg-sellos');
     if(bdg){ bdg.textContent=data.length; bdg.className='sb-badge'+(data.length>0?'':' zero'); }
-    tbody.innerHTML = data.map(s=>`<tr>
-      <td>${esc(s.municipio_id||'—')}</td>
-      <td>${esc(s.rider_id||'—')}</td>
+    const html = data.map(s=>{
+      const id = s.id || 'NULL';
+      const municipio = esc(s.municipio_id||'—');
+      const rider = esc(s.rider_id||'—');
+      return `<tr>
+      <td>${municipio}</td>
+      <td>${rider}</td>
       <td>${s.fecha?new Date(s.fecha).toLocaleDateString('es-CO'):'—'}</td>
       <td><span class="badge ${(s.estado||'').toLowerCase()==='aprobado'?'badge-apro':'badge-pend'}">${esc(s.estado||'—')}</span></td>
       <td>${s.en_manada?'✅':'—'}</td>
-      <td>
-        <button class="btn-small" onclick="approveStamp(${s.id},'${esc(s.municipio_id)}','${esc(s.rider_id)}')">Aprobar</button>
-        <button class="btn-small" onclick="deleteStamp(${s.id})">Borrar</button>
-      </td>
-    </tr>`).join('');
+      <td><button class="btn-small" onclick="approveStamp(${id},'${municipio}','${rider}')">Aprobar</button><button class="btn-small" onclick="deleteStamp(${id})">Borrar</button></td>
+    </tr>`;
+    }).join('');
+    tbody.innerHTML = html;
   }catch(e){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error: '+e.message+'</td></tr>'; }
 }
 
