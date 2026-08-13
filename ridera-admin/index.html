@@ -222,7 +222,7 @@ tbody td{padding:.8rem .75rem;vertical-align:middle}
         <div id="sec-sellos" class="hide">
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Municipio</th><th>Rider ID</th><th>Fecha</th><th>Estado</th><th>En manada</th></tr></thead>
+              <thead><tr><th>Municipio</th><th>Rider ID</th><th>Fecha</th><th>Estado</th><th>En manada</th><th>Acciones</th></tr></thead>
               <tbody id="sellosTbody"></tbody>
             </table>
           </div>
@@ -782,12 +782,12 @@ async function loadRiders(){
 // ── SELLOS ─────────────────────────────────────────────────────────────
 async function loadSellos(){
   const tbody = $id('sellosTbody');
-  tbody.innerHTML='<tr><td colspan="5" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
+  tbody.innerHTML='<tr><td colspan="6" class="empty-td"><span class="spin"></span> Cargando…</td></tr>';
   try{
     const res = await fetch(`${FN_MOTOS}?action=listar&seccion=sellos&key=${encodeURIComponent(adminKey)}`);
     const data = await res.json();
-    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error al cargar sellos.</td></tr>'; return; }
-    if(!data.length){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">No hay sellos registrados.</td></tr>'; return; }
+    if(!Array.isArray(data)){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error al cargar sellos.</td></tr>'; return; }
+    if(!data.length){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">No hay sellos registrados.</td></tr>'; return; }
     const bdg = $id('bdg-sellos');
     if(bdg){ bdg.textContent=data.length; bdg.className='sb-badge'+(data.length>0?'':' zero'); }
     tbody.innerHTML = data.map(s=>`<tr>
@@ -796,8 +796,32 @@ async function loadSellos(){
       <td>${s.fecha?new Date(s.fecha).toLocaleDateString('es-CO'):'—'}</td>
       <td><span class="badge ${s.estado==='aprobado'?'badge-apro':'badge-pend'}">${esc(s.estado||'—')}</span></td>
       <td>${s.en_manada?'✅':'—'}</td>
+      <td>
+        ${s.estado==='pendiente'?`<button class="btn-small" onclick="approveStamp(${s.id},'${esc(s.municipio_id)}','${esc(s.rider_id)}')">Aprobar</button>`:''}
+        <button class="btn-small" onclick="deleteStamp(${s.id})">Borrar</button>
+      </td>
     </tr>`).join('');
-  }catch(e){ tbody.innerHTML='<tr><td colspan="5" class="empty-td">Error: '+e.message+'</td></tr>'; }
+  }catch(e){ tbody.innerHTML='<tr><td colspan="6" class="empty-td">Error: '+e.message+'</td></tr>'; }
+}
+
+async function approveStamp(id, municipio, rider){
+  if(!confirm(`¿Aprobar sello de ${rider} en ${municipio}?`)) return;
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=actualizar&seccion=sellos&id=${id}&estado=aprobado&key=${encodeURIComponent(adminKey)}`, {method:'POST'});
+    const result = await res.json();
+    if(result.success){ loadSellos(); showNotif('✅ Sello aprobado'); }
+    else showNotif('❌ Error: '+result.error);
+  }catch(e){ showNotif('❌ '+e.message); }
+}
+
+async function deleteStamp(id){
+  if(!confirm('¿Borrar este sello?')) return;
+  try{
+    const res = await fetch(`${FN_MOTOS}?action=borrar&seccion=sellos&id=${id}&key=${encodeURIComponent(adminKey)}`, {method:'POST'});
+    const result = await res.json();
+    if(result.success){ loadSellos(); showNotif('✅ Sello borrado'); }
+    else showNotif('❌ Error: '+result.error);
+  }catch(e){ showNotif('❌ '+e.message); }
 }
 
 // Close modals on overlay click
