@@ -1898,7 +1898,7 @@ async function loadSellos() {
   }
   sectionLoaded.sellos = true;
   allSellos = data.sellos || [];
-  const pendCount = allSellos.filter(s => s.estado === 'pendiente').length;
+  const pendCount = allSellos.filter(s => (s.estado||'').toLowerCase() === 'pendiente').length;
   updateBadge('badgeSellos', pendCount);
   renderSellosTable();
 }
@@ -1912,7 +1912,7 @@ function setSelloFilter(f, btn) {
 
 function renderSellosTable() {
   let rows = allSellos;
-  if (selloFilter !== 'all') rows = rows.filter(s => s.estado === selloFilter);
+  if (selloFilter !== 'all') rows = rows.filter(s => (s.estado||'').toLowerCase() === selloFilter);
 
   const tbody = document.getElementById('sellosBody');
   if (!rows.length) {
@@ -1922,8 +1922,9 @@ function renderSellosTable() {
 
   tbody.innerHTML = rows.map(s => {
     const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : (s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—');
-    const estadoCls = s.estado === 'aprobado' ? 'badge-on' : s.estado === 'rechazado' ? 'badge-off' : 'badge-pend';
-    const estadoLbl = s.estado === 'aprobado' ? '✓ Aprobado' : s.estado === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
+    const estadoNorm = (s.estado||'').toLowerCase();
+    const estadoCls = estadoNorm === 'aprobado' ? 'badge-on' : estadoNorm === 'rechazado' ? 'badge-off' : 'badge-pend';
+    const estadoLbl = estadoNorm === 'aprobado' ? '✓ Aprobado' : estadoNorm === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
     const riderName = s.riders?.nombre || s.rider_id || '—';
     return `<tr>
       <td>${esc(riderName)}</td>
@@ -1951,7 +1952,7 @@ async function updateSello(id, estado, btn) {
   if (data.ok) {
     const s = allSellos.find(x => x.id === id);
     if (s) s.estado = estado;
-    const pendCount = allSellos.filter(x => x.estado === 'pendiente').length;
+    const pendCount = allSellos.filter(x => (x.estado||'').toLowerCase() === 'pendiente').length;
     updateBadge('badgeSellos', pendCount);
     renderSellosTable();
   } else {
