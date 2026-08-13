@@ -445,7 +445,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
           <div class="filters" id="sellosFilters">
             <button class="filter-btn active" onclick="setSelloFilter('all',this)">Todos</button>
-            <button class="filter-btn" onclick="setSelloFilter('pendiente',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setSelloFilter('sin_verificar',this)">Pendientes</button>
             <button class="filter-btn" onclick="setSelloFilter('aprobado',this)">Aprobados</button>
             <button class="filter-btn" onclick="setSelloFilter('rechazado',this)">Rechazados</button>
           </div>
@@ -1898,7 +1898,7 @@ async function loadSellos() {
   }
   sectionLoaded.sellos = true;
   allSellos = data.sellos || [];
-  const pendCount = allSellos.filter(s => (s.estado||'').toLowerCase() === 'pendiente').length;
+  const pendCount = allSellos.filter(s => !['aprobado','rechazado'].includes((s.estado||'').toLowerCase())).length;
   updateBadge('badgeSellos', pendCount);
   renderSellosTable();
 }
@@ -1934,7 +1934,7 @@ function renderSellosTable() {
       <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
       <td>
         <div class="actions-cell">
-          ${(s.estado||'').toLowerCase() === 'pendiente' ? `
+          ${estadoNorm !== 'aprobado' && estadoNorm !== 'rechazado' ? `
             <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
             <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
           ` : ''}
@@ -1952,7 +1952,7 @@ async function updateSello(id, estado, btn) {
   if (data.ok) {
     const s = allSellos.find(x => x.id === id);
     if (s) s.estado = estado;
-    const pendCount = allSellos.filter(x => (x.estado||'').toLowerCase() === 'pendiente').length;
+    const pendCount = allSellos.filter(x => !['aprobado','rechazado'].includes((x.estado||'').toLowerCase())).length;
     updateBadge('badgeSellos', pendCount);
     renderSellosTable();
   } else {
