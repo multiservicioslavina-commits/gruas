@@ -794,10 +794,10 @@ async function loadSellos(){
       <td>${esc(s.municipio_id||'—')}</td>
       <td>${esc(s.rider_id||'—')}</td>
       <td>${s.fecha?new Date(s.fecha).toLocaleDateString('es-CO'):'—'}</td>
-      <td><span class="badge ${s.estado==='aprobado'?'badge-apro':'badge-pend'}">${esc(s.estado||'—')}</span></td>
+      <td><span class="badge ${(s.estado||'').toLowerCase()==='aprobado'?'badge-apro':'badge-pend'}">${esc(s.estado||'—')}</span></td>
       <td>${s.en_manada?'✅':'—'}</td>
       <td>
-        ${s.estado==='pendiente'?`<button class="btn-small" onclick="approveStamp(${s.id},'${esc(s.municipio_id)}','${esc(s.rider_id)}')">Aprobar</button>`:''}
+        ${(s.estado||'').toLowerCase()==='pendiente'?`<button class="btn-small" onclick="approveStamp(${s.id},'${esc(s.municipio_id)}','${esc(s.rider_id)}')">Aprobar</button>`:''}
         <button class="btn-small" onclick="deleteStamp(${s.id})">Borrar</button>
       </td>
     </tr>`).join('');
