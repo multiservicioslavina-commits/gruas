@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Registrar Sello · Ridera 125</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/exifr/dist/full.umd.js"></script>
+
+<style>
+  :root{
+    --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;
+    --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;
+    --ink-faint:#a89e90;--copper:#c9a84c;--ok:#5fb86a;--err:#ff8a6b;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{font-size:17px;line-height:1.5;max-width:480px;margin:0 auto;min-height:100vh;padding:0 0 30px}
+
+  .top{padding:20px 20px 16px;border-bottom:1px solid var(--line);position:sticky;top:0;background:var(--bg);z-index:5}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:40px;line-height:.95;letter-spacing:.5px;margin:4px 0 0}
+
+  .wrap{padding:18px 18px 0}
+  .step-label{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.2em;color:var(--ink-faint);text-transform:uppercase;margin:22px 0 10px;display:flex;align-items:center;gap:8px}
+  .num{width:22px;height:22px;border-radius:50%;background:var(--orange);color:#100a06;display:grid;place-items:center;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:13px}
+
+  input,select{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
+  input:focus,select:focus{outline:none;border-color:var(--orange)}
+
+  /* Lista de municipios */
+  .muni-list{margin-top:10px;max-height:260px;overflow-y:auto;border:1px solid var(--line);border-radius:12px;background:var(--panel)}
+  .muni-row{display:flex;align-items:center;gap:10px;padding:12px 14px;cursor:pointer;border-bottom:1px solid var(--line-soft,#1c1c1c)}
+  .muni-row:last-child{border-bottom:0}
+  .muni-row:hover{background:var(--panel-2)}
+  .muni-row.sel{background:#231509;border-left:3px solid var(--orange)}
+  .muni-row.sealed{opacity:.45}
+  .muni-row .mn{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:18px;letter-spacing:.3px}
+  .muni-row .sub{font-size:14px;color:var(--ink-dim)}
+  .muni-row .pts{margin-left:auto;font-family:"JetBrains Mono",monospace;font-size:14px;color:var(--orange);font-weight:700}
+  .muni-row.sealed .pts{color:var(--ok)}
+  .picked{margin-top:12px;background:var(--panel);border:1px solid var(--orange);border-radius:12px;padding:14px;display:none}
+  .picked.show{display:block}
+  .picked .pn{font-family:"Bebas Neue",sans-serif;font-size:26px;letter-spacing:.5px}
+  .picked .pm{font-size:15px;color:var(--ink-dim)}
+
+  /* Foto */
+  .photo-box{margin-top:10px;border:1.5px dashed var(--line);border-radius:14px;padding:24px;text-align:center;cursor:pointer;background:var(--panel)}
+  .photo-box .icon{font-size:30px}
+  .photo-box .t{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:17px;margin-top:6px}
+  .photo-box .s{font-size:14px;color:var(--ink-faint);margin-top:2px}
+  .photo-opts{display:flex;gap:10px;margin-top:10px}
+  .photo-opt{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:24px 10px;border:1.5px dashed var(--line);border-radius:14px;background:var(--panel);color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.3px;cursor:pointer}
+  .photo-opt:active{transform:translateY(1px)}
+  .photo-opt .e{font-size:30px;line-height:1}
+  #preview{margin-top:10px;width:100%;border-radius:14px;display:none}
+  #fileInput{display:none}
+
+  /* GPS */
+  .gps-btn{margin-top:10px;width:100%;padding:14px;background:var(--panel);border:1px solid var(--line);border-radius:11px;color:var(--ink);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:17px;letter-spacing:.4px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px}
+  .gps-ok{color:var(--ok);font-family:"JetBrains Mono",monospace;font-size:15px;margin-top:8px;text-align:center;display:none}
+  .gps-ok.show{display:block}
+
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:26px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.6px;text-transform:uppercase;padding:16px;cursor:pointer}
+  .cta:active{transform:translateY(1px)}
+  .cta:disabled{opacity:.5;cursor:default}
+  .ghost{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+
+  .msg{margin-top:14px;font-family:"JetBrains Mono",monospace;font-size:14px;line-height:1.5;border-radius:10px;padding:11px 13px;display:none}
+  .msg.show{display:block}
+  .msg.error{color:var(--err);background:#1a0f0a;border:1px solid #3a1d12}
+
+  .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:s 1s linear infinite;display:none}
+  @keyframes s{to{transform:rotate(360deg)}}
+  .loading .spin{display:inline-block}
+
+  /* Gates */
+  .gate{min-height:100vh;display:grid;place-items:center;padding:32px 24px;text-align:center}
+  .gate .inner{max-width:380px;width:100%}
+  .gate h2{font-family:"Bebas Neue",sans-serif;font-size:34px;margin:14px 0 8px;letter-spacing:.5px}
+  .gate p{color:var(--ink-dim);font-size:15px}
+  .gate label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:14px 0 6px;text-align:left}
+  .brand h1{font-family:"Bebas Neue",sans-serif;font-size:54px;line-height:.9;margin:0}
+  .brand .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+
+  #app,#authGate,#success{display:none}
+  body.view-app #app{display:block}
+  body.view-auth #authGate{display:flex}
+  body.view-success #success{display:flex}
+
+  .check{width:64px;height:64px;border-radius:50%;border:2px solid var(--ok);color:var(--ok);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
+</style>
+</head>
+<body>
+
+<!-- AUTH GATE (login inline) -->
+<div id="authGate" class="gate">
+  <div class="inner">
+    <div class="brand"><div class="eyebrow">Registrar sello</div><h1>INGRESA</h1></div>
+    <p style="margin-top:10px">Entra para sellar tus municipios.</p>
+    <label>Correo</label>
+    <input id="aEmail" type="email" placeholder="tucorreo@ejemplo.com">
+    <label>Contraseña</label>
+    <input id="aPass" type="password" placeholder="tu contraseña">
+    <button class="cta" id="aBtn"><span class="lbl">Ingresar</span><span class="spin"></span></button>
+    <div class="msg" id="aMsg"></div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header class="top">
+    <div class="eyebrow">Pasaporte · Antioquia 125</div>
+    <h1>Registrar un sello</h1>
+  </header>
+
+  <div class="wrap">
+    <div id="pendBar" style="display:none;align-items:center;gap:10px;background:#1b1b1b;border:1px solid var(--orange);border-radius:11px;padding:11px 13px;margin-top:14px;font-size:14px;color:var(--ink-dim)">
+      <span>📤 <b id="pendN" style="color:var(--orange)">0</b> sello(s) por subir (sin señal).</span>
+      <button id="syncNow" type="button" style="margin-left:auto;background:var(--orange);color:#100a06;border:0;border-radius:8px;padding:8px 12px;font-family:'Barlow Condensed',sans-serif;font-weight:700;cursor:pointer">Subir ahora</button>
+    </div>
+    <div class="step-label"><span class="num">1</span> ¿Qué municipio conquistaste?</div>
+    <input id="search" placeholder="Busca tu municipio…" autocomplete="off">
+    <div class="muni-list" id="muniList"></div>
+    <div class="picked" id="picked">
+      <div class="pn" id="pickedName">—</div>
+      <div class="pm" id="pickedMeta">—</div>
+    </div>
+
+    <div class="step-label"><span class="num">2</span> La foto con tu moto</div>
+    <div class="photo-opts" id="photoOpts">
+      <button class="photo-opt" id="btnCamera"><span class="e">📷</span>Tomar foto</button>
+      <button class="photo-opt" id="btnGallery"><span class="e">🖼️</span>Galería</button>
+    </div>
+    <input type="file" id="camInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="galInput" accept="image/*" style="display:none">
+    <img id="preview" alt="vista previa">
+    <button class="gps-btn" id="changePhoto" style="display:none;margin-top:10px">🔄 Cambiar foto</button>
+
+    <div class="step-label"><span class="num">3</span> Tu ubicación (GPS)</div>
+    <p style="font-size:14px;color:var(--ink-faint);margin:-2px 0 8px;line-height:1.5">Si tu foto ya trae ubicación, el sello <b>se verifica solo</b>. Si no (o si pasó por WhatsApp), captura tu GPS aquí estando en el municipio. Igual puedes sellar sin GPS — solo quedará "sin verificar".</p>
+    <button class="gps-btn" id="gpsBtn">📍 Capturar mi ubicación</button>
+    <div class="gps-ok" id="gpsOk"></div>
+
+    <button class="cta" id="sellarBtn" disabled><span class="lbl">Sellar este municipio</span><span class="spin"></span></button>
+    <div class="msg" id="msg"></div>
+    <div style="margin-top:24px;text-align:center">
+      <a href="pasaporte.html" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">← Volver al pasaporte</a>
+      <span style="color:var(--line);margin:0 10px">•</span>
+      <a href="#" id="logout" style="color:var(--ink-faint);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none">Cerrar sesión</a>
+    </div>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="success" class="gate">
+  <div class="inner">
+    <div class="check">✓</div>
+    <h2 id="okTitle">¡Sello registrado!</h2>
+    <p id="okText">—</p>
+    <button class="cta" id="goPasaporte">Ver en mi Pasaporte →</button>
+    <button class="cta ghost" id="otro" style="margin-top:10px">Sellar otro municipio</button>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+  SUPABASE_URL: "https://vzzxsdtsaahhzyctvmhx.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu",
+  T_MUNICIPIO:"municipios", M_ID:"id", M_NOMBRE:"nombre", M_SUBREGION:"subregion", M_PUNTOS:"puntos_sello", M_FLUVIAL:"es_fluvial",
+  T_SELLO:"sellos", S_RIDER:"rider_id", S_MUNICIPIO:"municipio_id",
+  PASAPORTE_URL:"pasaporte.html"
+};
+const $ = id => document.getElementById(id);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+let sb=null, municipios=[], selected=null, photoData=null, gps=null, photoGPS=null, sealedSet=new Set(), isReplacing=false;
+
+function resolveKey(){ if(CONFIG.SUPABASE_ANON_KEY&&CONFIG.SUPABASE_ANON_KEY.length>20)return CONFIG.SUPABASE_ANON_KEY; try{return localStorage.getItem("ridera_supabase_key");}catch(e){return null;} }
+function view(v){ document.body.className="view-"+v; }
+
+(async function boot(){
+  const k = resolveKey();
+  if(!k){ window.location.href="index.html"; return; }
+  startClient(k);
+})();
+
+function startClient(key){
+  sb = supabase.createClient(CONFIG.SUPABASE_URL, key);
+  try{ localStorage.setItem("ridera_supabase_url",CONFIG.SUPABASE_URL); localStorage.setItem("ridera_supabase_key",key); }catch(e){}
+  checkSession();
+}
+async function checkSession(){
+  const { data } = await sb.auth.getSession();
+  if(data.session){ enterApp(); } else { view("auth"); }
+}
+
+// Auth gate (login)
+$("aBtn").addEventListener("click", async ()=>{
+  const email=$("aEmail").value.trim(), password=$("aPass").value, m=$("aMsg");
+  if(!email||!password){ m.textContent="Escribe correo y contraseña."; m.className="msg show error"; return; }
+  $("aBtn").classList.add("loading"); $("aBtn").disabled=true;
+  try{
+    const { error } = await sb.auth.signInWithPassword({email,password});
+    if(error) throw error;
+    enterApp();
+  }catch(err){
+    const msg=String(err.message||"");
+    if(/secret API key|Forbidden/i.test(msg)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; window.location.href="index.html"; return; }
+    m.textContent = /Invalid login/i.test(msg) ? "Correo o contraseña incorrectos." : "Ups: "+msg;
+    m.className="msg show error";
+  }finally{ $("aBtn").classList.remove("loading"); $("aBtn").disabled=false; }
+});
+
+async function enterApp(){
+  view("app");
+  await loadData();
+  updatePending();
+  syncQueue();
+}
+
+async function loadData(){
+  // Municipios: red con copia local (para funcionar sin señal)
+  let loaded=false;
+  try{
+    const m = await sb.from(CONFIG.T_MUNICIPIO).select("*");
+    if(!m.error && m.data){
+      municipios = m.data.map(r=>({ id:r[CONFIG.M_ID], nombre:r[CONFIG.M_NOMBRE], sub:r[CONFIG.M_SUBREGION], pts:r[CONFIG.M_PUNTOS], fluvial:r[CONFIG.M_FLUVIAL], lat:r.lat, lon:r["long"] }));
+      try{ localStorage.setItem("ridera_munis", JSON.stringify(municipios)); }catch(e){}
+      loaded=true;
+    }
+  }catch(e){}
+  if(!loaded){
+    const cached = localStorage.getItem("ridera_munis");
+    if(cached){ try{ municipios = JSON.parse(cached); loaded=true; }catch(e){} }
+  }
+  if(!loaded){ showErr("No pude leer municipios y no hay copia guardada. Conéctate una vez para descargarlos."); return; }
+  municipios.sort((a,b)=>a.nombre.localeCompare(b.nombre));
+  // Sellos del rider (puede fallar sin señal: usa copia local)
+  try{
+    const u = (await sb.auth.getUser()).data.user;
+    if(u){
+      const ss = await sb.from(CONFIG.T_SELLO).select(CONFIG.S_MUNICIPIO).eq(CONFIG.S_RIDER, u.id);
+      if(!ss.error){ sealedSet = new Set(ss.data.map(x=>x[CONFIG.S_MUNICIPIO])); try{ localStorage.setItem("ridera_sealed", JSON.stringify([...sealedSet])); }catch(e){} }
+      else { throw ss.error; }
+    }
+  }catch(e){
+    const cs=localStorage.getItem("ridera_sealed"); if(cs){ try{ sealedSet=new Set(JSON.parse(cs)); }catch(_){} }
+  }
+  renderList("");
+}
+
+function norm(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
+function renderList(q){
+  q = norm(q);
+  const list = $("muniList");
+  const filtered = municipios.filter(x=>norm(x.nombre).includes(q)).slice(0,80);
+  list.innerHTML = filtered.map(x=>{
+    const sealed = sealedSet.has(x.id);
+    return `<div class="muni-row ${sealed?'sealed':''} ${selected&&selected.id===x.id?'sel':''}" data-id="${x.id}">
+      <div><div class="mn">${esc(x.nombre)}</div><div class="sub">${esc(x.sub)}${x.fluvial?' · fluvial ⛟':''}</div></div>
+      <div class="pts">${sealed?'✓ sellado':'+'+x.pts}</div>
+    </div>`;
+  }).join("") || `<div style="padding:16px;color:var(--ink-faint)">Sin resultados.</div>`;
+  list.querySelectorAll(".muni-row").forEach(row=>{
+    row.addEventListener("click",()=>{
+      const id=row.dataset.id;
+      selected = municipios.find(x=>x.id===id);
+      isReplacing = sealedSet.has(id);
+      $("pickedName").textContent = selected.nombre;
+      if(isReplacing){
+        $("pickedMeta").innerHTML = esc(selected.sub) + " · <b style='color:var(--copper)'>Ya sellado — sube una foto mejor para reemplazarla</b>";
+        $("sellarBtn").querySelector(".lbl").textContent = "Reemplazar foto";
+      } else {
+        $("pickedMeta").textContent = selected.sub + " · +" + selected.pts + " puntos" + (selected.fluvial?" · fluvial":"");
+        $("sellarBtn").querySelector(".lbl").textContent = "Sellar este municipio";
+      }
+      $("picked").classList.add("show");
+      renderList($("search").value);
+      updateBtn();
+    });
+  });
+}
+$("search").addEventListener("input", e=>renderList(e.target.value));
+
+// Foto
+$("btnCamera").addEventListener("click",()=>$("camInput").click());
+$("btnGallery").addEventListener("click",()=>$("galInput").click());
+async function handleFile(e){
+  const f=e.target.files[0]; if(!f) return;
+  photoGPS=null;
+  try{ const g=await exifr.gps(f); if(g && g.latitude!=null){ photoGPS={latitude:g.latitude, longitude:g.longitude}; } }catch(_){}
+  photoData = await compress(f);
+  $("preview").src = photoData; $("preview").style.display="block";
+  $("photoOpts").style.display="none";
+  $("changePhoto").style.display="flex";
+  if(photoGPS){ $("gpsOk").textContent="📍 La foto ya trae ubicación — se verifica sola ✓"; $("gpsOk").classList.add("show"); }
+  updateBtn();
+}
+$("camInput").addEventListener("change",handleFile);
+$("galInput").addEventListener("change",handleFile);
+$("changePhoto").addEventListener("click",()=>{
+  $("preview").style.display="none";
+  $("changePhoto").style.display="none";
+  $("photoOpts").style.display="flex";
+  photoGPS=null; $("gpsOk").classList.remove("show");
+});
+function compress(file,maxW=1280,q=0.72){
+  return new Promise((res,rej)=>{
+    const img=new Image();
+    img.onload=()=>{
+      const sc=Math.min(1,maxW/img.width), w=Math.round(img.width*sc), h=Math.round(img.height*sc);
+      const c=document.createElement("canvas"); c.width=w; c.height=h;
+      c.getContext("2d").drawImage(img,0,0,w,h);
+      res(c.toDataURL("image/jpeg",q));
+    };
+    img.onerror=rej; img.src=URL.createObjectURL(file);
+  });
+}
+
+// GPS
+$("gpsBtn").addEventListener("click",()=>{
+  if(!navigator.geolocation){ $("gpsOk").textContent="Tu navegador no da GPS (se puede sellar sin él)."; $("gpsOk").classList.add("show"); return; }
+  $("gpsBtn").textContent="📍 Buscando señal…";
+  navigator.geolocation.getCurrentPosition(
+    pos=>{ gps={lat:pos.coords.latitude,lon:pos.coords.longitude}; $("gpsBtn").textContent="📍 Ubicación capturada ✓"; $("gpsOk").textContent="Lat "+gps.lat.toFixed(4)+" · Lon "+gps.lon.toFixed(4); $("gpsOk").classList.add("show"); },
+    err=>{ $("gpsBtn").textContent="📍 Capturar mi ubicación"; $("gpsOk").textContent="No se pudo (permiso o conexión). Puedes sellar igual."; $("gpsOk").classList.add("show"); },
+    {enableHighAccuracy:true,timeout:10000}
+  );
+});
+
+function updateBtn(){
+  // Para reemplazar sello ya existente también se requiere foto nueva
+  $("sellarBtn").disabled = !(selected && photoData);
+}
+
+const VERIF_RADIUS_KM = 40;
+function haversineKm(la1,lo1,la2,lo2){
+  const R=6371, r=d=>d*Math.PI/180;
+  const dLa=r(la2-la1), dLo=r(lo2-lo1);
+  const a=Math.sin(dLa/2)**2 + Math.cos(r(la1))*Math.cos(r(la2))*Math.sin(dLo/2)**2;
+  return 2*R*Math.asin(Math.sqrt(a));
+}
+function computeVerification(muni){
+  let lat=null, lon=null, source=null;
+  if(photoGPS && photoGPS.latitude!=null){ lat=photoGPS.latitude; lon=photoGPS.longitude; source="foto"; }
+  else if(gps){ lat=gps.lat; lon=gps.lon; source="vivo"; }
+  let verified=false;
+  if(lat!=null && muni && muni.lat!=null && muni.lon!=null){
+    verified = haversineKm(lat,lon,muni.lat,muni.lon) <= VERIF_RADIUS_KM;
+  }
+  return {lat,lon,verified,source};
+}
+
+async function uploadPhoto(userId, muniId){
+  const blob = await (await fetch(photoData)).blob();
+  const path = userId + "/" + muniId + "-" + Date.now() + ".jpg";
+  const { error } = await sb.storage.from("sellos").upload(path, blob, { contentType:"image/jpeg", upsert:true });
+  if(error) throw new Error("No se pudo subir la foto: " + error.message);
+  return sb.storage.from("sellos").getPublicUrl(path).data.publicUrl;
+}
+
+// ===== Cola offline (IndexedDB) =====
+function idbOpen(){ return new Promise((res,rej)=>{ const r=indexedDB.open("ridera125",1); r.onupgradeneeded=()=>{ if(!r.result.objectStoreNames.contains("queue")) r.result.createObjectStore("queue",{keyPath:"id",autoIncrement:true}); }; r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function idbAdd(item){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction("queue","readwrite"); tx.objectStore("queue").add(item); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function idbAll(){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction("queue","readonly"); const rq=tx.objectStore("queue").getAll(); rq.onsuccess=()=>res(rq.result||[]); rq.onerror=()=>rej(rq.error); }); }
+async function idbDel(id){ const db=await idbOpen(); return new Promise((res,rej)=>{ const tx=db.transaction("queue","readwrite"); tx.objectStore("queue").delete(id); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); }); }
+async function queueSeal(item){ item.ts=Date.now(); await idbAdd(item); }
+function isNetErr(e){ const m=String((e&&e.message)||e||""); return /fetch|network|failed to fetch|load failed|offline/i.test(m); }
+
+async function updatePending(){
+  let n=0; try{ n=(await idbAll()).length; }catch(e){}
+  const bar=$("pendBar"); if(!bar) return;
+  if(n>0){ bar.style.display="flex"; $("pendN").textContent=n; } else { bar.style.display="none"; }
+}
+
+let syncing=false;
+async function syncQueue(){
+  if(syncing || !navigator.onLine || !sb) return;
+  let u=null; try{ u=(await sb.auth.getUser()).data.user; }catch(e){}
+  if(!u) return;
+  syncing=true;
+  try{
+    const items=await idbAll();
+    for(const it of items){
+      try{
+        const blob=await (await fetch(it.photoData)).blob();
+        const path=u.id+"/"+it.municipio_id+"-"+(it.ts||Date.now())+".jpg";
+        const up=await sb.storage.from("sellos").upload(path,blob,{contentType:"image/jpeg",upsert:true});
+        if(up.error) throw up.error;
+        const url=sb.storage.from("sellos").getPublicUrl(path).data.publicUrl;
+        if(it.isReplacing){
+          const upd={ foto_url:url, lat:it.lat, lon:it.lon }; if(it.verified) upd.estado="validado";
+          const { error }=await sb.from(CONFIG.T_SELLO).update(upd).eq(CONFIG.S_RIDER,u.id).eq(CONFIG.S_MUNICIPIO,it.municipio_id);
+          if(error) throw error;
+        } else {
+          const row={}; row[CONFIG.S_RIDER]=u.id; row[CONFIG.S_MUNICIPIO]=it.municipio_id; row.foto_url=url; row.lat=it.lat; row.lon=it.lon; row.fecha=it.fecha; row.estado=it.verified?"validado":"sin_verificar"; row.en_manada=false;
+          const { error }=await sb.from(CONFIG.T_SELLO).insert(row);
+          if(error && !/duplicate|unique/i.test(error.message)) throw error;
+        }
+        await idbDel(it.id);
+      }catch(e){ /* se queda en la cola para el próximo intento */ }
+    }
+  } finally { syncing=false; updatePending(); }
+}
+window.addEventListener("online", ()=>{ syncQueue(); });
+
+// Sellar (con modo sin señal)
+$("sellarBtn").addEventListener("click", async ()=>{
+  if(!(selected && photoData)) return;
+  $("sellarBtn").classList.add("loading"); $("sellarBtn").disabled=true; hideErr();
+  const v = computeVerification(selected);
+  const fecha = new Date().toISOString().slice(0,10);
+  const replacing = isReplacing;
+  try{
+    if(!navigator.onLine){ throw new Error("offline"); }
+    const u = (await sb.auth.getUser()).data.user;
+    const fotoUrl = await uploadPhoto(u.id, selected.id);
+    if(replacing){
+      const upd = { foto_url: fotoUrl };
+      if(v.lat!=null){ upd.lat=v.lat; upd.lon=v.lon; }
+      if(v.verified){ upd.estado="validado"; }
+      const { error } = await sb.from(CONFIG.T_SELLO).update(upd).eq(CONFIG.S_RIDER, u.id).eq(CONFIG.S_MUNICIPIO, selected.id);
+      if(error) throw error;
+      $("okTitle").textContent="¡Foto actualizada!";
+      $("okText").textContent=selected.nombre+" ahora tiene tu mejor foto. 📸";
+    } else {
+      const row = {};
+      row[CONFIG.S_RIDER]=u.id; row[CONFIG.S_MUNICIPIO]=selected.id;
+      row["foto_url"]=fotoUrl; row["lat"]=v.lat; row["lon"]=v.lon;
+      row["fecha"]=fecha; row["estado"]=v.verified?"validado":"sin_verificar"; row["en_manada"]=false;
+      const { error } = await sb.from(CONFIG.T_SELLO).insert(row);
+      if(error){
+        if(/duplicate|unique/i.test(error.message)) throw new Error("Ya tienes sellado "+selected.nombre+".");
+        throw error;
+      }
+      $("okTitle").textContent="¡"+selected.nombre+" sellado!";
+      $("okText").textContent= v.verified
+        ? "✅ Sello verificado. +"+selected.pts+" puntos. ¡A seguir rodando!"
+        : "+"+selected.pts+" puntos (sin verificar, pero cuenta). Tip: usa la foto original del carrete para que se verifique. 🏍️";
+    }
+    view("success");
+  }catch(err){
+    const dup = err && /Ya tienes sellado/.test(err.message||"");
+    const offlineish = (err && err.message==="offline") || !navigator.onLine || isNetErr(err);
+    if(offlineish && !dup){
+      try{
+        await queueSeal({ municipio_id:selected.id, photoData, lat:v.lat, lon:v.lon, verified:v.verified, fecha, isReplacing:replacing });
+        sealedSet.add(selected.id);
+        $("okTitle").textContent="¡"+selected.nombre+" guardado!";
+        $("okText").textContent="📤 Sin señal — se subirá solo cuando tengas internet. ¡Sigue rodando!";
+        view("success");
+        updatePending();
+      }catch(e2){ showErr("No pude guardar sin conexión: "+(e2.message||e2)); }
+    } else {
+      showErr(err.message||"Error");
+    }
+  }finally{ $("sellarBtn").classList.remove("loading"); $("sellarBtn").disabled=false; }
+});
+
+$("syncNow").addEventListener("click", async ()=>{
+  $("syncNow").textContent="Subiendo…"; $("syncNow").disabled=true;
+  await syncQueue();
+  $("syncNow").textContent="Subir ahora"; $("syncNow").disabled=false;
+});
+
+$("goPasaporte").addEventListener("click",()=>{ window.location.href=CONFIG.PASAPORTE_URL; });
+$("otro").addEventListener("click",()=>{ location.reload(); });
+
+document.getElementById("logout").addEventListener("click", async e=>{
+  e.preventDefault();
+  try{ if(sb) await sb.auth.signOut(); }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+});
+
+function showErr(t){ const m=$("msg"); m.textContent=t; m.className="msg show error"; }
+function hideErr(){ $("msg").className="msg"; }
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

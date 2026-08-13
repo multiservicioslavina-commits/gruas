@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Álbum — Pasaporte Ridera125</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;
+      --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;
+      --ink-faint:#a89e90;--copper:#c9a84c;--copper-dim:rgba(201,168,76,0.15);
+      --ok:#5fb86a;--err:#ff8a6b;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ─────────────────────────────────── */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13,13,13,0.96);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 56px;
+    }
+
+    .nav-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--copper);
+    }
+
+    .nav-logo span { color: var(--orange); }
+
+    .nav-links {
+      display: flex;
+      gap: 6px;
+    }
+
+    .nav-links a {
+      color: var(--ink-faint);
+      text-decoration: none;
+      font-size: 12px;
+      font-family: 'Barlow Condensed', sans-serif;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 10px;
+      border-radius: 4px;
+      transition: color 0.2s, background 0.2s;
+    }
+
+    .nav-links a:hover,
+    .nav-links a.active {
+      color: var(--copper);
+      background: var(--copper-dim);
+    }
+
+    /* ── HERO STATS ───────────────────────────── */
+    .hero {
+      background: linear-gradient(180deg, #111 0%, var(--bg) 100%);
+      border-bottom: 1px solid rgba(201,168,76,0.15);
+      padding: 32px 20px 28px;
+    }
+
+    .hero-inner {
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .hero-title {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: clamp(32px, 8vw, 52px);
+      letter-spacing: 4px;
+      color: var(--copper);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .hero-sub {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: var(--ink-faint);
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1px;
+      background: rgba(201,168,76,0.15);
+      border: 1px solid rgba(201,168,76,0.15);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .stat-card {
+      background: var(--panel);
+      padding: 16px 12px;
+      text-align: center;
+    }
+
+    .stat-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: var(--orange);
+      line-height: 1;
+    }
+
+    .stat-label {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-top: 4px;
+    }
+
+    /* Barra de progreso */
+    .progress-wrap {
+      margin-top: 20px;
+    }
+
+    .progress-label {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 8px;
+    }
+
+    .progress-bar {
+      height: 6px;
+      background: var(--line);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--orange), var(--copper));
+      border-radius: 3px;
+      transition: width 1s cubic-bezier(0.22, 1, 0.36, 1);
+      width: 0%;
+    }
+
+    /* ── FILTROS ──────────────────────────────── */
+    .filtros {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px 20px 0;
+    }
+
+    .filtros-scroll {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      scrollbar-width: none;
+    }
+
+    .filtros-scroll::-webkit-scrollbar { display: none; }
+
+    .filtro-btn {
+      flex-shrink: 0;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink-faint);
+      cursor: pointer;
+      transition: all 0.2s;
+      white-space: nowrap;
+    }
+
+    .filtro-btn:hover { border-color: var(--copper); color: var(--copper); }
+    .filtro-btn.active { background: var(--copper-dim); border-color: var(--copper); color: var(--copper); }
+
+    /* ── ÁLBUM CONTENT ────────────────────────── */
+    .album-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 28px 20px 60px;
+    }
+
+    /* ── SUBREGIÓN ────────────────────────────── */
+    .subregion-block {
+      margin-bottom: 48px;
+    }
+
+    .subregion-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(201,168,76,0.2);
+    }
+
+    .subregion-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      color: rgba(201,168,76,0.25);
+      line-height: 1;
+      min-width: 42px;
+    }
+
+    .subregion-info {}
+
+    .subregion-nombre {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 22px;
+      letter-spacing: 3px;
+      color: var(--copper);
+      line-height: 1;
+    }
+
+    .subregion-prog {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 11px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-top: 3px;
+    }
+
+    .subregion-prog span { color: var(--orange); }
+
+    /* ── GRID MUNICIPIOS ──────────────────────── */
+    .muni-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    @media (max-width: 480px) {
+      .muni-grid { grid-template-columns: repeat(2, 1fr); }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* ── TARJETA MUNICIPIO ────────────────────── */
+    .muni-card {
+      position: relative;
+      aspect-ratio: 3/4;
+      border-radius: 6px;
+      overflow: hidden;
+      cursor: pointer;
+      background: var(--panel-2);
+      border: 1px solid var(--line);
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .muni-card:hover { transform: scale(1.02); border-color: var(--copper); }
+
+    /* Sellado */
+    .muni-card.sellado .muni-foto {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .muni-card.sellado::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 45%, rgba(0,0,0,0.85) 100%);
+      z-index: 1;
+    }
+
+    /* Pendiente */
+    .muni-card.pendiente .muni-placeholder {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .muni-placeholder-num {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      color: rgba(201,168,76,0.15);
+    }
+
+    .muni-placeholder-icon {
+      font-size: 20px;
+      opacity: 0.3;
+    }
+
+    /* Info sobre la foto */
+    .muni-info {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 8px;
+      z-index: 2;
+    }
+
+    .muni-nombre {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #fff;
+      line-height: 1.2;
+    }
+
+    .muni-card.pendiente .muni-nombre {
+      color: var(--ink-dim);
+    }
+
+    .muni-fecha {
+      font-family: 'DM Sans', sans-serif;
+      font-size: 9px;
+      color: var(--copper);
+      margin-top: 2px;
+    }
+
+    /* Sello badge */
+    .muni-sello {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      z-index: 2;
+      width: 24px;
+      height: 24px;
+      background: var(--orange);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+    }
+
+    /* Estrellas */
+    .muni-stars {
+      font-size: 8px;
+      color: var(--copper);
+      margin-top: 2px;
+      letter-spacing: 1px;
+    }
+
+    /* ── MODAL ────────────────────────────────── */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.92);
+      z-index: 200;
+      overflow-y: auto;
+      padding: 20px;
+      backdrop-filter: blur(8px);
+    }
+
+    .modal-overlay.open { display: flex; align-items: center; justify-content: center; }
+
+    .modal {
+      background: var(--panel);
+      border: 1px solid rgba(201,168,76,0.25);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 480px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .modal-foto-wrap {
+      position: relative;
+      aspect-ratio: 16/9;
+      background: var(--panel-2);
+    }
+
+    .modal-foto {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .modal-foto-empty {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .modal-foto-empty span { font-size: 40px; opacity: 0.3; }
+    .modal-foto-empty p { font-size: 12px; color: var(--ink-faint); }
+
+    .modal-close {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      width: 32px;
+      height: 32px;
+      background: rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 50%;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 5;
+    }
+
+    .modal-body {
+      padding: 20px;
+    }
+
+    .modal-tag {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 10px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--orange);
+      margin-bottom: 6px;
+    }
+
+    .modal-nombre {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 2px;
+      color: #fff;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .modal-subr {
+      font-size: 12px;
+      color: var(--ink-faint);
+      margin-bottom: 16px;
+    }
+
+    .modal-meta {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .modal-meta-item label {
+      display: block;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 9px;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--ink-faint);
+      margin-bottom: 3px;
+    }
+
+    .modal-meta-item span {
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 14px;
+      color: var(--ink);
+    }
+
+    .modal-notas {
+      font-size: 13px;
+      color: var(--ink-faint);
+      line-height: 1.6;
+      padding: 12px;
+      background: var(--panel-2);
+      border-radius: 6px;
+      border-left: 2px solid var(--copper);
+      margin-bottom: 16px;
+    }
+
+    .btn-registrar {
+      width: 100%;
+      padding: 12px;
+      background: transparent;
+      color: var(--copper);
+      border: 1px solid var(--copper);
+      border-radius: 6px;
+      font-family: 'Barlow Condensed', sans-serif;
+      font-size: 13px;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .btn-registrar:hover { background: var(--copper-dim); }
+
+    /* ── LOADING ──────────────────────────────── */
+    .loading-screen {
+      position: fixed;
+      inset: 0;
+      background: var(--bg);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      z-index: 999;
+      gap: 16px;
+    }
+
+    .loading-logo {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 36px;
+      letter-spacing: 6px;
+      color: var(--copper);
+    }
+
+    .loading-spinner {
+      width: 32px;
+      height: 32px;
+      border: 2px solid var(--line);
+      border-top-color: var(--orange);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOAST ────────────────────────────────── */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--ink);
+      padding: 12px 20px;
+      border-radius: 8px;
+      font-size: 13px;
+      z-index: 500;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      white-space: nowrap;
+    }
+
+    .toast.show { transform: translateX(-50%) translateY(0); }
+    .toast.success { border-color: var(--ok); }
+    .toast.error { border-color: var(--err); }
+
+    /* ── EMPTY STATE ──────────────────────────── */
+    .empty-album {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--ink-dim);
+    }
+
+    .empty-album h2 {
+      font-family: 'Bebas Neue', sans-serif;
+      font-size: 28px;
+      letter-spacing: 3px;
+      color: var(--line);
+      margin-bottom: 12px;
+    }
+
+    .empty-album p { font-size: 14px; line-height: 1.6; }
+  </style>
+</head>
+
+<body>
+
+<!-- LOADING -->
+<div class="loading-screen" id="loading">
+  <div class="loading-logo">RIDERA<span style="color:var(--orange)">125</span></div>
+  <div class="loading-spinner"></div>
+</div>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-logo">RIDERA<span>125</span></div>
+  <div class="nav-links">
+    <a href="pasaporte.html">Inicio</a>
+    <a href="album.html" class="active">Álbum</a>
+    <a href="mapa.html">Mapa</a>
+    <a href="perfil.html">Mi cuenta</a>
+  </div>
+</nav>
+
+<!-- HERO STATS -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-title">MI ÁLBUM</div>
+    <div class="hero-sub">Pasaporte Ridera · 125 Municipios de Antioquia</div>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="stat-sellados">0</div>
+        <div class="stat-label">Sellados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-pendientes">125</div>
+        <div class="stat-label">Pendientes</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-pct">0%</div>
+        <div class="stat-label">Completado</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-subr">0</div>
+        <div class="stat-label">Subregiones</div>
+      </div>
+    </div>
+
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span>Tu progreso</span>
+        <span id="prog-texto">0 / 125</span>
+      </div>
+      <div class="progress-bar">
+        <div class="progress-fill" id="prog-fill"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FILTROS SUBREGION -->
+<div class="filtros">
+  <div class="filtros-scroll" id="filtros-scroll">
+    <button class="filtro-btn active" onclick="filtrarSubregion(null, this)">Todas</button>
+  </div>
+</div>
+
+<!-- ÁLBUM GRID -->
+<div class="album-wrap" id="album-wrap">
+  <!-- Se genera con JS -->
+</div>
+
+<!-- MODAL MUNICIPIO -->
+<div class="modal-overlay" id="modal-overlay" onclick="cerrarModal(event)">
+  <div class="modal" id="modal">
+
+    <div class="modal-foto-wrap">
+      <img id="modal-foto" class="modal-foto" style="display:none" />
+      <div class="modal-foto-empty" id="modal-foto-empty">
+        <span>📷</span>
+        <p>Sin foto aún</p>
+      </div>
+      <button class="modal-close" onclick="cerrarModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-tag" id="modal-subr">Subregión</div>
+      <div class="modal-nombre" id="modal-nombre">Municipio</div>
+      <div class="modal-subr" id="modal-meta-top"></div>
+
+      <!-- Info si ya está sellado -->
+      <div id="modal-sellado-info" style="display:none">
+        <div class="modal-meta">
+          <div class="modal-meta-item">
+            <label>Fecha visita</label>
+            <span id="modal-fecha">—</span>
+          </div>
+          <div class="modal-meta-item">
+            <label>Calificación</label>
+            <span id="modal-stars">—</span>
+          </div>
+        </div>
+        <div class="modal-notas" id="modal-notas" style="display:none"></div>
+      </div>
+
+      <!-- Link a sello.html para registrar -->
+      <div id="modal-pendiente-actions" style="display:none">
+        <a href="sello.html" class="btn-registrar" style="display:inline-block;text-decoration:none;text-align:center">+ REGISTRAR VISITA EN SELLO</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG SUPABASE ───────────────────────────────────────────
+const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ── ESTADO GLOBAL ─────────────────────────────────────────────
+let municipios = [];
+let sellos = {};       // { municipio_id: { foto_url, fecha, calificacion, notas } }
+let rider = null;
+let muniActual = null;
+let filtroActivo = null;
+
+
+// ── INIT ───────────────────────────────────────────────────────
+async function init() {
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { window.location.href = 'index.html'; return; }
+    rider = session.user;
+
+    await cargarMunicipios();
+    await cargarSellos();
+    renderAlbum();
+    renderFiltros();
+    actualizarStats();
+    const el = document.getElementById('loading');
+    el.style.opacity = '0';
+    setTimeout(() => el.style.display = 'none', 400);
+  } catch(e) {
+    const el = document.getElementById('loading');
+    el.style.opacity = '1';
+    el.innerHTML = `
+      <div style="text-align:center;padding:40px 20px">
+        <p style="color:var(--err);font-family:'JetBrains Mono',monospace;font-size:14px;margin-bottom:18px">Error cargando el álbum.<br>Revisa tu conexión.</p>
+        <button onclick="init()" style="background:var(--orange);color:#100a06;border:0;border-radius:10px;padding:12px 24px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;cursor:pointer">Reintentar</button>
+      </div>`;
+    el.style.display = 'flex';
+  }
+}
+
+async function cargarMunicipios() {
+  const { data, error } = await sb.from('municipios').select('*').order('nombre');
+  if (error) throw error;
+  municipios = data || [];
+}
+
+async function cargarSellos() {
+  const { data, error } = await sb.from('sellos')
+    .select('*')
+    .eq('rider_id', rider.id);
+  if (error) throw error;
+
+  sellos = {};
+  (data || []).forEach(s => {
+    sellos[s.municipio_id] = s;
+  });
+}
+
+// ── RENDER ÁLBUM ──────────────────────────────────────────────
+function renderAlbum() {
+  const wrap = document.getElementById('album-wrap');
+  wrap.innerHTML = '';
+
+  const muniPorSubr = agruparPorSubregion();
+  let idx = 1;
+
+  Object.entries(muniPorSubr).forEach(([subr, munis]) => {
+    if (filtroActivo && filtroActivo !== subr) return;
+
+    const sellados = munis.filter(m => sellos[m.id]);
+    if (!sellados.length) return;
+
+    const block = document.createElement('div');
+    block.className = 'subregion-block';
+    block.dataset.subr = subr;
+
+    block.innerHTML = `
+      <div class="subregion-header">
+        <div class="subregion-num">${String(idx).padStart(2,'0')}</div>
+        <div class="subregion-info">
+          <div class="subregion-nombre">${esc(subr).toUpperCase()}</div>
+          <div class="subregion-prog"><span>${sellados.length}</span> de ${munis.length} municipios</div>
+        </div>
+      </div>
+      <div class="muni-grid">
+        ${sellados.map(m => renderCard(m)).join('')}
+      </div>
+    `;
+
+    wrap.appendChild(block);
+    idx++;
+  });
+
+  if (!wrap.children.length) {
+    wrap.innerHTML = `
+      <div class="empty-album">
+        <h2>AÚN NO TIENES SELLOS</h2>
+        <p>Empieza a rodar por Antioquia y registra tu primer municipio.</p>
+        <br>
+        <a href="sello.html" style="display:inline-block;background:var(--orange);color:white;padding:14px 28px;border-radius:6px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:3px;text-decoration:none">+ REGISTRAR MI PRIMER SELLO</a>
+      </div>`;
+  }
+}
+
+function renderCard(m) {
+  const s = sellos[m.id];
+  const sellado = !!s;
+  const stars = s?.calificacion ? '★'.repeat(s.calificacion) : '';
+  const fecha = s?.fecha ? new Date(s.fecha).toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'2-digit' }) : '';
+
+  return `
+    <div class="muni-card ${sellado ? 'sellado' : 'pendiente'}"
+         data-mid="${esc(String(m.id))}" onclick="abrirModal(this.dataset.mid)">
+
+      ${sellado && s.foto_url
+        ? `<img class="muni-foto" src="${esc(s.foto_url)}" loading="lazy" />`
+        : `<div class="muni-placeholder">
+             <div class="muni-placeholder-icon">🗺️</div>
+             <div class="muni-placeholder-num">${esc(m.nombre.substring(0,3).toUpperCase())}</div>
+           </div>`
+      }
+
+      ${sellado ? '<div class="muni-sello">✓</div>' : ''}
+
+      <div class="muni-info">
+        <div class="muni-nombre">${esc(m.nombre)}</div>
+        ${fecha ? `<div class="muni-fecha">${fecha}</div>` : ''}
+        ${stars ? `<div class="muni-stars">${stars}</div>` : ''}
+      </div>
+    </div>
+  `;
+}
+
+// ── FILTROS ───────────────────────────────────────────────────
+function renderFiltros() {
+  const scroll = document.getElementById('filtros-scroll');
+  const subregiones = [...new Set(municipios.map(m => m.subregion).filter(Boolean))];
+
+  subregiones.forEach(s => {
+    const btn = document.createElement('button');
+    btn.className = 'filtro-btn';
+    btn.textContent = s;
+    btn.onclick = () => filtrarSubregion(s, btn);
+    scroll.appendChild(btn);
+  });
+}
+
+function filtrarSubregion(subr, btn) {
+  filtroActivo = subr;
+  document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlbum();
+}
+
+// ── STATS ─────────────────────────────────────────────────────
+function actualizarStats() {
+  const totalSellados = Object.keys(sellos).length;
+  const pct = Math.round(totalSellados / 125 * 100);
+  const subrCompletas = calcSubrCompletas();
+
+  document.getElementById('stat-sellados').textContent = totalSellados;
+  document.getElementById('stat-pendientes').textContent = 125 - totalSellados;
+  document.getElementById('stat-pct').textContent = pct + '%';
+  document.getElementById('stat-subr').textContent = subrCompletas;
+  document.getElementById('prog-texto').textContent = `${totalSellados} / 125`;
+
+  setTimeout(() => {
+    document.getElementById('prog-fill').style.width = pct + '%';
+  }, 300);
+}
+
+function calcSubrCompletas() {
+  const muniPorSubr = agruparPorSubregion();
+  let c = 0;
+  Object.values(muniPorSubr).forEach(munis => {
+    if (munis.every(m => sellos[m.id])) c++;
+  });
+  return c;
+}
+
+function agruparPorSubregion() {
+  const grupos = {};
+  municipios.forEach(m => {
+    const s = m.subregion || 'Sin subregión';
+    if (!grupos[s]) grupos[s] = [];
+    grupos[s].push(m);
+  });
+  return grupos;
+}
+
+// ── MODAL ─────────────────────────────────────────────────────
+function abrirModal(muniId) {
+  muniActual = municipios.find(m => m.id == muniId);
+  if (!muniActual) return;
+
+  const s = sellos[muniId];
+  const el = id => document.getElementById(id);
+
+  el('modal-nombre').textContent = muniActual.nombre;
+  el('modal-subr').textContent = muniActual.subregion || '';
+  el('modal-meta-top').textContent = muniActual.subregion || '';
+
+  // Reset foto
+  el('modal-foto').style.display = 'none';
+  el('modal-foto-empty').style.display = 'flex';
+
+  if (s) {
+    // Municipio sellado
+    el('modal-sellado-info').style.display = 'block';
+    el('modal-pendiente-actions').style.display = 'none';
+
+    if (s.foto_url) {
+      el('modal-foto').src = s.foto_url;
+      el('modal-foto').style.display = 'block';
+      el('modal-foto-empty').style.display = 'none';
+    }
+
+    el('modal-fecha').textContent = s.fecha
+      ? new Date(s.fecha).toLocaleDateString('es-CO', { weekday:'long', year:'numeric', month:'long', day:'numeric' })
+      : '—';
+
+    el('modal-stars').textContent = s.calificacion ? '★'.repeat(s.calificacion) : '—';
+
+    if (s.notas) {
+      el('modal-notas').textContent = s.notas;
+      el('modal-notas').style.display = 'block';
+    } else {
+      el('modal-notas').style.display = 'none';
+    }
+
+  } else {
+    el('modal-sellado-info').style.display = 'none';
+    el('modal-pendiente-actions').style.display = 'block';
+  }
+
+  el('modal-overlay').classList.add('open');
+}
+
+function cerrarModal(e) {
+  if (!e || e.target === document.getElementById('modal-overlay')) {
+    document.getElementById('modal-overlay').classList.remove('open');
+    muniActual = null;
+  }
+}
+
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showToast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+// ── START ─────────────────────────────────────────────────────
+init();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "appId": "com.ridera.gruas",
+  "appName": "Grúas Ridera",
+  "webDir": "./www",
+  "plugins": {
+    "SplashScreen": {
+      "launchAutoHide": true
+    }
+  }
+}

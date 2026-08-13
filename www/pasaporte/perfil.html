@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Cuenta · Ridera 125</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --bg:#0d0d0d;--panel:#141414;--panel-2:#1b1b1b;--line:#262626;--line-soft:#1f1f1f;
+  --orange:#E85D20;--orange-soft:#ff7a3d;--ink:#f4f1ea;--ink-dim:#c2beb4;--ink-faint:#a89e90;
+  --copper:#c9a84c;--ok:#5fb86a;--err:#c0392b
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+body{font-size:16px;line-height:1.5;max-width:480px;margin:0 auto;min-height:100vh;padding:0 0 40px}
+
+/* loader */
+.loader{min-height:100vh;display:grid;place-items:center}
+.spinner{width:30px;height:30px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+#app{display:none}
+body.ready #app{display:block}
+body.ready #loader{display:none}
+
+/* hero */
+.hero{padding:28px 20px 24px;background:linear-gradient(180deg,#161616,var(--bg));border-bottom:1px solid var(--line);position:relative;overflow:hidden}
+.hero::before{content:"";position:absolute;top:-40px;right:-30px;width:200px;height:200px;background:radial-gradient(circle,rgba(232,93,32,.06),transparent 70%);pointer-events:none}
+.hero-top{display:flex;align-items:flex-start;gap:16px}
+.avatar{width:72px;height:72px;flex:0 0 72px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#2a1a0e,#120a04);border:2.5px solid var(--orange);display:grid;place-items:center;font-family:"Bebas Neue",sans-serif;font-size:30px;color:var(--orange)}
+.hero-info{flex:1;padding-top:4px}
+.hero-name{font-family:"Bebas Neue",sans-serif;font-size:34px;line-height:.95;letter-spacing:.5px}
+.hero-rank{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:14px;letter-spacing:.4px;color:var(--copper)}
+.hero-rank .dot{width:6px;height:6px;border-radius:50%;background:var(--copper)}
+.hero-meta{margin-top:8px;font-family:"JetBrains Mono",monospace;font-weight:500;font-size:12px;color:var(--ink-faint);letter-spacing:.05em}
+
+/* stats strip */
+.stats-strip{display:grid;grid-template-columns:1fr 1fr 1fr;margin:16px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.stat-cell{padding:16px 12px;text-align:center;position:relative}
+.stat-cell+.stat-cell::before{content:"";position:absolute;left:0;top:20%;bottom:20%;width:1px;background:var(--line)}
+.stat-val{font-family:"Bebas Neue",sans-serif;font-size:32px;line-height:1;color:var(--orange)}
+.stat-val.copper{color:var(--copper)}
+.stat-val.green{color:var(--ok)}
+.stat-label{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint);margin-top:4px}
+
+/* progress */
+.progress-card{margin:12px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.progress-header{display:flex;align-items:baseline;justify-content:space-between}
+.progress-title{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim);text-transform:uppercase}
+.progress-pct{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:var(--orange)}
+.progress-bar{height:8px;border-radius:6px;background:var(--panel-2);overflow:hidden;margin-top:10px;border:1px solid var(--line-soft)}
+.progress-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--orange),var(--orange-soft));width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+.progress-next{margin-top:10px;font-family:"Barlow Condensed",sans-serif;font-size:14px;color:var(--ink-faint);letter-spacing:.3px}
+.progress-next b{color:var(--copper);font-weight:700}
+
+/* section title */
+.section-title{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.3em;text-transform:uppercase;color:var(--ink-faint);margin:28px 20px 12px;display:flex;align-items:center;gap:10px}
+.section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+/* moto card */
+.moto-card{margin:0 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px}
+.moto-header{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.moto-icon{width:44px;height:44px;flex:0 0 44px;border-radius:12px;background:radial-gradient(circle at 35% 30%,#1a1206,#0d0a04);border:1.5px solid var(--copper);display:grid;place-items:center;font-size:22px}
+.moto-name{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.4px}
+.moto-cc{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:13px;color:var(--ink-faint);letter-spacing:.1em}
+.moto-edit{margin-left:auto;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:13px;color:var(--orange);letter-spacing:.3px;text-transform:uppercase;cursor:pointer;background:none;border:1px solid rgba(232,93,32,.3);border-radius:8px;padding:6px 12px}
+.moto-edit:active{background:rgba(232,93,32,.1)}
+.moto-specs{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.moto-spec{background:var(--panel-2);border:1px solid var(--line-soft);border-radius:10px;padding:10px 12px}
+.moto-spec .ms-label{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.moto-spec .ms-val{font-family:"DM Sans",sans-serif;font-weight:700;font-size:15px;color:var(--ink);margin-top:2px}
+.moto-empty{color:var(--ink-faint);font-style:italic;font-size:14px;margin-bottom:10px}
+
+/* info group */
+.info-group{margin:0 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.info-row{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;text-decoration:none;color:inherit}
+.info-row:active{background:rgba(232,93,32,.03)}
+.info-row+.info-row{border-top:1px solid var(--line-soft)}
+.info-icon{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line-soft);display:grid;place-items:center;font-size:16px}
+.info-content{flex:1;min-width:0}
+.info-label{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-faint)}
+.info-value{font-weight:500;font-size:15px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.info-value.empty{color:var(--ink-faint);font-style:italic;font-weight:400}
+.info-chevron{color:var(--ink-faint);font-size:14px;flex:0 0 auto}
+
+/* settings */
+.settings-group{margin:0 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.setting-row{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer;text-decoration:none;color:inherit}
+.setting-row:active{background:rgba(255,255,255,.02)}
+.setting-row+.setting-row{border-top:1px solid var(--line-soft)}
+.setting-icon{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:var(--panel-2);border:1px solid var(--line-soft);display:grid;place-items:center;font-size:16px}
+.setting-text{flex:1;font-weight:500;font-size:15px}
+
+/* danger */
+.danger-group{margin:0 16px;background:var(--panel);border:1px solid var(--line);border-radius:16px;overflow:hidden}
+.danger-row{display:flex;align-items:center;gap:14px;padding:14px 16px;cursor:pointer}
+.danger-row:active{background:rgba(192,57,43,.04)}
+.danger-row+.danger-row{border-top:1px solid var(--line-soft)}
+.danger-icon{width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:rgba(192,57,43,.08);border:1px solid rgba(192,57,43,.15);display:grid;place-items:center;font-size:16px}
+.danger-text{flex:1;font-weight:500;font-size:15px;color:var(--err)}
+.danger-text.logout{color:var(--ink-dim)}
+
+/* footer */
+.app-footer{margin-top:32px;text-align:center;padding:0 20px}
+.app-footer .logo-text{font-family:"Bebas Neue",sans-serif;font-size:18px;letter-spacing:1px;color:var(--ink-faint)}
+.app-footer .logo-text span{color:var(--orange)}
+.app-footer .version{font-family:"JetBrains Mono",monospace;font-weight:500;font-size:11px;color:var(--line);letter-spacing:.1em;margin-top:4px}
+.app-footer .links{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:10px;flex-wrap:wrap}
+.app-footer .links a{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:13px;color:var(--ink-faint);text-decoration:none;letter-spacing:.3px}
+.app-footer .links .sep{color:var(--line);font-size:10px}
+
+/* modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:flex-end;justify-content:center}
+.modal-overlay.open{display:flex}
+.modal{background:var(--panel);border-top:1px solid var(--line);border-radius:20px 20px 0 0;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;padding:24px 20px calc(20px + env(safe-area-inset-bottom));animation:slideUp .25s ease}
+@keyframes slideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.modal-handle{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto 18px}
+.modal h3{font-family:"Bebas Neue",sans-serif;font-size:28px;letter-spacing:.5px;margin-bottom:16px}
+.modal label{display:block;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:12px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin:14px 0 6px}
+.modal label:first-of-type{margin-top:0}
+.modal input,.modal select{width:100%;padding:13px 14px;font-size:16px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"DM Sans",sans-serif}
+.modal input:focus{outline:none;border-color:var(--orange)}
+.modal .field-row{display:flex;gap:10px}
+.modal .field-row>*{flex:1}
+.seg{display:flex;gap:8px;margin-top:6px}
+.seg .opt{flex:1;text-align:center;padding:13px;border:1px solid var(--line);border-radius:10px;cursor:pointer;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:16px;letter-spacing:.4px;color:var(--ink-dim)}
+.seg .opt.on{background:var(--orange);color:#100a06;border-color:var(--orange)}
+.modal-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;margin-top:20px;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:18px;letter-spacing:.5px;text-transform:uppercase;padding:15px;cursor:pointer}
+.modal-cta:active{transform:translateY(1px)}
+.modal-cta:disabled{opacity:.5}
+.modal-cta .spin{width:18px;height:18px;border:2px solid rgba(0,0,0,.3);border-top-color:#100a06;border-radius:50%;animation:spin 1s linear infinite;display:none}
+.modal-cta.loading .spin{display:inline-block}
+.msg{margin-top:12px;font-family:"JetBrains Mono",monospace;font-size:13px;border-radius:10px;padding:10px 12px;display:none}
+.msg.show{display:block}
+.msg.error{color:#ff8a6b;background:#1a0f0a;border:1px solid #3a1d12}
+.msg.ok{color:var(--ok);background:#0a1a0f;border:1px solid #123a1d}
+</style>
+</head>
+<body>
+<div class="loader" id="loader"><div class="spinner"></div></div>
+
+<div id="app">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-top">
+      <div class="avatar" id="avatar"></div>
+      <div class="hero-info">
+        <div class="hero-name" id="heroName">Rider</div>
+        <div class="hero-rank"><span class="dot"></span> <span id="heroRank">Aprendiz de Ruta</span></div>
+        <div class="hero-meta" id="heroMeta"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div class="stats-strip">
+    <div class="stat-cell">
+      <div class="stat-val" id="statSellos">0</div>
+      <div class="stat-label">Sellos</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val copper" id="statPuntos">0</div>
+      <div class="stat-label">Puntos</div>
+    </div>
+    <div class="stat-cell">
+      <div class="stat-val green" id="statClubs">0</div>
+      <div class="stat-label">Clubs</div>
+    </div>
+  </div>
+
+  <!-- PROGRESS -->
+  <div class="progress-card">
+    <div class="progress-header">
+      <span class="progress-title">Progreso Antioquia</span>
+      <span class="progress-pct" id="progressPct">0%</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-next" id="progressNext"></div>
+  </div>
+
+  <!-- MI MOTO -->
+  <div class="section-title">Mi moto</div>
+  <div class="moto-card">
+    <div class="moto-header">
+      <div class="moto-icon">&#x1F3CD;</div>
+      <div>
+        <div class="moto-name" id="motoName">Sin moto</div>
+        <div class="moto-cc" id="motoCcLabel"></div>
+      </div>
+      <button class="moto-edit" id="editMotoBtn">Editar</button>
+    </div>
+    <div class="moto-specs" id="motoSpecs">
+      <div class="moto-spec"><div class="ms-label">Marca</div><div class="ms-val" id="motoMarca">—</div></div>
+      <div class="moto-spec"><div class="ms-label">Modelo</div><div class="ms-val" id="motoModelo">—</div></div>
+      <div class="moto-spec"><div class="ms-label">Cilindraje</div><div class="ms-val" id="motoCc">—</div></div>
+      <div class="moto-spec"><div class="ms-label">Viaja</div><div class="ms-val" id="motoViaja">—</div></div>
+    </div>
+  </div>
+
+  <!-- DATOS PERSONALES -->
+  <div class="section-title">Datos personales</div>
+  <div class="info-group">
+    <div class="info-row" id="editNombreBtn">
+      <div class="info-icon">&#128100;</div>
+      <div class="info-content">
+        <div class="info-label">Nombre</div>
+        <div class="info-value" id="infoNombre">—</div>
+      </div>
+      <div class="info-chevron">&#8250;</div>
+    </div>
+    <div class="info-row" id="editCorreoBtn">
+      <div class="info-icon">&#9993;</div>
+      <div class="info-content">
+        <div class="info-label">Correo</div>
+        <div class="info-value" id="infoCorreo">—</div>
+      </div>
+    </div>
+    <div class="info-row" id="editTelBtn">
+      <div class="info-icon">&#128222;</div>
+      <div class="info-content">
+        <div class="info-label">Tel&eacute;fono</div>
+        <div class="info-value" id="infoTel">—</div>
+      </div>
+      <div class="info-chevron">&#8250;</div>
+    </div>
+    <div class="info-row" id="editCiudadBtn">
+      <div class="info-icon">&#127968;</div>
+      <div class="info-content">
+        <div class="info-label">Ciudad</div>
+        <div class="info-value" id="infoCiudad">—</div>
+      </div>
+      <div class="info-chevron">&#8250;</div>
+    </div>
+    <div class="info-row" id="editEdadBtn">
+      <div class="info-icon">&#127874;</div>
+      <div class="info-content">
+        <div class="info-label">Edad</div>
+        <div class="info-value" id="infoEdad">—</div>
+      </div>
+      <div class="info-chevron">&#8250;</div>
+    </div>
+  </div>
+
+  <!-- CUENTA -->
+  <div class="section-title">Cuenta</div>
+  <div class="settings-group">
+    <a class="setting-row" id="changePwBtn">
+      <div class="setting-icon">&#128274;</div>
+      <div class="setting-text">Cambiar contrase&ntilde;a</div>
+      <div class="info-chevron">&#8250;</div>
+    </a>
+    <a class="setting-row" href="pasaporte.html">
+      <div class="setting-icon">&#128506;</div>
+      <div class="setting-text">Mi pasaporte</div>
+      <div class="info-chevron">&#8250;</div>
+    </a>
+  </div>
+
+  <!-- CERRAR / ELIMINAR -->
+  <div style="margin-top:20px"></div>
+  <div class="danger-group">
+    <div class="danger-row" id="logoutBtn">
+      <div class="setting-icon">&#128682;</div>
+      <div class="danger-text logout">Cerrar sesi&oacute;n</div>
+    </div>
+    <div class="danger-row" id="deleteBtn">
+      <div class="danger-icon">&#9888;</div>
+      <div class="danger-text">Eliminar mi cuenta</div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <div class="app-footer">
+    <div class="logo-text"><span>RIDERA</span> 125</div>
+    <div class="version">Pasaporte de Antioquia</div>
+    <div class="links">
+      <a href="privacidad.html">Privacidad</a>
+      <span class="sep">&middot;</span>
+      <a href="pasaporte.html">Pasaporte</a>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: DATOS PERSONALES -->
+<div class="modal-overlay" id="modalDatos">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Datos personales</h3>
+    <label>Nombre de rider</label>
+    <input id="fNombre" type="text" placeholder="Ej: Samuel TBC">
+    <label>Tel&eacute;fono / WhatsApp</label>
+    <input id="fTelefono" type="tel" placeholder="+57 3xx xxx xxxx" inputmode="tel">
+    <label>&iquest;De d&oacute;nde eres?</label>
+    <input id="fCiudad" type="text" placeholder="Ej: Medell&iacute;n">
+    <label>Edad</label>
+    <input id="fEdad" type="number" placeholder="Ej: 48" inputmode="numeric" min="14" max="99">
+    <button class="modal-cta" id="saveDatosBtn"><span>Guardar</span><span class="spin"></span></button>
+    <div class="msg" id="msgDatos"></div>
+  </div>
+</div>
+
+<!-- MODAL: MOTO -->
+<div class="modal-overlay" id="modalMoto">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Tu moto</h3>
+    <div class="field-row">
+      <div><label>Marca</label><input id="fMarca" type="text" placeholder="Ej: BMW"></div>
+      <div><label>Modelo</label><input id="fModelo" type="text" placeholder="Ej: GS 1250"></div>
+    </div>
+    <label>Cilindraje (cc)</label>
+    <input id="fCc" type="number" placeholder="Ej: 1250" inputmode="numeric">
+    <label>&iquest;Viajas solo o acompa&ntilde;ado?</label>
+    <div class="seg" id="viajaSeg">
+      <div class="opt" data-v="Solo">Solo</div>
+      <div class="opt" data-v="Acompañado">Acompa&ntilde;ado</div>
+    </div>
+    <button class="modal-cta" id="saveMotoBtn"><span>Guardar</span><span class="spin"></span></button>
+    <div class="msg" id="msgMoto"></div>
+  </div>
+</div>
+
+<!-- MODAL: CONTRASEÑA -->
+<div class="modal-overlay" id="modalPw">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <h3>Cambiar contrase&ntilde;a</h3>
+    <label>Nueva contrase&ntilde;a</label>
+    <input id="fNewPw" type="password" placeholder="M&iacute;nimo 6 caracteres" minlength="6">
+    <label>Confirmar contrase&ntilde;a</label>
+    <input id="fConfirmPw" type="password" placeholder="Repite la contrase&ntilde;a">
+    <button class="modal-cta" id="savePwBtn"><span>Actualizar</span><span class="spin"></span></button>
+    <div class="msg" id="msgPw"></div>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL="https://vzzxsdtsaahhzyctvmhx.supabase.co";
+const SUPABASE_KEY="sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
+const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+function esc(s){const d=document.createElement("div");d.textContent=s;return d.innerHTML;}
+const RANKS=[
+  {min:0,name:"Aprendiz de Ruta"},{min:5,name:"Trochero"},{min:20,name:"Explorador"},
+  {min:45,name:"Trotapueblos"},{min:80,name:"Maestro Viajero"},{min:120,name:"Leyenda"},{min:125,name:"Patrón de Antioquia"}
+];
+function rankFor(n){let r=RANKS[0];for(const k of RANKS){if(n>=k.min)r=k;}return r;}
+function nextRank(n){for(const k of RANKS){if(n<k.min)return k;}return null;}
+function initials(name){return(name||"R").split(/\s+/).map(w=>w[0]).join("").substring(0,2).toUpperCase();}
+
+let user=null, profile=null, viaja="", selloCount=0, totalPts=0, clubCount=0;
+
+(async function(){
+  const{data:sess}=await sb.auth.getSession();
+  if(!sess.session){window.location.href="index.html";return;}
+  user=sess.session.user;
+
+  const[profRes,sellosRes,clubsRes]=await Promise.all([
+    sb.from("riders").select("*").eq("id",user.id).maybeSingle(),
+    sb.from("sellos").select("municipio_id").eq("rider_id",user.id),
+    sb.from("club_members").select("club_id").eq("rider_id",user.id)
+  ]);
+
+  profile=profRes.data;
+  const sellos=sellosRes.data||[];
+  selloCount=sellos.length;
+  clubCount=(clubsRes.data||[]).length;
+
+  if(selloCount>0){
+    const{data:munis}=await sb.from("municipios").select("id,puntos_sello");
+    if(munis){
+      const ptsMap=Object.fromEntries(munis.map(m=>[m.id,m.puntos_sello||1]));
+      totalPts=sellos.reduce((s,x)=>s+(ptsMap[x.municipio_id]||1),0);
+    }
+  }
+
+  renderAll();
+  document.body.classList.add("ready");
+
+  if(!profile||!profile.nombre){
+    setTimeout(()=>openModal("modalDatos"),400);
+  }
+})();
+
+function renderAll(){
+  const p=profile||{};
+  const name=p.nombre||"Rider";
+  $("avatar").textContent=initials(name);
+  $("heroName").textContent=name;
+
+  const rank=rankFor(selloCount);
+  $("heroRank").textContent=rank.name;
+
+  const dateStr=p.created_at?new Date(p.created_at).toLocaleDateString("es-CO",{month:"short",year:"numeric"}):"";
+  $("heroMeta").textContent=(dateStr?"Rider desde "+dateStr+" · ":"")+(user.email||"");
+
+  $("statSellos").textContent=selloCount;
+  $("statPuntos").textContent=totalPts.toLocaleString("es-CO");
+  $("statClubs").textContent=clubCount;
+
+  const pct=Math.round((selloCount/125)*1000)/10;
+  $("progressPct").textContent=pct+"%";
+  setTimeout(()=>{$("progressFill").style.width=pct+"%";},100);
+
+  const nr=nextRank(selloCount);
+  if(nr){
+    $("progressNext").innerHTML="Te faltan <b>"+esc(String(nr.min-selloCount))+" sellos</b> para <b>"+esc(nr.name)+"</b>";
+  }else{
+    $("progressNext").innerHTML="<b>&#127942; &iexcl;Completaste todos los rangos!</b>";
+  }
+
+  const marca=p.moto_marca||"";
+  const modelo=p.moto_modelo||"";
+  const cc=p.moto_cc||0;
+  if(marca||modelo){
+    $("motoName").textContent=(marca+" "+modelo).trim();
+    $("motoCcLabel").textContent=cc?cc+" CC":"";
+  }else{
+    $("motoName").textContent="Sin moto registrada";
+    $("motoCcLabel").textContent="";
+  }
+  $("motoMarca").textContent=marca||"—";
+  $("motoModelo").textContent=modelo||"—";
+  $("motoCc").textContent=cc?cc.toLocaleString("es-CO")+" cc":"—";
+  $("motoViaja").textContent=p.viaja||"—";
+
+  $("infoNombre").textContent=p.nombre||"";
+  $("infoNombre").className="info-value"+(p.nombre?"":" empty");
+  if(!p.nombre)$("infoNombre").textContent="Agregar nombre";
+
+  $("infoCorreo").textContent=user.email||"";
+  $("infoTel").textContent=p.telefono||"";
+  $("infoTel").className="info-value"+(p.telefono?"":" empty");
+  if(!p.telefono)$("infoTel").textContent="Agregar";
+
+  $("infoCiudad").textContent=p.ciudad||"";
+  $("infoCiudad").className="info-value"+(p.ciudad?"":" empty");
+  if(!p.ciudad)$("infoCiudad").textContent="Agregar";
+
+  $("infoEdad").textContent=p.edad?p.edad+" años":"";
+  $("infoEdad").className="info-value"+(p.edad?"":" empty");
+  if(!p.edad)$("infoEdad").textContent="Agregar";
+}
+
+// modals
+function openModal(id){
+  const p=profile||{};
+  if(id==="modalDatos"){
+    $("fNombre").value=p.nombre||"";
+    $("fTelefono").value=p.telefono||"";
+    $("fCiudad").value=p.ciudad||"";
+    $("fEdad").value=p.edad||"";
+  }else if(id==="modalMoto"){
+    $("fMarca").value=p.moto_marca||"";
+    $("fModelo").value=p.moto_modelo||"";
+    $("fCc").value=p.moto_cc||"";
+    viaja=p.viaja||"";
+    setViaja(viaja);
+  }else if(id==="modalPw"){
+    $("fNewPw").value="";
+    $("fConfirmPw").value="";
+  }
+  $(id).classList.add("open");
+}
+function closeModal(id){$(id).classList.remove("open");}
+
+document.querySelectorAll(".modal-overlay").forEach(ov=>{
+  ov.addEventListener("click",e=>{if(e.target===ov)closeModal(ov.id);});
+});
+
+function setViaja(v){viaja=v;document.querySelectorAll("#viajaSeg .opt").forEach(o=>o.classList.toggle("on",o.dataset.v===v));}
+document.querySelectorAll("#viajaSeg .opt").forEach(o=>o.addEventListener("click",()=>setViaja(o.dataset.v)));
+
+// edit triggers
+["editNombreBtn","editTelBtn","editCiudadBtn","editEdadBtn"].forEach(id=>{
+  $(id).addEventListener("click",()=>openModal("modalDatos"));
+});
+$("editMotoBtn").addEventListener("click",()=>openModal("modalMoto"));
+$("changePwBtn").addEventListener("click",e=>{e.preventDefault();openModal("modalPw");});
+
+async function saveFields(fields,btnId,msgId,modalId){
+  const msg=$(msgId);msg.className="msg";
+  const btn=$(btnId);btn.classList.add("loading");btn.disabled=true;
+  try{
+    const{error}=await sb.from("riders").upsert({id:user.id,...fields},{onConflict:"id"});
+    if(error)throw error;
+    profile=Object.assign(profile||{},fields);
+    renderAll();
+    closeModal(modalId);
+  }catch(err){
+    msg.textContent="Error: "+err.message;msg.className="msg show error";
+  }finally{
+    btn.classList.remove("loading");btn.disabled=false;
+  }
+}
+
+$("saveDatosBtn").addEventListener("click",()=>{
+  const nombre=$("fNombre").value.trim();
+  if(!nombre){
+    $("msgDatos").textContent="El nombre es obligatorio.";
+    $("msgDatos").className="msg show error";return;
+  }
+  saveFields({
+    nombre,
+    correo:user.email||null,
+    telefono:$("fTelefono").value.trim()||null,
+    ciudad:$("fCiudad").value.trim()||null,
+    edad:$("fEdad").value?parseInt($("fEdad").value,10):null
+  },"saveDatosBtn","msgDatos","modalDatos");
+});
+
+$("saveMotoBtn").addEventListener("click",()=>{
+  saveFields({
+    moto_marca:$("fMarca").value.trim()||null,
+    moto_modelo:$("fModelo").value.trim()||null,
+    moto_cc:$("fCc").value?parseInt($("fCc").value,10):null,
+    viaja:viaja||null
+  },"saveMotoBtn","msgMoto","modalMoto");
+});
+
+$("savePwBtn").addEventListener("click",async()=>{
+  const pw=$("fNewPw").value, pw2=$("fConfirmPw").value;
+  const msg=$("msgPw");msg.className="msg";
+  if(pw.length<6){msg.textContent="Mínimo 6 caracteres.";msg.className="msg show error";return;}
+  if(pw!==pw2){msg.textContent="Las contraseñas no coinciden.";msg.className="msg show error";return;}
+  const btn=$("savePwBtn");btn.classList.add("loading");btn.disabled=true;
+  try{
+    const{error}=await sb.auth.updateUser({password:pw});
+    if(error)throw error;
+    msg.textContent="Contraseña actualizada.";msg.className="msg show ok";
+    setTimeout(()=>closeModal("modalPw"),1200);
+  }catch(err){
+    msg.textContent="Error: "+err.message;msg.className="msg show error";
+  }finally{btn.classList.remove("loading");btn.disabled=false;}
+});
+
+// logout
+$("logoutBtn").addEventListener("click",async()=>{
+  try{await sb.auth.signOut();}catch(_){}
+  try{localStorage.removeItem("ridera_supabase_key");}catch(_){}
+  window.location.href="index.html";
+});
+
+// delete account
+$("deleteBtn").addEventListener("click",async()=>{
+  if(!confirm("¿Seguro que quieres eliminar tu cuenta?\n\nSe borrarán tus sellos, perfil y membresías de club. Esta acción no se puede deshacer."))return;
+  const btn=$("deleteBtn").querySelector(".danger-text");
+  btn.textContent="Eliminando...";
+  try{
+    const{data:sess}=await sb.auth.getSession();
+    const token=sess?.session?.access_token;
+    if(!token)throw new Error("Sin sesión activa");
+    const res=await fetch(SUPABASE_URL+"/functions/v1/delete-account",{
+      method:"POST",headers:{Authorization:"Bearer "+token,apikey:SUPABASE_KEY}
+    });
+    const result=await res.json();
+    if(!result.ok)throw new Error(result.error||"Error del servidor");
+    await sb.auth.signOut();
+    try{localStorage.removeItem("ridera_supabase_key");}catch(_){}
+    alert("Tu cuenta y datos han sido eliminados. ¡Hasta pronto!");
+    window.location.href="index.html";
+  }catch(err){
+    btn.textContent="Eliminar mi cuenta";
+    alert("No se pudo eliminar: "+(err.message||err));
+  }
+});
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+</body>
+</html>

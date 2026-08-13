@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grueros disponibles — Ridera</title>
+  <meta name="description" content="Encuentra grueros para motos disponibles en tu ciudad. Servicio de grúa rápido y confiable en Colombia. Contacta directamente o solicita ahora.">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Grueros disponibles — Ridera">
+  <meta property="og:description" content="Encuentra grueros para motos disponibles en tu ciudad en Colombia.">
+  <meta property="og:url" content="https://gruas.ridera.com.co/grueros">
+  <link rel="canonical" href="https://gruas.ridera.com.co/grueros">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0e0e0e; --surface: #1a1a1a; --surface2: #222;
+      --border: #2a2a2a; --accent: #E85D20; --text: #f0f0f0; --muted: #888;
+      --orange: #E85D20;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+    nav {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 0 1.5rem;
+      display: flex; align-items: center; gap: 1rem; height: 56px;
+      position: sticky; top: 0; z-index: 50;
+    }
+    .nav-brand { font-weight: 700; color: var(--accent); text-decoration: none; font-size: 1.1rem; }
+    .nav-sep { color: var(--border); }
+    .nav-sub { color: var(--muted); font-size: 0.9rem; }
+
+    .hero-stripe {
+      background: repeating-linear-gradient(45deg, var(--orange) 0 14px, #0d0d0d 14px 28px);
+      height: 6px;
+    }
+
+    .hero-section {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 2rem 1rem 1.5rem;
+      text-align: center;
+    }
+    .hero-section h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.4rem; }
+    .hero-section p { color: var(--muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto; }
+
+    .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    /* FILTERS */
+    .filters {
+      display: flex; flex-wrap: wrap; gap: 0.5rem;
+      margin-bottom: 1.5rem; align-items: center;
+    }
+    .filter-label { font-size: 0.8rem; color: var(--muted); margin-right: 0.25rem; }
+    .filter-btn {
+      font-size: 0.82rem; font-weight: 500;
+      padding: 0.35rem 0.9rem;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--muted);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+    .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+    /* SEARCH */
+    .search-wrap { margin-bottom: 1.25rem; }
+    .search-input {
+      width: 100%; max-width: 360px;
+      background: var(--surface); border: 1px solid var(--border);
+      color: var(--text); font-size: 0.9rem;
+      padding: 0.55rem 1rem; border-radius: 8px; outline: none;
+      transition: border-color 0.15s;
+    }
+    .search-input::placeholder { color: var(--muted); }
+    .search-input:focus { border-color: var(--accent); }
+
+    /* STATS BAR */
+    .stats-bar { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.25rem; }
+    .stats-bar span { color: var(--text); font-weight: 600; }
+
+    /* GRID */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    /* CARD */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex; flex-direction: column; gap: 0.75rem;
+      transition: border-color 0.15s, transform 0.15s;
+      text-decoration: none;
+      color: inherit;
+    }
+    .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .card.unavailable { opacity: 0.7; }
+
+    .card-header { display: flex; align-items: center; gap: 0.875rem; }
+    .card-avatar {
+      width: 56px; height: 56px; border-radius: 50%;
+      object-fit: cover; border: 2px solid var(--border); flex-shrink: 0;
+    }
+    .card-avatar-ph {
+      width: 56px; height: 56px; border-radius: 50%;
+      background: var(--accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem; font-weight: 700; color: #fff; flex-shrink: 0;
+    }
+    .card-name { font-weight: 700; font-size: 1rem; line-height: 1.25; }
+    .card-city { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+
+    .badge-disp {
+      display: inline-flex; align-items: center; gap: 0.35rem;
+      font-size: 0.75rem; font-weight: 600;
+      padding: 0.25rem 0.65rem; border-radius: 20px;
+    }
+    .badge-on  { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
+    .badge-off { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-on  { background: #4ade80; animation: pulse-green 2s ease-in-out infinite; }
+    .dot-off { background: #f87171; }
+    @keyframes pulse-green {
+      0%, 100% { opacity: 1; } 50% { opacity: 0.4; }
+    }
+
+    .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+    .chip {
+      display: inline-flex; align-items: center;
+      font-size: 0.75rem; padding: 0.2rem 0.6rem;
+      border-radius: 20px; border: 1px solid var(--border);
+      background: rgba(232,93,32,0.07); border-color: rgba(232,93,32,0.25); color: #f0a070;
+    }
+
+    .card-desc { font-size: 0.82rem; color: #bbb; line-height: 1.5; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+    .card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+    .btn-ver {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      background: var(--accent); color: #fff;
+      font-size: 0.82rem; font-weight: 600;
+      padding: 0.45rem 1rem;
+      border-radius: 8px; text-decoration: none;
+      transition: background 0.15s; white-space: nowrap;
+    }
+    .btn-ver:hover { background: #c94e18; }
+
+    /* LOADING / EMPTY */
+    #loading, #empty {
+      min-height: 40vh;
+      display: flex; align-items: center; justify-content: center;
+      flex-direction: column; gap: 1rem; color: var(--muted);
+    }
+    #empty { display: none; }
+    .spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* FOOTER */
+    footer {
+      text-align: center; padding: 2rem 1rem;
+      border-top: 1px solid var(--border);
+      color: var(--muted); font-size: 0.82rem;
+    }
+    footer a { color: var(--accent); text-decoration: none; }
+
+    @media (max-width: 480px) {
+      .hero-section h1 { font-size: 1.35rem; }
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "name": "Grueros disponibles — Ridera",
+    "description": "Directorio de grueros para motos en Colombia",
+    "url": "https://gruas.ridera.com.co/grueros"
+  }
+  </script>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="https://ridera.com.co">Ridera</a>
+  <span class="nav-sep">›</span>
+  <span class="nav-sub">Grueros</span>
+</nav>
+<div class="hero-stripe"></div>
+
+<div class="hero-section">
+  <h1>Grueros disponibles</h1>
+  <p>Encuentra un gruero para tu moto en toda Colombia. Contacta directo o solicita ahora.</p>
+</div>
+
+<div class="container">
+  <div id="loading"><div class="spinner"></div><span>Cargando grueros…</span></div>
+
+  <div id="mainContent" style="display:none">
+    <div class="search-wrap">
+      <input class="search-input" type="search" id="searchInput" placeholder="Buscar por nombre o ciudad…" autocomplete="off">
+    </div>
+    <div class="filters" id="cityFilters">
+      <span class="filter-label">Ciudad:</span>
+      <button class="filter-btn active" data-city="all">Todas</button>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="grid" id="grid"></div>
+    <div id="empty"><span>No se encontraron grueros con ese filtro.</span></div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://ridera.com.co">Ridera.com.co</a> &mdash; Grúas para motos en Colombia
+</footer>
+
+<script>
+const SB_URL  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let allGrueros = [];
+let activeCity = 'all';
+let searchTerm = '';
+
+async function loadGrueros() {
+  const url = `${SB_URL}/rest/v1/grueros?aprobado=eq.SI&select=id,nombre,slug,ciudad,datos,disponible,municipios&order=disponible.desc,nombre.asc`;
+  const res = await fetch(url, {
+    headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` }
+  });
+  if (!res.ok) throw new Error('Error cargando grueros');
+  return res.json();
+}
+
+function initials(nombre) {
+  return (nombre || '?').trim().split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+}
+
+function avatar(datos, nombre) {
+  const foto = datos?.foto_url || datos?.foto || datos?.avatar_url || '';
+  if (foto) return `<img class="card-avatar" src="${foto}" alt="${nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="card-avatar-ph" style="display:none">${initials(nombre)}</div>`;
+  return `<div class="card-avatar-ph">${initials(nombre)}</div>`;
+}
+
+function serviciosChips(datos) {
+  const srvs = datos?.servicios || datos?.tipos_servicio || [];
+  if (!srvs.length) return '';
+  return `<div class="chip-row">${srvs.slice(0,4).map(s => `<span class="chip">${s}</span>`).join('')}${srvs.length > 4 ? `<span class="chip">+${srvs.length-4}</span>` : ''}</div>`;
+}
+
+function cardLink(slug) {
+  return slug ? `/grua/${slug}` : null;
+}
+
+function buildCard(g) {
+  const datos = (typeof g.datos === 'string' ? JSON.parse(g.datos || '{}') : g.datos) || {};
+  const link  = cardLink(g.slug);
+  const ciudad = g.ciudad || datos.ciudad || '';
+  const desc   = datos.descripcion || datos.bio || '';
+  const disp   = g.disponible;
+  const munis  = (g.municipios || []).slice(0,3).join(', ');
+
+  const inner = `
+    <div class="card-header">
+      ${avatar(datos, g.nombre)}
+      <div>
+        <div class="card-name">${g.nombre || 'Gruero'}</div>
+        <div class="card-city">${ciudad}${munis ? ` · ${munis}` : ''}</div>
+        <span class="badge-disp ${disp ? 'badge-on' : 'badge-off'}">
+          <span class="dot ${disp ? 'dot-on' : 'dot-off'}"></span>
+          ${disp ? 'Disponible' : 'No disponible'}
+        </span>
+      </div>
+    </div>
+    ${serviciosChips(datos)}
+    ${desc ? `<div class="card-desc">${desc}</div>` : ''}
+    <div class="card-footer">
+      ${link ? `<a class="btn-ver" href="${link}">Ver perfil →</a>` : `<span></span>`}
+    </div>`;
+
+  if (link) {
+    return `<a class="card${disp ? '' : ' unavailable'}" href="${link}">${inner}</a>`;
+  }
+  return `<div class="card${disp ? '' : ' unavailable'}">${inner}</div>`;
+}
+
+function uniqueCities(list) {
+  const cities = [...new Set(
+    list.map(g => {
+      const datos = (typeof g.datos === 'string' ? JSON.parse(g.datos || '{}') : g.datos) || {};
+      return g.ciudad || datos.ciudad || '';
+    }).filter(Boolean)
+  )].sort();
+  return cities;
+}
+
+function filtered() {
+  return allGrueros.filter(g => {
+    const datos = (typeof g.datos === 'string' ? JSON.parse(g.datos || '{}') : g.datos) || {};
+    const ciudad = (g.ciudad || datos.ciudad || '').toLowerCase();
+    const nombre = (g.nombre || '').toLowerCase();
+    const munis  = (g.municipios || []).join(' ').toLowerCase();
+    const matchCity = activeCity === 'all' || ciudad === activeCity.toLowerCase();
+    const matchSearch = !searchTerm || nombre.includes(searchTerm) || ciudad.includes(searchTerm) || munis.includes(searchTerm);
+    return matchCity && matchSearch;
+  });
+}
+
+function render() {
+  const list = filtered();
+  const grid  = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+  const stats = document.getElementById('statsBar');
+
+  const total = allGrueros.length;
+  const disp  = allGrueros.filter(g => g.disponible).length;
+  stats.innerHTML = `<span>${list.length}</span> gruero${list.length !== 1 ? 's' : ''} mostrado${list.length !== 1 ? 's' : ''} · <span>${disp}</span> disponible${disp !== 1 ? 's' : ''} ahora de <span>${total}</span>`;
+
+  if (!list.length) {
+    grid.innerHTML = '';
+    empty.style.display = 'flex';
+  } else {
+    grid.innerHTML = list.map(buildCard).join('');
+    empty.style.display = 'none';
+  }
+}
+
+function buildFilters(cities) {
+  const wrap = document.getElementById('cityFilters');
+  cities.forEach(city => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.dataset.city = city;
+    btn.textContent = city;
+    btn.addEventListener('click', () => {
+      activeCity = city;
+      wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.city === city));
+      render();
+    });
+    wrap.appendChild(btn);
+  });
+  wrap.querySelector('[data-city="all"]').addEventListener('click', () => {
+    activeCity = 'all';
+    wrap.querySelectorAll('.filter-btn').forEach(b => b.classList.toggle('active', b.dataset.city === 'all'));
+    render();
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', e => {
+  searchTerm = e.target.value.toLowerCase().trim();
+  render();
+});
+
+(async () => {
+  try {
+    allGrueros = await loadGrueros();
+    const cities = uniqueCities(allGrueros);
+    buildFilters(cities);
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('mainContent').style.display = '';
+    render();
+  } catch (err) {
+    document.getElementById('loading').innerHTML = `<span style="color:#f87171">Error cargando grueros. Intenta más tarde.</span>`;
+  }
+})();
+</script>
+</body>
+</html>

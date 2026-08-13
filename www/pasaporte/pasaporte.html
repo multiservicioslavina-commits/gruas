@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi Pasaporte · Ridera 125</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ridera 125">
+
+<!-- Tipografías de la marca -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+<!-- Cliente de Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+  :root{
+    --bg:#0d0d0d;
+    --panel:#141414;
+    --panel-2:#1b1b1b;
+    --line:#262626;
+    --line-soft:#1f1f1f;
+    --orange:#E85D20;
+    --orange-soft:#ff7a3d;
+    --ink:#f4f1ea;
+    --ink-dim:#c2beb4;
+    --ink-faint:#a89e90;
+    --copper:#c9a84c;
+    --ok:#5fb86a;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{font-size:17px;line-height:1.55;padding:0 0 40px;max-width:560px;margin:0 auto;min-height:100vh}
+  h1,h2,h3{margin:0;font-weight:400}
+
+  /* ---------- Encabezado ---------- */
+  .top{
+    padding:22px 20px 18px;
+    border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#161616 0%,var(--bg) 100%);
+  }
+  .eyebrow{
+    font-family:"JetBrains Mono",monospace;font-weight:700;
+    font-size:15px;letter-spacing:.32em;color:var(--orange);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;
+  }
+  .eyebrow::after{content:"";flex:1;height:1px;background:var(--line)}
+  .rider-name{
+    font-family:"Bebas Neue",sans-serif;font-size:clamp(40px,11vw,56px);
+    line-height:.95;letter-spacing:.5px;margin-top:8px;
+  }
+  .rank-row{display:flex;align-items:center;gap:12px;margin-top:12px}
+  .rank-badge{
+    width:46px;height:46px;flex:0 0 46px;border-radius:50%;
+    border:2px solid var(--copper);
+    display:grid;place-items:center;
+    background:radial-gradient(circle at 35% 30%,#2a2317,#0f0d08);
+    font-family:"Bebas Neue",sans-serif;font-size:22px;color:var(--copper);
+  }
+  .rank-meta .label{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.22em;color:var(--ink-faint);text-transform:uppercase}
+  .rank-meta .name{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:22px;letter-spacing:.5px;line-height:1.05}
+
+  /* ---------- Tarjeta de progreso ---------- */
+  .progress-card{margin:18px 16px 0;background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px 18px}
+  .big-count{display:flex;align-items:baseline;gap:6px;font-family:"Bebas Neue",sans-serif;line-height:1}
+  .big-count .now{font-size:64px;color:var(--orange)}
+  .big-count .of{font-size:30px;color:var(--ink-dim)}
+  .big-count .word{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;letter-spacing:.2em;color:var(--ink-dim);text-transform:uppercase;margin-left:auto}
+  .bar{height:10px;border-radius:6px;background:var(--panel-2);overflow:hidden;margin-top:14px;border:1px solid var(--line)}
+  .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--orange),var(--orange-soft));border-radius:6px;width:0;transition:width 1.1s cubic-bezier(.2,.7,.2,1)}
+  .stat-row{display:flex;gap:10px;margin-top:16px}
+  .stat{flex:1;background:var(--panel-2);border:1px solid var(--line-soft);border-radius:12px;padding:10px 12px}
+  .stat .n{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:22px;color:var(--ink)}
+  .stat .l{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;letter-spacing:.18em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
+  .next-rank{margin-top:14px;font-family:"Barlow Condensed",sans-serif;font-size:15px;color:var(--ink-dim);letter-spacing:.3px}
+  .next-rank b{color:var(--copper);font-weight:700}
+
+  /* ---------- Secciones ---------- */
+  .section-title{
+    font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.28em;
+    color:var(--ink-faint);text-transform:uppercase;margin:28px 20px 12px;
+    display:flex;align-items:center;gap:10px;
+  }
+  .section-title::after{content:"";flex:1;height:1px;background:var(--line)}
+
+  /* ---------- Subregiones (acordeón) ---------- */
+  .subregion{margin:0 16px 10px;background:var(--panel);border:1px solid var(--line);border-radius:14px;overflow:hidden}
+  .sub-head{display:flex;align-items:center;gap:12px;padding:15px 16px;cursor:pointer;user-select:none}
+  .sub-head:focus-visible{outline:2px solid var(--orange);outline-offset:-2px}
+  .sub-name{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:20px;letter-spacing:.4px}
+  .sub-frac{margin-left:auto;font-family:"JetBrains Mono",monospace;font-weight:700;font-size:14px;color:var(--ink-dim)}
+  .sub-frac b{color:var(--orange)}
+  .chev{width:18px;height:18px;flex:0 0 18px;transition:transform .25s;color:var(--ink-faint)}
+  .subregion.open .chev{transform:rotate(180deg)}
+  .mini-bar{height:5px;border-radius:4px;background:var(--panel-2);overflow:hidden;margin:0 16px 0}
+  .mini-bar > i{display:block;height:100%;background:var(--orange);width:0;transition:width .9s ease}
+  .sub-body{display:none;padding:14px 14px 18px}
+  .subregion.open .sub-body{display:block}
+  .stamp-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:10px}
+
+  /* ---------- Sello de municipio ---------- */
+  .muni{position:relative;aspect-ratio:1;border-radius:12px;display:grid;place-items:center;text-align:center;padding:6px;border:1px solid var(--line-soft);background:var(--panel-2)}
+  .muni .mn{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;line-height:1.05;letter-spacing:.2px;color:var(--ink-dim)}
+  /* sellado */
+  .muni.sealed{border-color:transparent;background:radial-gradient(circle at 50% 45%,#23150c,#160d06)}
+  .muni.sealed .stamp{
+    position:absolute;inset:6px;border:2px solid var(--orange);border-radius:50%;
+    transform:rotate(-11deg);opacity:.9;
+    display:grid;place-items:center;
+  }
+  .muni.sealed .stamp::before{content:"";position:absolute;inset:5px;border:1px dashed rgba(232,93,32,.45);border-radius:50%}
+  .muni.sealed .mn{color:var(--ink);position:relative;z-index:2;text-transform:uppercase;font-weight:700;font-size:14px}
+  .muni.fluvial::after{content:"⛟";position:absolute;top:4px;right:6px;font-size:15px;color:var(--copper);z-index:3}
+  .muni .pts{position:absolute;bottom:4px;font-family:"JetBrains Mono",monospace;font-weight:600;font-size:14px;color:var(--ink-faint);letter-spacing:.1em}
+
+  /* ---------- Insignias ---------- */
+  .badges{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:12px;padding:0 16px}
+  .badge{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px 8px;text-align:center}
+  .badge .ico{width:42px;height:42px;margin:0 auto 8px;border-radius:50%;display:grid;place-items:center;border:2px solid var(--line);color:var(--ink-faint);font-family:"Bebas Neue",sans-serif;font-size:18px}
+  .badge.earned .ico{border-color:var(--copper);color:var(--copper);background:radial-gradient(circle at 35% 30%,#2a2317,#0f0d08)}
+  .badge .bn{font-family:"Barlow Condensed",sans-serif;font-weight:600;font-size:15px;line-height:1.1;color:var(--ink-dim)}
+  .badge.earned .bn{color:var(--ink)}
+  .badge .bf{font-family:"JetBrains Mono",monospace;font-weight:600;font-size:15px;color:var(--ink-faint);margin-top:3px}
+
+  /* ---------- Barra inferior fija ---------- */
+  .actionbar{margin-top:32px;padding:24px 20px calc(20px + env(safe-area-inset-bottom));border-top:1px solid var(--line)}
+  .cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;border:0;border-radius:12px;background:var(--orange);color:#100a06;font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:19px;letter-spacing:.5px;text-transform:uppercase;padding:15px;cursor:pointer}
+  .cta:active{transform:translateY(1px)}
+  .secondary-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px}
+  .action-card{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;min-height:88px;padding:16px 10px;border-radius:14px;background:#1b1b1b;border:1px solid var(--line);color:var(--ink-dim);font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:15px;line-height:1.15;letter-spacing:.3px;text-transform:uppercase;text-align:center;text-decoration:none;transition:transform .15s ease,border-color .15s ease}
+  .action-card .ic{font-size:24px;line-height:1}
+  .action-card:active{transform:scale(.96)}
+  .action-card.map{border-color:var(--orange);color:var(--orange)}
+  .action-card.clubs{border-color:#3fae5a;color:#3fae5a}
+  .link-row{display:flex;align-items:center;justify-content:center;gap:12px;margin-top:18px;flex-wrap:wrap}
+  .link-row a{font-family:"Barlow Condensed",sans-serif;font-weight:700;font-size:15px;letter-spacing:.3px;text-decoration:none;padding:6px 2px}
+  .link-row .sep{color:var(--ink-faint);font-size:12px}
+  @media (min-width:640px){
+    .secondary-grid{gap:14px}
+    .action-card{min-height:96px;font-size:16px}
+  }
+
+  /* ---------- Estados (carga / error / conexión) ---------- */
+  .gate{min-height:100vh;display:grid;place-items:center;padding:32px 24px;text-align:center}
+  .gate .inner{max-width:380px}
+  .gate .eyebrow{justify-content:center}
+  .gate .eyebrow::after,.gate .eyebrow::before{display:none}
+  .gate h2{font-family:"Bebas Neue",sans-serif;font-size:34px;margin:14px 0 8px;letter-spacing:.5px}
+  .gate p{color:var(--ink-dim);font-size:15px}
+  .gate input{width:100%;margin-top:14px;padding:14px;font-size:16px;background:var(--panel);border:1px solid var(--line);border-radius:10px;color:var(--ink);font-family:"JetBrains Mono",monospace}
+  .gate .cta{margin-top:14px}
+  .spinner{width:34px;height:34px;border:3px solid var(--line);border-top-color:var(--orange);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .err{color:#ff8a6b;font-family:"JetBrains Mono",monospace;font-size:14px;margin-top:12px;line-height:1.5;text-align:left;background:#1a0f0a;border:1px solid #3a1d12;border-radius:10px;padding:12px}
+  .hidden{display:none!important}
+
+  @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+
+<!-- ====== ESTADO: CARGANDO ====== -->
+<div id="loading" class="gate">
+  <div class="inner">
+    <div class="spinner"></div>
+    <h2 style="font-size:24px;margin-top:18px">Abriendo tu pasaporte…</h2>
+    <p>Leyendo tus sellos de Antioquia</p>
+  </div>
+</div>
+
+<!-- ====== ESTADO: SIN CONEXIÓN ====== -->
+<div id="connectGate" class="gate hidden">
+  <div class="inner">
+    <div class="eyebrow">Ridera · Pasaporte 125</div>
+    <h2>Sin conexión</h2>
+    <p>No se pudo conectar. Revisa tu internet e inténtalo de nuevo.</p>
+    <button class="cta" id="connectBtn" onclick="location.reload()">Reintentar</button>
+  </div>
+</div>
+
+<!-- ====== ESTADO: ERROR ====== -->
+<div id="errorGate" class="gate hidden">
+  <div class="inner">
+    <div class="eyebrow">Algo falló</div>
+    <h2>No pude leer los datos</h2>
+    <p>Revisa que los nombres de tus tablas coincidan con la configuración del archivo.</p>
+    <div id="errDetail" class="err"></div>
+    <button class="cta" id="retryBtn" style="margin-top:16px">Reintentar</button>
+  </div>
+</div>
+
+<!-- ====== APP ====== -->
+<div id="app" class="hidden">
+
+  <header class="top">
+    <div class="eyebrow">Pasaporte · Antioquia 125</div>
+    <h1 class="rider-name" id="riderName">Rider</h1>
+    <div class="rank-row">
+      <div class="rank-badge" id="rankInitial">A</div>
+      <div class="rank-meta">
+        <div class="label">Rango actual</div>
+        <div class="name" id="rankName">Aprendiz de Ruta</div>
+      </div>
+    </div>
+  </header>
+
+
+  <section class="progress-card">
+    <div class="big-count">
+      <span class="now" id="sealedCount">0</span>
+      <span class="of">/ 125</span>
+      <span class="word">Municipios sellados</span>
+    </div>
+    <div class="bar"><i id="mainBar"></i></div>
+    <div class="stat-row">
+      <div class="stat"><div class="n" id="ptsVal">0</div><div class="l">Puntos</div></div>
+      <div class="stat"><div class="n" id="subVal">0/9</div><div class="l">Subregiones</div></div>
+      <div class="stat"><div class="n" id="badgeVal">0</div><div class="l">Insignias</div></div>
+    </div>
+    <div class="next-rank" id="nextRank"></div>
+  </section>
+
+  <div class="section-title">El mapa de los 125</div>
+  <div id="subregions"></div>
+
+  <div class="section-title">Insignias subregionales</div>
+  <div class="badges" id="badges"></div>
+
+  <div class="actionbar">
+    <button class="cta" id="goSeal">＋ Registrar un sello</button>
+
+    <div class="secondary-grid">
+      <a href="mapa.html" class="action-card map"><span class="ic">🧩</span>Mi mapa rompecabezas</a>
+      <a href="clubes.html" class="action-card clubs"><span class="ic">🏁</span>Clubes</a>
+      <a href="album.html" class="action-card"><span class="ic">📸</span>Ver mis sellos</a>
+      <a href="perfil.html" class="action-card"><span class="ic">👤</span>Mi cuenta</a>
+    </div>
+
+    <button id="installBtn" type="button" class="cta" style="display:none;margin-top:14px;background:#1b1b1b;border:1px solid var(--orange);color:var(--orange)">📲 Instalar app</button>
+    <div id="iosHelp" style="display:none;margin-top:14px;padding:14px;border-radius:12px;background:#1b1b1b;border:1px solid #c9a84c;color:#c2beb4;font-size:15px;line-height:1.6">📲 <b style="color:#c9a84c">Para instalar en iPhone:</b><br>1. Toca <b>Compartir</b> ↑ (abajo, en Safari).<br>2. Elige <b>"Agregar a inicio"</b>.</div>
+
+    <div class="link-row">
+      <a href="compartir.html" style="color:var(--orange)">📣 Comparte tu avance</a>
+      <span class="sep">•</span>
+      <a href="#" id="logout" style="color:var(--ink-faint)">Cerrar sesión</a>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   CONFIG  ·  Ridera 125 — Pantalla 2 (Pasaporte)
+   ------------------------------------------------------------
+   Si tus tablas o columnas en Supabase se llaman distinto,
+   solo cambia los nombres aquí abajo. Nada más se toca.
+   ============================================================ */
+const CONFIG = {
+  // Tu proyecto Supabase (ya configurado, no necesita Pantalla 1)
+  SUPABASE_URL: "https://vzzxsdtsaahhzyctvmhx.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu",
+
+  // Nombres de tablas
+  T_MUNICIPIO: "municipios",
+  T_SELLO:     "sellos",
+
+  // Columnas de la tabla de municipios
+  M_ID:        "id",          // identificador del municipio
+  M_NOMBRE:    "nombre",
+  M_SUBREGION: "subregion",
+  M_ZONA:      "zona_dificultad", // opcional
+  M_PUNTOS:    "puntos_sello",    // opcional
+  M_FLUVIAL:   "es_fluvial",  // true en Murindó y Vigía del Fuerte
+
+  // Columna de la tabla de sellos que apunta al municipio
+  S_MUNICIPIO_FK: "municipio_id",
+
+  // Rangos por # de municipios sellados (ajústalos a tu gusto;
+  // Leyenda y Patrón quedan fijos como los definiste)
+  RANKS: [
+    { min:0,   name:"Aprendiz de Ruta",   ini:"A" },
+    { min:5,   name:"Trochero",            ini:"T" },
+    { min:20,  name:"Explorador",          ini:"E" },
+    { min:45,  name:"Trotapueblos",        ini:"T" },
+    { min:80,  name:"Maestro Viajero",     ini:"M" },
+    { min:120, name:"Leyenda",             ini:"L" },
+    { min:125, name:"Patrón de Antioquia", ini:"P" }
+  ],
+
+  // Orden de las 9 subregiones
+  SUBREGIONES: ["Valle de Aburrá","Oriente","Norte","Nordeste","Bajo Cauca",
+                "Magdalena Medio","Suroeste","Occidente","Urabá"]
+};
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+
+/* ============================================================
+   LÓGICA
+   ============================================================ */
+let sb = null;
+
+function show(id){ ["loading","connectGate","errorGate","app"].forEach(x=>document.getElementById(x).classList.toggle("hidden",x!==id)); }
+
+async function loadData(){
+  const m = await sb.from(CONFIG.T_MUNICIPIO).select("*");
+  if(m.error) throw new Error("Tabla '"+CONFIG.T_MUNICIPIO+"': "+m.error.message);
+  // Sellos del rider con sesión (y su nombre); si no hay sesión, muestra todos
+  let selloQuery = sb.from(CONFIG.T_SELLO).select("*");
+  try{
+    const u = (await sb.auth.getUser()).data.user;
+    if(u){
+      selloQuery = sb.from(CONFIG.T_SELLO).select("*").eq("rider_id", u.id);
+      const { data:prof } = await sb.from("riders").select("nombre").eq("id", u.id).maybeSingle();
+      if(prof && prof.nombre){ document.getElementById("riderName").textContent = prof.nombre; }
+    }
+  }catch(e){}
+  const s = await selloQuery;
+  if(s.error) throw new Error("Tabla '"+CONFIG.T_SELLO+"': "+s.error.message);
+
+  const sealedIds = new Set(s.data.map(r=>r[CONFIG.S_MUNICIPIO_FK]));
+  return m.data.map(r=>({
+    n: r[CONFIG.M_NOMBRE],
+    s: r[CONFIG.M_SUBREGION],
+    p: Number(r[CONFIG.M_PUNTOS]||0),
+    fluvial: !!r[CONFIG.M_FLUVIAL],
+    sealed: sealedIds.has(r[CONFIG.M_ID])
+  }));
+}
+
+function rankFor(n){
+  let r = CONFIG.RANKS[0];
+  for(const k of CONFIG.RANKS){ if(n>=k.min) r=k; }
+  const next = CONFIG.RANKS.find(k=>k.min>n);
+  return {current:r, next};
+}
+
+function render(data){
+
+  const sealed = data.filter(d=>d.sealed);
+  const total = data.length || 125;
+  const pts = sealed.reduce((a,d)=>a+(d.p||0),0);
+
+  // Rango
+  const {current,next} = rankFor(sealed.length);
+  document.getElementById("rankName").textContent = current.name;
+  document.getElementById("rankInitial").textContent = current.ini;
+
+  // Progreso principal
+  document.getElementById("sealedCount").textContent = sealed.length;
+  document.getElementById("ptsVal").textContent = pts;
+  setTimeout(()=>{ document.getElementById("mainBar").style.width = (sealed.length/125*100)+"%"; },120);
+
+  // Agrupar por subregión (en el orden oficial, + cualquiera extra al final)
+  const groups = {};
+  data.forEach(d=>{ (groups[d.s]=groups[d.s]||[]).push(d); });
+  const order = [...CONFIG.SUBREGIONES.filter(x=>groups[x]), ...Object.keys(groups).filter(x=>!CONFIG.SUBREGIONES.includes(x))];
+
+  let subsDone=0, badgesEarned=0;
+  const cont = document.getElementById("subregions");
+  cont.innerHTML="";
+  const badgeCont = document.getElementById("badges");
+  badgeCont.innerHTML="";
+
+  order.forEach((name,idx)=>{
+    const list = groups[name];
+    const done = list.filter(d=>d.sealed).length;
+    const complete = done===list.length && list.length>0;
+    if(done>0) subsDone++;
+    if(complete) badgesEarned++;
+
+    // Tarjeta acordeón
+    const sec = document.createElement("section");
+    sec.className="subregion"+(idx===0?" open":"");
+    sec.innerHTML = `
+      <div class="sub-head" role="button" tabindex="0" aria-expanded="${idx===0}">
+        <span class="sub-name">${esc(name)}</span>
+        <span class="sub-frac"><b>${done}</b>/${list.length}</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+      </div>
+      <div class="mini-bar"><i style="width:${(done/list.length*100)||0}%"></i></div>
+      <div class="sub-body"><div class="stamp-grid">
+        ${list.map(d=>`
+          <div class="muni ${d.sealed?'sealed':''} ${d.fluvial?'fluvial':''}">
+            ${d.sealed?'<span class="stamp"></span>':''}
+            <span class="mn">${esc(d.n)}</span>
+            ${d.p?`<span class="pts">+${d.p}</span>`:''}
+          </div>`).join("")}
+      </div></div>`;
+    const head = sec.querySelector(".sub-head");
+    const toggle = ()=>{ const o=sec.classList.toggle("open"); head.setAttribute("aria-expanded",o); };
+    head.addEventListener("click",toggle);
+    head.addEventListener("keydown",e=>{ if(e.key==="Enter"||e.key===" "){e.preventDefault();toggle();} });
+    cont.appendChild(sec);
+
+    // Insignia
+    const b=document.createElement("div");
+    b.className="badge"+(complete?" earned":"");
+    b.innerHTML=`<div class="ico">${esc(name.split(" ").map(w=>w[0]).join("").slice(0,2).toUpperCase())}</div>
+                 <div class="bn">${esc(name)}</div><div class="bf">${done}/${list.length}</div>`;
+    badgeCont.appendChild(b);
+  });
+
+  // Travesía del Atrato (los 2 fluviales)
+  const fluv = data.filter(d=>d.fluvial);
+  if(fluv.length){
+    const ok = fluv.every(d=>d.sealed);
+    if(ok) badgesEarned++;
+    const b=document.createElement("div");
+    b.className="badge"+(ok?" earned":"");
+    b.innerHTML=`<div class="ico">⛟</div><div class="bn">Travesía del Atrato</div>
+                 <div class="bf">${fluv.filter(d=>d.sealed).length}/${fluv.length}</div>`;
+    badgeCont.appendChild(b);
+  }
+
+  document.getElementById("subVal").textContent = subsDone+"/9";
+  document.getElementById("badgeVal").textContent = badgesEarned;
+
+  // Texto del siguiente rango
+  const nr = document.getElementById("nextRank");
+  if(next){ nr.innerHTML = `Te faltan <b>${next.min-sealed.length}</b> sellos para llegar a <b>${next.name}</b>.`; }
+  else { nr.innerHTML = `Conquistaste los 125. Eres <b>Patrón de Antioquia</b>. 🏍️`; }
+
+  show("app");
+}
+
+async function boot(){
+  show("loading");
+  try{
+    sb = supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+    const data = await loadData();
+    render(data, false);
+  }catch(e){
+    document.getElementById("errDetail").textContent = e.message;
+    show("errorGate");
+  }
+}
+
+document.getElementById("retryBtn").addEventListener("click",boot);
+document.getElementById("goSeal").addEventListener("click",()=>{
+  window.location.href = "sello.html";
+});
+
+document.getElementById("logout").addEventListener("click", async (e)=>{
+  e.preventDefault();
+  try{ if(sb){ await sb.auth.signOut(); } }catch(_){}
+  try{ localStorage.removeItem("ridera_supabase_key"); }catch(_){}
+  window.location.href="index.html";
+});
+
+boot();
+</script>
+<script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
+<script>
+(function(){
+  var isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone===true;
+  var isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  var btn=document.getElementById('installBtn'), help=document.getElementById('iosHelp'), deferred=null;
+  if(!btn || isStandalone) return;
+  if(isIOS){
+    btn.textContent="📲 Instalar en iPhone"; btn.style.display="block";
+    btn.addEventListener('click', function(){ if(help) help.style.display = (help.style.display==="block"?"none":"block"); });
+  } else {
+    window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); deferred=e; btn.style.display="block"; });
+    btn.addEventListener('click', function(){ if(deferred){ deferred.prompt(); deferred.userChoice.then(function(){ deferred=null; btn.style.display="none"; }); } });
+  }
+  window.addEventListener('appinstalled', function(){ btn.style.display="none"; if(help) help.style.display="none"; });
+})();
+</script>
+</body>
+</html>

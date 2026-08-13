@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ridera · Califica tu servicio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800;900&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d0d; --surface:#16171b; --surface-2:#1e2026; --line:#2a2c33;
+  --orange:#E85D20; --orange-2:#ff7a3c; --text:#f3f3f3; --muted:#9a9ca3; --green:#25D366; --gold:#ffc83d;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif;min-height:100dvh;display:flex;flex-direction:column}
+.hazard{height:7px;background:repeating-linear-gradient(45deg,var(--orange) 0 14px,#0d0d0d 14px 28px)}
+.top{display:flex;align-items:center;gap:10px;padding:16px 18px;border-bottom:.5px solid var(--line)}
+.top .logo{width:34px;height:34px;border-radius:9px;background:var(--orange);display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:900;font-size:20px;color:#fff}
+.top b{font-family:'Barlow Condensed';font-weight:800;font-size:20px;letter-spacing:.5px;text-transform:uppercase}
+.wrap{flex:1;max-width:460px;width:100%;margin:0 auto;padding:28px 18px 40px;text-align:center}
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--orange);margin-bottom:8px}
+h1{font-family:'Barlow Condensed';font-weight:800;font-size:32px;text-transform:uppercase;line-height:1;margin-bottom:10px}
+.sub{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:26px}
+.stars{display:flex;justify-content:center;gap:8px;margin-bottom:8px}
+.star{font-size:44px;cursor:pointer;filter:grayscale(1) opacity(.4);transition:transform .1s,filter .15s;user-select:none}
+.star.on{filter:none;transform:scale(1.05)}
+.star:active{transform:scale(.9)}
+.rate-lbl{height:20px;color:var(--gold);font-weight:600;font-size:14px;margin-bottom:20px}
+textarea{width:100%;background:var(--surface-2);border:.5px solid var(--line);border-radius:12px;color:#fff;font-family:inherit;font-size:15px;padding:13px 14px;min-height:90px;resize:vertical;margin-bottom:16px}
+textarea:focus{outline:none;border-color:rgba(232,93,32,.55)}
+.btn{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;border:none;border-radius:13px;padding:16px;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.03em;text-transform:uppercase;cursor:pointer;background:var(--orange);color:#fff;transition:filter .15s}
+.btn:hover{filter:brightness(1.08)}
+.btn:disabled{opacity:.5;cursor:default}
+.big-msg{padding:40px 10px 28px}
+.big-msg .ic{font-size:70px;margin-bottom:16px;display:block}
+.big-msg h2{font-family:'Barlow Condensed';font-weight:800;font-size:46px;text-transform:uppercase;margin-bottom:12px;letter-spacing:.5px}
+.big-msg p{color:var(--muted);font-size:17px;line-height:1.65}
+.big-msg .stars-shown{font-size:22px;margin-top:4px}
+.loading{color:var(--muted);padding:50px 0;font-size:14px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:s .7s linear infinite;vertical-align:-3px}
+@keyframes s{to{transform:rotate(360deg)}}
+.hide{display:none!important}
+.app-cta{background:var(--surface-2);border:.5px solid var(--line);border-radius:18px;padding:26px 22px;margin-top:20px;text-align:center}
+.app-cta-title{font-family:'Barlow Condensed';font-weight:800;font-size:28px;text-transform:uppercase;margin-bottom:10px;letter-spacing:.3px}
+.app-cta-sub{color:var(--muted);font-size:15px;line-height:1.6;margin-bottom:20px}
+.app-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.app-btn{display:inline-flex;align-items:center;justify-content:center;gap:9px;width:100%;padding:16px 20px;border-radius:13px;background:var(--orange);color:#fff;text-decoration:none;border:none;font-family:'Barlow Condensed';font-weight:700;font-size:19px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:filter .15s}
+.app-btn:hover{filter:brightness(1.1)}
+.ios-steps{margin-top:16px;background:rgba(255,255,255,.04);border-radius:10px;padding:14px 16px;text-align:left}
+.ios-steps p{font-size:13px;color:var(--muted);line-height:1.7}
+.ios-steps p strong{color:var(--text)}
+/* FLOATING INSTALL BANNER */
+.install-banner{position:fixed;bottom:0;left:0;right:0;z-index:999;background:var(--surface);border-top:1px solid rgba(232,93,32,.35);padding:14px 18px max(18px,env(safe-area-inset-bottom));display:none;align-items:center;gap:12px;box-shadow:0 -8px 32px rgba(0,0,0,.55)}
+.install-banner.on{display:flex}
+.ib-icon{font-size:30px;flex-shrink:0}
+.ib-text{flex:1;min-width:0}
+.ib-text strong{display:block;font-size:15px;font-weight:700;margin-bottom:1px}
+.ib-text span{font-size:12px;color:var(--muted)}
+.ib-btn{flex-shrink:0;background:var(--orange);color:#fff;border:none;border-radius:11px;padding:12px 18px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap;transition:filter .15s}
+.ib-btn:active{filter:brightness(.9)}
+.ib-close{flex-shrink:0;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;padding:4px 2px;line-height:1}
+</style>
+</head>
+<body>
+<div class="hazard"></div>
+<div class="top"><div class="logo">R</div><b>Ridera</b></div>
+
+<div class="wrap">
+  <div id="loading" class="loading"><span class="spin"></span> Cargando…</div>
+  <div id="content" class="hide"></div>
+</div>
+
+<!-- FLOATING INSTALL BANNER -->
+<div class="install-banner hide" id="installBanner">
+  <div class="ib-icon">📱</div>
+  <div class="ib-text">
+    <strong>Instala Ridera</strong>
+    <span>Pide grúas en segundos, siempre</span>
+  </div>
+  <button class="ib-btn" id="bannerInstallBtn">Instalar</button>
+  <button class="ib-close" id="bannerCloseBtn" aria-label="Cerrar">✕</button>
+</div>
+
+<script>
+const FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aceptar-solicitud';
+const qs = new URLSearchParams(location.search);
+let S = qs.get('s') || qs.get('t') || '';
+if (S.includes('~')) S = S.split('~')[0];
+let rating = 0;
+
+const LBLS = ['','Muy malo','Malo','Regular','Bueno','¡Excelente!'];
+
+function renderForm(){
+  document.getElementById('loading').classList.add('hide');
+  const c = document.getElementById('content'); c.classList.remove('hide');
+  c.innerHTML = `
+    <div class="eyebrow">Servicio finalizado</div>
+    <h1>¿Cómo te<br>atendieron?</h1>
+    <p class="sub">Tu opinión nos ayuda a mejorar el servicio de Ridera.</p>
+    <div class="stars" id="stars">
+      ${[1,2,3,4,5].map(i=>`<span class="star" data-v="${i}" onclick="setStar(${i})">⭐</span>`).join('')}
+    </div>
+    <div class="rate-lbl" id="rateLbl"></div>
+    <textarea id="comentario" placeholder="¿Quieres contarnos algo más? (opcional)"></textarea>
+    <button class="btn" id="sendBtn" onclick="enviar()" disabled>Enviar calificación</button>`;
+}
+function setStar(v){
+  rating = v;
+  document.querySelectorAll('#stars .star').forEach(s=>{ s.classList.toggle('on', Number(s.dataset.v)<=v); });
+  document.getElementById('rateLbl').textContent = LBLS[v];
+  document.getElementById('sendBtn').disabled = false;
+}
+async function enviar(){
+  const b=document.getElementById('sendBtn'); b.disabled=true; b.innerHTML='<span class="spin"></span> Enviando…';
+  const comentario = document.getElementById('comentario').value.trim();
+  try{
+    const r = await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'calificar',s:S,calificacion:rating,comentario})});
+    const d = await r.json();
+    if(d.ok) gracias(); else { b.disabled=false; b.textContent='Enviar calificación'; alert(d.error||'No se pudo enviar'); }
+  }catch(e){ b.disabled=false; b.textContent='Enviar calificación'; alert('Error de conexión'); }
+}
+function gracias(){
+  var canInstall = !_isStandalone && (_deferredPrompt || _isIOS);
+  var installBlock = canInstall ? `
+    <div class="app-cta" id="installCta">
+      <div class="app-cta-title">Tenla siempre a mano</div>
+      <div class="app-cta-sub">Instala Ridera en tu celular y pide grúa en segundos, sin abrir el navegador.</div>
+      <div class="app-btns">
+        <button class="app-btn" id="inlineInstallBtn">${_isIOS ? 'Cómo instalar' : 'Instalar Ridera'}</button>
+      </div>
+    </div>` : '';
+
+  document.getElementById('content').innerHTML = `
+    <div class="big-msg">
+      <span class="ic">🙏</span>
+      <h2>¡Gracias!</h2>
+      <p>Tu calificación quedó registrada.</p>
+      <div class="stars-shown">${'⭐'.repeat(rating)}</div>
+    </div>
+    ${installBlock}`;
+
+  var inlineBtn = document.getElementById('inlineInstallBtn');
+  if(inlineBtn){
+    inlineBtn.addEventListener('click', async function(){
+      if(_deferredPrompt){
+        _deferredPrompt.prompt();
+        try{ await _deferredPrompt.userChoice; }catch(e){}
+        _deferredPrompt = null;
+        var cta = document.getElementById('installCta');
+        if(cta) cta.remove();
+      } else if(_isIOS){
+        document.getElementById('installCta').innerHTML = `
+          <p style="font-family:'Barlow Condensed';font-size:17px;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:14px">Cómo instalar en iPhone</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">1. Toca el botón <strong style="color:var(--text)">Compartir</strong> en Safari</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">2. Elige <strong style="color:var(--text)">"Agregar a inicio"</strong></p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7">3. Toca <strong style="color:var(--text)">"Agregar"</strong> — listo</p>`;
+      }
+    });
+  }
+
+  // Redirect home — more time if install CTA is visible
+  setTimeout(() => { location.replace('/'); }, canInstall ? 30000 : 8000);
+}
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js').catch(()=>{});
+}
+
+// Install banner
+var _deferredPrompt = null;
+var _isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+var _isStandalone = window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+window.addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); _deferredPrompt = e; });
+
+function showInstallBanner(){
+  if(_isStandalone) return; // ya está instalada
+  var banner = document.getElementById('installBanner');
+  if(!banner) return;
+  if(_isIOS){
+    var btn = document.getElementById('bannerInstallBtn');
+    if(btn) btn.textContent = 'Cómo instalar';
+  }
+  banner.classList.remove('hide');
+  banner.classList.add('on');
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  var bannerInstallBtn = document.getElementById('bannerInstallBtn');
+  var bannerCloseBtn = document.getElementById('bannerCloseBtn');
+  var banner = document.getElementById('installBanner');
+
+  if(bannerInstallBtn){
+    bannerInstallBtn.addEventListener('click', async function(){
+      if(_deferredPrompt){
+        _deferredPrompt.prompt();
+        try{ await _deferredPrompt.userChoice; }catch(e){}
+        _deferredPrompt = null;
+      } else if(_isIOS){
+        // Mostrar instrucciones inline
+        if(banner) banner.classList.remove('on');
+        var c = document.getElementById('content');
+        if(c) c.innerHTML += `<div style="margin-top:20px;background:rgba(232,93,32,.06);border:1px solid rgba(232,93,32,.25);border-radius:14px;padding:18px 16px;text-align:left">
+          <p style="font-family:'Barlow Condensed';font-size:17px;font-weight:700;text-align:center;text-transform:uppercase;margin-bottom:14px">Cómo instalar en iPhone</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">1. Toca el botón <strong style="color:var(--text)">Compartir</strong> en Safari</p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:8px">2. Elige <strong style="color:var(--text)">"Agregar a inicio"</strong></p>
+          <p style="font-size:14px;color:var(--muted);line-height:1.7">3. Toca <strong style="color:var(--text)">"Agregar"</strong> — listo</p>
+        </div>`;
+      }
+      if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+    });
+  }
+
+  if(bannerCloseBtn){
+    bannerCloseBtn.addEventListener('click', function(){
+      if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+    });
+  }
+});
+
+window.addEventListener('appinstalled', function(){
+  var banner = document.getElementById('installBanner');
+  if(banner){ banner.classList.remove('on'); banner.classList.add('hide'); }
+});
+(async function init(){
+  if(!S){
+    document.getElementById('loading').classList.add('hide');
+    document.getElementById('content').classList.remove('hide');
+    document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Enlace inválido</h2><p>No pudimos identificar tu servicio.</p></div>`;
+    return;
+  }
+  try{
+    const r=await fetch(FN_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'info',s:S})});
+    const d=await r.json();
+    if(d.ok && d.sol?.calificacion){
+      rating=d.sol.calificacion;
+      document.getElementById('loading').classList.add('hide');
+      document.getElementById('content').classList.remove('hide');
+      gracias();
+      return;
+    }
+    if(!d.ok || !d.sol){
+      document.getElementById('loading').classList.add('hide');
+      document.getElementById('content').classList.remove('hide');
+      document.getElementById('content').innerHTML=`<div class="big-msg"><div class="ic">⚠️</div><h2>Servicio no encontrado</h2><p>No pudimos encontrar este servicio.</p></div>`;
+      return;
+    }
+  }catch(e){ /* si falla la verificación, mostrar formulario de todos modos */ }
+  renderForm();
+})();
+</script>
+</body>
+</html>

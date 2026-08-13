@@ -1,0 +1,25 @@
+{
+  "name": "gruas",
+  "version": "1.0.0",
+  "description": "appa gruas",
+  "main": "sw.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/multiservicioslavina-commits/gruas.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/multiservicioslavina-commits/gruas/issues"
+  },
+  "homepage": "https://github.com/multiservicioslavina-commits/gruas#readme",
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
+  }
+}

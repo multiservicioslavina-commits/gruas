@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Seguimiento de tu grúa — Ridera</title>
+<meta name="theme-color" content="#0d0d0d">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest.json">
+<link rel="apple-touch-icon" href="/icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;800&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" crossorigin=""/>
+<style>
+:root{
+  --bg:#0d0d0d; --s:#16171b; --s2:#1e2026; --line:#2a2c33;
+  --or:#E85D20; --or2:rgba(232,93,32,.15); --text:#f3f3f3; --mu:#9a9ca3;
+  --gr:#25D366; --am:#f59e0b; --bl:#3b82f6;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:'DM Sans',system-ui,sans-serif}
+body{display:flex;flex-direction:column}
+
+.hazard{height:6px;flex-shrink:0;background:repeating-linear-gradient(45deg,var(--or) 0 12px,#0d0d0d 12px 24px)}
+header{flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:11px 18px;background:var(--s);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:9px}
+.brand .rlogo{width:32px;height:32px;background:var(--or);border-radius:8px;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed';font-weight:800;font-size:19px;color:#fff}
+.brand b{font-family:'Barlow Condensed';font-size:18px;font-weight:700;letter-spacing:.5px}
+.chip{font-family:'Barlow Condensed';font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:5px 13px;border-radius:99px;border:1px solid}
+.chip.pend{background:rgba(245,158,11,.1);color:var(--am);border-color:rgba(245,158,11,.3)}
+.chip.asig{background:rgba(37,211,102,.1);color:var(--gr);border-color:rgba(37,211,102,.3)}
+.chip.llego{background:rgba(59,130,246,.1);color:#7fb0ff;border-color:rgba(59,130,246,.3)}
+.chip.done{background:rgba(59,130,246,.07);color:#aac7ff;border-color:rgba(59,130,246,.2)}
+
+#map{flex:0 0 44vh;width:100%;background:#111;z-index:0;position:relative;overflow:hidden}
+/* MAP OVERLAY — cuando no hay GPS del gruero */
+.map-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;z-index:400;background:linear-gradient(160deg,#0f0f1a 0%,#1c1028 60%,#0e1520 100%);pointer-events:none}
+.mo-icon{font-size:56px;display:inline-block;animation:bounce 2.2s ease-in-out infinite}
+.mo-ring{width:100px;height:100px;border-radius:50%;border:2px solid rgba(232,93,32,.15);display:grid;place-items:center;box-shadow:0 0 0 16px rgba(232,93,32,.04),0 0 0 32px rgba(232,93,32,.02);animation:ring-pulse 2.4s ease-in-out infinite}
+@keyframes ring-pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,93,32,.25),0 0 0 0 rgba(232,93,32,.1)}70%{box-shadow:0 0 0 18px rgba(232,93,32,0),0 0 0 36px rgba(232,93,32,0)}}
+.mo-title{font-family:'Barlow Condensed';font-size:22px;font-weight:700;color:var(--text);letter-spacing:.5px;text-align:center;line-height:1.2}
+.mo-sub{font-size:13px;color:var(--mu);text-align:center;max-width:26ch;line-height:1.55}
+.mo-dots{display:flex;gap:6px;margin-top:4px}
+.mo-dots span{width:6px;height:6px;border-radius:50%;background:var(--or);opacity:.25;animation:dot-seq 1.4s ease-in-out infinite}
+.mo-dots span:nth-child(2){animation-delay:.22s}
+.mo-dots span:nth-child(3){animation-delay:.44s}
+@keyframes dot-seq{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+.panel{flex:1;overflow-y:auto;padding:16px 18px 36px}
+
+/* STEPPER */
+.stepper{display:flex;align-items:flex-start;margin-bottom:16px;padding:0 2px;position:relative}
+.stepper::before{content:'';position:absolute;top:12px;left:28px;right:28px;height:2px;background:var(--line);z-index:0}
+.stp{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;position:relative;z-index:1}
+.stp .dot{width:32px;height:32px;border-radius:50%;background:var(--s2);border:2px solid var(--line);display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--mu);font-weight:700;transition:.3s}
+.stp .lbl{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--mu);font-weight:700;text-align:center;line-height:1.3}
+.stp.done .dot{background:var(--gr);border-color:var(--gr);color:#fff}
+.stp.done .lbl{color:var(--gr)}
+.stp.active .dot{background:var(--or);border-color:var(--or);color:#fff;animation:pdot 2s infinite}
+.stp.active .lbl{color:var(--or)}
+.stp.done~.stepper::before, .stp.done+.stp.done::before{background:var(--gr)}
+@keyframes pdot{0%,100%{box-shadow:0 0 0 0 rgba(232,93,32,.45)}60%{box-shadow:0 0 0 7px rgba(232,93,32,0)}}
+
+/* ETA PILL */
+.eta{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:var(--am);background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.22);border-radius:8px;padding:6px 12px;margin-bottom:14px}
+.eta .blink{width:6px;height:6px;background:var(--am);border-radius:50%;animation:pdot 1.4s infinite}
+
+/* BUSCANDO */
+.buscando{text-align:center;padding:20px 8px 8px}
+.buscando .bounce{font-size:38px;display:inline-block;animation:bounce 2.2s ease-in-out infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+.buscando h3{font-family:'Barlow Condensed';font-size:22px;font-weight:700;margin:10px 0 5px}
+.buscando p{font-size:14px;color:var(--mu);line-height:1.5;max-width:28ch;margin:0 auto}
+
+/* GRUERO CARD */
+.g-card{background:var(--s);border:1px solid var(--line);border-radius:16px;padding:15px;margin-bottom:12px;display:flex;align-items:center;gap:13px}
+.g-av{width:54px;height:54px;border-radius:50%;background:var(--s2);border:2px solid var(--line);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:var(--or);overflow:hidden}
+.g-av img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.g-info{flex:1;min-width:0}
+.g-name-row{display:flex;align-items:center;gap:8px;margin-bottom:3px;flex-wrap:wrap}
+.g-name{font-size:19px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.g-rating{font-size:13px;font-weight:700;color:var(--am);background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);border-radius:20px;padding:3px 10px;white-space:nowrap;flex-shrink:0}
+.g-rating.nuevo{color:var(--mu);background:rgba(154,156,163,.08);border-color:rgba(154,156,163,.2)}
+.g-sub{font-size:14px;color:var(--mu)}
+.g-detail{font-size:13px;color:var(--mu);margin-top:4px;display:flex;gap:10px;flex-wrap:wrap}
+.g-detail span{display:inline-flex;align-items:center;gap:3px}
+.g-actions{display:flex;gap:9px;margin-top:12px}
+.g-btn{flex:1;display:flex;align-items:center;justify-content:center;gap:7px;padding:12px;border-radius:13px;font-family:'DM Sans';font-size:14px;font-weight:700;text-decoration:none;border:none;cursor:pointer;transition:.15s}
+.g-btn-call{background:var(--s2);color:var(--text);border:1px solid var(--line)}
+.g-btn-wa{background:var(--gr);color:#fff}
+.g-btn:active{transform:scale(.97)}
+
+/* LLEGÓ */
+.llego-aviso{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px}
+.llego-aviso .ic{font-size:28px;margin-bottom:6px}
+.llego-aviso h3{font-family:'Barlow Condensed';font-size:18px;font-weight:700;color:#7fb0ff;margin-bottom:4px}
+.llego-aviso p{font-size:13px;color:var(--mu);line-height:1.5}
+
+/* CALIFICAR */
+.cal-cta{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;padding:16px;background:var(--or);color:#fff;font-family:'Barlow Condensed';font-size:19px;font-weight:700;letter-spacing:.04em;border:none;border-radius:14px;cursor:pointer;text-decoration:none;box-shadow:0 8px 24px -8px var(--or);margin-bottom:10px}
+.cal-cta:active{transform:scale(.98)}
+
+/* CANCELAR */
+.chip.canc{background:rgba(248,113,113,.1);color:#f87171;border-color:rgba(248,113,113,.3)}
+.btn-cancelar{background:transparent;border:1px solid rgba(248,113,113,.45);color:#f87171;font-size:13px;font-weight:600;padding:9px 24px;border-radius:10px;cursor:pointer;transition:.15s}
+.btn-cancelar:hover{background:rgba(248,113,113,.08)}
+.btn-cancelar:disabled{opacity:.5;cursor:not-allowed}
+.cancelled-aviso{background:rgba(248,113,113,.06);border:1px solid rgba(248,113,113,.2);border-radius:14px;padding:14px;text-align:center;margin-bottom:12px}
+.cancelled-aviso .ic{font-size:28px;margin-bottom:6px}
+.cancelled-aviso h3{font-family:'Barlow Condensed';font-size:18px;font-weight:700;color:#f87171;margin-bottom:4px}
+.cancelled-aviso p{font-size:13px;color:var(--mu);line-height:1.5}
+
+/* NOTA */
+.nota{font-size:13px;color:var(--mu);text-align:center;line-height:1.55;margin-top:8px}
+
+/* LOADING */
+#loader{position:absolute;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:12px;z-index:999;color:var(--mu);font-size:13px}
+.spin{width:28px;height:28px;border:3px solid rgba(255,255,255,.1);border-top-color:var(--or);border-radius:50%;animation:rot .7s linear infinite}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+.hide{display:none!important}
+
+/* Leaflet dark style */
+.leaflet-container{background:#111!important}
+.leaflet-tile{filter:brightness(.82) contrast(1.1) saturate(.85)!important}
+.leaflet-control-attribution{background:rgba(0,0,0,.55)!important;color:#666!important;font-size:9px!important}
+.leaflet-control-attribution a{color:var(--or)!important}
+.leaflet-control-zoom a{background:var(--s)!important;color:var(--text)!important;border-color:var(--line)!important}
+.g-pin{width:44px;height:44px;position:relative}
+.g-pin-bg{width:44px;height:44px;background:var(--or);border:3px solid #fff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.45)}
+.g-pin-ic{transform:rotate(45deg);font-size:19px;line-height:1;margin-top:2px}
+.c-pin{font-size:22px;line-height:1;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))}
+</style>
+</head>
+<body>
+
+<div id="loader"><div class="spin"></div>Cargando seguimiento…</div>
+
+<div class="hazard"></div>
+<header>
+  <div class="brand"><div class="rlogo">R</div><b>RIDERA</b></div>
+  <div class="chip pend" id="chip">Buscando…</div>
+</header>
+
+<div id="map">
+  <div class="map-overlay" id="mapOverlay">
+    <div class="mo-ring"><div class="mo-icon">🔍</div></div>
+    <div class="mo-title" id="moTitle">Buscando tu gruero…</div>
+    <div class="mo-sub" id="moSub">Avisamos a todos los disponibles en tu área</div>
+    <div class="mo-dots"><span></span><span></span><span></span></div>
+  </div>
+</div>
+
+<div class="panel">
+  <!-- Stepper -->
+  <div class="stepper" id="stepper">
+    <div class="stp active" id="stp0"><div class="dot">1</div><div class="lbl">En<br>camino</div></div>
+    <div class="stp" id="stp1"><div class="dot">2</div><div class="lbl">Llegó</div></div>
+    <div class="stp" id="stp2"><div class="dot">3</div><div class="lbl">Listo</div></div>
+  </div>
+
+  <!-- ETA -->
+  <div class="eta hide" id="eta"><span class="blink"></span><span id="etaTxt">Gruero en camino</span></div>
+
+  <!-- Buscando -->
+  <div class="buscando" id="secBuscando">
+    <div class="bounce">🛵</div>
+    <h3>Buscando tu gruero…</h3>
+    <p>Avisamos a todos los disponibles. Uno te tomará en segundos.</p>
+  </div>
+
+  <!-- Gruero card -->
+  <div class="g-card hide" id="secGruero">
+    <div class="g-av" id="gAv">?</div>
+    <div class="g-info">
+      <div class="g-name-row">
+        <span class="g-name" id="gNombre">—</span>
+        <span class="g-rating hide" id="gRating"></span>
+      </div>
+      <div class="g-sub" id="gSub">Gruero verificado ✓</div>
+      <div class="g-detail hide" id="gDetail"></div>
+    </div>
+  </div>
+  <div class="g-actions hide" id="secActions">
+    <a class="g-btn g-btn-call" id="btnCall" href="#">📞 Llamar</a>
+    <a class="g-btn g-btn-wa" id="btnWa" href="#" target="_blank">💬 WhatsApp</a>
+  </div>
+
+  <!-- Llegó aviso -->
+  <div class="llego-aviso hide" id="secLlego">
+    <div class="ic">📍</div>
+    <h3>Tu gruero ya llegó</h3>
+    <p>Está en tu ubicación esperándote. ¡Sal a recibirlo!</p>
+    <p style="margin-top:8px;font-size:12px;color:var(--mu)">¿No lo encuentras? Contáctalo con los botones de abajo.</p>
+  </div>
+
+  <!-- Calificar CTA -->
+  <a class="cal-cta hide" id="secCal" href="#">⭐ Calificar el servicio</a>
+
+  <!-- Cancelado -->
+  <div class="cancelled-aviso hide" id="secCancelada">
+    <div class="ic">❌</div>
+    <h3>Servicio cancelado</h3>
+    <p>Tu solicitud fue cancelada.</p>
+    <a href="/" style="display:inline-block;margin-top:10px;color:var(--or);font-size:13px;font-weight:700">Solicitar nueva grúa →</a>
+  </div>
+
+  <!-- Cancelar (solo pendiente/asignada) -->
+  <div class="hide" id="secCancelar" style="text-align:center;padding:10px 0 4px">
+    <button class="btn-cancelar" id="btnCancelar" onclick="doCancelClient()">Cancelar servicio</button>
+    <p style="font-size:11px;color:var(--mu);margin-top:5px;line-height:1.4">Solo si ya no necesitas el servicio</p>
+  </div>
+
+  <!-- Nota -->
+  <p class="nota" id="nota">Esta página se actualiza en tiempo real.</p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.min.js" crossorigin=""></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" onerror="window._sbFailed=true"></script>
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+let sb = null;
+try { sb = supabase.createClient(SB_URL, SB_KEY); } catch(e) { window._sbFailed = true; }
+
+const sid = new URLSearchParams(location.search).get('s');
+
+// Municipio centers (fallback map position)
+const MUNIS = {
+  medellin:[6.2518,-75.5636], bello:[6.3378,-75.5547], itagui:[6.1719,-75.6111],
+  envigado:[6.1700,-75.5836], sabaneta:[6.1518,-75.6166], la_estrella:[6.1597,-75.6436],
+  caldas:[6.0917,-75.6361], copacabana:[6.3486,-75.5103], girardota:[6.3792,-75.4453],
+  barbosa:[6.4392,-75.3317],
+};
+const MDE = [6.2518, -75.5636];
+
+let map = null, grueroMarker = null, sol = null, pollTimer = null;
+let grueroIcon = null, clienteIcon = null;
+
+function initMap(){
+  const mapEl = document.getElementById('map');
+  if(!mapEl || map) return;
+  // Always set explicit pixel height so Leaflet gets a definite container size
+  mapEl.style.height = Math.round(window.innerHeight * 0.44) + 'px';
+  try {
+    if(typeof L === 'undefined') throw new Error('Leaflet not loaded');
+    map = L.map('map', { zoomControl:true, center:MDE, zoom:13 });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution:'© <a href="https://osm.org/copyright">OpenStreetMap</a>',
+      maxZoom:19
+    }).addTo(map);
+    grueroIcon = L.divIcon({
+      html:`<div class="g-pin"><div class="g-pin-bg"><div class="g-pin-ic">🛵</div></div></div>`,
+      className:'', iconSize:[44,44], iconAnchor:[22,44], popupAnchor:[0,-44],
+    });
+    clienteIcon = L.divIcon({
+      html:`<div class="c-pin">📍</div>`,
+      className:'', iconSize:[28,28], iconAnchor:[14,28], popupAnchor:[0,-28],
+    });
+    setTimeout(()=>{ try{ map.invalidateSize(false); }catch(e){} }, 150);
+  } catch(e) {
+    mapEl.style.background = '#111';
+  }
+}
+
+function extractClientCoords(ubic){
+  const m=(ubic||'').match(/maps\.google\.com\/\?q=([-\d.]+),([-\d.]+)/);
+  return m?[parseFloat(m[1]),parseFloat(m[2])]:null;
+}
+
+let clienteMarker = null;
+function setClienteMarker(coords){
+  if(!coords||!map) return;
+  try {
+    if(clienteMarker){
+      clienteMarker.setLatLng(coords);
+    } else {
+      clienteMarker = L.marker(coords,{icon:clienteIcon})
+        .addTo(map).bindPopup('Tu ubicación 📍',{closeButton:false});
+    }
+  } catch(e) {}
+}
+
+function waNum(raw){let d=(raw||'').replace(/\D/g,'');if(d.length===10)d='57'+d;return d;}
+
+function haversineKm(la1,lo1,la2,lo2){
+  const R=6371,dL=(la2-la1)*Math.PI/180,dO=(lo2-lo1)*Math.PI/180;
+  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dO/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+function setOverlay(icon, title, sub){
+  const ov = document.getElementById('mapOverlay');
+  if(!ov) return;
+  const ic = ov.querySelector('.mo-icon');
+  if(ic) ic.textContent = icon;
+  document.getElementById('moTitle').textContent = title;
+  document.getElementById('moSub').textContent = sub;
+  ov.style.display = 'flex';
+}
+
+function hideOverlay(){
+  const ov = document.getElementById('mapOverlay');
+  if(ov) ov.style.display = 'none';
+}
+
+function moveGrueroMarker(lat, lng){
+  if(!lat||!lng||!map) return;
+  hideOverlay(); // always hide before Leaflet calls — can't be swallowed by try/catch
+  try {
+    if(grueroMarker){
+      grueroMarker.setLatLng([lat,lng]);
+    } else {
+      grueroMarker = L.marker([lat,lng],{icon:grueroIcon}).addTo(map)
+        .bindPopup('Tu gruero está aquí 🛵',{closeButton:false});
+    }
+    map.flyTo([lat,lng], Math.max(map.getZoom(),14), {duration:1.5});
+  } catch(e) { return; }
+
+  // ETA approximation — usa GPS del cliente si está disponible, sino centro del municipio
+  const clientCoords = extractClientCoords(sol?.ubicacion);
+  const muni = sol?.municipio;
+  const dest = clientCoords || (muni && MUNIS[muni]) || MDE;
+  const km = haversineKm(lat, lng, dest[0], dest[1]);
+  const min = Math.round((km/35)*60); // 35 km/h promedio Medellín
+  document.getElementById('etaTxt').textContent = min<=1 ? 'Llegando ahora mismo' : `~${min} min estimado`;
+}
+
+function applyEstado(estado){
+  const chip = document.getElementById('chip');
+  const configs = {
+    pendiente:['pend','Buscando gruero…'],
+    asignada:['asig','🛵 En camino'],
+    llego:['llego','📍 Llegó al sitio'],
+    finalizada:['done','✅ Servicio listo'],
+    cancelada:['canc','❌ Cancelado'],
+  };
+  const [cls,lbl] = configs[estado]||['pend','—'];
+  chip.className = 'chip '+cls;
+  chip.textContent = lbl;
+
+  // Stepper
+  const order = ['asignada','llego','finalizada'];
+  const idx = order.indexOf(estado);
+  [0,1,2].forEach(i=>{
+    const el = document.getElementById('stp'+i);
+    const dot = el.querySelector('.dot');
+    el.className = 'stp '+(i<idx?'done':i===idx?'active':'');
+    dot.textContent = i<idx?'✓':(i+1);
+  });
+
+  // Sections
+  const show = (id,v) => document.getElementById(id).classList.toggle('hide',!v);
+  const s = estado;
+  show('secBuscando', s==='pendiente');
+  show('secGruero', s!=='pendiente' && s!=='cancelada');
+  show('secActions', s==='asignada' || s==='llego');
+  show('eta', s==='asignada');
+  show('secLlego', s==='llego');
+  show('secCal', s==='finalizada');
+  show('secCancelada', s==='cancelada');
+  show('secCancelar', s==='pendiente' || s==='asignada');
+
+  const notas = {
+    pendiente:'Avisamos a todos los grueros. Uno tomará tu servicio en breve.',
+    asignada:'Tu gruero está en camino. Actualización en tiempo real.',
+    llego:'Sal a recibirlo — está esperándote en tu ubicación.',
+    finalizada:'Califica el servicio para ayudar a la comunidad motera.',
+    cancelada:'Tu solicitud fue cancelada. Crea una nueva si aún necesitas el servicio.',
+  };
+  document.getElementById('nota').textContent = notas[s]||'';
+
+  // Overlay del mapa: siempre actualizar según estado real
+  const overlayStates = {
+    pendiente: {icon:'🔍', title:'Buscando tu gruero…',    sub:'Avisamos a todos los disponibles en tu área'},
+    asignada:  {icon:'🛵', title:'Tu gruero va en camino', sub:'Esperando ubicación GPS en tiempo real'},
+    llego:     {icon:'📍', title:'¡Tu gruero llegó!',      sub:'Está en tu ubicación esperándote'},
+    finalizada:{icon:'✅', title:'Servicio completado',    sub:'Califica para ayudar a otros moteros'},
+    cancelada: {icon:'❌', title:'Servicio cancelado',     sub:'Puedes solicitar una nueva grúa'},
+  };
+  const ovCfg = overlayStates[s] || overlayStates.pendiente;
+  if(sol?.gruero_lat){
+    hideOverlay(); // GPS disponible → mapa muestra al gruero
+  } else {
+    setOverlay(ovCfg.icon, ovCfg.title, ovCfg.sub);
+  }
+}
+
+async function loadGruero(gid){
+  if(!gid) return;
+  const [{data}, {data:calData}] = await Promise.all([
+    sb.from('grueros').select('nombre,telefono,ciudad,datos').eq('id',gid).single(),
+    sb.from('solicitudes').select('calificacion').eq('gruero_asignado',gid).not('calificacion','is',null),
+  ]);
+  if(!data) return;
+  const nombre = data.nombre||'Tu gruero';
+  const foto = data.datos?.foto_url||'';
+  const tel = data.telefono||'';
+  const d = data.datos||{};
+
+  document.getElementById('gNombre').textContent = nombre;
+  document.getElementById('gSub').textContent = data.ciudad||'Gruero verificado ✓';
+
+  // Rating badge
+  const ratings = (calData||[]).map(r=>r.calificacion).filter(Boolean);
+  const ratingEl = document.getElementById('gRating');
+  ratingEl.classList.remove('hide');
+  if(ratings.length){
+    const avg = (ratings.reduce((a,b)=>a+b,0)/ratings.length).toFixed(1);
+    ratingEl.textContent = `⭐ ${avg}`;
+    ratingEl.classList.remove('nuevo');
+  } else {
+    ratingEl.textContent = 'Nuevo ✓';
+    ratingEl.classList.add('nuevo');
+  }
+
+  // Extra detail row
+  const parts = [];
+  if(d.tiempo_llegada) parts.push(`🕐 ${d.tiempo_llegada}`);
+  if(d.experiencia)    parts.push(`🏍 ${d.experiencia}`);
+  if(d.flota)          parts.push(`🚛 ${d.flota}`);
+  const detailEl = document.getElementById('gDetail');
+  if(parts.length){
+    detailEl.innerHTML = parts.map(p=>`<span>${p}</span>`).join('');
+    detailEl.classList.remove('hide');
+  }
+
+  // Avatar
+  const av = document.getElementById('gAv');
+  if(foto){
+    av.innerHTML = `<img src="${foto}" alt="${nombre}" onerror="this.parentElement.textContent='${nombre[0]?.toUpperCase()||'?'}'">`;
+  } else {
+    av.textContent = nombre[0]?.toUpperCase()||'?';
+  }
+
+  const wa = waNum(tel);
+  document.getElementById('btnCall').href = `tel:+${wa}`;
+  document.getElementById('btnWa').href = `https://wa.me/${wa}?text=${encodeURIComponent('Hola, soy tu cliente de Ridera Grúas. ¿Ya estás en camino?')}`;
+}
+
+async function init(){
+  if(window._sbFailed || !sb){
+    document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
+    document.getElementById('nota').textContent='Error cargando seguimiento. Por favor recarga la página.';
+    return;
+  }
+  if(!sid){
+    document.getElementById('loader').classList.add('hide');
+    if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
+    document.getElementById('nota').textContent='Enlace inválido. Por favor solicita una nueva grúa.';
+    return;
+  }
+
+  let data, error;
+  try {
+    ({data, error} = await sb.from('solicitudes')
+      .select('id,estado,ubicacion,municipio,gruero_asignado,gruero_lat,gruero_lng,calificacion,asignada_at,llego_at,finalizada_at')
+      .eq('id',sid).single());
+  } catch(e) {
+    document.getElementById('loader').classList.add('hide');
+    document.getElementById('nota').textContent='Error de conexión. Por favor recarga la página.';
+    return;
+  }
+
+  document.getElementById('loader').classList.add('hide');
+  if(map) setTimeout(()=>{ try{ map.invalidateSize(true); }catch(e){} }, 100);
+
+  if(error||!data){
+    document.getElementById('nota').textContent='Solicitud no encontrada. El enlace puede haber expirado.';
+    return;
+  }
+
+  sol = data;
+  applyEstado(data.estado);
+  if(data.gruero_asignado) await loadGruero(data.gruero_asignado);
+
+  // Mostrar ubicación del cliente si compartió GPS
+  const cCoords = extractClientCoords(data.ubicacion);
+  if(cCoords) setClienteMarker(cCoords);
+
+  if(data.gruero_lat&&data.gruero_lng){
+    moveGrueroMarker(data.gruero_lat, data.gruero_lng);
+    if(grueroMarker&&map) try{ grueroMarker.openPopup(); }catch(e){}
+    // Ajustar vista para mostrar ambos si hay dos marcadores
+    if(clienteMarker&&map){
+      try{
+        map.fitBounds(
+          L.latLngBounds(grueroMarker.getLatLng(), clienteMarker.getLatLng()),
+          {padding:[44,44], maxZoom:16}
+        );
+      }catch(e){}
+    }
+  } else if(!data.gruero_lat&&map){
+    // Sin GPS del gruero: centrar en cliente o municipio
+    if(cCoords){
+      map.setView(cCoords, 15);
+    } else if(data.municipio&&MUNIS[data.municipio]){
+      map.setView(MUNIS[data.municipio],13);
+    }
+  }
+
+  document.getElementById('secCal').href = `/califica.html?t=${sid}`;
+
+  // Realtime subscription (updates instantly when available)
+  sb.channel('seguimiento-'+sid)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'solicitudes',filter:`id=eq.${sid}`},payload=>{
+      const upd = payload.new;
+      const prev = sol;
+      sol = {...sol,...upd};
+      applyEstado(upd.estado||prev.estado);
+      if(upd.gruero_asignado&&upd.gruero_asignado!==prev.gruero_asignado) loadGruero(upd.gruero_asignado);
+      if(upd.gruero_lat&&upd.gruero_lng) moveGrueroMarker(upd.gruero_lat,upd.gruero_lng);
+      if(upd.estado==='finalizada') clearInterval(pollTimer);
+    })
+    .subscribe();
+
+  // Polling fallback (cada 10 s) — por si Realtime no llega o el WebSocket falla
+  async function pollLocation() {
+    if(!sid) return;
+    const {data} = await sb.from('solicitudes')
+      .select('id,estado,gruero_asignado,gruero_lat,gruero_lng,calificacion')
+      .eq('id',sid).single().catch(()=>({data:null}));
+    if(!data) return;
+    const prev = sol;
+    sol = {...sol,...data};
+    if(data.estado !== prev?.estado) applyEstado(data.estado);
+    if(data.gruero_asignado&&data.gruero_asignado!==prev?.gruero_asignado) loadGruero(data.gruero_asignado);
+    if(data.gruero_lat&&data.gruero_lng) moveGrueroMarker(data.gruero_lat,data.gruero_lng);
+    if(data.estado==='finalizada') clearInterval(pollTimer);
+  }
+  pollTimer = setInterval(pollLocation, 10000);
+}
+
+async function doCancelClient() {
+  if (!confirm('¿Cancelar el servicio? Solo hazlo si ya no necesitas la grúa.')) return;
+  const btn = document.getElementById('btnCancelar');
+  if (btn) { btn.disabled = true; btn.textContent = 'Cancelando…'; }
+  try {
+    const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/aceptar-solicitud', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ s: sid, action: 'cancelar_cliente' }),
+    });
+    const data = await res.json();
+    if (data.ok || data.resultado === 'ya_cancelada') {
+      applyEstado('cancelada');
+      clearInterval(pollTimer);
+    } else {
+      if (btn) { btn.disabled = false; btn.textContent = 'Cancelar servicio'; }
+      alert(data.error || 'No se pudo cancelar. Intenta de nuevo.');
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Cancelar servicio'; }
+    alert('Error de conexión. Intenta de nuevo.');
+  }
+}
+
+window.addEventListener('resize',()=>{ if(map) setTimeout(()=>map.invalidateSize(),200); });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden&&map) map.invalidateSize(); });
+
+// Initialize map immediately — <script> is at end of <body> so DOM is ready.
+// Decouples map from Supabase: tiles load even if data fetch is slow or fails.
+initMap();
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,814 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Panel admin — Ridera Grúas</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
+      --or: #E85D20; --text: #f0f0f0; --mu: #888;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LOGIN */
+    #loginWrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .login-card { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2.5rem 2rem; width: 100%; max-width: 360px; }
+    .login-card h1 { font-size: 1.4rem; font-weight: 700; color: var(--or); margin-bottom: 0.25rem; }
+    .login-card p { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.75rem; }
+    label { display: block; font-size: 0.8rem; color: var(--mu); margin-bottom: 0.35rem; margin-top: 1rem; }
+    input[type="password"], input[type="text"] {
+      width: 100%; background: #111; border: 1px solid var(--line); border-radius: 8px;
+      color: var(--text); font-size: 1rem; padding: 0.7rem 0.9rem; outline: none; transition: border-color 0.2s;
+    }
+    input:focus { border-color: var(--or); }
+    .btn { display: block; width: 100%; margin-top: 1.5rem; padding: 0.8rem; background: var(--or); color: #fff; font-size: 1rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s; }
+    .btn:hover { background: #cf4f18; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+
+    /* PANEL */
+    #panel { display: none; }
+    nav { background: var(--s); border-bottom: 1px solid var(--line); padding: 0 1.5rem; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .nav-brand { font-weight: 700; color: var(--or); font-size: 1.05rem; }
+    .nav-right { display: flex; align-items: center; gap: 0.75rem; }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; border: 1px solid var(--line); border-radius: 6px; background: transparent; color: var(--mu); cursor: pointer; transition: border-color 0.2s, color 0.2s; }
+    .btn-sm:hover { border-color: var(--or); color: var(--or); }
+    .btn-sm.danger:hover { border-color: #f87171; color: #f87171; }
+
+    .container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+    .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
+    .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    /* STATS */
+    .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+    .stat { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; min-width: 120px; }
+    .stat .num { font-size: 1.75rem; font-weight: 700; color: var(--or); }
+    .stat .num.warn { color: #f59e0b; }
+    .stat .num.green { color: #4ade80; }
+    .stat .num.blue { color: #60a5fa; }
+    .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
+
+    /* TABS */
+    .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
+    .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
+    .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
+
+    /* SOLICITUDES */
+    .sol-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
+    .sol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+    .sol-card { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; }
+    .sol-card .sc-label { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--mu); margin-bottom: 0.5rem; }
+    .sol-card .sc-val { font-size: 1.5rem; font-weight: 700; }
+    .muni-list { list-style: none; }
+    .muni-list li { display: flex; justify-content: space-between; padding: 0.45rem 0; border-bottom: 1px solid var(--line); font-size: 0.875rem; }
+    .muni-list li:last-child { border-bottom: none; }
+    .muni-cnt { color: var(--or); font-weight: 700; }
+    .recientes-list { display: flex; flex-direction: column; gap: 0.5rem; }
+    .rec-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: var(--s2); border-radius: 8px; font-size: 0.82rem; }
+    .rec-estado { font-size: 0.7rem; font-weight: 700; padding: 0.2rem 0.5rem; border-radius: 20px; white-space: nowrap; }
+    .re-pend { background: rgba(245,158,11,.12); color: #f59e0b; }
+    .re-asig { background: rgba(37,211,102,.1); color: #4ade80; }
+    .re-llego { background: rgba(96,165,250,.1); color: #60a5fa; }
+    .re-fin  { background: rgba(156,163,175,.08); color: #9ca3af; }
+    .rec-muni { color: var(--mu); flex: 1; }
+    .rec-cal { color: #facc15; font-weight: 600; white-space: nowrap; }
+    .rec-time { color: var(--mu); white-space: nowrap; }
+
+    /* DISPATCH */
+    .dispatch-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+    .dispatch-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); }
+    .dispatch-refresh { font-size: 0.75rem; color: var(--mu); cursor: pointer; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.6rem; }
+    .dispatch-refresh:hover { border-color: var(--or); color: var(--or); }
+    .pending-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .pend-card { background: var(--s); border: 1px solid rgba(245,158,11,.35); border-radius: 10px; padding: 1rem; }
+    .pend-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.5rem; }
+    .pend-name { font-weight: 700; font-size: 0.9rem; }
+    .pend-time { font-size: 0.72rem; color: #f59e0b; white-space: nowrap; }
+    .pend-muni { display: inline-block; font-size: 0.72rem; font-weight: 700; background: rgba(245,158,11,.1); color: #f59e0b; border-radius: 20px; padding: 0.15rem 0.5rem; margin-bottom: 0.4rem; }
+    .pend-ubic { font-size: 0.78rem; color: var(--mu); margin-bottom: 0.7rem; max-height: 2.5em; overflow: hidden; text-overflow: ellipsis; }
+    .pend-actions { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .btn-dispatch { font-size: 0.75rem; padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px solid rgba(245,158,11,.5); background: transparent; color: #f59e0b; cursor: pointer; transition: all .15s; }
+    .btn-dispatch:hover { background: rgba(245,158,11,.1); }
+    .gruero-dispatch-list { margin-top: 0.75rem; border-top: 1px solid var(--line); padding-top: 0.75rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .gd-row { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; padding: 0.45rem 0.6rem; background: var(--s2); border-radius: 8px; }
+    .gd-name { font-size: 0.82rem; font-weight: 600; }
+    .gd-city { font-size: 0.72rem; color: var(--mu); }
+    .btn-wa-dispatch { font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; border: none; background: rgba(37,211,102,.15); color: #4ade80; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; gap: 0.3rem; white-space: nowrap; }
+    .btn-wa-dispatch:hover { background: rgba(37,211,102,.25); }
+    .gd-empty { font-size: 0.8rem; color: var(--mu); padding: 0.5rem 0; }
+    .dispatch-empty { color: var(--mu); font-size: 0.85rem; padding: 1.5rem; text-align: center; background: var(--s); border-radius: 10px; border: 1px solid var(--line); }
+    .pend-card.alerta { border-color: rgba(248,113,113,.5); background: #1a0d0d; }
+    .alerta-badge { display:inline-flex;align-items:center;gap:4px;font-size:0.7rem;font-weight:700;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(248,113,113,.12);color:#f87171;margin-bottom:0.4rem; }
+    .pend-gruero { font-size:0.78rem;color:#f87171;margin-bottom:0.6rem; }
+    .btn-dispatch.danger { border-color:rgba(248,113,113,.5);color:#f87171; }
+    .btn-dispatch.danger:hover { background:rgba(248,113,113,.1); }
+    .dispatch-section-title { font-size:0.72rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin:1rem 0 0.5rem; }
+
+    /* FILTERS */
+    .filters { display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
+    .filter-btn { padding: 0.4rem 0.9rem; font-size: 0.8rem; font-weight: 600; border-radius: 20px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; }
+    .filter-btn.active { background: var(--or); border-color: var(--or); color: #fff; }
+    .filter-btn.warn-active { background: #f59e0b; border-color: #f59e0b; color: #000; }
+    .search-input { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; width: 200px; }
+    .search-input:focus { border-color: var(--or); }
+    .btn-export { font-size: 0.78rem; padding: 0.35rem 0.75rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all .15s; margin-left: auto; }
+    .btn-export:hover { border-color: #4ade80; color: #4ade80; }
+    .btn-export:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* GRUERO HISTORIAL */
+    .gh-bar { display: flex; align-items: center; gap: 0.75rem; margin: 1.5rem 0 0.75rem; flex-wrap: wrap; }
+    .gh-bar label { font-size: 0.8rem; color: var(--mu); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    .gh-select { padding: 0.4rem 0.8rem; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; flex: 1; min-width: 200px; max-width: 320px; }
+    .gh-select:focus { border-color: var(--or); }
+    #grueroHistorial { border-top: 1px solid var(--line); padding-top: 1rem; margin-top: 0.5rem; }
+    .gh-section-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); margin-bottom: 0.75rem; }
+
+    /* TABLE */
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.875rem; }
+    thead th { text-align: left; padding: 0.6rem 0.75rem; color: var(--mu); font-weight: 600; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--line); }
+    tbody tr { border-bottom: 1px solid var(--line); transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 0.85rem 0.75rem; vertical-align: middle; }
+    .badge { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.72rem; font-weight: 700; padding: 0.25rem 0.6rem; border-radius: 20px; }
+    .badge-on   { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
+    .badge-off  { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
+    .badge-apro { background: #0a1e2e; color: #60a5fa; border: 1px solid #1a4a6e; }
+    .badge-pend { background: #2a2000; color: #f59e0b; border: 1px solid #5c3d00; }
+    .dot { width: 7px; height: 7px; border-radius: 50%; }
+    .dot-on  { background: #4ade80; }
+    .dot-off { background: #f87171; }
+    .actions-cell { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+    .act-btn { font-size: 0.75rem; padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+    .act-btn:hover { border-color: var(--or); color: var(--or); }
+    .act-btn.aprobar { border-color: #1a5c36; color: #4ade80; }
+    .act-btn.aprobar:hover { background: #0e2a1a; }
+    .act-btn.del:hover { border-color: #f87171; color: #f87171; }
+    .act-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .tel { font-size: 0.8rem; color: var(--mu); }
+    .slug-link { font-size: 0.75rem; color: var(--or); text-decoration: none; }
+    .slug-link:hover { text-decoration: underline; }
+    .empty-row td { color: var(--mu); text-align: center; padding: 3rem; }
+
+    .spin { display: inline-block; width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.15); border-top-color: var(--or); border-radius: 50%; animation: rot 0.7s linear infinite; vertical-align: middle; }
+    @keyframes rot { to { transform: rotate(360deg); } }
+
+    /* MODAL */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 1rem; }
+    .modal { background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; width: 100%; max-width: 360px; }
+    .modal h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.25rem; }
+    .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.5rem; }
+    .btn-cancel { padding: 0.6rem 1.2rem; border: 1px solid var(--line); border-radius: 8px; background: transparent; color: var(--mu); font-size: 0.9rem; cursor: pointer; }
+    .btn-ok { padding: 0.6rem 1.2rem; background: var(--or); color: #fff; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
+    .modal-err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+    .hide { display: none !important; }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginWrap">
+  <div class="login-card">
+    <h1>Ridera Grúas</h1>
+    <p>Panel de administración</p>
+    <label for="pwdInput">Clave de acceso</label>
+    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password">
+    <div class="err" id="loginErr">Clave incorrecta.</div>
+    <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="panel">
+  <nav>
+    <span class="nav-brand">Ridera Grúas · Admin</span>
+    <div class="nav-right">
+      <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
+      <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
+      <button class="btn-sm danger" onclick="logout()">Salir</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="page-title">Panel de administración</div>
+    <div class="page-sub" id="lastUpdated">Cargando…</div>
+
+    <!-- TABS -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="showTab('grueros',this)">Grueros</button>
+      <button class="tab-btn" onclick="showTab('solicitudes',this)">Solicitudes</button>
+    </div>
+
+    <!-- GRUEROS TAB -->
+    <div id="tabGrueros">
+    <div class="stats" id="statsRow"></div>
+
+    <div class="filters">
+      <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+      <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
+      <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
+      <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
+      <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
+      <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad…" oninput="renderTable()">
+      <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nombre / Email</th>
+            <th>Ciudad</th>
+            <th>Teléfono</th>
+            <th>Aprobado</th>
+            <th>Disponible</th>
+            <th>Registrado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+    </div><!-- /tabGrueros -->
+
+    <!-- SOLICITUDES TAB -->
+    <div id="tabSolicitudes" style="display:none">
+
+      <!-- DESPACHO EN VIVO -->
+      <div class="dispatch-bar">
+        <span class="dispatch-title">📡 Despacho en vivo</span>
+        <div style="display:flex;gap:0.5rem;align-items:center">
+          <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
+          <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+        </div>
+      </div>
+      <div id="pendingGrid" class="pending-grid">
+        <div class="dispatch-empty">Cargando solicitudes pendientes…</div>
+      </div>
+
+      <div class="sol-stats" id="solStats">
+        <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
+        <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
+        <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
+        <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
+        <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
+        <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
+      </div>
+
+      <div class="sol-grid">
+        <div class="sol-card">
+          <div class="sc-label">Por estado</div>
+          <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        </div>
+        <div class="sol-card">
+          <div class="sc-label">Top municipios</div>
+          <ul class="muni-list" id="muniList"></ul>
+        </div>
+      </div>
+
+      <div class="sol-card" style="margin-bottom:1.5rem">
+        <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
+        <div class="recientes-list" id="recientesList"></div>
+      </div>
+
+      <!-- HISTORIAL POR GRUERO -->
+      <div class="gh-bar">
+        <label>Historial por gruero:</label>
+        <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
+          <option value="">— Seleccionar gruero —</option>
+        </select>
+      </div>
+      <div id="grueroHistorial" style="display:none">
+        <div class="gh-section-title">Servicios del gruero</div>
+        <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
+        <div class="table-wrap" id="ghTableWrap"></div>
+      </div>
+
+    </div><!-- /tabSolicitudes -->
+
+  </div>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal-overlay hide" id="pwdModal">
+  <div class="modal">
+    <h2>Cambiar clave admin</h2>
+    <label>Nueva clave</label>
+    <input type="password" id="newPwd" placeholder="Mínimo 4 caracteres" style="margin-top:0.4rem">
+    <div class="modal-err" id="pwdErr"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hidePwdModal()">Cancelar</button>
+      <button class="btn-ok" onclick="doChangePwd()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
+
+let adminKey = '';
+let allGrueros = [];
+let currentFilter = 'all';
+
+function esc(x) {
+  return (x == null ? '' : String(x)).replace(/[&<>"]/g,
+    c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+}
+function jsq(x) {
+  return (x == null ? '' : String(x)).replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+}
+
+let solStatsLoaded = false;
+
+function showTab(tab, btn) {
+  document.getElementById('tabGrueros').style.display    = tab === 'grueros'     ? 'block' : 'none';
+  document.getElementById('tabSolicitudes').style.display = tab === 'solicitudes' ? 'block' : 'none';
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
+  if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
+}
+
+async function loadSolicitudesStats() {
+  const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  solStatsLoaded = true;
+
+  document.getElementById('sTotal').textContent   = data.total ?? '—';
+  document.getElementById('sHoy').textContent     = data.hoy ?? '—';
+  document.getElementById('sSemana').textContent  = data.semana ?? '—';
+  document.getElementById('sMes').textContent     = data.mes ?? '—';
+  document.getElementById('sCal').textContent     = data.avgCal != null ? `⭐ ${data.avgCal}` : '—';
+  document.getElementById('sResp').textContent    = data.avgRespuestaMin != null ? `${data.avgRespuestaMin} min` : '—';
+
+  // By estado
+  const estadoLabels = { pendiente:'Pendiente', asignada:'En camino', llego:'Llegó', finalizada:'Finalizada' };
+  const estadoColors = { pendiente:'#f59e0b', asignada:'#4ade80', llego:'#60a5fa', finalizada:'#9ca3af' };
+  const be = data.byEstado || {};
+  document.getElementById('byEstadoList').innerHTML = Object.entries(estadoLabels).map(([k, lbl]) =>
+    `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.3rem 0;border-bottom:1px solid #2a2a2a">
+       <span style="font-size:0.82rem;color:#ccc">${lbl}</span>
+       <span style="font-weight:700;color:${estadoColors[k]}">${be[k] || 0}</span>
+     </div>`
+  ).join('');
+
+  // Top municipios
+  document.getElementById('muniList').innerHTML = (data.topMunicipios || []).map(m =>
+    `<li><span>${esc(m.municipio)}</span><span class="muni-cnt">${m.total}</span></li>`
+  ).join('') || '<li style="color:#888">Sin datos</li>';
+
+  // Recientes
+  const timelbl = d => {
+    const diff = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (diff < 60) return `${diff}m`;
+    if (diff < 1440) return `${Math.round(diff/60)}h`;
+    return `${Math.round(diff/1440)}d`;
+  };
+  const clsEstado = { pendiente:'re-pend', asignada:'re-asig', llego:'re-llego', finalizada:'re-fin' };
+  document.getElementById('recientesList').innerHTML = (data.recientes || []).map(s =>
+    `<div class="rec-row">
+       <span class="rec-estado ${clsEstado[s.estado]||'re-fin'}">${estadoLabels[s.estado]||s.estado}</span>
+       <span class="rec-muni">${esc(s.municipio||'—')}</span>
+       ${s.calificacion ? `<span class="rec-cal">${'⭐'.repeat(s.calificacion)}</span>` : ''}
+       <span class="rec-time">${timelbl(s.created_at)}</span>
+     </div>`
+  ).join('') || '<p style="color:#888;font-size:0.85rem">Sin solicitudes recientes.</p>';
+}
+
+// ── Live dispatch ────────────────────────────────────────────────────
+let dispatchTimer = null;
+
+function relTime(iso) {
+  const diff = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
+  if (diff < 60) return `hace ${diff}s`;
+  if (diff < 3600) return `hace ${Math.round(diff/60)} min`;
+  return `hace ${Math.round(diff/3600)} h`;
+}
+
+async function loadPendingDispatch() {
+  const grid = document.getElementById('pendingGrid');
+  const data = await callAdmin({ action: 'pending_dispatch' }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.solicitudes) {
+    grid.innerHTML = '<div class="dispatch-empty">No se pudo cargar el despacho.</div>';
+    return;
+  }
+  if (!data.solicitudes.length) {
+    grid.innerHTML = '<div class="dispatch-empty">✅ Sin solicitudes pendientes</div>';
+    return;
+  }
+
+  const pendientes = data.solicitudes.filter(s => s.estado === 'pendiente');
+  const alertas    = data.solicitudes.filter(s => s.estado === 'asignada');
+
+  let html = '';
+
+  if (alertas.length) {
+    html += `<div class="dispatch-section-title" style="grid-column:1/-1">⚠️ Gruero aceptó pero no ha marcado llegada (${alertas.length})</div>`;
+    html += alertas.map(s => {
+      const aceptoHace = s.asignada_at ? relTime(s.asignada_at) : '—';
+      return `
+      <div class="pend-card alerta" id="pc-${s.id}">
+        <div class="alerta-badge">⚠️ Sin llegada</div>
+        <div class="pend-header">
+          <span class="pend-name">${esc(s.cliente_nombre||'Cliente')}</span>
+          <span class="pend-time">${relTime(s.created_at)}</span>
+        </div>
+        ${s.municipio ? `<span class="pend-muni">📍 ${esc(s.municipio)}</span>` : ''}
+        <div class="pend-ubic">${esc(s.ubicacion||'Sin ubicación')}</div>
+        ${s.gruero_nombre ? `<div class="pend-gruero">👤 ${esc(s.gruero_nombre)} aceptó ${aceptoHace}</div>` : ''}
+        <div class="pend-actions">
+          <button class="btn-dispatch danger" onclick="cancelarDespacho('${s.id}')">
+            🔄 Cancelar y re-despachar
+          </button>
+          <a class="btn-dispatch" style="text-decoration:none" href="/aceptar?s=${s.id}" target="_blank">
+            🔗 Ver
+          </a>
+        </div>
+        <div id="gd-${s.id}" class="gruero-dispatch-list" style="display:none"></div>
+      </div>`;
+    }).join('');
+  }
+
+  if (pendientes.length) {
+    if (alertas.length) html += `<div class="dispatch-section-title" style="grid-column:1/-1">📡 Esperando gruero (${pendientes.length})</div>`;
+    html += pendientes.map(s => `
+    <div class="pend-card" id="pc-${s.id}">
+      <div class="pend-header">
+        <span class="pend-name">${esc(s.cliente_nombre||'Cliente')}</span>
+        <span class="pend-time">${relTime(s.created_at)}</span>
+      </div>
+      ${s.municipio ? `<span class="pend-muni">📍 ${esc(s.municipio)}</span>` : ''}
+      <div class="pend-ubic">${esc(s.ubicacion||'Sin ubicación')}</div>
+      <div class="pend-actions">
+        <button class="btn-dispatch" onclick="toggleDespacho('${jsq(s.id)}','${jsq(s.municipio||'')}')">
+          👥 Ver grueros disponibles
+        </button>
+        <a class="btn-dispatch" style="text-decoration:none" href="/aceptar?s=${s.id}" target="_blank">
+          🔗 Ver solicitud
+        </a>
+      </div>
+      <div id="gd-${s.id}" class="gruero-dispatch-list" style="display:none"></div>
+    </div>`).join('');
+  }
+
+  grid.innerHTML = html;
+  clearTimeout(dispatchTimer);
+  dispatchTimer = setTimeout(loadPendingDispatch, 30000);
+}
+
+async function cancelarDespacho(solId) {
+  if (!confirm('¿Cancelar este servicio y regresarlo a la cola para re-despachar?')) return;
+  const card = document.getElementById('pc-' + solId);
+  if (card) card.style.opacity = '0.5';
+  const data = await callAdmin({ action: 'cancel_dispatch', id: solId }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    loadPendingDispatch();
+  } else {
+    if (card) card.style.opacity = '1';
+    alert('Error: ' + (data.error || 'No se pudo cancelar'));
+  }
+}
+
+async function toggleDespacho(solId, municipio) {
+  const el = document.getElementById('gd-' + solId);
+  if (!el) return;
+  if (el.style.display !== 'none') { el.style.display = 'none'; return; }
+  el.style.display = 'flex';
+  el.innerHTML = '<span class="gd-empty">Buscando grueros…</span>';
+
+  const data = await callAdmin({ action: 'despacho_grueros', municipio }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.grueros || !data.grueros.length) {
+    el.innerHTML = '<span class="gd-empty">Sin grueros disponibles en este municipio.</span>';
+    return;
+  }
+
+  const BASE = 'https://gruas.ridera.com.co';
+  el.innerHTML = data.grueros.map(g => {
+    const phone = (g.telefono || '').replace(/\D/g,'');
+    const wa = phone.length === 10 ? '57' + phone : phone;
+    const link = `${BASE}/aceptar?s=${solId}&g=${g.id}`;
+    const msg = encodeURIComponent(`Hola ${g.nombre}, hay una solicitud de grúa esperando. Entra aquí para aceptarla: ${link}`);
+    return `<div class="gd-row">
+      <div>
+        <div class="gd-name">${esc(g.nombre)}</div>
+        <div class="gd-city">${esc(g.datos?.ciudad || g.datos?.municipios?.[0] || '—')}</div>
+      </div>
+      ${wa ? `<a class="btn-wa-dispatch" href="https://wa.me/${wa}?text=${msg}" target="_blank">💬 WhatsApp</a>` : '<span class="gd-empty">Sin tel</span>'}
+    </div>`;
+  }).join('');
+}
+
+async function callAdmin(body) {
+  const res = await fetch(FN_ADMIN, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: adminKey, ...body }),
+  });
+  return res.json();
+}
+
+async function doLogin() {
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginErr');
+  const pwd = document.getElementById('pwdInput').value.trim();
+  if (!pwd) return;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span>';
+  errEl.style.display = 'none';
+  adminKey = pwd;
+  const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allGrueros = data.grueros || [];
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('panel').style.display = 'block';
+    renderStats();
+    renderTable();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+  } else {
+    errEl.style.display = 'block';
+    adminKey = '';
+    btn.disabled = false;
+    btn.textContent = 'Entrar';
+  }
+}
+
+document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+
+async function reloadList() {
+  const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allGrueros = data.grueros || [];
+    renderStats();
+    renderTable();
+    document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+    const sel = document.getElementById('grueroSelect');
+    if (sel) sel.dataset.loaded = '';
+  }
+}
+
+function logout() {
+  adminKey = '';
+  allGrueros = [];
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('panel').style.display = 'none';
+  document.getElementById('pwdInput').value = '';
+}
+
+function renderStats() {
+  const total    = allGrueros.length;
+  const aprobados = allGrueros.filter(g => g.aprobado === 'SI').length;
+  const pendientes = total - aprobados;
+  const on       = allGrueros.filter(g => g.disponible).length;
+  const ciudades = new Set(allGrueros.map(g => g.ciudad).filter(Boolean)).size;
+
+  document.getElementById('statsRow').innerHTML = `
+    <div class="stat"><div class="num">${total}</div><div class="lbl">Total grueros</div></div>
+    <div class="stat"><div class="num warn">${pendientes}</div><div class="lbl">Pendientes aprobación</div></div>
+    <div class="stat"><div class="num">${aprobados}</div><div class="lbl">Aprobados</div></div>
+    <div class="stat"><div class="num">${on}</div><div class="lbl">Disponibles ahora</div></div>
+    <div class="stat"><div class="num">${ciudades}</div><div class="lbl">Ciudades</div></div>
+  `;
+
+  // Highlight pending filter button if there are pending grueros
+  const pBtn = document.getElementById('filterPend');
+  pBtn.textContent = `Pendientes${pendientes ? ' (' + pendientes + ')' : ''}`;
+}
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => {
+    b.classList.remove('active', 'warn-active');
+    if (b === btn) b.classList.add(f === 'pend' ? 'warn-active' : 'active');
+  });
+  renderTable();
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  let rows = allGrueros;
+  if (currentFilter === 'pend') rows = rows.filter(g => g.aprobado !== 'SI');
+  if (currentFilter === 'apro') rows = rows.filter(g => g.aprobado === 'SI');
+  if (currentFilter === 'on')   rows = rows.filter(g => g.disponible);
+  if (currentFilter === 'off')  rows = rows.filter(g => !g.disponible);
+  if (q) rows = rows.filter(g =>
+    (g.nombre||'').toLowerCase().includes(q) ||
+    (g.ciudad||'').toLowerCase().includes(q) ||
+    (g.telefono||'').includes(q) ||
+    (g.email||'').toLowerCase().includes(q)
+  );
+
+  const tbody = document.getElementById('tbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">No hay grueros que coincidan.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(g => {
+    const fecha   = g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '—';
+    const apro    = g.aprobado === 'SI';
+    const disp    = g.disponible;
+    const slug    = g.slug ? `<br><a class="slug-link" href="https://gruas.ridera.com.co/grua?slug=${esc(g.slug)}" target="_blank">/${esc(g.slug)}</a>` : '';
+    const authBadge = g.auth_id
+      ? `<span style="font-size:0.68rem;background:#0e2a1a;color:#4ade80;border:1px solid #1a5c36;padding:1px 6px;border-radius:20px;margin-left:4px">🔑 cuenta</span>`
+      : `<span style="font-size:0.68rem;background:#1a1a2a;color:#888;border:1px solid #2a2a3a;padding:1px 6px;border-radius:20px;margin-left:4px">sin cuenta</span>`;
+    return `<tr>
+      <td><strong>${esc(g.nombre||'—')}</strong>${authBadge}${slug}<br><span class="tel">${esc(g.email||'')}</span></td>
+      <td>${esc(g.ciudad||'—')}</td>
+      <td class="tel">${esc(g.telefono||'—')}</td>
+      <td><span class="badge ${apro?'badge-apro':'badge-pend'}">${apro?'✓ Aprobado':'Pendiente'}</span></td>
+      <td>
+        <span class="badge ${disp?'badge-on':'badge-off'}">
+          <span class="dot ${disp?'dot-on':'dot-off'}"></span>
+          ${disp?'Sí':'No'}
+        </span>
+      </td>
+      <td class="tel">${fecha}</td>
+      <td>
+        <div class="actions-cell">
+          ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
+          ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
+          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">Eliminar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function doAprobar(id, nombre, email, btn) {
+  const tieneEmail = email && email.includes('@');
+  const msg = tieneEmail
+    ? `¿Aprobar a "${nombre}"?\nSe creará su cuenta y se enviará el correo de bienvenida a ${email}.`
+    : `¿Aprobar a "${nombre}"?\n⚠️ No tiene correo registrado — no se creará cuenta de acceso.`;
+  if (!confirm(msg)) return;
+  btn.disabled = true;
+  btn.textContent = '…';
+  const res = await callAdmin({ action: 'approve', id }).catch(() => ({ ok: false }));
+
+  if (res.ok) {
+    const g = allGrueros.find(x => x.id === id);
+    if (g) { g.aprobado = 'SI'; g.auth_id = res.auth_created ? '(nuevo)' : g.auth_id; g.slug = res.slug || g.slug; }
+    renderStats();
+    renderTable();
+    const nota = res.auth_created
+      ? `✅ Aprobado. Cuenta creada, email de invitación enviado a ${email}.`
+      : `✅ Aprobado${tieneEmail ? ' (cuenta ya existía o hubo error de email)' : ' (sin correo, sin cuenta)'}. Slug: ${res.slug || '—'}`;
+    alert(nota);
+  } else {
+    btn.disabled = false;
+    btn.textContent = '✓ Aprobar';
+    alert('Error: ' + (res.error || 'No se pudo aprobar'));
+  }
+}
+
+async function toggleDisp(id, nuevoVal, btn) {
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'set', id, disponible: nuevoVal }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    const g = allGrueros.find(x => x.id === id);
+    if (g) g.disponible = nuevoVal;
+    renderStats();
+    renderTable();
+  } else {
+    btn.disabled = false;
+    alert('No se pudo cambiar el estado.');
+  }
+}
+
+async function doDelete(id, nombre, btn) {
+  if (!confirm(`¿Eliminar a "${nombre}" permanentemente? Esta acción no se puede deshacer.`)) return;
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'delete', id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    allGrueros = allGrueros.filter(x => x.id !== id);
+    renderStats();
+    renderTable();
+  } else {
+    btn.disabled = false;
+    alert('No se pudo eliminar.');
+  }
+}
+
+// ── Export CSV ───────────────────────────────────────────────────────
+function exportGruerosCSV() {
+  const headers = ['Nombre','Ciudad','Teléfono','Email','Aprobado','Disponible','Registrado','Slug'];
+  const csv = [headers, ...allGrueros.map(g => [
+    g.nombre||'', g.ciudad||'', g.telefono||'', g.email||'',
+    g.aprobado==='SI'?'Sí':'No', g.disponible?'Sí':'No',
+    g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '',
+    g.slug||''
+  ])].map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿'+csv, `grueros-ridera-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+async function exportSolicitudesCSV() {
+  const btn = document.getElementById('btnExportSols');
+  if (btn) { btn.disabled = true; btn.textContent = 'Exportando…'; }
+  const data = await callAdmin({ action: 'export_solicitudes' }).catch(() => ({ ok: false }));
+  if (btn) { btn.disabled = false; btn.textContent = '↓ Exportar CSV'; }
+  if (!data.ok) { alert('Error al exportar'); return; }
+  const headers = ['ID','Estado','Cliente','Teléfono','Gruero','Municipio','Ubicación','Calificación','Comentario','Creado','Asignado','Llegó','Finalizado'];
+  const csv = [headers, ...(data.solicitudes||[]).map(s => [
+    s.id, s.estado, s.cliente_nombre||'', s.cliente_telefono||'',
+    s.gruero_nombre||'', s.municipio||'', s.ubicacion||'',
+    s.calificacion||'', s.comentario_cliente||'',
+    s.created_at   ? new Date(s.created_at).toLocaleString('es-CO')   : '',
+    s.asignada_at  ? new Date(s.asignada_at).toLocaleString('es-CO')  : '',
+    s.llego_at     ? new Date(s.llego_at).toLocaleString('es-CO')     : '',
+    s.finalizada_at? new Date(s.finalizada_at).toLocaleString('es-CO'): '',
+  ])].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿'+csv, `solicitudes-ridera-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+function downloadCSV(content, filename) {
+  const blob = new Blob([content], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── Historial por gruero ─────────────────────────────────────────────
+function populateGrueroSelect() {
+  const sel = document.getElementById('grueroSelect');
+  if (!sel || sel.dataset.loaded === 'true') return;
+  const aprobados = allGrueros.filter(g => g.aprobado === 'SI')
+    .sort((a,b) => (a.nombre||'').localeCompare(b.nombre||'', 'es'));
+  sel.innerHTML = '<option value="">— Ver historial de gruero —</option>' +
+    aprobados.map(g => `<option value="${esc(g.id)}">${esc(g.nombre)} ${g.ciudad?'('+esc(g.ciudad)+')':''}</option>`).join('');
+  sel.dataset.loaded = 'true';
+}
+
+async function loadGrueroHistorial() {
+  const gruero_id = document.getElementById('grueroSelect').value;
+  const wrap = document.getElementById('grueroHistorial');
+  if (!gruero_id) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando…</div>';
+  document.getElementById('ghTableWrap').innerHTML = '';
+
+  const data = await callAdmin({ action: 'historial_gruero', gruero_id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('ghStats').innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar historial</p>';
+    return;
+  }
+
+  const s = data.stats || {};
+  document.getElementById('ghStats').innerHTML = `
+    <div class="stat"><div class="num">${s.total||0}</div><div class="lbl">Total servicios</div></div>
+    <div class="stat"><div class="num">${s.mes||0}</div><div class="lbl">Este mes</div></div>
+    <div class="stat"><div class="num ${s.avgCal?'green':''}">${s.avgCal?'⭐ '+s.avgCal:'—'}</div><div class="lbl">Calificación</div></div>
+    <div class="stat"><div class="num">${s.finalizadas||0}</div><div class="lbl">Completados</div></div>
+  `;
+
+  const sols = data.solicitudes || [];
+  if (!sols.length) {
+    document.getElementById('ghTableWrap').innerHTML = '<p style="color:#888;font-size:0.85rem;padding:0.5rem 0">Sin servicios registrados.</p>';
+    return;
+  }
+
+  const estadoLabels = { pendiente:'Pendiente', asignada:'En camino', llego:'Llegó', finalizada:'Finalizada', cancelada:'Cancelado' };
+  const clsEstado    = { pendiente:'re-pend', asignada:'re-asig', llego:'re-llego', finalizada:'re-fin', cancelada:'re-pend' };
+  const timelbl = d => {
+    const diff = Math.round((Date.now() - new Date(d).getTime()) / 60000);
+    if (diff < 60) return `${diff}m`; if (diff < 1440) return `${Math.round(diff/60)}h`; return `${Math.round(diff/1440)}d`;
+  };
+
+  document.getElementById('ghTableWrap').innerHTML = `
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th>Estado</th><th>Cliente</th><th>Municipio</th><th>Calificación</th><th>Fecha</th>
+      </tr></thead>
+      <tbody>
+        ${sols.map(s => `<tr>
+          <td><span class="rec-estado ${clsEstado[s.estado]||'re-fin'}">${estadoLabels[s.estado]||s.estado}</span></td>
+          <td style="font-size:0.85rem">${esc(s.cliente_nombre||'—')}</td>
+          <td style="font-size:0.82rem;color:var(--mu)">${esc(s.municipio||'—')}</td>
+          <td>${s.calificacion?'⭐'.repeat(s.calificacion):'—'}</td>
+          <td style="font-size:0.78rem;color:var(--mu)">${s.created_at?timelbl(s.created_at):''}</td>
+        </tr>`).join('')}
+      </tbody>
+    </table></div>`;
+}
+
+function showChangePwd() {
+  document.getElementById('newPwd').value = '';
+  document.getElementById('pwdErr').style.display = 'none';
+  document.getElementById('pwdModal').classList.remove('hide');
+}
+function hidePwdModal() { document.getElementById('pwdModal').classList.add('hide'); }
+
+async function doChangePwd() {
+  const nueva = document.getElementById('newPwd').value.trim();
+  const errEl = document.getElementById('pwdErr');
+  if (nueva.length < 4) { errEl.textContent = 'Mínimo 4 caracteres.'; errEl.style.display = 'block'; return; }
+  const data = await callAdmin({ action: 'change_password', new: nueva }).catch(() => ({ ok: false }));
+  if (data.ok) { adminKey = nueva; hidePwdModal(); }
+  else { errEl.textContent = data.error || 'Error al cambiar la clave.'; errEl.style.display = 'block'; }
+}
+</script>
+</body>
+</html>
