@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NPWT32Q5');</script>
+<!-- End Google Tag Manager -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Registrar Sello · Ridera 125</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ridera 125">
@@ -95,9 +102,8 @@
   .brand h1{font-family:"Bebas Neue",sans-serif;font-size:54px;line-height:.9;margin:0}
   .brand .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:15px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
 
-  #app,#keyGate,#authGate,#success{display:none}
+  #app,#authGate,#success{display:none}
   body.view-app #app{display:block}
-  body.view-key #keyGate{display:flex}
   body.view-auth #authGate{display:flex}
   body.view-success #success{display:flex}
 
@@ -105,17 +111,10 @@
 </style>
 </head>
 <body>
-
-<!-- KEY GATE -->
-<div id="keyGate" class="gate">
-  <div class="inner">
-    <div class="brand"><div class="eyebrow">Pasaporte</div><h1>RIDERA 125</h1></div>
-    <p style="margin-top:14px">Pega tu llave <b>anon / public</b> para conectar.</p>
-    <input id="keyInput" placeholder="sb_publishable_…" autocomplete="off">
-    <button class="cta" id="keyBtn">Conectar</button>
-    <div class="msg" id="keyMsg"></div>
-  </div>
-</div>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NPWT32Q5"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
 
 <!-- AUTH GATE (login inline) -->
 <div id="authGate" class="gate">
@@ -196,16 +195,15 @@ const CONFIG = {
   PASAPORTE_URL:"pasaporte.html"
 };
 const $ = id => document.getElementById(id);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 let sb=null, municipios=[], selected=null, photoData=null, gps=null, photoGPS=null, sealedSet=new Set(), isReplacing=false;
 
-function isSecret(k){ if(!k)return false; if(k.startsWith("sb_secret_"))return true; if(k.startsWith("sb_publishable_"))return false; try{const p=JSON.parse(atob(k.split(".")[1]));if(p&&p.role==="service_role")return true;}catch(e){} return false; }
 function resolveKey(){ if(CONFIG.SUPABASE_ANON_KEY&&CONFIG.SUPABASE_ANON_KEY.length>20)return CONFIG.SUPABASE_ANON_KEY; try{return localStorage.getItem("ridera_supabase_key");}catch(e){return null;} }
 function view(v){ document.body.className="view-"+v; }
 
 (async function boot(){
-  let k = resolveKey();
-  if(k && isSecret(k)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; k=null; }
-  if(!k){ view("key"); return; }
+  const k = resolveKey();
+  if(!k){ window.location.href="index.html"; return; }
   startClient(k);
 })();
 
@@ -219,15 +217,6 @@ async function checkSession(){
   if(data.session){ enterApp(); } else { view("auth"); }
 }
 
-// Key gate
-$("keyBtn").addEventListener("click",()=>{
-  const v=$("keyInput").value.trim(), m=$("keyMsg");
-  if(v.startsWith("http")){ m.textContent="Eso es la URL, no la llave."; m.className="msg show error"; return; }
-  if(isSecret(v)){ m.textContent="Esa es la SECRETA. Usa la anon/publishable."; m.className="msg show error"; return; }
-  if(v.length<20){ m.textContent="Pega la llave completa."; m.className="msg show error"; return; }
-  startClient(v);
-});
-
 // Auth gate (login)
 $("aBtn").addEventListener("click", async ()=>{
   const email=$("aEmail").value.trim(), password=$("aPass").value, m=$("aMsg");
@@ -239,7 +228,7 @@ $("aBtn").addEventListener("click", async ()=>{
     enterApp();
   }catch(err){
     const msg=String(err.message||"");
-    if(/secret API key|Forbidden/i.test(msg)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; view("key"); $("keyMsg").textContent="Esa era la llave secreta. Pega la anon/publishable."; $("keyMsg").className="msg show error"; return; }
+    if(/secret API key|Forbidden/i.test(msg)){ try{localStorage.removeItem("ridera_supabase_key");}catch(e){}; window.location.href="index.html"; return; }
     m.textContent = /Invalid login/i.test(msg) ? "Correo o contraseña incorrectos." : "Ups: "+msg;
     m.className="msg show error";
   }finally{ $("aBtn").classList.remove("loading"); $("aBtn").disabled=false; }
@@ -281,6 +270,24 @@ async function loadData(){
     const cs=localStorage.getItem("ridera_sealed"); if(cs){ try{ sealedSet=new Set(JSON.parse(cs)); }catch(_){} }
   }
   renderList("");
+  const preselect = new URLSearchParams(location.search).get("muni");
+  if(preselect){
+    const m = municipios.find(x=>x.id===preselect);
+    if(m){
+      selected = m;
+      isReplacing = sealedSet.has(m.id);
+      $("pickedName").textContent = m.nombre;
+      if(isReplacing){
+        $("pickedMeta").innerHTML = esc(m.sub) + " \u00b7 <b style='color:var(--copper)'>Ya sellado \u2014 sube una foto mejor para reemplazarla</b>";
+        $("sellarBtn").querySelector(".lbl").textContent = "Reemplazar foto";
+      } else {
+        $("pickedMeta").textContent = m.sub + " \u00b7 +" + m.pts + " puntos" + (m.fluvial?" \u00b7 fluvial":"");
+      }
+      $("picked").classList.add("show");
+      renderList("");
+      updateBtn();
+    }
+  }
 }
 
 function norm(str){ return (str||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,""); }
@@ -291,7 +298,7 @@ function renderList(q){
   list.innerHTML = filtered.map(x=>{
     const sealed = sealedSet.has(x.id);
     return `<div class="muni-row ${sealed?'sealed':''} ${selected&&selected.id===x.id?'sel':''}" data-id="${x.id}">
-      <div><div class="mn">${x.nombre}</div><div class="sub">${x.sub}${x.fluvial?' · fluvial ⛟':''}</div></div>
+      <div><div class="mn">${esc(x.nombre)}</div><div class="sub">${esc(x.sub)}${x.fluvial?' · fluvial ⛟':''}</div></div>
       <div class="pts">${sealed?'✓ sellado':'+'+x.pts}</div>
     </div>`;
   }).join("") || `<div style="padding:16px;color:var(--ink-faint)">Sin resultados.</div>`;
@@ -302,7 +309,7 @@ function renderList(q){
       isReplacing = sealedSet.has(id);
       $("pickedName").textContent = selected.nombre;
       if(isReplacing){
-        $("pickedMeta").innerHTML = selected.sub + " · <b style='color:var(--copper)'>Ya sellado — sube una foto mejor para reemplazarla</b>";
+        $("pickedMeta").innerHTML = esc(selected.sub) + " · <b style='color:var(--copper)'>Ya sellado — sube una foto mejor para reemplazarla</b>";
         $("sellarBtn").querySelector(".lbl").textContent = "Reemplazar foto";
       } else {
         $("pickedMeta").textContent = selected.sub + " · +" + selected.pts + " puntos" + (selected.fluvial?" · fluvial":"");

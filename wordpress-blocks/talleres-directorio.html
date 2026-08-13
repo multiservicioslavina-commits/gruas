@@ -1,0 +1,438 @@
+<!-- RIDERA — Widget Talleres CON RESEÑAS
+     Cambios sobre la versión anterior:
+     - Estrella de calificación promedio en cada tarjeta (si tiene reseñas)
+     - Sección de reseñas dentro del modal: promedio, lista y formulario para dejar una nueva
+     - Las reseñas nuevas quedan pendientes de aprobación (se aprueban desde el panel admin)
+-->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+<style>
+#rt-wrap *{box-sizing:border-box;margin:0;padding:0}
+#rt-wrap{background:#0e0e0e;border-radius:12px;overflow:hidden;font-family:sans-serif}
+.rt-filters{padding:1.25rem 2rem;border-bottom:1px solid #181818;display:flex;gap:8px;flex-wrap:wrap}
+.rt-pill{background:#151515;border:1px solid #252525;border-radius:20px;padding:8px 16px;font-size:13px;color:#e6e3de;cursor:pointer;display:flex;align-items:center;gap:5px;transition:all .2s;user-select:none}
+.rt-pill.on{background:#E85D20;border-color:#E85D20;color:#fff}
+.rt-search{padding:1rem 2rem;display:flex;gap:8px;border-bottom:1px solid #181818}
+.rt-search input{flex:1;background:#171717;border:1px solid #2a2a2a;border-radius:8px;padding:12px 16px;font-size:15px;color:#e6e3de;outline:none}
+.rt-search input:focus{border-color:#E85D20}
+.rt-search input::placeholder{color:#666}
+.rt-header{padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between}
+.rt-header span{font-size:14px;color:#e6e3de}
+.rt-sort{background:#151515;border:1px solid #252525;border-radius:6px;padding:7px 12px;font-size:13px;color:#e6e3de;outline:none;cursor:pointer}
+.rt-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:18px;padding:0 2rem 2rem}
+.rt-card{background:#141414;border:1px solid #1e1e1e;border-radius:14px;overflow:hidden;cursor:pointer;transition:border-color .2s,transform .15s;display:flex;flex-direction:column}
+.rt-card:hover{border-color:#E85D20;transform:translateY(-2px)}
+.rt-card-top{height:130px;background:#191919;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
+.rt-card-top img.bg{width:100%;height:100%;object-fit:cover;opacity:.7;position:absolute;inset:0}
+.rt-icon{width:58px;height:58px;background:#1f1f1f;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid #2a2a2a;position:relative;z-index:1}
+.rt-icon i{font-size:26px;color:#E85D20}
+.rt-icon img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+.rt-badge-ok{position:absolute;top:10px;left:10px;background:#0d2318;color:#4ade80;font-size:11px;padding:4px 9px;border-radius:4px;display:flex;align-items:center;gap:3px;z-index:2}
+.rt-body{padding:16px 18px;flex:1}
+.rt-name{font-size:16px;font-weight:600;color:#fff;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rt-rating{display:flex;align-items:center;gap:5px;font-size:12px;color:#facc15;margin-bottom:8px}
+.rt-rating .rt-rating-count{color:#888}
+.rt-zona{font-size:13px;color:#e6e3de;display:flex;align-items:center;gap:5px;margin-bottom:12px}
+.rt-zona i{font-size:14px;color:#E85D20}
+.rt-specs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.rt-spec{display:flex;align-items:center;gap:7px;font-size:13px;color:#e6e3de}
+.rt-spec i{font-size:15px;color:#888;flex-shrink:0}
+.rt-tags{display:flex;flex-wrap:wrap;gap:5px}
+.rt-tag{background:#1a1a1a;color:#e6e3de;font-size:12px;padding:3px 9px;border-radius:4px;border:1px solid #252525}
+.rt-foot{padding:12px 18px;border-top:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between}
+.rt-btn{background:transparent;border:1px solid #2a2a2a;border-radius:6px;padding:6px 14px;font-size:13px;color:#e6e3de;cursor:pointer;transition:all .2s}
+.rt-btn:hover{border-color:#E85D20;color:#E85D20}
+.rt-cta{background:#111;border:2px dashed #E85D20;border-radius:14px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:1.5rem;transition:background .2s}
+.rt-cta:hover{background:#1a1a1a}
+.rt-cta i{font-size:34px;color:#E85D20}
+.rt-cta-title{font-size:15px;font-weight:600;color:#E85D20}
+.rt-cta-sub{font-size:13px;color:#e6e3de;text-align:center;line-height:1.5}
+.rt-empty{grid-column:1/-1;text-align:center;padding:3rem;color:#e6e3de;font-size:15px}
+.rt-spinner{width:32px;height:32px;border:3px solid #222;border-top-color:#E85D20;border-radius:50%;animation:spin .7s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.rt-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:99999;align-items:center;justify-content:center}
+.rt-overlay.open{display:flex}
+.rt-modal{background:#141414;border:1px solid #2a2a2a;border-radius:16px;padding:2rem;max-width:480px;width:90%;position:relative;max-height:90vh;overflow-y:auto}
+.rt-modal-x{position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:20px;cursor:pointer}
+.rt-modal-logo{width:72px;height:72px;border-radius:50%;object-fit:cover;border:2px solid #2a2a2a;margin-bottom:14px}
+.rt-modal h3{color:#fff;font-size:20px;margin-bottom:4px}
+.rt-modal-zona{color:#E85D20;font-size:14px;margin-bottom:1.2rem}
+.rt-modal-row{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;font-size:14px;color:#e6e3de}
+.rt-modal-row i{color:#E85D20;font-size:17px;flex-shrink:0;margin-top:1px}
+.rt-modal-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:1.2rem}
+.rt-modal-fotos{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:1rem}
+.rt-modal-fotos img{width:100%;aspect-ratio:1;object-fit:cover;border-radius:8px}
+
+.rtm-resenas{margin-top:1.5rem;padding-top:1.2rem;border-top:1px solid #222}
+.rtm-resenas-titulo{font-size:14px;font-weight:700;color:#fff;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between}
+.rtm-resenas-avg{font-size:13px;color:#facc15;font-weight:400}
+.rtm-resena-item{background:#191919;border-radius:8px;padding:10px 12px;margin-bottom:8px}
+.rtm-resena-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.rtm-resena-autor{font-size:13px;font-weight:600;color:#fff}
+.rtm-resena-stars{font-size:12px;color:#facc15}
+.rtm-resena-texto{font-size:12.5px;color:#bbb;line-height:1.5}
+.rtm-resenas-empty{font-size:13px;color:#888;margin-bottom:10px}
+.rtm-resena-form{margin-top:12px}
+.rtm-star-picker{display:flex;gap:5px;margin-bottom:8px;font-size:22px;cursor:pointer}
+.rtm-star-picker span{color:#333;transition:color .15s}
+.rtm-star-picker span.filled{color:#facc15}
+.rtm-resena-form input,.rtm-resena-form textarea{width:100%;background:#171717;border:1px solid #2a2a2a;border-radius:8px;color:#e6e3de;font-family:inherit;font-size:13px;padding:9px 11px;margin-bottom:8px;outline:none}
+.rtm-resena-form textarea{resize:vertical;min-height:60px}
+.rtm-resena-form input:focus,.rtm-resena-form textarea:focus{border-color:#E85D20}
+.rtm-resena-btn{background:#E85D20;color:#fff;border:none;padding:9px 16px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer}
+.rtm-resena-btn:hover{background:#c94e18}
+.rtm-resena-status{font-size:12.5px;margin-top:8px;display:none}
+.rtm-resena-status.visible{display:block}
+.rtm-resena-status.ok{color:#4ade80}
+.rtm-resena-status.err{color:#f87171}
+
+@media(max-width:600px){
+  .rt-filters{padding:1rem 1.1rem;gap:7px}
+  .rt-search{padding:1rem 1.1rem}
+  .rt-header{padding:1rem 1.1rem}
+  .rt-grid{grid-template-columns:1fr;gap:16px;padding:0 1.1rem 1.5rem}
+  .rt-card-top{height:150px}
+  .rt-modal{padding:1.5rem}
+}
+</style>
+
+<div id="rt-wrap">
+  <div class="rt-search">
+    <input id="rt-input" type="text" placeholder="Buscar por nombre, ciudad o servicio...">
+  </div>
+  <div class="rt-filters" id="rt-filters">
+    <div class="rt-pill on" data-f="todos"><i class="ti ti-adjustments-horizontal"></i> Todos</div>
+    <div class="rt-pill" data-f="preparación"><i class="ti ti-engine"></i> Preparación</div>
+    <div class="rt-pill" data-f="mantenimiento"><i class="ti ti-tool"></i> Mantenimiento</div>
+    <div class="rt-pill" data-f="frenos"><i class="ti ti-settings-2"></i> Frenos</div>
+    <div class="rt-pill" data-f="suspensión"><i class="ti ti-car-crash"></i> Suspensión</div>
+    <div class="rt-pill" data-f="eléctrico"><i class="ti ti-bolt"></i> Eléctrico</div>
+    <div class="rt-pill" data-f="escapes"><i class="ti ti-flame"></i> Escapes</div>
+  </div>
+  <div class="rt-header">
+    <span id="rt-count">Cargando...</span>
+    <select class="rt-sort" id="rt-sort">
+      <option value="reciente">Más recientes</option>
+      <option value="az">A–Z</option>
+      <option value="rating">Mejor calificados</option>
+    </select>
+  </div>
+  <div class="rt-grid" id="rt-grid">
+    <div class="rt-empty"><div class="rt-spinner"></div>Cargando talleres...</div>
+  </div>
+</div>
+
+<div class="rt-overlay" id="rt-overlay">
+  <div class="rt-modal">
+    <button class="rt-modal-x" id="rt-close"><i class="ti ti-x"></i></button>
+    <div id="rtm-logo-wrap"></div>
+    <h3 id="m-nombre"></h3>
+    <div class="rt-modal-zona" id="m-zona"></div>
+    <div class="rt-modal-row"><i class="ti ti-map-pin"></i><span id="m-direccion"></span></div>
+    <div class="rt-modal-row"><i class="ti ti-phone"></i><span id="m-tel"></span></div>
+    <div class="rt-modal-row" id="m-email-row"><i class="ti ti-mail"></i><span id="m-email"></span></div>
+    <div class="rt-modal-row" id="m-ig-row"><i class="ti ti-brand-instagram"></i><span id="m-ig"></span></div>
+    <div class="rt-modal-row" id="m-servicios-row"><i class="ti ti-tool"></i><span id="m-servicios"></span></div>
+    <div class="rt-modal-row" id="m-tecnicos-row"><i class="ti ti-users"></i><span id="m-tecnicos"></span></div>
+    <div class="rt-modal-tags" id="m-marcas"></div>
+    <div class="rt-modal-fotos" id="m-fotos"></div>
+
+    <div class="rtm-resenas">
+      <div class="rtm-resenas-titulo">
+        <span>Reseñas</span>
+        <span class="rtm-resenas-avg" id="rtm-resenas-avg"></span>
+      </div>
+      <div id="rtm-resenas-empty" class="rtm-resenas-empty" style="display:none;">Todavía no tiene reseñas. ¡Sé el primero!</div>
+      <div id="rtm-resenas-list"></div>
+
+      <div class="rtm-resena-form">
+        <div class="rtm-star-picker" id="rtm-star-picker">
+          <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
+        </div>
+        <input type="text" id="rtm-resena-nombre" placeholder="Tu nombre" maxlength="60">
+        <textarea id="rtm-resena-comentario" placeholder="¿Cómo fue tu experiencia?" maxlength="500"></textarea>
+        <button class="rtm-resena-btn" id="rtm-resena-enviar">Enviar reseña</button>
+        <div class="rtm-resena-status" id="rtm-resena-status"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+  function sbHeaders(extra) {
+    return Object.assign({
+      'apikey':        SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY
+    }, extra || {});
+  }
+
+  function flat(row){
+    var d = row.datos || {};
+    return Object.assign({}, d, row);
+  }
+
+  function icono(srv){
+    if(!srv) return 'ti-tool';
+    var s = srv.toLowerCase();
+    if(s.includes('preparac')) return 'ti-engine';
+    if(s.includes('eléctr')||s.includes('electr')) return 'ti-bolt';
+    if(s.includes('escape')) return 'ti-flame';
+    if(s.includes('suspens')) return 'ti-car-crash';
+    if(s.includes('freno')) return 'ti-settings-2';
+    return 'ti-tool';
+  }
+
+  function esc(s){ return (s||'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function starsHtml(avg) {
+    var full = Math.round(avg);
+    return '★'.repeat(full) + '☆'.repeat(5 - full);
+  }
+
+  function card(t){
+    var marcas = (t.marcas||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    var zona   = [t.barrio, t.ciudad].filter(Boolean).join(', ');
+    var bgImg  = t.foto1_url ? '<img class="bg" src="'+esc(t.foto1_url)+'" alt="" loading="lazy">' : '';
+    var iconH  = t.logo_url ? '<img src="'+esc(t.logo_url)+'" alt="logo">' : '<i class="ti '+icono(t.servicios)+'"></i>';
+    var ratingHtml = t.reviewCount
+      ? '<div class="rt-rating">'+starsHtml(t.avgRating)+' <span class="rt-rating-count">'+t.avgRating.toFixed(1)+' ('+t.reviewCount+')</span></div>'
+      : '';
+    return '<div class="rt-card"'+
+      ' data-id="'+t.id+'"'+
+      ' data-nombre="'+esc(t.nombre)+'"'+
+      ' data-zona="'+esc(zona)+'"'+
+      ' data-tel="'+esc(t.telefono)+'"'+
+      ' data-email="'+esc(t.email)+'"'+
+      ' data-ig="'+esc(t.instagram)+'"'+
+      ' data-servicios="'+esc(t.servicios)+'"'+
+      ' data-tecnicos="'+esc(t.tecnicos)+'"'+
+      ' data-marcas="'+esc(t.marcas)+'"'+
+      ' data-direccion="'+esc(t.direccion)+'"'+
+      ' data-experiencia="'+esc(t.experiencia)+'"'+
+      ' data-logo="'+esc(t.logo_url)+'"'+
+      ' data-foto1="'+esc(t.foto1_url)+'"'+
+      ' data-foto2="'+esc(t.foto2_url)+'"'+
+      ' data-foto3="'+esc(t.foto3_url)+'"'+
+      ' data-avg="'+(t.avgRating||0)+'"'+
+      ' data-count="'+(t.reviewCount||0)+'"'+
+      '>'+
+      '<div class="rt-card-top">'+bgImg+
+        '<div class="rt-icon">'+iconH+'</div>'+
+        '<div class="rt-badge-ok"><i class="ti ti-check"></i> Verificado</div>'+
+      '</div>'+
+      '<div class="rt-body">'+
+        '<div class="rt-name">'+esc(t.nombre||'Sin nombre')+'</div>'+
+        ratingHtml+
+        '<div class="rt-zona"><i class="ti ti-map-pin"></i> '+(zona||'–')+'</div>'+
+        '<div class="rt-specs">'+
+          '<div class="rt-spec"><i class="ti ti-tool"></i> '+esc((t.servicios||'Consultar').substring(0,35))+'</div>'+
+          '<div class="rt-spec"><i class="ti ti-phone"></i> '+esc(t.telefono||'–')+'</div>'+
+        '</div>'+
+        '<div class="rt-tags">'+marcas.slice(0,3).map(function(m){return '<span class="rt-tag">'+esc(m)+'</span>';}).join('')+'</div>'+
+      '</div>'+
+      '<div class="rt-foot">'+
+        '<span style="font-size:12px;color:#999">'+esc(t.experiencia||'')+'</span>'+
+        '<button class="rt-btn">Ver más</button>'+
+      '</div>'+
+    '</div>';
+  }
+
+  function cta(){
+    return '<div class="rt-cta" onclick="window.location.href=\'https://ridera.com.co/registrar-talleres/\'">'+
+      '<i class="ti ti-plus"></i>'+
+      '<div class="rt-cta-title">Registrar mi taller</div>'+
+      '<div class="rt-cta-sub">¿Tenés un taller especializado?<br>Aparecé gratis en el directorio</div>'+
+    '</div>';
+  }
+
+  var todos=[], filtro='todos', busq='', orden='reciente';
+
+  function visibles(){
+    var l = todos.slice();
+    if(filtro!=='todos') l=l.filter(function(t){return (t.servicios||'').toLowerCase().includes(filtro);});
+    if(busq){
+      var q=busq.toLowerCase();
+      l=l.filter(function(t){
+        return (t.nombre||'').toLowerCase().includes(q)||
+               (t.ciudad||'').toLowerCase().includes(q)||
+               (t.barrio||'').toLowerCase().includes(q)||
+               (t.servicios||'').toLowerCase().includes(q)||
+               (t.marcas||'').toLowerCase().includes(q);
+      });
+    }
+    if(orden==='az') l.sort(function(a,b){return(a.nombre||'').localeCompare(b.nombre||'');});
+    if(orden==='rating') l.sort(function(a,b){return (b.avgRating||0)-(a.avgRating||0);});
+    return l;
+  }
+
+  function render(){
+    var grid  = document.getElementById('rt-grid');
+    var lista = visibles();
+    document.getElementById('rt-count').textContent =
+      lista.length+' taller'+(lista.length!==1?'es':'')+' encontrado'+(lista.length!==1?'s':'');
+    grid.innerHTML = lista.map(card).join('')+cta();
+    grid.querySelectorAll('.rt-card').forEach(function(c){
+      c.addEventListener('click',function(){modal(c.dataset);});
+      c.querySelector('.rt-btn').addEventListener('click',function(ev){ev.stopPropagation();modal(c.dataset);});
+    });
+  }
+
+  var modalTallerId = null;
+  var modalCalificacion = 0;
+
+  function modal(d){
+    modalTallerId = d.id;
+    modalCalificacion = 0;
+    document.querySelectorAll('#rtm-star-picker span').forEach(function(s){ s.classList.remove('filled'); });
+    document.getElementById('rtm-resena-nombre').value = '';
+    document.getElementById('rtm-resena-comentario').value = '';
+    document.getElementById('rtm-resena-status').className = 'rtm-resena-status';
+
+    var logoWrap = document.getElementById('rtm-logo-wrap');
+    logoWrap.innerHTML = d.logo ? '<img class="rt-modal-logo" src="'+esc(d.logo)+'" alt="logo">' : '';
+    document.getElementById('m-nombre').textContent    = d.nombre;
+    document.getElementById('m-zona').textContent      = d.zona;
+    document.getElementById('m-direccion').textContent = d.direccion||'–';
+    document.getElementById('m-tel').textContent       = d.tel||'–';
+    var eEl=document.getElementById('m-email'); eEl.textContent=d.email||'';
+    document.getElementById('m-email-row').style.display=d.email?'':'none';
+    var igEl=document.getElementById('m-ig'); igEl.textContent=d.ig||'';
+    document.getElementById('m-ig-row').style.display=d.ig?'':'none';
+    var sEl=document.getElementById('m-servicios'); sEl.textContent=d.servicios||'';
+    document.getElementById('m-servicios-row').style.display=d.servicios?'':'none';
+    var tEl=document.getElementById('m-tecnicos'); tEl.textContent=d.tecnicos||'';
+    document.getElementById('m-tecnicos-row').style.display=d.tecnicos?'':'none';
+    var marcas=(d.marcas||'').split(',').map(function(s){return s.trim();}).filter(Boolean);
+    document.getElementById('m-marcas').innerHTML=marcas.map(function(m){return '<span class="rt-tag">'+esc(m)+'</span>';}).join('');
+    var fotos=[d.foto1,d.foto2,d.foto3].filter(Boolean);
+    document.getElementById('m-fotos').innerHTML=fotos.map(function(f){return '<img src="'+esc(f)+'" alt="" loading="lazy">';}).join('');
+
+    cargarResenas(d.id);
+
+    document.getElementById('rt-overlay').classList.add('open');
+  }
+
+  function cargarResenas(tallerId) {
+    var listEl  = document.getElementById('rtm-resenas-list');
+    var emptyEl = document.getElementById('rtm-resenas-empty');
+    var avgEl   = document.getElementById('rtm-resenas-avg');
+    listEl.innerHTML = '';
+    emptyEl.style.display = 'none';
+    avgEl.textContent = '';
+
+    fetch(SUPABASE_URL + '/rest/v1/taller_resenas?taller_id=eq.' + encodeURIComponent(tallerId) +
+      '&aprobado=eq.true&select=nombre_autor,calificacion,comentario,created_at&order=created_at.desc',
+      { headers: sbHeaders() }
+    )
+    .then(function(r){ return r.ok ? r.json() : []; })
+    .then(function(resenas){
+      if (!resenas.length) {
+        emptyEl.style.display = 'block';
+        return;
+      }
+      var avg = resenas.reduce(function(s,r){ return s + r.calificacion; }, 0) / resenas.length;
+      avgEl.textContent = starsHtml(avg) + ' ' + avg.toFixed(1) + ' (' + resenas.length + ')';
+      listEl.innerHTML = resenas.map(function(r){
+        return '<div class="rtm-resena-item">'+
+          '<div class="rtm-resena-head">'+
+            '<span class="rtm-resena-autor">'+esc(r.nombre_autor)+'</span>'+
+            '<span class="rtm-resena-stars">'+starsHtml(r.calificacion)+'</span>'+
+          '</div>'+
+          (r.comentario ? '<div class="rtm-resena-texto">'+esc(r.comentario)+'</div>' : '')+
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){ /* silencioso: no bloquea el resto del modal */ });
+  }
+
+  document.getElementById('rtm-star-picker').addEventListener('click', function(e){
+    var val = e.target.dataset.val;
+    if (!val) return;
+    modalCalificacion = parseInt(val);
+    document.querySelectorAll('#rtm-star-picker span').forEach(function(s){
+      s.classList.toggle('filled', parseInt(s.dataset.val) <= modalCalificacion);
+    });
+  });
+
+  document.getElementById('rtm-resena-enviar').addEventListener('click', function(){
+    var statusEl  = document.getElementById('rtm-resena-status');
+    var nombre    = document.getElementById('rtm-resena-nombre').value.trim();
+    var comentario= document.getElementById('rtm-resena-comentario').value.trim();
+
+    if (!nombre || !modalCalificacion) {
+      statusEl.className = 'rtm-resena-status visible err';
+      statusEl.textContent = 'Escribe tu nombre y selecciona una calificación.';
+      return;
+    }
+
+    fetch(SUPABASE_URL + '/rest/v1/taller_resenas', {
+      method: 'POST',
+      headers: sbHeaders({ 'Content-Type': 'application/json', 'Prefer': 'return=minimal' }),
+      body: JSON.stringify({
+        taller_id: modalTallerId,
+        nombre_autor: nombre,
+        calificacion: modalCalificacion,
+        comentario: comentario || null
+      })
+    })
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      statusEl.className = 'rtm-resena-status visible ok';
+      statusEl.textContent = '¡Gracias! Tu reseña se publicará después de ser revisada.';
+      document.getElementById('rtm-resena-nombre').value = '';
+      document.getElementById('rtm-resena-comentario').value = '';
+      modalCalificacion = 0;
+      document.querySelectorAll('#rtm-star-picker span').forEach(function(s){ s.classList.remove('filled'); });
+    })
+    .catch(function(err){
+      statusEl.className = 'rtm-resena-status visible err';
+      statusEl.textContent = 'Error al enviar: ' + err.message;
+    });
+  });
+
+  document.getElementById('rt-close').onclick=function(){document.getElementById('rt-overlay').classList.remove('open');};
+  document.getElementById('rt-overlay').onclick=function(e){if(e.target===e.currentTarget)e.target.classList.remove('open');};
+  document.getElementById('rt-filters').addEventListener('click',function(e){
+    var p=e.target.closest('.rt-pill');if(!p)return;
+    document.querySelectorAll('.rt-pill').forEach(function(x){x.classList.remove('on');});
+    p.classList.add('on');filtro=p.dataset.f;render();
+  });
+  document.getElementById('rt-input').addEventListener('input',function(e){busq=e.target.value;render();});
+  document.getElementById('rt-sort').addEventListener('change',function(e){orden=e.target.value;render();});
+
+  // Cargar talleres y, en paralelo, las reseñas aprobadas (para el promedio en cada tarjeta)
+  Promise.all([
+    fetch(SUPABASE_URL+'/rest/v1/talleres?aprobado=eq.true&select=*&order=created_at.desc', { headers: sbHeaders() })
+      .then(function(r){ if(!r.ok) throw new Error('HTTP '+r.status); return r.json(); }),
+    fetch(SUPABASE_URL+'/rest/v1/taller_resenas?aprobado=eq.true&select=taller_id,calificacion', { headers: sbHeaders() })
+      .then(function(r){ return r.ok ? r.json() : []; })
+  ])
+  .then(function(results){
+    var data = results[0];
+    var resenas = results[1];
+
+    var ratingMap = {};
+    resenas.forEach(function(r){
+      if (!ratingMap[r.taller_id]) ratingMap[r.taller_id] = { sum: 0, count: 0 };
+      ratingMap[r.taller_id].sum += r.calificacion;
+      ratingMap[r.taller_id].count += 1;
+    });
+
+    todos = data.map(function(row){
+      var t = flat(row);
+      var rm = ratingMap[t.id];
+      t.avgRating = rm ? rm.sum / rm.count : 0;
+      t.reviewCount = rm ? rm.count : 0;
+      return t;
+    });
+    render();
+  })
+  .catch(function(err){
+    document.getElementById('rt-grid').innerHTML='<div class="rt-empty" style="color:#E85D20">⚠️ No se pudo cargar. '+err.message+'</div>';
+  });
+})();
+</script>

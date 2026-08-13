@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title id="pageTitle">Almacén — Ridera</title>
+<meta name="description" id="pageDesc" content="Catálogo de productos">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --orange: #E85D20;
+  --carbon: #0D0F12;
+  --carbon2: #141720;
+  --carbon3: #1E2229;
+  --text-muted: rgba(255,255,255,0.82);
+  --text-dim: rgba(255,255,255,0.48);
+  --border: rgba(255,255,255,0.07);
+  --border-hi: rgba(255,255,255,0.13);
+}
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--carbon); color: #fff; min-height: 100vh; }
+
+.topbar { background: rgba(13,15,18,0.97); backdrop-filter: blur(20px); border-bottom: 0.5px solid var(--border); padding: 0 24px; height: 60px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
+.topbar-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--orange); font-size: 1.1rem; }
+.topbar-back { background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 1.2rem; padding: 0.5rem; }
+.topbar-back:hover { color: var(--orange); }
+
+.hero { padding: 60px 24px 40px; text-align: center; background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(232,93,32,0.1) 0%, transparent 70%); }
+.hero-name { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(32px, 8vw, 56px); font-weight: 900; text-transform: uppercase; line-height: 0.95; margin-bottom: 12px; }
+.hero-city { font-size: 16px; color: var(--text-muted); margin-bottom: 24px; }
+.hero-contact { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; font-size: 14px; }
+.hero-contact a { color: var(--orange); text-decoration: none; }
+.hero-contact a:hover { text-decoration: underline; }
+
+.container { max-width: 1000px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+
+.section-title { font-family: 'Barlow Condensed', sans-serif; font-size: clamp(24px, 5vw, 36px); font-weight: 900; text-transform: uppercase; margin-bottom: 24px; }
+
+.filter-bar { display: flex; gap: 8px; margin-bottom: 2rem; flex-wrap: wrap; }
+.filter-btn { padding: 0.5rem 1rem; border-radius: 20px; border: 1px solid var(--border-hi); background: transparent; color: var(--text-dim); cursor: pointer; font-size: 0.85rem; font-weight: 600; transition: all 0.2s; }
+.filter-btn.active { background: var(--orange); border-color: var(--orange); color: #fff; }
+.filter-btn:hover { border-color: var(--orange); }
+
+.product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+.product-card { background: var(--carbon3); border: 0.5px solid var(--border-hi); border-radius: 12px; padding: 1.5rem; transition: border-color 0.2s, transform 0.2s; }
+.product-card:hover { border-color: rgba(232,93,32,0.3); transform: translateY(-2px); }
+.product-card .cat { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--orange); margin-bottom: 8px; }
+.product-card h3 { font-size: 1rem; font-weight: 700; margin-bottom: 8px; }
+.product-card .desc { font-size: 0.85rem; color: var(--text-dim); line-height: 1.5; margin-bottom: 1rem; }
+.product-card .price { font-size: 1.4rem; font-weight: 900; color: var(--orange); margin-bottom: 0.75rem; }
+.product-card .stock { font-size: 0.8rem; color: var(--text-dim); }
+.product-card .stock.low { color: #f87171; }
+.product-card .stock.out { color: #f87171; }
+
+.empty { text-align: center; padding: 3rem 1rem; color: var(--text-dim); }
+.empty-icon { font-size: 3rem; margin-bottom: 1rem; }
+
+.loading { text-align: center; padding: 2rem; color: var(--text-dim); }
+.spinner { display: inline-block; width: 24px; height: 24px; border: 2px solid rgba(255,255,255,0.1); border-top-color: var(--orange); border-radius: 50%; animation: spin 0.7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+footer { background: var(--carbon2); border-top: 0.5px solid var(--border); padding: 24px; text-align: center; font-size: 12px; color: var(--text-dim); margin-top: 3rem; }
+footer a { color: var(--orange); text-decoration: none; }
+
+.resenas-section { margin-top: 3rem; padding-top: 2rem; border-top: 0.5px solid var(--border); }
+.resenas-summary { display: flex; align-items: center; gap: 12px; margin-bottom: 1.5rem; }
+.resenas-avg { font-size: 2rem; font-weight: 900; font-family: 'Barlow Condensed', sans-serif; }
+.resenas-stars { color: var(--orange); font-size: 1.1rem; letter-spacing: 2px; }
+.resenas-count { color: var(--text-dim); font-size: 0.85rem; }
+.resena-card { background: var(--carbon3); border: 0.5px solid var(--border-hi); border-radius: 10px; padding: 1rem 1.25rem; margin-bottom: 0.75rem; }
+.resena-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+.resena-autor { font-weight: 700; font-size: 0.9rem; }
+.resena-stars { color: var(--orange); font-size: 0.9rem; }
+.resena-fecha { color: var(--text-dim); font-size: 0.75rem; }
+.resena-texto { color: var(--text-muted); font-size: 0.88rem; line-height: 1.5; }
+.resena-empty { color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1.5rem; }
+
+.resena-form { background: var(--carbon3); border: 0.5px solid var(--border-hi); border-radius: 12px; padding: 1.5rem; margin-top: 1.5rem; }
+.resena-form h4 { font-size: 1rem; margin-bottom: 1rem; }
+.star-picker { display: flex; gap: 6px; margin-bottom: 1rem; font-size: 1.6rem; cursor: pointer; }
+.star-picker span { color: var(--border-hi); transition: color 0.15s; }
+.star-picker span.filled { color: var(--orange); }
+.resena-form input, .resena-form textarea { width: 100%; background: var(--carbon2); border: 0.5px solid var(--border-hi); border-radius: 8px; color: #fff; font-family: inherit; font-size: 0.9rem; padding: 10px 12px; margin-bottom: 0.75rem; }
+.resena-form textarea { resize: vertical; min-height: 70px; }
+.resena-form button { background: var(--orange); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-size: 0.9rem; }
+.resena-form button:hover { background: #c94e18; }
+.resena-status { font-size: 0.85rem; margin-top: 0.75rem; display: none; }
+.resena-status.visible { display: block; }
+.resena-status.success { color: #4ade80; }
+.resena-status.error { color: #f87171; }
+
+@media (max-width: 700px) {
+  .product-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <button class="topbar-back" onclick="history.back()">← Volver</button>
+  <div class="topbar-logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L22 8V16C22 20.4183 17.9706 24 12 24C6.02944 24 2 20.4183 2 16V8L12 2Z" stroke="currentColor" stroke-width="1.5" fill="none" style="color:currentColor"/>
+    </svg>
+    <span>RIDERA</span>
+  </div>
+  <div></div>
+</nav>
+
+<section class="hero">
+  <h1 class="hero-name" id="almacenNombre">Cargando...</h1>
+  <p class="hero-city" id="almacenCiudad"></p>
+  <div class="hero-contact">
+    <span id="almacenTel"></span>
+    <span id="almacenEmail"></span>
+  </div>
+</section>
+
+<div class="container">
+  <h2 class="section-title">Catálogo</h2>
+
+  <div class="filter-bar" id="filterBar"></div>
+
+  <div id="productList" class="product-grid"></div>
+  <div id="emptyState" class="empty" style="display: none;">
+    <div class="empty-icon">📦</div>
+    <p>Este almacén aún no tiene productos disponibles.</p>
+  </div>
+  <div id="loadingState" class="loading">
+    <div class="spinner"></div>
+    <p>Cargando catálogo...</p>
+  </div>
+
+  <div class="resenas-section" id="resenasSection" style="display:none;">
+    <h2 class="section-title">Reseñas</h2>
+    <div class="resenas-summary" id="resenasSummary" style="display:none;">
+      <div class="resenas-avg" id="resenasAvg"></div>
+      <div>
+        <div class="resenas-stars" id="resenasStars"></div>
+        <div class="resenas-count" id="resenasCount"></div>
+      </div>
+    </div>
+    <p class="resena-empty" id="resenasEmpty" style="display:none;">Este almacén todavía no tiene reseñas. ¡Sé el primero!</p>
+    <div id="resenasList"></div>
+
+    <div class="resena-form">
+      <h4>Deja tu reseña</h4>
+      <div class="star-picker" id="starPicker">
+        <span data-val="1">★</span><span data-val="2">★</span><span data-val="3">★</span><span data-val="4">★</span><span data-val="5">★</span>
+      </div>
+      <input type="text" id="resenaNombre" placeholder="Tu nombre" maxlength="60">
+      <textarea id="resenaComentario" placeholder="¿Cómo fue tu experiencia?" maxlength="500"></textarea>
+      <button onclick="enviarResena()">Enviar reseña</button>
+      <div class="resena-status" id="resenaStatus"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2024 Ridera — Directorio de almacenes y repuestos.
+  <a href="/">Volver al inicio</a>
+</footer>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let sbClient = null;
+let currentAlmacen = null;
+let allProductos = [];
+let selectedCategory = null;
+
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, ANON_KEY);
+  }
+  return sbClient;
+}
+
+async function init() {
+  const params = new URLSearchParams(window.location.search);
+  const slug = params.get('slug');
+
+  if (!slug) {
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('loadingState').style.display = 'none';
+    return;
+  }
+
+  const sb = await initSupabase();
+
+  const { data: almacen, error: almError } = await sb
+    .from('almacenes')
+    .select('*')
+    .eq('slug', decodeURIComponent(slug))
+    .eq('status', 'activo')
+    .single();
+
+  if (almError || !almacen) {
+    document.getElementById('emptyState').style.display = 'block';
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('almacenNombre').textContent = 'Almacén no encontrado';
+    return;
+  }
+
+  currentAlmacen = almacen;
+  document.title = `${almacen.nombre} — Ridera Almacenes`;
+  document.getElementById('pageTitle').textContent = `${almacen.nombre} — Ridera`;
+  document.getElementById('pageDesc').content = `Catálogo de ${almacen.nombre} en ${almacen.ciudad}`;
+
+  document.getElementById('almacenNombre').textContent = almacen.nombre;
+  document.getElementById('almacenCiudad').textContent = almacen.ciudad;
+  if (almacen.telefono) {
+    document.getElementById('almacenTel').innerHTML = `📞 <a href="https://wa.me/${almacen.telefono.replace(/\D/g, '')}">${almacen.telefono}</a>`;
+  }
+  if (almacen.email) {
+    document.getElementById('almacenEmail').innerHTML = `📧 <a href="mailto:${almacen.email}">${almacen.email}</a>`;
+  }
+
+  const { data: productos, error: prodError } = await sb
+    .from('almacen_productos')
+    .select('*')
+    .eq('almacen_id', almacen.id)
+    .order('categoria', { ascending: true });
+
+  if (prodError) {
+    console.error(prodError);
+    return;
+  }
+
+  allProductos = productos || [];
+
+  if (allProductos.length === 0) {
+    document.getElementById('emptyState').style.display = 'block';
+  } else {
+    const categories = [...new Set(allProductos.map(p => p.categoria))];
+    renderFilters(categories);
+    renderProducts(allProductos);
+  }
+
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('resenasSection').style.display = 'block';
+  loadResenas();
+}
+
+let resenaCalificacion = 0;
+
+document.getElementById('starPicker').addEventListener('click', (e) => {
+  const val = e.target.dataset.val;
+  if (!val) return;
+  resenaCalificacion = parseInt(val);
+  document.querySelectorAll('#starPicker span').forEach(s => {
+    s.classList.toggle('filled', parseInt(s.dataset.val) <= resenaCalificacion);
+  });
+});
+
+async function loadResenas() {
+  const sb = await initSupabase();
+  const { data, error } = await sb
+    .from('almacen_resenas')
+    .select('*')
+    .eq('almacen_id', currentAlmacen.id)
+    .eq('aprobado', true)
+    .order('created_at', { ascending: false });
+
+  if (error) { console.error(error); return; }
+
+  const list = document.getElementById('resenasList');
+  const empty = document.getElementById('resenasEmpty');
+  const summary = document.getElementById('resenasSummary');
+
+  if (!data || !data.length) {
+    empty.style.display = 'block';
+    summary.style.display = 'none';
+    list.innerHTML = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  summary.style.display = 'flex';
+
+  const avg = data.reduce((sum, r) => sum + r.calificacion, 0) / data.length;
+  document.getElementById('resenasAvg').textContent = avg.toFixed(1);
+  document.getElementById('resenasStars').textContent = '★'.repeat(Math.round(avg)) + '☆'.repeat(5 - Math.round(avg));
+  document.getElementById('resenasCount').textContent = `${data.length} reseña${data.length === 1 ? '' : 's'}`;
+
+  list.innerHTML = data.map(r => `
+    <div class="resena-card">
+      <div class="resena-head">
+        <span class="resena-autor">${escapeHtmlLocal(r.nombre_autor)}</span>
+        <span class="resena-stars">${'★'.repeat(r.calificacion)}${'☆'.repeat(5 - r.calificacion)}</span>
+      </div>
+      <div class="resena-fecha">${new Date(r.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+      ${r.comentario ? `<p class="resena-texto">${escapeHtmlLocal(r.comentario)}</p>` : ''}
+    </div>
+  `).join('');
+}
+
+function escapeHtmlLocal(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
+async function enviarResena() {
+  const nombre = document.getElementById('resenaNombre').value.trim();
+  const comentario = document.getElementById('resenaComentario').value.trim();
+  const statusEl = document.getElementById('resenaStatus');
+
+  if (!nombre || !resenaCalificacion) {
+    statusEl.className = 'resena-status visible error';
+    statusEl.textContent = 'Escribe tu nombre y selecciona una calificación.';
+    return;
+  }
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.from('almacen_resenas').insert({
+      almacen_id: currentAlmacen.id,
+      nombre_autor: nombre,
+      calificacion: resenaCalificacion,
+      comentario: comentario || null,
+    });
+    if (error) throw error;
+
+    statusEl.className = 'resena-status visible success';
+    statusEl.textContent = '¡Gracias! Tu reseña se publicará después de ser revisada.';
+    document.getElementById('resenaNombre').value = '';
+    document.getElementById('resenaComentario').value = '';
+    resenaCalificacion = 0;
+    document.querySelectorAll('#starPicker span').forEach(s => s.classList.remove('filled'));
+  } catch (err) {
+    statusEl.className = 'resena-status visible error';
+    statusEl.textContent = 'Error al enviar: ' + err.message;
+  }
+}
+
+function renderFilters(categories) {
+  const bar = document.getElementById('filterBar');
+  bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory(null)">Todos (${allProductos.length})</button>` +
+    categories.map(cat => {
+      const count = allProductos.filter(p => p.categoria === cat).length;
+      return `<button class="filter-btn" onclick="filterCategory('${cat}')">${cat} (${count})</button>`;
+    }).join('');
+}
+
+function filterCategory(cat) {
+  selectedCategory = cat;
+  const filtered = cat ? allProductos.filter(p => p.categoria === cat) : allProductos;
+  renderProducts(filtered);
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+}
+
+function renderProducts(products) {
+  const list = document.getElementById('productList');
+  if (!products.length) {
+    list.innerHTML = '';
+    return;
+  }
+  list.innerHTML = products.map(p => {
+    const stockClass = p.stock === 0 ? 'out' : p.stock && p.stock < 5 ? 'low' : '';
+    const stockText = p.stock === null ? 'Disponible' : p.stock === 0 ? 'Agotado' : `${p.stock} en stock`;
+    return `<div class="product-card">
+      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">` : ''}
+      <div class="cat">${p.categoria}</div>
+      <h3>${p.nombre}</h3>
+      ${p.descripcion ? `<p class="desc">${p.descripcion}</p>` : ''}
+      <div class="price">$${parseFloat(p.precio).toLocaleString('es-CO')}</div>
+      <div class="stock ${stockClass}">${stockText}</div>
+    </div>`;
+  }).join('');
+}
+
+init();
+</script>
+</body>
+</html>

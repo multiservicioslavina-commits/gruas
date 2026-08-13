@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ridera Club — Admin</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #242836;
+    --border: #2e3345;
+    --text: #e8e9ed;
+    --text2: #8b8fa3;
+    --accent: #f97316;
+    --accent2: #fb923c;
+    --green: #22c55e;
+    --red: #ef4444;
+    --blue: #3b82f6;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 24px;
+    display: flex; align-items: center; gap: 16px;
+  }
+  .header h1 { font-size: 20px; font-weight: 600; }
+  .header h1 span { color: var(--accent); }
+  .header .club-name { color: var(--text2); font-size: 14px; margin-left: auto; }
+
+  .container { max-width: 900px; margin: 0 auto; padding: 24px 16px; }
+
+  .tabs {
+    display: flex; gap: 4px; background: var(--surface); border-radius: 10px; padding: 4px; margin-bottom: 24px;
+  }
+  .tab {
+    flex: 1; padding: 10px; text-align: center; border-radius: 8px; cursor: pointer;
+    font-size: 14px; font-weight: 500; color: var(--text2); transition: all .2s;
+  }
+  .tab.active { background: var(--accent); color: #fff; }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; margin-bottom: 16px;
+  }
+  .card h2 { font-size: 16px; margin-bottom: 4px; }
+  .card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
+
+  textarea {
+    width: 100%; min-height: 160px; padding: 12px; border-radius: 8px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    font-family: 'SF Mono', 'Consolas', monospace; font-size: 13px; resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: var(--accent); }
+  textarea::placeholder { color: var(--text2); }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px; padding: 10px 20px;
+    border-radius: 8px; font-size: 14px; font-weight: 500; cursor: pointer;
+    border: none; transition: all .2s;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text2); }
+  .btn-outline:hover { border-color: var(--text2); color: var(--text); }
+  .btn-danger { background: var(--red); color: #fff; }
+  .btn-sm { padding: 6px 12px; font-size: 12px; }
+  .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+  .actions { display: flex; gap: 8px; margin-top: 16px; }
+
+  .preview-table {
+    width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 13px;
+  }
+  .preview-table th {
+    text-align: left; padding: 8px 12px; color: var(--text2); font-weight: 500;
+    border-bottom: 1px solid var(--border); font-size: 12px; text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .preview-table td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  .preview-table tr:last-child td { border-bottom: none; }
+  .preview-table .remove-btn {
+    color: var(--red); cursor: pointer; background: none; border: none; font-size: 16px;
+  }
+
+  .stats {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px;
+    margin-bottom: 24px;
+  }
+  .stat {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; text-align: center;
+  }
+  .stat .number { font-size: 28px; font-weight: 700; color: var(--accent); }
+  .stat .label { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+  .badge {
+    display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 11px; font-weight: 600;
+  }
+  .badge-pending { background: rgba(251,146,60,.15); color: var(--accent2); }
+  .badge-linked { background: rgba(34,197,94,.15); color: var(--green); }
+
+  .member-list { list-style: none; }
+  .member-item {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .member-item:last-child { border-bottom: none; }
+  .member-avatar {
+    width: 36px; height: 36px; border-radius: 50%; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600;
+    color: var(--accent);
+  }
+  .member-info { flex: 1; }
+  .member-name { font-size: 14px; font-weight: 500; }
+  .member-phone { font-size: 12px; color: var(--text2); }
+  .member-date { font-size: 11px; color: var(--text2); }
+
+  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .room-card {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; cursor: pointer; transition: all .2s;
+  }
+  .room-card:hover { border-color: var(--accent); }
+  .room-icon { font-size: 28px; margin-bottom: 8px; }
+  .room-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .room-desc { font-size: 12px; color: var(--text2); }
+  .room-msgs { font-size: 11px; color: var(--text2); margin-top: 8px; }
+
+  .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
+  .empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .3s; pointer-events: none;
+    z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+
+  .search-bar {
+    width: 100%; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text); font-size: 14px; margin-bottom: 16px;
+  }
+  .search-bar:focus { outline: none; border-color: var(--accent); }
+
+  #preview-section, #tab-members, #tab-rooms, #tab-rita { display: none; }
+
+  .rita-question {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 16px; margin-bottom: 12px;
+  }
+  .rita-q-header {
+    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
+  }
+  .rita-q-member { font-weight: 600; font-size: 14px; }
+  .rita-q-time { font-size: 11px; color: var(--text2); }
+  .rita-q-text { font-size: 14px; margin-bottom: 12px; line-height: 1.45; }
+  .rita-q-response { background: var(--surface); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
+  .rita-q-response-label { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .rita-q-response-text { font-size: 13px; }
+  .rita-q-input { width: 100%; min-height: 80px; padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; resize: vertical; }
+  .rita-q-input:focus { outline: none; border-color: var(--accent); }
+  .rita-q-actions { display: flex; gap: 8px; }
+
+  @media (max-width: 600px) {
+    .stats { grid-template-columns: repeat(2, 1fr); }
+    .tabs { font-size: 12px; }
+    .rooms-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- LOGIN DEL CLUB -->
+<div id="admin-login" style="position:fixed;inset:0;background:#0f1117;display:flex;align-items:center;justify-content:center;z-index:9999;padding:1rem">
+  <div style="background:#1a1d27;border:1px solid #2e3345;border-radius:14px;padding:2rem;width:100%;max-width:360px">
+    <div style="font-weight:700;font-size:1.25rem;margin-bottom:.25rem"><span style="color:#f97316">Ridera</span> Club — Admin</div>
+    <div id="login-sub" style="color:#8b8fa3;font-size:.85rem;margin-bottom:1.25rem">Elige tu club para entrar</div>
+
+    <label style="display:block;font-size:.78rem;color:#8b8fa3;margin-bottom:.35rem">Tu club</label>
+    <select id="login-club" onchange="onClubSelect()" style="width:100%;background:#242836;border:1px solid #2e3345;border-radius:8px;color:#e8e9ed;padding:.65rem .8rem;font-size:.95rem;outline:none">
+      <option value="">Cargando clubes…</option>
+    </select>
+
+    <div id="login-pass-wrap" style="display:none">
+      <label id="login-pass-label" style="display:block;font-size:.78rem;color:#8b8fa3;margin:.9rem 0 .35rem">Clave</label>
+      <div style="position:relative">
+        <input id="login-pass" type="password" placeholder="Tu clave" style="width:100%;background:#242836;border:1px solid #2e3345;border-radius:8px;color:#e8e9ed;padding:.7rem 2.6rem .7rem .9rem;font-size:1rem;outline:none" onkeydown="if(event.key==='Enter')doAdminLogin()">
+        <button type="button" id="login-eye" onclick="togglePass()" title="Ver clave" style="position:absolute;right:.4rem;top:50%;transform:translateY(-50%);background:none;border:none;color:#8b8fa3;cursor:pointer;font-size:1.15rem;padding:.2rem">👁️</button>
+      </div>
+    </div>
+
+    <div id="login-error" style="color:#ef4444;font-size:.83rem;margin-top:.6rem;display:none"></div>
+    <button id="login-btn" onclick="doAdminLogin()" style="display:none;width:100%;margin-top:1rem;padding:.75rem;background:#f97316;color:#fff;font-weight:700;border:none;border-radius:8px;cursor:pointer;font-size:1rem">Entrar</button>
+    <button id="login-forgot" onclick="forgotPass()" style="display:none;width:100%;margin-top:.6rem;background:none;border:none;color:#8b8fa3;cursor:pointer;font-size:.82rem;text-decoration:underline">¿Olvidaste tu clave?</button>
+  </div>
+</div>
+
+<div class="header">
+  <h1><span>Ridera</span> Club</h1>
+  <div class="club-name" id="club-name">Cargando...</div>
+  <div style="display:flex;gap:8px;margin-left:16px">
+    <button class="btn btn-outline btn-sm" onclick="refreshPanel()">↻ Actualizar</button>
+    <button class="btn btn-outline btn-sm" onclick="changePass()">🔑 Cambiar clave</button>
+    <button class="btn btn-outline btn-sm" onclick="logoutAdmin()">Cerrar sesión</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="stats" id="stats">
+    <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
+    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
+    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Pendientes</div></div>
+    <div class="stat"><div class="number" id="stat-rooms">-</div><div class="label">Salas</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('add')">Agregar miembros</div>
+    <div class="tab" onclick="switchTab('members')">Miembros</div>
+    <div class="tab" onclick="switchTab('rooms')">Salas</div>
+    <div class="tab" onclick="switchTab('rita')">Preguntas a Rita</div>
+  </div>
+
+  <!-- TAB: Agregar miembros -->
+  <div id="tab-add">
+    <div class="card">
+      <h2>Logo del club</h2>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
+          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
+        </div>
+        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Compartir link de invitación</h2>
+      <p>Comparte este link con los miembros para que se registren directamente</p>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
+        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Agregar miembros al club</h2>
+      <p>Pega la lista de miembros, un miembro por línea. Formato: <strong>Nombre, Teléfono</strong></p>
+      <textarea id="members-input" placeholder="Juan Pérez, 3101234567
+María López, 3209876543
+Carlos Ruiz, 3158765432
+
+También funciona separado por tabs o guiones:
+Pedro Gómez - 3176543210"></textarea>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="parseMembers()">Previsualizar</button>
+        <button class="btn btn-outline" onclick="document.getElementById('members-input').value=''; hidePreview()">Limpiar</button>
+      </div>
+    </div>
+
+    <div id="preview-section" class="card">
+      <h2>Previsualización (<span id="preview-count">0</span> miembros)</h2>
+      <p>Revisa que los datos estén correctos antes de agregar</p>
+      <div style="overflow-x:auto">
+        <table class="preview-table">
+          <thead><tr><th>Nombre</th><th>Teléfono</th><th></th></tr></thead>
+          <tbody id="preview-body"></tbody>
+        </table>
+      </div>
+      <div class="actions">
+        <button class="btn btn-primary" id="btn-confirm" onclick="addMembers()">Agregar al club</button>
+        <button class="btn btn-outline" onclick="hidePreview()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Lista de miembros -->
+  <div id="tab-members">
+    <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
+    <div class="card" id="members-card">
+      <div class="empty" id="members-empty">
+        <div class="icon">👥</div>
+        <p>No hay miembros aún</p>
+      </div>
+      <ul class="member-list" id="members-list"></ul>
+    </div>
+  </div>
+
+  <!-- TAB: Salas -->
+  <div id="tab-rooms">
+    <div class="rooms-grid" id="rooms-grid"></div>
+  </div>
+
+  <!-- TAB: Preguntas a Rita -->
+  <div id="tab-rita">
+    <div class="card" id="rita-card">
+      <div class="empty" id="rita-empty">
+        <div class="icon">🤖</div>
+        <p>No hay preguntas sin responder</p>
+      </div>
+      <div id="rita-questions"></div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let clubId = null;
+let clubCode = null;
+let parsedMembers = [];
+let allMembers = [];
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SUPABASE_KEY,
+      // Con sesion de club activa mandamos SU token (trae el club_id como
+      // claim firmado) en vez de la llave publica -- las politicas RLS de
+      // connect_rita_dms dependen de que llegue este token, no la llave.
+      'Authorization': `Bearer ${window.__authToken || SUPABASE_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (opts.method === 'DELETE') return [];
+  return res.json();
+}
+
+async function init() {
+  let clubs;
+  if (window.__authClubId) {
+    clubs = await sb(`clubs?id=eq.${window.__authClubId}&select=id,nombre,codigo&limit=1`);
+  } else {
+    const slug = location.pathname.split('/').filter(Boolean).pop();
+    if (slug && slug !== 'connect-admin' && slug !== 'admin') {
+      clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
+    }
+    if (!clubs || !clubs.length) {
+      clubs = await sb('clubs?select=id,nombre,codigo&limit=1');
+    }
+  }
+  if (!clubs.length) {
+    document.getElementById('club-name').textContent = 'No hay clubes';
+    return;
+  }
+  clubId = clubs[0].id;
+  clubCode = clubs[0].codigo || clubs[0].id;
+  document.getElementById('club-name').textContent = clubs[0].nombre;
+  document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+}
+
+async function loadStats() {
+  const members = await sb(`connect_members?club_id=eq.${clubId}&select=estado`);
+  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=id`);
+  const total = members.length;
+  const linked = members.filter(m => m.estado === 'vinculado').length;
+  document.getElementById('stat-total').textContent = total;
+  document.getElementById('stat-linked').textContent = linked;
+  document.getElementById('stat-pending').textContent = total - linked;
+  document.getElementById('stat-rooms').textContent = rooms.length;
+}
+
+async function loadMembers() {
+  allMembers = await sb(`connect_members?club_id=eq.${clubId}&select=*&order=created_at.desc`);
+  renderMembers(allMembers);
+}
+
+function renderMembers(members) {
+  const list = document.getElementById('members-list');
+  const empty = document.getElementById('members-empty');
+  if (!members.length) { list.innerHTML = ''; empty.style.display = ''; return; }
+  empty.style.display = 'none';
+  list.innerHTML = members.map(m => {
+    const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const badge = m.estado === 'vinculado'
+      ? '<span class="badge badge-linked">Vinculado</span>'
+      : '<span class="badge badge-pending">Pendiente</span>';
+    const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    return `<li class="member-item">
+      <div class="member-avatar">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${m.nombre} ${badge}</div>
+        <div class="member-phone">${m.telefono}</div>
+      </div>
+      <div class="member-date">${date}</div>
+      <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>
+    </li>`;
+  }).join('');
+}
+
+function filterMembers(q) {
+  q = q.toLowerCase();
+  const filtered = allMembers.filter(m =>
+    m.nombre.toLowerCase().includes(q) || m.telefono.includes(q)
+  );
+  renderMembers(filtered);
+}
+
+async function loadRooms() {
+  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=*&order=orden`);
+  const grid = document.getElementById('rooms-grid');
+  if (!rooms.length) {
+    grid.innerHTML = '<div class="empty"><div class="icon">💬</div><p>No hay salas creadas</p></div>';
+    return;
+  }
+  grid.innerHTML = rooms.map(r => `
+    <div class="room-card">
+      <div class="room-icon">${r.icono}</div>
+      <div class="room-name">${r.nombre}</div>
+      <div class="room-desc">${r.descripcion || ''}</div>
+    </div>
+  `).join('');
+}
+
+function normalizePhone(raw) {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('57') && digits.length === 12) digits = digits.slice(2);
+  if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+  if (digits.startsWith('57') && digits.length === 12) return digits;
+  return digits;
+}
+
+function parseMembers() {
+  const input = document.getElementById('members-input').value.trim();
+  if (!input) return;
+  const lines = input.split('\n').filter(l => l.trim());
+  parsedMembers = [];
+  for (const line of lines) {
+    let parts = line.split(/[,\t\-–—]+/).map(p => p.trim()).filter(Boolean);
+    if (parts.length < 2) {
+      parts = line.trim().split(/\s+/);
+    }
+    if (parts.length < 2) continue;
+    const last = parts[parts.length - 1];
+    const phone = last.replace(/\D/g, '');
+    if (phone.length < 7) continue;
+    const name = parts.slice(0, -1).join(' ');
+    parsedMembers.push({ nombre: name, telefono: normalizePhone(phone) });
+  }
+  if (!parsedMembers.length) { toast('No se encontraron miembros válidos', true); return; }
+  renderPreview();
+}
+
+function renderPreview() {
+  const section = document.getElementById('preview-section');
+  section.style.display = 'block';
+  document.getElementById('preview-count').textContent = parsedMembers.length;
+  document.getElementById('preview-body').innerHTML = parsedMembers.map((m, i) => `
+    <tr>
+      <td>${m.nombre}</td>
+      <td>${m.telefono}</td>
+      <td><button class="remove-btn" onclick="removeFromPreview(${i})">✕</button></td>
+    </tr>
+  `).join('');
+  toast(`${parsedMembers.length} miembro(s) listos para agregar`);
+  setTimeout(() => section.scrollIntoView({ behavior: 'smooth' }), 100);
+}
+
+function removeFromPreview(i) {
+  parsedMembers.splice(i, 1);
+  if (!parsedMembers.length) { hidePreview(); return; }
+  renderPreview();
+}
+
+function hidePreview() {
+  const section = document.getElementById('preview-section');
+  section.style.display = 'none';
+  parsedMembers = [];
+}
+
+async function addMembers() {
+  if (!parsedMembers.length || !clubId) return;
+  const btn = document.getElementById('btn-confirm');
+  btn.disabled = true; btn.textContent = 'Agregando...';
+  const body = parsedMembers.map(m => ({
+    club_id: clubId,
+    nombre: m.nombre,
+    telefono: m.telefono,
+    estado: 'pendiente'
+  }));
+  try {
+    await sb('connect_members', {
+      method: 'POST',
+      body,
+      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
+    });
+    toast(`${parsedMembers.length} miembros agregados`);
+    document.getElementById('members-input').value = '';
+    hidePreview();
+    await Promise.all([loadStats(), loadMembers()]);
+  } catch (e) {
+    toast('Error al agregar: ' + e.message, true);
+  }
+  btn.disabled = false; btn.textContent = 'Agregar al club';
+}
+
+async function removeMember(id) {
+  if (!confirm('¿Eliminar este miembro?')) return;
+  await sb(`connect_members?id=eq.${id}`, { method: 'DELETE' });
+  toast('Miembro eliminado');
+  await Promise.all([loadStats(), loadMembers()]);
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach((t, i) => {
+    t.classList.toggle('active', ['add', 'members', 'rooms', 'rita'][i] === tab);
+  });
+  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
+  document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
+  document.getElementById('tab-rooms').style.display = tab === 'rooms' ? '' : 'none';
+  document.getElementById('tab-rita').style.display = tab === 'rita' ? '' : 'none';
+  if (tab === 'rita') loadRitaQuestions();
+}
+
+function toast(msg, isError) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.style.background = isError ? 'var(--red)' : 'var(--green)';
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+function copyInviteLink() {
+  const link = document.getElementById('invite-link');
+  link.select();
+  document.execCommand('copy');
+  toast('Link copiado al portapapeles');
+}
+
+async function uploadLogo(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Archivo muy grande. Máximo 2MB', true);
+    return;
+  }
+
+  const btn = document.querySelector('#logo-input');
+  btn.disabled = true;
+
+  try {
+    const filename = `${clubId}-logo.${file.name.split('.').pop()}`;
+    const path = `club-logos/${filename}`;
+
+    const res = await fetch(
+      `${SUPABASE_URL}/storage/v1/object/connect-files/${path}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'apikey': SUPABASE_KEY
+        },
+        body: file
+      }
+    );
+
+    if (!res.ok) throw new Error('Upload failed');
+
+    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/connect-files/${path}`;
+
+    await sb(`clubs?id=eq.${clubId}`, {
+      method: 'PATCH',
+      body: { logo_url: logoUrl }
+    });
+
+    document.getElementById('logo-preview').innerHTML = `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
+    toast('Logo actualizado');
+  } catch (e) {
+    toast('Error al subir logo: ' + e.message, true);
+  }
+
+  btn.disabled = false;
+}
+
+async function loadLogo() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=logo_url&limit=1`);
+  if (club.length && club[0].logo_url) {
+    document.getElementById('logo-preview').innerHTML = `<img src="${club[0].logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
+  }
+}
+
+async function loadRitaQuestions() {
+  const questions = await sb(`connect_rita_dms?club_id=eq.${clubId}&sender=eq.user&select=*,connect_members(nombre,telefono)&order=created_at.desc`);
+  renderRitaQuestions(questions || []);
+}
+
+function renderRitaQuestions(questions) {
+  const container = document.getElementById('rita-questions');
+  const empty = document.getElementById('rita-empty');
+
+  if (!questions.length) {
+    container.innerHTML = '';
+    empty.style.display = '';
+    return;
+  }
+
+  empty.style.display = 'none';
+  container.innerHTML = questions.map(q => {
+    const time = new Date(q.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    const memberName = q.connect_members ? q.connect_members.nombre : 'Usuario';
+    const hasResponse = questions.some(m => m.member_id === q.member_id && m.sender === 'rita' && m.id !== q.id);
+
+    return `<div class="rita-question">
+      <div class="rita-q-header">
+        <div>
+          <div class="rita-q-member">${memberName}</div>
+          <div class="rita-q-time">${time}</div>
+        </div>
+      </div>
+      <div class="rita-q-text">${q.content}</div>
+      ${hasResponse ? `<div class="rita-q-response">
+        <div class="rita-q-response-label">Respuesta enviada</div>
+        <div class="rita-q-response-text">✓ Ya respondida</div>
+      </div>` : `<div>
+        <textarea class="rita-q-input" id="resp-${q.id}" placeholder="Escribe la respuesta de Rita..."></textarea>
+        <div class="rita-q-actions">
+          <button class="btn btn-primary" onclick="sendRitaResponse('${q.id}', '${q.member_id}')">Enviar respuesta</button>
+        </div>
+      </div>`}
+    </div>`;
+  }).join('');
+}
+
+async function sendRitaResponse(questionId, memberId) {
+  const textarea = document.getElementById(`resp-${questionId}`);
+  const response = textarea.value.trim();
+  if (!response) return;
+
+  textarea.disabled = true;
+
+  try {
+    await sb('connect_rita_dms', {
+      method: 'POST',
+      body: {
+        member_id: memberId,
+        club_id: clubId,
+        sender: 'rita',
+        content: response
+      }
+    });
+    toast('Respuesta enviada');
+    await loadRitaQuestions();
+  } catch (e) {
+    toast('Error al enviar: ' + e.message, true);
+  }
+
+  textarea.disabled = false;
+}
+
+// ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
+const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
+const RIDERA_WA = '573104717982'; // WhatsApp de soporte para recuperar clave
+let loginClubTienePass = false;
+
+async function callAuth(payload) {
+  const r = await fetch(CLUB_AUTH, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  return r.json();
+}
+
+function togglePass() {
+  const i = document.getElementById('login-pass');
+  i.type = i.type === 'password' ? 'text' : 'password';
+  document.getElementById('login-eye').textContent = i.type === 'password' ? '👁️' : '🙈';
+}
+
+async function loadClubsForLogin() {
+  const sel = document.getElementById('login-club');
+  const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre.asc');
+  if (!clubs || !clubs.length) { sel.innerHTML = '<option value="">No hay clubes</option>'; return; }
+  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
+}
+
+async function onClubSelect() {
+  const id = document.getElementById('login-club').value;
+  const passWrap = document.getElementById('login-pass-wrap');
+  const btn = document.getElementById('login-btn');
+  const forgot = document.getElementById('login-forgot');
+  const sub = document.getElementById('login-sub');
+  const label = document.getElementById('login-pass-label');
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  document.getElementById('login-pass').value = '';
+  if (!id) { passWrap.style.display = 'none'; btn.style.display = 'none'; forgot.style.display = 'none'; return; }
+  const est = await callAuth({ action: 'estado', clubId: id });
+  loginClubTienePass = !!est.tienePass;
+  passWrap.style.display = 'block';
+  btn.style.display = 'block';
+  if (loginClubTienePass) {
+    sub.textContent = 'Ingresa la clave de tu club';
+    label.textContent = 'Clave';
+    document.getElementById('login-pass').placeholder = 'Tu clave';
+    btn.textContent = 'Entrar';
+    forgot.style.display = 'block';
+  } else {
+    sub.textContent = 'Tu club aún no tiene clave — créala ahora';
+    label.textContent = 'Crea una clave (mínimo 4 caracteres)';
+    document.getElementById('login-pass').placeholder = 'Nueva clave';
+    btn.textContent = 'Crear clave y entrar';
+    forgot.style.display = 'none';
+  }
+}
+
+async function doAdminLogin() {
+  const id = document.getElementById('login-club').value;
+  const pass = document.getElementById('login-pass').value;
+  const err = document.getElementById('login-error');
+  err.style.display = 'none';
+  if (!id) { err.textContent = 'Elige tu club.'; err.style.display = 'block'; return; }
+  if (!pass) { err.textContent = 'Escribe la clave.'; err.style.display = 'block'; return; }
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true; const prev = btn.textContent; btn.textContent = 'Un momento…';
+  try {
+    const res = loginClubTienePass
+      ? await callAuth({ action: 'login', clubId: id, password: pass })
+      : await callAuth({ action: 'set', clubId: id, password: pass });
+    btn.disabled = false; btn.textContent = prev;
+    if (res.ok) {
+      sessionStorage.setItem('club_admin', JSON.stringify({ id: res.clubId, nombre: res.nombre, codigo: res.codigo, token: res.token }));
+      window.__authClubId = res.clubId;
+      window.__authToken = res.token;
+      document.getElementById('admin-login').style.display = 'none';
+      init();
+    } else {
+      err.textContent = res.error || 'Clave incorrecta.'; err.style.display = 'block';
+    }
+  } catch (e) { btn.disabled = false; btn.textContent = prev; err.textContent = 'Error de conexión.'; err.style.display = 'block'; }
+}
+
+function forgotPass() {
+  if (confirm('Para recuperar tu clave escríbele a Ridera por WhatsApp. ¿Abrir el chat?')) {
+    const club = document.getElementById('login-club');
+    const nombre = club.options[club.selectedIndex]?.text || '';
+    const txt = encodeURIComponent(`Hola, olvidé la clave del panel de administración del club ${nombre}.`);
+    window.open(`https://wa.me/${RIDERA_WA}?text=${txt}`, '_blank');
+  }
+}
+
+async function changePass() {
+  if (!clubId) return;
+  const oldp = prompt('Clave actual:');
+  if (oldp === null) return;
+  const newp = prompt('Nueva clave (mínimo 4 caracteres):');
+  if (newp === null) return;
+  const res = await callAuth({ action: 'change', clubId: clubId, password: oldp, newPassword: newp });
+  if (res.ok) {
+    // La clave cambio -> el token viejo sigue siendo valido (no depende de
+    // la clave), pero guardamos el nuevo igual para mantener todo fresco.
+    window.__authToken = res.token;
+    const saved = JSON.parse(sessionStorage.getItem('club_admin') || '{}');
+    sessionStorage.setItem('club_admin', JSON.stringify({ ...saved, token: res.token }));
+    toast('Clave actualizada');
+  } else {
+    toast(res.error || 'No se pudo cambiar la clave', true);
+  }
+}
+
+function logoutAdmin() {
+  sessionStorage.removeItem('club_admin');
+  location.reload();
+}
+
+async function refreshPanel() {
+  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  toast('Actualizado');
+}
+
+async function bootAdmin() {
+  const saved = sessionStorage.getItem('club_admin');
+  if (saved) {
+    try {
+      const c = JSON.parse(saved);
+      window.__authClubId = c.id;
+      window.__authToken = c.token;
+      document.getElementById('admin-login').style.display = 'none';
+      await init();
+      return;
+    } catch (e) { /* cae al login */ }
+  }
+  await loadClubsForLogin();
+}
+
+bootAdmin();
+</script>
+</body>
+</html>

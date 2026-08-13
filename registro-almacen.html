@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Registra tu almacén en Ridera — Vende repuestos para motos</title>
+<meta name="description" content="Registra tu almacén de repuestos en Ridera. Los clientes te encontrarán en Rita (chatbot) y en nuestro directorio. Gratis. Crea tu catálogo.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#E85D20; --orange-hot:#FF6B2B; --orange-dim:rgba(232,93,32,0.15);
+  --carbon:#0D0F12; --carbon2:#141720; --carbon3:#1E2229; --carbon4:#262D37;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.48);
+  --border:rgba(255,255,255,0.07); --border-hi:rgba(255,255,255,0.13);
+  --green:#4ade80; --radius-sm:8px; --radius-md:12px; --radius-lg:20px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;overflow-x:hidden}
+
+.topbar{background:rgba(13,15,18,0.97);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);padding:0 24px;height:60px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:10px}
+.topbar-badge{font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--orange);background:rgba(232,93,32,0.1);border:0.5px solid rgba(232,93,32,0.28);padding:3px 10px;border-radius:99px}
+
+.hero{position:relative;padding:64px 24px 48px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(232,93,32,0.14) 0%,transparent 70%)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% -10%,rgba(232,93,32,0.07),transparent 60%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:0.16em;text-transform:uppercase;color:var(--orange);margin-bottom:22px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:24px;height:1px;background:var(--orange);opacity:0.5}
+.hero-headline{font-family:'Barlow Condensed',sans-serif;font-size:clamp(38px,8vw,68px);font-weight:900;text-transform:uppercase;line-height:0.93;letter-spacing:-1px;margin-bottom:18px}
+.hero-headline em{color:var(--orange);font-style:normal;display:block}
+.hero-sub{font-size:clamp(15px,3vw,18px);font-weight:400;color:var(--text-muted);line-height:1.6;max-width:540px;margin:0 auto}
+
+.form-zone{background:var(--carbon2);border-top:0.5px solid var(--border)}
+.form-zone-inner{max-width:680px;margin:0 auto;padding:48px 24px 80px}
+.form-section{margin-bottom:28px}
+.form-section-label{font-size:12px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--orange);margin-bottom:14px;padding-bottom:8px;border-bottom:0.5px solid var(--border)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+.form-group label{font-size:14px;font-weight:600;color:rgba(255,255,255,0.9);letter-spacing:0.01em}
+.form-group .req{color:var(--orange);margin-left:2px}
+.form-group .hint{font-size:12px;color:var(--text-dim);font-weight:400}
+input[type=text],input[type=tel],input[type=email],input[type=password],input[type=time],input[type=url],select,textarea{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:16px;font-weight:400;padding:14px 15px;transition:border-color .2s,background .2s;appearance:none;-webkit-appearance:none}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,0.5);background:#2e3542}
+input::placeholder,textarea::placeholder{color:var(--text-dim)}
+textarea{resize:vertical;min-height:80px;line-height:1.55}
+
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.pw-toggle:hover{color:var(--orange)}
+
+.check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+.check-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,0.75);background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:99px;padding:9px 15px;cursor:pointer;transition:all .18s;user-select:none}
+.check-chip input{display:none}
+.check-chip.checked{background:rgba(232,93,32,0.14);border-color:rgba(232,93,32,0.45);color:#fff}
+
+.upload-block{background:var(--carbon3);border:0.5px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:16px}
+.upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+.logo-row{display:flex;align-items:center;gap:16px}
+.logo-row .upload-grid{grid-template-columns:96px;margin-top:0;flex-shrink:0}
+.upload-slot{position:relative;aspect-ratio:1/1;border-radius:var(--radius-md);border:1.5px dashed rgba(255,255,255,0.28);background:var(--carbon4);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;overflow:hidden;transition:all .18s}
+.upload-slot:hover{border-color:var(--orange)}
+.upload-slot input[type=file]{display:none}
+.upload-icon{font-size:22px;opacity:.8}
+.upload-label{font-size:11px;font-weight:600;color:rgba(255,255,255,0.7);text-align:center;padding:0 4px}
+.upload-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.remove-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(13,15,18,0.92);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:2;border:1px solid rgba(255,255,255,0.3)}
+.upload-slot.has-image{border-style:solid;border-color:rgba(74,222,128,0.4)}
+.upload-slot.has-image .upload-icon,.upload-slot.has-image .upload-label{display:none}
+.upload-slot.has-image .remove-btn{display:flex}
+.upload-hint{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.5}
+
+.submit-area{margin-top:32px;padding-top:24px;border-top:0.5px solid var(--border)}
+.btn-submit{width:100%;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:20px 28px;border:none;border-radius:var(--radius-md);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+.btn-submit:hover{background:var(--orange-hot);transform:translateY(-1px);box-shadow:0 8px 28px rgba(232,93,32,0.3)}
+.btn-submit:disabled{background:var(--carbon3);color:var(--text-dim);cursor:default;transform:none;box-shadow:none}
+.form-note{font-size:13px;color:var(--text-dim);text-align:center;margin-top:12px;line-height:1.6}
+.status-bar{display:none;align-items:center;gap:10px;background:var(--carbon3);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;font-size:13px}
+.status-bar.visible{display:flex}
+.status-bar.loading{border-left:3px solid var(--orange)}
+.status-bar.success{border-left:3px solid var(--green)}
+.status-bar.error{border-left:3px solid #f87171}
+.success-card{display:none;background:linear-gradient(135deg,rgba(74,222,128,0.07),rgba(74,222,128,0.02));border:0.5px solid rgba(74,222,128,0.2);border-radius:var(--radius-lg);padding:40px 32px;text-align:center;margin-top:24px}
+.success-card.visible{display:block}
+.success-card .check{font-size:52px;margin-bottom:18px}
+.success-card h3{font-family:'Barlow Condensed',sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:10px}
+.success-card p{font-size:15px;color:var(--text-muted);line-height:1.7}
+.btn-portal{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;background:var(--orange);color:#fff;border:none;padding:18px 22px;border-radius:var(--radius-md);font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;cursor:pointer;margin-top:22px;text-decoration:none;transition:all .2s}
+.btn-portal:hover{background:var(--orange-hot)}
+
+footer{background:var(--carbon);border-top:0.5px solid var(--border);padding:28px 24px;text-align:center;font-size:12px;color:var(--text-dim)}
+footer a{color:var(--orange);text-decoration:none}
+
+@media (max-width:700px){
+  .form-row{grid-template-columns:1fr}
+  .logo-row{flex-direction:column;align-items:flex-start;gap:10px}
+}
+</style>
+</head>
+<body>
+<nav class="topbar">
+  <div class="topbar-logo">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 2L22 8V16C22 20.4183 17.9706 24 12 24C6.02944 24 2 20.4183 2 16V8L12 2Z" stroke="currentColor" stroke-width="1.5" fill="none" style="color:var(--orange)"/>
+    </svg>
+    <strong style="color:var(--orange)">RIDERA</strong>
+  </div>
+  <span class="topbar-badge">ALMACENES</span>
+</nav>
+
+<section class="hero">
+  <span class="hero-eyebrow">Vende repuestos a toda Antioquia</span>
+  <h1 class="hero-headline">Registra tu <em>almacén Ridera</em></h1>
+  <p class="hero-sub">Llena este formulario una vez. Al terminar tendrás tu cuenta activa y acceso para administrar tu catálogo de productos. Tu tarjeta aparece en el directorio en cuanto Ridera verifique tus datos.</p>
+  <p class="hero-sub" style="margin-top:10px;font-size:14px;">¿Ya tienes cuenta? <a href="/login-almacen" style="color:var(--orange)">Inicia sesión</a></p>
+</section>
+
+<div class="form-zone">
+  <div class="form-zone-inner">
+
+    <div class="status-bar" id="statusBar">
+      <span class="status-icon" id="statusIcon"></span>
+      <span id="statusText"></span>
+    </div>
+
+    <form id="registroForm" onsubmit="handleSubmit(event)">
+
+      <div class="form-section">
+        <label class="form-section-label">01 · Datos del almacén</label>
+        <div class="form-group">
+          <label>Nombre del almacén <span class="req">*</span></label>
+          <input type="text" id="a-nombre" placeholder="Ej: Repuestos La Montaña" required>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ciudad <span class="req">*</span></label>
+            <input type="text" id="a-ciudad" placeholder="Ej: Medellín" required>
+          </div>
+          <div class="form-group">
+            <label>Teléfono / WhatsApp <span class="req">*</span></label>
+            <input type="tel" id="a-tel" placeholder="Ej: 300 123 4567" required>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Dirección</label>
+            <input type="text" id="a-direccion" placeholder="Cra 50 # 30-15, local 22">
+          </div>
+          <div class="form-group">
+            <label>Barrio / Sector</label>
+            <input type="text" id="a-barrio" placeholder="Ej: Belén, Laureles">
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-section-label">02 · Acceso a tu cuenta</label>
+
+        <div id="sessionNotice" style="display:none;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--text-muted);">
+          Sesión iniciada como <strong id="sessionEmail"></strong>. Este almacén quedará asociado a esa cuenta.
+          <a onclick="cerrarSesionRegistro()" style="color:var(--orange);cursor:pointer;">¿No eres tú? Cierra sesión</a>
+        </div>
+
+        <div id="authFields">
+          <div class="form-group">
+            <label>Email <span class="req">*</span> <span class="hint">— con esto inicias sesión</span></label>
+            <input type="email" id="a-email" placeholder="tu@almacen.com">
+            <span class="hint">¿Ya tienes cuenta en Ridera (Pasaporte, Talleres, etc.)? <a href="/login-almacen" style="color:var(--orange)">Inicia sesión primero</a> y vuelve aquí para completar tu almacén.</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Contraseña <span class="req">*</span></label>
+              <div class="pw-wrap">
+                <input type="password" id="a-password" placeholder="Mínimo 8 caracteres" minlength="8">
+                <button type="button" class="pw-toggle" onclick="togglePw('a-password',this)" aria-label="Mostrar contraseña">👁</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Confirmar contraseña <span class="req">*</span></label>
+              <div class="pw-wrap">
+                <input type="password" id="a-password-confirm" placeholder="Repite la contraseña" minlength="8">
+                <button type="button" class="pw-toggle" onclick="togglePw('a-password-confirm',this)" aria-label="Mostrar contraseña">👁</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Persona de contacto</label>
+          <input type="text" id="a-contacto" placeholder="Tu nombre">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-section-label">03 · Logo y fotos <span style="color:var(--text-dim);font-weight:400;text-transform:none;letter-spacing:0">(opcional)</span></label>
+        <div class="upload-block">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Logo del almacén</label>
+            <div class="logo-row">
+              <div class="upload-grid">
+                <label class="upload-slot" id="slot-logo">
+                  <input type="file" accept="image/*" data-target="logo">
+                  <span class="upload-icon">🏷️</span>
+                  <span class="upload-label">Subir logo</span>
+                  <span class="remove-btn" onclick="removeImage(event,'logo')">✕</span>
+                </label>
+              </div>
+              <div class="upload-hint">Ideal: imagen cuadrada, fondo sólido.</div>
+            </div>
+          </div>
+        </div>
+        <div class="upload-block">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Fotos del almacén (hasta 3)</label>
+            <div class="upload-grid">
+              <label class="upload-slot" id="slot-foto1">
+                <input type="file" accept="image/*" data-target="foto1">
+                <span class="upload-icon">📷</span><span class="upload-label">Foto 1</span>
+                <span class="remove-btn" onclick="removeImage(event,'foto1')">✕</span>
+              </label>
+              <label class="upload-slot" id="slot-foto2">
+                <input type="file" accept="image/*" data-target="foto2">
+                <span class="upload-icon">📷</span><span class="upload-label">Foto 2</span>
+                <span class="remove-btn" onclick="removeImage(event,'foto2')">✕</span>
+              </label>
+              <label class="upload-slot" id="slot-foto3">
+                <input type="file" accept="image/*" data-target="foto3">
+                <span class="upload-icon">📷</span><span class="upload-label">Foto 3</span>
+                <span class="remove-btn" onclick="removeImage(event,'foto3')">✕</span>
+              </label>
+            </div>
+            <div class="upload-hint">Fachada, vitrina o productos destacados. Máx 5 MB c/u.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-section-label">04 · Productos y marcas</label>
+        <div class="form-group">
+          <label>Categorías de productos</label>
+          <div class="check-group" id="a-categorias">
+            <label class="check-chip"><input type="checkbox" value="Repuestos OEM"> Repuestos OEM</label>
+            <label class="check-chip"><input type="checkbox" value="Aftermarket"> Aftermarket</label>
+            <label class="check-chip"><input type="checkbox" value="Accesorios"> Accesorios</label>
+            <label class="check-chip"><input type="checkbox" value="Equipamiento piloto"> Equipamiento piloto</label>
+            <label class="check-chip"><input type="checkbox" value="Cascos"> Cascos</label>
+            <label class="check-chip"><input type="checkbox" value="Ropa técnica"> Ropa técnica</label>
+            <label class="check-chip"><input type="checkbox" value="Lubricantes"> Lubricantes</label>
+            <label class="check-chip"><input type="checkbox" value="Filtros"> Filtros</label>
+            <label class="check-chip"><input type="checkbox" value="Llantas"> Llantas</label>
+            <label class="check-chip"><input type="checkbox" value="Electrónica/GPS"> Electrónica/GPS</label>
+            <label class="check-chip"><input type="checkbox" value="Escape/tuning"> Escape/tuning</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Marcas que maneja</label>
+          <div class="check-group" id="a-marcas">
+            <label class="check-chip"><input type="checkbox" value="BMW Motorrad"> BMW Motorrad</label>
+            <label class="check-chip"><input type="checkbox" value="KTM"> KTM</label>
+            <label class="check-chip"><input type="checkbox" value="Ducati"> Ducati</label>
+            <label class="check-chip"><input type="checkbox" value="Triumph"> Triumph</label>
+            <label class="check-chip"><input type="checkbox" value="Honda"> Honda</label>
+            <label class="check-chip"><input type="checkbox" value="Kawasaki"> Kawasaki</label>
+            <label class="check-chip"><input type="checkbox" value="Yamaha"> Yamaha</label>
+            <label class="check-chip"><input type="checkbox" value="Harley-Davidson"> Harley-Davidson</label>
+            <label class="check-chip"><input type="checkbox" value="Multimarca"> Multimarca</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-section-label">05 · Horario y entrega</label>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Apertura</label>
+            <input type="time" id="a-hora-abre" value="08:00">
+          </div>
+          <div class="form-group">
+            <label>Cierre</label>
+            <input type="time" id="a-hora-cierra" value="18:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Días de atención</label>
+          <div class="check-group" id="a-dias">
+            <label class="check-chip"><input type="checkbox" value="Lun"> Lun</label>
+            <label class="check-chip"><input type="checkbox" value="Mar"> Mar</label>
+            <label class="check-chip"><input type="checkbox" value="Mié"> Mié</label>
+            <label class="check-chip"><input type="checkbox" value="Jue"> Jue</label>
+            <label class="check-chip"><input type="checkbox" value="Vie"> Vie</label>
+            <label class="check-chip"><input type="checkbox" value="Sáb"> Sáb</label>
+            <label class="check-chip"><input type="checkbox" value="Dom"> Dom</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>¿Tiene despacho a domicilio?</label>
+          <div class="check-group">
+            <label class="check-chip"><input type="radio" name="a-domicilio" value="Sí, en ciudad"> 🛵 Sí, ciudad</label>
+            <label class="check-chip"><input type="radio" name="a-domicilio" value="Sí, nacional"> 📦 Sí, nacional</label>
+            <label class="check-chip"><input type="radio" name="a-domicilio" value="No"> ✗ No</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <label class="form-section-label">06 · Notas</label>
+        <div class="form-group">
+          <label>Descripción del almacén</label>
+          <textarea id="a-descripcion" placeholder="¿Qué los diferencia? Stock, años en el mercado, servicio especial..."></textarea>
+        </div>
+      </div>
+
+      <div class="submit-area">
+        <button type="submit" class="btn-submit">Crear mi cuenta</button>
+        <p class="form-note">Tu contraseña es privada. Con ella entras a tu panel para subir productos que Rita podrá recomendar por WhatsApp.</p>
+      </div>
+    </form>
+
+    <div class="success-card" id="successCard">
+      <div class="check">✓</div>
+      <h3>¡Registrado!</h3>
+      <p>Tu cuenta ya está lista. Ridera revisará tus datos y tu almacén aparecerá en el <a href="/almacenes" style="color:var(--orange)">directorio</a> en menos de 48 horas. Mientras tanto, entra a tu panel para cargar tu catálogo.</p>
+      <a href="/mi-almacen.html" class="btn-portal" id="btnPortal">Ir a mi catálogo</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  © 2024 Ridera. Todos los derechos reservados. <a href="/">Inicio</a>
+</footer>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+const STORAGE_BUCKET = 'almacenes';
+const MAX_IMG_MB = 5;
+
+let sbClient = null;
+let imageStore = { logo: null, foto1: null, foto2: null, foto3: null };
+
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, ANON_KEY);
+  }
+  return sbClient;
+}
+
+// Chips (checkbox y radio)
+document.querySelectorAll('.check-chip').forEach(function (chip) {
+  const input = chip.querySelector('input');
+  if (!input) return;
+  chip.addEventListener('click', function () {
+    setTimeout(function () {
+      if (input.type === 'radio') {
+        document.querySelectorAll('input[name="' + input.name + '"]').forEach(function (r) {
+          r.closest('.check-chip').classList.remove('checked');
+        });
+      }
+      chip.classList.toggle('checked', input.checked);
+    }, 0);
+  });
+});
+
+// Subida de imágenes (preview local, se sube al enviar el formulario)
+document.querySelectorAll('.upload-slot input[type=file]').forEach(function (input) {
+  input.addEventListener('change', function (e) {
+    const file = e.target.files[0];
+    const key = input.dataset.target;
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { alert('Selecciona una imagen.'); input.value = ''; return; }
+    if (file.size > MAX_IMG_MB * 1024 * 1024) { alert('La imagen pesa más de ' + MAX_IMG_MB + 'MB.'); input.value = ''; return; }
+    imageStore[key] = file;
+    const reader = new FileReader();
+    reader.onload = function (ev) { renderSlot(key, ev.target.result); };
+    reader.readAsDataURL(file);
+  });
+});
+
+function renderSlot(key, src) {
+  const slot = document.getElementById('slot-' + key);
+  let img = slot.querySelector('img');
+  if (!img) { img = document.createElement('img'); slot.insertBefore(img, slot.querySelector('.remove-btn')); }
+  img.src = src;
+  slot.classList.add('has-image');
+}
+
+window.removeImage = function (evt, key) {
+  evt.preventDefault(); evt.stopPropagation();
+  imageStore[key] = null;
+  const slot = document.getElementById('slot-' + key);
+  const img = slot.querySelector('img');
+  if (img) img.remove();
+  slot.classList.remove('has-image');
+  const input = slot.querySelector('input[type=file]');
+  if (input) input.value = '';
+};
+
+let sessionUser = null; // usuario ya logueado (si viene de "Iniciar sesión" sin almacén todavía)
+
+async function checkSession() {
+  const sb = await initSupabase();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+
+  const { data: existingAlmacen } = await sb.from('almacenes').select('id, slug').eq('auth_id', user.id).maybeSingle();
+  if (existingAlmacen) {
+    window.location.href = '/mi-almacen.html';
+    return;
+  }
+
+  sessionUser = user;
+  document.getElementById('authFields').style.display = 'none';
+  document.getElementById('sessionNotice').style.display = 'block';
+  document.getElementById('sessionEmail').textContent = user.email;
+}
+
+window.cerrarSesionRegistro = async function () {
+  const sb = await initSupabase();
+  await sb.auth.signOut();
+  sessionUser = null;
+  document.getElementById('authFields').style.display = 'block';
+  document.getElementById('sessionNotice').style.display = 'none';
+};
+
+checkSession();
+
+function getChecked(id) {
+  return Array.from(document.querySelectorAll('#' + id + ' input:checked')).map(function (cb) { return cb.value; });
+}
+function getRadio(name) {
+  const r = document.querySelector('input[name="' + name + '"]:checked');
+  return r ? r.value : '';
+}
+
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
+function generateSlug(nombre) {
+  return nombre.toLowerCase().trim().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+}
+
+async function ensureUniqueSlug(sb, base) {
+  let slug = base;
+  let attempt = 0;
+  while (attempt < 5) {
+    const { data } = await sb.from('almacenes').select('id').eq('slug', slug).maybeSingle();
+    if (!data) return slug;
+    attempt++;
+    slug = base + '-' + Math.random().toString(36).slice(-4);
+  }
+  return slug;
+}
+
+async function uploadImage(sb, file, key, folder) {
+  const ext = (file.name.split('.').pop() || 'jpg').toLowerCase();
+  const path = folder + '/' + key + '.' + ext;
+  const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, file, { upsert: true, contentType: file.type });
+  if (error) throw error;
+  const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+function setStatus(state, msg) {
+  const bar = document.getElementById('statusBar');
+  bar.className = 'status-bar visible ' + state;
+  const icons = { loading: '⏳', success: '✓', error: '✕' };
+  document.getElementById('statusIcon').textContent = icons[state] || '';
+  document.getElementById('statusText').textContent = msg;
+}
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const form = e.target;
+  const btn = form.querySelector('button[type=submit]');
+
+  const nombre = document.getElementById('a-nombre').value.trim();
+  const ciudad = document.getElementById('a-ciudad').value.trim();
+  const tel = document.getElementById('a-tel').value.trim();
+  const email = document.getElementById('a-email').value.trim();
+  const password = document.getElementById('a-password').value;
+  const passwordConfirm = document.getElementById('a-password-confirm').value;
+
+  if (!nombre || !ciudad || !tel) {
+    setStatus('error', 'Completa los campos obligatorios.');
+    return;
+  }
+  if (!sessionUser) {
+    if (!email) {
+      setStatus('error', 'Completa los campos obligatorios.');
+      return;
+    }
+    if (password.length < 8) {
+      setStatus('error', 'La contraseña debe tener al menos 8 caracteres.');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setStatus('error', 'Las contraseñas no coinciden.');
+      return;
+    }
+  }
+
+  btn.disabled = true;
+  setStatus('loading', sessionUser ? 'Guardando tu almacén...' : 'Creando tu cuenta...');
+
+  try {
+    const sb = await initSupabase();
+
+    let userId;
+
+    if (sessionUser) {
+      userId = sessionUser.id;
+    } else {
+      const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+
+      if (signUpError) {
+        const yaExiste = /already registered|already exists/i.test(signUpError.message || '');
+        if (yaExiste) {
+          setStatus('error', 'Ese correo ya tiene una cuenta en Ridera (Pasaporte, Talleres u otra sección). Inicia sesión primero y vuelve a esta página para completar tu almacén.');
+          btn.disabled = false;
+          return;
+        }
+        throw signUpError;
+      }
+
+      userId = signUpData.user ? signUpData.user.id : null;
+      if (!userId) throw new Error('No se pudo crear la cuenta. Intenta con otro email.');
+    }
+
+    const baseSlug = generateSlug(nombre);
+    const slug = await ensureUniqueSlug(sb, baseSlug);
+
+    let urls = { logo: '', foto1: '', foto2: '', foto3: '' };
+    const hasImages = Object.values(imageStore).some(Boolean);
+    if (hasImages) {
+      setStatus('loading', 'Subiendo imágenes...');
+      for (const k of ['logo', 'foto1', 'foto2', 'foto3']) {
+        if (imageStore[k]) {
+          try {
+            urls[k] = await uploadImage(sb, imageStore[k], k, slug);
+          } catch (imgErr) {
+            console.warn('No se pudo subir ' + k, imgErr);
+          }
+        }
+      }
+    }
+
+    setStatus('loading', 'Guardando tu almacén...');
+
+    const categorias = getChecked('a-categorias');
+    const datos = {
+      marcas: getChecked('a-marcas').join(', '),
+      domicilio: getRadio('a-domicilio'),
+      hora_abre: document.getElementById('a-hora-abre').value,
+      hora_cierra: document.getElementById('a-hora-cierra').value,
+      dias: getChecked('a-dias').join(', '),
+      descripcion: document.getElementById('a-descripcion').value.trim(),
+    };
+
+    const { error: insertError } = await sb.from('almacenes').insert([{
+      auth_id: userId,
+      nombre: nombre,
+      ciudad: ciudad,
+      telefono: tel,
+      email: sessionUser ? sessionUser.email : email,
+      direccion: document.getElementById('a-direccion').value.trim(),
+      barrio: document.getElementById('a-barrio').value.trim(),
+      ubicacion: document.getElementById('a-direccion').value.trim(),
+      contacto: document.getElementById('a-contacto').value.trim(),
+      categorias: categorias.join(', '),
+      logo_url: urls.logo,
+      foto1_url: urls.foto1,
+      foto2_url: urls.foto2,
+      foto3_url: urls.foto3,
+      datos: datos,
+      slug: slug,
+      status: 'activo',
+      aprobado: false,
+    }]);
+
+    if (insertError) throw insertError;
+
+    setStatus('success', 'Registrado exitosamente');
+    form.style.display = 'none';
+    document.getElementById('btnPortal').href = '/mi-almacen?slug=' + encodeURIComponent(slug);
+    document.getElementById('successCard').classList.add('visible');
+  } catch (err) {
+    console.error(err);
+    const already = /already registered|already exists/i.test(err.message || '');
+    setStatus('error', already
+      ? 'Ese correo ya tiene una cuenta en Ridera. Si es tuya, entra por Iniciar sesión. Si no, usa otro correo.'
+      : (err.message || 'Error en el registro. Intenta de nuevo.'));
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

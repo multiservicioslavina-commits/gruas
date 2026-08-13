@@ -1,14 +1,21 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NPWT32Q5');</script>
+<!-- End Google Tag Manager -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Clubes · Ridera 125</title>
+<meta name="robots" content="noindex, nofollow">
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#0d0d0d">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" type="image/png" href="favicon.png">
-<link rel="icon" href="favicon.ico" sizes="any">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Ridera 125">
@@ -60,6 +67,10 @@
 </style>
 </head>
 <body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NPWT32Q5"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
   <header class="top">
     <a class="back" href="pasaporte.html">‹</a>
     <div><div class="eyebrow">Comunidad · Antioquia 125</div><h1>Clubes</h1></div>
@@ -124,6 +135,7 @@ const SUPABASE_URL="https://vzzxsdtsaahhzyctvmhx.supabase.co";
 const SUPABASE_KEY="sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu";
 const sb=supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const $=id=>document.getElementById(id);
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 let userId=null;
 
 (async function(){
@@ -159,7 +171,7 @@ async function loadMyClubs(){
       ? '<div class="codebox">Código para invitar: <span class="code">'+c.codigo+'</span></div>'
       : '';
     return '<div class="card">'
-      +'<div class="club-name">'+(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+pendBadge+'</div>'
+      +'<div class="club-name">'+esc(c.nombre||"Club")+(lider?'<span class="badge">LÍDER</span>':'')+pendBadge+'</div>'
       +(pendiente
         ? '<p style="font-size:13px;color:var(--ink-faint);margin:8px 0 0;line-height:1.5">Tu club está en revisión. El equipo Ridera lo aprobará en 24–48 horas.</p>'
         : codigoBox + pctBar(st.porcentaje_club)
@@ -178,7 +190,7 @@ async function loadRanking(){
     if(!data || !data.length){ box.innerHTML='<div class="empty">Aún no hay clubes en el ranking. ¡Sé el primero!</div>'; return; }
     box.innerHTML = data.map((c,i)=>
       '<div class="rank-row"><div class="rank-pos">'+(i+1)+'</div>'
-      +'<div class="rank-info"><div class="n">'+c.nombre+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
+      +'<div class="rank-info"><div class="n">'+esc(c.nombre)+'</div><div class="s">'+(c.municipios_cubiertos||0)+'/125 · '+(c.miembros||0)+' miembros</div></div>'
       +'<div class="rank-pct">'+(c.porcentaje_club||0)+'%</div></div>'
     ).join("");
   }catch(e){

@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NPWT32Q5');</script>
+<!-- End Google Tag Manager -->
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perfil de Rider — Ridera</title>
+<meta name="description" content="Perfil de motociclista en Ridera. Consulta estadísticas, rodadas y actividad de riders en la comunidad Ridera.">
+<link rel="canonical" href="https://gruas.ridera.com.co/rider/">
+<meta property="og:type" content="profile">
+<meta property="og:site_name" content="Ridera">
+<meta property="og:title" content="Perfil de Rider — Ridera">
+<meta property="og:description" content="Perfil de motociclista en Ridera. Consulta estadísticas, rodadas y actividad.">
+<meta property="og:url" content="https://gruas.ridera.com.co/rider/">
+<meta property="og:image" content="https://gruas.ridera.com.co/apple-touch-icon.png">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Perfil de Rider — Ridera">
+<meta name="twitter:description" content="Perfil de motociclista en Ridera. Consulta estadísticas, rodadas y actividad.">
+<meta name="robots" content="noindex, nofollow">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+  :root {
+    --void: #0e0e0e;
+    --surface: #141414;
+    --card: #1a1a1a;
+    --orange: #E85D20;
+    --ink: #e6e3de;
+    --muted: #8a8a8a;
+    --line: #2a2a2a;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--void);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 24px;
+  }
+  a { color: var(--orange); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  .container { max-width: 680px; width: 100%; margin: 0 auto; }
+
+  /* NAV */
+  .nav {
+    width: 100%; max-width: 680px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 0; margin-bottom: 32px;
+    border-bottom: 1px solid var(--line);
+  }
+  .nav-brand {
+    font-family: var(--font-display);
+    font-size: 28px; letter-spacing: 3px; color: var(--orange);
+  }
+  .nav-links { display: flex; gap: 12px; align-items: center; }
+  .nav-links a, .nav-links button {
+    font-size: 13px; color: var(--muted); background: none; border: none;
+    cursor: pointer; font-family: var(--font-body);
+  }
+  .nav-links button:hover { color: var(--orange); }
+
+  /* AUTH */
+  .auth-box {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 40px 32px;
+    text-align: center;
+  }
+  .auth-box h2 {
+    font-family: var(--font-display);
+    font-size: 32px; letter-spacing: 2px;
+    margin-bottom: 8px;
+  }
+  .auth-box p { color: var(--muted); margin-bottom: 24px; font-size: 14px; }
+  .auth-box input {
+    width: 100%; padding: 12px 16px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; color: var(--ink); font-size: 15px;
+    margin-bottom: 12px; outline: none;
+    font-family: var(--font-body);
+  }
+  .auth-box input:focus { border-color: var(--orange); }
+  .btn {
+    display: inline-block; padding: 12px 32px;
+    background: var(--orange); color: #fff;
+    border: none; border-radius: 8px;
+    font-size: 14px; font-weight: 700;
+    cursor: pointer; width: 100%;
+    font-family: var(--font-body);
+    transition: opacity 0.2s;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .msg { margin-top: 16px; font-size: 13px; color: var(--muted); }
+  .msg.error { color: #e55; }
+
+  /* PROFILE */
+  .profile-header {
+    display: flex; align-items: center; gap: 20px;
+    margin-bottom: 32px;
+  }
+  .profile-avatar {
+    width: 80px; height: 80px; border-radius: 50%;
+    object-fit: cover; background: var(--card); border: 3px solid var(--orange);
+  }
+  .profile-info h1 {
+    font-family: var(--font-display);
+    font-size: 36px; letter-spacing: 2px; line-height: 1;
+  }
+  .profile-info .meta { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .profile-info .moto { color: var(--orange); font-size: 14px; font-weight: 500; margin-top: 2px; }
+
+  .stats-grid {
+    display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+    margin-bottom: 32px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; text-align: center;
+  }
+  .stat-card .value {
+    font-family: var(--font-display);
+    font-size: 28px; color: var(--orange);
+  }
+  .stat-card .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+
+  /* RIDES LIST */
+  .section-title {
+    font-family: var(--font-display);
+    font-size: 22px; letter-spacing: 1px;
+    margin-bottom: 16px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ride-card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; margin-bottom: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+    transition: border-color 0.2s;
+  }
+  .ride-card:hover { border-color: var(--orange); }
+  .ride-card .ride-name { font-weight: 700; font-size: 15px; }
+  .ride-card .ride-meta { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .ride-card .ride-stats { text-align: right; font-size: 13px; color: var(--muted); }
+  .ride-card .ride-stats .km { color: var(--orange); font-weight: 700; font-size: 15px; }
+
+  .empty-state { text-align: center; color: var(--muted); padding: 40px; font-size: 14px; }
+
+  /* MAP */
+  #ride-map {
+    width: 100%; height: 300px;
+    border-radius: 10px; margin-bottom: 24px;
+    background: var(--card); border: 1px solid var(--line);
+  }
+
+  /* EDIT FORM */
+  .edit-section { margin-top: 32px; }
+  .edit-section label {
+    display: block; font-size: 12px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    margin-bottom: 4px; margin-top: 16px;
+  }
+  .edit-section input {
+    width: 100%; padding: 10px 14px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 8px; color: var(--ink); font-size: 14px;
+    outline: none; font-family: var(--font-body);
+  }
+  .edit-section input:focus { border-color: var(--orange); }
+  .btn-row { display: flex; gap: 12px; margin-top: 24px; }
+  .btn-secondary {
+    padding: 10px 24px; background: var(--card);
+    border: 1px solid var(--line); border-radius: 8px;
+    color: var(--ink); cursor: pointer; font-size: 13px;
+    font-family: var(--font-body);
+  }
+  .btn-secondary:hover { border-color: var(--orange); }
+
+  .slug-hint {
+    font-size: 12px; color: var(--muted); margin-top: 4px;
+  }
+  .slug-hint code { color: var(--orange); }
+
+  /* SHARE LINK */
+  .share-box {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 10px; padding: 16px; margin-top: 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .share-box input {
+    flex: 1; padding: 8px 12px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: 6px; color: var(--ink); font-size: 13px;
+    font-family: var(--font-body); outline: none;
+  }
+  .share-box .btn { width: auto; padding: 8px 16px; font-size: 12px; }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 600px) {
+    body { padding: 16px; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .profile-header { flex-direction: column; text-align: center; }
+  }
+</style>
+</head>
+<body>
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-NPWT32Q5"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<div class="container">
+  <nav class="nav">
+    <a href="/rider/" class="nav-brand">RIDERA</a>
+    <div class="nav-links" id="nav-links"></div>
+  </nav>
+
+  <!-- AUTH SCREEN -->
+  <div id="view-auth" class="hidden">
+    <div class="auth-box">
+      <h2>INICIA SESION</h2>
+      <p>Usa el correo con el que te registraste en la app Ridera</p>
+      <input type="email" id="auth-email" placeholder="tu@correo.com" />
+      <button class="btn" id="auth-btn" onclick="doLogin()">Enviar Magic Link</button>
+      <div class="msg" id="auth-msg"></div>
+    </div>
+  </div>
+
+  <!-- MY PROFILE (private, editable) -->
+  <div id="view-my-profile" class="hidden">
+    <div class="profile-header">
+      <img class="profile-avatar" id="my-avatar" src="" alt="avatar" />
+      <div class="profile-info">
+        <h1 id="my-name"></h1>
+        <div class="meta" id="my-city"></div>
+        <div class="moto" id="my-moto"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="my-stats"></div>
+
+    <div class="share-box" id="share-box">
+      <input type="text" id="share-url" readonly />
+      <button class="btn" onclick="copyShareLink()">Copiar</button>
+    </div>
+
+    <div class="section-title" style="margin-top:32px">Mis Rodadas</div>
+    <div id="my-rides"></div>
+
+    <div class="edit-section">
+      <div class="section-title">Editar Perfil</div>
+      <label>Nombre</label>
+      <input id="edit-nombre" />
+      <label>Apellido</label>
+      <input id="edit-apellido" />
+      <label>Ciudad</label>
+      <input id="edit-ciudad" />
+      <label>Slug (URL pública)</label>
+      <input id="edit-slug" placeholder="mi-nombre" />
+      <div class="slug-hint">Tu perfil será visible en <code>gruas.ridera.com.co/rider/?u=<span id="slug-preview">tu-slug</span></code></div>
+      <div class="btn-row">
+        <button class="btn" onclick="saveProfile()">Guardar</button>
+      </div>
+      <div class="msg" id="edit-msg"></div>
+    </div>
+  </div>
+
+  <!-- PUBLIC PROFILE -->
+  <div id="view-public" class="hidden">
+    <div class="profile-header">
+      <img class="profile-avatar" id="pub-avatar" src="" alt="avatar" />
+      <div class="profile-info">
+        <h1 id="pub-name"></h1>
+        <div class="meta" id="pub-city"></div>
+        <div class="moto" id="pub-moto"></div>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="pub-stats"></div>
+    <div id="ride-map"></div>
+    <div class="section-title">Rodadas</div>
+    <div id="pub-rides"></div>
+  </div>
+
+  <!-- LOADING -->
+  <div id="view-loading" class="empty-state">Cargando...</div>
+</div>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<script>
+const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+
+const $ = id => document.getElementById(id);
+const show = id => $(id).classList.remove('hidden');
+const hide = id => $(id).classList.add('hidden');
+
+let currentUser = null;
+let riderData = null;
+let map = null;
+
+async function init() {
+  const params = new URLSearchParams(location.search);
+  const slug = params.get('u');
+
+  // Handle magic link callback
+  if (location.hash.includes('access_token')) {
+    const { data, error } = await sb.auth.getSession();
+  }
+
+  const { data: { session } } = await sb.auth.getSession();
+
+  if (slug && !session) {
+    // Public profile view
+    hide('view-loading');
+    await loadPublicProfile(slug);
+    return;
+  }
+
+  if (slug && session) {
+    // Check if it's the user's own profile
+    const { data: rider } = await sb.from('riders').select('slug').eq('id', session.user.id).single();
+    if (rider && rider.slug === slug) {
+      hide('view-loading');
+      await loadMyProfile(session.user.id);
+      return;
+    }
+    hide('view-loading');
+    await loadPublicProfile(slug);
+    return;
+  }
+
+  if (session) {
+    currentUser = session.user;
+    hide('view-loading');
+    await loadMyProfile(session.user.id);
+    updateNav(true);
+  } else {
+    hide('view-loading');
+    show('view-auth');
+    updateNav(false);
+  }
+}
+
+function updateNav(loggedIn) {
+  const nav = $('nav-links');
+  if (loggedIn) {
+    nav.innerHTML = `<a href="/rider/">Mi Perfil</a><button onclick="doLogout()">Salir</button>`;
+  } else {
+    nav.innerHTML = `<a href="/">Grúas</a>`;
+  }
+}
+
+async function doLogin() {
+  const email = $('auth-email').value.trim();
+  if (!email) { $('auth-msg').textContent = 'Ingresa tu correo'; return; }
+  $('auth-btn').disabled = true;
+  $('auth-msg').textContent = 'Enviando...';
+
+  const { error } = await sb.auth.signInWithOtp({
+    email,
+    options: { emailRedirectTo: location.origin + '/rider/' }
+  });
+
+  if (error) {
+    $('auth-msg').textContent = error.message;
+    $('auth-msg').className = 'msg error';
+  } else {
+    $('auth-msg').textContent = 'Revisa tu correo — te enviamos un enlace para entrar.';
+    $('auth-msg').className = 'msg';
+  }
+  $('auth-btn').disabled = false;
+}
+
+async function doLogout() {
+  await sb.auth.signOut();
+  location.href = '/rider/';
+}
+
+async function loadMyProfile(uid) {
+  show('view-my-profile');
+  updateNav(true);
+
+  const { data: rider } = await sb.from('riders').select('*').eq('id', uid).single();
+  if (!rider) { $('my-name').textContent = 'Perfil no encontrado'; return; }
+  riderData = rider;
+
+  $('my-avatar').src = rider.foto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.nombre || 'R')}&background=E85D20&color=fff&size=160`;
+  $('my-name').textContent = `${rider.nombre || ''} ${rider.apellido || ''}`.trim() || 'Rider';
+  $('my-city').textContent = rider.ciudad || '';
+  $('my-moto').textContent = [rider.moto_marca, rider.moto_modelo, rider.moto_cc ? `${rider.moto_cc}cc` : ''].filter(Boolean).join(' ') || '';
+
+  // Slug
+  $('edit-nombre').value = rider.nombre || '';
+  $('edit-apellido').value = rider.apellido || '';
+  $('edit-ciudad').value = rider.ciudad || '';
+  $('edit-slug').value = rider.slug || '';
+  $('edit-slug').oninput = () => { $('slug-preview').textContent = $('edit-slug').value || 'tu-slug'; };
+  $('slug-preview').textContent = rider.slug || 'tu-slug';
+
+  if (rider.slug) {
+    $('share-url').value = `${location.origin}/rider/?u=${rider.slug}`;
+    show('share-box');
+  } else {
+    hide('share-box');
+  }
+
+  // Load rides
+  const { data: memberships } = await sb.from('members')
+    .select('ride_id, distance_km, duration_seconds, max_speed_kmh, finished_at, video_url')
+    .eq('uid', uid)
+    .not('finished_at', 'is', null)
+    .order('finished_at', { ascending: false })
+    .limit(50);
+
+  if (memberships && memberships.length > 0) {
+    const rideIds = memberships.map(m => m.ride_id);
+    const { data: rides } = await sb.from('rides')
+      .select('id, nombre, origin_name, destination_name')
+      .in('id', rideIds);
+
+    const ridesMap = {};
+    (rides || []).forEach(r => ridesMap[r.id] = r);
+
+    let totalKm = 0, totalTime = 0, maxSpeed = 0;
+    memberships.forEach(m => {
+      totalKm += m.distance_km || 0;
+      totalTime += m.duration_seconds || 0;
+      if ((m.max_speed_kmh || 0) > maxSpeed) maxSpeed = m.max_speed_kmh;
+    });
+
+    $('my-stats').innerHTML = `
+      <div class="stat-card"><div class="value">${memberships.length}</div><div class="label">Rodadas</div></div>
+      <div class="stat-card"><div class="value">${totalKm.toFixed(0)}</div><div class="label">Km totales</div></div>
+      <div class="stat-card"><div class="value">${maxSpeed.toFixed(0)}</div><div class="label">Vel. máx km/h</div></div>
+    `;
+
+    $('my-rides').innerHTML = memberships.map(m => {
+      const ride = ridesMap[m.ride_id] || {};
+      const name = ride.nombre || `${ride.origin_name || '?'} → ${ride.destination_name || '?'}`;
+      const date = m.finished_at ? new Date(m.finished_at).toLocaleDateString('es-CO') : '';
+      const dur = m.duration_seconds ? `${Math.round(m.duration_seconds / 60)} min` : '';
+      return `<div class="ride-card">
+        <div><div class="ride-name">${name}</div><div class="ride-meta">${date} · ${dur}</div></div>
+        <div class="ride-stats"><div class="km">${(m.distance_km || 0).toFixed(1)} km</div></div>
+      </div>`;
+    }).join('');
+  } else {
+    $('my-stats').innerHTML = `
+      <div class="stat-card"><div class="value">0</div><div class="label">Rodadas</div></div>
+      <div class="stat-card"><div class="value">0</div><div class="label">Km totales</div></div>
+      <div class="stat-card"><div class="value">0</div><div class="label">Vel. máx km/h</div></div>
+    `;
+    $('my-rides').innerHTML = '<div class="empty-state">Aún no tienes rodadas terminadas</div>';
+  }
+}
+
+async function loadPublicProfile(slug) {
+  show('view-public');
+  updateNav(false);
+
+  const { data: rider } = await sb.from('riders')
+    .select('id, nombre, apellido, ciudad, moto_marca, moto_modelo, moto_cc, foto_url, tipo_moto')
+    .eq('slug', slug).single();
+
+  if (!rider) {
+    $('pub-name').textContent = 'Rider no encontrado';
+    return;
+  }
+
+  $('pub-avatar').src = rider.foto_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(rider.nombre || 'R')}&background=E85D20&color=fff&size=160`;
+  $('pub-name').textContent = `${rider.nombre || ''} ${rider.apellido || ''}`.trim() || 'Rider';
+  $('pub-city').textContent = rider.ciudad || '';
+  $('pub-moto').textContent = [rider.moto_marca, rider.moto_modelo, rider.moto_cc ? `${rider.moto_cc}cc` : ''].filter(Boolean).join(' ') || '';
+
+  // Load rides
+  const { data: memberships } = await sb.from('members')
+    .select('ride_id, distance_km, duration_seconds, max_speed_kmh, finished_at')
+    .eq('uid', rider.id)
+    .not('finished_at', 'is', null)
+    .order('finished_at', { ascending: false })
+    .limit(50);
+
+  if (!memberships || memberships.length === 0) {
+    $('pub-stats').innerHTML = '<div class="empty-state">Sin rodadas públicas</div>';
+    $('pub-rides').innerHTML = '';
+    hide('ride-map');
+    return;
+  }
+
+  const rideIds = memberships.map(m => m.ride_id);
+  const { data: rides } = await sb.from('rides')
+    .select('id, nombre, origin_name, destination_name, origin_lat, origin_lon, destination_lat, destination_lon')
+    .in('id', rideIds);
+
+  const ridesMap = {};
+  (rides || []).forEach(r => ridesMap[r.id] = r);
+
+  let totalKm = 0, totalTime = 0, maxSpeed = 0;
+  memberships.forEach(m => {
+    totalKm += m.distance_km || 0;
+    totalTime += m.duration_seconds || 0;
+    if ((m.max_speed_kmh || 0) > maxSpeed) maxSpeed = m.max_speed_kmh;
+  });
+
+  $('pub-stats').innerHTML = `
+    <div class="stat-card"><div class="value">${memberships.length}</div><div class="label">Rodadas</div></div>
+    <div class="stat-card"><div class="value">${totalKm.toFixed(0)}</div><div class="label">Km totales</div></div>
+    <div class="stat-card"><div class="value">${maxSpeed.toFixed(0)}</div><div class="label">Vel. máx km/h</div></div>
+  `;
+
+  $('pub-rides').innerHTML = memberships.map(m => {
+    const ride = ridesMap[m.ride_id] || {};
+    const name = ride.nombre || `${ride.origin_name || '?'} → ${ride.destination_name || '?'}`;
+    const date = m.finished_at ? new Date(m.finished_at).toLocaleDateString('es-CO') : '';
+    return `<div class="ride-card">
+      <div><div class="ride-name">${name}</div><div class="ride-meta">${date}</div></div>
+      <div class="ride-stats"><div class="km">${(m.distance_km || 0).toFixed(1)} km</div></div>
+    </div>`;
+  }).join('');
+
+  // Map with ride markers
+  const points = (rides || []).filter(r => r.origin_lat && r.origin_lon);
+  if (points.length > 0) {
+    map = L.map('ride-map').setView([points[0].origin_lat, points[0].origin_lon], 10);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const bounds = L.latLngBounds();
+    points.forEach(r => {
+      const marker = L.circleMarker([r.origin_lat, r.origin_lon], {
+        radius: 6, fillColor: '#E85D20', color: '#fff', weight: 2, fillOpacity: 0.9
+      }).addTo(map);
+      marker.bindPopup(`<b>${r.nombre || 'Rodada'}</b><br>${r.origin_name || ''}`);
+      bounds.extend([r.origin_lat, r.origin_lon]);
+      if (r.destination_lat && r.destination_lon) {
+        bounds.extend([r.destination_lat, r.destination_lon]);
+      }
+    });
+    map.fitBounds(bounds, { padding: [30, 30] });
+  } else {
+    $('ride-map').style.display = 'none';
+  }
+}
+
+async function saveProfile() {
+  if (!currentUser) return;
+  const updates = {
+    nombre: $('edit-nombre').value.trim(),
+    apellido: $('edit-apellido').value.trim(),
+    ciudad: $('edit-ciudad').value.trim(),
+  };
+  const slug = $('edit-slug').value.trim().toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-');
+  if (slug) updates.slug = slug;
+
+  const { error } = await sb.from('riders').update(updates).eq('id', currentUser.id);
+  if (error) {
+    $('edit-msg').textContent = error.message.includes('unique') ? 'Ese slug ya está en uso' : error.message;
+    $('edit-msg').className = 'msg error';
+  } else {
+    $('edit-msg').textContent = 'Guardado';
+    $('edit-msg').className = 'msg';
+    if (slug) {
+      $('share-url').value = `${location.origin}/rider/?u=${slug}`;
+      show('share-box');
+    }
+  }
+}
+
+function copyShareLink() {
+  $('share-url').select();
+  navigator.clipboard.writeText($('share-url').value);
+  $('share-url').value = 'Copiado!';
+  setTimeout(() => { $('share-url').value = `${location.origin}/rider/?u=${riderData.slug}`; }, 1500);
+}
+
+// Boot
+init();
+</script>
+</body>
+</html>

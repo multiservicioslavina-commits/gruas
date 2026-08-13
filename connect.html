@@ -1,0 +1,936 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1117">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="/manifest-connect.json">
+<title>Ridera Club</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #242836; --border: #2e3345;
+    --text: #e8e9ed; --text2: #8b8fa3; --accent: #f97316; --accent2: #fb923c;
+    --green: #22c55e; --blue: #3b82f6; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  /* ── Login ── */
+  .login-screen {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    height: 100%; padding: 24px; text-align: center;
+  }
+  .login-screen.hidden { display: none; }
+  .login-logo { font-size: 48px; margin-bottom: 8px; }
+  .login-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .login-title span { color: var(--accent); }
+  .login-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+  .login-club { color: var(--accent); font-size: 15px; font-weight: 600; margin-bottom: 24px; }
+  .login-input {
+    width: 100%; max-width: 320px; padding: 14px 16px; border-radius: 12px;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+    font-size: 18px; text-align: center; letter-spacing: 1px;
+  }
+  .login-input:focus { outline: none; border-color: var(--accent); }
+  .login-input::placeholder { color: var(--text2); letter-spacing: 0; font-size: 14px; }
+  .login-btn {
+    width: 100%; max-width: 320px; padding: 14px; border-radius: 12px; border: none;
+    background: var(--accent); color: #fff; font-size: 16px; font-weight: 600;
+    cursor: pointer; margin-top: 12px; transition: background .2s;
+  }
+  .login-btn:hover { background: var(--accent2); }
+  .login-btn:disabled { opacity: .5; cursor: not-allowed; }
+  .login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 20px; }
+
+  /* ── App shell ── */
+  .app { display: none; flex-direction: column; height: 100%; }
+  .app.active { display: flex; }
+
+  /* Header */
+  .app-header {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 12px 16px; display: flex; align-items: center; gap: 12px;
+    flex-shrink: 0;
+  }
+  .menu-btn {
+    background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer;
+    padding: 4px; line-height: 1;
+  }
+  .header-info { flex: 1; }
+  .header-club { font-size: 13px; color: var(--text2); }
+  .header-room { font-size: 16px; font-weight: 600; }
+  .header-room .room-icon { margin-right: 6px; }
+  .header-members { font-size: 11px; color: var(--text2); }
+
+  /* Rooms drawer */
+  .drawer-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.5); z-index: 50;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .drawer-overlay.open { opacity: 1; pointer-events: auto; }
+  .drawer {
+    position: fixed; top: 0; left: -280px; width: 280px; height: 100%;
+    background: var(--surface); z-index: 51; transition: left .25s ease;
+    display: flex; flex-direction: column;
+  }
+  .drawer.open { left: 0; }
+  .drawer-header {
+    padding: 20px 16px 12px; border-bottom: 1px solid var(--border);
+  }
+  .drawer-title { font-size: 18px; font-weight: 700; }
+  .drawer-title span { color: var(--accent); }
+  .drawer-club { font-size: 13px; color: var(--text2); margin-top: 2px; }
+  .drawer-rooms { flex: 1; overflow-y: auto; padding: 8px; }
+  .drawer-room {
+    display: flex; align-items: center; gap: 12px; padding: 12px;
+    border-radius: 10px; cursor: pointer; transition: background .15s;
+  }
+  .drawer-room:hover { background: var(--surface2); }
+  .drawer-room.active { background: var(--accent); }
+  .drawer-room .r-icon { font-size: 22px; width: 36px; text-align: center; }
+  .drawer-room .r-name { font-size: 14px; font-weight: 500; }
+  .drawer-room .r-desc { font-size: 11px; color: var(--text2); }
+  .drawer-room.active .r-desc { color: rgba(255,255,255,.7); }
+  .unread-badge { background: var(--red); color: #fff; border-radius: 12px; padding: 2px 8px; font-size: 11px; font-weight: 600; margin-left: auto; }
+  .drawer-footer {
+    padding: 12px 16px; border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--text2);
+  }
+  .drawer-logout {
+    background: none; border: none; color: var(--red); font-size: 13px;
+    cursor: pointer; padding: 8px 0;
+  }
+  .drawer-app-link {
+    display: flex; align-items: center; gap: 10px; padding: 10px 0;
+    color: var(--text); font-size: 13px; font-weight: 500;
+    text-decoration: none; border-radius: 8px; transition: opacity .15s;
+  }
+  .drawer-app-link:hover { opacity: .8; }
+  .drawer-app-link .app-icon {
+    width: 32px; height: 32px; border-radius: 8px; background: var(--accent);
+    display: flex; align-items: center; justify-content: center; font-size: 16px;
+  }
+
+  /* Messages area */
+  .messages {
+    flex: 1; overflow-y: auto; padding: 12px 16px; display: flex;
+    flex-direction: column; gap: 6px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .msg {
+    max-width: 85%; padding: 10px 14px; border-radius: 16px;
+    font-size: 14px; line-height: 1.45; word-wrap: break-word;
+    position: relative;
+  }
+  .msg-mine {
+    align-self: flex-end; background: var(--accent); color: #fff;
+    border-bottom-right-radius: 4px;
+  }
+  .msg-other {
+    align-self: flex-start; background: var(--surface2);
+    border-bottom-left-radius: 4px;
+  }
+  .msg-rita {
+    align-self: flex-start; background: linear-gradient(135deg, #1e3a5f, #1a2d47);
+    border: 1px solid #2a4a6f; border-bottom-left-radius: 4px;
+  }
+  .msg-system {
+    align-self: center; background: transparent; color: var(--text2);
+    font-size: 12px; text-align: center; padding: 8px 0;
+  }
+  .msg-sender {
+    font-size: 11px; font-weight: 600; margin-bottom: 3px;
+    color: var(--accent2);
+  }
+  .msg-rita .msg-sender { color: #60a5fa; }
+  .msg-time {
+    font-size: 10px; opacity: .6; margin-top: 4px; text-align: right;
+  }
+  .msg-date-divider {
+    text-align: center; color: var(--text2); font-size: 11px;
+    padding: 12px 0 6px; font-weight: 500;
+  }
+
+  .empty-room {
+    flex: 1; display: flex; flex-direction: column; align-items: center;
+    justify-content: center; color: var(--text2); text-align: center; padding: 24px;
+  }
+  .empty-room .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-room p { font-size: 14px; }
+
+  /* Input bar */
+  .input-bar {
+    background: var(--surface); border-top: 1px solid var(--border);
+    padding: 10px 12px; display: flex; gap: 8px; align-items: flex-end;
+    flex-shrink: 0;
+  }
+  .input-bar textarea {
+    flex: 1; padding: 10px 14px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    font-family: inherit; resize: none; max-height: 120px; line-height: 1.4;
+    outline: none;
+  }
+  .input-bar textarea:focus { border-color: var(--accent); }
+  .input-bar textarea::placeholder { color: var(--text2); }
+  .send-btn {
+    width: 42px; height: 42px; border-radius: 50%; border: none;
+    background: var(--accent); color: #fff; font-size: 18px; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: background .2s;
+  }
+  .send-btn:hover { background: var(--accent2); }
+  .send-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+  /* Cards tab */
+  .cards-btn {
+    background: none; border: none; color: var(--text2); font-size: 20px;
+    cursor: pointer; padding: 4px;
+  }
+  .cards-panel {
+    display: none; flex: 1; overflow-y: auto; padding: 16px;
+  }
+  .cards-panel.active { display: block; }
+  .card-item {
+    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
+    padding: 14px; margin-bottom: 10px;
+  }
+  .card-type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .5px;
+    color: var(--accent); font-weight: 600; margin-bottom: 4px;
+  }
+  .card-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+  .card-detail { font-size: 13px; color: var(--text2); }
+
+  .typing-indicator {
+    align-self: flex-start; padding: 8px 14px; background: var(--surface2);
+    border-radius: 16px; font-size: 13px; color: var(--text2);
+    display: none;
+  }
+  .typing-indicator.show { display: block; }
+
+  /* ── Club directory ── */
+  .directory { display: none; flex-direction: column; align-items: center; min-height: 100%; padding: 32px 16px; overflow-y: auto; }
+  .directory.active { display: flex; }
+  .dir-logo { font-size: 48px; margin-bottom: 8px; }
+  .dir-title { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .dir-title span { color: var(--accent); }
+  .dir-sub { color: var(--text2); font-size: 14px; margin-bottom: 32px; }
+  .dir-list { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 12px; }
+  .dir-card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; cursor: pointer; transition: border-color .2s, transform .1s;
+    text-decoration: none; color: var(--text); display: flex; align-items: center; gap: 16px;
+  }
+  .dir-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+  .dir-card-icon { font-size: 36px; flex-shrink: 0; }
+  .dir-card-info { flex: 1; }
+  .dir-card-name { font-size: 16px; font-weight: 600; margin-bottom: 3px; }
+  .dir-card-members { font-size: 13px; color: var(--text2); }
+  .dir-card-arrow { color: var(--text2); font-size: 20px; }
+  .dir-empty { color: var(--text2); font-size: 14px; text-align: center; margin-top: 24px; }
+
+  /* ── Upload Modal ── */
+  .upload-modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  .upload-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  .upload-modal {
+    position: fixed; bottom: -100%; left: 0; right: 0; width: 100%; max-width: 100%;
+    background: var(--surface); z-index: 101;
+    display: flex; flex-direction: column; border-radius: 16px 16px 0 0;
+    transition: bottom .3s ease; padding: 16px 16px 12px;
+  }
+  .upload-modal.open { bottom: 0; }
+  .upload-modal-header { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: var(--text2); }
+  .upload-options {
+    display: flex; justify-content: space-around; margin-bottom: 16px;
+  }
+  .upload-option {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    background: none; border: none; cursor: pointer; padding: 4px;
+  }
+  .upload-option-icon {
+    width: 48px; height: 48px; border-radius: 50%; background: var(--surface2);
+    display: flex; align-items: center; justify-content: center; font-size: 22px;
+  }
+  .upload-option-label { font-size: 12px; color: var(--text2); }
+  .upload-modal-close {
+    width: 100%; padding: 10px; border-radius: 8px; border: none;
+    background: transparent; color: var(--text2); font-size: 13px;
+    cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- CLUB DIRECTORY -->
+<div class="directory" id="directory">
+  <div class="dir-logo">🏍️</div>
+  <div class="dir-title"><span>Ridera</span> Club</div>
+  <div class="dir-sub">Elige tu club</div>
+  <div class="dir-list" id="dir-list"></div>
+</div>
+
+<!-- LOGIN -->
+<div class="login-screen" id="login-screen">
+  <div class="login-logo">🏍️</div>
+  <div class="login-title"><span>Ridera</span> Club</div>
+  <div class="login-sub">El espacio de tu club</div>
+  <div class="login-club" id="login-club-name"></div>
+  <input class="login-input" id="login-phone" type="tel" placeholder="Tu número de celular" maxlength="15" inputmode="numeric">
+  <button class="login-btn" id="login-btn" onclick="login()">Entrar</button>
+  <div class="login-error" id="login-error"></div>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <div class="app-header">
+    <button class="menu-btn" onclick="toggleDrawer()">☰</button>
+    <div class="header-info">
+      <div class="header-club" id="h-club"></div>
+      <div class="header-room" id="h-room"></div>
+    </div>
+    <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
+  </div>
+
+  <div class="messages" id="messages"></div>
+  <div class="cards-panel" id="cards-panel"></div>
+
+  <div class="input-bar">
+    <button class="send-btn" id="file-btn" onclick="openUploadModal()" title="Agregar contenido" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">📎</button>
+    <button class="send-btn" id="voice-btn" onclick="toggleVoiceRecording()" title="Voz" style="background: transparent; color: var(--text2); width: 36px; height: 36px;">🎤</button>
+    <textarea id="msg-input" rows="1" placeholder="Escribe un mensaje..." onkeydown="handleKey(event)" oninput="autoResize(this)"></textarea>
+    <button class="send-btn" id="send-btn" onclick="sendMessage()">➤</button>
+  </div>
+</div>
+
+<!-- DRAWER -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="toggleDrawer()"></div>
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title"><span>Ridera</span> Club</div>
+    <div class="drawer-club" id="d-club"></div>
+  </div>
+  <div class="drawer-rooms" id="d-rooms"></div>
+  <div class="drawer-footer">
+    <a class="drawer-app-link" href="/lyrapp" download="Lyrapp.apk">
+      <div class="app-icon" style="background: var(--blue);">🎧</div>
+      Lyrapp - Descargar
+    </a>
+    <button class="drawer-logout" onclick="logout()">Cerrar sesión</button>
+  </div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="upload-modal-overlay" id="upload-modal-overlay" onclick="closeUploadModal()"></div>
+<div class="upload-modal" id="upload-modal">
+  <div class="upload-modal-header">Agregar contenido</div>
+  <div class="upload-options">
+    <div class="upload-option" onclick="openCamera()">
+      <div class="upload-option-icon">📷</div>
+      <div class="upload-option-label">Cámara</div>
+    </div>
+    <div class="upload-option" onclick="openPhotos()">
+      <div class="upload-option-icon">🖼️</div>
+      <div class="upload-option-label">Fotos</div>
+    </div>
+    <div class="upload-option" onclick="openFiles()">
+      <div class="upload-option-icon">📁</div>
+      <div class="upload-option-label">Archivo</div>
+    </div>
+  </div>
+  <button class="upload-modal-close" onclick="closeUploadModal()">Cancelar</button>
+</div>
+
+<input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
+<input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
+<input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let state = {
+  member: null,
+  club: null,
+  rooms: [],
+  currentRoom: null,
+  messages: [],
+  realtimeChannel: null,
+  showingCards: false
+};
+
+let isRecording = false;
+let mediaRecorder = null;
+let audioChunks = [];
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  if (opts.method === 'DELETE') return [];
+  return res.json();
+}
+
+function normalizePhone(raw) {
+  let d = raw.replace(/\D/g, '');
+  if (d.startsWith('57') && d.length === 12) return d;
+  if (d.length === 10 && d.startsWith('3')) return '57' + d;
+  return d;
+}
+
+// ── Init: check URL for club slug ──
+async function init() {
+  const pathParts = location.pathname.split('/').filter(Boolean);
+  const slug = pathParts.length > 0 ? pathParts[pathParts.length - 1] : null;
+  const isHome = !slug || slug === 'connect';
+  const saved = localStorage.getItem('connect_session');
+
+  // No slug → show club directory
+  if (isHome && !saved) {
+    return showDirectory();
+  }
+
+  // Load club from slug
+  let clubs;
+  if (slug && slug !== 'connect') {
+    clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre,codigo&limit=1`);
+  }
+
+  // If saved session, try to restore that club
+  if ((!clubs || !clubs.length) && saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (s.clubId) {
+        clubs = await sb(`clubs?id=eq.${s.clubId}&select=id,nombre,codigo&limit=1`);
+      }
+    } catch {}
+  }
+
+  // Still nothing → show directory
+  if (!clubs || !clubs.length) {
+    return showDirectory();
+  }
+
+  state.club = clubs[0];
+  document.getElementById('login-club-name').textContent = state.club.nombre;
+
+  // Check saved session
+  if (saved) {
+    try {
+      const s = JSON.parse(saved);
+      if (s.clubId === state.club.id) {
+        const members = await sb(`connect_members?id=eq.${s.memberId}&select=*`);
+        if (members.length) {
+          state.member = members[0];
+          await enterApp();
+          return;
+        }
+      }
+    } catch {}
+    localStorage.removeItem('connect_session');
+  }
+}
+
+async function login() {
+  const phone = normalizePhone(document.getElementById('login-phone').value);
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('login-btn');
+
+  if (phone.length < 10) { errEl.textContent = 'Ingresa un número válido'; return; }
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  errEl.textContent = '';
+
+  const members = await sb(`connect_members?club_id=eq.${state.club.id}&telefono=eq.${phone}&select=*`);
+  if (!members.length) {
+    errEl.textContent = 'Tu número no está registrado en este club. Pide al admin que te agregue.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+    return;
+  }
+
+  state.member = members[0];
+  localStorage.setItem('connect_session', JSON.stringify({
+    memberId: state.member.id, clubId: state.club.id
+  }));
+
+  // Mark as vinculado if pending
+  if (state.member.estado === 'pendiente') {
+    await sb(`connect_members?id=eq.${state.member.id}`, {
+      method: 'PATCH',
+      body: { estado: 'vinculado', vinculado_at: new Date().toISOString() }
+    });
+  }
+
+  btn.disabled = false; btn.textContent = 'Entrar';
+  await enterApp();
+}
+
+async function enterApp() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('app').classList.add('active');
+
+  // Load rooms
+  state.rooms = await sb(`connect_rooms?club_id=eq.${state.club.id}&select=*&order=orden`);
+
+  document.getElementById('h-club').textContent = state.club.nombre;
+  document.getElementById('d-club').textContent = state.club.nombre;
+  renderDrawerRooms();
+
+  if (state.rooms.length) {
+    switchRoom(state.rooms[0].id);
+  }
+}
+
+function renderDrawerRooms() {
+  const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+  document.getElementById('d-rooms').innerHTML = state.rooms.map(r => {
+    const count = unread[r.id] || 0;
+    return `
+    <div class="drawer-room ${state.currentRoom?.id === r.id ? 'active' : ''}"
+         onclick="switchRoom('${r.id}'); toggleDrawer();">
+      <div class="r-icon">${r.icono}</div>
+      <div>
+        <div class="r-name">${r.nombre}</div>
+        <div class="r-desc">${r.descripcion || ''}</div>
+      </div>
+      ${count > 0 ? `<div class="unread-badge">${count}</div>` : ''}
+    </div>
+  `;
+  }).join('');
+}
+
+async function switchRoom(roomId) {
+  if (state.realtimeChannel) {
+    state.realtimeChannel.unsubscribe();
+  }
+
+  state.currentRoom = state.rooms.find(r => r.id === roomId);
+  state.showingCards = false;
+  document.getElementById('cards-panel').classList.remove('active');
+  document.getElementById('messages').style.display = '';
+
+  // Ocultar botón de tarjetas en sala Rita
+  const cardsBtn = document.querySelector('.cards-btn');
+  if (cardsBtn) cardsBtn.style.display = state.currentRoom.slug === 'rita' ? 'none' : '';
+
+  document.getElementById('h-room').innerHTML = `<span class="room-icon">${state.currentRoom.icono}</span>${state.currentRoom.nombre}`;
+
+  // Clear unread badge for this room
+  const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+  delete unread[roomId];
+  localStorage.setItem('connect_unread', JSON.stringify(unread));
+  renderDrawerRooms();
+
+  // Load messages
+  const msgs = await sb(`connect_messages?room_id=eq.${roomId}&select=*,connect_members(nombre)&order=created_at.asc&limit=100`);
+  state.messages = msgs || [];
+  renderMessages();
+
+  // Subscribe to realtime
+  subscribeToRoom(roomId);
+}
+
+function subscribeToRoom(roomId) {
+  if (state.pollInterval) clearInterval(state.pollInterval);
+  if (state.globalPollInterval) clearInterval(state.globalPollInterval);
+
+  // Poll current room (500ms for faster updates)
+  state.pollInterval = setInterval(async () => {
+    const msgs = await sb(
+      `connect_messages?room_id=eq.${roomId}&select=*,connect_members(nombre)&order=created_at.asc`
+    );
+    if (msgs && msgs.length) {
+      state.messages = msgs;
+      renderMessages();
+      scrollToBottom();
+    }
+  }, 500);
+
+  // Poll other rooms for unread indicators
+  state.globalPollInterval = setInterval(async () => {
+    const unread = JSON.parse(localStorage.getItem('connect_unread') || '{}');
+    const roomMsgCounts = JSON.parse(localStorage.getItem('connect_msg_counts') || '{}');
+    let changed = false;
+
+    for (const room of state.rooms) {
+      if (room.id === roomId) continue;
+      const msgs = await sb(`connect_messages?room_id=eq.${room.id}&select=id`);
+      const count = msgs?.length || 0;
+      const lastKnown = roomMsgCounts[room.id] || 0;
+
+      if (count > lastKnown) {
+        unread[room.id] = (unread[room.id] || 0) + (count - lastKnown);
+        roomMsgCounts[room.id] = count;
+        changed = true;
+      }
+    }
+
+    if (changed) {
+      localStorage.setItem('connect_unread', JSON.stringify(unread));
+      localStorage.setItem('connect_msg_counts', JSON.stringify(roomMsgCounts));
+      renderDrawerRooms();
+    }
+  }, 3000);
+}
+
+function renderMessages() {
+  const container = document.getElementById('messages');
+  if (!state.messages.length) {
+    container.innerHTML = `
+      <div class="empty-room">
+        <div class="icon">${state.currentRoom?.icono || '💬'}</div>
+        <p>No hay mensajes en esta sala.<br>Sé el primero en escribir.</p>
+      </div>`;
+    return;
+  }
+
+  let html = '';
+  let lastDate = '';
+
+  for (const m of state.messages) {
+    const date = new Date(m.created_at);
+    const dateStr = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+    if (dateStr !== lastDate) {
+      html += `<div class="msg-date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+
+    const time = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const isMine = m.member_id === state.member.id;
+
+    if (m.tipo === 'system') {
+      html += `<div class="msg msg-system">${m.contenido}</div>`;
+    } else if (m.es_rita) {
+      html += `<div class="msg msg-rita">
+        <div class="msg-sender">🤖 Rita</div>
+        ${formatMessage(m.contenido)}
+        <div class="msg-time">${time}</div>
+      </div>`;
+    } else if (isMine) {
+      html += `<div class="msg msg-mine">
+        ${formatMessage(m.contenido)}
+        <div class="msg-time">${time}</div>
+      </div>`;
+    } else {
+      const sender = m.connect_members?.nombre || 'Anónimo';
+      html += `<div class="msg msg-other">
+        <div class="msg-sender">${sender}</div>
+        ${formatMessage(m.contenido)}
+        <div class="msg-time">${time}</div>
+      </div>`;
+    }
+  }
+
+  container.innerHTML = html;
+  scrollToBottom();
+}
+
+function formatMessage(text) {
+  // Convert URLs to clickable links
+  return text.replace(
+    /(https?:\/\/[^\s]+)/g,
+    '<a href="$1" target="_blank" style="color: var(--blue); text-decoration: underline;">$1</a>'
+  );
+}
+
+function scrollToBottom() {
+  const c = document.getElementById('messages');
+  setTimeout(() => c.scrollTop = c.scrollHeight, 50);
+}
+
+async function sendMessage() {
+  const input = document.getElementById('msg-input');
+  const text = input.value.trim();
+  if (!text || !state.currentRoom) return;
+
+  input.value = '';
+  autoResize(input);
+
+  const msg = {
+    room_id: state.currentRoom.id,
+    member_id: state.member.id,
+    contenido: text,
+    tipo: 'text',
+    es_rita: false
+  };
+
+  // Optimistic add
+  const tempMsg = {
+    ...msg,
+    id: 'temp-' + Date.now(),
+    created_at: new Date().toISOString(),
+    connect_members: { nombre: state.member.nombre }
+  };
+  state.messages.push(tempMsg);
+  renderMessages();
+
+  await sb('connect_messages', { method: 'POST', body: msg });
+
+  // Si es la sala de Rita, generar respuesta automática
+  if (state.currentRoom.slug === 'rita') {
+    try {
+      const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/rita-respond', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY },
+        body: JSON.stringify({ record: { content: text, member_id: state.member.id, club_id: state.club.id, sender: 'user' } })
+      });
+      const data = await res.json();
+      if (data.answer) {
+        await sb('connect_messages', { method: 'POST', body: {
+          room_id: state.currentRoom.id,
+          member_id: state.member.id,
+          contenido: data.answer,
+          tipo: 'text',
+          es_rita: true
+        }});
+      }
+    } catch (e) {
+      console.error('Rita error:', e);
+    }
+  }
+}
+
+function handleKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+function autoResize(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function toggleDrawer() {
+  document.getElementById('drawer').classList.toggle('open');
+  document.getElementById('drawer-overlay').classList.toggle('open');
+}
+
+async function toggleCards() {
+  state.showingCards = !state.showingCards;
+  const panel = document.getElementById('cards-panel');
+  const msgs = document.getElementById('messages');
+
+  if (state.showingCards) {
+    msgs.style.display = 'none';
+    panel.classList.add('active');
+    const cards = await sb(`connect_cards?room_id=eq.${state.currentRoom.id}&select=*&order=created_at.desc`);
+    if (!cards.length) {
+      panel.innerHTML = '<div class="empty-room"><div class="icon">🗂️</div><p>Rita aún no ha guardado tarjetas en esta sala.</p></div>';
+    } else {
+      panel.innerHTML = cards.map(c => {
+        const datos = c.datos || {};
+        const details = Object.entries(datos).map(([k,v]) => `${k}: ${v}`).join(' · ');
+        return `<div class="card-item">
+          <div class="card-type">${c.tipo}</div>
+          <div class="card-name">${c.nombre}</div>
+          ${details ? `<div class="card-detail">${details}</div>` : ''}
+        </div>`;
+      }).join('');
+    }
+  } else {
+    panel.classList.remove('active');
+    msgs.style.display = '';
+  }
+}
+
+async function sendFile(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const maxSize = 10 * 1024 * 1024; // 10MB
+  if (file.size > maxSize) {
+    alert('Archivo muy grande. Máximo 10MB');
+    return;
+  }
+
+  try {
+    const filename = `${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, '_')}`;
+    const path = `${state.club.id}/${state.currentRoom.id}/${filename}`;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const res = await fetch(
+      `${SB_URL}/storage/v1/object/connect-files/${path}`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SB_KEY}`,
+          'apikey': SB_KEY
+        },
+        body: file
+      }
+    );
+
+    if (!res.ok) throw new Error('Upload failed');
+
+    const fileUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+    const msg = `📎 ${file.name} (${(file.size/1024).toFixed(0)} KB)\n${fileUrl}`;
+
+    document.getElementById('msg-input').value = msg;
+    document.getElementById('msg-input').focus();
+  } catch (e) {
+    alert('Error al subir archivo: ' + e.message);
+  }
+
+  document.getElementById('file-input').value = '';
+}
+
+async function toggleVoiceRecording() {
+  if (!isRecording) {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: 'audio/mp4' });
+        const duration = mediaRecorder.stream.getTracks()[0]?.getCapabilities ? '?' : '0:00';
+
+        // Enviar el audio como un mensaje de voz
+        const formData = new FormData();
+        formData.append('file', blob, `voice-${Date.now()}.mp4`);
+
+        const voiceBtn = document.getElementById('voice-btn');
+        voiceBtn.disabled = true;
+
+        try {
+          // Subir audio a Supabase Storage
+          const filename = `voice-${state.member.id}-${Date.now()}.mp4`;
+          const path = `voices/${filename}`;
+
+          const uploadRes = await fetch(`${SB_URL}/storage/v1/object/connect-files/${path}`, {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${SB_KEY}`,
+              'apikey': SB_KEY
+            },
+            body: blob
+          });
+
+          if (uploadRes.ok) {
+            const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+            const msg = `🎙️ [Nota de voz](${voiceUrl})`;
+
+            // Enviar como mensaje
+            await sb('connect_messages', {
+              method: 'POST',
+              body: {
+                room_id: state.currentRoom,
+                member_id: state.member.id,
+                content: msg
+              }
+            });
+
+            document.getElementById('msg-input').value = '';
+            await subscribeToRoom(state.currentRoom);
+            scrollToBottom();
+          }
+        } catch (e) {
+          console.error('Error subiendo voz:', e);
+        }
+
+        voiceBtn.disabled = false;
+        stream.getTracks().forEach(t => t.stop());
+      };
+
+      mediaRecorder.start();
+      isRecording = true;
+      document.getElementById('voice-btn').style.color = 'var(--red)';
+      document.getElementById('voice-btn').textContent = '⏹️';
+    } catch (e) {
+      alert('No se pudo acceder al micrófono');
+    }
+  } else {
+    mediaRecorder.stop();
+    isRecording = false;
+    document.getElementById('voice-btn').style.color = 'var(--text2)';
+    document.getElementById('voice-btn').textContent = '🎤';
+  }
+}
+
+function logout() {
+  localStorage.removeItem('connect_session');
+  if (state.pollInterval) clearInterval(state.pollInterval);
+  location.reload();
+}
+
+async function showDirectory() {
+  document.getElementById('login-screen').classList.add('hidden');
+  document.getElementById('directory').classList.add('active');
+  const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre');
+  const list = document.getElementById('dir-list');
+  if (!clubs.length) {
+    list.innerHTML = '<div class="dir-empty">No hay clubs disponibles aún</div>';
+    return;
+  }
+  const counts = {};
+  const members = await sb('connect_members?select=club_id');
+  members.forEach(m => { counts[m.club_id] = (counts[m.club_id] || 0) + 1; });
+  list.innerHTML = clubs.map(c => `
+    <a class="dir-card" href="/${c.codigo || c.id}">
+      <div class="dir-card-icon">🏍️</div>
+      <div class="dir-card-info">
+        <div class="dir-card-name">${c.nombre}</div>
+        <div class="dir-card-members">${counts[c.id] || 0} miembros</div>
+      </div>
+      <div class="dir-card-arrow">›</div>
+    </a>
+  `).join('');
+}
+
+
+// Upload modal
+function openUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.add('open');
+  document.getElementById('upload-modal').classList.add('open');
+}
+
+function closeUploadModal() {
+  document.getElementById('upload-modal-overlay').classList.remove('open');
+  document.getElementById('upload-modal').classList.remove('open');
+}
+
+function openCamera() {
+  document.getElementById('camera-input').click();
+  closeUploadModal();
+}
+
+function openPhotos() {
+  document.getElementById('photo-input').click();
+  closeUploadModal();
+}
+
+function openFiles() {
+  document.getElementById('file-input').click();
+  closeUploadModal();
+}
+
+// Phone input formatting
+document.addEventListener('DOMContentLoaded', () => {
+  const phoneInput = document.getElementById('login-phone');
+  phoneInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') login();
+  });
+});
+
+init();
+</script>
+</body>
+</html>
