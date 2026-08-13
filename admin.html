@@ -1933,7 +1933,7 @@ function renderSellosTable() {
       <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
       <td>
         <div class="actions-cell">
-          ${s.estado === 'pendiente' ? `
+          ${(s.estado||'').toLowerCase() === 'pendiente' ? `
             <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
             <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
           ` : ''}
