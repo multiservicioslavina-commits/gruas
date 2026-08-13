@@ -42,9 +42,11 @@
 .rt-foot{padding:12px 18px;border-top:1px solid #1e1e1e;display:flex;align-items:center;justify-content:space-between}
 .rt-btn{background:transparent;border:1px solid #2a2a2a;border-radius:6px;padding:6px 14px;font-size:13px;color:#e6e3de;cursor:pointer;transition:all .2s}
 .rt-btn:hover{border-color:#E85D20;color:#E85D20}
-.rt-cta{background:#111;border:2px dashed #E85D20;border-radius:14px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:1.5rem;transition:background .2s}
-.rt-cta:hover{background:#1a1a1a}
-.rt-cta i{font-size:34px;color:#E85D20}
+.rt-cta{background:#111;border:2px dashed #E85D20;border-radius:14px;min-height:280px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;cursor:pointer;padding:1.5rem;transition:all .2s;user-select:none}
+.rt-cta:hover{background:#1a1a1a;border-color:#c94e18;transform:translateY(-2px);box-shadow:0 8px 16px rgba(232,93,32,.15)}
+.rt-cta:active{transform:translateY(0)}
+.rt-cta i{font-size:34px;color:#E85D20;transition:transform .2s}
+.rt-cta:hover i{transform:scale(1.1)}
 .rt-cta-title{font-size:15px;font-weight:600;color:#E85D20}
 .rt-cta-sub{font-size:13px;color:#e6e3de;text-align:center;line-height:1.5}
 .rt-empty{grid-column:1/-1;text-align:center;padding:3rem;color:#e6e3de;font-size:15px}
@@ -242,7 +244,7 @@
   }
 
   function cta(){
-    return '<div class="rt-cta" onclick="window.location.href=\'https://ridera.com.co/registrar-talleres/\'">'+
+    return '<div class="rt-cta" onclick="window.location.href=\'/registrar-talleres/\'">'+
       '<i class="ti ti-plus"></i>'+
       '<div class="rt-cta-title">Registrar mi taller</div>'+
       '<div class="rt-cta-sub">¿Tenés un taller especializado?<br>Aparecé gratis en el directorio</div>'+
