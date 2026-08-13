@@ -1,1 +1,9 @@
 node_modules/
+android/
+ios/
+.capacitor/
+dist/
+build/
+.env
+.env.local
+*.log
