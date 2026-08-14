@@ -1,105 +1,192 @@
-<!-- RIDERA · GARAGE TÉCNICO · DUCATI -->
-<div id="ridera-garage" style="--acc:#CC0000;--acc-soft:#ff5566">
-  <nav class="rg-nav"><a href="/garage-tecnico/" class="rg-back-link">‹ Todas las marcas</a></nav>
+<!-- RIDERA · GARAGE TÉCNICO · DUCATI
+     WPCode > HTML Snippet > Shortcode
+     Página WordPress: /garage-ducati/ -->
+<div id="ridera-garage">
+
+  <nav class="rg-nav">
+    <a href="/garage-tecnico/" class="rg-back-link">‹ Todas las marcas</a>
+  </nav>
+
   <header class="rg-hero">
-    <div class="rg-hero-line" style="background:#CC0000;box-shadow:0 0 30px rgba(204,0,0,.8),0 0 70px rgba(204,0,0,.25)"></div>
-    <span class="rg-eyebrow" style="color:#CC0000"><i style="background:#CC0000;box-shadow:0 0 0 5px rgba(204,0,0,.2)"></i>Ridera · Garage Técnico</span>
+    <div class="rg-hero-line" style="background:#CC0000;box-shadow:0 0 34px rgba(204,0,0,.9),0 0 80px rgba(204,0,0,.3)"></div>
+    <span class="rg-eyebrow" style="color:#ff5c5c"><i style="background:#CC0000;box-shadow:0 0 0 5px rgba(204,0,0,.2)"></i>Ridera · Garage Técnico</span>
     <div class="rg-brand-header">
       <img src="https://ridera.com.co/wp-content/uploads/2026/06/ducati.jpg" alt="Ducati" class="rg-brand-logo">
       <div>
-        <h2 class="rg-title">Ducati<br><span style="-webkit-text-stroke-color:#CC0000">Motor</span></h2>
+        <h2 class="rg-title">Ducati<br><span style="-webkit-text-stroke-color:#CC0000">Performance</span></h2>
         <p class="rg-model-count">4 modelos · Fichas técnicas de mantenimiento</p>
       </div>
     </div>
   </header>
+
+  <!-- MODELOS -->
   <div id="rgModels" class="rg-grid rg-grid--bikes"></div>
+
+  <!-- TEMAS TÉCNICOS (se muestra al elegir modelo) -->
   <section id="rgTopics" class="rg-panel" hidden>
     <button class="rg-back" id="btnBackModels">‹ Volver a modelos</button>
-    <div class="rg-panel-head"><span class="rg-crumb" style="color:#CC0000">Ducati</span><h3 id="rgTopicsTitle" class="rg-panel-title"></h3><p class="rg-panel-sub">Toca un sistema para abrir su ficha de taller.</p></div>
+    <div class="rg-panel-head">
+      <span class="rg-crumb" style="color:#ff5c5c">Ducati</span>
+      <h3 id="rgTopicsTitle" class="rg-panel-title"></h3>
+      <p class="rg-panel-sub">Toca un sistema para abrir su ficha de taller.</p>
+    </div>
     <div id="rgTopicsGrid" class="rg-topics"></div>
   </section>
+
+  <!-- DETALLE (se muestra al elegir tema) -->
   <section id="rgDetail" class="rg-panel" hidden>
     <button class="rg-back" id="btnBackTopics">‹ Volver a sistemas</button>
-    <div class="rg-detail-head"><span id="rgDetailCrumb" class="rg-crumb" style="color:#CC0000"></span><h3 id="rgDetailTitle" class="rg-panel-title"></h3><p id="rgDetailLede" class="rg-detail-lede" style="border-left-color:#CC0000"></p></div>
-    <div class="rg-detail-grid"><div class="rg-detail-main"><div id="rgDetailInfo" class="rg-info"></div></div><aside id="rgDetailAside" class="rg-aside"></aside></div>
+    <div class="rg-detail-head">
+      <span id="rgDetailCrumb" class="rg-crumb" style="color:#ff5c5c"></span>
+      <h3 id="rgDetailTitle" class="rg-panel-title"></h3>
+      <p id="rgDetailLede" class="rg-detail-lede" style="border-left-color:#CC0000"></p>
+    </div>
+    <div class="rg-detail-grid">
+      <div class="rg-detail-main">
+        <div id="rgDetailInfo" class="rg-info"></div>
+      </div>
+      <aside id="rgDetailAside" class="rg-aside"></aside>
+    </div>
   </section>
-  <div class="rg-seo" aria-hidden="true"><h2>Mantenimiento Ducati Motor Colombia</h2><p>Guías técnicas para motos Ducati: Monster, Scrambler, Multistrada, SuperSport.</p></div>
+
+  <!-- CONTENIDO SEO OCULTO (para búsqueda de WordPress/Rita) -->
+  <div class="rg-seo" aria-hidden="true">
+    <h2>Mantenimiento Ducati Colombia</h2>
+    <p>Guías técnicas de mantenimiento para motos Ducati: Monster 937, Desert X, Streetfighter V4 y Multistrada V4 Rally.</p>
+    <p>Cambio de aceite Ducati, filtro de aire Ducati, frenos Ducati, sistema ABS Ducati, suspensión Ducati, cadena Ducati, batería Ducati, ECU y diagnóstico Ducati, llantas Ducati, válvulas desmodrómicas Ducati, sistema eléctrico Ducati.</p>
+    <p>Aceite de motor Ducati: lubrica el embrague húmedo y la caja de cambios. Ducati recomienda aceite totalmente sintético; cámbialo cada 6.000–10.000 km según la viscosidad indicada en el manual del fabricante.</p>
+    <p>Filtro de aire Ducati: revísalo cada 15.000 km; en uso de destapado, revísalo después de cada salida. El filtro de papel se reemplaza, el de espuma se limpia y se vuelve a aceitar.</p>
+    <p>Frenos Ducati: cambia las pastillas cuando queden entre 2 y 3 mm, purga el líquido de frenos cada 2 años y usa el tipo de DOT indicado en la tapa del depósito.</p>
+    <p>ABS Ducati: limpia los sensores en cada servicio. El testigo encendido significa que el sistema está desactivado. El ABS de curva (cornering ABS) ajusta la frenada según el ángulo medido por el IMU.</p>
+    <p>Suspensión Ducati: calibra el sag (hundimiento) según tu peso y equipaje, revisa siempre los retenes en busca de fugas, y lleva la moto a service completo cada 40.000 km.</p>
+    <p>Cadena Ducati: lubrícala cada 500–800 km y después de lluvia; el kit de arrastre completo (cadena, piñón y catalina) se cambia cada 25.000–35.000 km.</p>
+    <p>Batería Ducati: vida útil de 3 a 5 años, voltaje sano en reposo de 12,6 V, y mantenedor inteligente recomendado para motos que quedan guardadas.</p>
+    <p>Válvulas desmodrómicas Ducati: sistema exclusivo de la marca que cierra las válvulas mecánicamente en vez de usar resortes. El intervalo de revisión (service desmo) varía según la familia de motor, entre 15.000 y 60.000 km.</p>
+  </div>
+
 </div>
 
 <style>
-#ridera-garage{--bg:#09090b;--acc:#CC0000;--acc-soft:#ff5566;--tx:#f5f5f6;--tx-2:#d8dae2;--tx-3:#8e9099;--tx-4:#a3a5ae;--font-display:'Bebas Neue','Barlow Condensed',sans-serif;--font-mono:'JetBrains Mono',monospace;--font-body:'DM Sans',system-ui,sans-serif;--fs-lead:clamp(1.1875rem,1.1rem+0.4vw,1.375rem);--fs-body:clamp(1.0625rem,1rem+0.3vw,1.125rem);--fs-small:clamp(0.9375rem,0.9rem+0.2vw,1rem);background:radial-gradient(ellipse 1000px 420px at 85% -6%,rgba(204,0,0,.13),transparent 55%),radial-gradient(ellipse 500px 400px at -5% 65%,rgba(204,0,0,.05),transparent 60%),var(--bg);color:var(--tx);font-family:var(--font-body);max-width:1200px;margin:0 auto;padding:0 24px 100px;position:relative;overflow:hidden}
+#ridera-garage{
+  --bg:#09090b;--acc:#CC0000;--acc-soft:#ff4444;
+  --tx:#ffffff;--tx-2:#e8ecf1;--tx-3:#a8adb8;--tx-4:#7a7f8a;
+  --font-display:'Bebas Neue','Barlow Condensed',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-body:'DM Sans',system-ui,sans-serif;
+
+  /* Escala tipográfica Ridera (clamp: mínimo móvil -> fluido -> máximo desktop) */
+  --fs-h1:    clamp(2.5rem, 1.85rem + 3.2vw, 4.25rem);      /* 40 -> 68 px */
+  --fs-h2:    clamp(1.9rem, 1.55rem + 1.7vw, 2.65rem);      /* 30 -> 42 px */
+  --fs-h3:    clamp(1.45rem, 1.27rem + 0.9vw, 1.85rem);     /* 23 -> 30 px */
+  --fs-lead:  clamp(1.25rem, 1.15rem + 0.4vw, 1.5rem);      /* 20 -> 24 px */
+  --fs-body:  clamp(1.125rem, 1.05rem + 0.3vw, 1.25rem);    /* 18 -> 20 px */
+  --fs-small: clamp(1rem, 0.95rem + 0.2vw, 1.0625rem);      /* 16 -> 17 px */
+  --fs-label: clamp(0.875rem, 0.85rem + 0.15vw, 0.9375rem); /* 14 -> 15 px, piso absoluto para etiquetas/mono */
+
+  background:
+    radial-gradient(ellipse 1000px 420px at 85% -6%,rgba(204,0,0,.15),transparent 55%),
+    radial-gradient(ellipse 500px 400px at -5% 65%,rgba(204,0,0,.06),transparent 60%),
+    var(--bg);
+  color:var(--tx);font-family:var(--font-body);
+  max-width:1200px;margin:0 auto;padding:0 24px 100px;
+  position:relative;overflow:hidden;
+}
 #ridera-garage *{box-sizing:border-box}
-#ridera-garage::before{content:'';position:absolute;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(rgba(204,0,0,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(204,0,0,.03) 1px,transparent 1px);background-size:54px 54px;mask-image:linear-gradient(180deg,rgba(0,0,0,.8) 0,transparent 480px)}
+#ridera-garage::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(204,0,0,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(204,0,0,.035) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.8) 0,transparent 480px);
+}
 #ridera-garage>*{position:relative;z-index:1}
-.rg-nav{padding:24px 0 0}.rg-back-link{display:inline-flex;align-items:center;gap:7px;color:var(--tx-3);text-decoration:none;font-size:.9rem;padding:10px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);transition:color .2s,border-color .2s}
-.rg-back-link:hover{color:var(--acc);border-color:rgba(204,0,0,.35)}
-.rg-hero{padding:40px 0 40px;max-width:780px}.rg-hero-line{width:52px;height:3px;margin-bottom:30px}.rg-eyebrow{display:block;font-family:var(--font-mono);font-size:.7rem;letter-spacing:.26em;text-transform:uppercase;margin-bottom:20px}
-.rg-eyebrow i{display:inline-block;width:7px;height:7px;border-radius:50%;animation:rgPulse 2.8s ease-in-out infinite;vertical-align:middle;margin-right:8px}
-@keyframes rgPulse{0%,100%{box-shadow:0 0 0 5px rgba(204,0,0,.2)}50%{box-shadow:0 0 0 10px rgba(204,0,0,.04)}}
-.rg-brand-header{display:flex;align-items:center;gap:28px}.rg-brand-logo{width:80px;height:80px;object-fit:contain;background:#fff;border-radius:16px;padding:12px}
-.rg-title{font-family:var(--font-display);font-weight:400;font-size:clamp(2.8rem,7vw,4.5rem);line-height:.85;margin:0;letter-spacing:.015em}
-.rg-title span{color:transparent;-webkit-text-stroke:1.5px var(--acc)}.rg-model-count{color:var(--tx-3);font-size:var(--fs-small);line-height:1.5;margin:10px 0 0}
+
+.rg-nav{padding:24px 0 0}
+.rg-back-link{display:inline-flex;align-items:center;gap:7px;color:var(--tx-3);text-decoration:none;font-size:var(--fs-label);padding:10px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.09);background:rgba(255,255,255,.04);transition:color .2s,border-color .2s}
+.rg-back-link:hover{color:var(--acc-soft);border-color:rgba(204,0,0,.4)}
+
+.rg-hero{padding:40px 0 40px;max-width:780px}
+.rg-hero-line{width:52px;height:3px;margin-bottom:30px}
+.rg-eyebrow{display:block;font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.24em;text-transform:uppercase;margin-bottom:20px}
+.rg-eyebrow i{display:inline-block;width:7px;height:7px;border-radius:50%;animation:rgPulse 2.4s ease-in-out infinite;vertical-align:middle;margin-right:8px}
+@keyframes rgPulse{0%,100%{box-shadow:0 0 0 5px rgba(204,0,0,.25)}50%{box-shadow:0 0 0 11px rgba(204,0,0,.05)}}
+.rg-brand-header{display:flex;align-items:center;gap:28px}
+.rg-brand-logo{width:80px;height:80px;object-fit:contain;background:#fff;border-radius:16px;padding:12px}
+.rg-title{font-family:var(--font-display);font-weight:400;font-size:var(--fs-h1);line-height:1.02;margin:0;letter-spacing:.005em;color:#ffffff}
+.rg-title span{color:transparent;-webkit-text-stroke:1.5px var(--acc);font-style:italic;letter-spacing:-.01em}
+.rg-model-count{color:#b0b5c0;font-size:var(--fs-small);line-height:1.5;margin:10px 0 0;font-weight:500}
+
 .rg-grid--bikes{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:14px}
-.rg-card--bike{display:flex;flex-direction:column;padding:0;overflow:hidden;background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:18px;cursor:pointer;color:var(--tx);font:inherit;text-align:left;position:relative;transition:transform .22s cubic-bezier(.2,.8,.3,1),box-shadow .28s,border-color .22s}
-.rg-card--bike::after{content:'';position:absolute;left:0;top:0;right:0;height:3px;background:var(--acc);box-shadow:0 0 20px rgba(204,0,0,.6)}
-.rg-card--bike:hover{transform:translateY(-5px)scale(1.01);border-color:rgba(255,255,255,.12);box-shadow:0 20px 50px -18px rgba(0,0,0,.95),0 0 50px -25px rgba(204,0,0,.5)}
-.rg-bike-inner{padding:22px;display:flex;flex-direction:column;gap:0;flex:1}
-.rg-bk-idx{font-family:var(--font-mono);font-size:.75rem;color:var(--tx-4);letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px;display:inline-flex;align-items:center;gap:8px}
-.rg-bk-idx::before{content:'';width:16px;height:1px;background:var(--acc);opacity:.6}
-.rg-name{font-family:var(--font-display);font-size:1.62rem;font-weight:400;letter-spacing:.02em;text-transform:uppercase;line-height:1}
-.rg-bike-count{display:inline-flex;align-items:center;gap:8px;margin-top:16px;color:var(--tx-4);font-size:.8rem;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
-.rg-bike-count b{color:var(--acc-soft);font-weight:600}.rg-chev{position:absolute;right:13px;bottom:13px;color:var(--acc);font-family:var(--font-mono);font-size:.7rem;opacity:0;transform:translateX(-5px);transition:opacity .2s,transform .22s}
+.rg-card--bike{display:flex;flex-direction:column;padding:0;overflow:hidden;background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:18px;cursor:pointer;color:var(--tx);font:inherit;text-align:left;position:relative;transition:transform .2s cubic-bezier(.2,.8,.3,1),box-shadow .3s,border-color .2s}
+.rg-card--bike::after{content:'';position:absolute;left:0;top:0;right:0;height:3px;background:var(--acc);box-shadow:0 0 22px rgba(204,0,0,.7)}
+.rg-card--bike:hover{transform:translateY(-4px) scale(1.012);border-color:rgba(255,255,255,.13);box-shadow:0 22px 55px -18px rgba(0,0,0,.95),0 0 60px -22px rgba(204,0,0,.6)}
+.rg-bike-inner{padding:22px 22px 24px;display:flex;flex-direction:column;gap:0;flex:1}
+.rg-bk-idx{font-family:var(--font-mono);font-size:var(--fs-label);color:var(--tx-4);letter-spacing:.12em;text-transform:uppercase;margin-bottom:12px;display:inline-flex;align-items:center;gap:8px}
+.rg-bk-idx::before{content:'';width:16px;height:1px;background:var(--acc);opacity:.7}
+.rg-name{font-family:var(--font-display);font-size:1.78rem;font-weight:400;letter-spacing:.02em;text-transform:uppercase;line-height:1;color:#ffffff}
+.rg-bike-count{display:inline-flex;align-items:center;gap:8px;margin-top:16px;color:var(--tx-4);font-size:var(--fs-label);font-family:var(--font-mono);letter-spacing:.05em;text-transform:uppercase;border-top:1px solid rgba(255,255,255,.06);padding-top:14px}
+.rg-bike-count b{color:var(--acc-soft);font-weight:600}
+.rg-chev{position:absolute;right:13px;bottom:13px;color:var(--acc-soft);font-family:var(--font-mono);font-size:var(--fs-label);opacity:0;transform:translateX(-5px);transition:opacity .2s,transform .22s}
 .rg-card--bike:hover .rg-chev{opacity:1;transform:translateX(0)}
+
 .rg-panel{padding-top:40px;animation:rgFade .35s cubic-bezier(.2,.8,.3,1)}
 @keyframes rgFade{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-.rg-panel-head{margin:0 0 28px}.rg-panel-title{font-family:var(--font-display);font-weight:400;font-size:clamp(2.2rem,5.5vw,3.4rem);margin:10px 0 0;line-height:.92;color:var(--tx)}
-.rg-panel-sub{color:var(--tx-3);font-size:var(--fs-small);margin:16px 0 0;max-width:64ch;line-height:1.5}
-.rg-crumb{font-family:var(--font-mono);font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;display:inline-block}
-.rg-back{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:var(--tx-3);padding:10px 18px;border-radius:10px;font:inherit;font-size:.9rem;cursor:pointer;margin-bottom:24px;transition:color .2s,border-color .2s}
-.rg-back:hover{color:var(--acc);border-color:rgba(204,0,0,.35)}
+.rg-panel-head{margin:0 0 28px}
+.rg-panel-title{font-family:var(--font-display);font-weight:400;font-size:var(--fs-h2);margin:10px 0 0;line-height:1.05;color:#ffffff}
+.rg-panel-sub{color:#a8adb8;font-size:var(--fs-lead);line-height:1.5;margin:16px 0 0;max-width:64ch;font-weight:500}
+.rg-crumb{font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.14em;text-transform:uppercase;display:inline-block}
+.rg-back{display:inline-flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.09);color:var(--tx-3);padding:10px 18px;border-radius:10px;font:inherit;font-size:var(--fs-label);cursor:pointer;margin-bottom:24px;transition:color .2s,border-color .2s}
+.rg-back:hover{color:var(--acc-soft);border-color:rgba(204,0,0,.4)}
+
 .rg-topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
-.rg-topic{display:flex;flex-direction:column;gap:0;background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px 20px 20px;cursor:pointer;color:var(--tx);font:inherit;text-align:left;position:relative;overflow:hidden;transition:transform .18s,border-color .2s,box-shadow .25s}
-.rg-topic::before{content:'';position:absolute;left:0;top:0;right:0;bottom:0;background:radial-gradient(ellipse 120% 80% at 50% 120%,rgba(204,0,0,.12),transparent);opacity:0;transition:opacity .3s}
-.rg-topic:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.13);box-shadow:0 16px 40px -18px rgba(0,0,0,.9)}
+.rg-topic{display:flex;flex-direction:column;gap:0;background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px 20px 20px;cursor:pointer;color:var(--tx);font:inherit;text-align:left;position:relative;overflow:hidden;transition:transform .16s cubic-bezier(.2,.8,.3,1),border-color .2s,box-shadow .25s}
+.rg-topic::before{content:'';position:absolute;left:0;top:0;right:0;bottom:0;background:radial-gradient(ellipse 120% 80% at 50% 120%,rgba(204,0,0,.15),transparent);opacity:0;transition:opacity .3s}
+.rg-topic:hover{transform:translateY(-3px);border-color:rgba(255,255,255,.14);box-shadow:0 18px 44px -18px rgba(0,0,0,.9)}
 .rg-topic:hover::before{opacity:1}
 .rg-topic .rg-ic{font-size:2rem;margin-bottom:16px;display:block;line-height:1}
-.rg-topic .rg-tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.16rem;letter-spacing:.03em;text-transform:uppercase;color:var(--tx);line-height:1.1}
-.rg-topic .rg-tmeta{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.1em;color:var(--tx-4);margin-top:10px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
-.rg-topic .rg-tmeta::before{content:'';width:14px;height:1px;background:var(--acc);opacity:.7}
+.rg-topic .rg-tn{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.25rem;letter-spacing:.03em;text-transform:uppercase;color:#ffffff;line-height:1.15}
+.rg-topic .rg-tmeta{font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.08em;color:var(--tx-4);margin-top:10px;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px}
+.rg-topic .rg-tmeta::before{content:'';width:14px;height:1px;background:var(--acc);opacity:.8}
+
 .rg-detail-head{margin-bottom:32px;max-width:780px;padding-bottom:28px;border-bottom:1px solid #222228}
 .rg-detail-head .rg-panel-title{margin-top:14px}
-.rg-detail-lede{color:var(--tx-2);font-size:var(--fs-lead);line-height:1.5;margin:20px 0 0;font-style:italic;border-left:2px solid var(--acc);padding-left:20px}
+.rg-detail-lede{color:#e8ecf1;font-size:var(--fs-lead);line-height:1.6;margin:20px 0 0;font-style:italic;font-weight:500;border-left:3px solid var(--acc);padding-left:24px}
 .rg-detail-grid{display:grid;grid-template-columns:1fr 310px;gap:22px;align-items:start}
-.rg-info{background:linear-gradient(170deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:18px;padding:36px 40px;color:var(--tx-2);font-size:var(--fs-body);line-height:1.6}
-.rg-info p{margin:0 0 20px}.rg-info p:last-child{margin-bottom:0}.rg-info strong{color:var(--tx);font-weight:600}
-.rg-info .rg-h{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.26rem;color:#fff;letter-spacing:.03em;text-transform:uppercase;margin:36px 0 16px;display:flex;align-items:center;gap:12px}
+.rg-info{background:linear-gradient(170deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);border-radius:18px;padding:36px 40px;color:var(--tx-2);font-size:var(--fs-body);line-height:1.7}
+.rg-info p{margin:0 0 20px}.rg-info p:last-child{margin-bottom:0}
+.rg-info strong{color:var(--tx);font-weight:600}
+.rg-info .rg-h{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:var(--fs-h3);color:#ffffff;letter-spacing:.03em;text-transform:uppercase;margin:36px 0 18px;display:flex;align-items:center;gap:12px}
 .rg-info .rg-h::before{content:'';width:20px;height:2px;background:var(--acc);flex:none}
 .rg-info .rg-h:first-child{margin-top:0}
-.rg-info ul{margin:0 0 20px;padding:0;list-style:none}
-.rg-info li{position:relative;padding-left:22px;margin-bottom:11px;color:var(--tx-2)}
-.rg-info li::before{content:'';position:absolute;left:2px;top:.65em;width:6px;height:6px;border:1.5px solid var(--acc);border-radius:2px;transform:rotate(45deg)}
-.rg-box{border-radius:14px;padding:20px 24px;margin:22px 0;font-size:var(--fs-small);line-height:1.6}
-.rg-box b{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
-.rg-box--tip{background:rgba(204,0,0,.09);border:1px solid rgba(204,0,0,.3);color:var(--tx)}
-.rg-box--tip b{color:var(--acc-soft)}
-.rg-box--warn{background:rgba(217,164,65,.08);border:1px solid rgba(217,164,65,.3);color:var(--tx)}
-.rg-box--warn b{color:#d9a441}
-.rg-box--secret{background:linear-gradient(135deg,rgba(204,0,0,.1),rgba(217,164,65,.05));border:1px solid rgba(204,0,0,.32);color:var(--tx)}
-.rg-box--secret b{color:var(--acc-soft)}
+.rg-info ul{margin:0 0 22px;padding:0;list-style:none}
+.rg-info li{position:relative;padding-left:24px;margin-bottom:13px;color:#e8ecf1;font-size:var(--fs-body);line-height:1.7}
+.rg-info li::before{content:'';position:absolute;left:2px;top:.65em;width:7px;height:7px;border:1.8px solid var(--acc);border-radius:2px;transform:rotate(45deg)}
+.rg-box{border-radius:14px;padding:22px 24px;margin:24px 0;font-size:var(--fs-body);line-height:1.7;color:#f5f5f6}
+.rg-box b{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.13em;text-transform:uppercase;margin-bottom:10px;font-weight:600}
+.rg-box--tip{background:rgba(204,0,0,.16);border:1px solid rgba(204,0,0,.55);color:#ffffff}
+.rg-box--tip b{color:#ff8080}
+.rg-box--warn{background:rgba(217,164,65,.12);border:1px solid rgba(217,164,65,.5);color:#ffffff}
+.rg-box--warn b{color:#ffc966}
+.rg-box--secret{background:linear-gradient(135deg,rgba(204,0,0,.17),rgba(217,164,65,.07));border:1px solid rgba(204,0,0,.5);color:#ffffff}
+.rg-box--secret b{color:#ff8080}
+
 .rg-aside{display:flex;flex-direction:column;gap:12px;position:sticky;top:96px}
-.rg-spec{background:linear-gradient(170deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:22px}
-.rg-spec h4{font-family:var(--font-mono);font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;color:var(--acc-soft);margin:0 0 18px;display:flex;align-items:center;gap:8px}
+.rg-spec{background:linear-gradient(170deg,rgba(255,255,255,.07),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.12);border-radius:16px;padding:22px 22px 14px}
+.rg-spec h4{font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.15em;text-transform:uppercase;color:#ff8080;margin:0 0 18px;display:flex;align-items:center;gap:8px;font-weight:600}
 .rg-spec h4::before{content:'▸';color:var(--acc)}
 .rg-spec dl{margin:0}
-.rg-spec .rg-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.rg-spec .rg-row{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.08)}
 .rg-spec .rg-row:last-child{border-bottom:0}
-.rg-spec dt{color:var(--tx-3);font-size:var(--fs-small);line-height:1.4;flex:none;max-width:50%}
-.rg-spec dd{margin:0;color:var(--tx);font-size:var(--fs-small);line-height:1.4;font-weight:600;text-align:right;font-family:var(--font-mono)}
-.rg-difficulty{display:flex;align-items:center;gap:10px;padding:14px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:13px}
-.rg-difficulty span{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--tx-4)}
-.rg-dots{display:flex;gap:5px;margin-left:auto}.rg-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)}
-.rg-dots i.on{background:var(--acc);box-shadow:0 0 8px rgba(204,0,0,.5)}
+.rg-spec dt{color:#a8adb8;font-size:var(--fs-small);flex:none;max-width:50%;font-weight:500}
+.rg-spec dd{margin:0;color:#ffffff;font-size:var(--fs-small);font-weight:700;text-align:right;font-family:var(--font-mono)}
+.rg-difficulty{display:flex;align-items:center;gap:10px;padding:14px 18px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:13px}
+.rg-difficulty span{font-family:var(--font-mono);font-size:var(--fs-label);letter-spacing:.1em;text-transform:uppercase;color:#8a8f9a;font-weight:600}
+.rg-dots{display:flex;gap:5px;margin-left:auto}
+.rg-dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.1)}
+.rg-dots i.on{background:var(--acc);box-shadow:0 0 9px rgba(204,0,0,.6)}
+
 .rg-seo{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
+
 @media(max-width:900px){.rg-detail-grid{grid-template-columns:1fr}.rg-aside{position:static;flex-direction:row;flex-wrap:wrap}.rg-aside>*{flex:1;min-width:240px}}
 @media(max-width:640px){#ridera-garage{padding:0 16px 60px}.rg-hero{padding:24px 0 24px}.rg-info{padding:22px 20px}.rg-grid--bikes{grid-template-columns:1fr}.rg-topics{grid-template-columns:1fr 1fr}.rg-brand-header{flex-direction:column;align-items:flex-start;gap:16px}.rg-brand-logo{width:60px;height:60px}.rg-aside{flex-direction:column}.rg-aside>*{min-width:0;width:100%}}
 @media(max-width:400px){.rg-topics{grid-template-columns:1fr}}
@@ -109,52 +196,176 @@
 <script>
 (function(){
   const TOPIC_INFO={
-    aceite:{titulo:'Cambio de Aceite',icon:'🛢️',dif:1,interval:'15.000 km',tiempo:'45 min',
-      lede:'Los motores Ducati requieren aceites específicos. La calidad aquí no es negociable.',
-      specs:[['Intervalo','15K km'],['Especificación','Ducati-certified'],['Filtro','Cartucho reemplazable']],
-      html:'<p>Ducati ha mejorado la confiabilidad motor dramáticamente. El aceite correcto es tu inversión en durabilidad.</p>'
+    aceite:{titulo:'Cambio de Aceite',icon:'🛢️',dif:1,interval:'6.000–10.000 km / 1 año',tiempo:'30–45 min',
+      lede:'Los motores Testastretta y Desmosedici Stradale de Ducati exigen aceite totalmente sintético. El aceite es la sangre de tu motor: cambiarlo a tiempo es lo más barato y lo más importante que puedes hacer por tu moto.',
+      specs:[['Intervalo','6–10K km'],['Tipo exigido','100% sintético'],['También lubrica','Embrague húmedo + caja'],['Filtro','Cambiar siempre']],
+      html:'<p>El aceite lubrica todas las piezas en movimiento, disipa el calor, arrastra residuos y protege el metal. En Monster 937, Desert X, Streetfighter V4 y Multistrada V4 Rally comparte cárter con el <strong>embrague húmedo y la caja de cambios</strong>, así que la calidad del aceite afecta directamente cómo entra cada marcha y si el embrague agarra bien.</p><p class="rg-h">¿Cómo sé que toca cambiarlo?</p><ul><li>El aceite en la mirilla o varilla se ve muy oscuro o huele a quemado.</li><li>Los cambios de marcha se sienten más duros de lo normal.</li><li>El embrague patina al acelerar fuerte (en pendiente, por ejemplo).</li></ul><p>Ducati especifica <strong>aceite 100% sintético</strong> en toda su gama actual. Busca el sello <strong>JASO MA2</strong> en el envase.</p><p class="rg-h">El procedimiento paso a paso</p><ul><li><strong>Paso 1:</strong> Calienta el motor 3–5 minutos.</li><li><strong>Paso 2:</strong> Pon la moto derecha (no en el caballete lateral).</li><li><strong>Paso 3:</strong> Abre el tapón de vaciado, deja drenar todo y cambia el filtro.</li><li><strong>Paso 4:</strong> Unta la junta del filtro con aceite nuevo antes de enroscarlo.</li><li><strong>Paso 5:</strong> Llena con aceite nuevo, arranca el motor 30 segundos, apágalo, espera 2 minutos y verifica el nivel.</li></ul>',
+      tip:'Después de llenar, espera 2 minutos antes de leer la mirilla. En caliente el nivel siempre engaña.',
+      warn:'Sobrellenar es un error muy común: el cigüeñal bate el aceite, lo airea y pierde lubricación.',
+      secret:'Usar un aceite genérico "porque rinde igual" en un Testastretta o Desmosedici Stradale acelera el desgaste del embrague húmedo. No vale la pena ahorrar ahí.'
     },
-    filtroaire:{titulo:'Filtro de Aire',icon:'🌬️',dif:1,interval:'15.000 km',tiempo:'20 min',
-      lede:'Acceso simple. Ducati no complica lo que debe ser fácil.',
-      specs:[['Intervalo','15K km'],['Tipo','Panel']],
-      html:'<p>Cambio directo, sin herramientas especiales.</p>'
+    desmo:{titulo:'Válvulas Desmodrómicas',icon:'⚙️',dif:4,interval:'15.000–60.000 km según motor',tiempo:'Solo en taller especializado',
+      lede:'El sistema Desmodrómico es la firma técnica de Ducati desde los años 50: en vez de resortes, un segundo juego de balancines cierra las válvulas mecánicamente. Por eso el "service desmo" es distinto a cualquier otra moto.',
+      specs:[['Qué es','Cierre mecánico, no por resorte'],['Ventaja','Sin flotación de válvula a alto RPM'],['Ajuste','Shims calibrados de precisión'],['Nunca','Estirar el intervalo del manual']],
+      html:'<p>En un motor convencional, el árbol de levas <strong>abre</strong> la válvula y un resorte la <strong>cierra</strong>. A altas RPM ese resorte puede no seguir el ritmo del motor ("flotación de válvula"), lo que limita el régimen máximo seguro. Ducati resuelve esto con un segundo balancín que cierra la válvula mecánicamente, sin depender de un resorte: de ahí el nombre <strong>desmodrómico</strong> ("controlado" en griego).</p><p class="rg-h">Por qué el intervalo varía tanto</p><p>El "service desmo" (revisión de holguras) es exclusivo de Ducati y requiere shims calibrados específicos. El intervalo depende completamente de la familia de motor: los Testastretta más antiguos pedían revisión cada 12.000 km, mientras que los motores modernos —Testastretta 11° (Monster 937, Desert X) y especialmente el V4 Granturismo (Multistrada V4)— lo estiraron a 30.000 e incluso 60.000 km. El Desmosedici Stradale del Streetfighter V4, de herencia MotoGP, tiene su propio intervalo de alta exigencia.</p><p class="rg-h">Lo que necesitas saber</p><ul><li>No es un ajuste de "destornillador": se mide la holgura con calibradores y se cambian shims de espesor específico.</li><li>Solo talleres con formación Ducati y herramienta específica deben tocarlo.</li><li>Un desmo bien hecho puede durar hasta el próximo intervalo sin ningún síntoma perceptible.</li></ul>',
+      tip:'Pregunta específicamente qué motor tiene tu Ducati (Testastretta 11°, V4 Granturismo, Desmosedici Stradale): el intervalo del desmo cambia radicalmente entre familias, y confundirlo te hace pagar de más o arriesgar el motor.',
+      warn:'Nunca dejes que un taller genérico "adivine" las holguras desmodrómicas. Es un ajuste de precisión con shims calibrados; hacerlo mal puede dañar válvulas y pistones.',
+      secret:'Ducati redujo dramáticamente los intervalos de service desmo en los motores modernos (hasta 60.000 km en el V4 Granturismo). Si te vendieron la idea de que "el desmo sale carísimo cada poco", pregunta el intervalo real de tu motor específico antes de asumirlo.'
     },
-    frenos:{titulo:'Sistema de Frenos',icon:'🛑',dif:2,interval:'20.000 km',tiempo:'50 min',
-      lede:'Brembo en casi todos los modelos. Los frenos Ducati son legendarios, así que mantenlos así.',
-      specs:[['Pastillas','Cambiar a 2-3 mm'],['Sistema','Dual disc delantero, ABS']],
-      html:'<p>Frenos potentes = mantenimiento responsable. Purga de líquido cada 2 años obligatoria.</p>'
+    filtroaire:{titulo:'Filtro de Aire',icon:'🌬️',dif:1,interval:'15.000 km',tiempo:'20–40 min',
+      lede:'El mantenimiento más barato y el más olvidado. Si tu Ducati "ya no jala igual", muchas veces solo tiene el filtro ahogado.',
+      specs:[['Intervalo','~15K km'],['Tipo papel','Se reemplaza'],['Tipo espuma','Se limpia y aceita'],['En destapado (Desert X)','Revisar cada salida']],
+      html:'<p>El filtro de aire impide que polvo, arena e insectos entren a los cilindros. Si el aire llega escaso o sucio, la combustión se vuelve ineficiente.</p><p class="rg-h">Señales de filtro tapado</p><ul><li>Pérdida de potencia gradual, sobre todo a altas vueltas.</li><li>Consume más gasolina sin razón aparente.</li><li>El acelerador responde perezoso.</li></ul><p>Dos tipos: <strong>papel</strong> (se reemplaza, nunca se lava) y <strong>espuma o algodón</strong> (se limpia y se vuelve a aceitar). En el Desert X, revísalo después de cada salida de destapado.</p>',
+      tip:'Un filtro de papel sucio se recupera un poco: golpéalo suavemente de canto y míralo a contraluz.',
+      warn:'Nunca soples un filtro de papel con compresor a presión alta: revientas las fibras.',
+      secret:'Un filtro lavable de algodón aceitado (tipo K&N) se paga solo con el tiempo en motos de destapado.'
     },
-    suspension:{titulo:'Suspensión',icon:'🪛',dif:3,interval:'40.000 km',tiempo:'Taller especializado',
-      lede:'Marzocchi o Showa depende del modelo. Ambos exigen ajustes precisos.',
-      specs:[['Delantero','Horquilla invertida','Algunos modelos'],['Trasero','Monoshock central']],
-      html:'<p>La suspensión Ducati es sofisticada. Un ajuste incorrecto echa a perder el carácter de la moto.</p>'
+    frenos:{titulo:'Sistema de Frenos',icon:'🛑',dif:2,interval:'Pastillas 15–25K km · líquido cada 2 años',tiempo:'45–60 min',
+      lede:'El único sistema cuyo fallo no perdona. Una pastilla gastada al límite puede costarte el disco, o algo mucho peor.',
+      specs:[['Pastillas','Cambiar a 2–3 mm'],['Líquido','Purgar cada 2 años'],['DOT','Según tapa del depósito'],['Espesor mínimo disco','Grabado en el borde']],
+      html:'<p>Las pastillas presionan contra el disco para convertir velocidad en calor y detenerte. En la gama Ducati, la mordaza Brembo radial es estándar en casi todos los modelos de esta lista.</p><p class="rg-h">Señales de alerta</p><ul><li><strong>Chirrido metálico agudo:</strong> testigo sonoro de desgaste.</li><li><strong>Vibración al frenar:</strong> disco posiblemente alabeado.</li><li><strong>Maneta esponjosa:</strong> aire o humedad en el líquido.</li></ul><p>Cambia las pastillas <strong>antes</strong> de llegar al soporte metálico. El líquido absorbe humedad con el tiempo, bajando su punto de ebullición.</p>',
+      tip:'Al cambiar pastillas, limpia y engrasa los pasadores de la mordaza con grasa de alta temperatura.',
+      warn:'Con la pastilla fuera, no toques la maneta: el pistón sale de su alojamiento. Nunca mezcles tipos de líquido.',
+      secret:'Para asentar pastillas nuevas: 8–10 frenadas medias desde 60 km/h sin clavar ni parar del todo.'
     },
-    cadena:{titulo:'Cadena y Transmisión',icon:'⛓️',dif:2,interval:'500-800 km lubricación',tiempo:'20 min',
-      lede:'Cadena Ducati. Lubrica más seguido que otros.',
-      specs:[['Lubricación','500-800 km','Después de lluvia'],['Tensión','Per manual']],
-      html:'<p>Una cadena bien lubricada durará 25K+ km. Una seca muere a los 10K.</p>'
+    abs:{titulo:'Sistema ABS',icon:'🅰️',dif:3,interval:'Revisión sensores en cada servicio',tiempo:'Diagnóstico 30 min',
+      lede:'El ABS no frena más corto: evita que las ruedas se bloqueen para que puedas seguir girando el manillar.',
+      specs:[['Sensores','1 por rueda'],['Vibración en maneta','Normal'],['Testigo encendido','Sistema desactivado'],['Cornering ABS','Ajuste según ángulo (IMU)']],
+      html:'<p>El ABS evita que las ruedas se bloqueen al frenar fuerte o sobre piso resbaladizo. En moto, no bloquear es no caer.</p><p class="rg-h">Qué revisar</p><ul><li>Limpia sensores y rueda fónica: el barro los tapa.</li><li>Revisa cable del sensor delantero: roza con la suspensión.</li><li>Purga el líquido del circuito ABS, no solo el de las mordazas.</li></ul>',
+      tip:'En el Desert X, el modo "Off-Road" permite desactivar el ABS trasero para trocha técnica.',
+      warn:'Testigo ABS encendido = sistema apagado. Causa #1: sensor con barro o conector húmedo.',
+      secret:'Después de lavar la moto a presión, si aparece el testigo, casi siempre es agua en el conector del sensor. Desconéctalo, limpia con limpiacontactos y sopla.'
     },
-    bateria:{titulo:'Batería',icon:'🔋',dif:1,interval:'5 años',tiempo:'20 min',
-      lede:'Ducati utiliza baterías de calidad. Mantenlas en ese estado.',
-      specs:[['Voltaje','12.6 V reposo'],['Carga','14-14.5 V acelerando']],
-      html:'<p>Una batería débil causa comportamientos erráticos en el motor de inyección Ducati.</p>'
+    suspension:{titulo:'Suspensión',icon:'🪛',dif:3,interval:'Retenes: revisar siempre · service ~40K km',tiempo:'Ajuste 20 min · service en taller',
+      lede:'La suspensión mantiene las llantas pegadas al piso. Mal ajustada, la moto rebota y pierdes confianza sin saber por qué.',
+      specs:[['Precarga','Según peso + equipaje'],['Compresión','Velocidad al hundirse'],['Rebote','Velocidad al volver'],['Retén con fuga','Cambio inmediato']],
+      html:'<p>La suspensión cumple dos funciones: contacto constante con el piso y absorción del terreno. La Multistrada V4 Rally y algunos Streetfighter V4 S incorporan suspensión semiactiva Öhlins que ajusta amortiguación electrónicamente según el modo de conducción.</p><p class="rg-h">Qué hace cada ajuste</p><ul><li><strong>Precarga:</strong> adapta la moto a tu peso y equipaje. El más importante.</li><li><strong>Compresión:</strong> controla qué tan rápido se hunde.</li><li><strong>Rebote:</strong> controla qué tan rápido vuelve. Si "rebota", falta más rebote.</li></ul><p class="rg-h">Revisión visual</p><ul><li>Línea de aceite en barras = retén dañado.</li><li>Holgura en rodamientos de dirección.</li></ul>',
+      tip:'Calibra el sag: sentado con equipo, la suspensión debe hundirse ~1/3 del recorrido total.',
+      warn:'Un retén que pierde aceite cae sobre las pastillas y destruye tu frenado. Retén con fuga = no rodar.',
+      secret:'Antes de desarmar la horquilla, mete una herramienta fina bajo el guardapolvo. El 70% de las "fugas" son un grano de arena atrapado.'
     },
-    diagnostico:{titulo:'Diagnóstico y ECU',icon:'💻',dif:2,interval:'Ante testigos',tiempo:'30 min',
-      lede:'La ECU de Ducati es sofisticada. Herramienta Ducati certificada es necesaria.',
-      specs:[['Sistema','Magneti Marelli','Propio Ducati']],
-      html:'<p>No uses genéricos. Los códigos Ducati requieren interpretación especializada.</p>'
+    cadena:{titulo:'Cadena y Transmisión',icon:'⛓️',dif:2,interval:'Lubricar cada 500–800 km · kit ~25–35K km',tiempo:'Ajuste y lubricación 20 min',
+      lede:'Cadena, piñón y catalina siempre se cambian juntos. Montar cadena nueva sobre piñones gastados es botar el dinero.',
+      specs:[['Lubricar','500–800 km y después de lluvia'],['Tensión','Según manual, tramo bajo'],['Kit','Cadena + piñón + catalina'],['Lubricar con','Cadena templada']],
+      html:'<p>La cadena transmite la potencia del motor a la rueda trasera junto al piñón y la catalina (kit de arrastre). Toda la gama Ducati de esta lista usa cadena.</p><p class="rg-h">Lo más importante</p><ul><li><strong>Tensión:</strong> muy floja puede salirse; muy tensa fuerza rodamientos.</li><li><strong>Lubricación:</strong> cada 500–800 km y después de lluvia. Streetfighter V4 y Monster 937 desgastan la cadena más rápido por el torque del motor.</li></ul><p class="rg-h">Cuándo cambiar</p><ul><li>Eslabones que no flexionan o con óxido.</li><li>Dientes con forma de gancho ("dientes de tiburón").</li><li>Si jalas la cadena atrás y se separa mostrando más de medio diente.</li></ul>',
+      tip:'Lubrica con motor templado: el calor dilata eslabones y la grasa penetra al interior.',
+      warn:'No tenses al máximo: cuando la suspensión comprime, una cadena tensa rompe rodamientos.',
+      secret:'Limpiar con gasolina disuelve la grasa interna de los retenes O-ring. Usa solo limpiador específico.'
     },
-    llantas:{titulo:'Llantas y Neumáticos',icon:'🛞',dif:1,interval:'Presión cada 2 semanas',tiempo:'10 min',
-      lede:'Pirelli o Michelin depende del modelo. Presión correcta es identidad Ducati.',
-      specs:[['Presión','Manual específico','En frío'],['Desgaste','TWI markers']],
-      html:'<p>Las presiones Ducati especifican diferenciales precisos entre eje. Respétalo.</p>'
+    bateria:{titulo:'Batería',icon:'🔋',dif:1,interval:'Vida útil 3–5 años',tiempo:'15 min',
+      lede:'Una batería débil genera fallas extrañas imposibles de diagnosticar. El peor enemigo: dejar la moto parada semanas.',
+      specs:[['Vida útil','3–5 años'],['Voltaje sano','~12.6 V'],['Cargar cuando baje de','12.4 V'],['Moto guardada','Mantenedor inteligente']],
+      html:'<p>La batería almacena energía para arrancar y estabiliza el voltaje de todos los sistemas.</p><p class="rg-h">Qué acorta su vida</p><ul><li>Dejar la moto parada semanas.</li><li>Accesorios eléctricos sin relé.</li><li>Arranques cortos repetidos.</li><li>Calor excesivo.</li></ul><p>Verifica voltaje con multímetro: en reposo ~<strong>12,6 V</strong>. Por debajo de 12,4 V hay que cargarla.</p>',
+      tip:'Mide voltaje apagada y acelerando a 3000-4000 rpm. Debe subir a 13,5-14,5 V. Si no sube, el problema es el regulador o estátor.',
+      warn:'Nunca arranques con cables de un carro encendido: picos de voltaje dañan la electrónica.',
+      secret:'Un mantenedor inteligente de 15–20 dólares enchufado en el garaje le duplica la vida a la batería.'
+    },
+    ecu:{titulo:'ECU y Diagnóstico',icon:'💻',dif:2,interval:'Escaneo ante testigo · preventivo anual',tiempo:'Lectura 15 min',
+      lede:'La ECU guarda el motivo exacto de cada falla en un código. Diagnosticar a ciegas lo que el cerebro ya sabe es perder horas y plata.',
+      specs:[['Función','Inyección + encendido + ride modes'],['Guarda','Códigos de error DTC'],['Testigo motor','Escanear antes de rodar'],['Reset servicio','Por diagnóstico']],
+      html:'<p>La ECU gestiona en tiempo real inyección, encendido, los modos de conducción (Sport, Touring, Urban, Enduro según el modelo), control de tracción, control de deslizamiento y ABS de curva. En la Multistrada V4 también coordina el radar de crucero adaptativo y detección de punto ciego, cuando la moto los trae equipados.</p><p class="rg-h">Por qué el diagnóstico te ahorra dinero</p><p>Con una herramienta de escaneo se lee el código en minutos y se identifica exactamente qué componente tiene el problema.</p>',
+      tip:'Muchas motos muestran el código en pantalla con una secuencia de la llave o menú oculto. Ducati tiene apps de diagnóstico con adaptadores OBD.',
+      warn:'Borrar el código no arregla la falla: solo apaga la luz hasta que el problema vuelva.',
+      secret:'La mayoría de testigos son por sensores baratos (lambda, mariposa, caballete lateral), no por el motor.'
+    },
+    llantas:{titulo:'Llantas y Neumáticos',icon:'🛞',dif:1,interval:'Presión cada 2 semanas · vida 5–6 años',tiempo:'10 min',
+      lede:'El ajuste más importante es la presión, es gratis, y casi nadie lo hace bien.',
+      specs:[['Presión','En frío, cada 2 semanas'],['Desgaste','Indicadores TWI'],['Edad máxima','5–6 años (código DOT)'],['Según uso','Asfalto / 80-20 / 50-50']],
+      html:'<p>Las llantas son los únicos puntos de contacto con el suelo. Sobre esa superficie recae toda la tracción, frenada y agarre en curva.</p><p class="rg-h">La presión</p><p>Presión <strong>baja</strong>: la goma se recalienta, sube consumo, empeora maniobrabilidad. Presión <strong>alta</strong>: reduce agarre. Revisar siempre en frío.</p><p class="rg-h">Qué revisar</p><ul><li><strong>Desgaste:</strong> indicadores TWI en los canales.</li><li><strong>Daños:</strong> cortes, grietas en flancos.</li><li><strong>Desgaste disparejo:</strong> presión incorrecta o suspensión mal ajustada.</li><li><strong>Edad:</strong> la goma envejece aunque le quede dibujo.</li></ul>',
+      tip:'Lee el código DOT: últimos 4 dígitos = semana y año de fabricación. Siempre compra la más reciente.',
+      warn:'Bajar presión para off-road en llanta sin cámara a velocidad de carretera es peligroso: se recalienta y puede desllantar.',
+      secret:'Una llanta puede tener dibujo y estar peligrosa por endurecimiento. Presiónala con la uña: si está dura como plástico, ya perdió agarre.'
+    },
+    electrico:{titulo:'Sistema Eléctrico',icon:'🔌',dif:3,interval:'Revisión conexiones en cada service',tiempo:'Variable',
+      lede:'Las fallas eléctricas son las más frustrantes. Casi siempre la culpa es una conexión floja o húmeda.',
+      specs:[['Sistema de carga','Estátor + regulador'],['Voltaje reposo','~12.6 V'],['Voltaje acelerando','13.5–14.5 V'],['Primero revisar','Fusibles + conectores + masas']],
+      html:'<p>El sistema eléctrico alimenta arranque, encendido, luces, tablero TFT, radar (Multistrada V4), quickshifter y toda la electrónica de control.</p><p class="rg-h">Dónde está el problema</p><p>Causa más común: <strong>conexiones flojas, corroídas o húmedas</strong>, sobre todo en motos que ruedan bajo lluvia, cruzan ríos o se lavan con pistola.</p><p class="rg-h">Piezas que sí fallan</p><ul><li><strong>Regulador/rectificador:</strong> se calienta mucho, punto débil clásico.</li><li><strong>Estátor:</strong> si se degrada, la batería nunca carga bien.</li><li><strong>Fusibles:</strong> lo primero que revisar cuando algo deja de funcionar de golpe.</li></ul>',
+      tip:'Puntos de masa oxidados generan fallas inexplicables. Desconecta, lija hasta metal brillante y aprieta bien.',
+      warn:'Antes de instalar accesorios, verifica que el alternador tiene capacidad. Conecta los de alto consumo a través de un relé.',
+      secret:'Un multímetro de 10 dólares es la herramienta que más dinero te ahorra. Medir caída de voltaje bajo carga explica el 90% de fallas fantasma.'
     }
   };
 
-  const BIKES=[{model:'Monster',topics:['aceite','filtroaire','frenos','suspension','cadena','bateria','diagnostico','llantas']},{model:'Scrambler',topics:['aceite','filtroaire','frenos','suspension','cadena','bateria','diagnostico','llantas']},{model:'Multistrada',topics:['aceite','filtroaire','frenos','suspension','cadena','bateria','diagnostico','llantas']},{model:'SuperSport',topics:['aceite','filtroaire','frenos','suspension','cadena','bateria','diagnostico','llantas']}];
+  const BIKES=[
+    {model:'Monster 937',topics:['aceite','desmo','filtroaire','frenos','abs','suspension','cadena','bateria','ecu','llantas','electrico']},
+    {model:'Desert X',topics:['aceite','desmo','filtroaire','frenos','abs','suspension','cadena','bateria','ecu','llantas','electrico']},
+    {model:'Streetfighter V4',topics:['aceite','desmo','filtroaire','frenos','abs','suspension','cadena','bateria','ecu','llantas','electrico']},
+    {model:'Multistrada V4 Rally',topics:['aceite','desmo','filtroaire','frenos','abs','suspension','cadena','bateria','ecu','llantas','electrico']},
+  ];
 
-  let curBike=null,modelsEl=document.getElementById('rgModels'),topicsEl=document.getElementById('rgTopics'),detailEl=document.getElementById('rgDetail'),topicsGrid=document.getElementById('rgTopicsGrid');
+  let curBike=null;
+  const modelsEl=document.getElementById('rgModels');
+  const topicsEl=document.getElementById('rgTopics');
+  const detailEl=document.getElementById('rgDetail');
+  const topicsGrid=document.getElementById('rgTopicsGrid');
 
-  function renderModels(){modelsEl.innerHTML=BIKES.map((b,i)=>`<button class="rg-card--bike" data-bike="${i}"><div class="rg-bike-inner"><span class="rg-bk-idx">Modelo ${String(i+1).padStart(2,'0')}</span><span class="rg-name">${b.model}</span><span class="rg-bike-count"><b>${b.topics.length}</b>&nbsp;sistemas técnicos →</span></div><span class="rg-chev">ABRIR →</span></button>`).join('');}function openTopics(i){curBike=BIKES[i];document.getElementById('rgTopicsTitle').textContent=curBike.model;topicsGrid.innerHTML=curBike.topics.map(k=>{const t=TOPIC_INFO[k];return t?`<button class="rg-topic" data-topic="${k}"><span class="rg-ic">${t.icon}</span><span class="rg-tn">${t.titulo}</span><span class="rg-tmeta">Ficha técnica</span></button>`:'';}).join('');show('topics');}function dots(n){let h='<div class="rg-dots">';for(let i=1;i<=4;i++)h+='<i class="'+(i<=n?'on':'')+'"></i>';return h+'</div>';}function openDetail(k){const t=TOPIC_INFO[k];if(!t)return;document.getElementById('rgDetailCrumb').textContent='Ducati · '+curBike.model;document.getElementById('rgDetailTitle').textContent=t.titulo;document.getElementById('rgDetailLede').textContent=t.lede;let b=t.html;if(t.tip)b+='<div class="rg-box rg-box--tip"><b>◆ Truco de mecánico</b>'+t.tip+'</div>';if(t.warn)b+='<div class="rg-box rg-box--warn"><b>▲ Cuidado con esto</b>'+t.warn+'</div>';if(t.secret)b+='<div class="rg-box rg-box--secret"><b>★ Lo que no te dicen en el taller</b>'+t.secret+'</div>';document.getElementById('rgDetailInfo').innerHTML=b;const r=(t.specs||[]).map(s=>'<div class="rg-row"><dt>'+s[0]+'</dt><dd>'+s[1]+'</dd></div>').join('');document.getElementById('rgDetailAside').innerHTML=`<div class="rg-spec"><h4>Datos rápidos</h4><dl>${r}</dl></div><div class="rg-difficulty"><span>Dificultad DIY</span>${dots(t.dif||1)}</div><div class="rg-spec"><h4>Logística</h4><dl><div class="rg-row"><dt>Intervalo</dt><dd>${t.interval||'—'}</dd></div><div class="rg-row"><dt>Tiempo aprox.</dt><dd>${t.tiempo||'—'}</dd></div></dl></div>`;show('detail');}function show(l){modelsEl.hidden=l!=='models';document.querySelector('.rg-hero').style.display=l==='models'?'':'none';topicsEl.hidden=l!=='topics';detailEl.hidden=l!=='detail';const t=l==='topics'?topicsEl:l==='detail'?detailEl:document.getElementById('ridera-garage');window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-90,behavior:'smooth'});}modelsEl.addEventListener('click',e=>{const b=e.target.closest('[data-bike]');if(b)openTopics(+b.dataset.bike)});topicsGrid.addEventListener('click',e=>{const t=e.target.closest('[data-topic]');if(t)openDetail(t.dataset.topic)});document.getElementById('btnBackModels').addEventListener('click',()=>show('models'));document.getElementById('btnBackTopics').addEventListener('click',()=>show('topics'));renderModels();
+  function renderModels(){
+    modelsEl.innerHTML=BIKES.map((b,i)=>`
+      <button class="rg-card--bike" data-bike="${i}">
+        <div class="rg-bike-inner">
+          <span class="rg-bk-idx">Modelo ${String(i+1).padStart(2,'0')}</span>
+          <span class="rg-name">${b.model}</span>
+          <span class="rg-bike-count"><b>${b.topics.length}</b>&nbsp;sistemas técnicos →</span>
+        </div>
+        <span class="rg-chev">ABRIR →</span>
+      </button>`).join('');
+  }
+
+  function openTopics(i){
+    curBike=BIKES[i];
+    document.getElementById('rgTopicsTitle').textContent=curBike.model;
+    topicsGrid.innerHTML=curBike.topics.map((key,j)=>{
+      const t=TOPIC_INFO[key];
+      return t?`<button class="rg-topic" data-topic="${key}">
+        <span class="rg-ic">${t.icon}</span>
+        <span class="rg-tn">${t.titulo}</span>
+        <span class="rg-tmeta">Ficha técnica</span>
+      </button>`:'';
+    }).join('');
+    show('topics');
+  }
+
+  function dots(n){
+    let h='<div class="rg-dots">';
+    for(let i=1;i<=4;i++) h+='<i class="'+(i<=n?'on':'')+'"></i>';
+    return h+'</div>';
+  }
+
+  function openDetail(key){
+    const t=TOPIC_INFO[key];if(!t)return;
+    document.getElementById('rgDetailCrumb').textContent='Ducati · '+curBike.model;
+    document.getElementById('rgDetailTitle').textContent=t.titulo;
+    document.getElementById('rgDetailLede').textContent=t.lede;
+    let body=t.html;
+    if(t.tip)    body+='<div class="rg-box rg-box--tip"><b>◆ Truco de mecánico</b>'+t.tip+'</div>';
+    if(t.warn)   body+='<div class="rg-box rg-box--warn"><b>▲ Cuidado con esto</b>'+t.warn+'</div>';
+    if(t.secret) body+='<div class="rg-box rg-box--secret"><b>★ Lo que no te dicen en el taller</b>'+t.secret+'</div>';
+    document.getElementById('rgDetailInfo').innerHTML=body;
+    const rows=(t.specs||[]).map(s=>'<div class="rg-row"><dt>'+s[0]+'</dt><dd>'+s[1]+'</dd></div>').join('');
+    document.getElementById('rgDetailAside').innerHTML=`
+      <div class="rg-spec"><h4>Datos rápidos</h4><dl>${rows}</dl></div>
+      <div class="rg-difficulty"><span>Dificultad DIY</span>${dots(t.dif||1)}</div>
+      <div class="rg-spec"><h4>Logística</h4><dl>
+        <div class="rg-row"><dt>Intervalo</dt><dd>${t.interval||'—'}</dd></div>
+        <div class="rg-row"><dt>Tiempo aprox.</dt><dd>${t.tiempo||'—'}</dd></div>
+      </dl></div>`;
+    show('detail');
+  }
+
+  function show(level){
+    modelsEl.hidden=level!=='models';
+    document.querySelector('.rg-hero').style.display=level==='models'?'':'none';
+    topicsEl.hidden=level!=='topics';
+    detailEl.hidden=level!=='detail';
+    const t=level==='topics'?topicsEl:level==='detail'?detailEl:document.getElementById('ridera-garage');
+    window.scrollTo({top:t.getBoundingClientRect().top+window.pageYOffset-90,behavior:'smooth'});
+  }
+
+  modelsEl.addEventListener('click',e=>{const b=e.target.closest('[data-bike]');if(b)openTopics(+b.dataset.bike)});
+  topicsGrid.addEventListener('click',e=>{const t=e.target.closest('[data-topic]');if(t)openDetail(t.dataset.topic)});
+  document.getElementById('btnBackModels').addEventListener('click',()=>show('models'));
+  document.getElementById('btnBackTopics').addEventListener('click',()=>show('topics'));
+
+  renderModels();
 })();
 </script>
