@@ -959,7 +959,9 @@
         map.getSource('photo-active').setData({ type: 'FeatureCollection', features: [] });
         show('hudBar');
 
-        const rideZoom = Math.max(17.5, fitZoom + 5.5);
+        // Zoom de seguimiento acercado (17.5→18.5): la moto y la ruta cercana
+        // se ven más grandes, sin perder del todo el camino que viene adelante.
+        const rideZoom = Math.max(18.5, fitZoom + 6.5);
         const zoomBlend = p < 0.05 ? easeIn(p / 0.05) : p > 0.95 ? 1 - easeIn((p - 0.95) / 0.05) : 1;
         const curZoom = fitZoom + zoomBlend * (rideZoom - fitZoom);
         const cBlend = p < 0.03 ? easeIn(p / 0.03) : p > 0.97 ? 1 - easeIn((p - 0.97) / 0.03) : 1;
