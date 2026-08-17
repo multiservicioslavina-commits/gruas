@@ -563,11 +563,12 @@ async function responder(
   return textoDe((cierre.content ?? []) as Bloque[]);
 }
 
-// ─── Orquestador de IA (Claude + OpenAI): apagado por defecto ───
+// ─── Orquestador de IA (Claude + OpenAI): activo por defecto ────
 // Mismo prompt y mensajes que responder(), pero delega la ejecucion a
 // ia.ts, que decide el motor (fallback) y compara respuestas en temas
-// criticos. Solo se usa si RITA_ORQUESTADOR=true (trafico real) o si
-// el modo prueba lo pide explicitamente con {orquestador:true}.
+// criticos. Activo en trafico real salvo que se apague con el kill
+// switch RITA_ORQUESTADOR="false". El modo prueba tambien lo puede
+// pedir explicitamente con {orquestador:true}.
 async function responderOrquestado(
   message: string,
   history: { role: string; content: string }[],
@@ -799,7 +800,10 @@ Deno.serve(async (req: Request) => {
 
     let reply = "";
     try {
-      reply = Deno.env.get("RITA_ORQUESTADOR") === "true"
+      // Orquestador (Claude + OpenAI) activo por defecto. Kill switch:
+      // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
+      // camino directo de Claude sin necesidad de redeploy.
+      reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
         ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
         : await responder(message, history, from, consentimiento, conVoz, nombreRider);
     } catch (e) {
