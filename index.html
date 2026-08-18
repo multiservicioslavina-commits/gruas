@@ -157,7 +157,21 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   .gc-wa{display:inline-flex;align-items:center;gap:5px;background:var(--green);color:#06210f;border-radius:9px;padding:8px 13px;font-weight:700;font-size:13px;text-decoration:none;white-space:nowrap;flex-shrink:0}
   .gc-wa:active{opacity:.85}
 
-  footer{text-align:center;padding:24px;color:var(--muted);font-family:'Barlow Condensed';letter-spacing:1.5px;text-transform:uppercase;font-size:12px;border-top:1px solid var(--line)}
+  .seo-content{max-width:560px;margin:40px auto 0;padding:0 18px 20px}
+  .seo-content h2{font-family:'Bebas Neue';font-weight:400;font-size:28px;letter-spacing:.5px;margin-bottom:14px;color:var(--orange)}
+  .seo-content h3{font-family:'Bebas Neue';font-weight:400;font-size:22px;letter-spacing:.5px;margin:20px 0 10px;color:var(--text)}
+  .seo-content p,.seo-content li{font-size:15px;line-height:1.6;color:#b8b8b8;margin-bottom:10px}
+  .seo-content a{color:var(--orange);text-decoration:none}
+  .seo-content a:hover{text-decoration:underline}
+  .seo-content ol,.seo-content ul{padding-left:20px;margin-bottom:14px}
+  .seo-content li{margin-bottom:6px}
+  .site-footer{text-align:center;padding:28px 18px;color:var(--muted);font-size:13px;border-top:1px solid var(--line)}
+  .footer-nav{display:flex;flex-wrap:wrap;justify-content:center;gap:16px;margin-bottom:14px}
+  .footer-nav a{color:var(--muted);text-decoration:none;font-family:'Barlow Condensed';text-transform:uppercase;letter-spacing:1.5px;font-size:12px;transition:color .15s}
+  .footer-nav a:hover{color:var(--orange)}
+  .site-footer p{font-family:'Barlow Condensed';letter-spacing:1px;text-transform:uppercase;font-size:12px;margin-bottom:6px}
+  .footer-contact{text-transform:none;letter-spacing:0;font-family:'DM Sans'}
+  .footer-contact a{color:var(--orange);text-decoration:none}
   .hide{display:none!important}
   .spin{width:20px;height:20px;border:3px solid rgba(255,255,255,.35);border-top-color:#fff;border-radius:50%;animation:rot .8s linear infinite}
   @keyframes rot{to{transform:rotate(360deg)}}
@@ -208,8 +222,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <section class="hero">
       <div class="stripes"></div>
       <div class="badge"><span class="pulse"></span> Disponible 24/7</div>
-      <h1>¿Tu moto<br>te dejó<br><span class="em">tirado?</span></h1>
-      <p class="lead">Pide una grúa en segundos. Te conectamos directo con el gruero más cercano.</p>
+      <h1>Grúa para<br>motos en<br><span class="em">Medellín</span></h1>
+      <p class="lead">¿Tu moto te dejó tirado? Pide una grúa en segundos. Te conectamos directo con el gruero más cercano, las 24 horas.</p>
     </section>
 
     <div class="stats">
@@ -301,7 +315,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </main>
 
-  <footer>Ridera · Comunidad motera de Antioquia</footer>
+  <section class="seo-content">
+    <h2>Servicio de grúa para motos en Medellín y el Área Metropolitana</h2>
+    <p>Ridera es la plataforma de <strong>grúas para motos</strong> más rápida de <strong>Medellín</strong> y el <strong>Valle de Aburrá</strong>. Conectamos motociclistas varados con grueros profesionales disponibles las <strong>24 horas</strong>, los 7 días de la semana.</p>
+    <p>Nuestro servicio cubre <strong>Medellín, Bello, Itagüí, Envigado, Sabaneta, La Estrella, Caldas, Copacabana, Girardota y Barbosa</strong>. Sin importar la hora o el lugar, siempre hay un gruero cerca de ti.</p>
+
+    <h3>¿Cómo funciona?</h3>
+    <ol>
+      <li><strong>Solicita tu grúa</strong> desde la app o el sitio web en segundos.</li>
+      <li><strong>Te conectamos</strong> con el gruero disponible más cercano a tu ubicación.</li>
+      <li><strong>Recibe tu moto</strong> en el destino que elijas, segura y sin daños.</li>
+    </ol>
+
+    <h3>¿Por qué elegir Ridera?</h3>
+    <ul>
+      <li>Grueros verificados y con experiencia en transporte de motos.</li>
+      <li>Seguimiento en tiempo real de tu servicio.</li>
+      <li>Disponible 24/7 en todo el Área Metropolitana.</li>
+      <li>Sin registro obligatorio, pide tu grúa al instante.</li>
+    </ul>
+
+    <p>También tenemos la app <a href="/app/">Ridera Ride Live</a> para rodadas en grupo con GPS en tiempo real, y el <a href="/garage-ridera.html">Garage Técnico</a> con fichas técnicas de motos de alta cilindrada.</p>
+  </section>
+
+  <footer class="site-footer">
+    <nav class="footer-nav" aria-label="Navegación del sitio">
+      <a href="/">Inicio</a>
+      <a href="/grueros">Grueros disponibles</a>
+      <a href="/app/">App Ridera</a>
+      <a href="/garage-ridera.html">Garage Técnico</a>
+    </nav>
+    <p>Ridera · Comunidad motera de Antioquia · Medellín, Colombia</p>
+    <p class="footer-contact">WhatsApp: <a href="https://wa.me/573117896717">+57 311 789 6717</a></p>
+  </footer>
 
   <!-- FLOATING INSTALL BANNER (Android/Chrome: aparece automático; iOS: instrucciones) -->
   <div class="install-banner" id="installBanner">
