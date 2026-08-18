@@ -1,4 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!-- AVISO: este archivo NO se sirve en producción. La ruta /sitemap.xml está
+     interceptada por netlify/edge-functions/sitemap.ts (ver netlify.toml).
+     Edita ese archivo .ts para cambiar el sitemap real de gruas.ridera.com.co. -->
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
     <loc>https://gruas.ridera.com.co/</loc>
@@ -31,7 +34,7 @@
     <priority>0.7</priority>
   </url>
   <url>
-    <loc>https://gruas.ridera.com.co/info.html</loc>
+    <loc>https://gruas.ridera.com.co/info</loc>
     <changefreq>monthly</changefreq>
     <priority>0.5</priority>
   </url>
