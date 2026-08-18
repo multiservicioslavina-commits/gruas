@@ -10,5 +10,13 @@ Disallow: /califica.html
 Disallow: /seguimiento.html
 Disallow: /mimoto.html
 Disallow: /widget-gruas.html
+Disallow: /connect.html
+Disallow: /connect-admin.html
+Disallow: /connect-register.html
+Disallow: /login-almacen.html
+Disallow: /registro-almacen.html
+Disallow: /mi-almacen.html
+Disallow: /almacen.html
+Disallow: /promo.html
 
 Sitemap: https://gruas.ridera.com.co/sitemap.xml
