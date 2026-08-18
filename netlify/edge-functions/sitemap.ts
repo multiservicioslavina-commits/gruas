@@ -16,6 +16,7 @@ export default async () => {
     { url: '/blog/pico-y-placa-motos-medellin.html',              priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
     { url: '/blog/como-elegir-grua-para-motos.html',               priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
     { url: '/blog/rutas-moto-antioquia.html',                      priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
+    { url: '/blog/africa-twin-vs-bmw-gs-comparacion.html',         priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
     { url: '/almacenes',           priority: '0.7', freq: 'weekly',  mod: '2026-08-18' },
     { url: '/info',                priority: '0.5', freq: 'monthly', mod: '2026-08-18' },
   ];
