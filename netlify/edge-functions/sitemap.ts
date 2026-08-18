@@ -11,6 +11,13 @@ export default async () => {
     { url: '/grueros',             priority: '0.9', freq: 'daily',   mod: '2026-07-21' },
     { url: '/app/',                priority: '0.8', freq: 'monthly', mod: '2026-07-21' },
     { url: '/garage-ridera.html',  priority: '0.7', freq: 'monthly', mod: '2026-07-17' },
+    { url: '/blog/',               priority: '0.8', freq: 'weekly',  mod: '2026-08-18' },
+    { url: '/blog/que-hacer-si-tu-moto-se-vara-en-medellin.html', priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
+    { url: '/blog/pico-y-placa-motos-medellin.html',              priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
+    { url: '/blog/como-elegir-grua-para-motos.html',               priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
+    { url: '/blog/rutas-moto-antioquia.html',                      priority: '0.7', freq: 'monthly', mod: '2026-08-18' },
+    { url: '/almacenes',           priority: '0.7', freq: 'weekly',  mod: '2026-08-18' },
+    { url: '/info',                priority: '0.5', freq: 'monthly', mod: '2026-08-18' },
   ];
 
   let grueroUrls: { url: string; mod: string; priority: string }[] = [];
@@ -18,7 +25,7 @@ export default async () => {
   try {
     const res = await fetch(
       `${SUPABASE_URL}/rest/v1/grueros?aprobado=eq.SI&slug=not.is.null&select=slug,created_at&order=created_at.desc`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` }, signal: AbortSignal.timeout(4000) }
     );
     if (res.ok) {
       const rows: { slug: string; created_at: string }[] = await res.json();
