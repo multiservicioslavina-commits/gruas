@@ -10,11 +10,16 @@
 #                        Si esto se pusiera en true por error, Rita dejaria de
 #                        recibir mensajes.
 #
+# verify_jwt = true   -> la funcion SI exige JWT. Apropiado para endpoints
+#                        que solo deben ser llamados por usuarios autenticados.
+#
 # REGLA: toda funcion que se agregue a supabase/functions/ debe tener aqui su
 # bloque [functions.<slug>] con el verify_jwt correcto, o el CLI la desplegara
 # con verify_jwt=true por defecto.
 
 project_id = "vzzxsdtsaahhzyctvmhx"
+
+# ─── Funciones desplegadas via CI (FUNCIONES en deploy-functions.yml) ───
 
 [functions.rita-v2]
 verify_jwt = false
@@ -23,4 +28,117 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.rita-recordatorios]
+verify_jwt = false
+
+# ─── Respaldo: funciones exportadas del dashboard (no se despliegan via CI) ───
+
+[functions.cartero]
+verify_jwt = false
+
+[functions.enviar-confirmacion]
+verify_jwt = false
+
+[functions.diag-templates]
+verify_jwt = true
+
+[functions.registrar-gruero]
+verify_jwt = false
+
+[functions.admin-grueros]
+verify_jwt = false
+
+[functions.aceptar-solicitud]
+verify_jwt = false
+
+[functions.registrar-moto]
+verify_jwt = false
+
+[functions.recordatorios]
+verify_jwt = false
+
+[functions.relojes]
+verify_jwt = false
+
+[functions.tablero]
+verify_jwt = false
+
+[functions.mi-perfil]
+verify_jwt = false
+
+[functions.mis-servicios]
+verify_jwt = false
+
+[functions.aprobar-gruero]
+verify_jwt = false
+
+[functions.stats-publicos]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = false
+
+[functions.rita-rider-context]
+verify_jwt = false
+
+[functions.form-hotel]
+verify_jwt = false
+
+[functions.form-restaurante]
+verify_jwt = false
+
+[functions.garage-search]
+verify_jwt = false
+
+[functions.rita-whatsapp]
+verify_jwt = false
+
+[functions.render-video]
+verify_jwt = false
+
+[functions.rita-broadcast]
+verify_jwt = false
+
+[functions.debug-fetch]
+verify_jwt = false
+
+[functions.rita-set-profile]
+verify_jwt = false
+
+[functions.s3-read]
+verify_jwt = false
+
+[functions.check-env]
+verify_jwt = false
+
+[functions.notificar-whatsapp]
+verify_jwt = false
+
+[functions.admin-motos]
+verify_jwt = false
+
+[functions.admin-clubs]
+verify_jwt = false
+
+[functions.registrar-club]
+verify_jwt = false
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.test-voz]
+verify_jwt = false
+
+[functions.rita-push]
+verify_jwt = false
+
+[functions.admin-rita]
+verify_jwt = false
+
+[functions.rita-respond]
+verify_jwt = false
+
+[functions.debug-proxy]
+verify_jwt = true
+
+[functions.club-auth]
 verify_jwt = false
