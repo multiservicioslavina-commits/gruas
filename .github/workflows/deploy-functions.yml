@@ -55,11 +55,34 @@ jobs:
 
       - name: Preparar token
         run: |
-          # Normaliza: quita espacios/saltos y convierte a minusculas
-          CLEAN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]' | tr 'A-F' 'a-f')"
+          # Strip whitespace, lowercase ALL letters (not just A-F)
+          CLEAN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
           echo "::add-mask::$CLEAN"
           echo "SUPABASE_ACCESS_TOKEN=$CLEAN" >> "$GITHUB_ENV"
-          echo "Token ready (length: ${#CLEAN}, prefix: ${CLEAN:0:4})"
+
+          # Diagnostic: character-class breakdown (no values leaked)
+          BODY="${CLEAN:4}"
+          echo "Token length: ${#CLEAN}, body length: ${#BODY}, prefix: ${CLEAN:0:4}"
+          DIGITS=$(printf '%s' "$BODY" | tr -cd '0-9' | wc -c)
+          HEX_LO=$(printf '%s' "$BODY" | tr -cd 'a-f' | wc -c)
+          HEX_UP=$(printf '%s' "$BODY" | tr -cd 'A-F' | wc -c)
+          ALPHA=$(printf '%s' "$BODY" | tr -cd 'g-zG-Z' | wc -c)
+          OTHER=$(printf '%s' "$BODY" | tr -d '0-9a-fA-Fg-zG-Z' | wc -c)
+          echo "Body chars: digits=$DIGITS hex_lower=$HEX_LO hex_upper=$HEX_UP alpha_nonhex=$ALPHA other=$OTHER"
+
+          # Direct regex check
+          if printf '%s' "$CLEAN" | grep -qE '^sbp_[a-f0-9]{40}$'; then
+            echo "Regex OK: token matches sbp_[a-f0-9]{40}"
+          else
+            echo "Regex FAIL: token does NOT match sbp_[a-f0-9]{40}"
+            # Show which positions are non-hex (position only, not the char)
+            for i in $(seq 0 $((${#BODY}-1))); do
+              C="${BODY:$i:1}"
+              if ! printf '%s' "$C" | grep -qE '[a-f0-9]'; then
+                echo "  bad char at body position $i (char class: $(printf '%s' "$C" | od -An -tx1 | tr -d ' '))"
+              fi
+            done
+          fi
         env:
           RAW_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
