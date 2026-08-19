@@ -473,6 +473,109 @@ async function changeNegocioEstado(table, id, estado) {
   }
 }
 
+async function getReportes() {
+  try {
+    const riders = await sbGet('riders?select=created_at&order=created_at.asc&limit=1000');
+    const gruas = await sbGet('solicitudes?select=municipio&limit=1000');
+    const negocios = await sbGet('talleres?select=estado&limit=1000');
+
+    // Riders por mes
+    const monthMap = {};
+    riders.forEach(r => {
+      if (r.created_at) {
+        const month = r.created_at.substring(0, 7);
+        monthMap[month] = (monthMap[month] || 0) + 1;
+      }
+    });
+    const ridersPerMonth = {
+      labels: Object.keys(monthMap).sort(),
+      values: Object.keys(monthMap).sort().map(m => monthMap[m]),
+    };
+
+    // Grúas por municipio (top 10)
+    const muniMap = {};
+    gruas.forEach(g => {
+      if (g.municipio) {
+        muniMap[g.municipio] = (muniMap[g.municipio] || 0) + 1;
+      }
+    });
+    const sorted = Object.entries(muniMap).sort((a, b) => b[1] - a[1]).slice(0, 10);
+    const gruasByMunicipio = {
+      labels: sorted.map(s => s[0]),
+      values: sorted.map(s => s[1]),
+    };
+
+    // Estados de negocios
+    const estadoMap = { interesado: 0, documentos: 0, aprobado: 0, activo: 0, inactivo: 0 };
+    negocios.forEach(n => {
+      const estado = n.estado || 'interesado';
+      estadoMap[estado] = (estadoMap[estado] || 0) + 1;
+    });
+    const negociosEstado = {
+      labels: Object.keys(estadoMap),
+      values: Object.values(estadoMap),
+    };
+
+    // Tasa de conversión
+    const interesados = negocios.filter(n => (n.estado || 'interesado') === 'interesado').length;
+    const activos = negocios.filter(n => n.estado === 'activo').length;
+    const conversionRate = interesados > 0 ? activos / interesados : 0;
+
+    return {
+      ok: true,
+      ridersPerMonth,
+      gruasByMunicipio,
+      negociosEstado,
+      conversionRate,
+      negociosInteresados: interesados,
+      negociosActivos: activos,
+    };
+  } catch (err) {
+    console.error('getReportes error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function exportReport(type) {
+  try {
+    let data, filename, headers;
+
+    if (type === 'riders') {
+      data = await sbGet('riders?select=id,nombre,apellido,telefono,ciudad,moto_marca,moto_modelo,created_at&order=created_at.desc&limit=1000');
+      headers = ['ID', 'Nombre', 'Apellido', 'Teléfono', 'Ciudad', 'Moto Marca', 'Moto Modelo', 'Fecha Registro'];
+      filename = 'riders';
+    } else if (type === 'gruas') {
+      data = await sbGet('solicitudes?select=id,cliente_nombre,cliente_telefono,municipio,estado,created_at&order=created_at.desc&limit=1000');
+      headers = ['ID', 'Cliente', 'Teléfono', 'Municipio', 'Estado', 'Fecha'];
+      filename = 'gruas';
+    } else if (type === 'negocios') {
+      const talleres = await sbGet('talleres?select=id,nombre,ciudad,telefono,estado,created_at&order=created_at.desc&limit=500');
+      const almacenes = await sbGet('almacenes?select=id,nombre,ciudad,telefono,estado,created_at&order=created_at.desc&limit=500');
+      data = [...talleres, ...almacenes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      headers = ['ID', 'Nombre', 'Ciudad', 'Teléfono', 'Estado', 'Fecha'];
+      filename = 'negocios';
+    } else if (type === 'sellos') {
+      data = await sbGet('sellos?select=id,rider_id,municipio_id,fecha,estado&order=fecha.desc&limit=1000');
+      headers = ['ID', 'Rider ID', 'Municipio ID', 'Fecha', 'Estado'];
+      filename = 'sellos';
+    } else {
+      return { ok: false, error: 'Tipo desconocido' };
+    }
+
+    const csv = [headers.join(','), ...data.map(row => headers.map(h => {
+      const key = h.toLowerCase().replace(/\s+/g, '_');
+      let val = row[key] || '';
+      if (typeof val === 'string' && val.includes(',')) val = `"${val}"`;
+      return val;
+    }).join(','))].join('\n');
+
+    return { ok: true, csv };
+  } catch (err) {
+    console.error('exportReport error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -565,6 +668,13 @@ exports.handler = async (event) => {
     case 'change_negocio_estado':
       if (!body.table || !body.id || !body.estado) return json({ ok: false, error: 'Faltan table, id o estado' });
       return json(await changeNegocioEstado(body.table, body.id, body.estado));
+
+    case 'get_reportes':
+      return json(await getReportes());
+
+    case 'export_report':
+      if (!body.type) return json({ ok: false, error: 'Falta type' });
+      return json(await exportReport(body.type));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

@@ -12,6 +12,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Panel admin — Ridera Grúas</title>
   <meta name="robots" content="noindex">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -395,6 +396,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="sidebar-item" data-tab="conversaciones" onclick="showTab('conversaciones')">
         <span class="sb-icon">💭</span> Conversaciones
+      </div>
+      <div class="sidebar-item" data-tab="reportes" onclick="showTab('reportes')">
+        <span class="sb-icon">📈</span> Reportes
       </div>
       <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
         <span class="sb-icon">💬</span> Rita
@@ -870,6 +874,44 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         </div><!-- /tabRita -->
 
+        <!-- REPORTES -->
+        <div id="tabReportes" style="display:none">
+          <div class="section-header"><h2>📈 Reportes y Análisis</h2></div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem">
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Riders por mes</div>
+              <canvas id="chartRidersPerMonth" height="250"></canvas>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Grúas por municipio (top 10)</div>
+              <canvas id="chartGruasByMunicipio" height="250"></canvas>
+            </div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem">
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Estados de negocios</div>
+              <canvas id="chartNegociosEstado" height="250"></canvas>
+            </div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Tasa de conversión (Interesado → Activo)</div>
+              <div id="chartConversionRate" style="padding:1rem;background:var(--s2);border-radius:8px;text-align:center">
+                <div style="font-size:2.5rem;font-weight:700;color:var(--or)">—%</div>
+                <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">Cargando...</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-header"><h3>Descargar datos</h3></div>
+          <div style="display:flex;gap:1rem;flex-wrap:wrap">
+            <button class="btn btn-sm" onclick="exportReportCSV('riders')">📥 Riders (CSV)</button>
+            <button class="btn btn-sm" onclick="exportReportCSV('gruas')">📥 Grúas (CSV)</button>
+            <button class="btn btn-sm" onclick="exportReportCSV('negocios')">📥 Negocios (CSV)</button>
+            <button class="btn btn-sm" onclick="exportReportCSV('sellos')">📥 Sellos (CSV)</button>
+          </div>
+        </div><!-- /tabReportes -->
+
         <!-- CONVERSACIONES RITA -->
         <div id="tabConversaciones" style="display:none">
           <div class="section-header"><h2>💭 Conversaciones Rita</h2></div>
@@ -950,7 +992,7 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','rita','conversaciones'];
+const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
   despacho: 'tabDespacho',
@@ -963,8 +1005,9 @@ const TAB_ID_MAP = {
   almacenes: 'tabAlmacenes',
   hoteles: 'tabHoteles',
   restaurantes: 'tabRestaurantes',
-  rita: 'tabRita',
   conversaciones: 'tabConversaciones',
+  reportes: 'tabReportes',
+  rita: 'tabRita',
 };
 
 // Track which sections have been loaded at least once
@@ -985,6 +1028,7 @@ function showTab(tab) {
   // Lazy-load section data
   if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
   if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
+  if (tab === 'reportes' && !sectionLoaded.reportes) loadReportes();
   if (tab === 'despacho') {
     if (!solStatsLoaded) loadSolicitudesStats();
     loadPendingDispatch();
@@ -2886,6 +2930,131 @@ async function changeNegocioEstado(table, id, estado) {
   } else {
     alert('Error: ' + (data.error || 'No se pudo cambiar estado'));
   }
+}
+
+// ── REPORTES ───────────────────────────────────────────────────────────
+let chartInstances = {};
+
+async function loadReportes() {
+  const data = await callAdmin({ action: 'get_reportes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    console.error('Error cargando reportes:', data.error);
+    return;
+  }
+  sectionLoaded.reportes = true;
+
+  // Riders por mes
+  if (data.ridersPerMonth) renderChartRidersPerMonth(data.ridersPerMonth);
+  if (data.gruasByMunicipio) renderChartGruasByMunicipio(data.gruasByMunicipio);
+  if (data.negociosEstado) renderChartNegociosEstado(data.negociosEstado);
+  if (data.conversionRate !== undefined) {
+    const rate = Math.round(data.conversionRate * 100);
+    document.querySelector('#chartConversionRate').innerHTML = `
+      <div style="font-size:2.5rem;font-weight:700;color:${rate > 50 ? '#4ade80' : '#f59e0b'}">${rate}%</div>
+      <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">${data.negociosActivos} / ${data.negociosInteresados} convertidos</div>
+    `;
+  }
+}
+
+function renderChartRidersPerMonth(data) {
+  const ctx = document.getElementById('chartRidersPerMonth');
+  if (chartInstances['ridersPerMonth']) chartInstances['ridersPerMonth'].destroy();
+
+  chartInstances['ridersPerMonth'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Riders nuevos',
+        data: data.values,
+        borderColor: '#E85D20',
+        backgroundColor: 'rgba(232,93,32,0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+function renderChartGruasByMunicipio(data) {
+  const ctx = document.getElementById('chartGruasByMunicipio');
+  if (chartInstances['gruasByMunicipio']) chartInstances['gruasByMunicipio'].destroy();
+
+  chartInstances['gruasByMunicipio'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Grúas',
+        data: data.values,
+        backgroundColor: '#E85D20',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+function renderChartNegociosEstado(data) {
+  const ctx = document.getElementById('chartNegociosEstado');
+  if (chartInstances['negociosEstado']) chartInstances['negociosEstado'].destroy();
+
+  const colors = {
+    interesado: '#f59e0b',
+    documentos: '#3b82f6',
+    aprobado: '#8b5cf6',
+    activo: '#4ade80',
+    inactivo: '#9ca3af'
+  };
+
+  chartInstances['negociosEstado'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values,
+        backgroundColor: data.labels.map(l => colors[l] || '#888'),
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#888' } } }
+    }
+  });
+}
+
+async function exportReportCSV(type) {
+  const data = await callAdmin({ action: 'export_report', type }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al exportar: ' + (data.error || 'Desconocido'));
+    return;
+  }
+
+  const csv = data.csv;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
 }
 </script>
 </body>
