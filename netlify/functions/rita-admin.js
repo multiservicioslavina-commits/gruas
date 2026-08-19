@@ -290,8 +290,22 @@ async function listAlmacenes() {
   return { ok: true, almacenes: rows };
 }
 
+async function listHoteles() {
+  const rows = await sbGet(
+    'hoteles?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_alojamiento,parqueadero_motos,aprobado,created_at&order=created_at.desc&limit=200'
+  );
+  return { ok: true, hoteles: rows };
+}
+
+async function listRestaurantes() {
+  const rows = await sbGet(
+    'restaurantes?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_cocina,parqueadero_motos,aprobado,created_at&order=created_at.desc&limit=200'
+  );
+  return { ok: true, restaurantes: rows };
+}
+
 async function toggleApproval(table, id, aprobado) {
-  const allowed = ['talleres', 'almacenes', 'clubs', 'motos_venta'];
+  const allowed = ['talleres', 'almacenes', 'clubs', 'motos_venta', 'hoteles', 'restaurantes'];
   if (!allowed.includes(table)) return { ok: false, error: 'Tabla no válida' };
   const res = await fetch(
     `${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,
@@ -372,6 +386,12 @@ exports.handler = async (event) => {
 
     case 'list_almacenes':
       return json(await listAlmacenes());
+
+    case 'list_hoteles':
+      return json(await listHoteles());
+
+    case 'list_restaurantes':
+      return json(await listRestaurantes());
 
     case 'toggle_approval':
       if (!body.table || !body.id) return json({ ok: false, error: 'Faltan table e id' });
