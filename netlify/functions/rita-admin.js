@@ -322,6 +322,107 @@ async function updateSelloEstado(id, estado) {
   return { ok: res.ok };
 }
 
+async function getCrmMetrics() {
+  try {
+    const [riders, sellos, gruas, rita, talleres, almacenes, hoteles, restaurantes] = await Promise.all([
+      sbCount('riders'),
+      sbCount('sellos'),
+      sbCount('solicitudes'),
+      sbCount('rita_ai_logs'),
+      sbCount('talleres'),
+      sbCount('almacenes'),
+      sbCount('hoteles'),
+      sbCount('restaurantes'),
+    ]);
+
+    const res1 = await fetch(`${SB_URL}/rest/v1/riders?created_at=gte.${new Date(Date.now() - 30*24*60*60*1000).toISOString()}&select=id`, {
+      headers: sbHeaders,
+    });
+    const ridersNuevos = await res1.json();
+
+    const res2 = await fetch(`${SB_URL}/rest/v1/sellos?select=distinct(municipio_id)`, { headers: sbHeaders });
+    const sellosDistinct = await res2.json();
+
+    const res3 = await fetch(`${SB_URL}/rest/v1/solicitudes?estado=eq.pendiente&select=id`, { headers: sbHeaders });
+    const gruasPendientes = await res3.json();
+
+    const res4 = await fetch(`${SB_URL}/rest/v1/talleres?aprobado=eq.true&select=id`, { headers: sbHeaders });
+    const talleresAprobados = await res4.json();
+
+    const res5 = await fetch(`${SB_URL}/rest/v1/almacenes?aprobado=eq.true&select=id`, { headers: sbHeaders });
+    const almacenesAprobados = await res5.json();
+
+    const res6 = await fetch(`${SB_URL}/rest/v1/hoteles?aprobado=eq.true&select=id`, { headers: sbHeaders });
+    const hotelesAprobados = await res6.json();
+
+    const res7 = await fetch(`${SB_URL}/rest/v1/restaurantes?aprobado=eq.true&select=id`, { headers: sbHeaders });
+    const restaurantesAprobados = await res7.json();
+
+    const res8 = await fetch(`${SB_URL}/rest/v1/rita_conversations?select=phone`, { headers: sbHeaders });
+    const ritaConvs = await res8.json();
+
+    const alerts = [];
+    if (gruasPendientes.length > 5) alerts.push({ tipo: 'Grúas', mensaje: `${gruasPendientes.length} solicitudes pendientes` });
+    if (talleresAprobados.length < talleres) alerts.push({ tipo: 'Talleres', mensaje: `${talleres - talleresAprobados.length} pendientes de aprobación` });
+    if (almacenesAprobados.length < almacenes) alerts.push({ tipo: 'Almacenes', mensaje: `${almacenes - almacenesAprobados.length} pendientes de aprobación` });
+
+    return {
+      ok: true,
+      riders_total: riders,
+      riders_nuevos: ridersNuevos.length,
+      sellos_total: sellos,
+      municipios_cubiertos: sellosDistinct.length,
+      gruas_total: gruas,
+      gruas_pendientes: gruasPendientes.length,
+      rita_logs_total: rita,
+      rita_chats: ritaConvs.length,
+      talleres_total: talleres,
+      talleres_aprobados: talleresAprobados.length,
+      almacenes_total: almacenes,
+      almacenes_aprobados: almacenesAprobados.length,
+      hoteles_total: hoteles,
+      hoteles_aprobados: hotelesAprobados.length,
+      restaurantes_total: restaurantes,
+      restaurantes_aprobados: restaurantesAprobados.length,
+      alerts,
+    };
+  } catch (err) {
+    console.error('getCrmMetrics error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function listConversaciones() {
+  try {
+    const convs = await sbGet('rita_conversations?select=phone,state,data,updated_at&order=updated_at.desc&limit=100');
+    const msgs = await sbGet('rita_messages?select=phone_number&order=created_at.desc&limit=500');
+
+    const msgCounts = {};
+    msgs.forEach(m => {
+      const phone = m.phone_number || m.phone;
+      msgCounts[phone] = (msgCounts[phone] || 0) + 1;
+    });
+
+    const resultado = convs.map(c => {
+      const phone = c.phone;
+      const data = typeof c.data === 'string' ? JSON.parse(c.data) : c.data || {};
+      return {
+        telefono: phone,
+        mensaje_count: msgCounts[phone] || 0,
+        sin_respuesta: data.sin_respuesta || false,
+        con_error: data.con_error || false,
+        pidio_grua: data.pidio_grua || false,
+        updated_at: c.updated_at,
+      };
+    });
+
+    return { ok: true, conversaciones: resultado };
+  } catch (err) {
+    console.error('listConversaciones error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -400,6 +501,12 @@ exports.handler = async (event) => {
     case 'update_sello':
       if (!body.id || !body.estado) return json({ ok: false, error: 'Faltan id y estado' });
       return json(await updateSelloEstado(body.id, body.estado));
+
+    case 'crm_metrics':
+      return json(await getCrmMetrics());
+
+    case 'list_conversaciones':
+      return json(await listConversaciones());
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

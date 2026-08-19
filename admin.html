@@ -117,6 +117,13 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .stat .num.blue { color: #60a5fa; }
     .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
 
+    /* DASHBOARD METRICS */
+    .metric-card { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1.5rem 1.25rem; transition: border-color 0.2s; }
+    .metric-card:hover { border-color: var(--or); }
+    .metric-label { font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); margin-bottom: 0.75rem; font-weight: 600; }
+    .metric-value { font-size: 2.2rem; font-weight: 700; color: var(--or); margin-bottom: 0.35rem; }
+    .metric-sub { font-size: 0.75rem; color: var(--mu); }
+
     /* TABS (kept for any inner use, but main tabs replaced by sidebar) */
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
@@ -348,13 +355,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="brand-icon">R</div>
         <div><span style="color:var(--or)">Ridera</span> ADMIN</div>
       </div>
+      <div class="sidebar-item active" data-tab="dashboard" onclick="showTab('dashboard')">
+        <span class="sb-icon">📊</span> Dashboard
+      </div>
       <div class="sidebar-item" data-tab="despacho" onclick="showTab('despacho')">
         <span class="sb-icon">📡</span> Despacho
       </div>
       <div class="sidebar-item" data-tab="sellos" onclick="showTab('sellos')">
         <span class="sb-icon">🏷️</span> Sellos <span class="sb-badge" id="badgeSellos" style="display:none">0</span>
       </div>
-      <div class="sidebar-item active" data-tab="grueros" onclick="showTab('grueros')">
+      <div class="sidebar-item" data-tab="grueros" onclick="showTab('grueros')">
         <span class="sb-icon">🔧</span> Grueros <span class="sb-badge" id="badgeGrueros" style="display:none">0</span>
       </div>
       <div class="sidebar-item" data-tab="riders" onclick="showTab('riders')">
@@ -378,6 +388,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="sidebar-item" data-tab="restaurantes" onclick="showTab('restaurantes')">
         <span class="sb-icon">🍽️</span> Restaurantes <span class="sb-badge" id="badgeRestaurantes" style="display:none">0</span>
       </div>
+      <div class="sidebar-item" data-tab="conversaciones" onclick="showTab('conversaciones')">
+        <span class="sb-icon">💭</span> Conversaciones
+      </div>
       <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
         <span class="sb-icon">💬</span> Rita
       </div>
@@ -388,6 +401,58 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="container">
         <div class="page-title">Panel de administración</div>
         <div class="page-sub" id="lastUpdated">Cargando...</div>
+
+        <!-- DASHBOARD CRM -->
+        <div id="tabDashboard">
+          <div class="section-header"><h2>📊 Dashboard Ridera CRM</h2></div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 2rem;">
+            <div class="metric-card">
+              <div class="metric-label">🏍️ Riders</div>
+              <div class="metric-value" id="metricRiders">—</div>
+              <div class="metric-sub" id="metricRidersDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🏷️ Sellos (municipios)</div>
+              <div class="metric-value" id="metricSellos">—</div>
+              <div class="metric-sub" id="metricSellosDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🚗 Grúas despachadas</div>
+              <div class="metric-value" id="metricGruas">—</div>
+              <div class="metric-sub" id="metricGruasDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">💬 Chats Rita</div>
+              <div class="metric-value" id="metricRita">—</div>
+              <div class="metric-sub" id="metricRitaDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🔧 Talleres</div>
+              <div class="metric-value" id="metricTalleres">—</div>
+              <div class="metric-sub" id="metricTalleresDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🛒 Almacenes</div>
+              <div class="metric-value" id="metricAlmacenes">—</div>
+              <div class="metric-sub" id="metricAlmacenesDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🏨 Hoteles</div>
+              <div class="metric-value" id="metricHoteles">—</div>
+              <div class="metric-sub" id="metricHotelesDetail"></div>
+            </div>
+            <div class="metric-card">
+              <div class="metric-label">🍽️ Restaurantes</div>
+              <div class="metric-value" id="metricRestaurantes">—</div>
+              <div class="metric-sub" id="metricRestaurantesDetail"></div>
+            </div>
+          </div>
+
+          <div class="section-header"><h3>⚠️ Alertas</h3></div>
+          <div id="dashboardAlerts" style="background:#f5f5f5;padding:1rem;border-radius:6px;min-height:100px;">
+            <p style="color:#666;font-size:0.9rem;">Cargando alertas...</p>
+          </div>
+        </div>
 
         <!-- DESPACHO (was Solicitudes) -->
         <div id="tabDespacho" style="display:none">
@@ -800,6 +865,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
         </div><!-- /tabRita -->
 
+        <!-- CONVERSACIONES RITA -->
+        <div id="tabConversaciones" style="display:none">
+          <div class="section-header"><h2>💭 Conversaciones Rita</h2></div>
+          <div class="filters" id="conversacionesFilters">
+            <button class="filter-btn active" onclick="setConversacionesFilter('todas',this)">Todas</button>
+            <button class="filter-btn" onclick="setConversacionesFilter('sin_respuesta',this)">Sin respuesta</button>
+            <button class="filter-btn" onclick="setConversacionesFilter('con_error',this)">Con error reportado</button>
+            <button class="filter-btn" onclick="setConversacionesFilter('grua',this)">Pidió grúa</button>
+          </div>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Teléfono</th><th>Última actividad</th><th>Mensajes</th><th>Tipo</th><th>Acciones</th></tr></thead>
+            <tbody id="conversacionesBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+          </table></div>
+        </div><!-- /tabConversaciones -->
+
       </div>
     </main>
   </div>
@@ -852,8 +932,9 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','rita'];
+const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','rita','conversaciones'];
 const TAB_ID_MAP = {
+  dashboard: 'tabDashboard',
   despacho: 'tabDespacho',
   sellos: 'tabSellos',
   grueros: 'tabGrueros',
@@ -865,6 +946,7 @@ const TAB_ID_MAP = {
   hoteles: 'tabHoteles',
   restaurantes: 'tabRestaurantes',
   rita: 'tabRita',
+  conversaciones: 'tabConversaciones',
 };
 
 // Track which sections have been loaded at least once
@@ -883,6 +965,8 @@ function showTab(tab) {
   });
 
   // Lazy-load section data
+  if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
+  if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
   if (tab === 'despacho') {
     if (!solStatsLoaded) loadSolicitudesStats();
     loadPendingDispatch();
@@ -2538,6 +2622,106 @@ async function saveEditModal() {
     errEl.textContent = data.error || 'No se pudo guardar.';
     errEl.style.display = 'block';
   }
+}
+
+// ── DASHBOARD CRM ──────────────────────────────────────────────────────
+async function loadDashboard() {
+  const data = await callAdmin({ action: 'crm_metrics' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#f87171">Error al cargar métricas.</p>';
+    return;
+  }
+  sectionLoaded.dashboard = true;
+
+  // Llenar métricas
+  document.getElementById('metricRiders').textContent = data.riders_total ?? '—';
+  document.getElementById('metricRidersDetail').textContent = data.riders_nuevos ? `${data.riders_nuevos} nuevos este mes` : '';
+
+  document.getElementById('metricSellos').textContent = data.sellos_total ?? '—';
+  document.getElementById('metricSellosDetail').textContent = data.municipios_cubiertos ? `${data.municipios_cubiertos} municipios` : '';
+
+  document.getElementById('metricGruas').textContent = data.gruas_total ?? '—';
+  document.getElementById('metricGruasDetail').textContent = data.gruas_pendientes ? `${data.gruas_pendientes} pendientes` : '';
+
+  document.getElementById('metricRita').textContent = data.rita_logs_total ?? '—';
+  document.getElementById('metricRitaDetail').textContent = data.rita_chats ? `${data.rita_chats} conversaciones` : '';
+
+  document.getElementById('metricTalleres').textContent = data.talleres_total ?? '—';
+  document.getElementById('metricTalleresDetail').textContent = data.talleres_aprobados ? `${data.talleres_aprobados} aprobados` : '';
+
+  document.getElementById('metricAlmacenes').textContent = data.almacenes_total ?? '—';
+  document.getElementById('metricAlmacenesDetail').textContent = data.almacenes_aprobados ? `${data.almacenes_aprobados} aprobados` : '';
+
+  document.getElementById('metricHoteles').textContent = data.hoteles_total ?? '—';
+  document.getElementById('metricHotelesDetail').textContent = data.hoteles_aprobados ? `${data.hoteles_aprobados} aprobados` : '';
+
+  document.getElementById('metricRestaurantes').textContent = data.restaurantes_total ?? '—';
+  document.getElementById('metricRestaurantesDetail').textContent = data.restaurantes_aprobados ? `${data.restaurantes_aprobados} aprobados` : '';
+
+  // Alertas
+  const alerts = data.alerts || [];
+  if (alerts.length === 0) {
+    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#4ade80">✓ Todo en orden</p>';
+  } else {
+    document.getElementById('dashboardAlerts').innerHTML = alerts.map(a =>
+      `<div style="padding:0.5rem;border-left:3px solid #f59e0b;background:#2a1a00;margin-bottom:0.5rem;font-size:0.85rem">
+        <strong>${a.tipo}</strong>: ${a.mensaje}
+       </div>`
+    ).join('');
+  }
+}
+
+// ── CONVERSACIONES RITA ────────────────────────────────────────────────
+let allConversaciones = [], conversacionesFilter = 'todas';
+
+async function loadConversaciones() {
+  const data = await callAdmin({ action: 'list_conversaciones' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('conversacionesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar conversaciones.</td></tr>';
+    return;
+  }
+  sectionLoaded.conversaciones = true;
+  allConversaciones = data.conversaciones || [];
+  renderConversacionesTable();
+}
+
+function setConversacionesFilter(f, btn) {
+  conversacionesFilter = f;
+  document.querySelectorAll('#conversacionesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderConversacionesTable();
+}
+
+function renderConversacionesTable() {
+  let rows = allConversaciones;
+  if (conversacionesFilter === 'sin_respuesta') rows = rows.filter(c => c.sin_respuesta);
+  else if (conversacionesFilter === 'con_error') rows = rows.filter(c => c.con_error);
+  else if (conversacionesFilter === 'grua') rows = rows.filter(c => c.pidio_grua);
+
+  const tbody = document.getElementById('conversacionesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin conversaciones que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(c => {
+    const tipoLabel = c.pidio_grua ? '🚗 Grúa' : c.con_error ? '⚠️ Error' : c.sin_respuesta ? '❓ Pendiente' : '✓ Resuelto';
+    return `<tr>
+      <td><strong>${esc(c.telefono || '—')}</strong></td>
+      <td><span class="tel">${c.updated_at ? new Date(c.updated_at).toLocaleDateString('es-CO') : '—'}</span></td>
+      <td>${c.mensaje_count || 0} msgs</td>
+      <td>${tipoLabel}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="viewConversacion('${jsq(c.telefono)}')">Ver</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function viewConversacion(telefono) {
+  alert('Conversa ción de: ' + telefono + ' (función expandida en próximas versiones)');
 }
 </script>
 </body>
