@@ -1,0 +1,66 @@
+name: Deploy Supabase Edge Functions
+
+# Despliega las edge functions que estan en supabase/functions/ usando el
+# Supabase CLI, leyendo su contenido del repo. Reemplaza el despliegue manual
+# (que obligaba a reconstruir archivos a mano y causo una caida).
+#
+# Cuando corre:
+#   - al hacer merge/push a main que toque las funciones o su config, y
+#   - manualmente desde la pestana Actions (boton "Run workflow").
+#
+# Despliega SOLO las funciones de la lista explicita FUNCIONES (abajo), no todo
+# lo que haya en supabase/functions/. Asi, aunque el repo tenga muchas funciones
+# exportadas como respaldo, solo se despliegan las que promovemos a proposito.
+# Para agregar una: validala, agregala a FUNCIONES y a supabase/config.toml.
+# El verify_jwt de cada funcion sale de supabase/config.toml.
+#
+# Requisito unico: agregar el secreto SUPABASE_ACCESS_TOKEN en
+#   GitHub -> Settings -> Secrets and variables -> Actions
+# con un token personal de https://supabase.com/dashboard/account/tokens
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "supabase/functions/**"
+      - "supabase/config.toml"
+      - ".github/workflows/deploy-functions.yml"
+  workflow_dispatch:
+
+# Evita que dos despliegues corran a la vez y se pisen.
+concurrency:
+  group: deploy-supabase-functions
+  cancel-in-progress: false
+
+env:
+  PROJECT_REF: vzzxsdtsaahhzyctvmhx
+  # Lista explicita de funciones a desplegar. Solo estas se suben.
+  # Agrega una funcion aqui SOLO cuando este validada y en config.toml.
+  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout del repo
+        uses: actions/checkout@v4
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Verificar login
+        run: supabase --version
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Desplegar edge functions (lista explicita)
+        run: |
+          for fn in $FUNCIONES; do
+            echo "::group::Deploy $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+            echo "::endgroup::"
+          done
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
