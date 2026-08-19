@@ -11,7 +11,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
-import { responderConOrquestador } from "./ia.ts";
+import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -238,6 +238,17 @@ async function handleRegistration(
 
   return null;
 }
+
+// ─── Filtro de mensajes triviales (Paso 5) ──────────────────────
+function esTrivial(msg: string): boolean {
+  const m = msg.trim();
+  if (m.length > 20) return false;
+  if (/^[jh]+[aeiou]+[jhs]*$/i.test(m)) return true;
+  if (!/[a-zA-Z0-9À-ɏ]/.test(m)) return true;
+  return false;
+}
+
+const ACKS_TRIVIALES = ["Dale parce! \u{1F919}", "\u{1F91C}\u{1F91B}", "A la orden! \u{1F3CD}\u{FE0F}", "\u{1F60E}\u{1F44D}"];
 
 // ─── Fecha y hora actual: Claude no la sabe por si solo ──────────
 function bloqueFechaHora(): string {
@@ -790,6 +801,23 @@ Deno.serve(async (req: Request) => {
         await entregar(from, saludo, conVoz);
         return json({ ok: true, flujo: "inicio_registro" });
       }
+    }
+
+    // Paso 5: mensajes triviales (emoji solo, risas) no gastan IA
+    if (esTrivial(message)) {
+      const ack = ACKS_TRIVIALES[Math.floor(Math.random() * ACKS_TRIVIALES.length)];
+      await saveMessage(from, "assistant", ack);
+      await entregar(from, ack, conVoz);
+      return json({ ok: true, flujo: "trivial" });
+    }
+
+    // Paso 3: tope de gasto diario de IA
+    const presupuesto = await verificarPresupuesto();
+    if (!presupuesto.ok) {
+      const capMsg = "Uy parce, hoy ya atend\u{ED} muchos riders y necesito un descanso. Ma\u{F1}ana vuelvo con toda! Si es urgente, entra a ridera.com.co \u{1F3CD}\u{FE0F}";
+      await saveMessage(from, "assistant", capMsg);
+      await entregar(from, capMsg, conVoz);
+      return json({ ok: true, flujo: "presupuesto_agotado", gasto: presupuesto.gastoHoy });
     }
 
     const [history, consentimiento, nombreRider] = await Promise.all([

@@ -17,10 +17,9 @@
 // Ambas claves (ANTHROPIC_API_KEY, OPENAI_API_KEY) viven solo en los
 // secretos de Supabase; nunca llegan al cliente/APK.
 //
-// Apagado por defecto: index.ts solo llama a este modulo si
-// RITA_ORQUESTADOR=true (trafico real) o si el modo prueba lo pide
-// explicitamente con {orquestador:true}. Mientras tanto Rita sigue
-// usando el camino directo a Claude, sin cambios de comportamiento.
+// Activo por defecto: index.ts llama a este modulo salvo que
+// RITA_ORQUESTADOR="false". El kill switch desactiva el orquestador
+// y vuelve al camino directo de Claude sin redeploy.
 // ─────────────────────────────────────────────────────────────────
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
@@ -48,6 +47,33 @@ const PRECIOS: Record<string, { entrada: number; salida: number }> = {
 function estimarCosto(proveedor: "claude" | "openai", tokensEntrada: number, tokensSalida: number): number {
   const p = PRECIOS[proveedor];
   return (tokensEntrada / 1_000_000) * p.entrada + (tokensSalida / 1_000_000) * p.salida;
+}
+
+// ─── Tope de gasto diario (Paso 3) ─────────────────────────────
+const DAILY_CAP_USD = parseFloat(Deno.env.get("RITA_DAILY_CAP_USD") ?? "5");
+
+function inicioDelDiaColombia(): string {
+  const ahora = new Date();
+  const medianoche = new Date(ahora);
+  medianoche.setUTCHours(5, 0, 0, 0);
+  if (ahora < medianoche) medianoche.setUTCDate(medianoche.getUTCDate() - 1);
+  return medianoche.toISOString();
+}
+
+export async function verificarPresupuesto(): Promise<{ ok: boolean; gastoHoy: number; tope: number }> {
+  if (DAILY_CAP_USD <= 0) return { ok: true, gastoHoy: 0, tope: 0 };
+  try {
+    const desde = inicioDelDiaColombia();
+    const { data } = await supabase
+      .from("rita_ai_logs")
+      .select("costo_usd")
+      .gte("created_at", desde);
+    const gastoHoy = (data || []).reduce((sum: number, r: Record<string, number>) => sum + (r.costo_usd || 0), 0);
+    return { ok: gastoHoy < DAILY_CAP_USD, gastoHoy, tope: DAILY_CAP_USD };
+  } catch (e) {
+    console.error("Error verificando presupuesto:", e);
+    return { ok: true, gastoHoy: 0, tope: DAILY_CAP_USD };
+  }
 }
 
 // Herramientas donde un error le cuesta caro al rider (multa, salud,
