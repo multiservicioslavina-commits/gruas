@@ -50,20 +50,23 @@ jobs:
         with:
           version: latest
 
-      - name: Verificar login
+      - name: Verificar CLI
         run: supabase --version
+
+      - name: Preparar token
+        run: |
+          # Normaliza: quita espacios/saltos y convierte a minusculas
+          CLEAN="$(printf '%s' "$RAW_TOKEN" | tr -d '[:space:]' | tr 'A-F' 'a-f')"
+          echo "::add-mask::$CLEAN"
+          echo "SUPABASE_ACCESS_TOKEN=$CLEAN" >> "$GITHUB_ENV"
+          echo "Token ready (length: ${#CLEAN}, prefix: ${CLEAN:0:4})"
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          RAW_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
       - name: Desplegar edge functions (lista explicita)
         run: |
-          # Normaliza el token: quita espacios y convierte a minusculas
-          # (el CLI exige sbp_ + hex en minusculas, y el dashboard a veces genera mayusculas)
-          export SUPABASE_ACCESS_TOKEN="$(printf '%s' "$SUPABASE_ACCESS_TOKEN" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
           for fn in $FUNCIONES; do
             echo "::group::Deploy $fn"
             supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
             echo "::endgroup::"
           done
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
