@@ -1,0 +1,26 @@
+# Configuracion del proyecto Supabase (Ridera).
+#
+# Este archivo fija la configuracion con la que se despliegan las edge
+# functions desde el repo (via GitHub Actions / Supabase CLI). Lo mas
+# importante: verify_jwt.
+#
+# verify_jwt = false  -> la funcion NO exige un JWT valido de Supabase en el
+#                        header Authorization. Es OBLIGATORIO para los webhooks
+#                        (Meta/WhatsApp) y para los crons, que llaman sin JWT.
+#                        Si esto se pusiera en true por error, Rita dejaria de
+#                        recibir mensajes.
+#
+# REGLA: toda funcion que se agregue a supabase/functions/ debe tener aqui su
+# bloque [functions.<slug>] con el verify_jwt correcto, o el CLI la desplegara
+# con verify_jwt=true por defecto.
+
+project_id = "vzzxsdtsaahhzyctvmhx"
+
+[functions.rita-v2]
+verify_jwt = false
+
+[functions.wp-content-sync]
+verify_jwt = false
+
+[functions.rita-recordatorios]
+verify_jwt = false
