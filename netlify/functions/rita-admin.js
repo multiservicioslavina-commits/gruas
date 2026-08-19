@@ -576,6 +576,100 @@ async function exportReport(type) {
   }
 }
 
+async function getTimeline() {
+  try {
+    const events = [];
+
+    // Riders
+    const riders = await sbGet('riders?select=id,nombre,apellido,ciudad,created_at&order=created_at.desc&limit=300');
+    riders.forEach(r => events.push({
+      timestamp: r.created_at,
+      type: 'rider',
+      title: `Nuevo rider: ${r.nombre} ${r.apellido}`,
+      location: r.ciudad,
+      id: r.id,
+    }));
+
+    // Solicitudes (grúas)
+    const solicitudes = await sbGet('solicitudes?select=id,cliente_nombre,municipio,created_at&order=created_at.desc&limit=300');
+    solicitudes.forEach(s => events.push({
+      timestamp: s.created_at,
+      type: 'grua',
+      title: `Solicitud grúa: ${s.cliente_nombre}`,
+      location: s.municipio,
+      id: s.id,
+    }));
+
+    // Talleres
+    const talleres = await sbGet('talleres?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    talleres.forEach(t => events.push({
+      timestamp: t.created_at,
+      type: 'negocio_taller',
+      title: `Nuevo taller: ${t.nombre} (${t.estado})`,
+      location: t.ciudad,
+      id: t.id,
+    }));
+
+    // Almacenes
+    const almacenes = await sbGet('almacenes?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    almacenes.forEach(a => events.push({
+      timestamp: a.created_at,
+      type: 'negocio_almacen',
+      title: `Nuevo almacén: ${a.nombre} (${a.estado})`,
+      location: a.ciudad,
+      id: a.id,
+    }));
+
+    // Hoteles
+    const hoteles = await sbGet('hoteles?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    hoteles.forEach(h => events.push({
+      timestamp: h.created_at,
+      type: 'negocio_hotel',
+      title: `Nuevo hotel: ${h.nombre} (${h.estado})`,
+      location: h.ciudad,
+      id: h.id,
+    }));
+
+    // Restaurantes
+    const restaurantes = await sbGet('restaurantes?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    restaurantes.forEach(r => events.push({
+      timestamp: r.created_at,
+      type: 'negocio_restaurante',
+      title: `Nuevo restaurante: ${r.nombre} (${r.estado})`,
+      location: r.ciudad,
+      id: r.id,
+    }));
+
+    // Sellos
+    const sellos = await sbGet('sellos?select=id,rider_id,municipio_id,fecha&order=fecha.desc&limit=300');
+    sellos.forEach(s => events.push({
+      timestamp: s.fecha,
+      type: 'sello',
+      title: `Sello registrado (Rider: ${s.rider_id})`,
+      municipio_id: s.municipio_id,
+      id: s.id,
+    }));
+
+    // Rita conversations
+    const rita = await sbGet('rita_conversations?select=id,phone,created_at,estado&order=created_at.desc&limit=300');
+    rita.forEach(r => events.push({
+      timestamp: r.created_at,
+      type: 'rita',
+      title: `Conversación Rita: ${r.phone}`,
+      estado: r.estado,
+      id: r.id,
+    }));
+
+    // Sort by timestamp descending
+    events.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+    return { ok: true, events: events.slice(0, 200) };
+  } catch (err) {
+    console.error('getTimeline error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -675,6 +769,9 @@ exports.handler = async (event) => {
     case 'export_report':
       if (!body.type) return json({ ok: false, error: 'Falta type' });
       return json(await exportReport(body.type));
+
+    case 'get_timeline':
+      return json(await getTimeline());
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

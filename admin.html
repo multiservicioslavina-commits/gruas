@@ -317,6 +317,23 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 
     /* Thumbnail in tables */
     .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--s2); }
+
+    /* TIMELINE */
+    .timeline-event { display: flex; gap: 1rem; padding: 1rem; background: var(--s); border: 1px solid var(--line); border-radius: 8px; transition: border-color 0.2s; }
+    .timeline-event:hover { border-color: var(--or); }
+    .timeline-dot { width: 10px; height: 10px; border-radius: 50%; margin-top: 0.4rem; flex-shrink: 0; }
+    .timeline-dot.rider { background: #3b82f6; }
+    .timeline-dot.grua { background: #f59e0b; }
+    .timeline-dot.negocio_taller { background: #8b5cf6; }
+    .timeline-dot.negocio_almacen { background: #ec4899; }
+    .timeline-dot.negocio_hotel { background: #06b6d4; }
+    .timeline-dot.negocio_restaurante { background: #84cc16; }
+    .timeline-dot.sello { background: #10b981; }
+    .timeline-dot.rita { background: #e879f9; }
+    .timeline-content { flex: 1; min-width: 0; }
+    .timeline-title { font-weight: 600; color: var(--text); margin-bottom: 0.25rem; }
+    .timeline-meta { font-size: 0.8rem; color: var(--mu); display: flex; gap: 0.5rem; flex-wrap: wrap; }
+    .timeline-tag { background: var(--s2); padding: 0.15rem 0.5rem; border-radius: 4px; font-size: 0.75rem; color: var(--mu); }
   </style>
 </head>
 <body>
@@ -399,6 +416,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="sidebar-item" data-tab="reportes" onclick="showTab('reportes')">
         <span class="sb-icon">📈</span> Reportes
+      </div>
+      <div class="sidebar-item" data-tab="timeline" onclick="showTab('timeline')">
+        <span class="sb-icon">🕐</span> Timeline
       </div>
       <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
         <span class="sb-icon">💬</span> Rita
@@ -912,6 +932,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div><!-- /tabReportes -->
 
+        <!-- TIMELINE -->
+        <div id="tabTimeline" style="display:none">
+          <div class="section-header"><h2>🕐 Timeline de Actividad</h2></div>
+          <div style="margin-bottom:1rem;padding:0.75rem;background:var(--s2);border-radius:8px;font-size:0.85rem;color:var(--mu)">
+            Últimas 200 acciones en el CRM (riders, negocios, grúas, conversaciones)
+          </div>
+          <div id="timelineBody" style="display:flex;flex-direction:column;gap:1rem">
+            <div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>
+          </div>
+        </div><!-- /tabTimeline -->
+
         <!-- CONVERSACIONES RITA -->
         <div id="tabConversaciones" style="display:none">
           <div class="section-header"><h2>💭 Conversaciones Rita</h2></div>
@@ -992,7 +1023,7 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','rita'];
+const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','timeline','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
   despacho: 'tabDespacho',
@@ -1007,6 +1038,7 @@ const TAB_ID_MAP = {
   restaurantes: 'tabRestaurantes',
   conversaciones: 'tabConversaciones',
   reportes: 'tabReportes',
+  timeline: 'tabTimeline',
   rita: 'tabRita',
 };
 
@@ -1029,6 +1061,7 @@ function showTab(tab) {
   if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
   if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
   if (tab === 'reportes' && !sectionLoaded.reportes) loadReportes();
+  if (tab === 'timeline' && !sectionLoaded.timeline) loadTimeline();
   if (tab === 'despacho') {
     if (!solStatsLoaded) loadSolicitudesStats();
     loadPendingDispatch();
@@ -3055,6 +3088,51 @@ async function exportReportCSV(type) {
   link.href = URL.createObjectURL(blob);
   link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
+}
+
+// ── TIMELINE ───────────────────────────────────────────────────────────
+async function loadTimeline() {
+  const data = await callAdmin({ action: 'get_timeline' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    console.error('Error cargando timeline:', data.error);
+    return;
+  }
+  sectionLoaded.timeline = true;
+
+  const body = document.getElementById('timelineBody');
+  if (!data.events || data.events.length === 0) {
+    body.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Sin eventos</div>';
+    return;
+  }
+
+  body.innerHTML = data.events.map(e => {
+    const timestamp = new Date(e.timestamp);
+    const timeStr = timestamp.toLocaleString('es-CO', { dateStyle: 'short', timeStyle: 'short' });
+    const typeLabel = {
+      rider: 'Rider',
+      grua: 'Grúa',
+      negocio_taller: 'Taller',
+      negocio_almacen: 'Almacén',
+      negocio_hotel: 'Hotel',
+      negocio_restaurante: 'Restaurante',
+      sello: 'Sello',
+      rita: 'Rita',
+    }[e.type] || e.type;
+
+    let meta = `<span class="timeline-tag">${typeLabel}</span><span class="timeline-tag">${timeStr}</span>`;
+    if (e.location) meta += `<span class="timeline-tag">📍 ${e.location}</span>`;
+    if (e.estado) meta += `<span class="timeline-tag">${e.estado}</span>`;
+
+    return `
+      <div class="timeline-event">
+        <div class="timeline-dot ${e.type}"></div>
+        <div class="timeline-content">
+          <div class="timeline-title">${e.title}</div>
+          <div class="timeline-meta">${meta}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
 }
 </script>
 </body>
