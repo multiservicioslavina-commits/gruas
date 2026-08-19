@@ -55,27 +55,11 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Diagnosticar token
-        run: |
-          echo "Raw token length: ${#SUPABASE_ACCESS_TOKEN}"
-          echo "Starts with sbp_: $(if [[ "$SUPABASE_ACCESS_TOKEN" == sbp_* ]]; then echo YES; else echo NO; fi)"
-          # Muestra los bytes hex del prefijo (primeros 5 chars) sin revelar el token
-          printf '%s' "$SUPABASE_ACCESS_TOKEN" | head -c 5 | xxd -p
-          # Muestra si hay caracteres no-hex despues del prefijo
-          AFTER_PREFIX="${SUPABASE_ACCESS_TOKEN:4}"
-          if [[ "$AFTER_PREFIX" =~ ^[0-9a-f]+$ ]]; then
-            echo "Body is valid lowercase hex: YES (length ${#AFTER_PREFIX})"
-          else
-            echo "Body is valid lowercase hex: NO"
-            echo "Body length: ${#AFTER_PREFIX}"
-          fi
-        env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
-
       - name: Desplegar edge functions (lista explicita)
         run: |
-          # Limpia espacios/saltos de linea invisibles que GitHub Secrets a veces agrega
-          export SUPABASE_ACCESS_TOKEN="$(echo -n "$SUPABASE_ACCESS_TOKEN" | tr -d '[:space:]')"
+          # Normaliza el token: quita espacios y convierte a minusculas
+          # (el CLI exige sbp_ + hex en minusculas, y el dashboard a veces genera mayusculas)
+          export SUPABASE_ACCESS_TOKEN="$(printf '%s' "$SUPABASE_ACCESS_TOKEN" | tr -d '[:space:]' | tr '[:upper:]' '[:lower:]')"
           for fn in $FUNCIONES; do
             echo "::group::Deploy $fn"
             supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
