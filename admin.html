@@ -912,6 +912,19 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<!-- RIDER PROFILE MODAL -->
+<div class="modal-overlay hide" id="riderProfileModal" style="padding:0;align-items:flex-start;overflow-y:auto">
+  <div style="width:100%;max-width:800px;background:var(--s);border:1px solid var(--line);border-radius:12px;margin:2rem auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.5rem;border-bottom:1px solid var(--line)">
+      <h2 id="riderProfileTitle">Perfil del Rider</h2>
+      <button onclick="closeRiderProfile()" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+    </div>
+    <div style="padding:1.5rem;max-height:calc(100vh - 200px);overflow-y:auto" id="riderProfileContent">
+      <p style="color:var(--mu)">Cargando...</p>
+    </div>
+  </div>
+</div>
+
 <script>
 const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
 
@@ -2147,6 +2160,7 @@ function renderRidersTable() {
       <td class="tel">${fecha}</td>
       <td>
         <div class="actions-cell">
+          <button class="act-btn" onclick="openRiderProfile('${jsq(r.id)}')">👁️ Perfil</button>
           <button class="act-btn" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2722,6 +2736,106 @@ function renderConversacionesTable() {
 
 function viewConversacion(telefono) {
   alert('Conversa ción de: ' + telefono + ' (función expandida en próximas versiones)');
+}
+
+// ── RIDER PROFILE ──────────────────────────────────────────────────────
+async function openRiderProfile(riderId) {
+  const modal = document.getElementById('riderProfileModal');
+  modal.classList.remove('hide');
+
+  const data = await callAdmin({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('riderProfileContent').innerHTML = '<p style="color:#f87171">Error al cargar perfil.</p>';
+    return;
+  }
+
+  const r = data.rider;
+  const sellos = data.sellos || [];
+  const gruas = data.gruas || [];
+  const conversaciones = data.conversaciones || [];
+
+  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+
+  document.getElementById('riderProfileTitle').textContent = `🏍️ ${nombre}`;
+
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+      <div>
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Datos personales</div>
+        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
+          <div style="margin-bottom:0.6rem"><strong>Teléfono:</strong> ${esc(r.telefono || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Ciudad:</strong> ${esc(r.ciudad || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Correo:</strong> ${esc(r.correo || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Unido:</strong> ${r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—'}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Moto</div>
+        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
+          <div style="margin-bottom:0.6rem"><strong>Modelo:</strong> ${esc(moto)}</div>
+          <div style="margin-bottom:0.6rem"><strong>Placa:</strong> ${esc(r.placa || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>SOAT:</strong> ${r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—'}</div>
+          <div style="margin-bottom:0.6rem"><strong>Tecno:</strong> ${r.tecno_vence ? new Date(r.tecno_vence).toLocaleDateString('es-CO') : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🏷️ Sellos (${sellos.length})</div>
+      ${sellos.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin municipios sellados aún.</p>' :
+        `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.75rem">
+          ${sellos.map(s => `
+            <div style="background:var(--s2);padding:0.6rem;border-radius:6px;font-size:0.8rem;border-left:3px solid var(--or)">
+              <strong>${esc(s.municipio_nombre || '—')}</strong><br>
+              <span style="color:var(--mu)">${s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : '—'}</span>
+            </div>
+          `).join('')}
+        </div>`
+      }
+    </div>
+
+    <div style="margin-bottom:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🚗 Grúas (${gruas.length})</div>
+      ${gruas.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin solicitudes de grúa.</p>' :
+        `<div style="display:flex;flex-direction:column;gap:0.5rem">
+          ${gruas.map(g => {
+            const estColor = { pendiente: '#f59e0b', asignada: '#4ade80', llego: '#60a5fa', finalizada: '#9ca3af' };
+            return `
+              <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid ${estColor[g.estado] || '#888'}">
+                <div style="font-size:0.85rem"><strong>${esc(g.municipio || '—')}</strong></div>
+                <div style="font-size:0.75rem;color:var(--mu);margin-top:0.3rem">${g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '—'}</div>
+                <div style="font-size:0.7rem;color:${estColor[g.estado] || '#888'};margin-top:0.2rem;font-weight:600">${g.estado}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>`
+      }
+    </div>
+
+    <div>
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">💬 Conversaciones con Rita (${conversaciones.length})</div>
+      ${conversaciones.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin chats registrados.</p>' :
+        `<div style="display:flex;flex-direction:column;gap:0.5rem;max-height:300px;overflow-y:auto">
+          ${conversaciones.map(c => `
+            <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid var(--or)">
+              <div style="font-size:0.75rem;color:var(--mu)">${c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '—'}</div>
+              <div style="font-size:0.8rem;margin-top:0.3rem;line-height:1.4">${esc(c.content || '').substring(0, 100)}${(c.content || '').length > 100 ? '...' : ''}</div>
+            </div>
+          `).join('')}
+        </div>`
+      }
+    </div>
+  `;
+
+  document.getElementById('riderProfileContent').innerHTML = html;
+}
+
+function closeRiderProfile() {
+  document.getElementById('riderProfileModal').classList.add('hide');
 }
 </script>
 </body>

@@ -423,6 +423,38 @@ async function listConversaciones() {
   }
 }
 
+async function getRiderProfile(riderId) {
+  try {
+    const riders = await sbGet(`riders?id=eq.${encodeURIComponent(riderId)}&select=*&limit=1`);
+    if (!riders.length) return { ok: false, error: 'Rider no encontrado' };
+    const rider = riders[0];
+
+    const sellos = await sbGet(`sellos?rider_id=eq.${encodeURIComponent(riderId)}&select=id,municipio_id,fecha,estado&order=fecha.desc`);
+    const gruas = await sbGet(`solicitudes?cliente_telefono=eq.${encodeURIComponent(rider.telefono)}&select=id,municipio,estado,created_at&order=created_at.desc&limit=20`);
+    const conversaciones = await sbGet(`rita_messages?phone=eq.${encodeURIComponent(rider.telefono)}&select=phone,content,created_at&order=created_at.desc&limit=20`);
+
+    const muniMap = {};
+    const municipios = await sbGet('municipios?select=id,nombre');
+    municipios.forEach(m => muniMap[m.id] = m.nombre);
+
+    const sellosConNombre = sellos.map(s => ({
+      ...s,
+      municipio_nombre: muniMap[s.municipio_id] || '—',
+    }));
+
+    return {
+      ok: true,
+      rider,
+      sellos: sellosConNombre,
+      gruas,
+      conversaciones,
+    };
+  } catch (err) {
+    console.error('getRiderProfile error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -507,6 +539,10 @@ exports.handler = async (event) => {
 
     case 'list_conversaciones':
       return json(await listConversaciones());
+
+    case 'get_rider_profile':
+      if (!body.rider_id) return json({ ok: false, error: 'Falta rider_id' });
+      return json(await getRiderProfile(body.rider_id));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });
