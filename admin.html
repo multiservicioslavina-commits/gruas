@@ -379,7 +379,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div><span style="color:var(--or)">Ridera</span> ADMIN</div>
       </div>
       <div class="sidebar-item active" data-tab="dashboard" onclick="showTab('dashboard')">
-        <span class="sb-icon">📊</span> Dashboard
+        <span class="sb-icon">📊</span> Dashboard <span class="sb-badge" id="badgeAlerts" style="display:none">0</span>
       </div>
       <div class="sidebar-item" data-tab="despacho" onclick="showTab('despacho')">
         <span class="sb-icon">📡</span> Despacho
@@ -1287,6 +1287,8 @@ async function doLogin() {
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
     // Default to grueros tab on login
     showTab('grueros');
+    // Load dashboard alerts in background so the badge shows regardless of active tab
+    loadDashboard();
   } else {
     errEl.style.display = 'block';
     adminKey = '';
@@ -2791,14 +2793,25 @@ async function loadDashboard() {
 
   // Alertas
   const alerts = data.alerts || [];
+  const badge = document.getElementById('badgeAlerts');
+  if (alerts.length > 0) {
+    badge.textContent = alerts.length;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
   if (alerts.length === 0) {
     document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#4ade80">✓ Todo en orden</p>';
   } else {
-    document.getElementById('dashboardAlerts').innerHTML = alerts.map(a =>
-      `<div style="padding:0.5rem;border-left:3px solid #f59e0b;background:#2a1a00;margin-bottom:0.5rem;font-size:0.85rem">
-        <strong>${a.tipo}</strong>: ${a.mensaje}
-       </div>`
-    ).join('');
+    document.getElementById('dashboardAlerts').innerHTML = alerts.map(a => {
+      const isStale = a.tipo.includes('estancados');
+      const color = isStale ? '#f87171' : '#f59e0b';
+      const bg = isStale ? '#2a1212' : '#2a1a00';
+      const icon = isStale ? '🔴' : '⚠️';
+      return `<div style="padding:0.5rem;border-left:3px solid ${color};background:${bg};margin-bottom:0.5rem;font-size:0.85rem">
+        ${icon} <strong>${a.tipo}</strong>: ${a.mensaje}
+       </div>`;
+    }).join('');
   }
 }
 

@@ -366,6 +366,21 @@ async function getCrmMetrics() {
     if (talleresAprobados.length < talleres) alerts.push({ tipo: 'Talleres', mensaje: `${talleres - talleresAprobados.length} pendientes de aprobación` });
     if (almacenesAprobados.length < almacenes) alerts.push({ tipo: 'Almacenes', mensaje: `${almacenes - almacenesAprobados.length} pendientes de aprobación` });
 
+    // Leads estancados (interesado/documentos > 7 días sin avanzar)
+    const staleThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const staleTables = ['talleres', 'almacenes', 'hoteles', 'restaurantes'];
+    const staleResults = await Promise.all(staleTables.map(t =>
+      fetch(`${SB_URL}/rest/v1/${t}?estado=in.(interesado,documentos)&created_at=lt.${staleThreshold}&select=id`, { headers: sbHeaders })
+        .then(r => r.json())
+        .catch(() => [])
+    ));
+    staleResults.forEach((rows, i) => {
+      if (Array.isArray(rows) && rows.length > 0) {
+        const label = { talleres: 'Talleres', almacenes: 'Almacenes', hoteles: 'Hoteles', restaurantes: 'Restaurantes' }[staleTables[i]];
+        alerts.push({ tipo: `${label} estancados`, mensaje: `${rows.length} leads sin avanzar hace más de 7 días` });
+      }
+    });
+
     return {
       ok: true,
       riders_total: riders,
