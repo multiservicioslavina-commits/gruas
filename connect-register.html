@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Unirse a Ridera Club</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2e3345;
+    --text: #e8e9ed; --text2: #8b8fa3; --accent: #f97316; --accent2: #fb923c;
+    --green: #22c55e; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .container { max-width: 420px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; min-height: 100vh; justify-content: center; }
+  .logo { font-size: 48px; text-align: center; margin-bottom: 16px; }
+  .title { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .title span { color: var(--accent); }
+  .subtitle { font-size: 14px; color: var(--text2); text-align: center; margin-bottom: 32px; }
+  .club-name { font-size: 18px; font-weight: 600; color: var(--accent); text-align: center; margin-bottom: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text2); }
+  input { width: 100%; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+  input:focus { outline: none; border-color: var(--accent); }
+  input::placeholder { color: var(--text2); }
+
+  .btn {
+    width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 600;
+    cursor: pointer; transition: all .2s; margin-top: 8px;
+  }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+  .error { color: var(--red); font-size: 13px; margin-top: 4px; }
+  .success { color: var(--green); font-size: 13px; margin-top: 4px; }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .3s; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="logo">🏍️</div>
+  <div class="title"><span>Ridera</span> Club</div>
+  <div class="subtitle">Únete a tu club</div>
+  <div class="club-name" id="club-name">Cargando...</div>
+
+  <div class="form-group">
+    <label>Tu nombre</label>
+    <input id="name" type="text" placeholder="Juan Pérez" maxlength="50">
+  </div>
+
+  <div class="form-group">
+    <label>Tu teléfono</label>
+    <input id="phone" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+  </div>
+
+  <button class="btn btn-primary" onclick="register()" id="btn-register">Unirme al club</button>
+  <div class="error" id="error"></div>
+  <div class="success" id="success"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+async function sb(path, opts = {}) {
+  const res = await fetch(`${SB_URL}/rest/v1/${path}`, {
+    headers: {
+      'apikey': SB_KEY,
+      'Authorization': `Bearer ${SB_KEY}`,
+      'Content-Type': 'application/json',
+      'Prefer': opts.prefer || 'return=representation',
+      ...opts.headers
+    },
+    method: opts.method || 'GET',
+    body: opts.body ? JSON.stringify(opts.body) : undefined
+  });
+  return res.json();
+}
+
+function normalizePhone(raw) {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('57') && digits.length === 12) return digits;
+  if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+  return digits;
+}
+
+async function init() {
+  const slug = location.pathname.split('/').filter(Boolean).pop();
+  if (!slug || slug === 'connect-register') {
+    document.getElementById('club-name').textContent = 'Club no encontrado';
+    return;
+  }
+
+  const clubs = await sb(`clubs?codigo=eq.${slug}&select=id,nombre&limit=1`);
+  if (!clubs || !clubs.length) {
+    document.getElementById('club-name').textContent = 'Club no encontrado';
+    return;
+  }
+
+  window.clubId = clubs[0].id;
+  document.getElementById('club-name').textContent = clubs[0].nombre;
+}
+
+async function register() {
+  const name = document.getElementById('name').value.trim();
+  const phone = document.getElementById('phone').value.trim();
+  const btn = document.getElementById('btn-register');
+
+  document.getElementById('error').textContent = '';
+  document.getElementById('success').textContent = '';
+
+  if (!name || !phone) {
+    document.getElementById('error').textContent = 'Completa nombre y teléfono';
+    return;
+  }
+
+  const normalized = normalizePhone(phone);
+  if (normalized.length < 7) {
+    document.getElementById('error').textContent = 'Teléfono inválido';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Registrando...';
+
+  try {
+    const result = await sb('connect_members', {
+      method: 'POST',
+      body: {
+        club_id: window.clubId,
+        nombre: name,
+        telefono: normalized,
+        estado: 'vinculado'
+      },
+      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
+    });
+
+    document.getElementById('success').textContent = '¡Bienvenido! Ya puedes entrar al chat.';
+    document.getElementById('name').value = '';
+    document.getElementById('phone').value = '';
+    setTimeout(() => {
+      window.location.href = `/tbc`;
+    }, 2000);
+  } catch (e) {
+    document.getElementById('error').textContent = 'Error al registrarse. Intenta de nuevo.';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Unirme al club';
+}
+
+document.getElementById('phone').addEventListener('keydown', e => {
+  if (e.key === 'Enter') register();
+});
+
+init();
+</script>
+</body>
+</html>

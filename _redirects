@@ -1,10 +1,38 @@
-/grueros      /grueros.html           200
-/seguimiento  /seguimiento.html       200
-/grua/*       /grua.html?slug=:splat  200
-/califica     /califica.html         200
-/aceptar      /aceptar.html          200
-/mi-cuenta    /mi-cuenta.html        301
-/login        /login-gruero.html     301
-/registro     /registro-gruero.html  301
-/admin        /admin.html            301
-/rider/*      /rider/index.html      200
+# club.ridera.com.co/admin -> panel admin del club (debe ir primero)
+https://club.ridera.com.co/admin        /connect-admin.html   200!
+https://club.ridera.com.co/admin/*      /connect-admin.html   200!
+
+/music                      /app/player.html                   200
+/lyrapp                     /app/lyrapp.apk                    200
+/grueros                    /grueros.html                      200
+/almacenes                  /almacenes.html                    200
+/seguimiento                /seguimiento.html                  200
+/info                       /info.html                         200
+/grua/*                     /grua.html?slug=:splat             200
+/almacen/*                  /almacen.html?slug=:splat          200
+/promo/*                    /promo.html?id=:splat              200
+/califica                   /califica.html                     200
+/aceptar                    /aceptar.html                      200
+/mi-cuenta                  /mi-cuenta.html                    301
+/mi-almacen                 /mi-almacen.html                   301
+/login-almacen              /login-almacen.html                301
+/reset-password              /reset-password.html               200
+/reset-gruero               /reset-gruero.html                 200
+/login                      /login-gruero.html                 301
+/registro                   /registro-gruero.html              301
+/registro-almacen           /registro-almacen.html             200
+/registrar-almacen          /registro-almacen.html             200
+/admin                      /admin.html                        301
+/connect-admin              /connect-admin.html                200
+/connect-admin/*            /connect-admin.html                200
+/connect-register           /connect-register.html             200
+/connect-register/*         /connect-register.html             200
+/connect                    /connect.html                      200
+/connect/*                  /connect.html                      200
+
+# Subdomain admin.ridera.com.co
+https://admin.ridera.com.co/*  /admin.html  200!
+
+# Subdomain club.ridera.com.co
+https://club.ridera.com.co/*  /connect.html  200!
+/rider/*                    /rider/index.html                  200

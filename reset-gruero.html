@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nueva contraseña — Ridera</title>
+<meta name="robots" content="noindex">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E85D20; --orange-hot:#FF6B2B;
+  --carbon:#0D0F12; --carbon3:#1E2229; --carbon4:#262D37;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.48);
+  --border:rgba(255,255,255,0.07); --border-hi:rgba(255,255,255,0.13);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px}
+.card{width:100%;max-width:400px;background:var(--carbon3);border:0.5px solid var(--border-hi);border-radius:16px;padding:36px 32px}
+.brand{color:var(--orange);font-weight:700;font-size:1.1rem;margin-bottom:6px}
+h1{font-size:1.5rem;font-weight:800;margin-bottom:6px}
+.sub{color:var(--text-muted);font-size:0.9rem;margin-bottom:28px;line-height:1.5}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+label{font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.9)}
+input{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:8px;color:#fff;font-size:15px;padding:12px 14px}
+input:focus{outline:none;border-color:rgba(232,93,32,0.5)}
+.pw-wrap{position:relative}
+.pw-wrap input{padding-right:44px}
+.pw-toggle{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:18px;padding:4px;line-height:1}
+.pw-toggle:hover{color:var(--orange)}
+.btn{width:100%;background:var(--orange);color:#fff;font-weight:700;font-size:1rem;padding:14px;border:none;border-radius:8px;cursor:pointer;margin-top:8px;transition:background .2s}
+.btn:hover{background:var(--orange-hot)}
+.btn:disabled{background:#333;color:var(--text-dim);cursor:default}
+.status{display:none;font-size:0.85rem;padding:10px 12px;border-radius:8px;margin-bottom:16px;border-left:3px solid}
+.status.visible{display:block}
+.status.error{background:rgba(248,113,113,0.1);border-color:#f87171;color:#fca5a5}
+.status.success{background:rgba(74,222,128,0.1);border-color:#4ade80;color:#86efac}
+.status.loading{background:rgba(232,93,32,0.08);border-color:var(--orange);color:var(--text-muted)}
+.foot{text-align:center;margin-top:20px;font-size:0.85rem;color:var(--text-dim)}
+.foot a{color:var(--orange);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="brand">RIDERA</div>
+  <h1>Crea tu nueva contraseña</h1>
+  <p class="sub">Escribe una contraseña nueva para tu cuenta de gruero.</p>
+
+  <div class="status" id="status"></div>
+
+  <form id="resetForm" onsubmit="handleReset(event)">
+    <div class="form-group">
+      <label>Nueva contraseña</label>
+      <div class="pw-wrap">
+        <input type="password" id="password" required minlength="8" placeholder="Mínimo 8 caracteres">
+        <button type="button" class="pw-toggle" onclick="togglePw('password',this)" aria-label="Mostrar contraseña">&#128065;</button>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Confirmar contraseña</label>
+      <div class="pw-wrap">
+        <input type="password" id="passwordConfirm" required minlength="8" placeholder="Repite la contraseña">
+        <button type="button" class="pw-toggle" onclick="togglePw('passwordConfirm',this)" aria-label="Mostrar contraseña">&#128065;</button>
+      </div>
+    </div>
+    <button type="submit" class="btn" id="btnReset">Guardar nueva contraseña</button>
+  </form>
+
+  <p class="foot"><a href="/login">Volver a iniciar sesión</a></p>
+</div>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+let sbClient = null;
+
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, ANON_KEY);
+  }
+  return sbClient;
+}
+
+function togglePw(id, btn) {
+  const input = document.getElementById(id);
+  const show = input.type === 'password';
+  input.type = show ? 'text' : 'password';
+  btn.textContent = show ? '\u{1F648}' : '\u{1F441}';
+}
+
+function setStatus(state, msg) {
+  const el = document.getElementById('status');
+  el.className = 'status visible ' + state;
+  el.textContent = msg;
+}
+
+async function handleReset(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnReset');
+  const password = document.getElementById('password').value;
+  const passwordConfirm = document.getElementById('passwordConfirm').value;
+
+  if (password !== passwordConfirm) {
+    setStatus('error', 'Las contraseñas no coinciden.');
+    return;
+  }
+
+  btn.disabled = true;
+  setStatus('loading', 'Guardando...');
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.updateUser({ password });
+    if (error) throw error;
+    setStatus('success', 'Contraseña actualizada. Redirigiendo...');
+    setTimeout(() => { window.location.href = '/mi-cuenta.html'; }, 1500);
+  } catch (err) {
+    setStatus('error', err.message || 'No se pudo actualizar la contraseña. Pide un nuevo enlace desde Iniciar sesión.');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

@@ -17,6 +17,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     :root {
       --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
       --or: #E85D20; --text: #f0f0f0; --mu: #888;
+      --sidebar-w: 220px;
     }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
 
@@ -45,9 +46,67 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .btn-sm:hover { border-color: var(--or); color: var(--or); }
     .btn-sm.danger:hover { border-color: #f87171; color: #f87171; }
 
+    /* SIDEBAR LAYOUT */
+    .admin-layout { display: flex; min-height: calc(100vh - 56px); }
+
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: #111; border-right: 1px solid var(--line);
+      position: sticky; top: 56px; height: calc(100vh - 56px);
+      overflow-y: auto; flex-shrink: 0; z-index: 5;
+    }
+
+    .sidebar-brand {
+      display: flex; align-items: center; gap: 0.65rem;
+      padding: 1.25rem 1rem 1rem; font-weight: 700; font-size: 0.95rem;
+      border-bottom: 1px solid var(--line); margin-bottom: 0.5rem;
+    }
+    .brand-icon {
+      width: 34px; height: 34px; border-radius: 8px; background: var(--or);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; font-weight: 800; color: #fff; flex-shrink: 0;
+    }
+
+    .sidebar-item {
+      display: flex; align-items: center; gap: 0.6rem;
+      padding: 0.6rem 1rem; margin: 0.15rem 0.5rem; border-radius: 8px;
+      font-size: 0.85rem; font-weight: 500; color: var(--mu);
+      cursor: pointer; transition: background 0.12s, color 0.12s;
+      position: relative; user-select: none;
+    }
+    .sidebar-item:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-item.active { background: rgba(232,93,32,0.1); color: var(--or); font-weight: 600; }
+    .sidebar-item .sb-icon { font-size: 1rem; width: 1.2rem; text-align: center; flex-shrink: 0; }
+    .sidebar-item .sb-badge {
+      margin-left: auto; font-size: 0.68rem; font-weight: 700;
+      background: rgba(232,93,32,0.15); color: var(--or);
+      padding: 0.1rem 0.45rem; border-radius: 10px; min-width: 1.3rem;
+      text-align: center;
+    }
+
+    .content-area { flex: 1; min-width: 0; overflow-x: hidden; }
+
     .container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
     .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
     .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
+
+    /* Mobile sidebar: horizontal scrollable strip */
+    @media (max-width: 768px) {
+      .admin-layout { flex-direction: column; }
+      .sidebar {
+        width: 100%; min-width: 100%; height: auto;
+        position: sticky; top: 56px;
+        display: flex; flex-direction: row; overflow-x: auto; overflow-y: hidden;
+        border-right: none; border-bottom: 1px solid var(--line);
+        padding: 0 0.5rem; gap: 0;
+      }
+      .sidebar-brand { display: none; }
+      .sidebar-item {
+        flex-shrink: 0; white-space: nowrap; margin: 0.35rem 0.15rem;
+        padding: 0.45rem 0.75rem; font-size: 0.78rem;
+      }
+      .content-area { width: 100%; }
+    }
 
     /* STATS */
     .stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
@@ -58,7 +117,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .stat .num.blue { color: #60a5fa; }
     .stat .lbl { font-size: 0.75rem; color: var(--mu); margin-top: 0.2rem; }
 
-    /* TABS */
+    /* TABS (kept for any inner use, but main tabs replaced by sidebar) */
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
@@ -173,6 +232,78 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .btn-ok { padding: 0.6rem 1.2rem; background: var(--or); color: #fff; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; }
     .modal-err { color: #f87171; font-size: 0.85rem; margin-top: 0.75rem; display: none; }
     .hide { display: none !important; }
+
+    /* RITA TAB */
+    .rita-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.75rem; margin-bottom: 1.5rem; }
+    .rita-sub { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); margin: 1.5rem 0 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+    .rita-sub:first-child { margin-top: 0; }
+
+    .intent-bars { display: flex; flex-direction: column; gap: 0.5rem; }
+    .intent-row { display: flex; align-items: center; gap: 0.75rem; font-size: 0.82rem; }
+    .intent-label { min-width: 100px; color: var(--mu); text-transform: capitalize; }
+    .intent-bar-wrap { flex: 1; height: 22px; background: var(--s2); border-radius: 6px; overflow: hidden; }
+    .intent-bar { height: 100%; border-radius: 6px; min-width: 2px; transition: width 0.4s ease; }
+    .intent-count { min-width: 32px; text-align: right; font-weight: 600; font-size: 0.78rem; }
+
+    .day-chart { display: flex; align-items: flex-end; gap: 4px; height: 100px; padding: 0.5rem 0; }
+    .day-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .day-bar { width: 100%; border-radius: 4px 4px 0 0; background: var(--or); min-height: 2px; transition: height 0.4s ease; }
+    .day-label { font-size: 0.65rem; color: var(--mu); }
+    .day-val { font-size: 0.68rem; font-weight: 600; color: var(--or); }
+
+    .contact-list { display: flex; flex-direction: column; gap: 0.35rem; }
+    .ct-row { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem 0.75rem; background: var(--s); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; transition: border-color 0.15s; }
+    .ct-row:hover { border-color: var(--or); }
+    .ct-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--s2); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; color: var(--or); flex-shrink: 0; }
+    .ct-info { flex: 1; min-width: 0; }
+    .ct-name { font-size: 0.88rem; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ct-phone { font-size: 0.75rem; color: var(--mu); }
+    .ct-meta { text-align: right; flex-shrink: 0; }
+    .ct-time { font-size: 0.72rem; color: var(--mu); }
+    .ct-opt { font-size: 0.65rem; font-weight: 700; padding: 0.1rem 0.4rem; border-radius: 10px; }
+    .ct-opt-in { background: #0e2a1a; color: #4ade80; }
+    .ct-opt-out { background: #2a1212; color: #f87171; }
+
+    .conv-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.8); z-index: 200; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .conv-panel { background: var(--s); border: 1px solid var(--line); border-radius: 12px; width: 100%; max-width: 480px; max-height: 80vh; display: flex; flex-direction: column; }
+    .conv-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; }
+    .conv-header h3 { font-size: 1rem; font-weight: 700; }
+    .conv-close { font-size: 1.2rem; background: none; border: none; color: var(--mu); cursor: pointer; padding: 0.25rem; }
+    .conv-close:hover { color: var(--text); }
+    .conv-body { flex: 1; overflow-y: auto; padding: 1rem 1.25rem; display: flex; flex-direction: column; gap: 0.5rem; }
+    .conv-msg { max-width: 80%; padding: 0.5rem 0.75rem; border-radius: 10px; font-size: 0.82rem; line-height: 1.45; word-break: break-word; }
+    .conv-msg.user { align-self: flex-end; background: var(--or); color: #fff; border-bottom-right-radius: 2px; }
+    .conv-msg.assistant { align-self: flex-start; background: var(--s2); border-bottom-left-radius: 2px; }
+    .conv-msg .conv-time { font-size: 0.65rem; opacity: 0.6; margin-top: 0.25rem; display: block; }
+    .conv-msg.user .conv-time { text-align: right; }
+
+    .bc-form { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1.25rem; }
+    .bc-field { margin-bottom: 1rem; }
+    .bc-field label { display: block; font-size: 0.78rem; color: var(--mu); margin-bottom: 0.35rem; font-weight: 600; }
+    .bc-field input, .bc-field select { width: 100%; padding: 0.55rem 0.8rem; font-size: 0.88rem; border-radius: 8px; border: 1px solid var(--line); background: #111; color: var(--text); outline: none; font-family: inherit; }
+    .bc-field input:focus, .bc-field select:focus { border-color: var(--or); }
+    .bc-params { display: flex; flex-direction: column; gap: 0.5rem; }
+    .bc-param-row { display: flex; gap: 0.5rem; align-items: center; }
+    .bc-param-row input { flex: 1; }
+    .bc-param-row button { padding: 0.4rem 0.6rem; font-size: 0.82rem; border-radius: 6px; border: 1px solid var(--line); background: transparent; color: var(--mu); cursor: pointer; }
+    .bc-param-row button:hover { border-color: #f87171; color: #f87171; }
+    .bc-add-param { font-size: 0.78rem; padding: 0.35rem 0.7rem; border-radius: 6px; border: 1px dashed var(--line); background: transparent; color: var(--mu); cursor: pointer; margin-top: 0.5rem; }
+    .bc-add-param:hover { border-color: var(--or); color: var(--or); }
+    .bc-preview { background: var(--s2); border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.82rem; color: var(--mu); margin-bottom: 1rem; }
+    .bc-send { padding: 0.7rem 1.5rem; background: #25D366; color: #fff; font-size: 0.9rem; font-weight: 600; border: none; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 0.5rem; transition: background 0.15s; }
+    .bc-send:hover { background: #1da851; }
+    .bc-send:disabled { opacity: 0.5; cursor: not-allowed; }
+    .bc-result { margin-top: 1rem; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.85rem; }
+    .bc-result.ok { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
+    .bc-result.err { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
+
+    /* NEW SECTION: section header */
+    .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
+    .section-header h2 { font-size: 1.1rem; font-weight: 700; }
+    .section-loading { color: var(--mu); font-size: 0.85rem; text-align: center; padding: 3rem; }
+
+    /* Thumbnail in tables */
+    .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--s2); }
   </style>
 </head>
 <body>
@@ -187,16 +318,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <h1>Ridera Grúas</h1>
     <p>Panel de administración</p>
     <label for="pwdInput">Clave de acceso</label>
-    <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password">
+    <div style="position: relative; display: flex; align-items: center;">
+      <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password" style="flex:1; padding-right: 2.5rem;">
+      <button type="button" onclick="togglePwdVisibility()" style="position: absolute; right: 0.9rem; background: none; border: none; color: var(--mu); cursor: pointer; font-size: 1.1rem; padding: 0.5rem; display: flex; align-items: center; justify-content: center;">
+        <span id="pwdToggleIcon">👁️</span>
+      </button>
+    </div>
     <div class="err" id="loginErr">Clave incorrecta.</div>
     <button class="btn" id="loginBtn" onclick="doLogin()">Entrar</button>
+    <button type="button" class="btn-sm" onclick="showResetPwdModal()" style="margin-top: 0.75rem; width: 100%; padding: 0.6rem;">¿Olvidaste la clave?</button>
   </div>
 </div>
 
 <!-- PANEL -->
 <div id="panel">
   <nav>
-    <span class="nav-brand">Ridera Grúas · Admin</span>
+    <span class="nav-brand">Ridera · Admin</span>
     <div class="nav-right">
       <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
       <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
@@ -204,103 +341,434 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
   </nav>
 
-  <div class="container">
-    <div class="page-title">Panel de administración</div>
-    <div class="page-sub" id="lastUpdated">Cargando…</div>
+  <div class="admin-layout">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="brand-icon">R</div>
+        <div><span style="color:var(--or)">Ridera</span> ADMIN</div>
+      </div>
+      <div class="sidebar-item" data-tab="despacho" onclick="showTab('despacho')">
+        <span class="sb-icon">📡</span> Despacho
+      </div>
+      <div class="sidebar-item" data-tab="sellos" onclick="showTab('sellos')">
+        <span class="sb-icon">🏷️</span> Sellos <span class="sb-badge" id="badgeSellos" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item active" data-tab="grueros" onclick="showTab('grueros')">
+        <span class="sb-icon">🔧</span> Grueros <span class="sb-badge" id="badgeGrueros" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="riders" onclick="showTab('riders')">
+        <span class="sb-icon">🏍️</span> Riders <span class="sb-badge" id="badgeRiders" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="clubs" onclick="showTab('clubs')">
+        <span class="sb-icon">🏁</span> Clubs <span class="sb-badge" id="badgeClubs" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="motos" onclick="showTab('motos')">
+        <span class="sb-icon">⚙️</span> Motos <span class="sb-badge" id="badgeMotos" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="talleres" onclick="showTab('talleres')">
+        <span class="sb-icon">🔩</span> Talleres <span class="sb-badge" id="badgeTalleres" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="almacenes" onclick="showTab('almacenes')">
+        <span class="sb-icon">🛒</span> Almacenes <span class="sb-badge" id="badgeAlmacenes" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
+        <span class="sb-icon">💬</span> Rita
+      </div>
+    </aside>
 
-    <!-- TABS -->
-    <div class="tabs">
-      <button class="tab-btn active" onclick="showTab('grueros',this)">Grueros</button>
-      <button class="tab-btn" onclick="showTab('solicitudes',this)">Solicitudes</button>
-    </div>
+    <!-- CONTENT -->
+    <main class="content-area">
+      <div class="container">
+        <div class="page-title">Panel de administración</div>
+        <div class="page-sub" id="lastUpdated">Cargando...</div>
 
-    <!-- GRUEROS TAB -->
-    <div id="tabGrueros">
-    <div class="stats" id="statsRow"></div>
+        <!-- DESPACHO (was Solicitudes) -->
+        <div id="tabDespacho" style="display:none">
 
-    <div class="filters">
-      <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
-      <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
-      <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
-      <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
-      <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
-      <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad…" oninput="renderTable()">
-      <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
-    </div>
+          <!-- DESPACHO EN VIVO -->
+          <div class="dispatch-bar">
+            <span class="dispatch-title">📡 Despacho en vivo</span>
+            <div style="display:flex;gap:0.5rem;align-items:center">
+              <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
+              <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+            </div>
+          </div>
+          <div id="pendingGrid" class="pending-grid">
+            <div class="dispatch-empty">Cargando solicitudes pendientes...</div>
+          </div>
 
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th>Nombre / Email</th>
-            <th>Ciudad</th>
-            <th>Teléfono</th>
-            <th>Aprobado</th>
-            <th>Disponible</th>
-            <th>Registrado</th>
-            <th>Acciones</th>
-          </tr>
-        </thead>
-        <tbody id="tbody"></tbody>
-      </table>
-    </div>
-    </div><!-- /tabGrueros -->
+          <div class="sol-stats" id="solStats">
+            <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
+            <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
+            <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
+            <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
+            <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
+            <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
+          </div>
 
-    <!-- SOLICITUDES TAB -->
-    <div id="tabSolicitudes" style="display:none">
+          <div class="sol-grid">
+            <div class="sol-card">
+              <div class="sc-label">Por estado</div>
+              <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+            </div>
+            <div class="sol-card">
+              <div class="sc-label">Top municipios</div>
+              <ul class="muni-list" id="muniList"></ul>
+            </div>
+          </div>
 
-      <!-- DESPACHO EN VIVO -->
-      <div class="dispatch-bar">
-        <span class="dispatch-title">📡 Despacho en vivo</span>
-        <div style="display:flex;gap:0.5rem;align-items:center">
-          <button class="btn-export" id="btnExportSols" onclick="exportSolicitudesCSV()">↓ Exportar CSV</button>
-          <button class="dispatch-refresh" onclick="loadPendingDispatch()">↻ Actualizar</button>
+          <div class="sol-card" style="margin-bottom:1.5rem">
+            <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
+            <div class="recientes-list" id="recientesList"></div>
+          </div>
+
+          <!-- HISTORIAL POR GRUERO -->
+          <div class="gh-bar">
+            <label>Historial por gruero:</label>
+            <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
+              <option value="">— Seleccionar gruero —</option>
+            </select>
+          </div>
+          <div id="grueroHistorial" style="display:none">
+            <div class="gh-section-title">Servicios del gruero</div>
+            <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
+            <div class="table-wrap" id="ghTableWrap"></div>
+          </div>
+
+        </div><!-- /tabDespacho -->
+
+        <!-- SELLOS -->
+        <div id="tabSellos" style="display:none">
+          <div class="section-header">
+            <h2>🏷️ Sellos del Pasaporte</h2>
+          </div>
+          <div class="filters" id="sellosFilters">
+            <button class="filter-btn active" onclick="setSelloFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setSelloFilter('sin_verificar',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setSelloFilter('aprobado',this)">Aprobados</button>
+            <button class="filter-btn" onclick="setSelloFilter('rechazado',this)">Rechazados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Rider</th><th>Municipio</th><th>Fecha</th><th>Manada</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="sellosBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabSellos -->
+
+        <!-- GRUEROS TAB -->
+        <div id="tabGrueros" style="display:none">
+        <div class="stats" id="statsRow"></div>
+
+        <div class="filters">
+          <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+          <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
+          <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
+          <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
+          <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
+          <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad..." oninput="renderTable()">
+          <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
         </div>
-      </div>
-      <div id="pendingGrid" class="pending-grid">
-        <div class="dispatch-empty">Cargando solicitudes pendientes…</div>
-      </div>
 
-      <div class="sol-stats" id="solStats">
-        <div class="stat"><div class="num" id="sTotal">—</div><div class="lbl">Total solicitudes</div></div>
-        <div class="stat"><div class="num" id="sHoy">—</div><div class="lbl">Hoy</div></div>
-        <div class="stat"><div class="num" id="sSemana">—</div><div class="lbl">Esta semana</div></div>
-        <div class="stat"><div class="num" id="sMes">—</div><div class="lbl">Este mes</div></div>
-        <div class="stat"><div class="num green" id="sCal">—</div><div class="lbl">Calif. promedio</div></div>
-        <div class="stat"><div class="num blue" id="sResp">—</div><div class="lbl">Tiempo respuesta</div></div>
-      </div>
-
-      <div class="sol-grid">
-        <div class="sol-card">
-          <div class="sc-label">Por estado</div>
-          <div id="byEstadoList" style="display:flex;flex-direction:column;gap:0.4rem"></div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Nombre / Email</th>
+                <th>Ciudad</th>
+                <th>Teléfono</th>
+                <th>Aprobado</th>
+                <th>Disponible</th>
+                <th>Registrado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
         </div>
-        <div class="sol-card">
-          <div class="sc-label">Top municipios</div>
-          <ul class="muni-list" id="muniList"></ul>
-        </div>
-      </div>
+        </div><!-- /tabGrueros -->
 
-      <div class="sol-card" style="margin-bottom:1.5rem">
-        <div class="sc-label" style="margin-bottom:0.75rem">Solicitudes recientes</div>
-        <div class="recientes-list" id="recientesList"></div>
-      </div>
+        <!-- RIDERS -->
+        <div id="tabRiders" style="display:none">
+          <div class="section-header">
+            <h2>🏍️ Riders</h2>
+            <input class="search-input" id="ridersSearch" type="text" placeholder="Buscar rider..." oninput="filterRidersTable()">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Moto</th><th>Teléfono</th><th>SOAT vence</th><th>Registrado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="ridersBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabRiders -->
 
-      <!-- HISTORIAL POR GRUERO -->
-      <div class="gh-bar">
-        <label>Historial por gruero:</label>
-        <select class="gh-select" id="grueroSelect" onchange="loadGrueroHistorial()">
-          <option value="">— Seleccionar gruero —</option>
-        </select>
-      </div>
-      <div id="grueroHistorial" style="display:none">
-        <div class="gh-section-title">Servicios del gruero</div>
-        <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
-        <div class="table-wrap" id="ghTableWrap"></div>
-      </div>
+        <!-- CLUBS -->
+        <div id="tabClubs" style="display:none">
+          <div class="section-header">
+            <h2>🏁 Clubs</h2>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Código</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="clubsBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabClubs -->
 
-    </div><!-- /tabSolicitudes -->
+        <!-- MOTOS -->
+        <div id="tabMotos" style="display:none">
+          <div class="section-header">
+            <h2>⚙️ Motos en venta</h2>
+          </div>
+          <div class="filters" id="motosFilters">
+            <button class="filter-btn active" onclick="setMotosFilter('all',this)">Todas</button>
+            <button class="filter-btn" onclick="setMotosFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setMotosFilter('aprobadas',this)">Aprobadas</button>
+            <button class="filter-btn" onclick="setMotosFilter('vendidas',this)">Vendidas</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Foto</th><th>Título</th><th>Marca/Modelo</th><th>Precio</th><th>Ciudad</th><th>Estado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="motosBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabMotos -->
 
+        <!-- TALLERES -->
+        <div id="tabTalleres" style="display:none">
+          <div class="section-header">
+            <h2>🔩 Talleres</h2>
+          </div>
+          <div class="filters" id="talleresFilters">
+            <button class="filter-btn active" onclick="setTalleresFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setTalleresFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setTalleresFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Teléfono</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="talleresBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabTalleres -->
+
+        <!-- ALMACENES -->
+        <div id="tabAlmacenes" style="display:none">
+          <div class="section-header">
+            <h2>🛒 Almacenes</h2>
+          </div>
+          <div class="filters" id="almacenesFilters">
+            <button class="filter-btn active" onclick="setAlmacenesFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setAlmacenesFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setAlmacenesFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Ciudad</th><th>Teléfono</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="almacenesBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabAlmacenes -->
+
+        <!-- RITA TAB -->
+        <div id="tabRita" style="display:none">
+
+          <!-- Analytics -->
+          <div class="rita-sub">Resumen</div>
+          <div class="rita-grid" id="ritaStats">
+            <div class="stat"><div class="num" id="rContacts">—</div><div class="lbl">Contactos</div></div>
+            <div class="stat"><div class="num green" id="rOptedIn">—</div><div class="lbl">Suscritos</div></div>
+            <div class="stat"><div class="num" id="rActiveToday">—</div><div class="lbl">Activos hoy</div></div>
+            <div class="stat"><div class="num" id="rMsgsToday">—</div><div class="lbl">Msgs hoy</div></div>
+            <div class="stat"><div class="num blue" id="rMsgsWeek">—</div><div class="lbl">Msgs semana</div></div>
+            <div class="stat"><div class="num" id="rMsgsMonth">—</div><div class="lbl">Msgs mes</div></div>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
+            <div class="sol-card">
+              <div class="sc-label">Intenciones (últimos 30 días)</div>
+              <div class="intent-bars" id="ritaIntents"></div>
+            </div>
+            <div class="sol-card">
+              <div class="sc-label">Mensajes por día (última semana)</div>
+              <div class="day-chart" id="ritaDayChart"></div>
+            </div>
+          </div>
+
+          <!-- Contacts -->
+          <div class="rita-sub">
+            Contactos
+            <button class="btn-export" onclick="exportRitaContacts()" style="margin-left:auto">↓ Exportar CSV</button>
+            <input class="search-input" id="ritaSearchContacts" type="text" placeholder="Buscar nombre o teléfono..." oninput="searchRitaContacts()" style="width:200px">
+          </div>
+          <div class="contact-list" id="ritaContactList"></div>
+          <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:1rem" id="ritaPagination"></div>
+
+          <!-- Error Reports -->
+          <div class="rita-sub">
+            Errores reportados
+            <select class="search-input" id="errorFilter" onchange="loadErrorReports()" style="margin-left:auto;width:160px;font-size:0.78rem">
+              <option value="">Todos</option>
+              <option value="pendiente_revision" selected>Pendientes</option>
+              <option value="revisado">Revisados</option>
+              <option value="corregido">Corregidos</option>
+            </select>
+          </div>
+          <div id="errorList" class="contact-list" style="margin-bottom:1.5rem"></div>
+
+          <!-- Campañas rápidas -->
+          <div class="rita-sub">Campañas</div>
+          <div class="bc-form" style="margin-bottom:1.5rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campStats">
+              <div class="sol-card"><div class="sc-label">Sin nombre</div><div class="sc-val" id="campSinNombre">—</div></div>
+              <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campTotal">—</div></div>
+            </div>
+            <div class="bc-field">
+              <label>Plantilla aprobada por Meta: <code>pedir_nombre_rita</code></label>
+              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)">
+¡Hola! 🏍️ Soy Rita, la asistente de Ridera. Puedo ayudarte a buscar talleres, planear rutas, avisarte del vencimiento del SOAT y mucho más.
+
+¿Cómo te gustaría que te llame? 😊</div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+              <button class="bc-send" id="campSendBtn" onclick="enviarCampanaNombre()" style="flex:1">
+                Enviar plantilla + pedir nombre
+              </button>
+            </div>
+            <div id="campResult" style="display:none"></div>
+            <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
+              Solo se envía a contactos que no tienen nombre registrado. Al usar una plantilla aprobada llega incluso fuera de la ventana de 24h de WhatsApp.
+            </div>
+          </div>
+
+          <!-- Campaña pedir email -->
+          <div class="rita-sub">Campaña: pedir email</div>
+          <div class="bc-form" style="margin-bottom:1.5rem">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem" id="campEmailStats">
+              <div class="sol-card"><div class="sc-label">Con nombre, sin email</div><div class="sc-val" id="campSinEmail">—</div></div>
+              <div class="sol-card"><div class="sc-label">Total contactos</div><div class="sc-val" id="campEmailTotal">—</div></div>
+            </div>
+            <div class="bc-field">
+              <label>Plantilla aprobada por Meta: <code>pedir_email_rita</code></label>
+              <div style="background:var(--s2);border:1px solid var(--line);border-radius:8px;padding:0.75rem;font-size:0.82rem;line-height:1.5;white-space:pre-wrap;color:var(--text-muted)">
+¡Hola {{nombre}}! 🏍️ Soy Rita, de Ridera. Quiero enviarte tips de mantenimiento, promos y novedades directo a tu correo.
+
+¿Me compartes tu email? 📧</div>
+            </div>
+            <div style="display:flex;gap:0.75rem;margin-top:0.75rem">
+              <button class="bc-send" id="campEmailSendBtn" onclick="enviarCampanaEmail()" style="flex:1">
+                Enviar plantilla + pedir email
+              </button>
+            </div>
+            <div id="campEmailResult" style="display:none"></div>
+            <div style="font-size:0.72rem;color:var(--mu);margin-top:0.6rem">
+              Solo se envía a contactos que ya tienen nombre registrado pero no email.
+            </div>
+          </div>
+
+          <!-- Broadcast WhatsApp -->
+          <div class="rita-sub">Broadcast WhatsApp</div>
+          <div class="bc-form">
+            <div class="bc-field">
+              <label>Nombre del template (aprobado en Meta)</label>
+              <input type="text" id="bcTemplate" placeholder="ej: promo_talleres">
+            </div>
+            <div class="bc-field">
+              <label>Idioma</label>
+              <select id="bcLang">
+                <option value="es_CO">Español (Colombia)</option>
+                <option value="es">Español</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+            <div class="bc-field">
+              <label>Parámetros del body (variables {{1}}, {{2}}, etc.)</label>
+              <div class="bc-params" id="bcParams"></div>
+              <button class="bc-add-param" onclick="addBcParam()">+ Agregar parámetro</button>
+              <div style="font-size:0.72rem;color:var(--mu);margin-top:0.4rem">Usa <code>{{nombre}}</code> como valor para insertar el nombre del contacto automáticamente.</div>
+            </div>
+            <div class="bc-preview" id="bcPreview">
+              Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
+            </div>
+            <button class="bc-send" id="bcSendBtn" onclick="sendBroadcast()">
+              Enviar broadcast
+            </button>
+            <div id="bcResult" style="display:none"></div>
+          </div>
+
+          <!-- Email Marketing -->
+          <div class="rita-sub">Email Marketing</div>
+          <div class="bc-form">
+            <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:1rem">
+              <div class="sol-card"><div class="sc-label">Con email</div><div class="sc-val" id="emConEmail">—</div></div>
+              <div class="sol-card"><div class="sc-label">Campañas enviadas</div><div class="sc-val" id="emCampanas">—</div></div>
+              <div class="sol-card"><div class="sc-label">Último envío</div><div class="sc-val" id="emUltimo" style="font-size:0.82rem">—</div></div>
+            </div>
+
+            <div class="bc-field">
+              <label>Asunto del email</label>
+              <input type="text" id="emSubject" placeholder="ej: Tips de mantenimiento para tu moto">
+            </div>
+            <div class="bc-field">
+              <label>Contenido del email</label>
+              <textarea id="emBody" rows="10" style="width:100%;font-family:inherit;font-size:0.85rem;padding:0.75rem;border:1px solid var(--line);border-radius:8px;background:var(--s2);color:var(--fg);resize:vertical" placeholder="Escribe el contenido del newsletter...&#10;&#10;Puedes usar:&#10;{{nombre}} - nombre del contacto&#10;**texto** - negrita&#10;[texto](url) - enlace"></textarea>
+              <div style="font-size:0.72rem;color:var(--mu);margin-top:0.3rem">Formato: <code>**negrita**</code> · <code>[enlace](url)</code> · <code>{{nombre}}</code> para personalizar. Se convierte a HTML automáticamente.</div>
+            </div>
+            <div class="bc-field">
+              <label>Vista previa</label>
+              <div id="emPreviewBox" style="background:#fff;color:#333;border:1px solid var(--line);border-radius:8px;padding:1rem;font-size:0.85rem;line-height:1.6;min-height:60px;max-height:300px;overflow-y:auto">
+                <span style="color:#999">Escribe arriba para ver la vista previa...</span>
+              </div>
+            </div>
+            <div class="bc-preview">
+              Destinatarios: <strong id="emAudience">—</strong> contactos con email registrado
+            </div>
+            <div style="display:flex;gap:0.75rem">
+              <button class="bc-send" id="emSendBtn" onclick="sendEmailCampaign()" style="flex:1">
+                Enviar newsletter
+              </button>
+              <button class="btn-sm" onclick="sendEmailTest()" style="padding:0.5rem 1rem;font-size:0.82rem;border:1px solid var(--line);border-radius:8px;background:var(--s2);cursor:pointer;color:var(--fg)">
+                Enviar prueba
+              </button>
+            </div>
+            <div id="emResult" style="display:none"></div>
+
+            <div style="margin-top:1.2rem">
+              <div style="font-size:0.82rem;font-weight:600;margin-bottom:0.5rem;color:var(--fg)">Historial de campañas</div>
+              <div id="emHistory" style="font-size:0.82rem;color:var(--mu)">Cargando...</div>
+            </div>
+          </div>
+
+        </div><!-- /tabRita -->
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- EDIT RECORD MODAL -->
+<div class="modal-overlay hide" id="editModal">
+  <div class="modal" style="max-width:420px">
+    <h2 id="editModalTitle">Modificar</h2>
+    <div id="editModalFields" style="display:flex;flex-direction:column;gap:0.75rem"></div>
+    <div class="modal-err" id="editModalErr"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="hideEditModal()">Cancelar</button>
+      <button class="btn-ok" onclick="saveEditModal()">Guardar</button>
+    </div>
   </div>
 </div>
 
@@ -334,15 +802,65 @@ function jsq(x) {
 }
 
 let solStatsLoaded = false;
+let ritaLoaded = false;
 
-function showTab(tab, btn) {
-  document.getElementById('tabGrueros').style.display    = tab === 'grueros'     ? 'block' : 'none';
-  document.getElementById('tabSolicitudes').style.display = tab === 'solicitudes' ? 'block' : 'none';
-  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  if (tab === 'solicitudes' && !solStatsLoaded) loadSolicitudesStats();
-  if (tab === 'solicitudes') { loadPendingDispatch(); populateGrueroSelect(); }
+// ── Sidebar navigation ───────────────────────────────────────────────
+
+const ALL_TABS = ['despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','rita'];
+const TAB_ID_MAP = {
+  despacho: 'tabDespacho',
+  sellos: 'tabSellos',
+  grueros: 'tabGrueros',
+  riders: 'tabRiders',
+  clubs: 'tabClubs',
+  motos: 'tabMotos',
+  talleres: 'tabTalleres',
+  almacenes: 'tabAlmacenes',
+  rita: 'tabRita',
+};
+
+// Track which sections have been loaded at least once
+const sectionLoaded = {};
+
+function showTab(tab) {
+  // Hide all tab panels
+  ALL_TABS.forEach(t => {
+    const el = document.getElementById(TAB_ID_MAP[t]);
+    if (el) el.style.display = t === tab ? 'block' : 'none';
+  });
+
+  // Update sidebar active state
+  document.querySelectorAll('.sidebar-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.tab === tab);
+  });
+
+  // Lazy-load section data
+  if (tab === 'despacho') {
+    if (!solStatsLoaded) loadSolicitudesStats();
+    loadPendingDispatch();
+    populateGrueroSelect();
+  }
+  if (tab === 'grueros') {
+    renderStats();
+    renderTable();
+  }
+  if (tab === 'sellos' && !sectionLoaded.sellos) loadSellos();
+  if (tab === 'riders' && !sectionLoaded.riders) loadRiders();
+  if (tab === 'clubs' && !sectionLoaded.clubs) loadClubs();
+  if (tab === 'motos' && !sectionLoaded.motos) loadMotos();
+  if (tab === 'talleres' && !sectionLoaded.talleres) loadTalleres();
+  if (tab === 'almacenes' && !sectionLoaded.almacenes) loadAlmacenes();
+  if (tab === 'rita') {
+    if (!ritaLoaded) loadRitaAnalytics();
+    loadRitaContacts();
+    loadErrorReports();
+    loadCampanaStats();
+    loadCampanaEmailStats();
+    loadEmailStats();
+  }
 }
+
+// ── Solicitudes stats (Despacho) ─────────────────────────────────────
 
 async function loadSolicitudesStats() {
   const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
@@ -489,7 +1007,7 @@ async function toggleDespacho(solId, municipio) {
   if (!el) return;
   if (el.style.display !== 'none') { el.style.display = 'none'; return; }
   el.style.display = 'flex';
-  el.innerHTML = '<span class="gd-empty">Buscando grueros…</span>';
+  el.innerHTML = '<span class="gd-empty">Buscando grueros...</span>';
 
   const data = await callAdmin({ action: 'despacho_grueros', municipio }).catch(() => ({ ok: false }));
   if (!data.ok || !data.grueros || !data.grueros.length) {
@@ -538,6 +1056,8 @@ async function doLogin() {
     renderStats();
     renderTable();
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
+    // Default to grueros tab on login
+    showTab('grueros');
   } else {
     errEl.style.display = 'block';
     adminKey = '';
@@ -563,9 +1083,41 @@ async function reloadList() {
 function logout() {
   adminKey = '';
   allGrueros = [];
+  // Reset lazy-load flags
+  solStatsLoaded = false;
+  ritaLoaded = false;
+  Object.keys(sectionLoaded).forEach(k => delete sectionLoaded[k]);
   document.getElementById('loginWrap').style.display = 'flex';
   document.getElementById('panel').style.display = 'none';
   document.getElementById('pwdInput').value = '';
+}
+
+function togglePwdVisibility() {
+  const input = document.getElementById('pwdInput');
+  const icon = document.getElementById('pwdToggleIcon');
+  if (input.type === 'password') {
+    input.type = 'text';
+    icon.textContent = '🙈';
+  } else {
+    input.type = 'password';
+    icon.textContent = '👁️';
+  }
+}
+
+function showResetPwdModal() {
+  const modal = document.createElement('div');
+  modal.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 1000;';
+  modal.innerHTML = `
+    <div style="background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 2rem; width: 90%; max-width: 360px;">
+      <h2 style="color: var(--or); margin-bottom: 1rem;">Recuperar clave</h2>
+      <p style="color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem;">
+        Contacta al administrador para resetear tu clave de acceso.
+        Email: <strong>soporte@ridera.com.co</strong>
+      </p>
+      <button onclick="this.closest('div').parentElement.remove()" class="btn" style="width: 100%;">Entendido</button>
+    </div>
+  `;
+  document.body.appendChild(modal);
 }
 
 function renderStats() {
@@ -586,11 +1138,14 @@ function renderStats() {
   // Highlight pending filter button if there are pending grueros
   const pBtn = document.getElementById('filterPend');
   pBtn.textContent = `Pendientes${pendientes ? ' (' + pendientes + ')' : ''}`;
+
+  // Update sidebar badge
+  updateBadge('badgeGrueros', total);
 }
 
 function setFilter(f, btn) {
   currentFilter = f;
-  document.querySelectorAll('.filter-btn').forEach(b => {
+  document.querySelectorAll('#tabGrueros .filter-btn').forEach(b => {
     b.classList.remove('active', 'warn-active');
     if (b === btn) b.classList.add(f === 'pend' ? 'warn-active' : 'active');
   });
@@ -641,7 +1196,8 @@ function renderTable() {
         <div class="actions-cell">
           ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
           ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
-          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">Eliminar</button>
+          <button class="act-btn" onclick="openEditModalFor('grueros','${jsq(g.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -655,7 +1211,7 @@ async function doAprobar(id, nombre, email, btn) {
     : `¿Aprobar a "${nombre}"?\n⚠️ No tiene correo registrado — no se creará cuenta de acceso.`;
   if (!confirm(msg)) return;
   btn.disabled = true;
-  btn.textContent = '…';
+  btn.textContent = '...';
   const res = await callAdmin({ action: 'approve', id }).catch(() => ({ ok: false }));
 
   if (res.ok) {
@@ -716,7 +1272,7 @@ function exportGruerosCSV() {
 
 async function exportSolicitudesCSV() {
   const btn = document.getElementById('btnExportSols');
-  if (btn) { btn.disabled = true; btn.textContent = 'Exportando…'; }
+  if (btn) { btn.disabled = true; btn.textContent = 'Exportando...'; }
   const data = await callAdmin({ action: 'export_solicitudes' }).catch(() => ({ ok: false }));
   if (btn) { btn.disabled = false; btn.textContent = '↓ Exportar CSV'; }
   if (!data.ok) { alert('Error al exportar'); return; }
@@ -758,7 +1314,7 @@ async function loadGrueroHistorial() {
   const wrap = document.getElementById('grueroHistorial');
   if (!gruero_id) { wrap.style.display = 'none'; return; }
   wrap.style.display = 'block';
-  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando…</div>';
+  document.getElementById('ghStats').innerHTML = '<div style="color:#888;font-size:0.85rem;padding:0.5rem 0">Cargando...</div>';
   document.getElementById('ghTableWrap').innerHTML = '';
 
   const data = await callAdmin({ action: 'historial_gruero', gruero_id }).catch(() => ({ ok: false }));
@@ -819,6 +1375,1009 @@ async function doChangePwd() {
   const data = await callAdmin({ action: 'change_password', new: nueva }).catch(() => ({ ok: false }));
   if (data.ok) { adminKey = nueva; hidePwdModal(); }
   else { errEl.textContent = data.error || 'Error al cambiar la clave.'; errEl.style.display = 'block'; }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RITA — Analytics, Contacts & Broadcasts
+// ═══════════════════════════════════════════════════════════════════════
+
+const FN_RITA = '/.netlify/functions/rita-admin';
+let ritaContactsPage = 0;
+const RITA_PAGE_SIZE = 20;
+
+async function callRita(body) {
+  const res = await fetch(FN_RITA, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ key: adminKey, ...body }),
+  });
+  return res.json();
+}
+
+// ── Analytics ──────────────────────────────────────────────────────────
+
+async function loadRitaAnalytics() {
+  const data = await callAdmin({ action: 'analytics' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  ritaLoaded = true;
+
+  document.getElementById('rContacts').textContent   = data.totalContacts;
+  document.getElementById('rOptedIn').textContent    = data.optedIn;
+  document.getElementById('rActiveToday').textContent = data.activeToday;
+  document.getElementById('rMsgsToday').textContent  = data.msgsToday;
+  document.getElementById('rMsgsWeek').textContent   = data.msgsWeek;
+  document.getElementById('rMsgsMonth').textContent  = data.msgsMonth;
+  document.getElementById('bcAudience').textContent  = data.optedIn;
+
+  renderIntentBars(data.intentCounts || {});
+  renderDayChart(data.perDay || {});
+}
+
+const INTENT_COLORS = {
+  general: '#E85D20',
+  emergency: '#f87171',
+  taller_search: '#60a5fa',
+  almacen_search: '#a78bfa',
+  pasaporte: '#4ade80',
+  error_report: '#f59e0b',
+  cita: '#f472b6',
+};
+
+const INTENT_LABELS = {
+  general: 'General',
+  emergency: 'Emergencia',
+  taller_search: 'Talleres',
+  almacen_search: 'Almacenes',
+  pasaporte: 'Pasaporte',
+  error_report: 'Error reportado',
+  cita: 'Citas',
+};
+
+function renderIntentBars(counts) {
+  const el = document.getElementById('ritaIntents');
+  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
+  if (!entries.length) { el.innerHTML = '<span style="color:var(--mu);font-size:0.82rem">Sin datos</span>'; return; }
+  const max = entries[0][1];
+  el.innerHTML = entries.map(([intent, count]) => {
+    const pct = Math.round((count / max) * 100);
+    const color = INTENT_COLORS[intent] || '#888';
+    const label = INTENT_LABELS[intent] || intent;
+    return `<div class="intent-row">
+      <span class="intent-label">${esc(label)}</span>
+      <div class="intent-bar-wrap"><div class="intent-bar" style="width:${pct}%;background:${color}"></div></div>
+      <span class="intent-count" style="color:${color}">${count}</span>
+    </div>`;
+  }).join('');
+}
+
+function renderDayChart(perDay) {
+  const el = document.getElementById('ritaDayChart');
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(Date.now() - i * 86400000);
+    const key = d.toISOString().slice(0, 10);
+    const dayNames = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+    days.push({ key, label: dayNames[d.getDay()], count: perDay[key] || 0 });
+  }
+  const max = Math.max(...days.map(d => d.count), 1);
+  el.innerHTML = days.map(d => {
+    const h = Math.round((d.count / max) * 80);
+    return `<div class="day-col">
+      <span class="day-val">${d.count || ''}</span>
+      <div class="day-bar" style="height:${h}px"></div>
+      <span class="day-label">${d.label}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── Contacts ───────────────────────────────────────────────────────────
+
+let ritaSearchTimeout = null;
+
+function searchRitaContacts() {
+  clearTimeout(ritaSearchTimeout);
+  ritaSearchTimeout = setTimeout(() => { ritaContactsPage = 0; loadRitaContacts(); }, 300);
+}
+
+async function loadRitaContacts() {
+  const search = (document.getElementById('ritaSearchContacts')?.value || '').trim();
+  const data = await callAdmin({
+    action: 'contacts',
+    limit: RITA_PAGE_SIZE,
+    offset: ritaContactsPage * RITA_PAGE_SIZE,
+    search,
+  }).catch(() => ({ ok: false }));
+
+  if (!data.ok) return;
+
+  const el = document.getElementById('ritaContactList');
+  if (!data.contacts.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:1.5rem">Sin contactos.</div>';
+    document.getElementById('ritaPagination').innerHTML = '';
+    return;
+  }
+
+  el.innerHTML = data.contacts.map(c => {
+    const initials = (c.preferred_name || '?').slice(0, 2).toUpperCase();
+    const timeAgo = c.last_seen_at ? relTime(c.last_seen_at) : '—';
+    const phone = c.phone_number || '';
+    const masked = phone.length > 6 ? phone.slice(0, -4).replace(/./g, '•') + phone.slice(-4) : phone;
+    return `<div class="ct-row" onclick="openConversation('${jsq(phone)}','${jsq(c.preferred_name||'Contacto')}')">
+      <div class="ct-avatar">${esc(initials)}</div>
+      <div class="ct-info">
+        <div class="ct-name">${esc(c.preferred_name || 'Sin nombre')}</div>
+        <div class="ct-phone">${esc(masked)}</div>
+      </div>
+      <div class="ct-meta">
+        <div class="ct-time">${timeAgo}</div>
+        ${c.email ? `<div class="ct-email" style="font-size:0.72rem;color:var(--mu);overflow:hidden;text-overflow:ellipsis;max-width:140px" title="${esc(c.email)}">${esc(c.email)}</div>` : ''}
+        <div class="ct-opt ${c.opted_in ? 'ct-opt-in' : 'ct-opt-out'}">${c.opted_in ? 'Suscrito' : 'Baja'}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const totalPages = Math.ceil((data.total || 0) / RITA_PAGE_SIZE);
+  const pag = document.getElementById('ritaPagination');
+  if (totalPages <= 1) { pag.innerHTML = ''; return; }
+  let html = '';
+  if (ritaContactsPage > 0)
+    html += `<button class="btn-sm" onclick="ritaContactsPage--;loadRitaContacts()">← Anterior</button>`;
+  html += `<span style="font-size:0.78rem;color:var(--mu);padding:0.35rem 0">${ritaContactsPage + 1} / ${totalPages}</span>`;
+  if (ritaContactsPage < totalPages - 1)
+    html += `<button class="btn-sm" onclick="ritaContactsPage++;loadRitaContacts()">Siguiente →</button>`;
+  pag.innerHTML = html;
+}
+
+// ── Conversation viewer ────────────────────────────────────────────────
+
+async function openConversation(phone, name) {
+  const overlay = document.createElement('div');
+  overlay.className = 'conv-overlay';
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  overlay.innerHTML = `
+    <div class="conv-panel">
+      <div class="conv-header">
+        <h3>${esc(name)}</h3>
+        <button class="conv-close" onclick="this.closest('.conv-overlay').remove()">✕</button>
+      </div>
+      <div class="conv-body" id="convBody">
+        <div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:2rem">Cargando...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
+
+  const data = await callAdmin({ action: 'conversation', phone }).catch(() => ({ ok: false }));
+  const body = document.getElementById('convBody');
+  if (!data.ok || !data.messages.length) {
+    body.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:2rem">Sin mensajes.</div>';
+    return;
+  }
+
+  body.innerHTML = data.messages.map(m => {
+    const time = m.created_at ? new Date(m.created_at).toLocaleString('es-CO', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'short' }) : '';
+    return `<div class="conv-msg ${m.role}">
+      ${esc(m.content)}
+      <span class="conv-time">${time}</span>
+    </div>`;
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+}
+
+// ── Error reports ──────────────────────────────────────────────────────
+
+async function loadErrorReports() {
+  const estado = document.getElementById('errorFilter').value;
+  const data = await callAdmin({ action: 'error_reports', estado }).catch(() => ({ ok: false }));
+  const el = document.getElementById('errorList');
+
+  if (!data.ok || !data.reports || !data.reports.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:1.5rem">Sin reportes de errores.</div>';
+    return;
+  }
+
+  const estadoStyles = {
+    pendiente_revision: { bg: '#2a2000', color: '#f59e0b', label: 'Pendiente' },
+    revisado: { bg: '#0a1e2e', color: '#60a5fa', label: 'Revisado' },
+    corregido: { bg: '#0e2a1a', color: '#4ade80', label: 'Corregido' },
+  };
+
+  el.innerHTML = data.reports.map(r => {
+    const s = estadoStyles[r.estado] || estadoStyles.pendiente_revision;
+    const phone = r.whatsapp_number || '';
+    const masked = phone.length > 6 ? '...' + phone.slice(-4) : phone;
+    const nombre = r.contexto?.preferred_name || masked;
+    const time = r.created_at ? relTime(r.created_at) : '';
+    return `<div class="ct-row" style="cursor:default;flex-wrap:wrap">
+      <div class="ct-avatar" style="background:${s.bg};color:${s.color};font-size:0.7rem">⚠</div>
+      <div class="ct-info" style="min-width:0">
+        <div class="ct-name">${esc(nombre)}</div>
+        <div class="ct-phone" style="white-space:normal;max-width:400px">${esc(r.descripcion)}</div>
+      </div>
+      <div class="ct-meta" style="display:flex;align-items:center;gap:0.5rem">
+        <span class="ct-time">${time}</span>
+        <span class="ct-opt" style="background:${s.bg};color:${s.color}">${s.label}</span>
+        ${r.estado === 'pendiente_revision' ? `
+          <button class="act-btn" onclick="markError('${jsq(r.id)}','revisado',this)" style="font-size:0.72rem">Revisar</button>
+          <button class="act-btn aprobar" onclick="markError('${jsq(r.id)}','corregido',this)" style="font-size:0.72rem">Corregido</button>
+        ` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markError(id, estado, btn) {
+  if (btn) btn.disabled = true;
+  await callAdmin({ action: 'update_error', id, estado }).catch(() => {});
+  loadErrorReports();
+}
+
+// ── Export contacts ────────────────────────────────────────────────────
+
+async function exportRitaContacts() {
+  const data = await callAdmin({ action: 'export_contacts' }).catch(() => ({ ok: false }));
+  if (!data.ok || !data.contacts) { alert('Error al exportar'); return; }
+  const headers = ['Teléfono','Nombre','Email','Última actividad','Suscrito','Registrado'];
+  const csv = [headers, ...data.contacts.map(c => [
+    c.phone_number || '',
+    c.preferred_name || '',
+    c.email || '',
+    c.last_seen_at ? new Date(c.last_seen_at).toLocaleString('es-CO') : '',
+    c.opted_in ? 'Sí' : 'No',
+    c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '',
+  ])].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
+  downloadCSV('﻿' + csv, `rita-contactos-${new Date().toISOString().slice(0,10)}.csv`);
+}
+
+// ── Broadcast ──────────────────────────────────────────────────────────
+
+function addBcParam() {
+  const container = document.getElementById('bcParams');
+  const idx = container.children.length + 1;
+  const row = document.createElement('div');
+  row.className = 'bc-param-row';
+  row.innerHTML = `<input type="text" placeholder="Valor para {{${idx}}} (o {{nombre}} para auto)">
+    <button onclick="this.parentElement.remove()">✕</button>`;
+  container.appendChild(row);
+}
+
+// ── Campañas rápidas ───────────────────────────────────────────────────
+
+async function loadCampanaStats() {
+  const data = await callAdmin({ action: 'campana_preview' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('campSinNombre').textContent = data.sinNombre;
+  document.getElementById('campTotal').textContent = data.total;
+}
+
+async function enviarCampanaNombre() {
+  const sinNombre = document.getElementById('campSinNombre').textContent;
+  if (sinNombre === '0' || sinNombre === '—') {
+    alert('Todos los contactos ya tienen nombre registrado.');
+    return;
+  }
+  if (!confirm(`¿Enviar el recordatorio a ${sinNombre} contactos sin nombre?\n\nSe les pedirá que digan cómo quieren que los llamen.`)) return;
+
+  const btn = document.getElementById('campSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  const resultEl = document.getElementById('campResult');
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'campana_enviar_nombre' }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar plantilla + pedir nombre';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    if (data.errorDetails && data.errorDetails.length) {
+      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
+        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
+    }
+    loadCampanaStats();
+    loadRitaAnalytics();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar campaña.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Campaña pedir email ─────────────────────────────────────────────────
+
+async function loadCampanaEmailStats() {
+  const data = await callAdmin({ action: 'campana_preview_email' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('campSinEmail').textContent = data.sinEmail;
+  document.getElementById('campEmailTotal').textContent = data.total;
+}
+
+async function enviarCampanaEmail() {
+  const sinEmail = document.getElementById('campSinEmail').textContent;
+  if (sinEmail === '0' || sinEmail === '—') {
+    alert('Todos los contactos con nombre ya tienen email registrado.');
+    return;
+  }
+  if (!confirm(`¿Enviar la plantilla a ${sinEmail} contactos con nombre pero sin email?`)) return;
+
+  const btn = document.getElementById('campEmailSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  const resultEl = document.getElementById('campEmailResult');
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'campana_enviar_email' }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar plantilla + pedir email';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    if (data.errorDetails && data.errorDetails.length) {
+      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
+        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
+    }
+    loadCampanaEmailStats();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar campaña.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Broadcast ──────────────────────────────────────────────────────────
+
+async function sendBroadcast() {
+  const template = document.getElementById('bcTemplate').value.trim();
+  const lang = document.getElementById('bcLang').value;
+  const paramInputs = document.querySelectorAll('#bcParams .bc-param-row input');
+  const params = Array.from(paramInputs).map(i => i.value.trim()).filter(Boolean);
+  const resultEl = document.getElementById('bcResult');
+
+  if (!template) {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = 'Ingresa el nombre del template.';
+    resultEl.style.display = 'block';
+    return;
+  }
+
+  const audience = document.getElementById('bcAudience').textContent;
+  if (!confirm(`¿Enviar template "${template}" a ${audience} contactos suscritos?\n\nEsta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('bcSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'broadcast', template, language: lang, params }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar broadcast';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    if (data.errorDetails && data.errorDetails.length) {
+      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">Errores: ' +
+        data.errorDetails.map(e => `...${esc(e.phone)}`).join(', ') + '</span>';
+    }
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar broadcast.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Email Marketing ───────────────────────────────────────────────────
+
+function mdToHtml(text) {
+  return text
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" style="color:#E85D2A;text-decoration:underline">$1</a>')
+    .replace(/\{\{nombre\}\}/g, '<em style="color:#E85D2A">[nombre]</em>')
+    .replace(/\n\n/g, '</p><p style="margin:0 0 12px">')
+    .replace(/\n/g, '<br>');
+}
+
+const emBodyEl = () => document.getElementById('emBody');
+if (emBodyEl()) {
+  emBodyEl().addEventListener('input', () => {
+    const raw = emBodyEl().value;
+    document.getElementById('emPreviewBox').innerHTML = raw.trim()
+      ? '<p style="margin:0 0 12px">' + mdToHtml(raw) + '</p>'
+      : '<span style="color:#999">Escribe arriba para ver la vista previa...</span>';
+  });
+}
+
+async function loadEmailStats() {
+  const data = await callAdmin({ action: 'email_stats' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('emConEmail').textContent = data.conEmail || 0;
+  document.getElementById('emAudience').textContent = data.conEmail || 0;
+  document.getElementById('emCampanas').textContent = data.totalCampanas || 0;
+  document.getElementById('emUltimo').textContent = data.ultimoEnvio
+    ? new Date(data.ultimoEnvio).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' })
+    : 'Nunca';
+
+  const histEl = document.getElementById('emHistory');
+  if (!data.campanas || !data.campanas.length) {
+    histEl.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--mu)">No hay campañas enviadas aún.</div>';
+    return;
+  }
+  histEl.innerHTML = data.campanas.map(c => {
+    const date = new Date(c.sent_at || c.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0;border-bottom:1px solid var(--line)">
+      <div>
+        <div style="font-weight:500;color:var(--fg)">${esc(c.subject)}</div>
+        <div style="font-size:0.72rem;color:var(--mu)">${date}</div>
+      </div>
+      <div style="text-align:right;font-size:0.78rem">
+        <span style="color:var(--ok)">${c.sent_count} enviados</span>
+        ${c.error_count ? `<span style="color:var(--err);margin-left:0.4rem">${c.error_count} errores</span>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function sendEmailCampaign() {
+  const subject = document.getElementById('emSubject').value.trim();
+  const body = emBodyEl().value.trim();
+  const resultEl = document.getElementById('emResult');
+
+  if (!subject) { resultEl.className = 'bc-result err'; resultEl.textContent = 'Escribe el asunto del email.'; resultEl.style.display = 'block'; return; }
+  if (!body) { resultEl.className = 'bc-result err'; resultEl.textContent = 'Escribe el contenido del email.'; resultEl.style.display = 'block'; return; }
+
+  const audience = document.getElementById('emAudience').textContent;
+  if (audience === '0' || audience === '—') { alert('No hay contactos con email registrado.'); return; }
+  if (!confirm(`¿Enviar newsletter "${subject}" a ${audience} contactos?\n\nEsta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('emSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'email_send', subject, body_md: body }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar newsletter';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    document.getElementById('emSubject').value = '';
+    emBodyEl().value = '';
+    document.getElementById('emPreviewBox').innerHTML = '<span style="color:#999">Escribe arriba para ver la vista previa...</span>';
+    loadEmailStats();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar el newsletter.';
+  }
+  resultEl.style.display = 'block';
+}
+
+async function sendEmailTest() {
+  const subject = document.getElementById('emSubject').value.trim();
+  const body = emBodyEl().value.trim();
+  if (!subject || !body) { alert('Escribe asunto y contenido primero.'); return; }
+  const email = prompt('Email de prueba:');
+  if (!email || !email.includes('@')) return;
+
+  const data = await callAdmin({ action: 'email_test', subject, body_md: body, test_email: email }).catch(() => ({ ok: false }));
+  if (data.ok) alert('Email de prueba enviado a ' + email);
+  else alert(data.error || 'Error al enviar prueba.');
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// NEW SECTIONS — Sellos, Riders, Clubs, Motos, Talleres, Almacenes
+// ═══════════════════════════════════════════════════════════════════════
+
+// Helper: update sidebar badge
+function updateBadge(id, count) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (count > 0) {
+    el.textContent = count;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+// ── SELLOS ─────────────────────────────────────────────────────────────
+
+let allSellos = [];
+let selloFilter = 'all';
+
+async function loadSellos() {
+  const data = await callAdmin({ action: 'list_sellos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('sellosBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar sellos.</td></tr>';
+    return;
+  }
+  sectionLoaded.sellos = true;
+  allSellos = data.sellos || [];
+  const pendCount = allSellos.filter(s => !['aprobado','rechazado'].includes((s.estado||'').toLowerCase())).length;
+  updateBadge('badgeSellos', pendCount);
+  renderSellosTable();
+}
+
+function setSelloFilter(f, btn) {
+  selloFilter = f;
+  document.querySelectorAll('#sellosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSellosTable();
+}
+
+function renderSellosTable() {
+  let rows = allSellos;
+  if (selloFilter !== 'all') rows = rows.filter(s => (s.estado||'').toLowerCase() === selloFilter);
+
+  const tbody = document.getElementById('sellosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin sellos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(s => {
+    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : (s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—');
+    const estadoNorm = (s.estado||'').toLowerCase();
+    const estadoCls = estadoNorm === 'aprobado' ? 'badge-on' : estadoNorm === 'rechazado' ? 'badge-off' : 'badge-pend';
+    const estadoLbl = estadoNorm === 'aprobado' ? '✓ Aprobado' : estadoNorm === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
+    const riderName = s.riders?.nombre || s.rider_id || '—';
+    return `<tr>
+      <td>${esc(riderName)}</td>
+      <td>${esc(s.municipio_id || '—')}</td>
+      <td class="tel">${fecha}</td>
+      <td>${s.en_manada ? '<span class="badge badge-apro">Si</span>' : '<span class="badge badge-off">No</span>'}</td>
+      <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
+      <td>
+        <div class="actions-cell">
+          ${estadoNorm !== 'aprobado' && estadoNorm !== 'rechazado' ? `
+            <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
+            <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
+          ` : ''}
+          <button class="act-btn del" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
+          ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function updateSello(id, estado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    const s = allSellos.find(x => x.id === id);
+    if (s) s.estado = estado;
+    const pendCount = allSellos.filter(x => !['aprobado','rechazado'].includes((x.estado||'').toLowerCase())).length;
+    updateBadge('badgeSellos', pendCount);
+    renderSellosTable();
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
+
+// ── RIDERS ─────────────────────────────────────────────────────────────
+
+let allRiders = [];
+
+async function loadRiders() {
+  const data = await callAdmin({ action: 'list_riders' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar riders.</td></tr>';
+    return;
+  }
+  sectionLoaded.riders = true;
+  allRiders = data.riders || [];
+  updateBadge('badgeRiders', allRiders.length);
+  renderRidersTable();
+}
+
+function filterRidersTable() {
+  renderRidersTable();
+}
+
+function renderRidersTable() {
+  const q = (document.getElementById('ridersSearch')?.value || '').toLowerCase();
+  let rows = allRiders;
+  if (q) rows = rows.filter(r =>
+    (r.nombre||'').toLowerCase().includes(q) ||
+    (r.apellido||'').toLowerCase().includes(q) ||
+    (r.ciudad||'').toLowerCase().includes(q) ||
+    (r.telefono||'').includes(q)
+  );
+
+  const tbody = document.getElementById('ridersBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin riders que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+    const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+    const soat = r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—';
+    const fecha = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—';
+    // Warn if SOAT expires within 30 days
+    const soatWarn = r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000;
+    return `<tr>
+      <td><strong>${esc(nombre)}</strong>${r.slug ? `<br><span class="tel">${esc(r.slug)}</span>` : ''}</td>
+      <td>${esc(r.ciudad || '—')}</td>
+      <td class="tel">${esc(moto)}</td>
+      <td class="tel">${esc(r.telefono || '—')}</td>
+      <td><span style="${soatWarn ? 'color:#f59e0b;font-weight:600' : ''}">${soat}</span></td>
+      <td class="tel">${fecha}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── CLUBS ──────────────────────────────────────────────────────────────
+
+let allClubs = [];
+
+async function loadClubs() {
+  const data = await callAdmin({ action: 'list_clubs' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('clubsBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar clubs.</td></tr>';
+    return;
+  }
+  sectionLoaded.clubs = true;
+  allClubs = data.clubs || [];
+  updateBadge('badgeClubs', allClubs.length);
+  renderClubsTable();
+}
+
+function renderClubsTable() {
+  const tbody = document.getElementById('clubsBody');
+  if (!allClubs.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin clubs registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = allClubs.map(c => {
+    const apro = !!c.aprobado;
+    return `<tr>
+      <td><strong>${esc(c.nombre || '—')}</strong>${c.logo_url ? ` <img class="tbl-thumb" src="${esc(c.logo_url)}" alt="" style="vertical-align:middle;margin-left:0.5rem">` : ''}</td>
+      <td>${esc(c.ciudad || '—')}</td>
+      <td class="tel">${esc(c.codigo || '—')}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── MOTOS ──────────────────────────────────────────────────────────────
+
+let allMotos = [];
+let motosFilter = 'all';
+
+async function loadMotos() {
+  const data = await callAdmin({ action: 'list_motos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('motosBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar motos.</td></tr>';
+    return;
+  }
+  sectionLoaded.motos = true;
+  allMotos = data.motos || [];
+  const pendCount = allMotos.filter(m => !m.aprobado && !m.vendido).length;
+  updateBadge('badgeMotos', pendCount || allMotos.length);
+  renderMotosTable();
+}
+
+function setMotosFilter(f, btn) {
+  motosFilter = f;
+  document.querySelectorAll('#motosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMotosTable();
+}
+
+function renderMotosTable() {
+  let rows = allMotos;
+  if (motosFilter === 'pendientes') rows = rows.filter(m => !m.aprobado && !m.vendido);
+  else if (motosFilter === 'aprobadas') rows = rows.filter(m => m.aprobado && !m.vendido);
+  else if (motosFilter === 'vendidas') rows = rows.filter(m => m.vendido);
+
+  const tbody = document.getElementById('motosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin motos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(m => {
+    const precio = m.precio ? '$' + Number(m.precio).toLocaleString('es-CO') : '—';
+    const marcaModelo = [m.marca, m.modelo].filter(Boolean).join(' ') || '—';
+    let estadoBadge;
+    if (m.vendido) estadoBadge = '<span class="badge badge-off">Vendida</span>';
+    else if (m.aprobado) estadoBadge = '<span class="badge badge-on">Aprobada</span>';
+    else estadoBadge = '<span class="badge badge-pend">Pendiente</span>';
+
+    return `<tr>
+      <td>${m.foto1_url ? `<img class="tbl-thumb" src="${esc(m.foto1_url)}" alt="">` : '—'}</td>
+      <td><strong>${esc(m.titulo || '—')}</strong>${m.anio ? `<br><span class="tel">${m.anio}</span>` : ''}${m.kilometraje ? ` <span class="tel">${Number(m.kilometraje).toLocaleString('es-CO')} km</span>` : ''}</td>
+      <td>${esc(marcaModelo)}${m.cilindraje ? `<br><span class="tel">${m.cilindraje}cc</span>` : ''}</td>
+      <td style="font-weight:600">${precio}</td>
+      <td>${esc(m.ciudad || '—')}</td>
+      <td>${estadoBadge}</td>
+      <td>
+        <div class="actions-cell">
+          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
+          ${m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
+          <button class="act-btn" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── TALLERES ───────────────────────────────────────────────────────────
+
+let allTalleres = [];
+let talleresFilter = 'all';
+
+async function loadTalleres() {
+  const data = await callAdmin({ action: 'list_talleres' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('talleresBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar talleres.</td></tr>';
+    return;
+  }
+  sectionLoaded.talleres = true;
+  allTalleres = data.talleres || [];
+  const pendCount = allTalleres.filter(t => !t.aprobado).length;
+  updateBadge('badgeTalleres', pendCount || allTalleres.length);
+  renderTalleresTable();
+}
+
+function setTalleresFilter(f, btn) {
+  talleresFilter = f;
+  document.querySelectorAll('#talleresFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTalleresTable();
+}
+
+function renderTalleresTable() {
+  let rows = allTalleres;
+  if (talleresFilter === 'pendientes') rows = rows.filter(t => !t.aprobado);
+  else if (talleresFilter === 'aprobados') rows = rows.filter(t => !!t.aprobado);
+
+  const tbody = document.getElementById('talleresBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin talleres que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(t => {
+    const apro = !!t.aprobado;
+    return `<tr>
+      <td><strong>${esc(t.nombre || '—')}</strong>${t.direccion ? `<br><span class="tel">${esc(t.direccion)}${t.barrio ? ', ' + esc(t.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(t.ciudad || '—')}</td>
+      <td class="tel">${esc(t.telefono || '—')}${t.email ? `<br><span class="tel">${esc(t.email)}</span>` : ''}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('talleres','${jsq(t.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ALMACENES ──────────────────────────────────────────────────────────
+
+let allAlmacenes = [];
+let almacenesFilter = 'all';
+
+async function loadAlmacenes() {
+  const data = await callAdmin({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('almacenesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar almacenes.</td></tr>';
+    return;
+  }
+  sectionLoaded.almacenes = true;
+  allAlmacenes = data.almacenes || [];
+  const pendCount = allAlmacenes.filter(a => !a.aprobado).length;
+  updateBadge('badgeAlmacenes', pendCount || allAlmacenes.length);
+  renderAlmacenesTable();
+}
+
+function setAlmacenesFilter(f, btn) {
+  almacenesFilter = f;
+  document.querySelectorAll('#almacenesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAlmacenesTable();
+}
+
+function renderAlmacenesTable() {
+  let rows = allAlmacenes;
+  if (almacenesFilter === 'pendientes') rows = rows.filter(a => !a.aprobado);
+  else if (almacenesFilter === 'aprobados') rows = rows.filter(a => !!a.aprobado);
+
+  const tbody = document.getElementById('almacenesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin almacenes que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => {
+    const apro = !!a.aprobado;
+    return `<tr>
+      <td><strong>${esc(a.nombre || '—')}</strong>${a.direccion ? `<br><span class="tel">${esc(a.direccion)}${a.barrio ? ', ' + esc(a.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(a.ciudad || '—')}</td>
+      <td class="tel">${esc(a.telefono || '—')}${a.email ? `<br><span class="tel">${esc(a.email)}</span>` : ''}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('almacenes','${jsq(a.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
+          <button class="act-btn del" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SHARED: Toggle approval / reject / edit for talleres, almacenes, clubs, motos ────
+
+function reloadSectionTable(table) {
+  if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
+  else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
+  else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
+  else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+  else if (table === 'riders') { sectionLoaded.riders = false; loadRiders(); }
+  else if (table === 'sellos') { sectionLoaded.sellos = false; loadSellos(); }
+  else if (table === 'grueros') { reloadList(); }
+}
+
+async function toggleApproval(table, id, aprobado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
+
+async function deleteRecord(table, id, btn) {
+  if (!confirm('¿Borrar este registro permanentemente? Esta acción no se puede deshacer.')) return;
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'reject_record', table, id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo borrar'));
+  }
+}
+
+const EDIT_FIELDS = {
+  grueros: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'zona', label: 'Zona', type: 'text' },
+  ],
+  riders: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'apellido', label: 'Apellido', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'correo', label: 'Correo', type: 'text' },
+    { key: 'moto_marca', label: 'Marca de moto', type: 'text' },
+    { key: 'moto_modelo', label: 'Modelo de moto', type: 'text' },
+  ],
+  clubs: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'codigo', label: 'Código', type: 'text' },
+  ],
+  talleres: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'instagram', label: 'Instagram', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+  ],
+  almacenes: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'categorias', label: 'Categorías', type: 'text' },
+  ],
+  motos_venta: [
+    { key: 'titulo', label: 'Título', type: 'text' },
+    { key: 'precio', label: 'Precio', type: 'number' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'marca', label: 'Marca', type: 'text' },
+    { key: 'modelo', label: 'Modelo', type: 'text' },
+    { key: 'anio', label: 'Año', type: 'number' },
+    { key: 'kilometraje', label: 'Kilometraje', type: 'number' },
+    { key: 'cilindraje', label: 'Cilindraje', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+};
+
+let editModalState = { table: null, id: null };
+
+function openEditModalFor(table, id) {
+  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos };
+  const list = map[table] || [];
+  const record = list.find(r => String(r.id) === String(id));
+  if (record) openEditModal(table, record);
+}
+
+function openEditModal(table, record) {
+  editModalState = { table, id: record.id };
+  const fields = EDIT_FIELDS[table] || [];
+  document.getElementById('editModalTitle').textContent = 'Modificar ' + (record.nombre || record.titulo || '');
+  const container = document.getElementById('editModalFields');
+  container.innerHTML = fields.map(f => {
+    const val = record[f.key] ?? '';
+    if (f.type === 'textarea') {
+      return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><textarea data-field="${f.key}" rows="3" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem">${esc(val)}</textarea></div>`;
+    }
+    return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><input type="${f.type}" data-field="${f.key}" value="${esc(val)}" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem"></div>`;
+  }).join('');
+  document.getElementById('editModalErr').style.display = 'none';
+  document.getElementById('editModal').classList.remove('hide');
+}
+
+function hideEditModal() {
+  document.getElementById('editModal').classList.add('hide');
+}
+
+async function saveEditModal() {
+  const { table, id } = editModalState;
+  const container = document.getElementById('editModalFields');
+  const fields = {};
+  container.querySelectorAll('[data-field]').forEach(el => {
+    fields[el.dataset.field] = el.type === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value;
+  });
+  const errEl = document.getElementById('editModalErr');
+  errEl.style.display = 'none';
+  const data = await callAdmin({ action: 'update_record', table, id, fields }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    hideEditModal();
+    reloadSectionTable(table);
+  } else {
+    errEl.textContent = data.error || 'No se pudo guardar.';
+    errEl.style.display = 'block';
+  }
 }
 </script>
 </body>

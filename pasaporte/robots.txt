@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /
+Disallow: /perfil.html
+Disallow: /clubes.html
+Disallow: /mapa.html
+Disallow: /pasaporte.html
+Disallow: /album.html
+Disallow: /sello.html
+Disallow: /compartir.html
+Disallow: /reset.html
+Disallow: /404.html
+
+Sitemap: https://pasaporte.ridera.com.co/sitemap.xml

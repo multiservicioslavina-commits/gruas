@@ -604,7 +604,7 @@ async function handleRegistration(from: string, message: string, conv: { state: 
     if (msg2.length < 2 || msg2.length > 60) return "No pille bien el nombre, como te llamas?";
     const nombre = message.trim().split(/\s+/).map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
     await setConvState(from, "waiting_moto", { ...conv.data, nombre });
-    return `${nombre}! Buena, parce. Que moto tienes? Dime marca y modelo:\nHonda CB500X 2022\nYamaha MT-07 700cc\n\nSi no tienes moto aun, dime \"no tengo\" y listo.`;
+    return `${nombre}! Buena, parce. Que moto tienes? Dime marca y modelo:\nHonda CB500X 2022\nYamaha MT-07 700cc\n\nSi no tienes moto aun, dime "no tengo" y listo.`;
   }
   if (conv.state === "waiting_moto") {
     if (/no tengo|ninguna|no moto|sin moto|todavia no|aun no/.test(msg2)) {

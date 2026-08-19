@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Almacenes y repuestos para motos | Ridera</title>
+<meta name="description" content="Directorio de almacenes de repuestos para motos en Colombia. Encuentra bujías, filtros, aceites y más. Ubicación, precios y contacto directo.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Ridera">
+<meta property="og:title" content="Almacenes de repuestos para motos | Ridera">
+<meta property="og:description" content="Directorio de almacenes de repuestos para motos disponibles en Colombia.">
+<meta property="og:url" content="https://gruas.ridera.com.co/almacenes">
+<meta property="og:locale" content="es_CO">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Almacenes de repuestos para motos | Ridera">
+<meta name="twitter:description" content="Encuentra almacenes de repuestos para motos disponibles en tu ciudad en Colombia.">
+<link rel="canonical" href="https://gruas.ridera.com.co/almacenes">
+
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0e0e; --surface: #1a1a1a; --surface2: #222;
+    --border: #2a2a2a; --accent: #E85D20; --text: #f0f0f0; --muted: #888;
+    --orange: #E85D20;
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); }
+
+  nav {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 1.5rem;
+    display: flex; align-items: center; gap: 1rem; height: 56px;
+    position: sticky; top: 0; z-index: 50;
+  }
+  .nav-brand { font-weight: 700; color: var(--accent); text-decoration: none; font-size: 1.1rem; }
+  .nav-sep { color: var(--border); }
+  .nav-sub { color: var(--muted); font-size: 0.9rem; }
+
+  .hero-stripe {
+    background: repeating-linear-gradient(45deg, var(--orange) 0 14px, #0d0d0d 14px 28px);
+    height: 6px;
+  }
+
+  .hero-section {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 2rem 1rem 1.5rem;
+    text-align: center;
+  }
+  .hero-section h1 { font-size: 1.75rem; font-weight: 800; margin-bottom: 0.4rem; }
+  .hero-section p { color: var(--muted); font-size: 0.95rem; max-width: 480px; margin: 0 auto; }
+
+  .container { max-width: 1100px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+  /* FILTERS */
+  .filters {
+    display: flex; flex-wrap: wrap; gap: 0.5rem;
+    margin-bottom: 1.5rem; align-items: center;
+  }
+  .filter-label { font-size: 0.8rem; color: var(--muted); margin-right: 0.25rem; }
+  .filter-btn {
+    font-size: 0.82rem; font-weight: 500;
+    padding: 0.35rem 0.9rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: var(--accent); color: var(--text); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+
+  /* SEARCH */
+  .search-wrap { margin-bottom: 1.25rem; }
+  .search-input {
+    width: 100%; max-width: 360px;
+    background: var(--surface); border: 1px solid var(--border);
+    color: var(--text); font-size: 0.9rem;
+    padding: 0.55rem 1rem; border-radius: 8px; outline: none;
+    transition: border-color 0.15s;
+  }
+  .search-input::placeholder { color: var(--muted); }
+  .search-input:focus { border-color: var(--accent); }
+
+  /* STATS BAR */
+  .stats-bar { font-size: 0.82rem; color: var(--muted); margin-bottom: 1.25rem; }
+  .stats-bar span { color: var(--text); font-weight: 600; }
+
+  /* GRID */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+
+  /* CARD */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 1.25rem;
+    display: flex; flex-direction: column; gap: 0.75rem;
+    transition: border-color 0.15s, transform 0.15s;
+    text-decoration: none;
+    color: inherit;
+  }
+  .card:hover { border-color: var(--accent); transform: translateY(-2px); }
+
+  .card-header { display: flex; align-items: flex-start; gap: 0.875rem; }
+  .card-icon {
+    width: 48px; height: 48px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--accent), #d94d1a);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.5rem; flex-shrink: 0; color: #fff;
+  }
+  .card-name { font-weight: 700; font-size: 1rem; line-height: 1.25; }
+  .card-city { font-size: 0.8rem; color: var(--muted); margin-top: 0.15rem; }
+
+  .card-info { display: flex; gap: 1rem; font-size: 0.82rem; margin: 0.5rem 0; }
+  .info-item { display: flex; flex-direction: column; }
+  .info-label { color: var(--muted); font-size: 0.75rem; }
+  .info-value { color: var(--text); font-weight: 500; }
+
+  .chip-row { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .chip {
+    display: inline-flex; align-items: center;
+    font-size: 0.75rem; padding: 0.2rem 0.6rem;
+    border-radius: 20px; border: 1px solid var(--border);
+    background: rgba(232,93,32,0.07); border-color: rgba(232,93,32,0.25); color: #f0a070;
+  }
+
+  .card-footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; }
+  .btn-ver {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: var(--accent); color: #fff;
+    font-size: 0.82rem; font-weight: 600;
+    padding: 0.45rem 1rem;
+    border-radius: 8px; text-decoration: none;
+    transition: background 0.15s; white-space: nowrap;
+  }
+  .btn-ver:hover { background: #c94e18; }
+
+  /* LOADING / EMPTY */
+  #loading, #empty {
+    min-height: 40vh;
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column; gap: 1rem; color: var(--muted);
+  }
+  #empty { display: none; }
+  .spinner { width: 32px; height: 32px; border: 3px solid rgba(255,255,255,0.1); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* FOOTER */
+  footer {
+    text-align: center; padding: 2rem 1rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted); font-size: 0.82rem;
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  @media (max-width: 480px) {
+    .hero-section h1 { font-size: 1.35rem; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <a class="nav-brand" href="https://ridera.com.co">Ridera</a>
+  <span class="nav-sep">›</span>
+  <span class="nav-sub">Almacenes</span>
+</nav>
+<div class="hero-stripe"></div>
+
+<div class="hero-section">
+  <h1>Almacenes de repuestos</h1>
+  <p>Encuentra almacenes de repuestos para tu moto en Colombia. Consulta precios, stock y contacta directo.</p>
+</div>
+
+<div class="container">
+  <div id="loading"><div class="spinner"></div><span>Cargando almacenes…</span></div>
+
+  <div id="mainContent" style="display:none">
+    <div class="search-wrap">
+      <input class="search-input" type="search" id="searchInput" placeholder="Buscar por nombre o ciudad…" autocomplete="off">
+    </div>
+    <div class="filters" id="cityFilters">
+      <span class="filter-label">Ciudad:</span>
+      <button class="filter-btn active" data-city="all">Todas</button>
+    </div>
+    <div class="stats-bar" id="statsBar"></div>
+    <div class="grid" id="grid"></div>
+    <div id="empty"><span>No se encontraron almacenes con ese filtro.</span></div>
+  </div>
+</div>
+
+<footer>
+  <a href="https://ridera.com.co">Ridera.com.co</a> &mdash; Repuestos para motos en Colombia
+</footer>
+
+<script>
+const SB_URL  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let allAlmacenes = [];
+let activeCity = 'all';
+let searchTerm = '';
+
+async function loadAlmacenes() {
+  const url = `${SB_URL}/rest/v1/almacenes?status=eq.activo&select=id,nombre,slug,ciudad,telefono,email,categorias`;
+  const res = await fetch(url, {
+    headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` }
+  });
+  if (!res.ok) throw new Error('Error cargando almacenes');
+  return res.json();
+}
+
+async function getProductCount(almacenId) {
+  const url = `${SB_URL}/rest/v1/almacen_productos?almacen_id=eq.${almacenId}&select=id`;
+  const res = await fetch(url, {
+    headers: { 'apikey': SB_ANON, 'Authorization': `Bearer ${SB_ANON}` }
+  });
+  if (!res.ok) return 0;
+  const rows = await res.json();
+  return rows.length;
+}
+
+function buildCard(a, productCount) {
+  const categorias = (typeof a.categorias === 'string' ? a.categorias.split(',').map(c => c.trim()) : a.categorias || []).filter(Boolean);
+  const catalogLink = `/almacen/${a.slug || (a.nombre || '').replace(/\s+/g, '-').toLowerCase()}`;
+
+  const inner = `
+    <div class="card-header">
+      <div class="card-icon">📦</div>
+      <div style="flex: 1;">
+        <div class="card-name">${a.nombre || 'Almacén'}</div>
+        <div class="card-city">${a.ciudad || ''}</div>
+      </div>
+    </div>
+    <div class="card-info">
+      <div class="info-item">
+        <span class="info-label">Productos</span>
+        <span class="info-value">${productCount}</span>
+      </div>
+      <div class="info-item">
+        <span class="info-label">Teléfono</span>
+        <span class="info-value">${a.telefono ? '✓' : '–'}</span>
+      </div>
+    </div>
+    ${categorias.length ? `<div class="chip-row">${categorias.slice(0,4).map(c => `<span class="chip">${c}</span>`).join('')}${categorias.length > 4 ? `<span class="chip">+${categorias.length-4}</span>` : ''}</div>` : ''}
+    <div class="card-footer">
+      <a class="btn-ver" href="${catalogLink}">Ver catálogo →</a>
+    </div>`;
+
+  return `<a class="card" href="${catalogLink}">${inner}</a>`;
+}
+
+function uniqueCities(list) {
+  const cities = [...new Set(list.map(a => a.ciudad || '').filter(Boolean))].sort();
+  return cities;
+}
+
+function filtered() {
+  return allAlmacenes.filter(a => {
+    const ciudad = (a.ciudad || '').toLowerCase();
+    const nombre = (a.nombre || '').toLowerCase();
+    const cats = ((typeof a.categorias === 'string' ? a.categorias : a.categorias?.join(' ') || '') || '').toLowerCase();
+    const matchCity = activeCity === 'all' || ciudad === activeCity.toLowerCase();
+    const matchSearch = !searchTerm || nombre.includes(searchTerm) || ciudad.includes(searchTerm) || cats.includes(searchTerm);
+    return matchCity && matchSearch;
+  });
+}
+
+async function renderCards() {
+  const list = filtered();
+  const grid = document.getElementById('grid');
+  grid.innerHTML = '';
+
+  for (const a of list) {
+    const count = await getProductCount(a.id);
+    grid.innerHTML += buildCard(a, count);
+  }
+}
+
+function updateStats() {
+  const list = filtered();
+  document.getElementById('statsBar').innerHTML = `Mostrando <span>${list.length}</span> de <span>${allAlmacenes.length}</span> almacenes`;
+}
+
+function initFilters() {
+  const cities = uniqueCities(allAlmacenes);
+  const filterBar = document.getElementById('cityFilters');
+  cities.forEach(city => {
+    const btn = document.createElement('button');
+    btn.className = 'filter-btn';
+    btn.textContent = city;
+    btn.dataset.city = city;
+    btn.addEventListener('click', () => {
+      activeCity = city;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      updateStats();
+      renderCards();
+    });
+    filterBar.appendChild(btn);
+  });
+}
+
+document.getElementById('searchInput').addEventListener('input', (e) => {
+  searchTerm = e.target.value.toLowerCase();
+  updateStats();
+  renderCards();
+});
+
+async function init() {
+  try {
+    allAlmacenes = await loadAlmacenes();
+    initFilters();
+    updateStats();
+    await renderCards();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    if (!allAlmacenes.length) {
+      document.getElementById('empty').style.display = 'flex';
+    }
+  } catch (err) {
+    console.error(err);
+    document.getElementById('loading').innerHTML = '<span style="color: #f87171;">Error cargando almacenes</span>';
+  }
+}
+
+init();
+</script>
+
+</body>
+</html>
