@@ -372,6 +372,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="sidebar-item" data-tab="almacenes" onclick="showTab('almacenes')">
         <span class="sb-icon">🛒</span> Almacenes <span class="sb-badge" id="badgeAlmacenes" style="display:none">0</span>
       </div>
+      <div class="sidebar-item" data-tab="hoteles" onclick="showTab('hoteles')">
+        <span class="sb-icon">🏨</span> Hoteles <span class="sb-badge" id="badgeHoteles" style="display:none">0</span>
+      </div>
+      <div class="sidebar-item" data-tab="restaurantes" onclick="showTab('restaurantes')">
+        <span class="sb-icon">🍽️</span> Restaurantes <span class="sb-badge" id="badgeRestaurantes" style="display:none">0</span>
+      </div>
       <div class="sidebar-item" data-tab="rita" onclick="showTab('rita')">
         <span class="sb-icon">💬</span> Rita
       </div>
@@ -582,6 +588,46 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </table>
           </div>
         </div><!-- /tabAlmacenes -->
+
+        <!-- HOTELES -->
+        <div id="tabHoteles" style="display:none">
+          <div class="section-header">
+            <h2>🏨 Hoteles</h2>
+          </div>
+          <div class="filters" id="hotelesFilters">
+            <button class="filter-btn active" onclick="setHotelesFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setHotelesFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setHotelesFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Municipio / Subregión</th><th>Contacto</th><th>Parqueadero</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="hotelesBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabHoteles -->
+
+        <!-- RESTAURANTES -->
+        <div id="tabRestaurantes" style="display:none">
+          <div class="section-header">
+            <h2>🍽️ Restaurantes</h2>
+          </div>
+          <div class="filters" id="restaurantesFilters">
+            <button class="filter-btn active" onclick="setRestaurantesFilter('all',this)">Todos</button>
+            <button class="filter-btn" onclick="setRestaurantesFilter('pendientes',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setRestaurantesFilter('aprobados',this)">Aprobados</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr>
+                <th>Nombre</th><th>Municipio / Subregión</th><th>Contacto</th><th>Tipo cocina</th><th>Aprobado</th><th>Acciones</th>
+              </tr></thead>
+              <tbody id="restaurantesBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabRestaurantes -->
 
         <!-- RITA TAB -->
         <div id="tabRita" style="display:none">
@@ -806,7 +852,7 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','rita'];
+const ALL_TABS = ['despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','rita'];
 const TAB_ID_MAP = {
   despacho: 'tabDespacho',
   sellos: 'tabSellos',
@@ -816,6 +862,8 @@ const TAB_ID_MAP = {
   motos: 'tabMotos',
   talleres: 'tabTalleres',
   almacenes: 'tabAlmacenes',
+  hoteles: 'tabHoteles',
+  restaurantes: 'tabRestaurantes',
   rita: 'tabRita',
 };
 
@@ -850,6 +898,8 @@ function showTab(tab) {
   if (tab === 'motos' && !sectionLoaded.motos) loadMotos();
   if (tab === 'talleres' && !sectionLoaded.talleres) loadTalleres();
   if (tab === 'almacenes' && !sectionLoaded.almacenes) loadAlmacenes();
+  if (tab === 'hoteles' && !sectionLoaded.hoteles) loadHoteles();
+  if (tab === 'restaurantes' && !sectionLoaded.restaurantes) loadRestaurantes();
   if (tab === 'rita') {
     if (!ritaLoaded) loadRitaAnalytics();
     loadRitaContacts();
@@ -2240,6 +2290,114 @@ function renderAlmacenesTable() {
   }).join('');
 }
 
+// ── HOTELES ───────────────────────────────────────────────────────────────────
+let allHoteles = [], hotelesFilter = 'all';
+
+async function loadHoteles() {
+  const data = await callAdmin({ action: 'list_hoteles' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('hotelesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar hoteles.</td></tr>';
+    return;
+  }
+  sectionLoaded.hoteles = true;
+  allHoteles = data.hoteles || [];
+  const pendCount = allHoteles.filter(h => !h.aprobado).length;
+  updateBadge('badgeHoteles', pendCount || allHoteles.length);
+  renderHotelesTable();
+}
+
+function setHotelesFilter(f, btn) {
+  hotelesFilter = f;
+  document.querySelectorAll('#hotelesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderHotelesTable();
+}
+
+function renderHotelesTable() {
+  let rows = allHoteles;
+  if (hotelesFilter === 'pendientes') rows = rows.filter(h => !h.aprobado);
+  else if (hotelesFilter === 'aprobados') rows = rows.filter(h => !!h.aprobado);
+
+  const tbody = document.getElementById('hotelesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin hoteles que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(h => {
+    const apro = !!h.aprobado;
+    return `<tr>
+      <td><strong>${esc(h.nombre || '—')}</strong></td>
+      <td>${esc(h.municipio || '—')}${h.subregion ? `<br><span class="tel">${esc(h.subregion)}</span>` : ''}</td>
+      <td class="tel">${esc(h.telefono || '—')}${h.email ? `<br><span class="tel">${esc(h.email)}</span>` : ''}</td>
+      <td>${h.parqueadero_motos ? '✓ Sí' : '—'}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('hoteles','${jsq(h.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn del" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+// ── RESTAURANTES ──────────────────────────────────────────────────────────────
+let allRestaurantes = [], restaurantesFilter = 'all';
+
+async function loadRestaurantes() {
+  const data = await callAdmin({ action: 'list_restaurantes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('restaurantesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar restaurantes.</td></tr>';
+    return;
+  }
+  sectionLoaded.restaurantes = true;
+  allRestaurantes = data.restaurantes || [];
+  const pendCount = allRestaurantes.filter(r => !r.aprobado).length;
+  updateBadge('badgeRestaurantes', pendCount || allRestaurantes.length);
+  renderRestaurantesTable();
+}
+
+function setRestaurantesFilter(f, btn) {
+  restaurantesFilter = f;
+  document.querySelectorAll('#restaurantesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderRestaurantesTable();
+}
+
+function renderRestaurantesTable() {
+  let rows = allRestaurantes;
+  if (restaurantesFilter === 'pendientes') rows = rows.filter(r => !r.aprobado);
+  else if (restaurantesFilter === 'aprobados') rows = rows.filter(r => !!r.aprobado);
+
+  const tbody = document.getElementById('restaurantesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin restaurantes que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const apro = !!r.aprobado;
+    return `<tr>
+      <td><strong>${esc(r.nombre || '—')}</strong></td>
+      <td>${esc(r.municipio || '—')}${r.subregion ? `<br><span class="tel">${esc(r.subregion)}</span>` : ''}</td>
+      <td class="tel">${esc(r.telefono || '—')}${r.email ? `<br><span class="tel">${esc(r.email)}</span>` : ''}</td>
+      <td>${esc(r.tipo_cocina || '—')}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('restaurantes','${jsq(r.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn del" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
 // ── SHARED: Toggle approval / reject / edit for talleres, almacenes, clubs, motos ────
 
 function reloadSectionTable(table) {
@@ -2250,6 +2408,8 @@ function reloadSectionTable(table) {
   else if (table === 'riders') { sectionLoaded.riders = false; loadRiders(); }
   else if (table === 'sellos') { sectionLoaded.sellos = false; loadSellos(); }
   else if (table === 'grueros') { reloadList(); }
+  else if (table === 'hoteles') { sectionLoaded.hoteles = false; loadHoteles(); }
+  else if (table === 'restaurantes') { sectionLoaded.restaurantes = false; loadRestaurantes(); }
 }
 
 async function toggleApproval(table, id, aprobado, btn) {
