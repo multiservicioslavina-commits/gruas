@@ -8,9 +8,11 @@ name: Deploy Supabase Edge Functions
 #   - al hacer merge/push a main que toque las funciones o su config, y
 #   - manualmente desde la pestana Actions (boton "Run workflow").
 #
-# Solo despliega las funciones presentes en el repo. Las demas funciones que
-# viven solo en Supabase NO se tocan (el deploy es por-funcion, no borra las
-# que faltan). El verify_jwt de cada funcion sale de supabase/config.toml.
+# Despliega SOLO las funciones de la lista explicita FUNCIONES (abajo), no todo
+# lo que haya en supabase/functions/. Asi, aunque el repo tenga muchas funciones
+# exportadas como respaldo, solo se despliegan las que promovemos a proposito.
+# Para agregar una: validala, agregala a FUNCIONES y a supabase/config.toml.
+# El verify_jwt de cada funcion sale de supabase/config.toml.
 #
 # Requisito unico: agregar el secreto SUPABASE_ACCESS_TOKEN en
 #   GitHub -> Settings -> Secrets and variables -> Actions
@@ -32,6 +34,9 @@ concurrency:
 
 env:
   PROJECT_REF: vzzxsdtsaahhzyctvmhx
+  # Lista explicita de funciones a desplegar. Solo estas se suben.
+  # Agrega una funcion aqui SOLO cuando este validada y en config.toml.
+  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios"
 
 jobs:
   deploy:
@@ -50,7 +55,12 @@ jobs:
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
-      - name: Desplegar edge functions desde el repo
-        run: supabase functions deploy --project-ref "$PROJECT_REF"
+      - name: Desplegar edge functions (lista explicita)
+        run: |
+          for fn in $FUNCIONES; do
+            echo "::group::Deploy $fn"
+            supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
+            echo "::endgroup::"
+          done
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
