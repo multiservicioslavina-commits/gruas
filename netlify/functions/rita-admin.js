@@ -278,28 +278,28 @@ async function listMotos() {
 
 async function listTalleres() {
   const rows = await sbGet(
-    'talleres?select=id,nombre,ciudad,telefono,email,instagram,direccion,barrio,aprobado,logo_url,created_at&order=created_at.desc&limit=200'
+    'talleres?select=id,nombre,ciudad,telefono,email,instagram,direccion,barrio,aprobado,logo_url,estado,created_at&order=created_at.desc&limit=200'
   );
   return { ok: true, talleres: rows };
 }
 
 async function listAlmacenes() {
   const rows = await sbGet(
-    'almacenes?select=id,nombre,ciudad,telefono,email,direccion,barrio,aprobado,logo_url,slug,status,created_at&order=created_at.desc&limit=200'
+    'almacenes?select=id,nombre,ciudad,telefono,email,direccion,barrio,aprobado,logo_url,slug,status,estado,created_at&order=created_at.desc&limit=200'
   );
   return { ok: true, almacenes: rows };
 }
 
 async function listHoteles() {
   const rows = await sbGet(
-    'hoteles?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_alojamiento,parqueadero_motos,aprobado,created_at&order=created_at.desc&limit=200'
+    'hoteles?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_alojamiento,parqueadero_motos,aprobado,estado,created_at&order=created_at.desc&limit=200'
   );
   return { ok: true, hoteles: rows };
 }
 
 async function listRestaurantes() {
   const rows = await sbGet(
-    'restaurantes?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_cocina,parqueadero_motos,aprobado,created_at&order=created_at.desc&limit=200'
+    'restaurantes?select=id,nombre,municipio,subregion,telefono,email,whatsapp,contacto_nombre,tipo_cocina,parqueadero_motos,aprobado,estado,created_at&order=created_at.desc&limit=200'
   );
   return { ok: true, restaurantes: rows };
 }
@@ -455,6 +455,24 @@ async function getRiderProfile(riderId) {
   }
 }
 
+async function changeNegocioEstado(table, id, estado) {
+  const allowed = ['talleres', 'almacenes', 'hoteles', 'restaurantes'];
+  const validEstados = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'];
+  if (!allowed.includes(table)) return { ok: false, error: 'Tabla no válida' };
+  if (!validEstados.includes(estado)) return { ok: false, error: 'Estado no válido' };
+
+  try {
+    const res = await fetch(
+      `${SB_URL}/rest/v1/${table}?id=eq.${encodeURIComponent(id)}`,
+      { method: 'PATCH', headers: { ...sbHeaders, Prefer: 'return=minimal' }, body: JSON.stringify({ estado }) }
+    );
+    return { ok: res.ok };
+  } catch (err) {
+    console.error('changeNegocioEstado error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 // ── Handler ────────────────────────────────────────────────────────────
 
 exports.handler = async (event) => {
@@ -543,6 +561,10 @@ exports.handler = async (event) => {
     case 'get_rider_profile':
       if (!body.rider_id) return json({ ok: false, error: 'Falta rider_id' });
       return json(await getRiderProfile(body.rider_id));
+
+    case 'change_negocio_estado':
+      if (!body.table || !body.id || !body.estado) return json({ ok: false, error: 'Faltan table, id o estado' });
+      return json(await changeNegocioEstado(body.table, body.id, body.estado));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

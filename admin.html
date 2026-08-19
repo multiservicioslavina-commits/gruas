@@ -124,6 +124,11 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .metric-value { font-size: 2.2rem; font-weight: 700; color: var(--or); margin-bottom: 0.35rem; }
     .metric-sub { font-size: 0.75rem; color: var(--mu); }
 
+    /* PIPELINE BUTTONS */
+    .pipeline-btn { padding: 0.35rem 0.65rem; font-size: 0.7rem; border: 1px solid var(--line); background: transparent; color: var(--mu); border-radius: 4px; cursor: pointer; border-left: 3px solid #888; transition: all 0.15s; }
+    .pipeline-btn:hover { border-color: var(--or); color: var(--text); }
+    .pipeline-btn.active { background: rgba(232,93,32,0.1); border-color: var(--or); color: var(--or); font-weight: 600; }
+
     /* TABS (kept for any inner use, but main tabs replaced by sidebar) */
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
@@ -2314,16 +2319,25 @@ function renderTalleresTable() {
 
   tbody.innerHTML = rows.map(t => {
     const apro = !!t.aprobado;
+    const estado = t.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('talleres','${jsq(t.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
     return `<tr>
       <td><strong>${esc(t.nombre || '—')}</strong>${t.direccion ? `<br><span class="tel">${esc(t.direccion)}${t.barrio ? ', ' + esc(t.barrio) : ''}</span>` : ''}</td>
       <td>${esc(t.ciudad || '—')}</td>
       <td class="tel">${esc(t.telefono || '—')}${t.email ? `<br><span class="tel">${esc(t.email)}</span>` : ''}</td>
-      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
+          ${pipelineOptions}
+        </div>
+      </td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('talleres','${jsq(t.id)}',${!apro},this)">
-            ${apro ? 'Desaprobar' : '✓ Aprobar'}
-          </button>
           <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2369,17 +2383,25 @@ function renderAlmacenesTable() {
   }
 
   tbody.innerHTML = rows.map(a => {
-    const apro = !!a.aprobado;
+    const estado = a.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('almacenes','${jsq(a.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
     return `<tr>
       <td><strong>${esc(a.nombre || '—')}</strong>${a.direccion ? `<br><span class="tel">${esc(a.direccion)}${a.barrio ? ', ' + esc(a.barrio) : ''}</span>` : ''}</td>
       <td>${esc(a.ciudad || '—')}</td>
       <td class="tel">${esc(a.telefono || '—')}${a.email ? `<br><span class="tel">${esc(a.email)}</span>` : ''}</td>
-      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
+          ${pipelineOptions}
+        </div>
+      </td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('almacenes','${jsq(a.id)}',${!apro},this)">
-            ${apro ? 'Desaprobar' : '✓ Aprobar'}
-          </button>
           <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2423,18 +2445,27 @@ function renderHotelesTable() {
   }
 
   tbody.innerHTML = rows.map(h => {
-    const apro = !!h.aprobado;
+    const estado = h.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('hoteles','${jsq(h.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
     return `<tr>
       <td><strong>${esc(h.nombre || '—')}</strong></td>
       <td>${esc(h.municipio || '—')}${h.subregion ? `<br><span class="tel">${esc(h.subregion)}</span>` : ''}</td>
       <td class="tel">${esc(h.telefono || '—')}${h.email ? `<br><span class="tel">${esc(h.email)}</span>` : ''}</td>
       <td>${h.parqueadero_motos ? '✓ Sí' : '—'}</td>
-      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
+          ${pipelineOptions}
+        </div>
+      </td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('hoteles','${jsq(h.id)}',${!apro},this)">
-            ${apro ? 'Desaprobar' : '✓ Aprobar'}
-          </button>
+          <button class="act-btn" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
@@ -2477,18 +2508,27 @@ function renderRestaurantesTable() {
   }
 
   tbody.innerHTML = rows.map(r => {
-    const apro = !!r.aprobado;
+    const estado = r.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('restaurantes','${jsq(r.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
     return `<tr>
       <td><strong>${esc(r.nombre || '—')}</strong></td>
       <td>${esc(r.municipio || '—')}${r.subregion ? `<br><span class="tel">${esc(r.subregion)}</span>` : ''}</td>
       <td class="tel">${esc(r.telefono || '—')}${r.email ? `<br><span class="tel">${esc(r.email)}</span>` : ''}</td>
       <td>${esc(r.tipo_cocina || '—')}</td>
-      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
+          ${pipelineOptions}
+        </div>
+      </td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('restaurantes','${jsq(r.id)}',${!apro},this)">
-            ${apro ? 'Desaprobar' : '✓ Aprobar'}
-          </button>
+          <button class="act-btn" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
@@ -2836,6 +2876,16 @@ async function openRiderProfile(riderId) {
 
 function closeRiderProfile() {
   document.getElementById('riderProfileModal').classList.add('hide');
+}
+
+// ── PIPELINE DE NEGOCIOS ───────────────────────────────────────────────
+async function changeNegocioEstado(table, id, estado) {
+  const data = await callAdmin({ action: 'change_negocio_estado', table, id, estado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    alert('Error: ' + (data.error || 'No se pudo cambiar estado'));
+  }
 }
 </script>
 </body>
