@@ -595,7 +595,15 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="tabRiders" style="display:none">
           <div class="section-header">
             <h2>🏍️ Riders</h2>
-            <input class="search-input" id="ridersSearch" type="text" placeholder="Buscar rider..." oninput="filterRidersTable()">
+            <div style="display:flex;gap:0.5rem;flex-wrap:wrap;align-items:center">
+              <input class="search-input" id="ridersSearch" type="text" placeholder="Buscar rider..." oninput="filterRidersTable()">
+              <select class="search-input" id="ridersCiudadFilter" onchange="filterRidersTable()" style="width:auto">
+                <option value="">Todas las ciudades</option>
+              </select>
+              <label style="display:flex;align-items:center;gap:0.35rem;font-size:0.8rem;color:var(--mu);white-space:nowrap">
+                <input type="checkbox" id="ridersSoatFilter" onchange="filterRidersTable()"> SOAT por vencer
+              </label>
+            </div>
           </div>
           <div class="table-wrap">
             <table>
@@ -2205,7 +2213,16 @@ async function loadRiders() {
   sectionLoaded.riders = true;
   allRiders = data.riders || [];
   updateBadge('badgeRiders', allRiders.length);
+  populateRidersCiudadFilter();
   renderRidersTable();
+}
+
+function populateRidersCiudadFilter() {
+  const sel = document.getElementById('ridersCiudadFilter');
+  if (!sel) return;
+  const ciudades = [...new Set(allRiders.map(r => r.ciudad).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todas las ciudades</option>' +
+    ciudades.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
 }
 
 function filterRidersTable() {
@@ -2214,6 +2231,8 @@ function filterRidersTable() {
 
 function renderRidersTable() {
   const q = (document.getElementById('ridersSearch')?.value || '').toLowerCase();
+  const ciudadFilter = document.getElementById('ridersCiudadFilter')?.value || '';
+  const soatFilter = document.getElementById('ridersSoatFilter')?.checked || false;
   let rows = allRiders;
   if (q) rows = rows.filter(r =>
     (r.nombre||'').toLowerCase().includes(q) ||
@@ -2221,6 +2240,8 @@ function renderRidersTable() {
     (r.ciudad||'').toLowerCase().includes(q) ||
     (r.telefono||'').includes(q)
   );
+  if (ciudadFilter) rows = rows.filter(r => r.ciudad === ciudadFilter);
+  if (soatFilter) rows = rows.filter(r => r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000);
 
   const tbody = document.getElementById('ridersBody');
   if (!rows.length) {
