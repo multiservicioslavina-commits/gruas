@@ -208,6 +208,7 @@ Deno.serve(async (req) => {
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
+      'survey_create', 'survey_list', 'survey_results',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1184,6 +1185,102 @@ Deno.serve(async (req) => {
       }
       logAudit(auth.username!, 'meta_broadcast', { channel, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CREATE SURVEY (WhatsApp interactive buttons, max 3 options)
+    if (action === 'survey_create') {
+      const { pregunta, opciones, ciudad } = body
+      if (!pregunta || !Array.isArray(opciones) || opciones.length < 2 || opciones.length > 3) {
+        return new Response(JSON.stringify({ ok: false, error: 'La encuesta necesita una pregunta y entre 2 y 3 opciones' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: encuesta, error: insertError } = await sbClient.from('encuestas').insert({
+        pregunta, opciones, ciudad: ciudad || null, created_by: auth.username!,
+      }).select().single()
+      if (insertError) {
+        return new Response(JSON.stringify({ ok: false, error: insertError.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number').eq('opted_in', true)
+      contacts = contacts || []
+      if (ciudad) {
+        const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+        const ciudadByPhoneSuffix = new Map<string, string>()
+        for (const r of riders || []) {
+          const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+          if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+        }
+        contacts = contacts.filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        })
+      }
+
+      const buttons = opciones.map((op: { label: string }, i: number) => ({
+        type: 'reply', reply: { id: `enc:${encuesta.id}:${i}`, title: String(op.label).slice(0, 20) },
+      }))
+
+      let sent = 0, errors = 0
+      for (const c of contacts) {
+        try {
+          const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: c.phone_number,
+              type: 'interactive',
+              interactive: { type: 'button', body: { text: pregunta }, action: { buttons } },
+            }),
+          })
+          if (res.ok) sent++
+          else errors++
+        } catch { errors++ }
+        await new Promise((r) => setTimeout(r, 200))
+      }
+
+      await sbClient.from('encuestas').update({ sent_count: sent }).eq('id', encuesta.id)
+      logAudit(auth.username!, 'survey_create', { encuesta_id: encuesta.id, pregunta, sent, errors })
+      return new Response(JSON.stringify({ ok: true, encuesta, sent, errors, total: contacts.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST SURVEYS
+    if (action === 'survey_list') {
+      const { data: encuestas, error } = await sbClient.from('encuestas').select('*').order('created_at', { ascending: false }).limit(50)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, encuestas: encuestas || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SURVEY RESULTS (counts per option)
+    if (action === 'survey_results') {
+      const { encuestaId } = body
+      if (!encuestaId) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el id de la encuesta' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: respuestas, error } = await sbClient.from('encuesta_respuestas').select('opcion_label').eq('encuesta_id', encuestaId)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const counts: Record<string, number> = {}
+      for (const r of respuestas || []) counts[r.opcion_label] = (counts[r.opcion_label] || 0) + 1
+      return new Response(JSON.stringify({ ok: true, counts, total: (respuestas || []).length }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }

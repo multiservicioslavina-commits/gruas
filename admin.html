@@ -953,6 +953,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div id="metaResult" style="display:none"></div>
           </div>
 
+          <!-- Encuestas WhatsApp -->
+          <div class="rita-sub">Encuestas WhatsApp</div>
+          <div class="bc-form">
+            <div class="bc-field">
+              <label>Pregunta</label>
+              <input type="text" id="svQuestion" placeholder="ej: ¿Qué te gustaría ver más en Ridera?" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+            </div>
+            <div class="bc-field">
+              <label>Opciones (2 o 3 — se muestran como botones)</label>
+              <div id="svOptions" style="display:flex;flex-direction:column;gap:0.4rem">
+                <input type="text" class="sv-opt" placeholder="Opción 1" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+                <input type="text" class="sv-opt" placeholder="Opción 2" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+                <input type="text" class="sv-opt" placeholder="Opción 3 (opcional)" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+              </div>
+            </div>
+            <button class="bc-send admin-only" id="svSendBtn" onclick="sendSurvey()">
+              Enviar encuesta
+            </button>
+            <div id="svResult" style="display:none"></div>
+            <div class="rita-sub" style="margin-top:1.25rem">Encuestas enviadas</div>
+            <button class="btn-sm" onclick="loadSurveys()">🔄 Actualizar lista</button>
+            <div id="surveysList" style="margin-top:0.75rem;font-size:0.85rem;color:var(--mu)">Cargando...</div>
+          </div>
+
           <!-- Email Marketing -->
           <div class="rita-sub">Email Marketing</div>
           <div class="bc-form">
@@ -1911,6 +1935,7 @@ async function loadRitaAnalytics() {
   loadCampaigns();
   loadTelegramAudience();
   loadMetaAudience();
+  loadSurveys();
 }
 
 async function loadBroadcastAudience() {
@@ -2428,6 +2453,72 @@ async function sendMetaBroadcast() {
     resultEl.textContent = data.error || 'Error al enviar broadcast.';
   }
   resultEl.style.display = 'block';
+}
+
+// ── Encuestas WhatsApp ──────────────────────────────────────────────────
+
+async function sendSurvey() {
+  const pregunta = document.getElementById('svQuestion').value.trim();
+  const opciones = Array.from(document.querySelectorAll('.sv-opt'))
+    .map(i => i.value.trim()).filter(Boolean).map(label => ({ label }));
+  const resultEl = document.getElementById('svResult');
+
+  if (!pregunta || opciones.length < 2) {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = 'Escribe la pregunta y al menos 2 opciones.';
+    resultEl.style.display = 'block';
+    return;
+  }
+  if (!confirm(`¿Enviar esta encuesta a todos los contactos suscritos?\n\n"${pregunta}"`)) return;
+
+  const btn = document.getElementById('svSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'survey_create', pregunta, opciones }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar encuesta';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+    document.getElementById('svQuestion').value = '';
+    document.querySelectorAll('.sv-opt').forEach(i => i.value = '');
+    loadSurveys();
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar la encuesta.';
+  }
+  resultEl.style.display = 'block';
+}
+
+async function loadSurveys() {
+  const box = document.getElementById('surveysList');
+  box.textContent = 'Cargando...';
+  const data = await callAdmin({ action: 'survey_list' }).catch(() => ({ ok: false }));
+  if (!data.ok) { box.innerHTML = '<span style="color:#f87171">Error al cargar encuestas.</span>'; return; }
+  const encuestas = data.encuestas || [];
+  if (!encuestas.length) { box.textContent = 'No hay encuestas enviadas.'; return; }
+  box.innerHTML = encuestas.map(e => `
+    <div style="padding:0.6rem 0;border-bottom:1px solid var(--line)">
+      <div style="color:var(--text);font-weight:600">${esc(e.pregunta)}</div>
+      <div style="font-size:0.75rem;margin-bottom:0.4rem">Enviada a ${e.sent_count ?? 0} · ${new Date(e.created_at).toLocaleString('es-CO')}</div>
+      <div id="svResults-${e.id}" style="font-size:0.78rem"><a href="#" onclick="loadSurveyResults('${e.id}');return false" style="color:var(--or)">Ver resultados</a></div>
+    </div>
+  `).join('');
+}
+
+async function loadSurveyResults(id) {
+  const box = document.getElementById('svResults-' + id);
+  box.textContent = 'Cargando...';
+  const data = await callAdmin({ action: 'survey_results', encuestaId: id }).catch(() => ({ ok: false }));
+  if (!data.ok) { box.innerHTML = '<span style="color:#f87171">Error al cargar resultados.</span>'; return; }
+  const counts = data.counts || {};
+  const entries = Object.entries(counts);
+  if (!entries.length) { box.textContent = 'Sin respuestas todavía.'; return; }
+  box.innerHTML = entries.map(([label, n]) => `${esc(label)}: <strong>${n}</strong>`).join(' · ') + ` (total: ${data.total})`;
 }
 
 // ── Email Marketing ───────────────────────────────────────────────────
