@@ -875,10 +875,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <button class="bc-add-param" onclick="addBcParam()">+ Agregar parámetro</button>
               <div style="font-size:0.72rem;color:var(--mu);margin-top:0.4rem">Usa <code>{{nombre}}</code> como valor para insertar el nombre del contacto automáticamente.</div>
             </div>
+            <div class="bc-field">
+              <label>Segmentar por ciudad (opcional)</label>
+              <select id="bcCiudad" onchange="loadBroadcastAudience()" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+                <option value="">Todas las ciudades</option>
+              </select>
+            </div>
             <div class="bc-preview" id="bcPreview">
               Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
             </div>
-            <button class="bc-send" id="bcSendBtn" onclick="sendBroadcast()">
+            <button class="bc-send admin-only" id="bcSendBtn" onclick="sendBroadcast()">
               Enviar broadcast
             </button>
             <div id="bcResult" style="display:none"></div>
@@ -1796,6 +1802,21 @@ async function loadRitaAnalytics() {
 
   renderIntentBars(data.intentCounts || {});
   renderDayChart(data.perDay || {});
+  loadBroadcastAudience();
+}
+
+async function loadBroadcastAudience() {
+  const ciudad = document.getElementById('bcCiudad').value;
+  const data = await callAdmin({ action: 'broadcast_audience', ciudad }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+  document.getElementById('bcAudience').textContent = data.total;
+  if (data.ciudades) {
+    const sel = document.getElementById('bcCiudad');
+    const current = sel.value;
+    sel.innerHTML = '<option value="">Todas las ciudades</option>' +
+      data.ciudades.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+    sel.value = current;
+  }
 }
 
 const INTENT_COLORS = {
@@ -2129,14 +2150,16 @@ async function sendBroadcast() {
   }
 
   const audience = document.getElementById('bcAudience').textContent;
-  if (!confirm(`¿Enviar template "${template}" a ${audience} contactos suscritos?\n\nEsta acción no se puede deshacer.`)) return;
+  const ciudad = document.getElementById('bcCiudad').value;
+  const audienceLabel = ciudad ? `${audience} contactos en ${ciudad}` : `${audience} contactos suscritos`;
+  if (!confirm(`¿Enviar template "${template}" a ${audienceLabel}?\n\nEsta acción no se puede deshacer.`)) return;
 
   const btn = document.getElementById('bcSendBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span> Enviando...';
   resultEl.style.display = 'none';
 
-  const data = await callAdmin({ action: 'broadcast', template, language: lang, params }).catch(() => ({ ok: false }));
+  const data = await callAdmin({ action: 'broadcast', template, language: lang, params, ciudad }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast';
