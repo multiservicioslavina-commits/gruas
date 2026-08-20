@@ -172,6 +172,7 @@ Deno.serve(async (req) => {
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
+      'campaign_create', 'campaign_list', 'campaign_cancel',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1010,6 +1011,72 @@ Deno.serve(async (req) => {
 
       logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CREATE SCHEDULED CAMPAIGN
+    if (action === 'campaign_create') {
+      const { template, language, params, ciudad, mediaUrl, mediaType, scheduledAt } = body
+      if (!template || !scheduledAt) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el template o la fecha programada' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: campaign, error } = await sbClient.from('broadcast_campaigns').insert({
+        template,
+        language: language || 'es_CO',
+        params: Array.isArray(params) ? params : [],
+        ciudad: ciudad || null,
+        media_url: mediaUrl || null,
+        media_type: ['image', 'video', 'document'].includes(mediaType) ? mediaType : null,
+        scheduled_at: scheduledAt,
+        created_by: auth.username!,
+      }).select().single()
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'campaign_create', { campaign_id: campaign.id, template, scheduledAt })
+      return new Response(JSON.stringify({ ok: true, campaign }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST SCHEDULED CAMPAIGNS
+    if (action === 'campaign_list') {
+      const { data: campaigns, error } = await sbClient
+        .from('broadcast_campaigns')
+        .select('*')
+        .order('scheduled_at', { ascending: false })
+        .limit(100)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, campaigns: campaigns || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CANCEL SCHEDULED CAMPAIGN
+    if (action === 'campaign_cancel') {
+      const { campaignId } = body
+      if (!campaignId) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el id de la campaña' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('broadcast_campaigns').update({ status: 'canceled' }).eq('id', campaignId).eq('status', 'pending')
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'campaign_cancel', { campaign_id: campaignId })
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
