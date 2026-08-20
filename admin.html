@@ -893,6 +893,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <input type="text" id="bcMediaUrl" placeholder="URL pública del archivo (https://...)" style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
               </div>
             </div>
+            <div class="bc-field">
+              <label>Programar envío (opcional — vacío = enviar ahora)</label>
+              <input type="datetime-local" id="bcScheduleAt" style="background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+            </div>
             <div class="bc-preview" id="bcPreview">
               Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
             </div>
@@ -900,6 +904,13 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               Enviar broadcast
             </button>
             <div id="bcResult" style="display:none"></div>
+          </div>
+
+          <!-- Campañas programadas -->
+          <div class="rita-sub">Campañas programadas</div>
+          <div class="bc-form">
+            <button class="btn-sm" onclick="loadCampaigns()">🔄 Actualizar lista</button>
+            <div id="campaignsList" style="margin-top:0.75rem;font-size:0.85rem;color:var(--mu)">Cargando...</div>
           </div>
 
           <!-- Email Marketing -->
@@ -1857,6 +1868,7 @@ async function loadRitaAnalytics() {
   renderIntentBars(data.intentCounts || {});
   renderDayChart(data.perDay || {});
   loadBroadcastAudience();
+  loadCampaigns();
 }
 
 async function loadBroadcastAudience() {
@@ -2206,6 +2218,43 @@ async function sendBroadcast() {
   const audience = document.getElementById('bcAudience').textContent;
   const ciudad = document.getElementById('bcCiudad').value;
   const audienceLabel = ciudad ? `${audience} contactos en ${ciudad}` : `${audience} contactos suscritos`;
+  const scheduleAt = document.getElementById('bcScheduleAt').value;
+  const mediaUrl = document.getElementById('bcMediaUrl').value.trim();
+  const mediaType = document.getElementById('bcMediaType').value;
+
+  if (scheduleAt) {
+    const scheduledAt = new Date(scheduleAt).toISOString();
+    if (new Date(scheduledAt) <= new Date()) {
+      resultEl.className = 'bc-result err';
+      resultEl.textContent = 'La fecha programada debe ser futura.';
+      resultEl.style.display = 'block';
+      return;
+    }
+    if (!confirm(`¿Programar template "${template}" para ${audienceLabel} el ${new Date(scheduledAt).toLocaleString('es-CO')}?`)) return;
+
+    const btn = document.getElementById('bcSendBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="spin"></span> Programando...';
+    resultEl.style.display = 'none';
+
+    const data = await callAdmin({ action: 'campaign_create', template, language: lang, params, ciudad, mediaUrl, mediaType, scheduledAt }).catch(() => ({ ok: false }));
+
+    btn.disabled = false;
+    btn.innerHTML = 'Enviar broadcast';
+
+    if (data.ok) {
+      resultEl.className = 'bc-result ok';
+      resultEl.textContent = `Campaña programada para ${new Date(scheduledAt).toLocaleString('es-CO')}.`;
+      document.getElementById('bcScheduleAt').value = '';
+      loadCampaigns();
+    } else {
+      resultEl.className = 'bc-result err';
+      resultEl.textContent = data.error || 'Error al programar la campaña.';
+    }
+    resultEl.style.display = 'block';
+    return;
+  }
+
   if (!confirm(`¿Enviar template "${template}" a ${audienceLabel}?\n\nEsta acción no se puede deshacer.`)) return;
 
   const btn = document.getElementById('bcSendBtn');
@@ -2213,8 +2262,6 @@ async function sendBroadcast() {
   btn.innerHTML = '<span class="spin"></span> Enviando...';
   resultEl.style.display = 'none';
 
-  const mediaUrl = document.getElementById('bcMediaUrl').value.trim();
-  const mediaType = document.getElementById('bcMediaType').value;
   const data = await callAdmin({ action: 'broadcast', template, language: lang, params, ciudad, mediaUrl, mediaType }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
@@ -2232,6 +2279,32 @@ async function sendBroadcast() {
     resultEl.textContent = data.error || 'Error al enviar broadcast.';
   }
   resultEl.style.display = 'block';
+}
+
+async function loadCampaigns() {
+  const box = document.getElementById('campaignsList');
+  box.textContent = 'Cargando...';
+  const data = await callAdmin({ action: 'campaign_list' }).catch(() => ({ ok: false }));
+  if (!data.ok) { box.innerHTML = '<span style="color:#f87171">Error al cargar campañas.</span>'; return; }
+  const campaigns = data.campaigns || [];
+  if (!campaigns.length) { box.textContent = 'No hay campañas programadas.'; return; }
+  const statusLabels = { pending: '⏳ Pendiente', sent: '✅ Enviada', canceled: '🚫 Cancelada', error: '⚠️ Error' };
+  box.innerHTML = campaigns.map(c => `
+    <div style="padding:0.6rem 0;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:0.5rem">
+      <div>
+        <div style="color:var(--text);font-weight:600">${esc(c.template)} ${c.ciudad ? `· ${esc(c.ciudad)}` : ''}</div>
+        <div style="font-size:0.75rem">${statusLabels[c.status] || c.status} · ${new Date(c.scheduled_at).toLocaleString('es-CO')}${c.status === 'sent' ? ` · Enviados: ${c.sent_count ?? 0} · Errores: ${c.error_count ?? 0}` : ''}</div>
+      </div>
+      ${c.status === 'pending' ? `<button class="btn-sm" onclick="cancelCampaign('${c.id}')">Cancelar</button>` : ''}
+    </div>
+  `).join('');
+}
+
+async function cancelCampaign(id) {
+  if (!confirm('¿Cancelar esta campaña programada?')) return;
+  const data = await callAdmin({ action: 'campaign_cancel', campaignId: id }).catch(() => ({ ok: false }));
+  if (data.ok) loadCampaigns();
+  else alert(data.error || 'Error al cancelar.');
 }
 
 // ── Email Marketing ───────────────────────────────────────────────────
