@@ -268,13 +268,37 @@ async function fetchGarageMoto(marca: string, modelo?: string): Promise<any | nu
   return data?.length ? data : null;
 }
 
+const NIVELES_SELLO = [
+  { min: 0, nombre: "Novato", icono: "🔰" },
+  { min: 50, nombre: "Explorador", icono: "🧭" },
+  { min: 150, nombre: "Trotamundos", icono: "🗺️" },
+  { min: 350, nombre: "Leyenda Motera", icono: "🏆" },
+  { min: 700, nombre: "Maestro de las Rutas", icono: "👑" },
+];
+function nivelForPuntos(puntos: number) {
+  let n = NIVELES_SELLO[0];
+  for (const x of NIVELES_SELLO) if (puntos >= x.min) n = x;
+  return n;
+}
+
 async function fetchSellosRider(phone: string): Promise<any | null> {
   try {
     const tel = phone.replace(/^57/, "");
     const { data: rider } = await supabase.from("riders").select("id, nombre").or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`).maybeSingle();
     if (!rider) return null;
-    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at").eq("rider_id", rider.id);
-    return { nombre: rider.nombre, total: sellos?.length || 0, municipios: sellos?.map(s => s.municipio_id) || [] };
+    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at, estado").eq("rider_id", rider.id).eq("estado", "aprobado");
+    const { data: municipios } = await supabase.from("municipios").select("id, puntos_sello");
+    const puntosByMuni = new Map((municipios || []).map((m: any) => [m.id, m.puntos_sello || 10]));
+    const puntos = (sellos || []).reduce((acc: number, s: any) => acc + (puntosByMuni.get(s.municipio_id) || 10), 0);
+    const nivel = nivelForPuntos(puntos);
+    return {
+      nombre: rider.nombre,
+      total: sellos?.length || 0,
+      municipios: sellos?.map((s: any) => s.municipio_id) || [],
+      puntos,
+      nivel: nivel.nombre,
+      nivel_icono: nivel.icono,
+    };
   } catch { return null; }
 }
 
@@ -563,7 +587,7 @@ async function askClaude(message: string, history: { role: string; content: stri
   if (context.resultados?.length) contextBlock += `\nWEB: ${JSON.stringify(context.resultados, null, 0)}`;
   if (context.talleres?.length) contextBlock += `\nTALLERES: ${JSON.stringify(context.talleres, null, 0)}`;
   if (context.tramitesCtx) contextBlock += `\nTRAMITES: ${JSON.stringify(context.tramitesCtx, null, 0)}`;
-  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos.`;
+  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos, ${context.sellos.puntos} puntos, nivel ${context.sellos.nivel_icono} ${context.sellos.nivel}. Puede ver el ranking completo en gruas.ridera.com.co/leaderboard.html`;
   if (context.isGrua) contextBlock += `\nGRUA: gruas.ridera.com.co y boton SOS.`;
   if (context.marcaMencionada && !context.garageMotoData) contextBlock += `\nMarca: ${context.marcaMencionada} (sin datos en Garage).`;
 
