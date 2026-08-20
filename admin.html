@@ -882,6 +882,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
                 <option value="">Todas las ciudades</option>
               </select>
             </div>
+            <div class="bc-field">
+              <label>Adjuntar media (opcional — solo si el template tiene encabezado de imagen/video/documento aprobado en Meta)</label>
+              <div style="display:flex;gap:0.5rem">
+                <select id="bcMediaType" style="background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+                  <option value="image">Imagen</option>
+                  <option value="video">Video</option>
+                  <option value="document">Documento</option>
+                </select>
+                <input type="text" id="bcMediaUrl" placeholder="URL pública del archivo (https://...)" style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+              </div>
+            </div>
             <div class="bc-preview" id="bcPreview">
               Audiencia: <strong id="bcAudience">—</strong> contactos suscritos
             </div>
@@ -2202,7 +2213,9 @@ async function sendBroadcast() {
   btn.innerHTML = '<span class="spin"></span> Enviando...';
   resultEl.style.display = 'none';
 
-  const data = await callAdmin({ action: 'broadcast', template, language: lang, params, ciudad }).catch(() => ({ ok: false }));
+  const mediaUrl = document.getElementById('bcMediaUrl').value.trim();
+  const mediaType = document.getElementById('bcMediaType').value;
+  const data = await callAdmin({ action: 'broadcast', template, language: lang, params, ciudad, mediaUrl, mediaType }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast';
