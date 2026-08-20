@@ -655,6 +655,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="tabTalleres" style="display:none">
           <div class="section-header">
             <h2>🔩 Talleres</h2>
+            <select class="search-input" id="talleresCiudadFilter" onchange="renderTalleresTable()" style="width:auto">
+              <option value="">Todas las ciudades</option>
+            </select>
           </div>
           <div class="filters" id="talleresFilters">
             <button class="filter-btn active" onclick="setTalleresFilter('all',this)">Todos</button>
@@ -675,6 +678,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="tabAlmacenes" style="display:none">
           <div class="section-header">
             <h2>🛒 Almacenes</h2>
+            <select class="search-input" id="almacenesCiudadFilter" onchange="renderAlmacenesTable()" style="width:auto">
+              <option value="">Todas las ciudades</option>
+            </select>
           </div>
           <div class="filters" id="almacenesFilters">
             <button class="filter-btn active" onclick="setAlmacenesFilter('all',this)">Todos</button>
@@ -695,6 +701,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="tabHoteles" style="display:none">
           <div class="section-header">
             <h2>🏨 Hoteles</h2>
+            <select class="search-input" id="hotelesCiudadFilter" onchange="renderHotelesTable()" style="width:auto">
+              <option value="">Todas las ciudades</option>
+            </select>
           </div>
           <div class="filters" id="hotelesFilters">
             <button class="filter-btn active" onclick="setHotelesFilter('all',this)">Todos</button>
@@ -715,6 +724,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div id="tabRestaurantes" style="display:none">
           <div class="section-header">
             <h2>🍽️ Restaurantes</h2>
+            <select class="search-input" id="restaurantesCiudadFilter" onchange="renderRestaurantesTable()" style="width:auto">
+              <option value="">Todas las ciudades</option>
+            </select>
           </div>
           <div class="filters" id="restaurantesFilters">
             <button class="filter-btn active" onclick="setRestaurantesFilter('all',this)">Todos</button>
@@ -2218,11 +2230,17 @@ async function loadRiders() {
 }
 
 function populateRidersCiudadFilter() {
-  const sel = document.getElementById('ridersCiudadFilter');
+  populateCiudadFilter('ridersCiudadFilter', allRiders);
+}
+
+function populateCiudadFilter(selectId, rows) {
+  const sel = document.getElementById(selectId);
   if (!sel) return;
-  const ciudades = [...new Set(allRiders.map(r => r.ciudad).filter(Boolean))].sort();
+  const current = sel.value;
+  const ciudades = [...new Set(rows.map(r => r.ciudad).filter(Boolean))].sort();
   sel.innerHTML = '<option value="">Todas las ciudades</option>' +
     ciudades.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (ciudades.includes(current)) sel.value = current;
 }
 
 function filterRidersTable() {
@@ -2396,6 +2414,7 @@ async function loadTalleres() {
   allTalleres = data.talleres || [];
   const pendCount = allTalleres.filter(t => !t.aprobado).length;
   updateBadge('badgeTalleres', pendCount || allTalleres.length);
+  populateCiudadFilter('talleresCiudadFilter', allTalleres);
   renderTalleresTable();
 }
 
@@ -2410,6 +2429,8 @@ function renderTalleresTable() {
   let rows = allTalleres;
   if (talleresFilter === 'pendientes') rows = rows.filter(t => !t.aprobado);
   else if (talleresFilter === 'aprobados') rows = rows.filter(t => !!t.aprobado);
+  const ciudadFilter = document.getElementById('talleresCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(t => t.ciudad === ciudadFilter);
 
   const tbody = document.getElementById('talleresBody');
   if (!rows.length) {
@@ -2461,6 +2482,7 @@ async function loadAlmacenes() {
   allAlmacenes = data.almacenes || [];
   const pendCount = allAlmacenes.filter(a => !a.aprobado).length;
   updateBadge('badgeAlmacenes', pendCount || allAlmacenes.length);
+  populateCiudadFilter('almacenesCiudadFilter', allAlmacenes);
   renderAlmacenesTable();
 }
 
@@ -2475,6 +2497,8 @@ function renderAlmacenesTable() {
   let rows = allAlmacenes;
   if (almacenesFilter === 'pendientes') rows = rows.filter(a => !a.aprobado);
   else if (almacenesFilter === 'aprobados') rows = rows.filter(a => !!a.aprobado);
+  const ciudadFilter = document.getElementById('almacenesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(a => a.ciudad === ciudadFilter);
 
   const tbody = document.getElementById('almacenesBody');
   if (!rows.length) {
@@ -2523,6 +2547,7 @@ async function loadHoteles() {
   allHoteles = data.hoteles || [];
   const pendCount = allHoteles.filter(h => !h.aprobado).length;
   updateBadge('badgeHoteles', pendCount || allHoteles.length);
+  populateCiudadFilter('hotelesCiudadFilter', allHoteles.map(h => ({ ciudad: h.municipio })));
   renderHotelesTable();
 }
 
@@ -2537,6 +2562,8 @@ function renderHotelesTable() {
   let rows = allHoteles;
   if (hotelesFilter === 'pendientes') rows = rows.filter(h => !h.aprobado);
   else if (hotelesFilter === 'aprobados') rows = rows.filter(h => !!h.aprobado);
+  const ciudadFilter = document.getElementById('hotelesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(h => h.municipio === ciudadFilter);
 
   const tbody = document.getElementById('hotelesBody');
   if (!rows.length) {
@@ -2586,6 +2613,7 @@ async function loadRestaurantes() {
   allRestaurantes = data.restaurantes || [];
   const pendCount = allRestaurantes.filter(r => !r.aprobado).length;
   updateBadge('badgeRestaurantes', pendCount || allRestaurantes.length);
+  populateCiudadFilter('restaurantesCiudadFilter', allRestaurantes.map(r => ({ ciudad: r.municipio })));
   renderRestaurantesTable();
 }
 
@@ -2600,6 +2628,8 @@ function renderRestaurantesTable() {
   let rows = allRestaurantes;
   if (restaurantesFilter === 'pendientes') rows = rows.filter(r => !r.aprobado);
   else if (restaurantesFilter === 'aprobados') rows = rows.filter(r => !!r.aprobado);
+  const ciudadFilter = document.getElementById('restaurantesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(r => r.municipio === ciudadFilter);
 
   const tbody = document.getElementById('restaurantesBody');
   if (!rows.length) {
