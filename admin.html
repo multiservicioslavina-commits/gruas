@@ -380,6 +380,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div class="nav-right">
       <span class="role-badge" id="roleBadge">👑 Admin</span>
       <button class="btn-sm" id="manageUsersBtn" onclick="showUsersModal()" style="display:none">👥 Usuarios</button>
+      <button class="btn-sm" id="auditLogBtn" onclick="showAuditLogModal()" style="display:none">📋 Auditoría</button>
       <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
       <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
       <button class="btn-sm danger" onclick="logout()">Salir</button>
@@ -1085,6 +1086,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<div class="modal-overlay hide" id="auditLogModal" style="padding:0;align-items:flex-start;overflow-y:auto">
+  <div style="width:100%;max-width:640px;background:var(--s);border:1px solid var(--line);border-radius:12px;margin:4rem auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--line)">
+      <h2 style="font-size:1rem">📋 Auditoría — últimas 200 acciones</h2>
+      <button onclick="document.getElementById('auditLogModal').classList.add('hide')" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+    </div>
+    <div style="padding:1.5rem">
+      <div id="auditLogList" style="display:flex;flex-direction:column;gap:0.5rem;max-height:500px;overflow-y:auto">Cargando...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
 
@@ -1392,6 +1405,8 @@ function applyRoleUI() {
   if (badge) badge.textContent = adminRole === 'admin' ? '👑 Admin' : '👁️ Solo lectura';
   const usersBtn = document.getElementById('manageUsersBtn');
   if (usersBtn) usersBtn.style.display = adminRole === 'admin' ? '' : 'none';
+  const auditBtn = document.getElementById('auditLogBtn');
+  if (auditBtn) auditBtn.style.display = adminRole === 'admin' ? '' : 'none';
 }
 
 // ── GESTIÓN DE USUARIOS ──────────────────────────────────────────────────
@@ -1451,6 +1466,34 @@ async function deleteAdminUser(username) {
     return;
   }
   loadAdminUsers();
+}
+
+// ── AUDITORÍA ────────────────────────────────────────────────────────────
+async function showAuditLogModal() {
+  document.getElementById('auditLogModal').classList.remove('hide');
+  const box = document.getElementById('auditLogList');
+  box.innerHTML = 'Cargando...';
+  const data = await callAdmin({ action: 'admin_audit_log' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar auditoría.</p>';
+    return;
+  }
+  const log = data.log || [];
+  if (!log.length) {
+    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin acciones registradas.</p>';
+    return;
+  }
+  const actionLabels = {
+    toggle_approval: 'Aprobó/desaprobó', reject_record: 'Borró registro', update_record: 'Editó registro',
+    delete_gruero: 'Borró gruero', broadcast: 'Envió broadcast', change_password: 'Cambió su clave',
+    admin_users_create: 'Creó usuario', admin_users_delete: 'Borró usuario',
+  };
+  box.innerHTML = log.map(l => `
+    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem">
+      <div><strong>${esc(l.username)}</strong> — ${esc(actionLabels[l.action] || l.action)}</div>
+      <div style="font-size:0.72rem;color:var(--mu);margin-top:0.2rem">${new Date(l.created_at).toLocaleString('es-CO')}${l.detail && Object.keys(l.detail).length ? ' · ' + esc(JSON.stringify(l.detail)) : ''}</div>
+    </div>
+  `).join('');
 }
 
 document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
