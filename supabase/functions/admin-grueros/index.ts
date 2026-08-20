@@ -84,10 +84,16 @@ function html_email_template(body: string, preheader: string = ''): string {
 </html>`
 }
 
-async function validateKey(key: string): Promise<boolean> {
-  const { data } = await sbClient.from('admin_config').select('password').eq('id', 1).maybeSingle()
-  const current = data?.password || 'mipadre2816'
-  return key === current
+async function validateKey(key: string): Promise<{ ok: boolean; role?: string; username?: string }> {
+  const sep = (key || '').indexOf(':')
+  if (sep === -1) return { ok: false }
+  const username = key.slice(0, sep)
+  const password = key.slice(sep + 1)
+  if (!username || !password) return { ok: false }
+  const { data } = await sbClient.from('admin_users').select('password, role').eq('username', username).maybeSingle()
+  if (!data || data.password !== password) return { ok: false }
+  sbClient.from('admin_users').update({ last_login_at: new Date().toISOString() }).eq('username', username).then(() => {})
+  return { ok: true, role: data.role, username }
 }
 
 function toSlug(s: string, suffix = ''): string {
@@ -142,12 +148,26 @@ Deno.serve(async (req) => {
       })
     }
 
-    const isValid = await validateKey(key)
-    console.log('validateKey result:', { key: key.substring(0, 10) + '...', isValid })
+    const auth = await validateKey(key)
+    console.log('validateKey result:', { key: key.substring(0, 10) + '...', ok: auth.ok, role: auth.role })
 
-    if (!isValid) {
+    if (!auth.ok) {
       return new Response(JSON.stringify({ ok: false, error: 'Invalid key' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const role = auth.role || 'admin'
+    const ADMIN_ONLY_ACTIONS = new Set([
+      'toggle_approval', 'reject_record', 'update_record', 'approve', 'set', 'delete',
+      'update_error', 'export_contacts', 'broadcast',
+      'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
+      'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
+      'admin_users_list', 'admin_users_create', 'admin_users_delete',
+    ])
+    if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
+      return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -155,7 +175,7 @@ Deno.serve(async (req) => {
     // LIST ACTION - for login validation
     if (action === 'list') {
       const { data: grueros } = await sbClient.from('grueros').select('*')
-      return new Response(JSON.stringify({ ok: true, grueros: grueros || [] }), {
+      return new Response(JSON.stringify({ ok: true, grueros: grueros || [], role }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -786,7 +806,7 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { error } = await sbClient.from('admin_config').update({ password: nueva, updated_at: new Date().toISOString() }).eq('id', 1)
+      const { error } = await sbClient.from('admin_users').update({ password: nueva }).eq('username', auth.username)
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -962,6 +982,67 @@ Deno.serve(async (req) => {
     if (action === 'update_sello') {
       const { id, estado } = body
       const { error } = await sbClient.from('sellos').update({ estado }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - list (admin only, no passwords returned)
+    if (action === 'admin_users_list') {
+      const { data: users, error } = await sbClient.from('admin_users').select('id, username, role, created_at, last_login_at').order('created_at', { ascending: true })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, users: users || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - create (admin only)
+    if (action === 'admin_users_create') {
+      const { username, password, role: newRole } = body
+      if (!username || !password || !['admin', 'viewer'].includes(newRole)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Faltan username, password o role válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (password.length < 4) {
+        return new Response(JSON.stringify({ ok: false, error: 'Contraseña mínimo 4 caracteres' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('admin_users').insert({ username, password, role: newRole })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message.includes('duplicate') ? 'Ese usuario ya existe' : error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - delete (admin only)
+    if (action === 'admin_users_delete') {
+      const { username: delUsername } = body
+      if (!delUsername) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta username' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (delUsername === auth.username) {
+        return new Response(JSON.stringify({ ok: false, error: 'No puedes borrar tu propio usuario' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('admin_users').delete().eq('username', delUsername)
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },

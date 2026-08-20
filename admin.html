@@ -13,6 +13,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <title>Panel admin — Ridera Grúas</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -318,6 +319,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     /* Thumbnail in tables */
     .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--s2); }
 
+    /* ROLE-BASED UI */
+    .role-badge { font-size: 0.72rem; font-weight: 700; padding: 0.2rem 0.55rem; border-radius: 10px; background: rgba(232,93,32,0.12); color: var(--or); }
+    body.role-viewer .admin-only { display: none !important; }
+
     /* TIMELINE */
     .timeline-event { display: flex; gap: 1rem; padding: 1rem; background: var(--s); border: 1px solid var(--line); border-radius: 8px; transition: border-color 0.2s; }
     .timeline-event:hover { border-color: var(--or); }
@@ -347,6 +352,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div class="login-card">
     <h1>Ridera Grúas</h1>
     <p>Panel de administración</p>
+    <label for="userInput">Usuario</label>
+    <input type="text" id="userInput" placeholder="admin" autocomplete="username" value="admin">
     <label for="pwdInput">Clave de acceso</label>
     <div style="position: relative; display: flex; align-items: center;">
       <input type="password" id="pwdInput" placeholder="••••••••" autocomplete="current-password" style="flex:1; padding-right: 2.5rem;">
@@ -371,6 +378,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div id="globalSearchResults" style="display:none;position:absolute;top:110%;left:0;right:0;background:var(--s);border:1px solid var(--line);border-radius:8px;max-height:360px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.4)"></div>
     </div>
     <div class="nav-right">
+      <span class="role-badge" id="roleBadge">👑 Admin</span>
+      <button class="btn-sm" id="manageUsersBtn" onclick="showUsersModal()" style="display:none">👥 Usuarios</button>
       <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
       <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
       <button class="btn-sm danger" onclick="logout()">Salir</button>
@@ -1021,7 +1030,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   <div style="width:100%;max-width:800px;background:var(--s);border:1px solid var(--line);border-radius:12px;margin:2rem auto">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:1.5rem;border-bottom:1px solid var(--line)">
       <h2 id="riderProfileTitle">Perfil del Rider</h2>
-      <button onclick="closeRiderProfile()" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+      <div style="display:flex;gap:0.5rem;align-items:center">
+        <button class="btn-sm" onclick="exportRiderProfilePDF()">📄 Exportar PDF</button>
+        <button onclick="closeRiderProfile()" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+      </div>
     </div>
     <div style="padding:1.5rem;max-height:calc(100vh - 200px);overflow-y:auto" id="riderProfileContent">
       <p style="color:var(--mu)">Cargando...</p>
@@ -1036,11 +1048,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <button onclick="document.getElementById('notesModal').classList.add('hide')" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
     </div>
     <div style="padding:1.5rem">
-      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+      <div class="admin-only" style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
         <input type="text" id="genericNoteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
         <button class="btn-sm" onclick="submitGenericNote()">Agregar</button>
       </div>
       <div id="genericNotesList" style="display:flex;flex-direction:column;gap:0.5rem;max-height:400px;overflow-y:auto">Cargando notas...</div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay hide" id="usersModal" style="padding:0;align-items:flex-start;overflow-y:auto">
+  <div style="width:100%;max-width:520px;background:var(--s);border:1px solid var(--line);border-radius:12px;margin:4rem auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--line)">
+      <h2 style="font-size:1rem">👥 Usuarios del panel</h2>
+      <button onclick="document.getElementById('usersModal').classList.add('hide')" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+    </div>
+    <div style="padding:1.5rem">
+      <div style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem">
+        <input type="text" id="newUserUsername" placeholder="Usuario nuevo" style="background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
+        <input type="password" id="newUserPassword" placeholder="Clave (mín. 4 caracteres)" style="background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
+        <select id="newUserRole" style="background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+          <option value="viewer">Solo lectura (viewer)</option>
+          <option value="admin">Admin (control total)</option>
+        </select>
+        <button class="btn-sm" onclick="createAdminUser()">+ Crear usuario</button>
+        <div id="usersModalErr" style="display:none;color:#f87171;font-size:0.8rem"></div>
+      </div>
+      <div id="usersList" style="display:flex;flex-direction:column;gap:0.5rem;max-height:300px;overflow-y:auto">Cargando usuarios...</div>
     </div>
   </div>
 </div>
@@ -1310,20 +1344,27 @@ async function callAdmin(body) {
   return res.json();
 }
 
+let currentUsername = '';
+let adminRole = 'admin';
+
 async function doLogin() {
   const btn = document.getElementById('loginBtn');
   const errEl = document.getElementById('loginErr');
+  const user = document.getElementById('userInput').value.trim() || 'admin';
   const pwd = document.getElementById('pwdInput').value.trim();
   if (!pwd) return;
   btn.disabled = true;
   btn.innerHTML = '<span class="spin"></span>';
   errEl.style.display = 'none';
-  adminKey = pwd;
+  adminKey = `${user}:${pwd}`;
   const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
   if (data.ok) {
+    currentUsername = user;
+    adminRole = data.role || 'admin';
     allGrueros = data.grueros || [];
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('panel').style.display = 'block';
+    applyRoleUI();
     renderStats();
     renderTable();
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
@@ -1339,7 +1380,75 @@ async function doLogin() {
   }
 }
 
+function applyRoleUI() {
+  document.body.classList.toggle('role-viewer', adminRole !== 'admin');
+  const badge = document.getElementById('roleBadge');
+  if (badge) badge.textContent = adminRole === 'admin' ? '👑 Admin' : '👁️ Solo lectura';
+  const usersBtn = document.getElementById('manageUsersBtn');
+  if (usersBtn) usersBtn.style.display = adminRole === 'admin' ? '' : 'none';
+}
+
+// ── GESTIÓN DE USUARIOS ──────────────────────────────────────────────────
+async function showUsersModal() {
+  document.getElementById('usersModal').classList.remove('hide');
+  document.getElementById('usersModalErr').style.display = 'none';
+  await loadAdminUsers();
+}
+
+async function loadAdminUsers() {
+  const box = document.getElementById('usersList');
+  box.innerHTML = 'Cargando usuarios...';
+  const data = await callAdmin({ action: 'admin_users_list' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar usuarios.</p>';
+    return;
+  }
+  box.innerHTML = (data.users || []).map(u => `
+    <div style="display:flex;justify-content:space-between;align-items:center;background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.85rem">
+      <div>
+        <strong>${esc(u.username)}</strong>
+        <span class="role-badge" style="margin-left:0.4rem">${u.role === 'admin' ? '👑 Admin' : '👁️ Viewer'}</span>
+        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.2rem">Último acceso: ${u.last_login_at ? new Date(u.last_login_at).toLocaleString('es-CO') : 'Nunca'}</div>
+      </div>
+      ${u.username === currentUsername ? '' : `<button class="btn-sm danger" onclick="deleteAdminUser('${jsq(u.username)}')">🗑</button>`}
+    </div>
+  `).join('') || '<p style="color:var(--mu);font-size:0.85rem">Sin usuarios.</p>';
+}
+
+async function createAdminUser() {
+  const username = document.getElementById('newUserUsername').value.trim();
+  const password = document.getElementById('newUserPassword').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  const errEl = document.getElementById('usersModalErr');
+  errEl.style.display = 'none';
+  if (!username || password.length < 4) {
+    errEl.textContent = 'Usuario y clave (mín. 4 caracteres) son obligatorios.';
+    errEl.style.display = 'block';
+    return;
+  }
+  const data = await callAdmin({ action: 'admin_users_create', username, password, role }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    errEl.textContent = data.error || 'Error al crear usuario.';
+    errEl.style.display = 'block';
+    return;
+  }
+  document.getElementById('newUserUsername').value = '';
+  document.getElementById('newUserPassword').value = '';
+  loadAdminUsers();
+}
+
+async function deleteAdminUser(username) {
+  if (!confirm(`¿Borrar el usuario "${username}"?`)) return;
+  const data = await callAdmin({ action: 'admin_users_delete', username }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al borrar usuario: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  loadAdminUsers();
+}
+
 document.getElementById('pwdInput').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+document.getElementById('userInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('pwdInput').focus(); });
 
 async function reloadList() {
   const data = await callAdmin({ action: 'list' }).catch(() => ({ ok: false }));
@@ -1355,6 +1464,9 @@ async function reloadList() {
 
 function logout() {
   adminKey = '';
+  currentUsername = '';
+  adminRole = 'admin';
+  document.body.classList.remove('role-viewer');
   allGrueros = [];
   // Reset lazy-load flags
   solStatsLoaded = false;
@@ -1469,8 +1581,8 @@ function renderTable() {
         <div class="actions-cell">
           ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
           ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
-          <button class="act-btn" onclick="openEditModalFor('grueros','${jsq(g.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('grueros','${jsq(g.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -1646,7 +1758,7 @@ async function doChangePwd() {
   const errEl = document.getElementById('pwdErr');
   if (nueva.length < 4) { errEl.textContent = 'Mínimo 4 caracteres.'; errEl.style.display = 'block'; return; }
   const data = await callAdmin({ action: 'change_password', new: nueva }).catch(() => ({ ok: false }));
-  if (data.ok) { adminKey = nueva; hidePwdModal(); }
+  if (data.ok) { adminKey = `${currentUsername}:${nueva}`; hidePwdModal(); }
   else { errEl.textContent = data.error || 'Error al cambiar la clave.'; errEl.style.display = 'block'; }
 }
 
@@ -2209,9 +2321,9 @@ function renderSellosTable() {
         <div class="actions-cell">
           ${estadoNorm !== 'aprobado' && estadoNorm !== 'rechazado' ? `
             <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
-            <button class="act-btn del" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
+            <button class="act-btn del admin-only" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
           ` : ''}
-          <button class="act-btn del" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
           ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
         </div>
       </td>
@@ -2306,8 +2418,8 @@ function renderRidersTable() {
       <td>
         <div class="actions-cell">
           <button class="act-btn" onclick="openRiderProfile('${jsq(r.id)}')">👁️ Perfil</button>
-          <button class="act-btn" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2346,11 +2458,11 @@ function renderClubsTable() {
       <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
+          <button class="act-btn admin-only ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
             ${apro ? 'Desaprobar' : '✓ Aprobar'}
           </button>
-          <button class="act-btn" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2411,10 +2523,10 @@ function renderMotosTable() {
       <td>${estadoBadge}</td>
       <td>
         <div class="actions-cell">
-          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
-          ${m.aprobado && !m.vendido ? `<button class="act-btn del" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
-          <button class="act-btn" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
+          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
+          ${m.aprobado && !m.vendido ? `<button class="act-btn del admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
+          <button class="act-btn admin-only" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2467,7 +2579,7 @@ function renderTalleresTable() {
     const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
 
     const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('talleres','${jsq(t.id)}','${e}')">${estadoLabels[e]}</button>`
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('talleres','${jsq(t.id)}','${e}')">${estadoLabels[e]}</button>`
     ).join('');
 
     return `<tr>
@@ -2482,8 +2594,8 @@ function renderTalleresTable() {
       <td>
         <div class="actions-cell">
           <button class="act-btn" onclick="openNotesModal('taller','${jsq(t.id)}','${jsq(t.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2535,7 +2647,7 @@ function renderAlmacenesTable() {
     const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
 
     const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('almacenes','${jsq(a.id)}','${e}')">${estadoLabels[e]}</button>`
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('almacenes','${jsq(a.id)}','${e}')">${estadoLabels[e]}</button>`
     ).join('');
 
     return `<tr>
@@ -2550,8 +2662,8 @@ function renderAlmacenesTable() {
       <td>
         <div class="actions-cell">
           <button class="act-btn" onclick="openNotesModal('almacen','${jsq(a.id)}','${jsq(a.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2601,7 +2713,7 @@ function renderHotelesTable() {
     const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
 
     const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('hoteles','${jsq(h.id)}','${e}')">${estadoLabels[e]}</button>`
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('hoteles','${jsq(h.id)}','${e}')">${estadoLabels[e]}</button>`
     ).join('');
 
     return `<tr>
@@ -2617,8 +2729,8 @@ function renderHotelesTable() {
       <td>
         <div class="actions-cell">
           <button class="act-btn" onclick="openNotesModal('hotel','${jsq(h.id)}','${jsq(h.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2668,7 +2780,7 @@ function renderRestaurantesTable() {
     const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
 
     const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('restaurantes','${jsq(r.id)}','${e}')">${estadoLabels[e]}</button>`
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('restaurantes','${jsq(r.id)}','${e}')">${estadoLabels[e]}</button>`
     ).join('');
 
     return `<tr>
@@ -2684,8 +2796,8 @@ function renderRestaurantesTable() {
       <td>
         <div class="actions-cell">
           <button class="act-btn" onclick="openNotesModal('restaurante','${jsq(r.id)}','${jsq(r.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
-          <button class="act-btn del" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
         </div>
       </td>
     </tr>`;
@@ -2965,9 +3077,12 @@ function renderConversacionesTable() {
 }
 
 // ── RIDER PROFILE ──────────────────────────────────────────────────────
+let currentRiderProfile = null;
+
 async function openRiderProfile(riderId) {
   const modal = document.getElementById('riderProfileModal');
   modal.classList.remove('hide');
+  currentRiderProfile = null;
 
   const data = await callRita({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
   if (!data.ok) {
@@ -2979,6 +3094,7 @@ async function openRiderProfile(riderId) {
   const sellos = data.sellos || [];
   const gruas = data.gruas || [];
   const conversaciones = data.conversaciones || [];
+  currentRiderProfile = { rider: r, sellos, gruas, conversaciones };
 
   const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
   const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
@@ -3058,7 +3174,7 @@ async function openRiderProfile(riderId) {
 
     <div style="margin-top:2rem">
       <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">📝 Notas internas</div>
-      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+      <div class="admin-only" style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
         <input type="text" id="noteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
         <button class="btn-sm" onclick="submitNote('rider','${jsq(riderId)}')">Agregar</button>
       </div>
@@ -3072,6 +3188,106 @@ async function openRiderProfile(riderId) {
 
 function closeRiderProfile() {
   document.getElementById('riderProfileModal').classList.add('hide');
+}
+
+function exportRiderProfilePDF() {
+  if (!currentRiderProfile || !window.jspdf) {
+    alert('El perfil aún no ha cargado.');
+    return;
+  }
+  const { rider: r, sellos, gruas, conversaciones } = currentRiderProfile;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CO') : '—';
+
+  let y = 20;
+  doc.setFontSize(18);
+  doc.setTextColor(232, 93, 32);
+  doc.text(`Perfil del Rider: ${nombre}`, 14, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Generado: ${new Date().toLocaleString('es-CO')}`, 14, y);
+  y += 10;
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(14, y, 196, y);
+  y += 8;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text('Datos personales', 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  [
+    ['Teléfono', r.telefono], ['Ciudad', r.ciudad], ['Correo', r.correo],
+    ['Fecha de registro', fmtDate(r.created_at)],
+  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
+  y += 4;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text('Moto', 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  [
+    ['Modelo', moto], ['Placa', r.placa],
+    ['SOAT vence', fmtDate(r.soat_vence)], ['Tecno vence', fmtDate(r.tecno_vence)],
+  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
+  y += 4;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Sellos (${sellos.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!sellos.length) { doc.text('Sin municipios sellados.', 14, y); y += 6; }
+  else sellos.forEach(s => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.text(`• ${s.municipio_nombre || '—'} — ${fmtDate(s.fecha)}`, 14, y);
+    y += 6;
+  });
+  y += 4;
+
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Grúas (${gruas.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!gruas.length) { doc.text('Sin solicitudes de grúa.', 14, y); y += 6; }
+  else gruas.forEach(g => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.text(`• ${g.municipio || '—'} — ${g.estado} — ${fmtDate(g.created_at)}`, 14, y);
+    y += 6;
+  });
+  y += 4;
+
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Conversaciones con Rita (${conversaciones.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!conversaciones.length) { doc.text('Sin chats registrados.', 14, y); y += 6; }
+  else conversaciones.slice(0, 20).forEach(c => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const content = (c.content || '').substring(0, 90);
+    const lines = doc.splitTextToSize(`• [${fmtDate(c.created_at)}] ${content}`, 180);
+    doc.text(lines, 14, y);
+    y += 6 * lines.length;
+  });
+
+  const filename = `perfil_${(nombre || 'rider').toLowerCase().replace(/\s+/g, '_')}.pdf`;
+  doc.save(filename);
 }
 
 // ── NOTAS INTERNAS ────────────────────────────────────────────────────
@@ -3093,7 +3309,7 @@ async function loadNotes(entityType, entityId) {
         <div>${esc(n.note)}</div>
         <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
       </div>
-      <button class="btn-sm danger" style="padding:0.15rem 0.4rem" onclick="removeNote('${jsq(n.id)}','${entityType}','${jsq(entityId)}')">✕</button>
+      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeNote('${jsq(n.id)}','${entityType}','${jsq(entityId)}')">✕</button>
     </div>
   `).join('');
 }
@@ -3150,7 +3366,7 @@ async function loadGenericNotes() {
         <div>${esc(n.note)}</div>
         <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
       </div>
-      <button class="btn-sm danger" style="padding:0.15rem 0.4rem" onclick="removeGenericNote('${jsq(n.id)}')">✕</button>
+      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeGenericNote('${jsq(n.id)}')">✕</button>
     </div>
   `).join('');
 }
