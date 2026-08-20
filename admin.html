@@ -913,6 +913,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div id="campaignsList" style="margin-top:0.75rem;font-size:0.85rem;color:var(--mu)">Cargando...</div>
           </div>
 
+          <!-- Broadcast Telegram -->
+          <div class="rita-sub">Broadcast Telegram</div>
+          <div class="bc-form">
+            <div class="bc-field">
+              <label>Mensaje (texto libre — usa <code>{{nombre}}</code> para el nombre del contacto)</label>
+              <textarea id="tgMessage" rows="4" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.8rem;font-family:inherit;resize:vertical"></textarea>
+            </div>
+            <div class="bc-preview" id="tgPreview">
+              Audiencia: <strong id="tgAudience">—</strong> contactos suscritos en Telegram
+            </div>
+            <button class="bc-send admin-only" id="tgSendBtn" onclick="sendTelegramBroadcast()">
+              Enviar broadcast Telegram
+            </button>
+            <div id="tgResult" style="display:none"></div>
+          </div>
+
           <!-- Email Marketing -->
           <div class="rita-sub">Email Marketing</div>
           <div class="bc-form">
@@ -1869,6 +1885,7 @@ async function loadRitaAnalytics() {
   renderDayChart(data.perDay || {});
   loadBroadcastAudience();
   loadCampaigns();
+  loadTelegramAudience();
 }
 
 async function loadBroadcastAudience() {
@@ -2305,6 +2322,45 @@ async function cancelCampaign(id) {
   const data = await callAdmin({ action: 'campaign_cancel', campaignId: id }).catch(() => ({ ok: false }));
   if (data.ok) loadCampaigns();
   else alert(data.error || 'Error al cancelar.');
+}
+
+// ── Broadcast Telegram ────────────────────────────────────────────────
+
+async function loadTelegramAudience() {
+  const data = await callAdmin({ action: 'telegram_audience' }).catch(() => ({ ok: false }));
+  document.getElementById('tgAudience').textContent = data.ok ? data.total : '—';
+}
+
+async function sendTelegramBroadcast() {
+  const message = document.getElementById('tgMessage').value.trim();
+  const resultEl = document.getElementById('tgResult');
+  if (!message) {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = 'Escribe el mensaje a enviar.';
+    resultEl.style.display = 'block';
+    return;
+  }
+  const audience = document.getElementById('tgAudience').textContent;
+  if (!confirm(`¿Enviar este mensaje a ${audience} contactos de Telegram?\n\nEsta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('tgSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'telegram_broadcast', message }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar broadcast Telegram';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar broadcast de Telegram.';
+  }
+  resultEl.style.display = 'block';
 }
 
 // ── Email Marketing ───────────────────────────────────────────────────
