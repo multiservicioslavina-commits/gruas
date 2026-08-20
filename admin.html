@@ -1029,6 +1029,22 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
   </div>
 </div>
 
+<div class="modal-overlay hide" id="notesModal" style="padding:0;align-items:flex-start;overflow-y:auto">
+  <div style="width:100%;max-width:480px;background:var(--s);border:1px solid var(--line);border-radius:12px;margin:4rem auto">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid var(--line)">
+      <h2 id="notesModalTitle" style="font-size:1rem">📝 Notas</h2>
+      <button onclick="document.getElementById('notesModal').classList.add('hide')" style="font-size:1.4rem;background:none;border:none;color:var(--mu);cursor:pointer">×</button>
+    </div>
+    <div style="padding:1.5rem">
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+        <input type="text" id="genericNoteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
+        <button class="btn-sm" onclick="submitGenericNote()">Agregar</button>
+      </div>
+      <div id="genericNotesList" style="display:flex;flex-direction:column;gap:0.5rem;max-height:400px;overflow-y:auto">Cargando notas...</div>
+    </div>
+  </div>
+</div>
+
 <script>
 const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
 
@@ -2465,6 +2481,7 @@ function renderTalleresTable() {
       </td>
       <td>
         <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('taller','${jsq(t.id)}','${jsq(t.nombre || '')}')">📝 Notas</button>
           <button class="act-btn" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2532,6 +2549,7 @@ function renderAlmacenesTable() {
       </td>
       <td>
         <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('almacen','${jsq(a.id)}','${jsq(a.nombre || '')}')">📝 Notas</button>
           <button class="act-btn" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2598,6 +2616,7 @@ function renderHotelesTable() {
       </td>
       <td>
         <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('hotel','${jsq(h.id)}','${jsq(h.nombre || '')}')">📝 Notas</button>
           <button class="act-btn" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
         </div>
@@ -2664,6 +2683,7 @@ function renderRestaurantesTable() {
       </td>
       <td>
         <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('restaurante','${jsq(r.id)}','${jsq(r.nombre || '')}')">📝 Notas</button>
           <button class="act-btn" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
           <button class="act-btn del" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
         </div>
@@ -3079,6 +3099,64 @@ async function removeNote(id, entityType, entityId) {
     return;
   }
   loadNotes(entityType, entityId);
+}
+
+// ── NOTAS GENÉRICAS (negocios) ─────────────────────────────────────────
+let genericNotesEntity = { type: null, id: null };
+
+function openNotesModal(entityType, entityId, label) {
+  genericNotesEntity = { type: entityType, id: entityId };
+  document.getElementById('notesModalTitle').textContent = `📝 Notas — ${label}`;
+  document.getElementById('notesModal').classList.remove('hide');
+  loadGenericNotes();
+}
+
+async function loadGenericNotes() {
+  const box = document.getElementById('genericNotesList');
+  box.innerHTML = 'Cargando notas...';
+  const { type, id } = genericNotesEntity;
+  const data = await callAdmin({ action: 'list_notes', entity_type: type, entity_id: id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
+    return;
+  }
+  const notes = data.notes || [];
+  if (!notes.length) {
+    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
+    return;
+  }
+  box.innerHTML = notes.map(n => `
+    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+      <div>
+        <div>${esc(n.note)}</div>
+        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
+      </div>
+      <button class="btn-sm danger" style="padding:0.15rem 0.4rem" onclick="removeGenericNote('${jsq(n.id)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitGenericNote() {
+  const input = document.getElementById('genericNoteInput');
+  const note = input.value.trim();
+  if (!note) return;
+  const { type, id } = genericNotesEntity;
+  const data = await callAdmin({ action: 'add_note', entity_type: type, entity_id: id, note }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  input.value = '';
+  loadGenericNotes();
+}
+
+async function removeGenericNote(id) {
+  const data = await callAdmin({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  loadGenericNotes();
 }
 
 // ── PIPELINE DE NEGOCIOS ───────────────────────────────────────────────
