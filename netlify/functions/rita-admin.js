@@ -40,11 +40,21 @@ async function validateKey(key) {
       body: JSON.stringify({ key, action: 'list' }),
     });
     const data = await res.json();
-    return data.ok === true;
+    if (data.ok !== true) return { ok: false };
+    return { ok: true, role: data.role || 'admin' };
   } catch {
-    return false;
+    return { ok: false };
   }
 }
+
+// Actions that mutate data or send outbound messages — restricted to role 'admin'.
+const ADMIN_ONLY_ACTIONS = new Set([
+  'broadcast', 'update_error', 'export_contacts',
+  'toggle_approval', 'update_sello', 'change_negocio_estado',
+  'add_note', 'delete_note',
+  'campana_enviar_nombre', 'campana_enviar_email',
+  'email_send', 'email_test',
+]);
 
 async function sbCount(filter) {
   const res = await fetch(`${SB_URL}/rest/v1/${filter}`, {
@@ -824,8 +834,11 @@ exports.handler = async (event) => {
   const { key, action } = body;
   if (!key) return json({ ok: false, error: 'Falta clave de admin' });
 
-  const valid = await validateKey(key);
-  if (!valid) return json({ ok: false, error: 'Clave inválida' });
+  const auth = await validateKey(key);
+  if (!auth.ok) return json({ ok: false, error: 'Clave inválida' });
+  if (ADMIN_ONLY_ACTIONS.has(action) && auth.role !== 'admin') {
+    return json({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' });
+  }
 
   switch (action) {
     case 'analytics':
