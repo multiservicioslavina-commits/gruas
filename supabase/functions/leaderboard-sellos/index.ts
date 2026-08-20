@@ -44,6 +44,8 @@ Deno.serve(async (req) => {
     const { data: riders } = await sbClient.from('riders').select('id, nombre, apellido, ciudad, foto_url, slug')
     const riderById = new Map((riders || []).map((r) => [r.id, r]))
 
+    const { data: bonus } = await sbClient.from('puntos_bonus').select('rider_id, puntos')
+
     const porRider = new Map<string, { puntos: number; municipios: Set<string>; ultima: string }>()
     for (const s of sellos || []) {
       if (!s.rider_id) continue
@@ -52,6 +54,12 @@ Deno.serve(async (req) => {
       entry.municipios.add(s.municipio_id)
       if (s.fecha > entry.ultima) entry.ultima = s.fecha
       porRider.set(s.rider_id, entry)
+    }
+    for (const b of bonus || []) {
+      if (!b.rider_id) continue
+      const entry = porRider.get(b.rider_id) || { puntos: 0, municipios: new Set<string>(), ultima: '' }
+      entry.puntos += b.puntos || 0
+      porRider.set(b.rider_id, entry)
     }
 
     const ranking = [...porRider.entries()]

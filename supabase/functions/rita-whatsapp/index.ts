@@ -818,6 +818,20 @@ Deno.serve(async (req: Request) => {
 
       await saveMessage(from, "user", message);
 
+      const refMatch = /\bREF[\s-]?([A-Za-z0-9]{4,12})\b/i.exec(message);
+      if (refMatch) {
+        try {
+          const codigo = refMatch[1].toUpperCase();
+          const { data: referidor } = await supabase.from("riders").select("id").eq("codigo_referido", codigo).maybeSingle();
+          const { data: yaRider } = await supabase.from("riders").select("id").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+          if (referidor && !yaRider) {
+            await supabase.from("referidos").upsert({
+              codigo, referidor_id: referidor.id, telefono_invitado: from, estado: "pendiente",
+            }, { onConflict: "codigo,telefono_invitado" });
+          }
+        } catch { /* no bloquea el flujo normal */ }
+      }
+
       const conv = await getConvState(from);
       if (conv.state !== "idle") {
         const regReply = await handleRegistration(from, message, conv);
@@ -829,6 +843,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const msg2 = norm(message);
+      if (/invitar|referir|mi codigo|codigo de referido|codigo referido/.test(msg2)) {
+        const { data: yo } = await supabase.from("riders").select("id, nombre, codigo_referido, telefono").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+        if (yo?.codigo_referido) {
+          const link = `https://wa.me/573117896717?text=REF%20${encodeURIComponent(yo.codigo_referido)}`;
+          const r = `🏍️ Invita a un amigo y ambos ganan +50 puntos en el ranking Ridera. Comparte este link:\n\n${link}\n\nCuando escriba y se registre, les llega la recompensa automático.`;
+          await saveMessage(from, "assistant", r);
+          await sendWhatsApp(from, r);
+          return new Response(JSON.stringify({ ok: true, flow: "invite_link" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+      }
       if (/quiero registrarme|registrarme|registrame|inscribirme/.test(msg2)) {
         const riderCheck = await getRiderContext(from);
         if (!riderCheck?.encontrado) {
