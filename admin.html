@@ -10,7 +10,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
 <!-- End Google Tag Manager -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Panel admin — Ridera Grúas</title>
+  <title>Panel admin — Ridera CRM</title>
   <meta name="robots" content="noindex">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
@@ -350,7 +350,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- LOGIN -->
 <div id="loginWrap">
   <div class="login-card">
-    <h1>Ridera Grúas</h1>
+    <h1>Ridera CRM</h1>
     <p>Panel de administración</p>
     <label for="userInput">Usuario</label>
     <input type="text" id="userInput" placeholder="admin" autocomplete="username" value="admin">
@@ -432,6 +432,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
       <div class="sidebar-item" data-tab="reportes" onclick="showTab('reportes')">
         <span class="sb-icon">📈</span> Reportes
+      </div>
+      <div class="sidebar-item" data-tab="crecimiento" onclick="showTab('crecimiento')">
+        <span class="sb-icon">🚀</span> Crecimiento
+      </div>
+      <div class="sidebar-item" data-tab="reservas" onclick="showTab('reservas')">
+        <span class="sb-icon">📅</span> Reservas <span class="sb-badge" id="badgeReservas" style="display:none">0</span>
       </div>
       <div class="sidebar-item" data-tab="timeline" onclick="showTab('timeline')">
         <span class="sb-icon">🕐</span> Timeline
@@ -1060,6 +1066,45 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div><!-- /tabReportes -->
 
+        <!-- CRECIMIENTO -->
+        <div id="tabCrecimiento" style="display:none">
+          <div class="section-header"><h2>🚀 Funnel de Crecimiento</h2></div>
+          <div class="stats" style="margin-bottom:2rem">
+            <div class="stat"><div class="num" id="gRegistrados">—</div><div class="lbl">Registrados</div></div>
+            <div class="stat"><div class="num green" id="gActivados">—</div><div class="lbl">Activados (1er sello) — <span id="gTasaActivacion">—%</span></div></div>
+            <div class="stat"><div class="num blue" id="gActivos30">—</div><div class="lbl">Activos últ. 30 días — <span id="gTasaRetencion">—%</span></div></div>
+            <div class="stat"><div class="num warn" id="gReferidos">—</div><div class="lbl">Invitaciones enviadas</div></div>
+            <div class="stat"><div class="num" id="gReferidosOk">—</div><div class="lbl">Referidos registrados — <span id="gTasaReferidos">—%</span></div></div>
+          </div>
+
+          <div class="section-header"><h3>Activación por semana de registro (cohortes)</h3></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--mu)">
+                  <th style="padding:0.5rem">Semana</th><th style="padding:0.5rem">Registrados</th><th style="padding:0.5rem">Activados en semana 1</th><th style="padding:0.5rem">% Activación</th>
+                </tr>
+              </thead>
+              <tbody id="cohortesBody"><tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabCrecimiento -->
+
+        <!-- RESERVAS -->
+        <div id="tabReservas" style="display:none">
+          <div class="section-header"><h2>📅 Reservas</h2></div>
+          <div class="filters" id="reservasFilters">
+            <button class="filter-btn active" onclick="setReservasFilter('',this)">Todas</button>
+            <button class="filter-btn" onclick="setReservasFilter('pendiente',this)">Pendientes</button>
+            <button class="filter-btn" onclick="setReservasFilter('confirmada',this)">Confirmadas</button>
+            <button class="filter-btn" onclick="setReservasFilter('completada',this)">Completadas</button>
+            <button class="filter-btn" onclick="setReservasFilter('cancelada',this)">Canceladas</button>
+          </div>
+          <div id="reservasBody" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1rem">
+            <div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>
+          </div>
+        </div><!-- /tabReservas -->
+
         <!-- TIMELINE -->
         <div id="tabTimeline" style="display:none">
           <div class="section-header"><h2>🕐 Timeline de Actividad</h2></div>
@@ -1204,7 +1249,7 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','timeline','rita'];
+const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','crecimiento','reservas','timeline','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
   despacho: 'tabDespacho',
@@ -1219,6 +1264,8 @@ const TAB_ID_MAP = {
   restaurantes: 'tabRestaurantes',
   conversaciones: 'tabConversaciones',
   reportes: 'tabReportes',
+  crecimiento: 'tabCrecimiento',
+  reservas: 'tabReservas',
   timeline: 'tabTimeline',
   rita: 'tabRita',
 };
@@ -1242,6 +1289,8 @@ function showTab(tab) {
   if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
   if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
   if (tab === 'reportes' && !sectionLoaded.reportes) loadReportes();
+  if (tab === 'crecimiento' && !sectionLoaded.crecimiento) loadCrecimiento();
+  if (tab === 'reservas') loadReservas();
   if (tab === 'timeline' && !sectionLoaded.timeline) loadTimeline();
   if (tab === 'despacho') {
     if (!solStatsLoaded) loadSolicitudesStats();
@@ -1632,7 +1681,7 @@ function showResetPwdModal() {
       <h2 style="color: var(--or); margin-bottom: 1rem;">Recuperar clave</h2>
       <p style="color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem;">
         Contacta al administrador para resetear tu clave de acceso.
-        Email: <strong>soporte@ridera.com.co</strong>
+        Email: <strong>info@ridera.com.co</strong>
       </p>
       <button onclick="this.closest('div').parentElement.remove()" class="btn" style="width: 100%;">Entendido</button>
     </div>
@@ -3793,6 +3842,87 @@ async function loadReportes() {
       <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">${data.negociosActivos} / ${data.negociosInteresados} convertidos</div>
     `;
   }
+}
+
+async function loadCrecimiento() {
+  const data = await callAdmin({ action: 'growth_analytics' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('cohortesBody').innerHTML = '<tr><td colspan="4" style="padding:1rem;text-align:center;color:#f87171">Error al cargar.</td></tr>';
+    return;
+  }
+  sectionLoaded.crecimiento = true;
+
+  document.getElementById('gRegistrados').textContent = data.funnel.registrados;
+  document.getElementById('gActivados').textContent = data.funnel.activados_primer_sello;
+  document.getElementById('gTasaActivacion').textContent = data.funnel.tasa_activacion + '%';
+  document.getElementById('gActivos30').textContent = data.funnel.activos_ultimos_30d;
+  document.getElementById('gTasaRetencion').textContent = data.funnel.tasa_retencion_30d + '%';
+  document.getElementById('gReferidos').textContent = data.referidos.total_invitaciones;
+  document.getElementById('gReferidosOk').textContent = data.referidos.registrados;
+  document.getElementById('gTasaReferidos').textContent = data.referidos.tasa_conversion + '%';
+
+  const body = document.getElementById('cohortesBody');
+  body.innerHTML = (data.cohortes_semanales || []).slice().reverse().map(c => `
+    <tr style="border-bottom:1px solid var(--line)">
+      <td style="padding:0.5rem">${esc(c.semana)}</td>
+      <td style="padding:0.5rem">${c.registrados}</td>
+      <td style="padding:0.5rem">${c.activados_semana1}</td>
+      <td style="padding:0.5rem;color:${c.tasa_activacion_semana1 >= 50 ? '#4ade80' : c.tasa_activacion_semana1 >= 20 ? '#f59e0b' : '#f87171'}">${c.tasa_activacion_semana1}%</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Sin datos aún.</td></tr>';
+}
+
+let reservasFilterEstado = '';
+async function setReservasFilter(estado, btn) {
+  reservasFilterEstado = estado;
+  document.querySelectorAll('#reservasFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  await loadReservas();
+}
+
+const ESTADO_COLOR = { pendiente: '#f59e0b', confirmada: '#60a5fa', completada: '#4ade80', cancelada: '#f87171' };
+const ESTADO_LABEL = { pendiente: 'Pendiente', confirmada: 'Confirmada', completada: 'Completada', cancelada: 'Cancelada' };
+
+async function loadReservas() {
+  const box = document.getElementById('reservasBody');
+  box.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>';
+  const data = await callAdmin({ action: 'reserva_list', estado: reservasFilterEstado || undefined }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem;padding:1rem">Error al cargar reservas.</p>';
+    return;
+  }
+  const reservas = data.reservas || [];
+  const badge = document.getElementById('badgeReservas');
+  const pendientes = reservas.filter(r => r.estado === 'pendiente').length;
+  if (badge) { badge.style.display = pendientes > 0 ? 'inline-block' : 'none'; badge.textContent = pendientes; }
+
+  box.innerHTML = reservas.length ? reservas.map(r => `
+    <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
+      <div>
+        <div style="font-weight:600">${esc(r.nombre_contacto)} <span style="color:var(--mu);font-weight:400">· ${esc(r.telefono_contacto)}</span></div>
+        <div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">${esc(r.entidad_tipo)} — ${esc(r.entidad_nombre || r.entidad_id)}</div>
+        ${r.fecha_solicitada ? `<div style="font-size:0.8rem;color:var(--mu)">📅 ${esc(r.fecha_solicitada)} ${esc(r.hora_solicitada || '')}</div>` : ''}
+        ${r.nota ? `<div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">"${esc(r.nota)}"</div>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:0.75rem;font-weight:700;color:${ESTADO_COLOR[r.estado] || '#888'}">${ESTADO_LABEL[r.estado] || r.estado}</span>
+        <select onchange="updateReservaEstado('${r.id}', this.value)" style="background:#111;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem">
+          <option value="">Cambiar...</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmada">Confirmada</option>
+          <option value="completada">Completada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+  `).join('') : '<p style="color:var(--mu);font-size:0.85rem;padding:1rem">Sin reservas.</p>';
+}
+
+async function updateReservaEstado(id, estado) {
+  if (!estado) return;
+  const data = await callAdmin({ action: 'reserva_update_estado', id, estado }).catch(() => ({ ok: false }));
+  if (!data.ok) { alert(data.error || 'Error al actualizar'); return; }
+  loadReservas();
 }
 
 function renderChartRidersPerMonth(data) {

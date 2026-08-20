@@ -268,13 +268,37 @@ async function fetchGarageMoto(marca: string, modelo?: string): Promise<any | nu
   return data?.length ? data : null;
 }
 
+const NIVELES_SELLO = [
+  { min: 0, nombre: "Novato", icono: "🔰" },
+  { min: 50, nombre: "Explorador", icono: "🧭" },
+  { min: 150, nombre: "Trotamundos", icono: "🗺️" },
+  { min: 350, nombre: "Leyenda Motera", icono: "🏆" },
+  { min: 700, nombre: "Maestro de las Rutas", icono: "👑" },
+];
+function nivelForPuntos(puntos: number) {
+  let n = NIVELES_SELLO[0];
+  for (const x of NIVELES_SELLO) if (puntos >= x.min) n = x;
+  return n;
+}
+
 async function fetchSellosRider(phone: string): Promise<any | null> {
   try {
     const tel = phone.replace(/^57/, "");
     const { data: rider } = await supabase.from("riders").select("id, nombre").or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`).maybeSingle();
     if (!rider) return null;
-    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at").eq("rider_id", rider.id);
-    return { nombre: rider.nombre, total: sellos?.length || 0, municipios: sellos?.map(s => s.municipio_id) || [] };
+    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at, estado").eq("rider_id", rider.id).eq("estado", "aprobado");
+    const { data: municipios } = await supabase.from("municipios").select("id, puntos_sello");
+    const puntosByMuni = new Map((municipios || []).map((m: any) => [m.id, m.puntos_sello || 10]));
+    const puntos = (sellos || []).reduce((acc: number, s: any) => acc + (puntosByMuni.get(s.municipio_id) || 10), 0);
+    const nivel = nivelForPuntos(puntos);
+    return {
+      nombre: rider.nombre,
+      total: sellos?.length || 0,
+      municipios: sellos?.map((s: any) => s.municipio_id) || [],
+      puntos,
+      nivel: nivel.nombre,
+      nivel_icono: nivel.icono,
+    };
   } catch { return null; }
 }
 
@@ -563,7 +587,7 @@ async function askClaude(message: string, history: { role: string; content: stri
   if (context.resultados?.length) contextBlock += `\nWEB: ${JSON.stringify(context.resultados, null, 0)}`;
   if (context.talleres?.length) contextBlock += `\nTALLERES: ${JSON.stringify(context.talleres, null, 0)}`;
   if (context.tramitesCtx) contextBlock += `\nTRAMITES: ${JSON.stringify(context.tramitesCtx, null, 0)}`;
-  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos.`;
+  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos, ${context.sellos.puntos} puntos, nivel ${context.sellos.nivel_icono} ${context.sellos.nivel}. Puede ver el ranking completo en gruas.ridera.com.co/leaderboard.html`;
   if (context.isGrua) contextBlock += `\nGRUA: gruas.ridera.com.co y boton SOS.`;
   if (context.marcaMencionada && !context.garageMotoData) contextBlock += `\nMarca: ${context.marcaMencionada} (sin datos en Garage).`;
 
@@ -794,6 +818,20 @@ Deno.serve(async (req: Request) => {
 
       await saveMessage(from, "user", message);
 
+      const refMatch = /\bREF[\s-]?([A-Za-z0-9]{4,12})\b/i.exec(message);
+      if (refMatch) {
+        try {
+          const codigo = refMatch[1].toUpperCase();
+          const { data: referidor } = await supabase.from("riders").select("id").eq("codigo_referido", codigo).maybeSingle();
+          const { data: yaRider } = await supabase.from("riders").select("id").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+          if (referidor && !yaRider) {
+            await supabase.from("referidos").upsert({
+              codigo, referidor_id: referidor.id, telefono_invitado: from, estado: "pendiente",
+            }, { onConflict: "codigo,telefono_invitado" });
+          }
+        } catch { /* no bloquea el flujo normal */ }
+      }
+
       const conv = await getConvState(from);
       if (conv.state !== "idle") {
         const regReply = await handleRegistration(from, message, conv);
@@ -805,6 +843,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const msg2 = norm(message);
+      if (/invitar|referir|mi codigo|codigo de referido|codigo referido/.test(msg2)) {
+        const { data: yo } = await supabase.from("riders").select("id, nombre, codigo_referido, telefono").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+        if (yo?.codigo_referido) {
+          const link = `https://wa.me/573117896717?text=REF%20${encodeURIComponent(yo.codigo_referido)}`;
+          const r = `🏍️ Invita a un amigo y ambos ganan +50 puntos en el ranking Ridera. Comparte este link:\n\n${link}\n\nCuando escriba y se registre, les llega la recompensa automático.`;
+          await saveMessage(from, "assistant", r);
+          await sendWhatsApp(from, r);
+          return new Response(JSON.stringify({ ok: true, flow: "invite_link" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+      }
       if (/quiero registrarme|registrarme|registrame|inscribirme/.test(msg2)) {
         const riderCheck = await getRiderContext(from);
         if (!riderCheck?.encontrado) {

@@ -139,6 +139,15 @@ function logAudit(username: string, action: string, detail: Record<string, unkno
   sbClient.from('admin_audit_log').insert({ username, action, detail }).then(() => {})
 }
 
+function weekKey(d: Date): string {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  const dayNum = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+}
+
 function toSlug(s: string, suffix = ''): string {
   const base = s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'gruero'
@@ -208,7 +217,8 @@ Deno.serve(async (req) => {
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
-      'survey_create', 'survey_list', 'survey_results',
+      'survey_create', 'survey_list', 'survey_results', 'set_tags',
+      'reserva_update_estado',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -380,6 +390,32 @@ Deno.serve(async (req) => {
       }
       logAudit(auth.username!, 'update_record', { table, id, fields: Object.keys(update) })
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SET TAGS (segmentación) on rita_contacts by phone or riders by id
+    if (action === 'set_tags') {
+      const { entity, id, phone, tags } = body
+      if (!Array.isArray(tags)) {
+        return new Response(JSON.stringify({ ok: false, error: 'tags debe ser un arreglo' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const cleanTags = [...new Set(tags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean))]
+      if (entity === 'rider') {
+        const { error } = await sbClient.from('riders').update({ tags: cleanTags }).eq('id', id)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else if (entity === 'contact') {
+        const { error } = await sbClient.from('rita_contacts').update({ tags: cleanTags }).eq('phone_number', phone)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else {
+        return new Response(JSON.stringify({ ok: false, error: 'entity debe ser rider o contact' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'set_tags', { entity, id: id || null, phone: phone || null, tags: cleanTags })
+      return new Response(JSON.stringify({ ok: true, tags: cleanTags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -898,6 +934,110 @@ Deno.serve(async (req) => {
       })
     }
 
+    // GROWTH ANALYTICS (funnel + retencion + referidos)
+    if (action === 'growth_analytics') {
+      const [{ data: riders }, { data: sellos }, { data: msgs }, { data: referidos }] = await Promise.all([
+        sbClient.from('riders').select('id, telefono, created_at'),
+        sbClient.from('sellos').select('rider_id, fecha, estado').eq('estado', 'aprobado'),
+        sbClient.from('rita_messages').select('phone, phone_number, created_at').gte('created_at', new Date(Date.now() - 60 * 86400000).toISOString()),
+        sbClient.from('referidos').select('estado, created_at'),
+      ])
+
+      const totalRiders = riders?.length || 0
+      const primerSelloByRider = new Map<string, string>()
+      for (const s of sellos || []) {
+        if (!s.rider_id) continue
+        const prev = primerSelloByRider.get(s.rider_id)
+        if (!prev || s.fecha < prev) primerSelloByRider.set(s.rider_id, s.fecha)
+      }
+      const activados = primerSelloByRider.size
+
+      const phoneSuffix = (p: string) => (p || '').replace(/\D/g, '').slice(-10)
+      const riderPhoneSuffixes = new Set((riders || []).map((r) => phoneSuffix(r.telefono)).filter(Boolean))
+      const start30 = new Date(Date.now() - 30 * 86400000)
+      const phonesActivos30 = new Set(
+        (msgs || [])
+          .filter((m) => new Date(m.created_at) >= start30)
+          .map((m) => phoneSuffix(m.phone || m.phone_number))
+          .filter((p) => p && riderPhoneSuffixes.has(p)),
+      )
+      const activosUltimos30 = phonesActivos30.size
+
+      // Cohortes por semana de registro: % con al menos 1 sello dentro de 7 dias de registrarse
+      const porSemana: Record<string, { registrados: number; activadosSemana1: number }> = {}
+      for (const r of riders || []) {
+        const semana = weekKey(new Date(r.created_at))
+        porSemana[semana] = porSemana[semana] || { registrados: 0, activadosSemana1: 0 }
+        porSemana[semana].registrados++
+        const primerSello = primerSelloByRider.get(r.id)
+        if (primerSello && (new Date(primerSello).getTime() - new Date(r.created_at).getTime()) <= 7 * 86400000) {
+          porSemana[semana].activadosSemana1++
+        }
+      }
+
+      const referidosTotal = referidos?.length || 0
+      const referidosRegistrados = (referidos || []).filter((r) => r.estado === 'registrado').length
+      const tasaConversionReferidos = referidosTotal ? Math.round((referidosRegistrados / referidosTotal) * 100) : 0
+
+      return new Response(JSON.stringify({
+        ok: true,
+        funnel: {
+          registrados: totalRiders,
+          activados_primer_sello: activados,
+          tasa_activacion: totalRiders ? Math.round((activados / totalRiders) * 100) : 0,
+          activos_ultimos_30d: activosUltimos30,
+          tasa_retencion_30d: totalRiders ? Math.round((activosUltimos30 / totalRiders) * 100) : 0,
+        },
+        cohortes_semanales: Object.entries(porSemana).sort(([a], [b]) => a.localeCompare(b)).map(([semana, v]) => ({
+          semana, registrados: v.registrados, activados_semana1: v.activadosSemana1,
+          tasa_activacion_semana1: v.registrados ? Math.round((v.activadosSemana1 / v.registrados) * 100) : 0,
+        })),
+        referidos: {
+          total_invitaciones: referidosTotal,
+          registrados: referidosRegistrados,
+          tasa_conversion: tasaConversionReferidos,
+        },
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RESERVAS (talleres, almacenes, hoteles, restaurantes - sin pago)
+    if (action === 'reserva_list') {
+      const estado = body.estado ? String(body.estado) : null
+      let query = sbClient.from('reservas').select('*').order('created_at', { ascending: false }).limit(200)
+      if (estado) query = query.eq('estado', estado)
+      const { data, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, reservas: data || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (action === 'reserva_update_estado') {
+      const { id, estado } = body
+      const validEstados = ['pendiente', 'confirmada', 'cancelada', 'completada']
+      if (!validEstados.includes(estado)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Estado no válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('reservas').update({ estado, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'reserva_update_estado', { id, estado })
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // RITA CONTACTS (paginated + search)
     if (action === 'contacts') {
       const limit = Math.min(Number(body.limit) || 20, 100)
@@ -986,14 +1126,19 @@ Deno.serve(async (req) => {
     // BROADCAST AUDIENCE - distinct ciudades + count of opted-in contacts, optionally filtered by ciudad
     if (action === 'broadcast_audience') {
       const ciudad = String(body.ciudad || '').trim()
-      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number').eq('opted_in', true)
+      const tag = String(body.tag || '').trim()
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, tags').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [tag])
+      const { data: contacts } = await contactsQuery
       const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+      const { data: allTagged } = await sbClient.from('rita_contacts').select('tags').eq('opted_in', true)
       const ciudadByPhoneSuffix = new Map<string, string>()
       for (const r of riders || []) {
         const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
         if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
       }
       const ciudades = [...new Set((riders || []).map((r) => r.ciudad).filter(Boolean))].sort()
+      const tags = [...new Set((allTagged || []).flatMap((c) => c.tags || []))].sort()
       let total = (contacts || []).length
       if (ciudad) {
         total = (contacts || []).filter((c) => {
@@ -1001,21 +1146,23 @@ Deno.serve(async (req) => {
           return ciudadByPhoneSuffix.get(suffix) === ciudad
         }).length
       }
-      return new Response(JSON.stringify({ ok: true, total, ciudades }), {
+      return new Response(JSON.stringify({ ok: true, total, ciudades, tags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     // BROADCAST (WhatsApp template to opted-in contacts, optionally filtered by rider ciudad)
     if (action === 'broadcast') {
-      const { template, language, params, ciudad, mediaUrl, mediaType } = body
+      const { template, language, params, ciudad, tag, mediaUrl, mediaType } = body
       if (!template) {
         return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
       const media = mediaUrl && ['image', 'video', 'document'].includes(mediaType) ? { type: mediaType, url: mediaUrl } : undefined
-      let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [String(tag).trim()])
+      let { data: contacts } = await contactsQuery
       contacts = contacts || []
 
       if (ciudad) {
@@ -1045,7 +1192,7 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 200))
       }
 
-      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, sent, errors })
+      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, tag: tag || null, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
