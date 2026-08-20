@@ -208,7 +208,7 @@ Deno.serve(async (req) => {
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
-      'survey_create', 'survey_list', 'survey_results',
+      'survey_create', 'survey_list', 'survey_results', 'set_tags',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -380,6 +380,32 @@ Deno.serve(async (req) => {
       }
       logAudit(auth.username!, 'update_record', { table, id, fields: Object.keys(update) })
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SET TAGS (segmentación) on rita_contacts by phone or riders by id
+    if (action === 'set_tags') {
+      const { entity, id, phone, tags } = body
+      if (!Array.isArray(tags)) {
+        return new Response(JSON.stringify({ ok: false, error: 'tags debe ser un arreglo' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const cleanTags = [...new Set(tags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean))]
+      if (entity === 'rider') {
+        const { error } = await sbClient.from('riders').update({ tags: cleanTags }).eq('id', id)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else if (entity === 'contact') {
+        const { error } = await sbClient.from('rita_contacts').update({ tags: cleanTags }).eq('phone_number', phone)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else {
+        return new Response(JSON.stringify({ ok: false, error: 'entity debe ser rider o contact' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'set_tags', { entity, id: id || null, phone: phone || null, tags: cleanTags })
+      return new Response(JSON.stringify({ ok: true, tags: cleanTags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -986,14 +1012,19 @@ Deno.serve(async (req) => {
     // BROADCAST AUDIENCE - distinct ciudades + count of opted-in contacts, optionally filtered by ciudad
     if (action === 'broadcast_audience') {
       const ciudad = String(body.ciudad || '').trim()
-      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number').eq('opted_in', true)
+      const tag = String(body.tag || '').trim()
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, tags').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [tag])
+      const { data: contacts } = await contactsQuery
       const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+      const { data: allTagged } = await sbClient.from('rita_contacts').select('tags').eq('opted_in', true)
       const ciudadByPhoneSuffix = new Map<string, string>()
       for (const r of riders || []) {
         const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
         if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
       }
       const ciudades = [...new Set((riders || []).map((r) => r.ciudad).filter(Boolean))].sort()
+      const tags = [...new Set((allTagged || []).flatMap((c) => c.tags || []))].sort()
       let total = (contacts || []).length
       if (ciudad) {
         total = (contacts || []).filter((c) => {
@@ -1001,21 +1032,23 @@ Deno.serve(async (req) => {
           return ciudadByPhoneSuffix.get(suffix) === ciudad
         }).length
       }
-      return new Response(JSON.stringify({ ok: true, total, ciudades }), {
+      return new Response(JSON.stringify({ ok: true, total, ciudades, tags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
 
     // BROADCAST (WhatsApp template to opted-in contacts, optionally filtered by rider ciudad)
     if (action === 'broadcast') {
-      const { template, language, params, ciudad, mediaUrl, mediaType } = body
+      const { template, language, params, ciudad, tag, mediaUrl, mediaType } = body
       if (!template) {
         return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
       const media = mediaUrl && ['image', 'video', 'document'].includes(mediaType) ? { type: mediaType, url: mediaUrl } : undefined
-      let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [String(tag).trim()])
+      let { data: contacts } = await contactsQuery
       contacts = contacts || []
 
       if (ciudad) {
@@ -1045,7 +1078,7 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 200))
       }
 
-      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, sent, errors })
+      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, tag: tag || null, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
