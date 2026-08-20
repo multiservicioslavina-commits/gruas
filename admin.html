@@ -2562,7 +2562,7 @@ function renderAlmacenesTable() {
 let allHoteles = [], hotelesFilter = 'all';
 
 async function loadHoteles() {
-  const data = await callAdmin({ action: 'list_hoteles' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'list_hoteles' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('hotelesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar hoteles.</td></tr>';
     return;
@@ -2629,7 +2629,7 @@ function renderHotelesTable() {
 let allRestaurantes = [], restaurantesFilter = 'all';
 
 async function loadRestaurantes() {
-  const data = await callAdmin({ action: 'list_restaurantes' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'list_restaurantes' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('restaurantesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar restaurantes.</td></tr>';
     return;
@@ -2836,7 +2836,7 @@ async function saveEditModal() {
 
 // ── DASHBOARD CRM ──────────────────────────────────────────────────────
 async function loadDashboard() {
-  const data = await callAdmin({ action: 'crm_metrics' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'crm_metrics' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#f87171">Error al cargar métricas.</p>';
     return;
@@ -2896,7 +2896,7 @@ async function loadDashboard() {
 let allConversaciones = [], conversacionesFilter = 'todas';
 
 async function loadConversaciones() {
-  const data = await callAdmin({ action: 'list_conversaciones' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'list_conversaciones' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('conversacionesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar conversaciones.</td></tr>';
     return;
@@ -2950,7 +2950,7 @@ async function openRiderProfile(riderId) {
   const modal = document.getElementById('riderProfileModal');
   modal.classList.remove('hide');
 
-  const data = await callAdmin({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
   if (!data.ok) {
     document.getElementById('riderProfileContent').innerHTML = '<p style="color:#f87171">Error al cargar perfil.</p>';
     return;
@@ -3058,7 +3058,7 @@ function closeRiderProfile() {
 // ── NOTAS INTERNAS ────────────────────────────────────────────────────
 async function loadNotes(entityType, entityId) {
   const box = document.getElementById('notesList');
-  const data = await callAdmin({ action: 'list_notes', entity_type: entityType, entity_id: entityId }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'list_notes', entity_type: entityType, entity_id: entityId }).catch(() => ({ ok: false }));
   if (!data.ok) {
     box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
     return;
@@ -3083,7 +3083,7 @@ async function submitNote(entityType, entityId) {
   const input = document.getElementById('noteInput');
   const note = input.value.trim();
   if (!note) return;
-  const data = await callAdmin({ action: 'add_note', entity_type: entityType, entity_id: entityId, note }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'add_note', entity_type: entityType, entity_id: entityId, note }).catch(() => ({ ok: false }));
   if (!data.ok) {
     alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
     return;
@@ -3093,7 +3093,7 @@ async function submitNote(entityType, entityId) {
 }
 
 async function removeNote(id, entityType, entityId) {
-  const data = await callAdmin({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
   if (!data.ok) {
     alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
     return;
@@ -3115,7 +3115,7 @@ async function loadGenericNotes() {
   const box = document.getElementById('genericNotesList');
   box.innerHTML = 'Cargando notas...';
   const { type, id } = genericNotesEntity;
-  const data = await callAdmin({ action: 'list_notes', entity_type: type, entity_id: id }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'list_notes', entity_type: type, entity_id: id }).catch(() => ({ ok: false }));
   if (!data.ok) {
     box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
     return;
@@ -3141,7 +3141,7 @@ async function submitGenericNote() {
   const note = input.value.trim();
   if (!note) return;
   const { type, id } = genericNotesEntity;
-  const data = await callAdmin({ action: 'add_note', entity_type: type, entity_id: id, note }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'add_note', entity_type: type, entity_id: id, note }).catch(() => ({ ok: false }));
   if (!data.ok) {
     alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
     return;
@@ -3151,7 +3151,7 @@ async function submitGenericNote() {
 }
 
 async function removeGenericNote(id) {
-  const data = await callAdmin({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
   if (!data.ok) {
     alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
     return;
@@ -3161,7 +3161,7 @@ async function removeGenericNote(id) {
 
 // ── PIPELINE DE NEGOCIOS ───────────────────────────────────────────────
 async function changeNegocioEstado(table, id, estado) {
-  const data = await callAdmin({ action: 'change_negocio_estado', table, id, estado }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'change_negocio_estado', table, id, estado }).catch(() => ({ ok: false }));
   if (data.ok) {
     reloadSectionTable(table);
   } else {
@@ -3173,7 +3173,7 @@ async function changeNegocioEstado(table, id, estado) {
 let chartInstances = {};
 
 async function loadReportes() {
-  const data = await callAdmin({ action: 'get_reportes' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'get_reportes' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     console.error('Error cargando reportes:', data.error);
     return;
@@ -3280,7 +3280,7 @@ function renderChartNegociosEstado(data) {
 }
 
 async function exportReportCSV(type) {
-  const data = await callAdmin({ action: 'export_report', type }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'export_report', type }).catch(() => ({ ok: false }));
   if (!data.ok) {
     alert('Error al exportar: ' + (data.error || 'Desconocido'));
     return;
@@ -3306,7 +3306,7 @@ function onGlobalSearchInput() {
     return;
   }
   globalSearchTimer = setTimeout(async () => {
-    const data = await callAdmin({ action: 'global_search', query: q }).catch(() => ({ ok: false }));
+    const data = await callRita({ action: 'global_search', query: q }).catch(() => ({ ok: false }));
     if (!data.ok) return;
     renderGlobalSearchResults(data.results || []);
   }, 300);
@@ -3363,7 +3363,7 @@ document.addEventListener('click', (e) => {
 
 // ── TIMELINE ───────────────────────────────────────────────────────────
 async function loadTimeline() {
-  const data = await callAdmin({ action: 'get_timeline' }).catch(() => ({ ok: false }));
+  const data = await callRita({ action: 'get_timeline' }).catch(() => ({ ok: false }));
   if (!data.ok) {
     console.error('Error cargando timeline:', data.error);
     return;

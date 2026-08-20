@@ -128,7 +128,10 @@ async function getAnalytics() {
 async function getContacts(limit = 50, offset = 0, search = '') {
   let filter = `rita_contacts?select=phone_number,preferred_name,last_seen_at,opted_in&order=last_seen_at.desc&limit=${limit}&offset=${offset}`;
   if (search) {
-    filter += `&or=(preferred_name.ilike.*${encodeURIComponent(search)}*,phone_number.ilike.*${encodeURIComponent(search)}*)`;
+    // PostgREST reserves , . : ( ) inside filter values (used by the or=(...) syntax);
+    // backslash-escape them so user input can't inject extra filter clauses.
+    const safeSearch = search.replace(/[\\,.:()]/g, c => `\\${c}`);
+    filter += `&or=(preferred_name.ilike.*${encodeURIComponent(safeSearch)}*,phone_number.ilike.*${encodeURIComponent(safeSearch)}*)`;
   }
   const res = await fetch(`${SB_URL}/rest/v1/${filter}`, {
     headers: { ...sbHeaders, Prefer: 'count=exact' },
@@ -340,8 +343,9 @@ async function getCrmMetrics() {
     });
     const ridersNuevos = await res1.json();
 
-    const res2 = await fetch(`${SB_URL}/rest/v1/sellos?select=distinct(municipio_id)`, { headers: sbHeaders });
-    const sellosDistinct = await res2.json();
+    const res2 = await fetch(`${SB_URL}/rest/v1/sellos?select=municipio_id`, { headers: sbHeaders });
+    const sellosRows = await res2.json();
+    const sellosDistinct = [...new Set((Array.isArray(sellosRows) ? sellosRows : []).map(r => r.municipio_id))];
 
     const res3 = await fetch(`${SB_URL}/rest/v1/solicitudes?estado=eq.pendiente&select=id`, { headers: sbHeaders });
     const gruasPendientes = await res3.json();
@@ -365,6 +369,8 @@ async function getCrmMetrics() {
     if (gruasPendientes.length > 5) alerts.push({ tipo: 'Grúas', mensaje: `${gruasPendientes.length} solicitudes pendientes` });
     if (talleresAprobados.length < talleres) alerts.push({ tipo: 'Talleres', mensaje: `${talleres - talleresAprobados.length} pendientes de aprobación` });
     if (almacenesAprobados.length < almacenes) alerts.push({ tipo: 'Almacenes', mensaje: `${almacenes - almacenesAprobados.length} pendientes de aprobación` });
+    if (hotelesAprobados.length < hoteles) alerts.push({ tipo: 'Hoteles', mensaje: `${hoteles - hotelesAprobados.length} pendientes de aprobación` });
+    if (restaurantesAprobados.length < restaurantes) alerts.push({ tipo: 'Restaurantes', mensaje: `${restaurantes - restaurantesAprobados.length} pendientes de aprobación` });
 
     // Leads estancados (interesado/documentos > 7 días sin avanzar)
     const staleThreshold = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -594,7 +600,7 @@ async function exportReport(type) {
 async function listNotes(entityType, entityId) {
   try {
     if (!entityType || !entityId) return { ok: false, error: 'Faltan entity_type y entity_id' };
-    const notes = await sbGet(`crm_notes?entity_type=eq.${entityType}&entity_id=eq.${entityId}&select=id,note,created_at&order=created_at.desc`);
+    const notes = await sbGet(`crm_notes?entity_type=eq.${encodeURIComponent(entityType)}&entity_id=eq.${encodeURIComponent(entityId)}&select=id,note,created_at&order=created_at.desc`);
     return { ok: true, notes };
   } catch (err) {
     console.error('listNotes error:', err);
@@ -622,7 +628,7 @@ async function addNote(entityType, entityId, note) {
 async function deleteNote(id) {
   try {
     if (!id) return { ok: false, error: 'Falta id' };
-    const res = await fetch(`${SB_URL}/rest/v1/crm_notes?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders });
+    const res = await fetch(`${SB_URL}/rest/v1/crm_notes?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE', headers: sbHeaders });
     if (!res.ok) return { ok: false, error: 'Error al borrar nota' };
     return { ok: true };
   } catch (err) {
@@ -635,7 +641,10 @@ async function globalSearch(query) {
   try {
     const q = (query || '').trim();
     if (!q || q.length < 2) return { ok: true, results: [] };
-    const esc = encodeURIComponent(`*${q}*`);
+    // PostgREST reserves , . : ( ) inside filter values (used by the or=(...) syntax);
+    // backslash-escape them so user input can't inject extra filter clauses.
+    const safe = q.replace(/[\\,.:()]/g, c => `\\${c}`);
+    const esc = encodeURIComponent(`*${safe}*`);
     const results = [];
 
     const riders = await sbGet(`riders?or=(nombre.ilike.${esc},apellido.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,apellido,telefono,ciudad&limit=10`);
