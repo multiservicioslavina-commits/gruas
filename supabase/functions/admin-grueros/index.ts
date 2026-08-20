@@ -349,7 +349,7 @@ Deno.serve(async (req) => {
         almacenes: ['nombre', 'ciudad', 'telefono', 'email', 'direccion', 'barrio', 'categorias'],
         motos_venta: ['titulo', 'precio', 'ciudad', 'barrio', 'telefono', 'email', 'marca', 'modelo', 'anio', 'kilometraje', 'cilindraje', 'color', 'descripcion'],
         grueros: ['nombre', 'ciudad', 'telefono', 'email', 'zona'],
-        riders: ['nombre', 'apellido', 'ciudad', 'telefono', 'correo', 'moto_marca', 'moto_modelo'],
+        riders: ['nombre', 'apellido', 'ciudad', 'telefono', 'correo', 'moto_marca', 'moto_modelo', 'fecha_nacimiento'],
         hoteles: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'contacto_nombre', 'descripcion'],
         restaurantes: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'tipo_cocina', 'contacto_nombre', 'descripcion'],
       }
