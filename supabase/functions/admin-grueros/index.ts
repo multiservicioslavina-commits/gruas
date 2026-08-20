@@ -90,10 +90,14 @@ async function validateKey(key: string): Promise<{ ok: boolean; role?: string; u
   const username = key.slice(0, sep)
   const password = key.slice(sep + 1)
   if (!username || !password) return { ok: false }
-  const { data } = await sbClient.from('admin_users').select('password, role').eq('username', username).maybeSingle()
-  if (!data || data.password !== password) return { ok: false }
+  const { data, error } = await sbClient.rpc('verify_admin_credentials', { p_username: username, p_password: password })
+  if (error || !data || !data.length) return { ok: false }
   sbClient.from('admin_users').update({ last_login_at: new Date().toISOString() }).eq('username', username).then(() => {})
-  return { ok: true, role: data.role, username }
+  return { ok: true, role: data[0].role, username }
+}
+
+function logAudit(username: string, action: string, detail: Record<string, unknown> = {}) {
+  sbClient.from('admin_audit_log').insert({ username, action, detail }).then(() => {})
 }
 
 function toSlug(s: string, suffix = ''): string {
@@ -163,7 +167,7 @@ Deno.serve(async (req) => {
       'update_error', 'export_contacts', 'broadcast',
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
-      'admin_users_list', 'admin_users_create', 'admin_users_delete',
+      'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -267,6 +271,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'toggle_approval', { table, id, aprobado })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -289,6 +294,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'reject_record', { table, id })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -331,6 +337,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'update_record', { table, id, fields: Object.keys(update) })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -744,6 +751,7 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'delete_gruero', { id })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -806,12 +814,13 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { error } = await sbClient.from('admin_users').update({ password: nueva }).eq('username', auth.username)
+      const { error } = await sbClient.rpc('set_admin_password', { p_username: auth.username, p_password: nueva })
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'change_password', {})
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -994,6 +1003,7 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 200))
       }
 
+      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -1042,6 +1052,23 @@ Deno.serve(async (req) => {
       })
     }
 
+    // ADMIN AUDIT LOG - recent actions (admin only)
+    if (action === 'admin_audit_log') {
+      const { data: log, error } = await sbClient
+        .from('admin_audit_log')
+        .select('id, username, action, detail, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, log: log || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
     // ADMIN USERS - create (admin only)
     if (action === 'admin_users_create') {
       const { username, password, role: newRole } = body
@@ -1055,12 +1082,13 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { error } = await sbClient.from('admin_users').insert({ username, password, role: newRole })
+      const { error } = await sbClient.rpc('create_admin_user', { p_username: username, p_password: password, p_role: newRole })
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message.includes('duplicate') ? 'Ese usuario ya existe' : error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'admin_users_create', { username, role: newRole })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -1085,6 +1113,7 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'admin_users_delete', { username: delUsername })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
