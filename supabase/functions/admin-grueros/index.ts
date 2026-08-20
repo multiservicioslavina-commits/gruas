@@ -255,7 +255,7 @@ Deno.serve(async (req) => {
     // REJECT RECORD (talleres, almacenes, clubs, motos_venta, riders, sellos) - deletes the record
     if (action === 'reject_record') {
       const { table, id } = body
-      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta', 'riders', 'sellos']
+      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta', 'riders', 'sellos', 'hoteles', 'restaurantes']
       if (!allowedTables.includes(table)) {
         return new Response(JSON.stringify({ ok: false, error: 'Tabla no permitida' }), {
           status: 400,
@@ -284,6 +284,8 @@ Deno.serve(async (req) => {
         motos_venta: ['titulo', 'precio', 'ciudad', 'barrio', 'telefono', 'email', 'marca', 'modelo', 'anio', 'kilometraje', 'cilindraje', 'color', 'descripcion'],
         grueros: ['nombre', 'ciudad', 'telefono', 'email', 'zona'],
         riders: ['nombre', 'apellido', 'ciudad', 'telefono', 'correo', 'moto_marca', 'moto_modelo'],
+        hoteles: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'contacto_nombre', 'descripcion'],
+        restaurantes: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'tipo_cocina', 'contacto_nombre', 'descripcion'],
       }
       const allowed = editableFields[table]
       if (!allowed) {
