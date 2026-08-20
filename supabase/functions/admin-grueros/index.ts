@@ -13,6 +13,23 @@ const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_
 const GRAPH = 'https://graph.facebook.com/v25.0'
 const tgBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || ''
 const TELEGRAM_API = `https://api.telegram.org/bot${tgBotToken}`
+const metaPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN') || ''
+
+async function sendMetaMessage(psid: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!metaPageToken) return { ok: false, error: 'Falta META_PAGE_ACCESS_TOKEN' }
+  try {
+    const res = await fetch(`${GRAPH}/me/messages?access_token=${metaPageToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipient: { id: psid }, message: { text } }),
+    })
+    if (res.ok) return { ok: true }
+    const d = await res.json().catch(() => ({}))
+    return { ok: false, error: d?.error?.message || `HTTP ${res.status}` }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
 
 async function sendTelegramMessage(chatId: number, text: string): Promise<{ ok: boolean; error?: string }> {
   if (!tgBotToken) return { ok: false, error: 'Falta TELEGRAM_BOT_TOKEN' }
@@ -190,7 +207,7 @@ Deno.serve(async (req) => {
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
-      'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast',
+      'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1129,6 +1146,43 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 50))
       }
       logAudit(auth.username!, 'telegram_broadcast', { sent, errors })
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // META AUDIENCE (Messenger + Instagram DM)
+    if (action === 'meta_audience') {
+      const channel = body.channel === 'instagram' ? 'instagram' : 'messenger'
+      const { count } = await sbClient.from('meta_contacts').select('id', { count: 'exact', head: true }).eq('opted_in', true).eq('channel', channel)
+      return new Response(JSON.stringify({ ok: true, total: count || 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // META BROADCAST (Messenger + Instagram DM, plain text to opted-in contacts within the 24h window)
+    if (action === 'meta_broadcast') {
+      const { message, channel: rawChannel } = body
+      const channel = rawChannel === 'instagram' ? 'instagram' : 'messenger'
+      if (!message) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el mensaje' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: contacts } = await sbClient.from('meta_contacts').select('psid, name').eq('opted_in', true).eq('channel', channel)
+      let sent = 0, errors = 0
+      const errorDetails: { psid: string; error?: string }[] = []
+      for (const c of contacts || []) {
+        const text = message.replace(/\{\{nombre\}\}/g, c.name || '')
+        const result = await sendMetaMessage(c.psid, text)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ psid: '...' + String(c.psid).slice(-4), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      logAudit(auth.username!, 'meta_broadcast', { channel, sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

@@ -929,6 +929,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div id="tgResult" style="display:none"></div>
           </div>
 
+          <!-- Broadcast Facebook / Instagram -->
+          <div class="rita-sub">Broadcast Facebook Messenger / Instagram</div>
+          <div class="bc-form">
+            <div style="font-size:0.72rem;color:var(--mu);margin-bottom:0.75rem">⚠️ Meta solo permite texto libre a contactos que te escribieron en las últimas 24 horas. Fuera de ese plazo el mensaje falla salvo que uses un mensaje de plantilla aprobado por Meta.</div>
+            <div class="bc-field">
+              <label>Canal</label>
+              <select id="metaChannel" onchange="loadMetaAudience()" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem">
+                <option value="messenger">Facebook Messenger</option>
+                <option value="instagram">Instagram</option>
+              </select>
+            </div>
+            <div class="bc-field">
+              <label>Mensaje (texto libre — usa <code>{{nombre}}</code> para el nombre del contacto)</label>
+              <textarea id="metaMessage" rows="4" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.55rem 0.8rem;font-family:inherit;resize:vertical"></textarea>
+            </div>
+            <div class="bc-preview" id="metaPreview">
+              Audiencia: <strong id="metaAudience">—</strong> contactos suscritos
+            </div>
+            <button class="bc-send admin-only" id="metaSendBtn" onclick="sendMetaBroadcast()">
+              Enviar broadcast
+            </button>
+            <div id="metaResult" style="display:none"></div>
+          </div>
+
           <!-- Email Marketing -->
           <div class="rita-sub">Email Marketing</div>
           <div class="bc-form">
@@ -1886,6 +1910,7 @@ async function loadRitaAnalytics() {
   loadBroadcastAudience();
   loadCampaigns();
   loadTelegramAudience();
+  loadMetaAudience();
 }
 
 async function loadBroadcastAudience() {
@@ -2359,6 +2384,48 @@ async function sendTelegramBroadcast() {
   } else {
     resultEl.className = 'bc-result err';
     resultEl.textContent = data.error || 'Error al enviar broadcast de Telegram.';
+  }
+  resultEl.style.display = 'block';
+}
+
+// ── Broadcast Facebook / Instagram ─────────────────────────────────────
+
+async function loadMetaAudience() {
+  const channel = document.getElementById('metaChannel').value;
+  const data = await callAdmin({ action: 'meta_audience', channel }).catch(() => ({ ok: false }));
+  document.getElementById('metaAudience').textContent = data.ok ? data.total : '—';
+}
+
+async function sendMetaBroadcast() {
+  const channel = document.getElementById('metaChannel').value;
+  const message = document.getElementById('metaMessage').value.trim();
+  const resultEl = document.getElementById('metaResult');
+  if (!message) {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = 'Escribe el mensaje a enviar.';
+    resultEl.style.display = 'block';
+    return;
+  }
+  const audience = document.getElementById('metaAudience').textContent;
+  const channelLabel = channel === 'instagram' ? 'Instagram' : 'Facebook Messenger';
+  if (!confirm(`¿Enviar este mensaje a ${audience} contactos de ${channelLabel}?\n\nSolo llegará a quienes te escribieron en las últimas 24h. Esta acción no se puede deshacer.`)) return;
+
+  const btn = document.getElementById('metaSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spin"></span> Enviando...';
+  resultEl.style.display = 'none';
+
+  const data = await callAdmin({ action: 'meta_broadcast', channel, message }).catch(() => ({ ok: false }));
+
+  btn.disabled = false;
+  btn.innerHTML = 'Enviar broadcast';
+
+  if (data.ok) {
+    resultEl.className = 'bc-result ok';
+    resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
+  } else {
+    resultEl.className = 'bc-result err';
+    resultEl.textContent = data.error || 'Error al enviar broadcast.';
   }
   resultEl.style.display = 'block';
 }
