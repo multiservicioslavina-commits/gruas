@@ -3016,13 +3016,69 @@ async function openRiderProfile(riderId) {
         </div>`
       }
     </div>
+
+    <div style="margin-top:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">📝 Notas internas</div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+        <input type="text" id="noteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
+        <button class="btn-sm" onclick="submitNote('rider','${jsq(riderId)}')">Agregar</button>
+      </div>
+      <div id="notesList" style="display:flex;flex-direction:column;gap:0.5rem">Cargando notas...</div>
+    </div>
   `;
 
   document.getElementById('riderProfileContent').innerHTML = html;
+  loadNotes('rider', riderId);
 }
 
 function closeRiderProfile() {
   document.getElementById('riderProfileModal').classList.add('hide');
+}
+
+// ── NOTAS INTERNAS ────────────────────────────────────────────────────
+async function loadNotes(entityType, entityId) {
+  const box = document.getElementById('notesList');
+  const data = await callAdmin({ action: 'list_notes', entity_type: entityType, entity_id: entityId }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
+    return;
+  }
+  const notes = data.notes || [];
+  if (!notes.length) {
+    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
+    return;
+  }
+  box.innerHTML = notes.map(n => `
+    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+      <div>
+        <div>${esc(n.note)}</div>
+        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
+      </div>
+      <button class="btn-sm danger" style="padding:0.15rem 0.4rem" onclick="removeNote('${jsq(n.id)}','${entityType}','${jsq(entityId)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function submitNote(entityType, entityId) {
+  const input = document.getElementById('noteInput');
+  const note = input.value.trim();
+  if (!note) return;
+  const data = await callAdmin({ action: 'add_note', entity_type: entityType, entity_id: entityId, note }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  input.value = '';
+  loadNotes(entityType, entityId);
+}
+
+async function removeNote(id, entityType, entityId) {
+  const data = await callAdmin({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  loadNotes(entityType, entityId);
 }
 
 // ── PIPELINE DE NEGOCIOS ───────────────────────────────────────────────

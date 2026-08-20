@@ -591,6 +591,46 @@ async function exportReport(type) {
   }
 }
 
+async function listNotes(entityType, entityId) {
+  try {
+    if (!entityType || !entityId) return { ok: false, error: 'Faltan entity_type y entity_id' };
+    const notes = await sbGet(`crm_notes?entity_type=eq.${entityType}&entity_id=eq.${entityId}&select=id,note,created_at&order=created_at.desc`);
+    return { ok: true, notes };
+  } catch (err) {
+    console.error('listNotes error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function addNote(entityType, entityId, note) {
+  try {
+    if (!entityType || !entityId || !note) return { ok: false, error: 'Faltan entity_type, entity_id o note' };
+    const res = await fetch(`${SB_URL}/rest/v1/crm_notes`, {
+      method: 'POST',
+      headers: { ...sbHeaders, Prefer: 'return=representation' },
+      body: JSON.stringify({ entity_type: entityType, entity_id: entityId, note }),
+    });
+    const data = await res.json();
+    if (!res.ok) return { ok: false, error: data.message || 'Error al guardar nota' };
+    return { ok: true, note: data[0] };
+  } catch (err) {
+    console.error('addNote error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
+async function deleteNote(id) {
+  try {
+    if (!id) return { ok: false, error: 'Falta id' };
+    const res = await fetch(`${SB_URL}/rest/v1/crm_notes?id=eq.${id}`, { method: 'DELETE', headers: sbHeaders });
+    if (!res.ok) return { ok: false, error: 'Error al borrar nota' };
+    return { ok: true };
+  } catch (err) {
+    console.error('deleteNote error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 async function globalSearch(query) {
   try {
     const q = (query || '').trim();
@@ -819,6 +859,16 @@ exports.handler = async (event) => {
 
     case 'global_search':
       return json(await globalSearch(body.query));
+
+    case 'list_notes':
+      return json(await listNotes(body.entity_type, body.entity_id));
+
+    case 'add_note':
+      return json(await addNote(body.entity_type, body.entity_id, body.note));
+
+    case 'delete_note':
+      if (!body.id) return json({ ok: false, error: 'Falta id' });
+      return json(await deleteNote(body.id));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });
