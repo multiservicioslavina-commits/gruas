@@ -933,20 +933,57 @@ Deno.serve(async (req) => {
       })
     }
 
-    // BROADCAST (WhatsApp template to opted-in contacts)
+    // BROADCAST AUDIENCE - distinct ciudades + count of opted-in contacts, optionally filtered by ciudad
+    if (action === 'broadcast_audience') {
+      const ciudad = String(body.ciudad || '').trim()
+      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number').eq('opted_in', true)
+      const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+      const ciudadByPhoneSuffix = new Map<string, string>()
+      for (const r of riders || []) {
+        const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+        if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+      }
+      const ciudades = [...new Set((riders || []).map((r) => r.ciudad).filter(Boolean))].sort()
+      let total = (contacts || []).length
+      if (ciudad) {
+        total = (contacts || []).filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        }).length
+      }
+      return new Response(JSON.stringify({ ok: true, total, ciudades }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // BROADCAST (WhatsApp template to opted-in contacts, optionally filtered by rider ciudad)
     if (action === 'broadcast') {
-      const { template, language, params } = body
+      const { template, language, params, ciudad } = body
       if (!template) {
         return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      contacts = contacts || []
+
+      if (ciudad) {
+        const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+        const ciudadByPhoneSuffix = new Map<string, string>()
+        for (const r of riders || []) {
+          const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+          if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+        }
+        contacts = contacts.filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        })
+      }
 
       let sent = 0, errors = 0
       const errorDetails: { phone: string; error?: string }[] = []
 
-      for (const c of contacts || []) {
+      for (const c of contacts) {
         const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
         const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams)
         if (result.ok) sent++
@@ -957,7 +994,7 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 200))
       }
 
-      return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
