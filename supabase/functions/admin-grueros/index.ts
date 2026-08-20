@@ -14,12 +14,16 @@ const GRAPH = 'https://graph.facebook.com/v25.0'
 
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
 
-async function sendWATemplate(to: string, name: string, language: string, bodyParams: string[]): Promise<{ ok: boolean; error?: string }> {
+async function sendWATemplate(to: string, name: string, language: string, bodyParams: string[], media?: { type: 'image' | 'video' | 'document'; url: string }): Promise<{ ok: boolean; error?: string }> {
   if (!waToken || !waPhoneId) return { ok: false, error: 'Faltan credenciales WhatsApp' }
   try {
-    const components = bodyParams.length
+    const components: Record<string, unknown>[] = bodyParams.length
       ? [{ type: 'body', parameters: bodyParams.map((t) => ({ type: 'text', text: t })) }]
       : []
+    // Only works if the approved template has a matching HEADER component (IMAGE/VIDEO/DOCUMENT).
+    if (media?.url) {
+      components.unshift({ type: 'header', parameters: [{ type: media.type, [media.type]: { link: media.url } }] })
+    }
     const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
@@ -967,12 +971,13 @@ Deno.serve(async (req) => {
 
     // BROADCAST (WhatsApp template to opted-in contacts, optionally filtered by rider ciudad)
     if (action === 'broadcast') {
-      const { template, language, params, ciudad } = body
+      const { template, language, params, ciudad, mediaUrl, mediaType } = body
       if (!template) {
         return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      const media = mediaUrl && ['image', 'video', 'document'].includes(mediaType) ? { type: mediaType, url: mediaUrl } : undefined
       let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
       contacts = contacts || []
 
@@ -994,7 +999,7 @@ Deno.serve(async (req) => {
 
       for (const c of contacts) {
         const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
-        const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams)
+        const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams, media)
         if (result.ok) sent++
         else {
           errors++
