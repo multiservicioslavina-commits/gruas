@@ -591,6 +591,35 @@ async function exportReport(type) {
   }
 }
 
+async function globalSearch(query) {
+  try {
+    const q = (query || '').trim();
+    if (!q || q.length < 2) return { ok: true, results: [] };
+    const esc = encodeURIComponent(`*${q}*`);
+    const results = [];
+
+    const riders = await sbGet(`riders?or=(nombre.ilike.${esc},apellido.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,apellido,telefono,ciudad&limit=10`);
+    riders.forEach(r => results.push({ type: 'rider', id: r.id, title: `${r.nombre || ''} ${r.apellido || ''}`.trim(), subtitle: `${r.telefono || ''} · ${r.ciudad || ''}` }));
+
+    const talleres = await sbGet(`talleres?or=(nombre.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,telefono,ciudad&limit=10`);
+    talleres.forEach(t => results.push({ type: 'negocio_taller', id: t.id, title: t.nombre, subtitle: `Taller · ${t.telefono || ''} · ${t.ciudad || ''}` }));
+
+    const almacenes = await sbGet(`almacenes?or=(nombre.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,telefono,ciudad&limit=10`);
+    almacenes.forEach(a => results.push({ type: 'negocio_almacen', id: a.id, title: a.nombre, subtitle: `Almacén · ${a.telefono || ''} · ${a.ciudad || ''}` }));
+
+    const hoteles = await sbGet(`hoteles?or=(nombre.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,telefono,municipio&limit=10`);
+    hoteles.forEach(h => results.push({ type: 'negocio_hotel', id: h.id, title: h.nombre, subtitle: `Hotel · ${h.telefono || ''} · ${h.municipio || ''}` }));
+
+    const restaurantes = await sbGet(`restaurantes?or=(nombre.ilike.${esc},telefono.ilike.${esc})&select=id,nombre,telefono,municipio&limit=10`);
+    restaurantes.forEach(r => results.push({ type: 'negocio_restaurante', id: r.id, title: r.nombre, subtitle: `Restaurante · ${r.telefono || ''} · ${r.municipio || ''}` }));
+
+    return { ok: true, results: results.slice(0, 30) };
+  } catch (err) {
+    console.error('globalSearch error:', err);
+    return { ok: false, error: err.message };
+  }
+}
+
 async function getTimeline() {
   try {
     const events = [];
@@ -787,6 +816,9 @@ exports.handler = async (event) => {
 
     case 'get_timeline':
       return json(await getTimeline());
+
+    case 'global_search':
+      return json(await globalSearch(body.query));
 
     default:
       return json({ ok: false, error: `Acción "${action}" no válida` });

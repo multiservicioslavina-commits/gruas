@@ -364,6 +364,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <div id="panel">
   <nav>
     <span class="nav-brand">Ridera · Admin</span>
+    <div style="position:relative;flex:1;max-width:360px;margin:0 1rem">
+      <input type="text" id="globalSearchInput" placeholder="🔍 Buscar rider o negocio..." autocomplete="off"
+        oninput="onGlobalSearchInput()" onfocus="onGlobalSearchInput()"
+        style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.45rem 0.75rem;outline:none">
+      <div id="globalSearchResults" style="display:none;position:absolute;top:110%;left:0;right:0;background:var(--s);border:1px solid var(--line);border-radius:8px;max-height:360px;overflow-y:auto;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,0.4)"></div>
+    </div>
     <div class="nav-right">
       <button class="btn-sm" onclick="reloadList()">↻ Actualizar</button>
       <button class="btn-sm" onclick="showChangePwd()">Cambiar clave</button>
@@ -3153,6 +3159,73 @@ async function exportReportCSV(type) {
   link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
   link.click();
 }
+
+// ── GLOBAL SEARCH ────────────────────────────────────────────────────────
+let globalSearchTimer = null;
+
+function onGlobalSearchInput() {
+  const q = document.getElementById('globalSearchInput').value.trim();
+  clearTimeout(globalSearchTimer);
+  const resultsBox = document.getElementById('globalSearchResults');
+  if (q.length < 2) {
+    resultsBox.style.display = 'none';
+    return;
+  }
+  globalSearchTimer = setTimeout(async () => {
+    const data = await callAdmin({ action: 'global_search', query: q }).catch(() => ({ ok: false }));
+    if (!data.ok) return;
+    renderGlobalSearchResults(data.results || []);
+  }, 300);
+}
+
+function renderGlobalSearchResults(results) {
+  const box = document.getElementById('globalSearchResults');
+  if (!results.length) {
+    box.innerHTML = '<div style="padding:0.75rem;color:var(--mu);font-size:0.85rem">Sin resultados</div>';
+    box.style.display = 'block';
+    return;
+  }
+  const tabByType = {
+    rider: 'riders',
+    negocio_taller: 'talleres',
+    negocio_almacen: 'almacenes',
+    negocio_hotel: 'hoteles',
+    negocio_restaurante: 'restaurantes',
+  };
+  const iconByType = {
+    rider: '🏍️', negocio_taller: '🔩', negocio_almacen: '🛒', negocio_hotel: '🏨', negocio_restaurante: '🍽️',
+  };
+  box.innerHTML = results.map(r => `
+    <div onclick="goToSearchResult('${r.type}','${jsq(r.id)}')" style="padding:0.6rem 0.75rem;cursor:pointer;border-bottom:1px solid var(--line)" onmouseover="this.style.background='rgba(255,255,255,0.04)'" onmouseout="this.style.background='transparent'">
+      <div style="font-size:0.85rem;font-weight:600">${iconByType[r.type] || '📄'} ${esc(r.title || '—')}</div>
+      <div style="font-size:0.75rem;color:var(--mu)">${esc(r.subtitle || '')}</div>
+    </div>
+  `).join('');
+  box.style.display = 'block';
+
+  window._searchTabMap = tabByType;
+}
+
+function goToSearchResult(type, id) {
+  const tabByType = window._searchTabMap || {};
+  const tab = tabByType[type];
+  document.getElementById('globalSearchResults').style.display = 'none';
+  document.getElementById('globalSearchInput').value = '';
+  if (type === 'rider') {
+    showTab('riders');
+    setTimeout(() => openRiderProfile(id), 300);
+  } else if (tab) {
+    showTab(tab);
+  }
+}
+
+document.addEventListener('click', (e) => {
+  const box = document.getElementById('globalSearchResults');
+  const input = document.getElementById('globalSearchInput');
+  if (box && input && !box.contains(e.target) && e.target !== input) {
+    box.style.display = 'none';
+  }
+});
 
 // ── TIMELINE ───────────────────────────────────────────────────────────
 async function loadTimeline() {
