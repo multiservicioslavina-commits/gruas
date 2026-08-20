@@ -2784,12 +2784,35 @@ const EDIT_FIELDS = {
     { key: 'color', label: 'Color', type: 'text' },
     { key: 'descripcion', label: 'Descripción', type: 'textarea' },
   ],
+  hoteles: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'municipio', label: 'Municipio', type: 'text' },
+    { key: 'subregion', label: 'Subregión', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+  restaurantes: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'municipio', label: 'Municipio', type: 'text' },
+    { key: 'subregion', label: 'Subregión', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'tipo_cocina', label: 'Tipo de cocina', type: 'text' },
+    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
 };
 
 let editModalState = { table: null, id: null };
 
 function openEditModalFor(table, id) {
-  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos };
+  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos, hoteles: allHoteles, restaurantes: allRestaurantes };
   const list = map[table] || [];
   const record = list.find(r => String(r.id) === String(id));
   if (record) openEditModal(table, record);
@@ -2934,15 +2957,11 @@ function renderConversacionesTable() {
       <td>${tipoLabel}</td>
       <td>
         <div class="actions-cell">
-          <button class="act-btn" onclick="viewConversacion('${jsq(c.telefono)}')">Ver</button>
+          <button class="act-btn" onclick="openConversation('${jsq(c.telefono)}', '${jsq(c.telefono)}')">Ver</button>
         </div>
       </td>
     </tr>`;
   }).join('');
-}
-
-function viewConversacion(telefono) {
-  alert('Conversa ción de: ' + telefono + ' (función expandida en próximas versiones)');
 }
 
 // ── RIDER PROFILE ──────────────────────────────────────────────────────

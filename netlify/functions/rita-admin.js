@@ -362,8 +362,10 @@ async function getCrmMetrics() {
     const res7 = await fetch(`${SB_URL}/rest/v1/restaurantes?aprobado=eq.true&select=id`, { headers: sbHeaders });
     const restaurantesAprobados = await res7.json();
 
-    const res8 = await fetch(`${SB_URL}/rest/v1/rita_conversations?select=phone`, { headers: sbHeaders });
-    const ritaConvs = await res8.json();
+    // rita_conversations is effectively unused; count distinct phones in rita_messages instead.
+    const res8 = await fetch(`${SB_URL}/rest/v1/rita_messages?select=phone&limit=5000`, { headers: sbHeaders });
+    const ritaMsgRows = await res8.json();
+    const ritaConvs = [...new Set((Array.isArray(ritaMsgRows) ? ritaMsgRows : []).map(r => r.phone).filter(Boolean))];
 
     const alerts = [];
     if (gruasPendientes.length > 5) alerts.push({ tipo: 'Grúas', mensaje: `${gruasPendientes.length} solicitudes pendientes` });
@@ -413,29 +415,43 @@ async function getCrmMetrics() {
   }
 }
 
+function last10Digits(phone) {
+  return (phone || '').replace(/\D/g, '').slice(-10);
+}
+
 async function listConversaciones() {
   try {
-    const convs = await sbGet('rita_conversations?select=phone,state,data,updated_at&order=updated_at.desc&limit=100');
-    const msgs = await sbGet('rita_messages?select=phone_number&order=created_at.desc&limit=500');
+    // rita_conversations is effectively unused (single legacy row); the real
+    // conversation log lives in rita_messages, grouped here by phone.
+    const msgs = await sbGet('rita_messages?select=phone,role,created_at&order=created_at.desc&limit=2000');
+    const [errores, solicitudes] = await Promise.all([
+      sbGet('rita_errores_reportados?select=whatsapp_number'),
+      sbGet('solicitudes?select=cliente_telefono&order=created_at.desc&limit=1000'),
+    ]);
 
-    const msgCounts = {};
+    const errorSuffixes = new Set(errores.map(e => last10Digits(e.whatsapp_number)).filter(Boolean));
+    const gruaSuffixes = new Set(solicitudes.map(s => last10Digits(s.cliente_telefono)).filter(Boolean));
+
+    const byPhone = {};
     msgs.forEach(m => {
-      const phone = m.phone_number || m.phone;
-      msgCounts[phone] = (msgCounts[phone] || 0) + 1;
+      if (!m.phone) return;
+      if (!byPhone[m.phone]) {
+        byPhone[m.phone] = { telefono: m.phone, mensaje_count: 0, lastRole: m.role, updated_at: m.created_at };
+      }
+      byPhone[m.phone].mensaje_count += 1;
     });
 
-    const resultado = convs.map(c => {
-      const phone = c.phone;
-      const data = typeof c.data === 'string' ? JSON.parse(c.data) : c.data || {};
+    const resultado = Object.values(byPhone).map(c => {
+      const suffix = last10Digits(c.telefono);
       return {
-        telefono: phone,
-        mensaje_count: msgCounts[phone] || 0,
-        sin_respuesta: data.sin_respuesta || false,
-        con_error: data.con_error || false,
-        pidio_grua: data.pidio_grua || false,
+        telefono: c.telefono,
+        mensaje_count: c.mensaje_count,
+        sin_respuesta: c.lastRole === 'user',
+        con_error: errorSuffixes.has(suffix),
+        pidio_grua: gruaSuffixes.has(suffix),
         updated_at: c.updated_at,
       };
-    });
+    }).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
 
     return { ok: true, conversaciones: resultado };
   } catch (err) {
@@ -450,9 +466,18 @@ async function getRiderProfile(riderId) {
     if (!riders.length) return { ok: false, error: 'Rider no encontrado' };
     const rider = riders[0];
 
+    // Phone numbers are stored inconsistently across tables (local "3001234567" vs
+    // international "573001234567" / "+573001234567"), so match on the last 10 digits.
+    const phoneSuffix = (rider.telefono || '').replace(/\D/g, '').slice(-10);
+    const phoneFilter = phoneSuffix ? `*${encodeURIComponent(phoneSuffix)}` : '';
+
     const sellos = await sbGet(`sellos?rider_id=eq.${encodeURIComponent(riderId)}&select=id,municipio_id,fecha,estado&order=fecha.desc`);
-    const gruas = await sbGet(`solicitudes?cliente_telefono=eq.${encodeURIComponent(rider.telefono)}&select=id,municipio,estado,created_at&order=created_at.desc&limit=20`);
-    const conversaciones = await sbGet(`rita_messages?phone=eq.${encodeURIComponent(rider.telefono)}&select=phone,content,created_at&order=created_at.desc&limit=20`);
+    const gruas = phoneSuffix
+      ? await sbGet(`solicitudes?cliente_telefono=like.${phoneFilter}&select=id,municipio,estado,created_at&order=created_at.desc&limit=20`)
+      : [];
+    const conversaciones = phoneSuffix
+      ? await sbGet(`rita_messages?phone=like.${phoneFilter}&select=phone,content,created_at&order=created_at.desc&limit=20`)
+      : [];
 
     const muniMap = {};
     const municipios = await sbGet('municipios?select=id,nombre');
@@ -498,7 +523,13 @@ async function getReportes() {
   try {
     const riders = await sbGet('riders?select=created_at&order=created_at.asc&limit=1000');
     const gruas = await sbGet('solicitudes?select=municipio&limit=1000');
-    const negocios = await sbGet('talleres?select=estado&limit=1000');
+    const [negTalleres, negAlmacenes, negHoteles, negRestaurantes] = await Promise.all([
+      sbGet('talleres?select=estado&limit=1000'),
+      sbGet('almacenes?select=estado&limit=1000'),
+      sbGet('hoteles?select=estado&limit=1000'),
+      sbGet('restaurantes?select=estado&limit=1000'),
+    ]);
+    const negocios = [...negTalleres, ...negAlmacenes, ...negHoteles, ...negRestaurantes];
 
     // Riders por mes
     const monthMap = {};
@@ -572,7 +603,11 @@ async function exportReport(type) {
     } else if (type === 'negocios') {
       const talleres = await sbGet('talleres?select=id,nombre,ciudad,telefono,estado,created_at&order=created_at.desc&limit=500');
       const almacenes = await sbGet('almacenes?select=id,nombre,ciudad,telefono,estado,created_at&order=created_at.desc&limit=500');
-      data = [...talleres, ...almacenes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+      const hoteles = (await sbGet('hoteles?select=id,nombre,municipio,telefono,estado,created_at&order=created_at.desc&limit=500'))
+        .map(h => ({ ...h, ciudad: h.municipio }));
+      const restaurantes = (await sbGet('restaurantes?select=id,nombre,municipio,telefono,estado,created_at&order=created_at.desc&limit=500'))
+        .map(r => ({ ...r, ciudad: r.municipio }));
+      data = [...talleres, ...almacenes, ...hoteles, ...restaurantes].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
       headers = ['ID', 'Nombre', 'Ciudad', 'Teléfono', 'Estado', 'Fecha'];
       filename = 'negocios';
     } else if (type === 'sellos') {
@@ -714,22 +749,22 @@ async function getTimeline() {
     }));
 
     // Hoteles
-    const hoteles = await sbGet('hoteles?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    const hoteles = await sbGet('hoteles?select=id,nombre,municipio,estado,created_at&order=created_at.desc&limit=200');
     hoteles.forEach(h => events.push({
       timestamp: h.created_at,
       type: 'negocio_hotel',
       title: `Nuevo hotel: ${h.nombre} (${h.estado})`,
-      location: h.ciudad,
+      location: h.municipio,
       id: h.id,
     }));
 
     // Restaurantes
-    const restaurantes = await sbGet('restaurantes?select=id,nombre,ciudad,estado,created_at&order=created_at.desc&limit=200');
+    const restaurantes = await sbGet('restaurantes?select=id,nombre,municipio,estado,created_at&order=created_at.desc&limit=200');
     restaurantes.forEach(r => events.push({
       timestamp: r.created_at,
       type: 'negocio_restaurante',
       title: `Nuevo restaurante: ${r.nombre} (${r.estado})`,
-      location: r.ciudad,
+      location: r.municipio,
       id: r.id,
     }));
 
@@ -743,14 +778,20 @@ async function getTimeline() {
       id: s.id,
     }));
 
-    // Rita conversations
-    const rita = await sbGet('rita_conversations?select=id,phone,created_at,estado&order=created_at.desc&limit=300');
-    rita.forEach(r => events.push({
-      timestamp: r.created_at,
+    // Rita conversations — rita_conversations is effectively unused (single legacy
+    // row); the real conversation log lives in rita_messages, one event per phone.
+    const ritaMsgs = await sbGet('rita_messages?select=phone,role,created_at&order=created_at.desc&limit=2000');
+    const ritaByPhone = {};
+    ritaMsgs.forEach(m => {
+      if (!m.phone || ritaByPhone[m.phone]) return;
+      ritaByPhone[m.phone] = m;
+    });
+    Object.values(ritaByPhone).forEach(m => events.push({
+      timestamp: m.created_at,
       type: 'rita',
-      title: `Conversación Rita: ${r.phone}`,
-      estado: r.estado,
-      id: r.id,
+      title: `Conversación Rita: ${m.phone}`,
+      estado: m.role === 'user' ? 'sin_respuesta' : 'respondido',
+      id: m.phone,
     }));
 
     // Sort by timestamp descending
