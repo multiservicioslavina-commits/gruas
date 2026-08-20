@@ -11,6 +11,24 @@ const resendApiKey = Deno.env.get('RESEND_API_KEY')
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || ''
 const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '1238785075974458'
 const GRAPH = 'https://graph.facebook.com/v25.0'
+const tgBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || ''
+const TELEGRAM_API = `https://api.telegram.org/bot${tgBotToken}`
+
+async function sendTelegramMessage(chatId: number, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!tgBotToken) return { ok: false, error: 'Falta TELEGRAM_BOT_TOKEN' }
+  try {
+    const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    })
+    if (res.ok) return { ok: true }
+    const d = await res.json().catch(() => ({}))
+    return { ok: false, error: d?.description || `HTTP ${res.status}` }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
 
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
 
@@ -172,7 +190,7 @@ Deno.serve(async (req) => {
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
-      'campaign_create', 'campaign_list', 'campaign_cancel',
+      'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1077,6 +1095,41 @@ Deno.serve(async (req) => {
       }
       logAudit(auth.username!, 'campaign_cancel', { campaign_id: campaignId })
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TELEGRAM AUDIENCE
+    if (action === 'telegram_audience') {
+      const { count } = await sbClient.from('telegram_contacts').select('id', { count: 'exact', head: true }).eq('opted_in', true)
+      return new Response(JSON.stringify({ ok: true, total: count || 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TELEGRAM BROADCAST (plain text to opted-in Telegram contacts)
+    if (action === 'telegram_broadcast') {
+      const { message } = body
+      if (!message) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el mensaje' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: contacts } = await sbClient.from('telegram_contacts').select('chat_id, first_name').eq('opted_in', true)
+      let sent = 0, errors = 0
+      const errorDetails: { chatId: string; error?: string }[] = []
+      for (const c of contacts || []) {
+        const text = message.replace(/\{\{nombre\}\}/g, c.first_name || '')
+        const result = await sendTelegramMessage(c.chat_id, text)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ chatId: String(c.chat_id), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      logAudit(auth.username!, 'telegram_broadcast', { sent, errors })
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
