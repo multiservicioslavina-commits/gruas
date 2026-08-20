@@ -139,6 +139,15 @@ function logAudit(username: string, action: string, detail: Record<string, unkno
   sbClient.from('admin_audit_log').insert({ username, action, detail }).then(() => {})
 }
 
+function weekKey(d: Date): string {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  const dayNum = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
+}
+
 function toSlug(s: string, suffix = ''): string {
   const base = s.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
     .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 50) || 'gruero'
@@ -919,6 +928,67 @@ Deno.serve(async (req) => {
 
       return new Response(JSON.stringify({
         ok: true, totalContacts, optedIn, activeToday, msgsToday, msgsWeek, msgsMonth, intentCounts: {}, perDay,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // GROWTH ANALYTICS (funnel + retencion + referidos)
+    if (action === 'growth_analytics') {
+      const [{ data: riders }, { data: sellos }, { data: msgs }, { data: referidos }] = await Promise.all([
+        sbClient.from('riders').select('id, created_at'),
+        sbClient.from('sellos').select('rider_id, fecha, estado').eq('estado', 'aprobado'),
+        sbClient.from('rita_messages').select('phone, phone_number, created_at').gte('created_at', new Date(Date.now() - 60 * 86400000).toISOString()),
+        sbClient.from('referidos').select('estado, created_at'),
+      ])
+
+      const totalRiders = riders?.length || 0
+      const primerSelloByRider = new Map<string, string>()
+      for (const s of sellos || []) {
+        if (!s.rider_id) continue
+        const prev = primerSelloByRider.get(s.rider_id)
+        if (!prev || s.fecha < prev) primerSelloByRider.set(s.rider_id, s.fecha)
+      }
+      const activados = primerSelloByRider.size
+
+      const start30 = new Date(Date.now() - 30 * 86400000)
+      const phonesActivos30 = new Set((msgs || []).filter((m) => new Date(m.created_at) >= start30).map((m) => m.phone || m.phone_number).filter(Boolean))
+      const activosUltimos30 = phonesActivos30.size
+
+      // Cohortes por semana de registro: % con al menos 1 sello dentro de 7 dias de registrarse
+      const porSemana: Record<string, { registrados: number; activadosSemana1: number }> = {}
+      for (const r of riders || []) {
+        const semana = weekKey(new Date(r.created_at))
+        porSemana[semana] = porSemana[semana] || { registrados: 0, activadosSemana1: 0 }
+        porSemana[semana].registrados++
+        const primerSello = primerSelloByRider.get(r.id)
+        if (primerSello && (new Date(primerSello).getTime() - new Date(r.created_at).getTime()) <= 7 * 86400000) {
+          porSemana[semana].activadosSemana1++
+        }
+      }
+
+      const referidosTotal = referidos?.length || 0
+      const referidosRegistrados = (referidos || []).filter((r) => r.estado === 'registrado').length
+      const tasaConversionReferidos = referidosTotal ? Math.round((referidosRegistrados / referidosTotal) * 100) : 0
+
+      return new Response(JSON.stringify({
+        ok: true,
+        funnel: {
+          registrados: totalRiders,
+          activados_primer_sello: activados,
+          tasa_activacion: totalRiders ? Math.round((activados / totalRiders) * 100) : 0,
+          activos_ultimos_30d: activosUltimos30,
+          tasa_retencion_30d: totalRiders ? Math.round((activosUltimos30 / totalRiders) * 100) : 0,
+        },
+        cohortes_semanales: Object.entries(porSemana).sort(([a], [b]) => a.localeCompare(b)).map(([semana, v]) => ({
+          semana, registrados: v.registrados, activados_semana1: v.activadosSemana1,
+          tasa_activacion_semana1: v.registrados ? Math.round((v.activadosSemana1 / v.registrados) * 100) : 0,
+        })),
+        referidos: {
+          total_invitaciones: referidosTotal,
+          registrados: referidosRegistrados,
+          tasa_conversion: tasaConversionReferidos,
+        },
       }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

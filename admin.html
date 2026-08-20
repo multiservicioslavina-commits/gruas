@@ -433,6 +433,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       <div class="sidebar-item" data-tab="reportes" onclick="showTab('reportes')">
         <span class="sb-icon">📈</span> Reportes
       </div>
+      <div class="sidebar-item" data-tab="crecimiento" onclick="showTab('crecimiento')">
+        <span class="sb-icon">🚀</span> Crecimiento
+      </div>
       <div class="sidebar-item" data-tab="timeline" onclick="showTab('timeline')">
         <span class="sb-icon">🕐</span> Timeline
       </div>
@@ -1060,6 +1063,30 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div><!-- /tabReportes -->
 
+        <!-- CRECIMIENTO -->
+        <div id="tabCrecimiento" style="display:none">
+          <div class="section-header"><h2>🚀 Funnel de Crecimiento</h2></div>
+          <div class="stats" style="margin-bottom:2rem">
+            <div class="stat"><div class="num" id="gRegistrados">—</div><div class="lbl">Registrados</div></div>
+            <div class="stat"><div class="num green" id="gActivados">—</div><div class="lbl">Activados (1er sello) — <span id="gTasaActivacion">—%</span></div></div>
+            <div class="stat"><div class="num blue" id="gActivos30">—</div><div class="lbl">Activos últ. 30 días — <span id="gTasaRetencion">—%</span></div></div>
+            <div class="stat"><div class="num warn" id="gReferidos">—</div><div class="lbl">Invitaciones enviadas</div></div>
+            <div class="stat"><div class="num" id="gReferidosOk">—</div><div class="lbl">Referidos registrados — <span id="gTasaReferidos">—%</span></div></div>
+          </div>
+
+          <div class="section-header"><h3>Activación por semana de registro (cohortes)</h3></div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+              <thead>
+                <tr style="text-align:left;border-bottom:1px solid var(--line);color:var(--mu)">
+                  <th style="padding:0.5rem">Semana</th><th style="padding:0.5rem">Registrados</th><th style="padding:0.5rem">Activados en semana 1</th><th style="padding:0.5rem">% Activación</th>
+                </tr>
+              </thead>
+              <tbody id="cohortesBody"><tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div><!-- /tabCrecimiento -->
+
         <!-- TIMELINE -->
         <div id="tabTimeline" style="display:none">
           <div class="section-header"><h2>🕐 Timeline de Actividad</h2></div>
@@ -1204,7 +1231,7 @@ let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
 
-const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','timeline','rita'];
+const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','crecimiento','timeline','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
   despacho: 'tabDespacho',
@@ -1219,6 +1246,7 @@ const TAB_ID_MAP = {
   restaurantes: 'tabRestaurantes',
   conversaciones: 'tabConversaciones',
   reportes: 'tabReportes',
+  crecimiento: 'tabCrecimiento',
   timeline: 'tabTimeline',
   rita: 'tabRita',
 };
@@ -1242,6 +1270,7 @@ function showTab(tab) {
   if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
   if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
   if (tab === 'reportes' && !sectionLoaded.reportes) loadReportes();
+  if (tab === 'crecimiento' && !sectionLoaded.crecimiento) loadCrecimiento();
   if (tab === 'timeline' && !sectionLoaded.timeline) loadTimeline();
   if (tab === 'despacho') {
     if (!solStatsLoaded) loadSolicitudesStats();
@@ -3793,6 +3822,34 @@ async function loadReportes() {
       <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">${data.negociosActivos} / ${data.negociosInteresados} convertidos</div>
     `;
   }
+}
+
+async function loadCrecimiento() {
+  const data = await callAdmin({ action: 'growth_analytics' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('cohortesBody').innerHTML = '<tr><td colspan="4" style="padding:1rem;text-align:center;color:#f87171">Error al cargar.</td></tr>';
+    return;
+  }
+  sectionLoaded.crecimiento = true;
+
+  document.getElementById('gRegistrados').textContent = data.funnel.registrados;
+  document.getElementById('gActivados').textContent = data.funnel.activados_primer_sello;
+  document.getElementById('gTasaActivacion').textContent = data.funnel.tasa_activacion + '%';
+  document.getElementById('gActivos30').textContent = data.funnel.activos_ultimos_30d;
+  document.getElementById('gTasaRetencion').textContent = data.funnel.tasa_retencion_30d + '%';
+  document.getElementById('gReferidos').textContent = data.referidos.total_invitaciones;
+  document.getElementById('gReferidosOk').textContent = data.referidos.registrados;
+  document.getElementById('gTasaReferidos').textContent = data.referidos.tasa_conversion + '%';
+
+  const body = document.getElementById('cohortesBody');
+  body.innerHTML = (data.cohortes_semanales || []).slice().reverse().map(c => `
+    <tr style="border-bottom:1px solid var(--line)">
+      <td style="padding:0.5rem">${esc(c.semana)}</td>
+      <td style="padding:0.5rem">${c.registrados}</td>
+      <td style="padding:0.5rem">${c.activados_semana1}</td>
+      <td style="padding:0.5rem;color:${c.tasa_activacion_semana1 >= 50 ? '#4ade80' : c.tasa_activacion_semana1 >= 20 ? '#f59e0b' : '#f87171'}">${c.tasa_activacion_semana1}%</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Sin datos aún.</td></tr>';
 }
 
 function renderChartRidersPerMonth(data) {
