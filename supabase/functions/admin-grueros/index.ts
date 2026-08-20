@@ -218,6 +218,7 @@ Deno.serve(async (req) => {
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
       'survey_create', 'survey_list', 'survey_results', 'set_tags',
+      'reserva_update_estado',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -936,7 +937,7 @@ Deno.serve(async (req) => {
     // GROWTH ANALYTICS (funnel + retencion + referidos)
     if (action === 'growth_analytics') {
       const [{ data: riders }, { data: sellos }, { data: msgs }, { data: referidos }] = await Promise.all([
-        sbClient.from('riders').select('id, created_at'),
+        sbClient.from('riders').select('id, telefono, created_at'),
         sbClient.from('sellos').select('rider_id, fecha, estado').eq('estado', 'aprobado'),
         sbClient.from('rita_messages').select('phone, phone_number, created_at').gte('created_at', new Date(Date.now() - 60 * 86400000).toISOString()),
         sbClient.from('referidos').select('estado, created_at'),
@@ -951,8 +952,15 @@ Deno.serve(async (req) => {
       }
       const activados = primerSelloByRider.size
 
+      const phoneSuffix = (p: string) => (p || '').replace(/\D/g, '').slice(-10)
+      const riderPhoneSuffixes = new Set((riders || []).map((r) => phoneSuffix(r.telefono)).filter(Boolean))
       const start30 = new Date(Date.now() - 30 * 86400000)
-      const phonesActivos30 = new Set((msgs || []).filter((m) => new Date(m.created_at) >= start30).map((m) => m.phone || m.phone_number).filter(Boolean))
+      const phonesActivos30 = new Set(
+        (msgs || [])
+          .filter((m) => new Date(m.created_at) >= start30)
+          .map((m) => phoneSuffix(m.phone || m.phone_number))
+          .filter((p) => p && riderPhoneSuffixes.has(p)),
+      )
       const activosUltimos30 = phonesActivos30.size
 
       // Cohortes por semana de registro: % con al menos 1 sello dentro de 7 dias de registrarse
@@ -990,6 +998,42 @@ Deno.serve(async (req) => {
           tasa_conversion: tasaConversionReferidos,
         },
       }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RESERVAS (talleres, almacenes, hoteles, restaurantes - sin pago)
+    if (action === 'reserva_list') {
+      const estado = body.estado ? String(body.estado) : null
+      let query = sbClient.from('reservas').select('*').order('created_at', { ascending: false }).limit(200)
+      if (estado) query = query.eq('estado', estado)
+      const { data, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, reservas: data || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (action === 'reserva_update_estado') {
+      const { id, estado } = body
+      const validEstados = ['pendiente', 'confirmada', 'cancelada', 'completada']
+      if (!validEstados.includes(estado)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Estado no válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('reservas').update({ estado, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'reserva_update_estado', { id, estado })
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
