@@ -738,6 +738,27 @@ Deno.serve(async (req: Request) => {
       const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!msg) return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
 
+      if (msg.type === "interactive") {
+        const buttonReply = msg.interactive?.button_reply;
+        const replyId = buttonReply?.id || "";
+        const match = /^enc:([0-9a-f-]{36}):(\d+)$/.exec(replyId);
+        if (match) {
+          const [, encuestaId, opcionIndexStr] = match;
+          const { data: encuesta } = await supabase.from("encuestas").select("opciones").eq("id", encuestaId).maybeSingle();
+          const opcion = encuesta?.opciones?.[Number(opcionIndexStr)];
+          if (opcion) {
+            await supabase.from("encuesta_respuestas").upsert({
+              encuesta_id: encuestaId,
+              phone_number: msg.from,
+              opcion_id: String(opcionIndexStr),
+              opcion_label: opcion.label || buttonReply.title || "",
+            }, { onConflict: "encuesta_id,phone_number" });
+            await sendWhatsApp(msg.from, "¡Gracias por responder! 🏍️");
+          }
+        }
+        return new Response(JSON.stringify({ ok: true, flow: "survey_reply" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
       const from = msg.from || "";
       let message = "";
       let respondWithVoice = false;
