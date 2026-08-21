@@ -363,6 +363,14 @@ async function fetchRideraSemantic(message: string): Promise<any[]> {
   }
 }
 
+async function fetchSaludMotero(message: string, categoria: string): Promise<any[]> {
+  try {
+    const msg2 = norm(message);
+    const { data } = await supabase.from("salud_motero_kb").select("tema, palabras_clave, contenido").eq("categoria", categoria);
+    return (data || []).filter((row: any) => (row.palabras_clave || []).some((kw: string) => msg2.includes(norm(kw))));
+  } catch { return []; }
+}
+
 async function fetchContext(message: string, phone: string): Promise<any> {
   const msg2 = norm(message);
   let searchTerm = "";
@@ -382,6 +390,8 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   const isSellosQ  = /sello|pasaporte|cuantos|llevo|municipio.*llevo|progreso|avance/.test(msg2);
   const isGrua     = /grua|remolque|averia|varad/.test(msg2);
   const isPicoPlacaQ = /pico.*placa|placa.*pico|restriccion.*vehic|dia.*sin.*carro|puedo.*circular|no.*circular|exent|via.*exent/.test(msg2);
+  const isEmergenciaQ = /accidente|choque|choco|me cai|se cayo|atropell|volco|no respira|no responde|inconsciente|desmayado|no reacciona|sangre|sangrando|sangrado|hemorragia|herida abierta|fractura|se quebro|hueso roto|no puede mover|deformidad|quemadura|quemado|me queme/.test(msg2);
+  const isSaludViajeQ = /frio|helado|calor|sudando|deshidrat|insolacion|gripa|gripe|resfriado|tos\b|fiebre|garganta|ronco|ronquera|ojos|ojo rojo|ardor ojos|vision borrosa|espalda|lumbar|lumbago|piernas|entumecid|hormigueo|hemorroides|almorranas|sueño|cansado|fatiga|bostezando|dolor de cabeza|cervical|casco aprieta/.test(msg2);
 
   const fetches: Promise<any>[] = [];
 
@@ -407,8 +417,10 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     return { climaData, siataData };
   }) : Promise.resolve(null));
   fetches.push(isViaQ && searchTerm.length > 2 ? fetchEstadoViasINVIAS(searchTerm) : Promise.resolve(null));
+  fetches.push(isEmergenciaQ ? fetchSaludMotero(message, "primeros_auxilios") : Promise.resolve([]));
+  fetches.push(!isEmergenciaQ && isSaludViajeQ ? fetchSaludMotero(message, "salud_viaje") : Promise.resolve([]));
 
-  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes] = await Promise.all(fetches);
+  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes, emergenciaRes, saludViajeRes] = await Promise.all(fetches);
 
   const resultados = [
     ...(rideraSemantic || []),
@@ -430,7 +442,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     garageMotoData = await fetchGarageMoto(marcaMencionada, posibleModelo || undefined);
   }
 
-  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes };
+  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, isEmergenciaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes, emergencia: emergenciaRes, saludViaje: saludViajeRes };
 }
 
 function getPicoPlacaPromptBlock(): string {
@@ -550,6 +562,7 @@ REGLAS DE RESPUESTA:
 - PICO Y PLACA: usa SIEMPRE la tabla de arriba. Para motos usa el PRIMER digito de la placa. Para carros el ULTIMO. Indica el dia y horario. Si preguntan por vias o vehiculos exentos, usar la info de arriba.
 - Rider NO registrado: sugerir registro cada 3-4 intercambios.
 - Si el mensaje empieza con "[Foto recibida]": es una descripcion de una imagen que el usuario mando. Responde de forma natural sobre lo que se ve (documento, moto, daño, ruta) como si tu la hubieras visto, sin mencionar que "recibiste una descripcion".
+- EMERGENCIAS Y SALUD: si el contexto interno trae una guia de EMERGENCIA, esa es tu maxima prioridad sobre cualquier otro tema de la conversacion. Nunca actues como medico ni des diagnostico: solo guia con los pasos de primeros auxilios basicos que te dan, siempre insistiendo primero en llamar al 123. Para temas de salud del motero (frio, calor, dolor, etc, sin ser emergencia), da el consejo practico de forma breve y cercana, y recomienda ver a un medico si persiste.
 ${riderInfo}`;
 }
 
@@ -559,7 +572,8 @@ async function askClaude(message: string, history: { role: string; content: stri
 
   const hasData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
     context.municipios?.length || context.talleres?.length || context.rutaDetail ||
-    context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ;
+    context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ ||
+    context.emergencia?.length || context.saludViaje?.length;
 
   if (!hasData && !context.marcaMencionada) {
     contextBlock += `\nSIN DATOS DISPONIBLES. NO inventes. Di que no tienes esa info.`;
@@ -569,6 +583,12 @@ async function askClaude(message: string, history: { role: string; content: stri
     contextBlock += `\nPICO Y PLACA: El usuario pregunta sobre pico y placa. Usa la tabla del system prompt para responder. Recuerda: motos usan el PRIMER digito, carros el ULTIMO. Si pregunta por vias exentas o vehiculos exentos, usa esa info tambien.`;
   }
 
+  if (context.emergencia?.length) {
+    contextBlock += `\n\n🚨 EMERGENCIA DETECTADA — PRIORIDAD MAXIMA. Responde con extrema calma y firmeza, en pasos numerados cortos y claros (mensajes de WhatsApp, no parrafos largos). SIEMPRE lo PRIMERO en tu respuesta debe ser: "Llama YA al 123" (o confirma que ya llamaron). Nunca des diagnostico medico. Usa esta guia:\n${context.emergencia.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}\nSi el usuario manda una foto de la persona lesionada, descibe solo lo objetivamente visible (sangrado, si luce consciente, deformidad aparente) para reforzar las instrucciones, SIN diagnosticar. Sigue preguntando "sigue respirando?", "el sangrado para con presion?", etc. y ofrece mantenerte en la conversacion hasta que llegue la ambulancia.`;
+  }
+  if (context.saludViaje?.length) {
+    contextBlock += `\nCUIDADOS DE SALUD DEL MOTERO (no es emergencia, da consejo practico y breve, y sugiere ver un medico si persiste o empeora):\n${context.saludViaje.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}`;
+  }
   if (context.clima) {
     if (context.clima.siataData) contextBlock += `\n${context.clima.siataData}`;
     if (context.clima.climaData) contextBlock += `\n${context.clima.climaData}`;
