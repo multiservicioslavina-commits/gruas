@@ -391,7 +391,8 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   const isGrua     = /grua|remolque|averia|varad/.test(msg2);
   const isPicoPlacaQ = /pico.*placa|placa.*pico|restriccion.*vehic|dia.*sin.*carro|puedo.*circular|no.*circular|exent|via.*exent/.test(msg2);
   const isEmergenciaQ = /accidente|choque|choco|me cai|se cayo|atropell|volco|no respira|no responde|inconsciente|desmayado|no reacciona|sangre|sangrando|sangrado|hemorragia|herida abierta|fractura|se quebro|hueso roto|no puede mover|deformidad|quemadura|quemado|me queme/.test(msg2);
-  const isSaludViajeQ = /frio|helado|calor|sudando|deshidrat|insolacion|gripa|gripe|resfriado|tos\b|fiebre|garganta|ronco|ronquera|ojos|ojo rojo|ardor ojos|vision borrosa|espalda|lumbar|lumbago|piernas|entumecid|hormigueo|hemorroides|almorranas|sueño|cansado|fatiga|bostezando|dolor de cabeza|cervical|casco aprieta/.test(msg2);
+  const isSaludViajeQ = /frio|helado|calor|sudando|deshidrat|insolacion|gripa|gripe|resfriado|tos\b|fiebre|garganta|ronco|ronquera|ojos|ojo rojo|ardor ojos|vision borrosa|espalda|lumbar|lumbago|piernas|entumecid|hormigueo|hemorroides|almorranas|sueño|cansado|fatiga|bostezando|dolor de cabeza|cervical|casco aprieta|picadura|pico un insecto|abeja|avispa|mordida|mordedura|mal de paramo|soroche|calambre|muñecas|dolor de manos|quemadura solar|protector solar/.test(msg2);
+  const isCuidadosManejoQ = /manejar en lluvia|manejo en lluvia|niebla|neblina|distancia de seguridad|punto ciego|animal en la via|ganado en la via|trocha|via destapada|equipo de proteccion|casco certificado|sobrecargad|celular manejando|revision antes de salir|chequeo antes de viajar|consejos.*manejar|cuidados.*conducir|precaucion.*manejar/.test(msg2);
 
   const fetches: Promise<any>[] = [];
 
@@ -419,8 +420,9 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   fetches.push(isViaQ && searchTerm.length > 2 ? fetchEstadoViasINVIAS(searchTerm) : Promise.resolve(null));
   fetches.push(isEmergenciaQ ? fetchSaludMotero(message, "primeros_auxilios") : Promise.resolve([]));
   fetches.push(!isEmergenciaQ && isSaludViajeQ ? fetchSaludMotero(message, "salud_viaje") : Promise.resolve([]));
+  fetches.push(!isEmergenciaQ && isCuidadosManejoQ ? fetchSaludMotero(message, "cuidados_manejo") : Promise.resolve([]));
 
-  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes, emergenciaRes, saludViajeRes] = await Promise.all(fetches);
+  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes, emergenciaRes, saludViajeRes, cuidadosManejoRes] = await Promise.all(fetches);
 
   const resultados = [
     ...(rideraSemantic || []),
@@ -442,7 +444,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     garageMotoData = await fetchGarageMoto(marcaMencionada, posibleModelo || undefined);
   }
 
-  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, isEmergenciaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes, emergencia: emergenciaRes, saludViaje: saludViajeRes };
+  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, isEmergenciaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes, emergencia: emergenciaRes, saludViaje: saludViajeRes, cuidadosManejo: cuidadosManejoRes };
 }
 
 function getPicoPlacaPromptBlock(): string {
@@ -573,7 +575,7 @@ async function askClaude(message: string, history: { role: string; content: stri
   const hasData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
     context.municipios?.length || context.talleres?.length || context.rutaDetail ||
     context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ ||
-    context.emergencia?.length || context.saludViaje?.length;
+    context.emergencia?.length || context.saludViaje?.length || context.cuidadosManejo?.length;
 
   if (!hasData && !context.marcaMencionada) {
     contextBlock += `\nSIN DATOS DISPONIBLES. NO inventes. Di que no tienes esa info.`;
@@ -588,6 +590,9 @@ async function askClaude(message: string, history: { role: string; content: stri
   }
   if (context.saludViaje?.length) {
     contextBlock += `\nCUIDADOS DE SALUD DEL MOTERO (no es emergencia, da consejo practico y breve, y sugiere ver un medico si persiste o empeora):\n${context.saludViaje.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}`;
+  }
+  if (context.cuidadosManejo?.length) {
+    contextBlock += `\nPRECAUCIONES DE MANEJO (consejos de seguridad vial, da respuesta practica y breve):\n${context.cuidadosManejo.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}`;
   }
   if (context.clima) {
     if (context.clima.siataData) contextBlock += `\n${context.clima.siataData}`;
