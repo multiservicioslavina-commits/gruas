@@ -181,60 +181,18 @@ footer a{color:var(--orange);text-decoration:none}
     <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu taller. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
   </div>
 
-  <!-- RESTAURANTE -->
+  <!-- RESTAURANTE: ya tiene formulario propio (form-restaurante) -->
   <div class="panel" id="panel-restaurante">
     <h2>Registra tu <em>restaurante</em></h2>
-    <div class="sub">Los moteros paran a comer en ruta. Aparece como parada recomendada en Rita.</div>
-    <form id="form-restaurante" onsubmit="return submitForm(event,'restaurante')">
-      <div class="field"><label>Nombre del restaurante<span class="req">*</span></label>
-        <input type="text" name="nombre" required maxlength="80" placeholder="Fonda La Parrilla"></div>
-      <div class="field"><label>Municipio<span class="req">*</span></label>
-        <input type="text" name="municipio" required list="dl-municipios" placeholder="Guarne" oninput="autoSubregion(this,'restaurante')"></div>
-      <div class="row2">
-        <div class="field"><label>WhatsApp<span class="req">*</span></label>
-          <input type="tel" name="whatsapp" required inputmode="numeric" placeholder="310 1234567"></div>
-        <div class="field"><label>Persona de contacto</label>
-          <input type="text" name="contacto_nombre" maxlength="60" placeholder="Tu nombre"></div>
-      </div>
-      <div class="field"><label>Tipo de cocina</label>
-        <input type="text" name="tipo_cocina" maxlength="60" placeholder="Comida típica, parrilla, rápida..."></div>
-      <label class="check"><input type="checkbox" name="parqueadero_motos"><span>Tengo parqueadero seguro para motos</span></label>
-      <div class="field"><label>Cuéntanos de tu negocio</label>
-        <textarea name="descripcion" maxlength="300" placeholder="Qué te hace especial para los moteros que pasan por tu zona"></textarea></div>
-      <button class="submit-btn" type="submit">Enviar registro</button>
-      <div class="form-err"></div>
-    </form>
-    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu restaurante. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+    <div class="sub">Los moteros paran a comer en ruta. Tenemos un formulario completo con horario, tipo de cocina y descuentos.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro-restaurante">Ir al registro de restaurante →</a></div>
   </div>
 
-  <!-- HOTEL -->
+  <!-- HOTEL: ya tiene formulario propio (form-hotel) -->
   <div class="panel" id="panel-hotel">
     <h2>Registra tu <em>hotel</em></h2>
-    <div class="sub">Los moteros buscan dónde quedarse en ruta. Aparece como aliado en Rita y en el Pasaporte Ridera.</div>
-    <form id="form-hotel" onsubmit="return submitForm(event,'hotel')">
-      <div class="field"><label>Nombre del hotel<span class="req">*</span></label>
-        <input type="text" name="nombre" required maxlength="80" placeholder="Hotel Los Cerros"></div>
-      <div class="field"><label>Municipio<span class="req">*</span></label>
-        <input type="text" name="municipio" required list="dl-municipios" placeholder="Santa Fe de Antioquia" oninput="autoSubregion(this,'hotel')"></div>
-      <div class="row2">
-        <div class="field"><label>WhatsApp<span class="req">*</span></label>
-          <input type="tel" name="whatsapp" required inputmode="numeric" placeholder="310 1234567"></div>
-        <div class="field"><label>Persona de contacto</label>
-          <input type="text" name="contacto_nombre" maxlength="60" placeholder="Tu nombre"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>Tipo de alojamiento</label>
-          <input type="text" name="tipo_alojamiento" maxlength="40" placeholder="Hotel, hostal, finca, cabañas..."></div>
-        <div class="field"><label>Descuento para moteros (%)</label>
-          <input type="number" name="descuento_moteros" min="0" max="100" placeholder="10"></div>
-      </div>
-      <label class="check"><input type="checkbox" name="parqueadero_motos"><span>Tengo parqueadero seguro para motos</span></label>
-      <div class="field"><label>Cuéntanos de tu negocio</label>
-        <textarea name="descripcion" maxlength="300" placeholder="Qué te hace especial para los moteros que pasan por tu zona"></textarea></div>
-      <button class="submit-btn" type="submit">Enviar registro</button>
-      <div class="form-err"></div>
-    </form>
-    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu hotel. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+    <div class="sub">Los moteros buscan dónde quedarse en ruta. Tenemos un formulario completo con ubicación GPS, habitaciones y servicios.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro-hotel">Ir al registro de hotel →</a></div>
   </div>
 </main>
 
@@ -247,7 +205,7 @@ const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
 const RITA_WA = '573117896717';
 
-// municipio -> subregión (Antioquia)
+// Municipios de Antioquia, para sugerir ciudad en el campo de taller
 const MUNI_SUBREGION = {"Cáceres":"Bajo Cauca","Caucasia":"Bajo Cauca","El Bagre":"Bajo Cauca","Nechí":"Bajo Cauca","Tarazá":"Bajo Cauca","Zaragoza":"Bajo Cauca","Caracolí":"Magdalena Medio","Maceo":"Magdalena Medio","Puerto Berrío":"Magdalena Medio","Puerto Nare":"Magdalena Medio","Puerto Triunfo":"Magdalena Medio","Yondó":"Magdalena Medio","Amalfi":"Nordeste","Anorí":"Nordeste","Cisneros":"Nordeste","Remedios":"Nordeste","San Roque":"Nordeste","Santo Domingo":"Nordeste","Segovia":"Nordeste","Vegachí":"Nordeste","Yalí":"Nordeste","Yolombó":"Nordeste","Angostura":"Norte","Belmira":"Norte","Briceño":"Norte","Campamento":"Norte","Carolina del Príncipe":"Norte","Donmatías":"Norte","Entrerríos":"Norte","Gómez Plata":"Norte","Guadalupe":"Norte","Ituango":"Norte","San Andrés de Cuerquia":"Norte","San José de la Montaña":"Norte","San Pedro de los Milagros":"Norte","Santa Rosa de Osos":"Norte","Toledo":"Norte","Valdivia":"Norte","Yarumal":"Norte","Abriaquí":"Occidente","Anzá":"Occidente","Armenia":"Occidente","Buriticá":"Occidente","Caicedo":"Occidente","Cañasgordas":"Occidente","Dabeiba":"Occidente","Ebéjico":"Occidente","Frontino":"Occidente","Giraldo":"Occidente","Heliconia":"Occidente","Liborina":"Occidente","Olaya":"Occidente","Peque":"Occidente","Sabanalarga":"Occidente","San Jerónimo":"Occidente","Santa Fe de Antioquia":"Occidente","Sopetrán":"Occidente","Uramita":"Occidente","Abejorral":"Oriente","Alejandría":"Oriente","Argelia":"Oriente","Cocorná":"Oriente","Concepción":"Oriente","El Carmen de Viboral":"Oriente","El Peñol":"Oriente","El Retiro":"Oriente","El Santuario":"Oriente","Granada":"Oriente","Guarne":"Oriente","Guatapé":"Oriente","La Ceja":"Oriente","La Unión":"Oriente","Marinilla":"Oriente","Nariño":"Oriente","Rionegro":"Oriente","San Carlos":"Oriente","San Francisco":"Oriente","San Luis":"Oriente","San Rafael":"Oriente","San Vicente Ferrer":"Oriente","Sonsón":"Oriente","Amagá":"Suroeste","Andes":"Suroeste","Angelópolis":"Suroeste","Betania":"Suroeste","Betulia":"Suroeste","Caramanta":"Suroeste","Ciudad Bolívar":"Suroeste","Concordia":"Suroeste","Fredonia":"Suroeste","Hispania":"Suroeste","Jardín":"Suroeste","Jericó":"Suroeste","La Pintada":"Suroeste","Montebello":"Suroeste","Pueblorrico":"Suroeste","Salgar":"Suroeste","Santa Bárbara":"Suroeste","Támesis":"Suroeste","Tarso":"Suroeste","Titiribí":"Suroeste","Urrao":"Suroeste","Valparaíso":"Suroeste","Venecia":"Suroeste","Apartadó":"Urabá","Arboletes":"Urabá","Carepa":"Urabá","Chigorodó":"Urabá","Murindó":"Urabá","Mutatá":"Urabá","Necoclí":"Urabá","San Juan de Urabá":"Urabá","San Pedro de Urabá":"Urabá","Turbo":"Urabá","Vigía del Fuerte":"Urabá","Barbosa":"Valle de Aburrá","Bello":"Valle de Aburrá","Caldas":"Valle de Aburrá","Copacabana":"Valle de Aburrá","Envigado":"Valle de Aburrá","Girardota":"Valle de Aburrá","Itagüí":"Valle de Aburrá","La Estrella":"Valle de Aburrá","Medellín":"Valle de Aburrá","Sabaneta":"Valle de Aburrá"};
 
 // Poblar datalist de municipios
@@ -259,12 +217,6 @@ const MUNI_SUBREGION = {"Cáceres":"Bajo Cauca","Caucasia":"Bajo Cauca","El Bagr
     dl.appendChild(opt);
   });
 })();
-
-function autoSubregion(input, type) {
-  const sub = MUNI_SUBREGION[input.value.trim()];
-  const form = document.getElementById('form-' + type);
-  form.dataset.subregion = sub || 'Antioquia';
-}
 
 // Selector de tipo de negocio
 const picks = document.querySelectorAll('.pick');
@@ -297,7 +249,7 @@ function normalizePhone(raw) {
   return digits;
 }
 
-const TABLE_BY_TYPE = { taller: 'talleres', restaurante: 'restaurantes', hotel: 'hoteles' };
+const TABLE_BY_TYPE = { taller: 'talleres' };
 
 async function submitForm(ev, type) {
   ev.preventDefault();
@@ -309,21 +261,9 @@ async function submitForm(ev, type) {
   const fd = new FormData(form);
   const payload = {};
   for (const [k, v] of fd.entries()) {
-    if (k === 'parqueadero_motos') { payload[k] = true; continue; }
     const val = String(v).trim();
     if (!val) continue;
-    if (k === 'telefono' || k === 'whatsapp') {
-      payload[k] = normalizePhone(val);
-      if (type !== 'taller') payload.whatsapp = normalizePhone(val);
-    } else if (k === 'descuento_moteros') {
-      payload[k] = parseInt(val, 10);
-    } else {
-      payload[k] = val;
-    }
-  }
-  if (!fd.has('parqueadero_motos')) payload.parqueadero_motos = false;
-  if (type === 'restaurante' || type === 'hotel') {
-    payload.subregion = form.dataset.subregion || MUNI_SUBREGION[payload.municipio] || 'Antioquia';
+    payload[k] = (k === 'telefono') ? normalizePhone(val) : val;
   }
 
   btn.disabled = true;
