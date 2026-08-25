@@ -112,11 +112,11 @@
       <span class="desc">Recibe viajes de moteros varados</span>
       <span class="arrow">Registrarme →</span>
     </a>
-    <a class="cat wa" href="#" id="wa-club">
+    <a class="cat" href="https://ridera.com.co/registro-clubes/">
       <span class="ic">🏍️</span>
       <span class="name">Club</span>
       <span class="desc">Chat propio y rodadas en vivo</span>
-      <span class="arrow">💬 Escribir a Rita →</span>
+      <span class="arrow">Registrarme →</span>
     </a>
     <a class="cat" href="/registro-restaurante">
       <span class="ic">🍽️</span>
@@ -130,11 +130,11 @@
       <span class="desc">Hospedaje para rutas largas</span>
       <span class="arrow">Registrarme →</span>
     </a>
-    <a class="cat wa" href="#" id="wa-moto" style="grid-column:1/-1">
+    <a class="cat" href="https://ridera.com.co/vende-tu-moto/" style="grid-column:1/-1">
       <span class="ic">🏷️</span>
       <span class="name">Vender tu moto</span>
-      <span class="desc">Publica tu moto usada con ayuda de Rita, directo por WhatsApp</span>
-      <span class="arrow">💬 Escribir a Rita →</span>
+      <span class="desc">Publícala gratis en el marketplace de motos, sin intermediarios</span>
+      <span class="arrow">Publicarla →</span>
     </a>
   </div>
 
@@ -156,12 +156,6 @@
 
 <script>
 const PAGE_URL = 'https://ridera.com.co/red';
-const RITA_WA = '573117896717';
-
-document.getElementById('wa-club').href =
-  'https://wa.me/' + RITA_WA + '?text=' + encodeURIComponent('Hola Rita! 🏍️ Quiero registrar mi club de motos en Ridera.');
-document.getElementById('wa-moto').href =
-  'https://wa.me/' + RITA_WA + '?text=' + encodeURIComponent('Hola Rita! 🏍️ Quiero vender mi moto, ayúdame a publicarla.');
 
 // QR generado vía servicio público (alto contraste blanco/negro para asegurar buen escaneo)
 const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(PAGE_URL);

@@ -143,13 +143,11 @@ footer a{color:var(--orange);text-decoration:none}
     <div class="ext-card"><a class="ext-btn" href="/registro">Ir al registro de grúa →</a></div>
   </div>
 
-  <!-- CLUB: vía WhatsApp con Rita -->
+  <!-- CLUB: ya tiene registro propio en WordPress -->
   <div class="panel" id="panel-club">
     <h2>Registra tu <em>club</em></h2>
-    <div class="sub">Escríbele a Rita por WhatsApp con el nombre de tu club, ciudad y cuántos rodantes son. Ella te ayuda a crear tu chat privado de club en minutos.</div>
-    <div class="ext-card">
-      <a class="ext-btn wa" id="wa-club" href="#" target="_blank" rel="noopener">💬 Escribir a Rita por WhatsApp</a>
-    </div>
+    <div class="sub">Registra tu club de motos y activa tu chat privado con rodadas en vivo.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/registro-clubes/">Ir al registro de club →</a></div>
   </div>
 
   <!-- TALLER -->
@@ -203,7 +201,6 @@ footer a{color:var(--orange);text-decoration:none}
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
-const RITA_WA = '573117896717';
 
 // Municipios de Antioquia, para sugerir ciudad en el campo de taller
 const MUNI_SUBREGION = {"Cáceres":"Bajo Cauca","Caucasia":"Bajo Cauca","El Bagre":"Bajo Cauca","Nechí":"Bajo Cauca","Tarazá":"Bajo Cauca","Zaragoza":"Bajo Cauca","Caracolí":"Magdalena Medio","Maceo":"Magdalena Medio","Puerto Berrío":"Magdalena Medio","Puerto Nare":"Magdalena Medio","Puerto Triunfo":"Magdalena Medio","Yondó":"Magdalena Medio","Amalfi":"Nordeste","Anorí":"Nordeste","Cisneros":"Nordeste","Remedios":"Nordeste","San Roque":"Nordeste","Santo Domingo":"Nordeste","Segovia":"Nordeste","Vegachí":"Nordeste","Yalí":"Nordeste","Yolombó":"Nordeste","Angostura":"Norte","Belmira":"Norte","Briceño":"Norte","Campamento":"Norte","Carolina del Príncipe":"Norte","Donmatías":"Norte","Entrerríos":"Norte","Gómez Plata":"Norte","Guadalupe":"Norte","Ituango":"Norte","San Andrés de Cuerquia":"Norte","San José de la Montaña":"Norte","San Pedro de los Milagros":"Norte","Santa Rosa de Osos":"Norte","Toledo":"Norte","Valdivia":"Norte","Yarumal":"Norte","Abriaquí":"Occidente","Anzá":"Occidente","Armenia":"Occidente","Buriticá":"Occidente","Caicedo":"Occidente","Cañasgordas":"Occidente","Dabeiba":"Occidente","Ebéjico":"Occidente","Frontino":"Occidente","Giraldo":"Occidente","Heliconia":"Occidente","Liborina":"Occidente","Olaya":"Occidente","Peque":"Occidente","Sabanalarga":"Occidente","San Jerónimo":"Occidente","Santa Fe de Antioquia":"Occidente","Sopetrán":"Occidente","Uramita":"Occidente","Abejorral":"Oriente","Alejandría":"Oriente","Argelia":"Oriente","Cocorná":"Oriente","Concepción":"Oriente","El Carmen de Viboral":"Oriente","El Peñol":"Oriente","El Retiro":"Oriente","El Santuario":"Oriente","Granada":"Oriente","Guarne":"Oriente","Guatapé":"Oriente","La Ceja":"Oriente","La Unión":"Oriente","Marinilla":"Oriente","Nariño":"Oriente","Rionegro":"Oriente","San Carlos":"Oriente","San Francisco":"Oriente","San Luis":"Oriente","San Rafael":"Oriente","San Vicente Ferrer":"Oriente","Sonsón":"Oriente","Amagá":"Suroeste","Andes":"Suroeste","Angelópolis":"Suroeste","Betania":"Suroeste","Betulia":"Suroeste","Caramanta":"Suroeste","Ciudad Bolívar":"Suroeste","Concordia":"Suroeste","Fredonia":"Suroeste","Hispania":"Suroeste","Jardín":"Suroeste","Jericó":"Suroeste","La Pintada":"Suroeste","Montebello":"Suroeste","Pueblorrico":"Suroeste","Salgar":"Suroeste","Santa Bárbara":"Suroeste","Támesis":"Suroeste","Tarso":"Suroeste","Titiribí":"Suroeste","Urrao":"Suroeste","Valparaíso":"Suroeste","Venecia":"Suroeste","Apartadó":"Urabá","Arboletes":"Urabá","Carepa":"Urabá","Chigorodó":"Urabá","Murindó":"Urabá","Mutatá":"Urabá","Necoclí":"Urabá","San Juan de Urabá":"Urabá","San Pedro de Urabá":"Urabá","Turbo":"Urabá","Vigía del Fuerte":"Urabá","Barbosa":"Valle de Aburrá","Bello":"Valle de Aburrá","Caldas":"Valle de Aburrá","Copacabana":"Valle de Aburrá","Envigado":"Valle de Aburrá","Girardota":"Valle de Aburrá","Itagüí":"Valle de Aburrá","La Estrella":"Valle de Aburrá","Medellín":"Valle de Aburrá","Sabaneta":"Valle de Aburrá"};
@@ -237,10 +234,6 @@ picks.forEach(p => {
   const target = tipo && document.querySelector('.pick[data-type="' + tipo + '"]');
   (target || picks[0]).click();
 })();
-
-// WhatsApp club
-document.getElementById('wa-club').href =
-  'https://wa.me/' + RITA_WA + '?text=' + encodeURIComponent('Hola Rita! 🏍️ Quiero registrar mi club de motos en Ridera.');
 
 function normalizePhone(raw) {
   let digits = raw.replace(/\D/g, '');
