@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-NPWT32Q5');</script>
+<!-- End Google Tag Manager -->
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<title>Ranking de Moteros | Ridera</title>
+<meta name="description" content="Descubre a los moteros con más municipios recorridos en Colombia. Sella tu ruta, sube de nivel y sal en el ranking de Ridera." />
+<link rel="canonical" href="https://gruas.ridera.com.co/leaderboard.html" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Ridera" />
+<meta property="og:title" content="Ranking de Moteros | Ridera" />
+<meta property="og:description" content="¿Cuántos municipios has recorrido en moto? Mira el ranking y súbete a la tabla." />
+<meta property="og:url" content="https://gruas.ridera.com.co/leaderboard.html" />
+<meta property="og:locale" content="es_CO" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Ranking de Moteros | Ridera" />
+<meta name="twitter:description" content="¿Cuántos municipios has recorrido en moto? Mira el ranking y súbete a la tabla." />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #0e0e0e; --s: #1a1a1a; --s2: #222; --line: #2a2a2a;
+    --or: #E85D20; --text: #f0f0f0; --mu: #888;
+    --gold: #f5c518; --silver: #c0c0c0; --bronze: #cd7f32;
+  }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: radial-gradient(circle at top, #1a1108 0%, var(--bg) 55%);
+    color: var(--text); min-height: 100vh; padding-bottom: 3rem;
+  }
+  header { text-align: center; padding: 2.5rem 1rem 1.5rem; }
+  header .logo { font-size: 1.6rem; font-weight: 800; color: var(--or); margin-bottom: 0.4rem; }
+  header h1 { font-size: 1.6rem; font-weight: 800; margin-bottom: 0.4rem; }
+  header p { color: var(--mu); font-size: 0.9rem; max-width: 420px; margin: 0 auto; }
+
+  .wrap { max-width: 560px; margin: 0 auto; padding: 0 1rem; }
+
+  .stats-bar { display: flex; gap: 0.75rem; margin: 1.5rem 0; }
+  .stat-chip { flex: 1; background: var(--s); border: 1px solid var(--line); border-radius: 12px; padding: 0.9rem; text-align: center; }
+  .stat-chip .n { font-size: 1.4rem; font-weight: 800; color: var(--or); }
+  .stat-chip .l { font-size: 0.7rem; color: var(--mu); margin-top: 0.15rem; }
+
+  .podio { display: flex; align-items: flex-end; gap: 0.6rem; margin: 1.5rem 0 2rem; }
+  .podio-item { flex: 1; text-align: center; }
+  .podio-item .avatar {
+    width: 56px; height: 56px; border-radius: 50%; background: var(--s2);
+    display: flex; align-items: center; justify-content: center; font-size: 1.4rem;
+    margin: 0 auto 0.5rem; border: 3px solid var(--line); overflow: hidden;
+  }
+  .podio-item.p1 .avatar { border-color: var(--gold); width: 72px; height: 72px; }
+  .podio-item.p2 .avatar { border-color: var(--silver); }
+  .podio-item.p3 .avatar { border-color: var(--bronze); }
+  .podio-item img { width: 100%; height: 100%; object-fit: cover; }
+  .podio-item .nom { font-size: 0.8rem; font-weight: 700; }
+  .podio-item .pts { font-size: 0.72rem; color: var(--or); font-weight: 700; }
+  .podio-bar { height: 60px; border-radius: 8px 8px 0 0; margin-top: 0.5rem; }
+  .p1 .podio-bar { height: 90px; background: linear-gradient(180deg, var(--gold), #b8930e); }
+  .p2 .podio-bar { height: 60px; background: linear-gradient(180deg, var(--silver), #8f8f8f); }
+  .p3 .podio-bar { height: 45px; background: linear-gradient(180deg, var(--bronze), #8a5423); }
+
+  .list { display: flex; flex-direction: column; gap: 0.5rem; }
+  .row {
+    display: flex; align-items: center; gap: 0.75rem; background: var(--s);
+    border: 1px solid var(--line); border-radius: 10px; padding: 0.7rem 0.9rem;
+  }
+  .row .pos { width: 1.6rem; text-align: center; font-weight: 800; color: var(--mu); font-size: 0.9rem; }
+  .row .av { width: 38px; height: 38px; border-radius: 50%; background: var(--s2); flex-shrink: 0; overflow: hidden; display: flex; align-items: center; justify-content: center; font-size: 1rem; }
+  .row .av img { width: 100%; height: 100%; object-fit: cover; }
+  .row .info { flex: 1; min-width: 0; }
+  .row .nom { font-weight: 700; font-size: 0.9rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .meta { font-size: 0.72rem; color: var(--mu); }
+  .row .pts { font-weight: 800; color: var(--or); font-size: 0.95rem; white-space: nowrap; }
+
+  .nivel-badge { display: inline-block; font-size: 0.65rem; background: rgba(232,93,32,0.15); color: var(--or); padding: 0.1rem 0.4rem; border-radius: 6px; margin-left: 0.35rem; font-weight: 700; }
+
+  .cta { text-align: center; margin-top: 2rem; }
+  .cta a { display: inline-block; background: var(--or); color: #fff; font-weight: 700; padding: 0.85rem 1.6rem; border-radius: 999px; text-decoration: none; font-size: 0.9rem; }
+  .cta p { color: var(--mu); font-size: 0.8rem; margin-top: 0.75rem; }
+
+  .empty, .loading { text-align: center; color: var(--mu); padding: 3rem 1rem; font-size: 0.9rem; }
+</style>
+</head>
+<body>
+  <header>
+    <div class="logo">🏍️ Ridera</div>
+    <h1>Ranking de Moteros</h1>
+    <p>Cada municipio que recorres y sellas suma puntos. Mira quién lleva más rutas por Colombia.</p>
+  </header>
+
+  <div class="wrap">
+    <div class="stats-bar" id="statsBar" style="display:none">
+      <div class="stat-chip"><div class="n" id="totalRiders">–</div><div class="l">Moteros activos</div></div>
+      <div class="stat-chip"><div class="n" id="topPuntos">–</div><div class="l">Puntos del líder</div></div>
+    </div>
+
+    <div id="podio" class="podio" style="display:none"></div>
+    <div id="loading" class="loading">Cargando ranking...</div>
+    <div id="list" class="list"></div>
+    <div id="empty" class="empty" style="display:none">Todavía no hay moteros en el ranking. ¡Sé el primero en sellar un municipio!</div>
+
+    <div class="cta">
+      <a href="https://wa.me/573117896717?text=Hola%2C%20quiero%20sellar%20un%20municipio%20en%20Ridera" target="_blank" rel="noopener">Sellar mi ruta con Rita 🏍️</a>
+      <p>Escríbele a Rita por WhatsApp y cuéntale a qué municipio llegaste.</p>
+    </div>
+  </div>
+
+<script>
+const FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/leaderboard-sellos';
+
+function initials(nombre) {
+  return (nombre || 'M').trim().split(/\s+/).slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'M';
+}
+
+function avatarHtml(r, size) {
+  if (r.foto_url) return `<img src="${r.foto_url}" alt="${esc(r.nombre)}" loading="lazy" />`;
+  return initials(r.nombre);
+}
+
+function esc(s) {
+  return String(s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function load() {
+  try {
+    const res = await fetch(FN_URL);
+    const data = await res.json();
+    document.getElementById('loading').style.display = 'none';
+    if (!data.ok || !data.ranking || !data.ranking.length) {
+      document.getElementById('empty').style.display = 'block';
+      return;
+    }
+
+    const ranking = data.ranking;
+    document.getElementById('statsBar').style.display = 'flex';
+    document.getElementById('totalRiders').textContent = data.total_riders || ranking.length;
+    document.getElementById('topPuntos').textContent = ranking[0].puntos;
+
+    // Podio (top 3)
+    if (ranking.length >= 3) {
+      const [p1, p2, p3] = ranking;
+      const podio = document.getElementById('podio');
+      podio.style.display = 'flex';
+      podio.innerHTML = `
+        <div class="podio-item p2"><div class="avatar">${avatarHtml(p2)}</div><div class="nom">${esc(p2.nombre)}</div><div class="pts">${p2.puntos} pts</div><div class="podio-bar"></div></div>
+        <div class="podio-item p1"><div class="avatar">${avatarHtml(p1)}</div><div class="nom">${esc(p1.nombre)}</div><div class="pts">${p1.puntos} pts</div><div class="podio-bar"></div></div>
+        <div class="podio-item p3"><div class="avatar">${avatarHtml(p3)}</div><div class="nom">${esc(p3.nombre)}</div><div class="pts">${p3.puntos} pts</div><div class="podio-bar"></div></div>
+      `;
+    }
+
+    const rest = ranking.length >= 3 ? ranking.slice(3) : ranking;
+    const list = document.getElementById('list');
+    list.innerHTML = rest.map(r => `
+      <div class="row">
+        <div class="pos">#${r.posicion}</div>
+        <div class="av">${avatarHtml(r)}</div>
+        <div class="info">
+          <div class="nom">${esc(r.nombre)}${r.ciudad ? ' · ' + esc(r.ciudad) : ''}</div>
+          <div class="meta">${r.municipios_visitados} municipios<span class="nivel-badge">${r.nivel_icono} ${r.nivel}</span></div>
+        </div>
+        <div class="pts">${r.puntos}</div>
+      </div>
+    `).join('');
+  } catch (e) {
+    document.getElementById('loading').textContent = 'No pudimos cargar el ranking. Intenta de nuevo.';
+  }
+}
+
+load();
+</script>
+</body>
+</html>

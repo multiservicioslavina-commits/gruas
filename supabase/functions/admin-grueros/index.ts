@@ -11,15 +11,54 @@ const resendApiKey = Deno.env.get('RESEND_API_KEY')
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || ''
 const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '1238785075974458'
 const GRAPH = 'https://graph.facebook.com/v25.0'
+const tgBotToken = Deno.env.get('TELEGRAM_BOT_TOKEN') || ''
+const TELEGRAM_API = `https://api.telegram.org/bot${tgBotToken}`
+const metaPageToken = Deno.env.get('META_PAGE_ACCESS_TOKEN') || ''
+
+async function sendMetaMessage(psid: string, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!metaPageToken) return { ok: false, error: 'Falta META_PAGE_ACCESS_TOKEN' }
+  try {
+    const res = await fetch(`${GRAPH}/me/messages?access_token=${metaPageToken}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ recipient: { id: psid }, message: { text } }),
+    })
+    if (res.ok) return { ok: true }
+    const d = await res.json().catch(() => ({}))
+    return { ok: false, error: d?.error?.message || `HTTP ${res.status}` }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
+
+async function sendTelegramMessage(chatId: number, text: string): Promise<{ ok: boolean; error?: string }> {
+  if (!tgBotToken) return { ok: false, error: 'Falta TELEGRAM_BOT_TOKEN' }
+  try {
+    const res = await fetch(`${TELEGRAM_API}/sendMessage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ chat_id: chatId, text }),
+    })
+    if (res.ok) return { ok: true }
+    const d = await res.json().catch(() => ({}))
+    return { ok: false, error: d?.description || `HTTP ${res.status}` }
+  } catch (error) {
+    return { ok: false, error: error.message }
+  }
+}
 
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
 
-async function sendWATemplate(to: string, name: string, language: string, bodyParams: string[]): Promise<{ ok: boolean; error?: string }> {
+async function sendWATemplate(to: string, name: string, language: string, bodyParams: string[], media?: { type: 'image' | 'video' | 'document'; url: string }): Promise<{ ok: boolean; error?: string }> {
   if (!waToken || !waPhoneId) return { ok: false, error: 'Faltan credenciales WhatsApp' }
   try {
-    const components = bodyParams.length
+    const components: Record<string, unknown>[] = bodyParams.length
       ? [{ type: 'body', parameters: bodyParams.map((t) => ({ type: 'text', text: t })) }]
       : []
+    // Only works if the approved template has a matching HEADER component (IMAGE/VIDEO/DOCUMENT).
+    if (media?.url) {
+      components.unshift({ type: 'header', parameters: [{ type: media.type, [media.type]: { link: media.url } }] })
+    }
     const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
       method: 'POST',
       headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
@@ -84,10 +123,29 @@ function html_email_template(body: string, preheader: string = ''): string {
 </html>`
 }
 
-async function validateKey(key: string): Promise<boolean> {
-  const { data } = await sbClient.from('admin_config').select('password').eq('id', 1).maybeSingle()
-  const current = data?.password || 'mipadre2816'
-  return key === current
+async function validateKey(key: string): Promise<{ ok: boolean; role?: string; username?: string }> {
+  const sep = (key || '').indexOf(':')
+  if (sep === -1) return { ok: false }
+  const username = key.slice(0, sep)
+  const password = key.slice(sep + 1)
+  if (!username || !password) return { ok: false }
+  const { data, error } = await sbClient.rpc('verify_admin_credentials', { p_username: username, p_password: password })
+  if (error || !data || !data.length) return { ok: false }
+  sbClient.from('admin_users').update({ last_login_at: new Date().toISOString() }).eq('username', username).then(() => {})
+  return { ok: true, role: data[0].role, username }
+}
+
+function logAudit(username: string, action: string, detail: Record<string, unknown> = {}) {
+  sbClient.from('admin_audit_log').insert({ username, action, detail }).then(() => {})
+}
+
+function weekKey(d: Date): string {
+  const date = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()))
+  const dayNum = date.getUTCDay() || 7
+  date.setUTCDate(date.getUTCDate() + 4 - dayNum)
+  const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
+  const weekNo = Math.ceil((((date.getTime() - yearStart.getTime()) / 86400000) + 1) / 7)
+  return `${date.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`
 }
 
 function toSlug(s: string, suffix = ''): string {
@@ -142,12 +200,29 @@ Deno.serve(async (req) => {
       })
     }
 
-    const isValid = await validateKey(key)
-    console.log('validateKey result:', { key: key.substring(0, 10) + '...', isValid })
+    const auth = await validateKey(key)
+    console.log('validateKey result:', { key: key.substring(0, 10) + '...', ok: auth.ok, role: auth.role })
 
-    if (!isValid) {
+    if (!auth.ok) {
       return new Response(JSON.stringify({ ok: false, error: 'Invalid key' }), {
         status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+    const role = auth.role || 'admin'
+    const ADMIN_ONLY_ACTIONS = new Set([
+      'toggle_approval', 'reject_record', 'update_record', 'approve', 'set', 'delete',
+      'update_error', 'export_contacts', 'broadcast',
+      'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
+      'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
+      'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
+      'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
+      'survey_create', 'survey_list', 'survey_results', 'set_tags',
+      'reserva_update_estado',
+    ])
+    if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
+      return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
+        status: 403,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -155,7 +230,7 @@ Deno.serve(async (req) => {
     // LIST ACTION - for login validation
     if (action === 'list') {
       const { data: grueros } = await sbClient.from('grueros').select('*')
-      return new Response(JSON.stringify({ ok: true, grueros: grueros || [] }), {
+      return new Response(JSON.stringify({ ok: true, grueros: grueros || [], role }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -247,6 +322,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'toggle_approval', { table, id, aprobado })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -255,7 +331,7 @@ Deno.serve(async (req) => {
     // REJECT RECORD (talleres, almacenes, clubs, motos_venta, riders, sellos) - deletes the record
     if (action === 'reject_record') {
       const { table, id } = body
-      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta', 'riders', 'sellos']
+      const allowedTables = ['talleres', 'almacenes', 'clubs', 'motos_venta', 'riders', 'sellos', 'hoteles', 'restaurantes']
       if (!allowedTables.includes(table)) {
         return new Response(JSON.stringify({ ok: false, error: 'Tabla no permitida' }), {
           status: 400,
@@ -269,6 +345,7 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'reject_record', { table, id })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -283,7 +360,9 @@ Deno.serve(async (req) => {
         almacenes: ['nombre', 'ciudad', 'telefono', 'email', 'direccion', 'barrio', 'categorias'],
         motos_venta: ['titulo', 'precio', 'ciudad', 'barrio', 'telefono', 'email', 'marca', 'modelo', 'anio', 'kilometraje', 'cilindraje', 'color', 'descripcion'],
         grueros: ['nombre', 'ciudad', 'telefono', 'email', 'zona'],
-        riders: ['nombre', 'apellido', 'ciudad', 'telefono', 'correo', 'moto_marca', 'moto_modelo'],
+        riders: ['nombre', 'apellido', 'ciudad', 'telefono', 'correo', 'moto_marca', 'moto_modelo', 'fecha_nacimiento'],
+        hoteles: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'contacto_nombre', 'descripcion'],
+        restaurantes: ['nombre', 'municipio', 'subregion', 'direccion', 'telefono', 'whatsapp', 'email', 'tipo_cocina', 'contacto_nombre', 'descripcion'],
       }
       const allowed = editableFields[table]
       if (!allowed) {
@@ -309,7 +388,34 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'update_record', { table, id, fields: Object.keys(update) })
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SET TAGS (segmentación) on rita_contacts by phone or riders by id
+    if (action === 'set_tags') {
+      const { entity, id, phone, tags } = body
+      if (!Array.isArray(tags)) {
+        return new Response(JSON.stringify({ ok: false, error: 'tags debe ser un arreglo' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const cleanTags = [...new Set(tags.map((t: string) => String(t).trim().toLowerCase()).filter(Boolean))]
+      if (entity === 'rider') {
+        const { error } = await sbClient.from('riders').update({ tags: cleanTags }).eq('id', id)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else if (entity === 'contact') {
+        const { error } = await sbClient.from('rita_contacts').update({ tags: cleanTags }).eq('phone_number', phone)
+        if (error) return new Response(JSON.stringify({ ok: false, error: error.message }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+      } else {
+        return new Response(JSON.stringify({ ok: false, error: 'entity debe ser rider o contact' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'set_tags', { entity, id: id || null, phone: phone || null, tags: cleanTags })
+      return new Response(JSON.stringify({ ok: true, tags: cleanTags }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -722,6 +828,7 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'delete_gruero', { id })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -784,12 +891,13 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { error } = await sbClient.from('admin_config').update({ password: nueva, updated_at: new Date().toISOString() }).eq('id', 1)
+      const { error } = await sbClient.rpc('set_admin_password', { p_username: auth.username, p_password: nueva })
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      logAudit(auth.username!, 'change_password', {})
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
@@ -822,6 +930,110 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true, totalContacts, optedIn, activeToday, msgsToday, msgsWeek, msgsMonth, intentCounts: {}, perDay,
       }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // GROWTH ANALYTICS (funnel + retencion + referidos)
+    if (action === 'growth_analytics') {
+      const [{ data: riders }, { data: sellos }, { data: msgs }, { data: referidos }] = await Promise.all([
+        sbClient.from('riders').select('id, telefono, created_at'),
+        sbClient.from('sellos').select('rider_id, fecha, estado').eq('estado', 'aprobado'),
+        sbClient.from('rita_messages').select('phone, phone_number, created_at').gte('created_at', new Date(Date.now() - 60 * 86400000).toISOString()),
+        sbClient.from('referidos').select('estado, created_at'),
+      ])
+
+      const totalRiders = riders?.length || 0
+      const primerSelloByRider = new Map<string, string>()
+      for (const s of sellos || []) {
+        if (!s.rider_id) continue
+        const prev = primerSelloByRider.get(s.rider_id)
+        if (!prev || s.fecha < prev) primerSelloByRider.set(s.rider_id, s.fecha)
+      }
+      const activados = primerSelloByRider.size
+
+      const phoneSuffix = (p: string) => (p || '').replace(/\D/g, '').slice(-10)
+      const riderPhoneSuffixes = new Set((riders || []).map((r) => phoneSuffix(r.telefono)).filter(Boolean))
+      const start30 = new Date(Date.now() - 30 * 86400000)
+      const phonesActivos30 = new Set(
+        (msgs || [])
+          .filter((m) => new Date(m.created_at) >= start30)
+          .map((m) => phoneSuffix(m.phone || m.phone_number))
+          .filter((p) => p && riderPhoneSuffixes.has(p)),
+      )
+      const activosUltimos30 = phonesActivos30.size
+
+      // Cohortes por semana de registro: % con al menos 1 sello dentro de 7 dias de registrarse
+      const porSemana: Record<string, { registrados: number; activadosSemana1: number }> = {}
+      for (const r of riders || []) {
+        const semana = weekKey(new Date(r.created_at))
+        porSemana[semana] = porSemana[semana] || { registrados: 0, activadosSemana1: 0 }
+        porSemana[semana].registrados++
+        const primerSello = primerSelloByRider.get(r.id)
+        if (primerSello && (new Date(primerSello).getTime() - new Date(r.created_at).getTime()) <= 7 * 86400000) {
+          porSemana[semana].activadosSemana1++
+        }
+      }
+
+      const referidosTotal = referidos?.length || 0
+      const referidosRegistrados = (referidos || []).filter((r) => r.estado === 'registrado').length
+      const tasaConversionReferidos = referidosTotal ? Math.round((referidosRegistrados / referidosTotal) * 100) : 0
+
+      return new Response(JSON.stringify({
+        ok: true,
+        funnel: {
+          registrados: totalRiders,
+          activados_primer_sello: activados,
+          tasa_activacion: totalRiders ? Math.round((activados / totalRiders) * 100) : 0,
+          activos_ultimos_30d: activosUltimos30,
+          tasa_retencion_30d: totalRiders ? Math.round((activosUltimos30 / totalRiders) * 100) : 0,
+        },
+        cohortes_semanales: Object.entries(porSemana).sort(([a], [b]) => a.localeCompare(b)).map(([semana, v]) => ({
+          semana, registrados: v.registrados, activados_semana1: v.activadosSemana1,
+          tasa_activacion_semana1: v.registrados ? Math.round((v.activadosSemana1 / v.registrados) * 100) : 0,
+        })),
+        referidos: {
+          total_invitaciones: referidosTotal,
+          registrados: referidosRegistrados,
+          tasa_conversion: tasaConversionReferidos,
+        },
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RESERVAS (talleres, almacenes, hoteles, restaurantes - sin pago)
+    if (action === 'reserva_list') {
+      const estado = body.estado ? String(body.estado) : null
+      let query = sbClient.from('reservas').select('*').order('created_at', { ascending: false }).limit(200)
+      if (estado) query = query.eq('estado', estado)
+      const { data, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, reservas: data || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    if (action === 'reserva_update_estado') {
+      const { id, estado } = body
+      const validEstados = ['pendiente', 'confirmada', 'cancelada', 'completada']
+      if (!validEstados.includes(estado)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Estado no válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('reservas').update({ estado, updated_at: new Date().toISOString() }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'reserva_update_estado', { id, estado })
+      return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -911,22 +1123,67 @@ Deno.serve(async (req) => {
       })
     }
 
-    // BROADCAST (WhatsApp template to opted-in contacts)
+    // BROADCAST AUDIENCE - distinct ciudades + count of opted-in contacts, optionally filtered by ciudad
+    if (action === 'broadcast_audience') {
+      const ciudad = String(body.ciudad || '').trim()
+      const tag = String(body.tag || '').trim()
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, tags').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [tag])
+      const { data: contacts } = await contactsQuery
+      const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+      const { data: allTagged } = await sbClient.from('rita_contacts').select('tags').eq('opted_in', true)
+      const ciudadByPhoneSuffix = new Map<string, string>()
+      for (const r of riders || []) {
+        const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+        if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+      }
+      const ciudades = [...new Set((riders || []).map((r) => r.ciudad).filter(Boolean))].sort()
+      const tags = [...new Set((allTagged || []).flatMap((c) => c.tags || []))].sort()
+      let total = (contacts || []).length
+      if (ciudad) {
+        total = (contacts || []).filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        }).length
+      }
+      return new Response(JSON.stringify({ ok: true, total, ciudades, tags }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // BROADCAST (WhatsApp template to opted-in contacts, optionally filtered by rider ciudad)
     if (action === 'broadcast') {
-      const { template, language, params } = body
+      const { template, language, params, ciudad, tag, mediaUrl, mediaType } = body
       if (!template) {
         return new Response(JSON.stringify({ ok: false, error: 'Falta el nombre del template' }), {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const { data: contacts } = await sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      const media = mediaUrl && ['image', 'video', 'document'].includes(mediaType) ? { type: mediaType, url: mediaUrl } : undefined
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      if (tag) contactsQuery = contactsQuery.contains('tags', [String(tag).trim()])
+      let { data: contacts } = await contactsQuery
+      contacts = contacts || []
+
+      if (ciudad) {
+        const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+        const ciudadByPhoneSuffix = new Map<string, string>()
+        for (const r of riders || []) {
+          const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+          if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+        }
+        contacts = contacts.filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        })
+      }
 
       let sent = 0, errors = 0
       const errorDetails: { phone: string; error?: string }[] = []
 
-      for (const c of contacts || []) {
+      for (const c of contacts) {
         const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
-        const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams)
+        const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams, media)
         if (result.ok) sent++
         else {
           errors++
@@ -935,7 +1192,242 @@ Deno.serve(async (req) => {
         await new Promise((r) => setTimeout(r, 200))
       }
 
+      logAudit(auth.username!, 'broadcast', { template, ciudad: ciudad || null, tag: tag || null, sent, errors })
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: contacts.length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CREATE SCHEDULED CAMPAIGN
+    if (action === 'campaign_create') {
+      const { template, language, params, ciudad, mediaUrl, mediaType, scheduledAt } = body
+      if (!template || !scheduledAt) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el template o la fecha programada' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: campaign, error } = await sbClient.from('broadcast_campaigns').insert({
+        template,
+        language: language || 'es_CO',
+        params: Array.isArray(params) ? params : [],
+        ciudad: ciudad || null,
+        media_url: mediaUrl || null,
+        media_type: ['image', 'video', 'document'].includes(mediaType) ? mediaType : null,
+        scheduled_at: scheduledAt,
+        created_by: auth.username!,
+      }).select().single()
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'campaign_create', { campaign_id: campaign.id, template, scheduledAt })
+      return new Response(JSON.stringify({ ok: true, campaign }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST SCHEDULED CAMPAIGNS
+    if (action === 'campaign_list') {
+      const { data: campaigns, error } = await sbClient
+        .from('broadcast_campaigns')
+        .select('*')
+        .order('scheduled_at', { ascending: false })
+        .limit(100)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, campaigns: campaigns || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CANCEL SCHEDULED CAMPAIGN
+    if (action === 'campaign_cancel') {
+      const { campaignId } = body
+      if (!campaignId) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el id de la campaña' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('broadcast_campaigns').update({ status: 'canceled' }).eq('id', campaignId).eq('status', 'pending')
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'campaign_cancel', { campaign_id: campaignId })
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TELEGRAM AUDIENCE
+    if (action === 'telegram_audience') {
+      const { count } = await sbClient.from('telegram_contacts').select('id', { count: 'exact', head: true }).eq('opted_in', true)
+      return new Response(JSON.stringify({ ok: true, total: count || 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // TELEGRAM BROADCAST (plain text to opted-in Telegram contacts)
+    if (action === 'telegram_broadcast') {
+      const { message } = body
+      if (!message) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el mensaje' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: contacts } = await sbClient.from('telegram_contacts').select('chat_id, first_name').eq('opted_in', true)
+      let sent = 0, errors = 0
+      const errorDetails: { chatId: string; error?: string }[] = []
+      for (const c of contacts || []) {
+        const text = message.replace(/\{\{nombre\}\}/g, c.first_name || '')
+        const result = await sendTelegramMessage(c.chat_id, text)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ chatId: String(c.chat_id), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      logAudit(auth.username!, 'telegram_broadcast', { sent, errors })
       return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // META AUDIENCE (Messenger + Instagram DM)
+    if (action === 'meta_audience') {
+      const channel = body.channel === 'instagram' ? 'instagram' : 'messenger'
+      const { count } = await sbClient.from('meta_contacts').select('id', { count: 'exact', head: true }).eq('opted_in', true).eq('channel', channel)
+      return new Response(JSON.stringify({ ok: true, total: count || 0 }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // META BROADCAST (Messenger + Instagram DM, plain text to opted-in contacts within the 24h window)
+    if (action === 'meta_broadcast') {
+      const { message, channel: rawChannel } = body
+      const channel = rawChannel === 'instagram' ? 'instagram' : 'messenger'
+      if (!message) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el mensaje' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: contacts } = await sbClient.from('meta_contacts').select('psid, name').eq('opted_in', true).eq('channel', channel)
+      let sent = 0, errors = 0
+      const errorDetails: { psid: string; error?: string }[] = []
+      for (const c of contacts || []) {
+        const text = message.replace(/\{\{nombre\}\}/g, c.name || '')
+        const result = await sendMetaMessage(c.psid, text)
+        if (result.ok) sent++
+        else {
+          errors++
+          if (errorDetails.length < 10) errorDetails.push({ psid: '...' + String(c.psid).slice(-4), error: result.error })
+        }
+        await new Promise((r) => setTimeout(r, 50))
+      }
+      logAudit(auth.username!, 'meta_broadcast', { channel, sent, errors })
+      return new Response(JSON.stringify({ ok: true, sent, errors, total: (contacts || []).length, errorDetails }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // CREATE SURVEY (WhatsApp interactive buttons, max 3 options)
+    if (action === 'survey_create') {
+      const { pregunta, opciones, ciudad } = body
+      if (!pregunta || !Array.isArray(opciones) || opciones.length < 2 || opciones.length > 3) {
+        return new Response(JSON.stringify({ ok: false, error: 'La encuesta necesita una pregunta y entre 2 y 3 opciones' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: encuesta, error: insertError } = await sbClient.from('encuestas').insert({
+        pregunta, opciones, ciudad: ciudad || null, created_by: auth.username!,
+      }).select().single()
+      if (insertError) {
+        return new Response(JSON.stringify({ ok: false, error: insertError.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      let { data: contacts } = await sbClient.from('rita_contacts').select('phone_number').eq('opted_in', true)
+      contacts = contacts || []
+      if (ciudad) {
+        const { data: riders } = await sbClient.from('riders').select('telefono, ciudad').not('ciudad', 'is', null)
+        const ciudadByPhoneSuffix = new Map<string, string>()
+        for (const r of riders || []) {
+          const suffix = (r.telefono || '').replace(/\D/g, '').slice(-10)
+          if (suffix) ciudadByPhoneSuffix.set(suffix, r.ciudad)
+        }
+        contacts = contacts.filter((c) => {
+          const suffix = (c.phone_number || '').replace(/\D/g, '').slice(-10)
+          return ciudadByPhoneSuffix.get(suffix) === ciudad
+        })
+      }
+
+      const buttons = opciones.map((op: { label: string }, i: number) => ({
+        type: 'reply', reply: { id: `enc:${encuesta.id}:${i}`, title: String(op.label).slice(0, 20) },
+      }))
+
+      let sent = 0, errors = 0
+      for (const c of contacts) {
+        try {
+          const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              messaging_product: 'whatsapp',
+              to: c.phone_number,
+              type: 'interactive',
+              interactive: { type: 'button', body: { text: pregunta }, action: { buttons } },
+            }),
+          })
+          if (res.ok) sent++
+          else errors++
+        } catch { errors++ }
+        await new Promise((r) => setTimeout(r, 200))
+      }
+
+      await sbClient.from('encuestas').update({ sent_count: sent }).eq('id', encuesta.id)
+      logAudit(auth.username!, 'survey_create', { encuesta_id: encuesta.id, pregunta, sent, errors })
+      return new Response(JSON.stringify({ ok: true, encuesta, sent, errors, total: contacts.length }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // LIST SURVEYS
+    if (action === 'survey_list') {
+      const { data: encuestas, error } = await sbClient.from('encuestas').select('*').order('created_at', { ascending: false }).limit(50)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, encuestas: encuestas || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // SURVEY RESULTS (counts per option)
+    if (action === 'survey_results') {
+      const { encuestaId } = body
+      if (!encuestaId) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta el id de la encuesta' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { data: respuestas, error } = await sbClient.from('encuesta_respuestas').select('opcion_label').eq('encuesta_id', encuestaId)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const counts: Record<string, number> = {}
+      for (const r of respuestas || []) counts[r.opcion_label] = (counts[r.opcion_label] || 0) + 1
+      return new Response(JSON.stringify({ ok: true, counts, total: (respuestas || []).length }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
@@ -965,6 +1457,86 @@ Deno.serve(async (req) => {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - list (admin only, no passwords returned)
+    if (action === 'admin_users_list') {
+      const { data: users, error } = await sbClient.from('admin_users').select('id, username, role, created_at, last_login_at').order('created_at', { ascending: true })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, users: users || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN AUDIT LOG - recent actions (admin only)
+    if (action === 'admin_audit_log') {
+      const { data: log, error } = await sbClient
+        .from('admin_audit_log')
+        .select('id, username, action, detail, created_at')
+        .order('created_at', { ascending: false })
+        .limit(200)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, log: log || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - create (admin only)
+    if (action === 'admin_users_create') {
+      const { username, password, role: newRole } = body
+      if (!username || !password || !['admin', 'viewer'].includes(newRole)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Faltan username, password o role válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (password.length < 4) {
+        return new Response(JSON.stringify({ ok: false, error: 'Contraseña mínimo 4 caracteres' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.rpc('create_admin_user', { p_username: username, p_password: password, p_role: newRole })
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message.includes('duplicate') ? 'Ese usuario ya existe' : error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'admin_users_create', { username, role: newRole })
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ADMIN USERS - delete (admin only)
+    if (action === 'admin_users_delete') {
+      const { username: delUsername } = body
+      if (!delUsername) {
+        return new Response(JSON.stringify({ ok: false, error: 'Falta username' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      if (delUsername === auth.username) {
+        return new Response(JSON.stringify({ ok: false, error: 'No puedes borrar tu propio usuario' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('admin_users').delete().eq('username', delUsername)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      logAudit(auth.username!, 'admin_users_delete', { username: delUsername })
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })

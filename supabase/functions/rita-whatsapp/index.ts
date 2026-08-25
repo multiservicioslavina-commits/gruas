@@ -268,13 +268,37 @@ async function fetchGarageMoto(marca: string, modelo?: string): Promise<any | nu
   return data?.length ? data : null;
 }
 
+const NIVELES_SELLO = [
+  { min: 0, nombre: "Novato", icono: "🔰" },
+  { min: 50, nombre: "Explorador", icono: "🧭" },
+  { min: 150, nombre: "Trotamundos", icono: "🗺️" },
+  { min: 350, nombre: "Leyenda Motera", icono: "🏆" },
+  { min: 700, nombre: "Maestro de las Rutas", icono: "👑" },
+];
+function nivelForPuntos(puntos: number) {
+  let n = NIVELES_SELLO[0];
+  for (const x of NIVELES_SELLO) if (puntos >= x.min) n = x;
+  return n;
+}
+
 async function fetchSellosRider(phone: string): Promise<any | null> {
   try {
     const tel = phone.replace(/^57/, "");
     const { data: rider } = await supabase.from("riders").select("id, nombre").or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`).maybeSingle();
     if (!rider) return null;
-    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at").eq("rider_id", rider.id);
-    return { nombre: rider.nombre, total: sellos?.length || 0, municipios: sellos?.map(s => s.municipio_id) || [] };
+    const { data: sellos } = await supabase.from("sellos").select("municipio_id, created_at, estado").eq("rider_id", rider.id).eq("estado", "aprobado");
+    const { data: municipios } = await supabase.from("municipios").select("id, puntos_sello");
+    const puntosByMuni = new Map((municipios || []).map((m: any) => [m.id, m.puntos_sello || 10]));
+    const puntos = (sellos || []).reduce((acc: number, s: any) => acc + (puntosByMuni.get(s.municipio_id) || 10), 0);
+    const nivel = nivelForPuntos(puntos);
+    return {
+      nombre: rider.nombre,
+      total: sellos?.length || 0,
+      municipios: sellos?.map((s: any) => s.municipio_id) || [],
+      puntos,
+      nivel: nivel.nombre,
+      nivel_icono: nivel.icono,
+    };
   } catch { return null; }
 }
 
@@ -339,6 +363,14 @@ async function fetchRideraSemantic(message: string): Promise<any[]> {
   }
 }
 
+async function fetchSaludMotero(message: string, categoria: string): Promise<any[]> {
+  try {
+    const msg2 = norm(message);
+    const { data } = await supabase.from("salud_motero_kb").select("tema, palabras_clave, contenido").eq("categoria", categoria);
+    return (data || []).filter((row: any) => (row.palabras_clave || []).some((kw: string) => msg2.includes(norm(kw))));
+  } catch { return []; }
+}
+
 async function fetchContext(message: string, phone: string): Promise<any> {
   const msg2 = norm(message);
   let searchTerm = "";
@@ -358,6 +390,9 @@ async function fetchContext(message: string, phone: string): Promise<any> {
   const isSellosQ  = /sello|pasaporte|cuantos|llevo|municipio.*llevo|progreso|avance/.test(msg2);
   const isGrua     = /grua|remolque|averia|varad/.test(msg2);
   const isPicoPlacaQ = /pico.*placa|placa.*pico|restriccion.*vehic|dia.*sin.*carro|puedo.*circular|no.*circular|exent|via.*exent/.test(msg2);
+  const isEmergenciaQ = /accidente|choque|choco|me cai|se cayo|atropell|volco|no respira|no responde|inconsciente|desmayado|no reacciona|sangre|sangrando|sangrado|hemorragia|herida abierta|fractura|se quebro|hueso roto|no puede mover|deformidad|quemadura|quemado|me queme|ataque de asma|crisis asmatica|se ahoga|no puede respirar/.test(msg2);
+  const isSaludViajeQ = /frio|helado|calor|sudando|deshidrat|insolacion|gripa|gripe|resfriado|tos\b|fiebre|garganta|ronco|ronquera|ojos|ojo rojo|ardor ojos|vision borrosa|espalda|lumbar|lumbago|piernas|entumecid|hormigueo|hemorroides|almorranas|sueño|cansado|fatiga|bostezando|dolor de cabeza|cervical|casco aprieta|picadura|pico un insecto|abeja|avispa|mordida|mordedura|mal de paramo|soroche|calambre|muñecas|dolor de manos|quemadura solar|protector solar|rozadura|alergia al casco|colico|menstru|oidos|zumbido|pitido en el oido|no he comido|mareo por hambre|medicamento|antihistaminico|nariz tapada|congestion nasal|mucosidad|boca seca|labios partidos|tos seca|humo|smog|pecho apretado/.test(msg2);
+  const isCuidadosManejoQ = /manejar en lluvia|manejo en lluvia|niebla|neblina|distancia de seguridad|punto ciego|animal en la via|ganado en la via|trocha|via destapada|equipo de proteccion|casco certificado|sobrecargad|celular manejando|revision antes de salir|chequeo antes de viajar|consejos.*manejar|cuidados.*conducir|precaucion.*manejar/.test(msg2);
 
   const fetches: Promise<any>[] = [];
 
@@ -383,8 +418,11 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     return { climaData, siataData };
   }) : Promise.resolve(null));
   fetches.push(isViaQ && searchTerm.length > 2 ? fetchEstadoViasINVIAS(searchTerm) : Promise.resolve(null));
+  fetches.push(isEmergenciaQ ? fetchSaludMotero(message, "primeros_auxilios") : Promise.resolve([]));
+  fetches.push(!isEmergenciaQ && isSaludViajeQ ? fetchSaludMotero(message, "salud_viaje") : Promise.resolve([]));
+  fetches.push(!isEmergenciaQ && isCuidadosManejoQ ? fetchSaludMotero(message, "cuidados_manejo") : Promise.resolve([]));
 
-  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes] = await Promise.all(fetches);
+  const [rideraSemantic, garageRes, municipiosRes, talleresRes, antioquiaRes, sellosRes, climaRes, inviasRes, emergenciaRes, saludViajeRes, cuidadosManejoRes] = await Promise.all(fetches);
 
   const resultados = [
     ...(rideraSemantic || []),
@@ -406,7 +444,7 @@ async function fetchContext(message: string, phone: string): Promise<any> {
     garageMotoData = await fetchGarageMoto(marcaMencionada, posibleModelo || undefined);
   }
 
-  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes };
+  return { resultados, tramitesCtx, marcaMencionada, garageMotoData, isGrua, isGarageQ, isClimaQ, isViaQ, isPicoPlacaQ, isEmergenciaQ, searchTerm, municipios: municipiosRes, talleres: talleresRes, sellos: sellosRes, clima: climaRes, estadoVias: inviasRes, emergencia: emergenciaRes, saludViaje: saludViajeRes, cuidadosManejo: cuidadosManejoRes };
 }
 
 function getPicoPlacaPromptBlock(): string {
@@ -526,6 +564,7 @@ REGLAS DE RESPUESTA:
 - PICO Y PLACA: usa SIEMPRE la tabla de arriba. Para motos usa el PRIMER digito de la placa. Para carros el ULTIMO. Indica el dia y horario. Si preguntan por vias o vehiculos exentos, usar la info de arriba.
 - Rider NO registrado: sugerir registro cada 3-4 intercambios.
 - Si el mensaje empieza con "[Foto recibida]": es una descripcion de una imagen que el usuario mando. Responde de forma natural sobre lo que se ve (documento, moto, daño, ruta) como si tu la hubieras visto, sin mencionar que "recibiste una descripcion".
+- EMERGENCIAS Y SALUD: si el contexto interno trae una guia de EMERGENCIA, esa es tu maxima prioridad sobre cualquier otro tema de la conversacion. Nunca actues como medico ni des diagnostico: solo guia con los pasos de primeros auxilios basicos que te dan, siempre insistiendo primero en llamar al 123. Para temas de salud del motero (frio, calor, dolor, etc, sin ser emergencia), da el consejo practico de forma breve y cercana, y recomienda ver a un medico si persiste.
 ${riderInfo}`;
 }
 
@@ -535,7 +574,8 @@ async function askClaude(message: string, history: { role: string; content: stri
 
   const hasData = context.resultados?.length || context.tramitesCtx || context.isGrua ||
     context.municipios?.length || context.talleres?.length || context.rutaDetail ||
-    context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ;
+    context.garageMotoData || context.sellos || context.clima || context.estadoVias || context.isPicoPlacaQ ||
+    context.emergencia?.length || context.saludViaje?.length || context.cuidadosManejo?.length;
 
   if (!hasData && !context.marcaMencionada) {
     contextBlock += `\nSIN DATOS DISPONIBLES. NO inventes. Di que no tienes esa info.`;
@@ -545,6 +585,15 @@ async function askClaude(message: string, history: { role: string; content: stri
     contextBlock += `\nPICO Y PLACA: El usuario pregunta sobre pico y placa. Usa la tabla del system prompt para responder. Recuerda: motos usan el PRIMER digito, carros el ULTIMO. Si pregunta por vias exentas o vehiculos exentos, usa esa info tambien.`;
   }
 
+  if (context.emergencia?.length) {
+    contextBlock += `\n\n🚨 EMERGENCIA DETECTADA — PRIORIDAD MAXIMA. Responde con extrema calma y firmeza, en pasos numerados cortos y claros (mensajes de WhatsApp, no parrafos largos). SIEMPRE lo PRIMERO en tu respuesta debe ser: "Llama YA al 123" (o confirma que ya llamaron). Nunca des diagnostico medico. Usa esta guia:\n${context.emergencia.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}\nSi el usuario manda una foto de la persona lesionada, descibe solo lo objetivamente visible (sangrado, si luce consciente, deformidad aparente) para reforzar las instrucciones, SIN diagnosticar. Sigue preguntando "sigue respirando?", "el sangrado para con presion?", etc. y ofrece mantenerte en la conversacion hasta que llegue la ambulancia.`;
+  }
+  if (context.saludViaje?.length) {
+    contextBlock += `\nCUIDADOS DE SALUD DEL MOTERO (no es emergencia, da consejo practico y breve, y sugiere ver un medico si persiste o empeora):\n${context.saludViaje.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}`;
+  }
+  if (context.cuidadosManejo?.length) {
+    contextBlock += `\nPRECAUCIONES DE MANEJO (consejos de seguridad vial, da respuesta practica y breve):\n${context.cuidadosManejo.map((e: any) => `[${e.tema}]\n${e.contenido}`).join("\n\n")}`;
+  }
   if (context.clima) {
     if (context.clima.siataData) contextBlock += `\n${context.clima.siataData}`;
     if (context.clima.climaData) contextBlock += `\n${context.clima.climaData}`;
@@ -563,7 +612,7 @@ async function askClaude(message: string, history: { role: string; content: stri
   if (context.resultados?.length) contextBlock += `\nWEB: ${JSON.stringify(context.resultados, null, 0)}`;
   if (context.talleres?.length) contextBlock += `\nTALLERES: ${JSON.stringify(context.talleres, null, 0)}`;
   if (context.tramitesCtx) contextBlock += `\nTRAMITES: ${JSON.stringify(context.tramitesCtx, null, 0)}`;
-  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos.`;
+  if (context.sellos) contextBlock += `\nPASAPORTE 125: ${context.sellos.nombre} lleva ${context.sellos.total}/125 sellos, ${context.sellos.puntos} puntos, nivel ${context.sellos.nivel_icono} ${context.sellos.nivel}. Puede ver el ranking completo en gruas.ridera.com.co/leaderboard.html`;
   if (context.isGrua) contextBlock += `\nGRUA: gruas.ridera.com.co y boton SOS.`;
   if (context.marcaMencionada && !context.garageMotoData) contextBlock += `\nMarca: ${context.marcaMencionada} (sin datos en Garage).`;
 
@@ -738,6 +787,27 @@ Deno.serve(async (req: Request) => {
       const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!msg) return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
 
+      if (msg.type === "interactive") {
+        const buttonReply = msg.interactive?.button_reply;
+        const replyId = buttonReply?.id || "";
+        const match = /^enc:([0-9a-f-]{36}):(\d+)$/.exec(replyId);
+        if (match) {
+          const [, encuestaId, opcionIndexStr] = match;
+          const { data: encuesta } = await supabase.from("encuestas").select("opciones").eq("id", encuestaId).maybeSingle();
+          const opcion = encuesta?.opciones?.[Number(opcionIndexStr)];
+          if (opcion) {
+            await supabase.from("encuesta_respuestas").upsert({
+              encuesta_id: encuestaId,
+              phone_number: msg.from,
+              opcion_id: String(opcionIndexStr),
+              opcion_label: opcion.label || buttonReply.title || "",
+            }, { onConflict: "encuesta_id,phone_number" });
+            await sendWhatsApp(msg.from, "¡Gracias por responder! 🏍️");
+          }
+        }
+        return new Response(JSON.stringify({ ok: true, flow: "survey_reply" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
       const from = msg.from || "";
       let message = "";
       let respondWithVoice = false;
@@ -773,6 +843,20 @@ Deno.serve(async (req: Request) => {
 
       await saveMessage(from, "user", message);
 
+      const refMatch = /\bREF[\s-]?([A-Za-z0-9]{4,12})\b/i.exec(message);
+      if (refMatch) {
+        try {
+          const codigo = refMatch[1].toUpperCase();
+          const { data: referidor } = await supabase.from("riders").select("id").eq("codigo_referido", codigo).maybeSingle();
+          const { data: yaRider } = await supabase.from("riders").select("id").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+          if (referidor && !yaRider) {
+            await supabase.from("referidos").upsert({
+              codigo, referidor_id: referidor.id, telefono_invitado: from, estado: "pendiente",
+            }, { onConflict: "codigo,telefono_invitado" });
+          }
+        } catch { /* no bloquea el flujo normal */ }
+      }
+
       const conv = await getConvState(from);
       if (conv.state !== "idle") {
         const regReply = await handleRegistration(from, message, conv);
@@ -784,6 +868,16 @@ Deno.serve(async (req: Request) => {
       }
 
       const msg2 = norm(message);
+      if (/invitar|referir|mi codigo|codigo de referido|codigo referido/.test(msg2)) {
+        const { data: yo } = await supabase.from("riders").select("id, nombre, codigo_referido, telefono").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+        if (yo?.codigo_referido) {
+          const link = `https://wa.me/573117896717?text=REF%20${encodeURIComponent(yo.codigo_referido)}`;
+          const r = `🏍️ Invita a un amigo y ambos ganan +50 puntos en el ranking Ridera. Comparte este link:\n\n${link}\n\nCuando escriba y se registre, les llega la recompensa automático.`;
+          await saveMessage(from, "assistant", r);
+          await sendWhatsApp(from, r);
+          return new Response(JSON.stringify({ ok: true, flow: "invite_link" }), { status: 200, headers: { "Content-Type": "application/json" } });
+        }
+      }
       if (/quiero registrarme|registrarme|registrame|inscribirme/.test(msg2)) {
         const riderCheck = await getRiderContext(from);
         if (!riderCheck?.encontrado) {

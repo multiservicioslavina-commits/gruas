@@ -348,6 +348,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     font-family: var(--font-mono); font-size: 10px; letter-spacing: 0.08em;
     text-transform: uppercase; color: var(--muted);
   }
+  .footer-nav { display: flex; flex-wrap: wrap; gap: 18px; }
+  .footer-nav a { color: var(--muted); text-decoration: none; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; transition: color .15s; }
+  .footer-nav a:hover { color: var(--orange); }
 
   /* ═══════════ RESPONSIVE ═══════════ */
   @media (max-width: 900px) {
@@ -535,6 +538,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 <!-- FOOTER -->
 <footer class="footer">
   <div class="footer-brand">RIDERA</div>
+  <nav class="footer-nav" aria-label="Navegación del sitio">
+    <a href="/">Solicitar grúa</a>
+    <a href="/grueros">Grueros</a>
+    <a href="/garage-ridera.html">Garage Técnico</a>
+  </nav>
+  <div class="footer-nav" style="margin-top:8px">
+    <a href="https://www.facebook.com/share/1HzA2UhMEo/" target="_blank" rel="noopener">Facebook</a>
+    <a href="https://www.instagram.com/rideragruas/" target="_blank" rel="noopener">Instagram</a>
+    <a href="https://www.tiktok.com/@rideragruas" target="_blank" rel="noopener">TikTok</a>
+    <a href="https://x.com/rideragruas" target="_blank" rel="noopener">X</a>
+    <a href="https://wa.me/573117896717" target="_blank" rel="noopener">WhatsApp</a>
+  </div>
   <div class="footer-text">Medellín, Colombia — 2026</div>
 </footer>
 

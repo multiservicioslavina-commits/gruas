@@ -1,0 +1,141 @@
+<!-- RIDERA · GARAGE TÉCNICO · Índice de Marcas
+     WPCode > HTML Snippet > Shortcode -->
+<div id="ridera-garage">
+  <header class="rg-hero">
+    <div class="rg-hero-line"></div>
+    <span class="rg-eyebrow"><i></i>Ridera · Garage Técnico</span>
+    <h2 class="rg-title">Biblioteca<br><span>Técnica</span></h2>
+    <p class="rg-sub">Mantenimiento, frenos, ABS, suspensión, electrónica y diagnóstico,
+      organizado por moto. Fichas de taller con datos reales, errores comunes y los
+      consejos que normalmente no te cuentan. Elige tu marca para empezar.</p>
+    <div class="rg-hero-stats">
+      <span><b>10</b><small>Marcas</small></span>
+      <span><b>58</b><small>Modelos</small></span>
+      <span><b>11</b><small>Sistemas técnicos</small></span>
+    </div>
+  </header>
+
+  <div class="rg-search-wrap">
+    <svg class="rg-search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    <input id="rgSearch" class="rg-search" type="text" placeholder="Buscar marca — BMW, Honda, KTM…" autocomplete="off">
+  </div>
+
+  <div id="rgBrands" class="rg-grid"></div>
+</div>
+
+<style>
+#ridera-garage{
+  --bg:#09090b;--bg-2:#0f0f12;
+  --card:#111114;--card-h:#191920;--card-line:#222228;
+  --acc:#E85D20;--acc-soft:#ff7a42;--acc-glow:rgba(232,93,32,.18);
+  --tx:#ffffff;--tx-2:#e8e8ec;--tx-3:#b0b0b8;--tx-4:#7a7a84;
+  --line:#1c1c21;
+  --font-display:'Bebas Neue','Barlow Condensed',sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-body:'DM Sans',system-ui,sans-serif;
+  background:
+    radial-gradient(ellipse 1000px 420px at 85% -6%,rgba(232,93,32,.13),transparent 55%),
+    radial-gradient(ellipse 500px 400px at -5% 65%,rgba(232,93,32,.05),transparent 60%),
+    var(--bg);
+  color:var(--tx);font-family:var(--font-body);
+  max-width:1200px;margin:0 auto;padding:0 24px 100px;
+  position:relative;overflow:hidden;
+}
+#ridera-garage *{box-sizing:border-box}
+#ridera-garage::before{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(232,93,32,.035) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(232,93,32,.035) 1px,transparent 1px);
+  background-size:54px 54px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.8) 0,transparent 480px);
+}
+#ridera-garage>*{position:relative;z-index:1}
+
+.rg-hero{padding:72px 0 40px;max-width:780px}
+.rg-hero-line{width:52px;height:3px;background:var(--acc);margin-bottom:30px;box-shadow:0 0 30px rgba(232,93,32,.8),0 0 70px rgba(232,93,32,.25)}
+.rg-eyebrow{display:block;font-family:var(--font-mono);font-size:.8rem;letter-spacing:.26em;text-transform:uppercase;color:var(--acc-soft);margin-bottom:20px;font-weight:700}
+.rg-eyebrow i{display:inline-block;width:7px;height:7px;background:var(--acc);border-radius:50%;box-shadow:0 0 0 5px rgba(232,93,32,.2);animation:rgPulse 2.8s ease-in-out infinite;vertical-align:middle;margin-right:8px}
+@keyframes rgPulse{0%,100%{box-shadow:0 0 0 5px rgba(232,93,32,.2)}50%{box-shadow:0 0 0 10px rgba(232,93,32,.04)}}
+.rg-title{font-family:var(--font-display);font-weight:400;font-size:clamp(3.8rem,10vw,6.8rem);line-height:.82;margin:0;letter-spacing:.015em}
+.rg-title span{color:transparent;-webkit-text-stroke:1.5px var(--acc);text-shadow:0 0 60px rgba(232,93,32,.18)}
+.rg-sub{color:var(--tx-2);margin:28px 0 0;max-width:58ch;font-size:1.15rem;line-height:1.8;font-weight:500}
+.rg-hero-stats{display:flex;gap:12px;margin-top:36px;flex-wrap:wrap}
+.rg-hero-stats span{display:flex;flex-direction:column;gap:4px;background:linear-gradient(160deg,rgba(255,255,255,.05),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.12);border-radius:14px;padding:18px 24px;min-width:120px}
+.rg-hero-stats b{font-family:var(--font-display);font-size:2.4rem;line-height:1;color:var(--acc-soft);font-weight:400}
+.rg-hero-stats small{font-family:var(--font-mono);font-size:.75rem;letter-spacing:.14em;text-transform:uppercase;color:var(--tx-3);font-weight:600}
+
+.rg-search-wrap{position:relative;margin:0 0 36px;max-width:580px}
+.rg-search-ic{position:absolute;left:18px;top:50%;transform:translateY(-50%);width:18px;height:18px;color:var(--tx-3);pointer-events:none}
+.rg-search{width:100%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);color:var(--tx);padding:16px 18px 16px 50px;border-radius:13px;font-size:1rem;outline:none;font-family:inherit;font-weight:500;transition:border-color .2s,box-shadow .2s,background .2s}
+.rg-search:focus{border-color:rgba(232,93,32,.6);box-shadow:0 0 0 4px rgba(232,93,32,.12);background:rgba(255,255,255,.08)}
+.rg-search::placeholder{color:var(--tx-4)}
+
+.rg-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:14px}
+
+.rg-card{background:linear-gradient(170deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.02) 100%);border:1px solid rgba(255,255,255,.1);border-radius:18px;padding:0;cursor:pointer;text-align:left;color:var(--tx);font:inherit;position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.8,.3,1),box-shadow .28s,border-color .22s;text-decoration:none;display:flex;flex-direction:column;align-items:stretch;text-align:center}
+.rg-card::before{content:'';position:absolute;left:0;top:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--bc,var(--acc)),transparent);opacity:0;transition:opacity .28s}
+.rg-card:hover{transform:translateY(-5px) scale(1.01);border-color:rgba(255,255,255,.16);box-shadow:0 20px 50px -18px rgba(0,0,0,.95),0 0 50px -25px var(--bc,rgba(232,93,32,.5))}
+.rg-card:hover::before{opacity:1}
+.rg-card:focus-visible{outline:2px solid var(--bc,var(--acc));outline-offset:3px}
+.rg-card .rg-chev{position:absolute;right:13px;bottom:13px;color:var(--bc,var(--acc));font-family:var(--font-mono);font-size:.75rem;font-weight:700;opacity:0;transform:translateX(-5px);transition:opacity .2s,transform .22s}
+.rg-card:hover .rg-chev{opacity:1;transform:translateX(0)}
+
+.rg-logo-bg{background:#fff;border-radius:17px 17px 0 0;padding:16px 20px;display:flex;align-items:center;justify-content:center;height:96px;transition:background .2s;overflow:hidden}
+.rg-card:hover .rg-logo-bg{background:#f5f5f5}
+.rg-logo{max-width:100%;max-height:62px;width:auto;height:auto;object-fit:contain;display:block}
+.rg-brand-foot{padding:16px 16px 18px;border-top:1px solid rgba(255,255,255,.08);display:flex;flex-direction:column;align-items:center;gap:8px}
+.rg-name{font-family:'Barlow Condensed',var(--font-display),sans-serif;font-size:1.35rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;line-height:1;color:var(--tx)}
+.rg-cats{display:inline-flex;align-items:center;gap:6px;color:var(--tx-3);font-size:.8rem;font-family:var(--font-mono);letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+.rg-cats::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--bc,var(--acc));flex:none}
+
+.rg-empty{color:var(--tx-3);grid-column:1/-1;padding:48px 0;text-align:center;font-family:var(--font-mono);font-size:.95rem;font-weight:500}
+
+@media(max-width:640px){
+  #ridera-garage{padding:0 16px 60px}
+  .rg-hero{padding:44px 0 24px}
+  .rg-hero-stats span{flex:1;min-width:0}
+  .rg-grid{grid-template-columns:repeat(auto-fill,minmax(148px,1fr))}
+  .rg-sub{font-size:1.02rem}
+}
+@media(prefers-reduced-motion:reduce){#ridera-garage *{animation:none!important;transition:none!important}}
+</style>
+
+<script>
+(function(){
+  const BRANDS=[
+    {name:'BMW',slug:'garage-bmw',color:'#2A8FD4',logo:'https://upload.wikimedia.org/wikipedia/commons/4/44/BMW.svg',count:14},
+    {name:'Honda',slug:'garage-honda',color:'#E2001A',logo:'https://upload.wikimedia.org/wikipedia/commons/7/7b/Honda_Logo.svg',count:6},
+    {name:'Yamaha',slug:'garage-yamaha',color:'#3B5BB5',logo:'https://upload.wikimedia.org/wikipedia/commons/9/9d/Yamaha_logo.svg',count:7},
+    {name:'KTM',slug:'garage-ktm',color:'#FF6600',logo:'https://ridera.com.co/wp-content/uploads/2026/06/ktm.jpg',count:5},
+    {name:'Triumph',slug:'garage-triumph',color:'#C8102E',logo:'https://ridera.com.co/wp-content/uploads/2026/06/triumph.png',count:5},
+    {name:'Ducati',slug:'garage-ducati',color:'#CC0000',logo:'https://ridera.com.co/wp-content/uploads/2026/06/ducati.jpg',count:4},
+    {name:'Suzuki',slug:'garage-suzuki',color:'#2A6FD4',logo:'https://ridera.com.co/wp-content/uploads/2026/06/suzuki.png',count:6},
+    {name:'Kawasaki',slug:'garage-kawasaki',color:'#5CB615',logo:'https://ridera.com.co/wp-content/uploads/2026/06/kawasaki.png',count:5},
+    {name:'Aprilia',slug:'garage-aprilia',color:'#E2001A',logo:'https://ridera.com.co/wp-content/uploads/2026/06/aprilia.png',count:1},
+    {name:'Harley-Davidson',slug:'garage-harley',color:'#E08A2B',logo:'https://ridera.com.co/wp-content/uploads/2026/06/harley.png',count:1},
+  ];
+
+  const grid=document.getElementById('rgBrands');
+  const search=document.getElementById('rgSearch');
+
+  function render(filter){
+    const f=(filter||'').trim().toLowerCase();
+    const list=BRANDS.filter(b=>!f||b.name.toLowerCase().includes(f));
+    grid.innerHTML=list.length?list.map(b=>`
+      <a href="/${b.slug}/" class="rg-card" style="--bc:${b.color}">
+        <div class="rg-logo-bg">
+          <img class="rg-logo" src="${b.logo}" alt="${b.name}" loading="lazy">
+        </div>
+        <div class="rg-brand-foot">
+          <span class="rg-name">${b.name}</span>
+          <span class="rg-cats">${b.count} modelo${b.count>1?'s':''}</span>
+        </div>
+        <span class="rg-chev">VER →</span>
+      </a>`).join('')
+      :`<p class="rg-empty">Sin resultados para "${filter}".</p>`;
+  }
+
+  search.addEventListener('input',e=>render(e.target.value));
+  render();
+})();
+</script>
