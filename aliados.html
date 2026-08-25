@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sé Aliado Ridera — Talleres, Almacenes, Grúas, Clubes, Restaurantes y Hoteles</title>
+<meta name="description" content="Únete a la red Ridera. Miles de moteros te encuentran en Rita (chatbot) y en nuestro directorio. Gratis, sin comisiones. Talleres, almacenes, grúas, clubes, restaurantes y hoteles bienvenidos.">
+<link rel="canonical" href="https://ridera.com.co/aliados" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Ridera" />
+<meta property="og:title" content="Sé Aliado Ridera — Haz crecer tu negocio con la comunidad motera" />
+<meta property="og:description" content="Talleres, almacenes, grúas, clubes, restaurantes y hoteles: regístrate gratis y aparece frente a miles de moteros en Rita y el directorio Ridera." />
+<meta property="og:url" content="https://ridera.com.co/aliados" />
+<meta property="og:image" content="https://ridera.com.co/og-home.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#E85D20; --orange-hot:#FF6B2B; --orange-dim:rgba(232,93,32,0.14);
+  --carbon:#0D0F12; --carbon2:#141720; --carbon3:#1E2229; --carbon4:#262D37;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.5);
+  --border:rgba(255,255,255,0.08); --border-hi:rgba(255,255,255,0.14);
+  --green:#4ade80; --radius-sm:10px; --radius-md:14px; --radius-lg:22px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;overflow-x:hidden}
+
+.topbar{background:rgba(13,15,18,0.97);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed';font-weight:800;font-size:19px;letter-spacing:.5px}
+.topbar-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);background:rgba(232,93,32,0.1);border:0.5px solid rgba(232,93,32,0.28);padding:4px 10px;border-radius:99px}
+
+.hero{position:relative;padding:52px 20px 36px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(232,93,32,0.14) 0%,transparent 70%)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% -10%,rgba(232,93,32,0.08),transparent 60%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:20px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:22px;height:1px;background:var(--orange);opacity:.5}
+.hero h1{font-family:'Barlow Condensed';font-size:clamp(36px,9vw,64px);font-weight:900;text-transform:uppercase;line-height:.94;letter-spacing:-.5px;margin-bottom:16px}
+.hero h1 em{color:var(--orange);font-style:normal;display:block}
+.hero p{font-size:clamp(15px,3vw,17px);color:var(--text-muted);line-height:1.6;max-width:480px;margin:0 auto}
+
+.stats{display:flex;gap:10px;max-width:520px;margin:26px auto 0;padding:0 4px}
+.stat{flex:1;background:var(--carbon2);border:0.5px solid var(--border);border-radius:14px;padding:14px 8px}
+.stat b{display:block;font-family:'Barlow Condensed';font-size:26px;color:var(--orange);line-height:1}
+.stat span{display:block;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+main{max-width:640px;margin:0 auto;padding:8px 20px 70px}
+
+/* SELECTOR DE NEGOCIO */
+.picker-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);text-align:center;margin:34px 0 14px}
+.picker{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+@media(max-width:420px){.picker{grid-template-columns:repeat(2,1fr)}}
+.pick{background:var(--carbon2);border:0.5px solid var(--border-hi);border-radius:var(--radius-md);padding:16px 8px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
+.pick:hover{border-color:rgba(232,93,32,.4)}
+.pick .ic{font-size:26px;display:block;margin-bottom:6px}
+.pick .lbl{font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.03em}
+.pick.active{background:var(--orange-dim);border-color:var(--orange)}
+
+/* PANEL DINÁMICO */
+.panel{display:none;margin-top:26px;background:var(--carbon2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:26px 22px;animation:fade .25s ease}
+.panel.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.panel h2{font-family:'Barlow Condensed';font-size:26px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
+.panel h2 em{color:var(--orange);font-style:normal}
+.panel .sub{color:var(--text-muted);font-size:14.5px;line-height:1.55;margin-bottom:20px}
+
+/* REDIRECT / WHATSAPP CARDS */
+.ext-card{text-align:center;padding:6px 0 4px}
+.ext-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans';font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:filter .15s}
+.ext-btn:hover{filter:brightness(1.06)}
+.ext-btn.wa{background:#25D366}
+
+/* FORM */
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:6px}
+.field .req{color:var(--orange);margin-left:2px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:480px){.row2{grid-template-columns:1fr}}
+input[type=text],input[type=tel],input[type=email],input[type=number],textarea{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans';font-size:16px;padding:13px 14px;transition:border-color .15s,background .15s}
+input:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,.55);background:#2e3542}
+input::placeholder,textarea::placeholder{color:var(--text-dim)}
+textarea{resize:vertical;min-height:70px;line-height:1.5}
+.check{display:flex;align-items:center;gap:9px;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);padding:12px 14px;cursor:pointer;margin-bottom:14px}
+.check input{width:17px;height:17px;accent-color:var(--orange)}
+.check span{font-size:14px;color:rgba(255,255,255,.88)}
+
+.submit-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans';font-weight:700;font-size:16px;cursor:pointer;margin-top:6px;transition:filter .15s}
+.submit-btn:hover{filter:brightness(1.06)}
+.submit-btn:disabled{opacity:.55;cursor:not-allowed}
+.form-err{color:#f0a0a0;font-size:13px;margin-top:10px;display:none}
+
+/* SUCCESS */
+.success{display:none;text-align:center;padding:10px 4px}
+.success .ring{width:74px;height:74px;border-radius:50%;background:rgba(74,222,128,.1);border:2px solid var(--green);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
+.success h2{font-family:'Barlow Condensed';font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+.success p{color:var(--text-muted);font-size:14.5px;line-height:1.55;max-width:36ch;margin:0 auto}
+
+footer{text-align:center;padding:30px 20px;color:var(--text-dim);font-size:12.5px}
+footer a{color:var(--orange);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">🏍️ RIDERA</div>
+  <div class="topbar-badge">Aliados</div>
+</div>
+
+<div class="hero">
+  <div class="hero-eyebrow">Red de aliados Ridera</div>
+  <h1>Súmate a la<br><em>comunidad motera</em></h1>
+  <p>Talleres, almacenes, grúas, clubes, restaurantes y hoteles: aparece frente a miles de moteros en Rita (nuestro chatbot) y en el directorio Ridera. Gratis, sin comisiones.</p>
+  <div class="stats">
+    <div class="stat"><b>125</b><span>Municipios</span></div>
+    <div class="stat"><b>24/7</b><span>Rita atiende</span></div>
+    <div class="stat"><b>$0</b><span>Costo unirte</span></div>
+  </div>
+</div>
+
+<main>
+  <div class="picker-label">¿Qué tipo de negocio tienes?</div>
+  <div class="picker" id="picker">
+    <div class="pick" data-type="taller"><span class="ic">🔧</span><span class="lbl">Taller</span></div>
+    <div class="pick" data-type="almacen"><span class="ic">🛠️</span><span class="lbl">Almacén</span></div>
+    <div class="pick" data-type="grua"><span class="ic">🚚</span><span class="lbl">Grúa</span></div>
+    <div class="pick" data-type="club"><span class="ic">🏍️</span><span class="lbl">Club</span></div>
+    <div class="pick" data-type="restaurante"><span class="ic">🍽️</span><span class="lbl">Restaurante</span></div>
+    <div class="pick" data-type="hotel"><span class="ic">🛏️</span><span class="lbl">Hotel</span></div>
+  </div>
+
+  <!-- ALMACÉN: ya tiene formulario propio -->
+  <div class="panel" id="panel-almacen">
+    <h2>Registra tu <em>almacén</em></h2>
+    <div class="sub">Ya tenemos un formulario especial para almacenes de repuestos y accesorios, con catálogo y perfil propio.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro-almacen">Ir al registro de almacén →</a></div>
+  </div>
+
+  <!-- GRÚA: ya tiene formulario propio -->
+  <div class="panel" id="panel-grua">
+    <h2>Sé <em>gruero</em> Ridera</h2>
+    <div class="sub">Conecta con moteros varados cerca de ti. Tenemos un registro dedicado para grueros.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro">Ir al registro de grúa →</a></div>
+  </div>
+
+  <!-- CLUB: vía WhatsApp con Rita -->
+  <div class="panel" id="panel-club">
+    <h2>Registra tu <em>club</em></h2>
+    <div class="sub">Escríbele a Rita por WhatsApp con el nombre de tu club, ciudad y cuántos rodantes son. Ella te ayuda a crear tu chat privado de club en minutos.</div>
+    <div class="ext-card">
+      <a class="ext-btn wa" id="wa-club" href="#" target="_blank" rel="noopener">💬 Escribir a Rita por WhatsApp</a>
+    </div>
+  </div>
+
+  <!-- TALLER -->
+  <div class="panel" id="panel-taller">
+    <h2>Registra tu <em>taller</em></h2>
+    <div class="sub">Cuéntanos lo básico. Nuestro equipo te contacta para completar tu perfil y activarlo.</div>
+    <form id="form-taller" onsubmit="return submitForm(event,'taller')">
+      <div class="field"><label>Nombre del taller<span class="req">*</span></label>
+        <input type="text" name="nombre" required maxlength="80" placeholder="Taller Motos El Parche"></div>
+      <div class="row2">
+        <div class="field"><label>Ciudad<span class="req">*</span></label>
+          <input type="text" name="ciudad" required list="dl-municipios" placeholder="Medellín"></div>
+        <div class="field"><label>WhatsApp<span class="req">*</span></label>
+          <input type="tel" name="telefono" required inputmode="numeric" placeholder="310 1234567"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Barrio</label>
+          <input type="text" name="barrio" maxlength="60" placeholder="Belén"></div>
+        <div class="field"><label>Instagram</label>
+          <input type="text" name="instagram" maxlength="40" placeholder="@tutaller"></div>
+      </div>
+      <div class="field"><label>Dirección</label>
+        <input type="text" name="direccion" maxlength="120" placeholder="Cra 70 # 45-12"></div>
+      <div class="field"><label>Email</label>
+        <input type="email" name="email" maxlength="80" placeholder="contacto@tutaller.com"></div>
+      <button class="submit-btn" type="submit">Enviar registro</button>
+      <div class="form-err"></div>
+    </form>
+    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu taller. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+  </div>
+
+  <!-- RESTAURANTE -->
+  <div class="panel" id="panel-restaurante">
+    <h2>Registra tu <em>restaurante</em></h2>
+    <div class="sub">Los moteros paran a comer en ruta. Aparece como parada recomendada en Rita.</div>
+    <form id="form-restaurante" onsubmit="return submitForm(event,'restaurante')">
+      <div class="field"><label>Nombre del restaurante<span class="req">*</span></label>
+        <input type="text" name="nombre" required maxlength="80" placeholder="Fonda La Parrilla"></div>
+      <div class="field"><label>Municipio<span class="req">*</span></label>
+        <input type="text" name="municipio" required list="dl-municipios" placeholder="Guarne" oninput="autoSubregion(this,'restaurante')"></div>
+      <div class="row2">
+        <div class="field"><label>WhatsApp<span class="req">*</span></label>
+          <input type="tel" name="whatsapp" required inputmode="numeric" placeholder="310 1234567"></div>
+        <div class="field"><label>Persona de contacto</label>
+          <input type="text" name="contacto_nombre" maxlength="60" placeholder="Tu nombre"></div>
+      </div>
+      <div class="field"><label>Tipo de cocina</label>
+        <input type="text" name="tipo_cocina" maxlength="60" placeholder="Comida típica, parrilla, rápida..."></div>
+      <label class="check"><input type="checkbox" name="parqueadero_motos"><span>Tengo parqueadero seguro para motos</span></label>
+      <div class="field"><label>Cuéntanos de tu negocio</label>
+        <textarea name="descripcion" maxlength="300" placeholder="Qué te hace especial para los moteros que pasan por tu zona"></textarea></div>
+      <button class="submit-btn" type="submit">Enviar registro</button>
+      <div class="form-err"></div>
+    </form>
+    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu restaurante. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+  </div>
+
+  <!-- HOTEL -->
+  <div class="panel" id="panel-hotel">
+    <h2>Registra tu <em>hotel</em></h2>
+    <div class="sub">Los moteros buscan dónde quedarse en ruta. Aparece como aliado en Rita y en el Pasaporte Ridera.</div>
+    <form id="form-hotel" onsubmit="return submitForm(event,'hotel')">
+      <div class="field"><label>Nombre del hotel<span class="req">*</span></label>
+        <input type="text" name="nombre" required maxlength="80" placeholder="Hotel Los Cerros"></div>
+      <div class="field"><label>Municipio<span class="req">*</span></label>
+        <input type="text" name="municipio" required list="dl-municipios" placeholder="Santa Fe de Antioquia" oninput="autoSubregion(this,'hotel')"></div>
+      <div class="row2">
+        <div class="field"><label>WhatsApp<span class="req">*</span></label>
+          <input type="tel" name="whatsapp" required inputmode="numeric" placeholder="310 1234567"></div>
+        <div class="field"><label>Persona de contacto</label>
+          <input type="text" name="contacto_nombre" maxlength="60" placeholder="Tu nombre"></div>
+      </div>
+      <div class="row2">
+        <div class="field"><label>Tipo de alojamiento</label>
+          <input type="text" name="tipo_alojamiento" maxlength="40" placeholder="Hotel, hostal, finca, cabañas..."></div>
+        <div class="field"><label>Descuento para moteros (%)</label>
+          <input type="number" name="descuento_moteros" min="0" max="100" placeholder="10"></div>
+      </div>
+      <label class="check"><input type="checkbox" name="parqueadero_motos"><span>Tengo parqueadero seguro para motos</span></label>
+      <div class="field"><label>Cuéntanos de tu negocio</label>
+        <textarea name="descripcion" maxlength="300" placeholder="Qué te hace especial para los moteros que pasan por tu zona"></textarea></div>
+      <button class="submit-btn" type="submit">Enviar registro</button>
+      <div class="form-err"></div>
+    </form>
+    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu hotel. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+  </div>
+</main>
+
+<datalist id="dl-municipios"></datalist>
+
+<footer>Ridera © 2026 · <a href="https://ridera.com.co">ridera.com.co</a></footer>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+const RITA_WA = '573117896717';
+
+// municipio -> subregión (Antioquia)
+const MUNI_SUBREGION = {"Cáceres":"Bajo Cauca","Caucasia":"Bajo Cauca","El Bagre":"Bajo Cauca","Nechí":"Bajo Cauca","Tarazá":"Bajo Cauca","Zaragoza":"Bajo Cauca","Caracolí":"Magdalena Medio","Maceo":"Magdalena Medio","Puerto Berrío":"Magdalena Medio","Puerto Nare":"Magdalena Medio","Puerto Triunfo":"Magdalena Medio","Yondó":"Magdalena Medio","Amalfi":"Nordeste","Anorí":"Nordeste","Cisneros":"Nordeste","Remedios":"Nordeste","San Roque":"Nordeste","Santo Domingo":"Nordeste","Segovia":"Nordeste","Vegachí":"Nordeste","Yalí":"Nordeste","Yolombó":"Nordeste","Angostura":"Norte","Belmira":"Norte","Briceño":"Norte","Campamento":"Norte","Carolina del Príncipe":"Norte","Donmatías":"Norte","Entrerríos":"Norte","Gómez Plata":"Norte","Guadalupe":"Norte","Ituango":"Norte","San Andrés de Cuerquia":"Norte","San José de la Montaña":"Norte","San Pedro de los Milagros":"Norte","Santa Rosa de Osos":"Norte","Toledo":"Norte","Valdivia":"Norte","Yarumal":"Norte","Abriaquí":"Occidente","Anzá":"Occidente","Armenia":"Occidente","Buriticá":"Occidente","Caicedo":"Occidente","Cañasgordas":"Occidente","Dabeiba":"Occidente","Ebéjico":"Occidente","Frontino":"Occidente","Giraldo":"Occidente","Heliconia":"Occidente","Liborina":"Occidente","Olaya":"Occidente","Peque":"Occidente","Sabanalarga":"Occidente","San Jerónimo":"Occidente","Santa Fe de Antioquia":"Occidente","Sopetrán":"Occidente","Uramita":"Occidente","Abejorral":"Oriente","Alejandría":"Oriente","Argelia":"Oriente","Cocorná":"Oriente","Concepción":"Oriente","El Carmen de Viboral":"Oriente","El Peñol":"Oriente","El Retiro":"Oriente","El Santuario":"Oriente","Granada":"Oriente","Guarne":"Oriente","Guatapé":"Oriente","La Ceja":"Oriente","La Unión":"Oriente","Marinilla":"Oriente","Nariño":"Oriente","Rionegro":"Oriente","San Carlos":"Oriente","San Francisco":"Oriente","San Luis":"Oriente","San Rafael":"Oriente","San Vicente Ferrer":"Oriente","Sonsón":"Oriente","Amagá":"Suroeste","Andes":"Suroeste","Angelópolis":"Suroeste","Betania":"Suroeste","Betulia":"Suroeste","Caramanta":"Suroeste","Ciudad Bolívar":"Suroeste","Concordia":"Suroeste","Fredonia":"Suroeste","Hispania":"Suroeste","Jardín":"Suroeste","Jericó":"Suroeste","La Pintada":"Suroeste","Montebello":"Suroeste","Pueblorrico":"Suroeste","Salgar":"Suroeste","Santa Bárbara":"Suroeste","Támesis":"Suroeste","Tarso":"Suroeste","Titiribí":"Suroeste","Urrao":"Suroeste","Valparaíso":"Suroeste","Venecia":"Suroeste","Apartadó":"Urabá","Arboletes":"Urabá","Carepa":"Urabá","Chigorodó":"Urabá","Murindó":"Urabá","Mutatá":"Urabá","Necoclí":"Urabá","San Juan de Urabá":"Urabá","San Pedro de Urabá":"Urabá","Turbo":"Urabá","Vigía del Fuerte":"Urabá","Barbosa":"Valle de Aburrá","Bello":"Valle de Aburrá","Caldas":"Valle de Aburrá","Copacabana":"Valle de Aburrá","Envigado":"Valle de Aburrá","Girardota":"Valle de Aburrá","Itagüí":"Valle de Aburrá","La Estrella":"Valle de Aburrá","Medellín":"Valle de Aburrá","Sabaneta":"Valle de Aburrá"};
+
+// Poblar datalist de municipios
+(function(){
+  const dl = document.getElementById('dl-municipios');
+  Object.keys(MUNI_SUBREGION).sort().forEach(m => {
+    const opt = document.createElement('option');
+    opt.value = m;
+    dl.appendChild(opt);
+  });
+})();
+
+function autoSubregion(input, type) {
+  const sub = MUNI_SUBREGION[input.value.trim()];
+  const form = document.getElementById('form-' + type);
+  form.dataset.subregion = sub || 'Antioquia';
+}
+
+// Selector de tipo de negocio
+const picks = document.querySelectorAll('.pick');
+const panels = document.querySelectorAll('.panel');
+picks.forEach(p => {
+  p.addEventListener('click', () => {
+    picks.forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    panels.forEach(x => x.classList.remove('show'));
+    document.getElementById('panel-' + p.dataset.type).classList.add('show');
+    document.getElementById('panel-' + p.dataset.type).scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+});
+
+// Preseleccionar desde ?tipo= en la URL (para links directos desde redes)
+(function(){
+  const tipo = new URLSearchParams(location.search).get('tipo');
+  const target = tipo && document.querySelector('.pick[data-type="' + tipo + '"]');
+  (target || picks[0]).click();
+})();
+
+// WhatsApp club
+document.getElementById('wa-club').href =
+  'https://wa.me/' + RITA_WA + '?text=' + encodeURIComponent('Hola Rita! 🏍️ Quiero registrar mi club de motos en Ridera.');
+
+function normalizePhone(raw) {
+  let digits = raw.replace(/\D/g, '');
+  if (digits.startsWith('57') && digits.length === 12) return digits;
+  if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+  return digits;
+}
+
+const TABLE_BY_TYPE = { taller: 'talleres', restaurante: 'restaurantes', hotel: 'hoteles' };
+
+async function submitForm(ev, type) {
+  ev.preventDefault();
+  const form = ev.target;
+  const btn = form.querySelector('.submit-btn');
+  const errEl = form.querySelector('.form-err');
+  errEl.style.display = 'none';
+
+  const fd = new FormData(form);
+  const payload = {};
+  for (const [k, v] of fd.entries()) {
+    if (k === 'parqueadero_motos') { payload[k] = true; continue; }
+    const val = String(v).trim();
+    if (!val) continue;
+    if (k === 'telefono' || k === 'whatsapp') {
+      payload[k] = normalizePhone(val);
+      if (type !== 'taller') payload.whatsapp = normalizePhone(val);
+    } else if (k === 'descuento_moteros') {
+      payload[k] = parseInt(val, 10);
+    } else {
+      payload[k] = val;
+    }
+  }
+  if (!fd.has('parqueadero_motos')) payload.parqueadero_motos = false;
+  if (type === 'restaurante' || type === 'hotel') {
+    payload.subregion = form.dataset.subregion || MUNI_SUBREGION[payload.municipio] || 'Antioquia';
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+
+  try {
+    const res = await fetch(`${SB_URL}/rest/v1/${TABLE_BY_TYPE[type]}`, {
+      method: 'POST',
+      headers: {
+        'apikey': SB_KEY,
+        'Authorization': `Bearer ${SB_KEY}`,
+        'Content-Type': 'application/json',
+        'Prefer': 'return=minimal'
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error(await res.text());
+
+    form.style.display = 'none';
+    document.getElementById('panel-' + type).querySelector('.success').style.display = 'block';
+  } catch (e) {
+    errEl.textContent = 'No pudimos enviar tu registro. Intenta de nuevo o escríbenos por WhatsApp.';
+    errEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enviar registro';
+  }
+}
+</script>
+</body>
+</html>
