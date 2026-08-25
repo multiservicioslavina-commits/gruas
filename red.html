@@ -142,9 +142,9 @@
     <h2>Comparte esta página</h2>
     <div class="sub">Escanea o descarga el QR para imprimir en tu volante, aviso o tarjeta</div>
     <div class="qr-wrap">
-      <img id="qrImg" width="180" height="180" alt="Código QR hacia gruas.ridera.com.co/red" src="">
+      <img id="qrImg" width="180" height="180" alt="Código QR de prueba (preview)" src="">
     </div>
-    <div class="qr-url">gruas.ridera.com.co/red</div>
+    <div class="qr-url" id="qrUrlText"></div>
     <div class="qr-actions">
       <button class="qr-btn" id="copyLinkBtn">🔗 Copiar link</button>
       <a class="qr-btn" id="downloadQrBtn" download="ridera-qr.png" href="#">⬇ Descargar QR</a>
@@ -155,12 +155,17 @@
 <footer>Ridera · Comunidad motera de Antioquia · <a href="/">gruas.ridera.com.co</a></footer>
 
 <script>
-const PAGE_URL = 'https://gruas.ridera.com.co/red';
+// TEMPORAL: mientras el PR #15 siga en borrador, gruas.ridera.com.co/red
+// no existe en producción todavía — el QR debe apuntar al preview de
+// Netlify. Cambiar de vuelta a 'https://gruas.ridera.com.co/red' cuando
+// se fusione a main.
+const PAGE_URL = 'https://deploy-preview-15--gruasridera.netlify.app/red';
 
 // QR generado vía servicio público (alto contraste blanco/negro para asegurar buen escaneo)
 const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(PAGE_URL);
 document.getElementById('qrImg').src = qrApiUrl;
 document.getElementById('downloadQrBtn').href = qrApiUrl;
+document.getElementById('qrUrlText').textContent = PAGE_URL.replace(/^https?:\/\//, '');
 
 document.getElementById('copyLinkBtn').addEventListener('click', async (e) => {
   e.preventDefault();
