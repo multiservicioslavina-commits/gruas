@@ -4,6 +4,7 @@ https://club.ridera.com.co/admin/*      /connect-admin.html   200!
 
 /aliados                    /aliados.html                      200
 /aliado                     /aliados.html                      200
+/red                        /red.html                          200
 /registro-hotel              https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-hotel        200
 /registro-restaurante        https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-restaurante  200
 /music                      /app/player.html                   200
