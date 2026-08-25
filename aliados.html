@@ -71,31 +71,6 @@ main{max-width:640px;margin:0 auto;padding:8px 20px 70px}
 .ext-btn:hover{filter:brightness(1.06)}
 .ext-btn.wa{background:#25D366}
 
-/* FORM */
-.field{margin-bottom:14px}
-.field label{display:block;font-size:13px;font-weight:600;color:rgba(255,255,255,.9);margin-bottom:6px}
-.field .req{color:var(--orange);margin-left:2px}
-.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-@media(max-width:480px){.row2{grid-template-columns:1fr}}
-input[type=text],input[type=tel],input[type=email],input[type=number],textarea{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans';font-size:16px;padding:13px 14px;transition:border-color .15s,background .15s}
-input:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,.55);background:#2e3542}
-input::placeholder,textarea::placeholder{color:var(--text-dim)}
-textarea{resize:vertical;min-height:70px;line-height:1.5}
-.check{display:flex;align-items:center;gap:9px;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:var(--radius-sm);padding:12px 14px;cursor:pointer;margin-bottom:14px}
-.check input{width:17px;height:17px;accent-color:var(--orange)}
-.check span{font-size:14px;color:rgba(255,255,255,.88)}
-
-.submit-btn{width:100%;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans';font-weight:700;font-size:16px;cursor:pointer;margin-top:6px;transition:filter .15s}
-.submit-btn:hover{filter:brightness(1.06)}
-.submit-btn:disabled{opacity:.55;cursor:not-allowed}
-.form-err{color:#f0a0a0;font-size:13px;margin-top:10px;display:none}
-
-/* SUCCESS */
-.success{display:none;text-align:center;padding:10px 4px}
-.success .ring{width:74px;height:74px;border-radius:50%;background:rgba(74,222,128,.1);border:2px solid var(--green);display:grid;place-items:center;margin:0 auto 16px;font-size:32px}
-.success h2{font-family:'Barlow Condensed';font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
-.success p{color:var(--text-muted);font-size:14.5px;line-height:1.55;max-width:36ch;margin:0 auto}
-
 footer{text-align:center;padding:30px 20px;color:var(--text-dim);font-size:12.5px}
 footer a{color:var(--orange);text-decoration:none}
 </style>
@@ -151,32 +126,11 @@ footer a{color:var(--orange);text-decoration:none}
   </div>
 
   <!-- TALLER -->
+  <!-- TALLER: ya tiene formulario propio en WordPress -->
   <div class="panel" id="panel-taller">
     <h2>Registra tu <em>taller</em></h2>
-    <div class="sub">Cuéntanos lo básico. Nuestro equipo te contacta para completar tu perfil y activarlo.</div>
-    <form id="form-taller" onsubmit="return submitForm(event,'taller')">
-      <div class="field"><label>Nombre del taller<span class="req">*</span></label>
-        <input type="text" name="nombre" required maxlength="80" placeholder="Taller Motos El Parche"></div>
-      <div class="row2">
-        <div class="field"><label>Ciudad<span class="req">*</span></label>
-          <input type="text" name="ciudad" required list="dl-municipios" placeholder="Medellín"></div>
-        <div class="field"><label>WhatsApp<span class="req">*</span></label>
-          <input type="tel" name="telefono" required inputmode="numeric" placeholder="310 1234567"></div>
-      </div>
-      <div class="row2">
-        <div class="field"><label>Barrio</label>
-          <input type="text" name="barrio" maxlength="60" placeholder="Belén"></div>
-        <div class="field"><label>Instagram</label>
-          <input type="text" name="instagram" maxlength="40" placeholder="@tutaller"></div>
-      </div>
-      <div class="field"><label>Dirección</label>
-        <input type="text" name="direccion" maxlength="120" placeholder="Cra 70 # 45-12"></div>
-      <div class="field"><label>Email</label>
-        <input type="email" name="email" maxlength="80" placeholder="contacto@tutaller.com"></div>
-      <button class="submit-btn" type="submit">Enviar registro</button>
-      <div class="form-err"></div>
-    </form>
-    <div class="success"><div class="ring">✅</div><h2>¡Listo!</h2><p>Recibimos los datos de tu taller. Nuestro equipo te escribe pronto para activar tu perfil.</p></div>
+    <div class="sub">Aparece cuando un motero le pregunta a Rita dónde arreglar su moto cerca.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/registrar-talleres/">Ir al registro de taller →</a></div>
   </div>
 
   <!-- RESTAURANTE: ya tiene formulario propio (form-restaurante) -->
@@ -194,27 +148,9 @@ footer a{color:var(--orange);text-decoration:none}
   </div>
 </main>
 
-<datalist id="dl-municipios"></datalist>
-
 <footer>Ridera © 2026 · <a href="https://ridera.com.co">ridera.com.co</a></footer>
 
 <script>
-const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
-const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
-
-// Municipios de Antioquia, para sugerir ciudad en el campo de taller
-const MUNI_SUBREGION = {"Cáceres":"Bajo Cauca","Caucasia":"Bajo Cauca","El Bagre":"Bajo Cauca","Nechí":"Bajo Cauca","Tarazá":"Bajo Cauca","Zaragoza":"Bajo Cauca","Caracolí":"Magdalena Medio","Maceo":"Magdalena Medio","Puerto Berrío":"Magdalena Medio","Puerto Nare":"Magdalena Medio","Puerto Triunfo":"Magdalena Medio","Yondó":"Magdalena Medio","Amalfi":"Nordeste","Anorí":"Nordeste","Cisneros":"Nordeste","Remedios":"Nordeste","San Roque":"Nordeste","Santo Domingo":"Nordeste","Segovia":"Nordeste","Vegachí":"Nordeste","Yalí":"Nordeste","Yolombó":"Nordeste","Angostura":"Norte","Belmira":"Norte","Briceño":"Norte","Campamento":"Norte","Carolina del Príncipe":"Norte","Donmatías":"Norte","Entrerríos":"Norte","Gómez Plata":"Norte","Guadalupe":"Norte","Ituango":"Norte","San Andrés de Cuerquia":"Norte","San José de la Montaña":"Norte","San Pedro de los Milagros":"Norte","Santa Rosa de Osos":"Norte","Toledo":"Norte","Valdivia":"Norte","Yarumal":"Norte","Abriaquí":"Occidente","Anzá":"Occidente","Armenia":"Occidente","Buriticá":"Occidente","Caicedo":"Occidente","Cañasgordas":"Occidente","Dabeiba":"Occidente","Ebéjico":"Occidente","Frontino":"Occidente","Giraldo":"Occidente","Heliconia":"Occidente","Liborina":"Occidente","Olaya":"Occidente","Peque":"Occidente","Sabanalarga":"Occidente","San Jerónimo":"Occidente","Santa Fe de Antioquia":"Occidente","Sopetrán":"Occidente","Uramita":"Occidente","Abejorral":"Oriente","Alejandría":"Oriente","Argelia":"Oriente","Cocorná":"Oriente","Concepción":"Oriente","El Carmen de Viboral":"Oriente","El Peñol":"Oriente","El Retiro":"Oriente","El Santuario":"Oriente","Granada":"Oriente","Guarne":"Oriente","Guatapé":"Oriente","La Ceja":"Oriente","La Unión":"Oriente","Marinilla":"Oriente","Nariño":"Oriente","Rionegro":"Oriente","San Carlos":"Oriente","San Francisco":"Oriente","San Luis":"Oriente","San Rafael":"Oriente","San Vicente Ferrer":"Oriente","Sonsón":"Oriente","Amagá":"Suroeste","Andes":"Suroeste","Angelópolis":"Suroeste","Betania":"Suroeste","Betulia":"Suroeste","Caramanta":"Suroeste","Ciudad Bolívar":"Suroeste","Concordia":"Suroeste","Fredonia":"Suroeste","Hispania":"Suroeste","Jardín":"Suroeste","Jericó":"Suroeste","La Pintada":"Suroeste","Montebello":"Suroeste","Pueblorrico":"Suroeste","Salgar":"Suroeste","Santa Bárbara":"Suroeste","Támesis":"Suroeste","Tarso":"Suroeste","Titiribí":"Suroeste","Urrao":"Suroeste","Valparaíso":"Suroeste","Venecia":"Suroeste","Apartadó":"Urabá","Arboletes":"Urabá","Carepa":"Urabá","Chigorodó":"Urabá","Murindó":"Urabá","Mutatá":"Urabá","Necoclí":"Urabá","San Juan de Urabá":"Urabá","San Pedro de Urabá":"Urabá","Turbo":"Urabá","Vigía del Fuerte":"Urabá","Barbosa":"Valle de Aburrá","Bello":"Valle de Aburrá","Caldas":"Valle de Aburrá","Copacabana":"Valle de Aburrá","Envigado":"Valle de Aburrá","Girardota":"Valle de Aburrá","Itagüí":"Valle de Aburrá","La Estrella":"Valle de Aburrá","Medellín":"Valle de Aburrá","Sabaneta":"Valle de Aburrá"};
-
-// Poblar datalist de municipios
-(function(){
-  const dl = document.getElementById('dl-municipios');
-  Object.keys(MUNI_SUBREGION).sort().forEach(m => {
-    const opt = document.createElement('option');
-    opt.value = m;
-    dl.appendChild(opt);
-  });
-})();
-
 // Selector de tipo de negocio
 const picks = document.querySelectorAll('.pick');
 const panels = document.querySelectorAll('.panel');
@@ -235,55 +171,6 @@ picks.forEach(p => {
   (target || picks[0]).click();
 })();
 
-function normalizePhone(raw) {
-  let digits = raw.replace(/\D/g, '');
-  if (digits.startsWith('57') && digits.length === 12) return digits;
-  if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
-  return digits;
-}
-
-const TABLE_BY_TYPE = { taller: 'talleres' };
-
-async function submitForm(ev, type) {
-  ev.preventDefault();
-  const form = ev.target;
-  const btn = form.querySelector('.submit-btn');
-  const errEl = form.querySelector('.form-err');
-  errEl.style.display = 'none';
-
-  const fd = new FormData(form);
-  const payload = {};
-  for (const [k, v] of fd.entries()) {
-    const val = String(v).trim();
-    if (!val) continue;
-    payload[k] = (k === 'telefono') ? normalizePhone(val) : val;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'Enviando...';
-
-  try {
-    const res = await fetch(`${SB_URL}/rest/v1/${TABLE_BY_TYPE[type]}`, {
-      method: 'POST',
-      headers: {
-        'apikey': SB_KEY,
-        'Authorization': `Bearer ${SB_KEY}`,
-        'Content-Type': 'application/json',
-        'Prefer': 'return=minimal'
-      },
-      body: JSON.stringify(payload)
-    });
-    if (!res.ok) throw new Error(await res.text());
-
-    form.style.display = 'none';
-    document.getElementById('panel-' + type).querySelector('.success').style.display = 'block';
-  } catch (e) {
-    errEl.textContent = 'No pudimos enviar tu registro. Intenta de nuevo o escríbenos por WhatsApp.';
-    errEl.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Enviar registro';
-  }
-}
 </script>
 </body>
 </html>
