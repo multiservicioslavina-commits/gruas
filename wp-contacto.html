@@ -1,11 +1,33 @@
 <!-- RIDERA — Página de Contacto para WordPress
      Pega esto en un bloque "HTML personalizado" en la página /contacto/ de ridera.com.co
-     No necesitas ningún plugin. Los mensajes se guardan en Supabase (tabla: mensajes_contacto). -->
+     No necesitas ningún plugin.
+     - Los mensajes se guardan en Supabase (tabla: mensajes_contacto)
+     - Te llega copia por correo vía EmailJS (gratis hasta 200/mes)
+
+     ══ CONFIGURACIÓN EMAILJS ══
+     1. Crea cuenta en https://www.emailjs.com (gratis)
+     2. Conecta tu Gmail (Email Services → Add Service → Gmail)
+     3. Crea una plantilla (Email Templates → Create New Template) con estas variables:
+           De: {{from_name}} <{{from_email}}>
+           Asunto: Nuevo mensaje de contacto — {{asunto}}
+           Cuerpo:
+             Nombre:   {{from_name}}
+             Correo:   {{from_email}}
+             Teléfono: {{telefono}}
+             Asunto:   {{asunto}}
+             Mensaje:  {{mensaje}}
+     4. En Account → General, copia tu Public Key
+     5. Reemplaza los tres valores de abajo:
+           EMAILJS_PUBLIC_KEY  → tu Public Key
+           EMAILJS_SERVICE_ID  → el Service ID que creaste (ej: service_xxxxx)
+           EMAILJS_TEMPLATE_ID → el Template ID que creaste (ej: template_xxxxx)
+     ════════════════════════════ -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 #ridera-contacto-wrap *{box-sizing:border-box;margin:0;padding:0}
@@ -294,15 +316,33 @@
 
 <script>
 (function(){
-  var SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
-  var SB_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
+  /* ── CONFIGURACIÓN ── */
+  var SB_URL  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  var SB_KEY  = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
 
+  /* Reemplaza estos 3 valores con los de tu cuenta EmailJS */
+  var EMAILJS_PUBLIC_KEY  = 'PEGA_TU_PUBLIC_KEY_AQUI';
+  var EMAILJS_SERVICE_ID  = 'PEGA_TU_SERVICE_ID_AQUI';
+  var EMAILJS_TEMPLATE_ID = 'PEGA_TU_TEMPLATE_ID_AQUI';
+
+  /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 
   var form    = document.getElementById('rc-form');
   var btn     = document.getElementById('rc-btn');
   var errBar  = document.getElementById('rc-error');
   var success = document.getElementById('rc-success');
+
+  var ASUNTO_LABELS = {
+    gruas:     'Servicio de grúas',
+    almacenes: 'Almacenes de repuestos',
+    clubes:    'Clubes de motos',
+    garaje:    'Garaje / talleres',
+    alianzas:  'Alianzas y negocios',
+    prensa:    'Prensa y medios',
+    otro:      'Otro'
+  };
 
   function showError(msg){
     errBar.textContent = msg;
@@ -328,6 +368,7 @@
       return;
     }
 
+    /* 1️⃣ Guardar en Supabase */
     var record = {
       nombre:   nombre,
       email:    email,
@@ -346,6 +387,23 @@
       return;
     }
 
+    /* 2️⃣ Enviar notificación por correo a multiservicioslavina@gmail.com */
+    try {
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+        to_email:  'multiservicioslavina@gmail.com',
+        from_name:  nombre,
+        from_email: email,
+        telefono:   telefono || 'No indicó',
+        asunto:     ASUNTO_LABELS[asunto] || asunto,
+        mensaje:    mensaje,
+        fecha:      new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+      });
+    } catch(emailErr) {
+      /* El correo falló pero el mensaje ya quedó en Supabase — no bloqueamos al usuario */
+      console.warn('EmailJS error:', emailErr);
+    }
+
+    /* 3️⃣ Mostrar confirmación */
     form.style.display = 'none';
     success.style.display = 'block';
   });
