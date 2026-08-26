@@ -1221,6 +1221,65 @@ export const TOOL_SCHEMAS = [
       required: ["recommendation_id"],
     },
   },
+  {
+    name: "obtener_estado_backups",
+    description:
+      "Solo admin. Obtiene estado de todos los backups configurados: último backup, siguiente programado, tamaño, duración.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "activar_backup_manual",
+    description:
+      "Solo admin. Dispara un backup manual inmediato para una región y entidad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        region_code: { type: "string", description: "Código de región: MDE, BOG, CAL, NATIONAL" },
+        entity_type: { type: "string", description: "Entidad a respaldar: riders, motorcycles, sessions, transactions, all" },
+      },
+      required: ["region_code", "entity_type"],
+    },
+  },
+  {
+    name: "obtener_estado_replicacion",
+    description:
+      "Solo admin. Obtiene estado de replicación multi-región: salud, rezago, última sincronización.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_eventos_desastres",
+    description:
+      "Solo admin. Obtiene historial de eventos de recuperación ante desastres (últimos 30 días).",
+    input_schema: {
+      type: "object",
+      properties: {
+        dias_atras: { type: "number", description: "Últimos N días (default: 30)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "verificar_consistencia",
+    description:
+      "Solo admin. Verifica consistencia de datos entre región primaria y réplicas.",
+    input_schema: {
+      type: "object",
+      properties: {
+        entity_type: { type: "string", description: "Tipo de entidad: riders, motorcycles, sessions, transactions" },
+        primary_region: { type: "string", description: "Región primaria: MDE" },
+        compare_regions: { type: "array", items: { type: "string" }, description: "Regiones a comparar: [BOG, CAL]" },
+      },
+      required: ["entity_type", "primary_region", "compare_regions"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3254,6 +3313,111 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     }
 
     return { ok: true, data: "✅ Recomendación marcada como mostrada." };
+  },
+
+  async obtener_estado_backups(input) {
+    const { obtenerEstadoBackups } = await import("./backup.ts");
+    const backups = await obtenerEstadoBackups();
+
+    let respuesta = `💾 *ESTADO DE BACKUPS*\n\n`;
+    backups.forEach((b) => {
+      const estado = b.status === "completed" ? "✅" : b.status === "failed" ? "❌" : "⏳";
+      respuesta += `${estado} ${b.region_code} - ${b.entity_type}\n`;
+      respuesta += `   Estado: ${b.status} | Tamaño: ${(b.data_size_bytes / 1024 / 1024).toFixed(1)}MB\n`;
+      respuesta += `   Último: ${b.last_backup ? new Date(b.last_backup).toLocaleDateString() : "Nunca"}\n`;
+      respuesta += `   Próximo: ${b.next_scheduled ? new Date(b.next_scheduled).toLocaleDateString() : "—"}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async activar_backup_manual(input) {
+    const region = String(input.region_code || "").trim().toUpperCase();
+    const entity = String(input.entity_type || "").trim().toLowerCase();
+
+    if (!region || !entity) {
+      return { ok: false, data: "❌ Región y entidad requeridas." };
+    }
+
+    const { activarBackupManual } = await import("./backup.ts");
+    const result = await activarBackupManual(region, entity, "system");
+
+    return { ok: result.success, data: result.message };
+  },
+
+  async obtener_estado_replicacion(input) {
+    const { obtenerEstadoReplicacion } = await import("./backup.ts");
+    const replicas = await obtenerEstadoReplicacion();
+
+    let respuesta = `🌍 *ESTADO DE REPLICACIÓN MULTI-REGIÓN*\n\n`;
+    replicas.forEach((r) => {
+      const estado = r.is_healthy ? "✅" : "⚠️";
+      respuesta += `${estado} ${r.source_region} → ${r.target_region}\n`;
+      respuesta += `   Estado: ${r.status} | Rezago: ${r.lag_seconds}s\n`;
+      respuesta += `   Última sync: ${new Date(r.last_sync).toLocaleString("es-CO")}\n`;
+      respuesta += `   Filas replicadas: ${r.total_replicated_rows.toLocaleString("es-CO")}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_eventos_desastres(input) {
+    const dias = Number(input.dias_atras || 30);
+    const { obtenerEventosDesastres } = await import("./backup.ts");
+    const events = await obtenerEventosDesastres(dias);
+
+    let respuesta = `🚨 *EVENTOS DE RECUPERACIÓN ANTE DESASTRES* (últimos ${dias} días)\n\n`;
+    respuesta += `Total: ${events.total_events} eventos\n`;
+    respuesta += `🔴 Críticos: ${events.critical}\n`;
+    respuesta += `🟠 Altos: ${events.high}\n\n`;
+
+    if (Object.keys(events.by_region).length > 0) {
+      respuesta += `📍 Por región:\n`;
+      for (const [region, count] of Object.entries(events.by_region)) {
+        respuesta += `• ${region}: ${count} eventos\n`;
+      }
+      respuesta += `\n`;
+    }
+
+    if (events.active_incidents.length > 0) {
+      respuesta += `⚠️ *Incidentes activos:*\n`;
+      events.active_incidents.forEach((i) => {
+        respuesta += `• [${i.severity.toUpperCase()}] ${i.event_type} en ${i.affected_region}\n`;
+        respuesta += `  Detectado: ${new Date(i.detected_at).toLocaleString("es-CO")}\n`;
+      });
+    } else {
+      respuesta += `✅ Sin incidentes activos.\n`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async verificar_consistencia(input) {
+    const entity = String(input.entity_type || "").trim();
+    const primary = String(input.primary_region || "").trim();
+    const compare = Array.isArray(input.compare_regions) ? input.compare_regions.map(String) : [];
+
+    if (!entity || !primary || compare.length === 0) {
+      return { ok: false, data: "❌ Entidad, región primaria y regiones de comparación requeridas." };
+    }
+
+    const { verificarConsistenciaDatos } = await import("./backup.ts");
+    const result = await verificarConsistenciaDatos(entity, primary, compare);
+
+    let respuesta = `🔍 *VERIFICACIÓN DE CONSISTENCIA* — ${entity}\n\n`;
+    respuesta += result.consistent ? `✅ Datos consistentes\n` : `❌ Discrepancias detectadas\n`;
+    respuesta += `Estado: ${result.status}\n\n`;
+
+    if (Object.keys(result.discrepancies).length > 0) {
+      respuesta += `📋 Discrepancias por región:\n`;
+      for (const [region, disc] of Object.entries(result.discrepancies)) {
+        if (disc.missing_rows > 0 || disc.extra_rows > 0) {
+          respuesta += `• ${region}: -${disc.missing_rows} filas, +${disc.extra_rows} filas\n`;
+        }
+      }
+    }
+
+    return { ok: true, data: respuesta };
   },
 };
 

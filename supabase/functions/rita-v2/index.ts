@@ -22,6 +22,7 @@ import { generarContextoAnalytics } from "./analytics.ts";
 import { generarContextoMarketplace } from "./marketplace.ts";
 import { generarContextoEmergencia } from "./emergency.ts";
 import { generarContextoRecomendaciones } from "./recommendations.ts";
+import { generarContextoBackup } from "./backup.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -340,6 +341,7 @@ function buildSystemPrompt(
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
   contextoRecomendaciones: string = "",
+  contextoBackup: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
@@ -387,6 +389,10 @@ function buildSystemPrompt(
     ? `\n${contextoRecomendaciones}`
     : "";
 
+  const bloqueContextoBackup = contextoBackup
+    ? `\n${contextoBackup}`
+    : "";
+
   const bloqueEstilo = conVoz
     ? `COMO HABLAS (MODO VOZ - tu respuesta se convierte a audio, el rider la ESCUCHA):
 - REGLA #1: NUNCA uses asteriscos, guiones, vinetas, encabezados, URLs ni emojis.
@@ -426,7 +432,7 @@ cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
 ${bloqueFechaHora()}
 
-${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}${bloqueContextoMarketplace}${bloqueContextoAnalytics}${bloqueContextoEmergencia}${bloqueContextoRecomendaciones}
+${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}${bloqueContextoMarketplace}${bloqueContextoAnalytics}${bloqueContextoEmergencia}${bloqueContextoRecomendaciones}${bloqueContextoBackup}
 
 REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
@@ -648,8 +654,9 @@ async function responder(
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
   contextoRecomendaciones: string = "",
+  contextoBackup: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -725,8 +732,9 @@ async function responderOrquestado(
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
   contextoRecomendaciones: string = "",
+  contextoBackup: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -857,7 +865,7 @@ Deno.serve(async (req: Request) => {
       const texto = String(body.message ?? "");
       // Inicializar base de conocimiento legal una sola vez
       await inicializarBaseConocimientoLegal();
-      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones] = await Promise.all([
+      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
         getRiderNombre(phone),
@@ -871,11 +879,12 @@ Deno.serve(async (req: Request) => {
         generarContextoAnalytics(phone),
         generarContextoEmergencia(phone),
         generarContextoRecomendaciones(phone),
+        generarContextoBackup(),
       ]);
       const usarOrquestador = body.orquestador === true;
       const reply = usarOrquestador
-        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones)
-        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
+        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup)
+        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup);
       return json({ ok: true, reply, motor: usarOrquestador ? "orquestador" : "claude_directo" });
     }
 
@@ -973,7 +982,7 @@ Deno.serve(async (req: Request) => {
     // Inicializar base de conocimiento legal una sola vez
     await inicializarBaseConocimientoLegal();
 
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones] = await Promise.all([
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
@@ -987,6 +996,7 @@ Deno.serve(async (req: Request) => {
       generarContextoAnalytics(from),
       generarContextoEmergencia(from),
       generarContextoRecomendaciones(from),
+      generarContextoBackup(),
     ]);
 
     let reply = "";
@@ -995,8 +1005,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
