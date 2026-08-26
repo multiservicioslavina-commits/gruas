@@ -1133,6 +1133,56 @@ export const TOOL_SCHEMAS = [
       required: [],
     },
   },
+  {
+    name: "obtener_recomendaciones",
+    description:
+      "Obtiene recomendaciones personalizadas basadas en tu moto, km, experiencia y patrones de conducción. Hasta 3 recomendaciones priorizadas.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "registrar_compra_recomendacion",
+    description:
+      "Registra que completaste una compra de un producto recomendado. Usa esto para que Rita pueda ganar comisión y mejorar las recomendaciones.",
+    input_schema: {
+      type: "object",
+      properties: {
+        recommendation_id: { type: "string", description: "ID de la recomendación (uuid)" },
+        amount: { type: "number", description: "Monto de la compra en pesos colombianos" },
+        source: { type: "string", description: "Origen de la compra: 'direct_link', 'search', 'other'" },
+      },
+      required: ["recommendation_id", "amount"],
+    },
+  },
+  {
+    name: "crear_regla_recomendacion",
+    description:
+      "Solo admin. Crea una nueva regla de recomendación automática sin cambiar código. Ej: 'cambio de aceite a 8000km para CB500'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre de la regla" },
+        tipo: { type: "string", description: "Tipo: 'maintenance', 'seasonal', 'experience', 'behavior', 'companion'" },
+        condicion_json: { type: "string", description: "Condición en JSON. Ej: {\"km_threshold\": 8000, \"component\": \"oil\"}" },
+        productos: { type: "string", description: "Nombres de productos separados por coma" },
+        prioridad: { type: "number", description: "1=muy alta, 2=alta, 3=normal, 4=baja" },
+      },
+      required: ["nombre", "tipo", "condicion_json"],
+    },
+  },
+  {
+    name: "obtener_historial_recomendaciones",
+    description:
+      "Ve tu historial completo de recomendaciones: cuáles se mostraron, cuáles compraste, comisión generada.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2963,6 +3013,139 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     }
 
     return { ok: true, data: alertas };
+  },
+
+  async obtener_recomendaciones(_input, phone) {
+    const { obtenerRecomendacionesPendientes } = await import("./recommendations.ts");
+    const recomendaciones = await obtenerRecomendacionesPendientes(phone, 3);
+
+    if (!recomendaciones.length) {
+      return { ok: true, data: "✅ No tienes recomendaciones pendientes en este momento." };
+    }
+
+    let respuesta = `💡 *RECOMENDACIONES PARA TI* (${recomendaciones.length})\n\n`;
+    recomendaciones.forEach((r, i) => {
+      const tipo_emoji = r.type === "maintenance" ? "🛢️" : r.type === "seasonal" ? "🌧️" : "🧤";
+      respuesta += `${i + 1}. ${tipo_emoji} ${r.productName}\n   ${r.reason}\n   Precio: ~$${r.estimatedPrice.toLocaleString("es-CO")}\n   [Comprar](${r.actionUrl})\n\n`;
+    });
+
+    respuesta += `Solo menciono si es relevante. No las fuerzo.`;
+    return { ok: true, data: respuesta };
+  },
+
+  async registrar_compra_recomendacion(input, phone) {
+    const recommendation_id = String(input.recommendation_id || "").trim();
+    const amount = Number(input.amount || 0);
+    const source = String(input.source || "direct_link").trim();
+
+    if (!recommendation_id || amount <= 0) {
+      return { ok: false, data: "❌ Necesito ID de recomendación y monto válido." };
+    }
+
+    const { registrarCompraRecomendacion } = await import("./recommendations.ts");
+    const success = await registrarCompraRecomendacion(phone, recommendation_id, amount, source);
+
+    if (!success) {
+      return { ok: false, data: "❌ Error registrando compra." };
+    }
+
+    const comision = Math.round(amount * 0.1);
+    return {
+      ok: true,
+      data: `✅ Compra registrada por $${amount.toLocaleString("es-CO")}.\n💰 Comisión generada: $${comision.toLocaleString("es-CO")}\n\nGracias por confiar en las recomendaciones de Rita.`,
+    };
+  },
+
+  async crear_regla_recomendacion(input, phone) {
+    const nombre = String(input.nombre || "").trim();
+    const tipo = String(input.tipo || "").trim();
+    const condicion_json = String(input.condicion_json || "").trim();
+    const productos = String(input.productos || "").trim();
+    const prioridad = Number(input.prioridad || 3);
+
+    if (!nombre || !tipo || !condicion_json) {
+      return { ok: false, data: "❌ Nombre, tipo y condición son requeridos." };
+    }
+
+    try {
+      const condicion = JSON.parse(condicion_json);
+      const product_names = productos.split(",").map((p) => p.trim()).filter((p) => p);
+
+      const tel = phone.replace(/^57/, "");
+      const { data: rider } = await supabase
+        .from("riders")
+        .select("id")
+        .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+        .maybeSingle();
+
+      if (!rider) {
+        return { ok: false, data: "No te encuentro registrado." };
+      }
+
+      const { error } = await supabase.from("recommendation_rules").insert({
+        name: nombre,
+        rule_type: tipo,
+        condition: condicion,
+        product_ids: [],
+        product_names: product_names,
+        priority: prioridad,
+        is_active: true,
+      });
+
+      if (error) {
+        return { ok: false, data: `❌ Error: ${error.message}` };
+      }
+
+      return {
+        ok: true,
+        data: `✅ Regla creada: "${nombre}"\nTipo: ${tipo}\nProductos: ${product_names.join(", ") || "N/A"}\n\nLa regla está activa y generará recomendaciones automáticamente.`,
+      };
+    } catch (e) {
+      return { ok: false, data: `❌ JSON inválido en condición: ${(e as Error).message}` };
+    }
+  },
+
+  async obtener_historial_recomendaciones(_input, phone) {
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const { data: recomendaciones } = await supabase
+      .from("rider_product_recommendations")
+      .select(
+        "id, product_name, recommendation_type, shown_at, clicked, purchased, purchased_amount, commission_earned"
+      )
+      .eq("rider_id", rider.id)
+      .order("recommended_at", { ascending: false })
+      .limit(10);
+
+    if (!recomendaciones || recomendaciones.length === 0) {
+      return { ok: true, data: "✅ No tienes recomendaciones en el historial." };
+    }
+
+    let respuesta = `📊 *HISTORIAL DE RECOMENDACIONES* (últimas 10)\n\n`;
+    let totalComision = 0;
+
+    recomendaciones.forEach((r, i) => {
+      const estado =
+        r.purchased ? "✅ Comprada" : r.clicked ? "👁️ Vista, no comprada" : "📌 Mostrada";
+      const monto = r.purchased_amount ? `\n   Monto: $${r.purchased_amount.toLocaleString("es-CO")}` : "";
+      const comision = r.commission_earned ? r.commission_earned : 0;
+      if (r.purchased) totalComision += comision;
+
+      respuesta += `${i + 1}. ${r.product_name} (${r.recommendation_type})\n   ${estado}${monto}\n\n`;
+    });
+
+    respuesta += `\n💰 Total comisión generada: $${Math.round(totalComision).toLocaleString("es-CO")}`;
+
+    return { ok: true, data: respuesta };
   },
 };
 

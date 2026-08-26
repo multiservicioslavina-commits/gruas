@@ -21,6 +21,7 @@ import { generarContextoAcademia } from "./academia.ts";
 import { generarContextoAnalytics } from "./analytics.ts";
 import { generarContextoMarketplace } from "./marketplace.ts";
 import { generarContextoEmergencia } from "./emergency.ts";
+import { generarContextoRecomendaciones } from "./recommendations.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -338,6 +339,7 @@ function buildSystemPrompt(
   contextoMarketplace: string = "",
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
+  contextoRecomendaciones: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
@@ -381,6 +383,10 @@ function buildSystemPrompt(
     ? `\n${contextoEmergencia}`
     : "";
 
+  const bloqueContextoRecomendaciones = contextoRecomendaciones
+    ? `\n${contextoRecomendaciones}`
+    : "";
+
   const bloqueEstilo = conVoz
     ? `COMO HABLAS (MODO VOZ - tu respuesta se convierte a audio, el rider la ESCUCHA):
 - REGLA #1: NUNCA uses asteriscos, guiones, vinetas, encabezados, URLs ni emojis.
@@ -420,7 +426,7 @@ cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
 ${bloqueFechaHora()}
 
-${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}${bloqueContextoMarketplace}${bloqueContextoAnalytics}${bloqueContextoEmergencia}
+${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}${bloqueContextoMarketplace}${bloqueContextoAnalytics}${bloqueContextoEmergencia}${bloqueContextoRecomendaciones}
 
 REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
@@ -487,6 +493,15 @@ COMO USAS LAS HERRAMIENTAS:
   * reportar_incidente_manual: si tuvo accidente pero sensor NO detectó. Escala inmediato a SMS y 122
   * obtener_incidentes: historial de emergencias últimos 30 días
   * obtener_alertas_seguridad: alertas de comunidad (retenes agresivos, vías peligrosas, accidentes en 3km radio)
+- RECOMENDACIONES INTELIGENTES (PHASE 6):
+  * obtener_recomendaciones: cuando pregunten "qué me recomiendas", "tienes algo para mi moto", "qué puedo mejorar"
+    Devuelve hasta 3 recomendaciones priorizadas basadas en mantenimiento predictivo, estacionalidad, experiencia y patrones de conducción.
+    Dale contexto: "Veo que llevas 8.500km, toca mantenimiento" o "Como llueve mucho en tu zona, te recomiendo..."
+  * registrar_compra_recomendacion: SIEMPRE después de que el rider compre algo recomendado
+    Esto es cómo Rita gana comisión (7% base + 3% bonus si viene de recomendación). No olvides.
+  * obtener_historial_recomendaciones: cuando pidan historial de recomendaciones, comisión generada o confirmación de compras
+  * crear_regla_recomendacion: solo admin. Crea reglas de recomendación automática sin cambiar código
+  * REGLA DURA: NO insistas en recomendar. Solo sugiere si el rider pregunta. Recomendaciones forzadas = mala experiencia = abandono.
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
@@ -632,8 +647,9 @@ async function responder(
   contextoMarketplace: string = "",
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
+  contextoRecomendaciones: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -708,8 +724,9 @@ async function responderOrquestado(
   contextoMarketplace: string = "",
   contextoAnalytics: string = "",
   contextoEmergencia: string = "",
+  contextoRecomendaciones: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -840,7 +857,7 @@ Deno.serve(async (req: Request) => {
       const texto = String(body.message ?? "");
       // Inicializar base de conocimiento legal una sola vez
       await inicializarBaseConocimientoLegal();
-      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia] = await Promise.all([
+      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
         getRiderNombre(phone),
@@ -853,11 +870,12 @@ Deno.serve(async (req: Request) => {
         generarContextoMarketplace(phone),
         generarContextoAnalytics(phone),
         generarContextoEmergencia(phone),
+        generarContextoRecomendaciones(phone),
       ]);
       const usarOrquestador = body.orquestador === true;
       const reply = usarOrquestador
-        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia)
-        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia);
+        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones)
+        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
       return json({ ok: true, reply, motor: usarOrquestador ? "orquestador" : "claude_directo" });
     }
 
@@ -955,7 +973,7 @@ Deno.serve(async (req: Request) => {
     // Inicializar base de conocimiento legal una sola vez
     await inicializarBaseConocimientoLegal();
 
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia] = await Promise.all([
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
@@ -968,6 +986,7 @@ Deno.serve(async (req: Request) => {
       generarContextoMarketplace(from),
       generarContextoAnalytics(from),
       generarContextoEmergencia(from),
+      generarContextoRecomendaciones(from),
     ]);
 
     let reply = "";
@@ -976,8 +995,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
