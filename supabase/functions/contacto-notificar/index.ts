@@ -93,28 +93,45 @@ async function avisarWhatsApp(campos: string[], textoPlano: string) {
   const to = normalizePhone(ADMIN_PHONE);
   if (!to) return { ok: false, error: "CONTACTO_ADMIN_PHONE inválido" };
 
-  const lang = await plantillaAprobada(TPL_WHATSAPP);
-  const payload = lang
-    ? {
-        messaging_product: "whatsapp", to, type: "template",
-        template: {
-          name: TPL_WHATSAPP,
-          language: { code: lang },
-          components: [{
-            type: "body",
-            parameters: campos.map((t) => ({ type: "text", text: String(t || "-") })),
-          }],
-        },
-      }
-    : { messaging_product: "whatsapp", to, type: "text", text: { body: textoPlano } };
+  function enviar(payload: unknown) {
+    return fetch(`${GRAPH}/${PHONE_ID}/messages`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  }
 
-  const res = await fetch(`${GRAPH}/${PHONE_ID}/messages`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+  const textoLibre = { messaging_product: "whatsapp", to, type: "text", text: { body: textoPlano } };
+  const lang = await plantillaAprobada(TPL_WHATSAPP);
+
+  if (lang) {
+    const res = await enviar({
+      messaging_product: "whatsapp", to, type: "template",
+      template: {
+        name: TPL_WHATSAPP,
+        language: { code: lang },
+        components: [{
+          type: "body",
+          parameters: campos.map((t) => ({ type: "text", text: String(t || "-") })),
+        }],
+      },
+    });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) return { ok: true, status: res.status, to, desde: PHONE_ID, via: "plantilla", data };
+    // Meta tarda unos minutos en propagar una plantilla recién aprobada y
+    // entretanto la rechaza al enviarla. Caemos a texto libre para no perder
+    // el aviso.
+    const res2 = await enviar(textoLibre);
+    const data2 = await res2.json().catch(() => ({}));
+    return {
+      ok: res2.ok, status: res2.status, to, desde: PHONE_ID,
+      via: "texto_libre_tras_fallo_plantilla", error_plantilla: data, data: data2,
+    };
+  }
+
+  const res = await enviar(textoLibre);
   const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, to, via: lang ? "plantilla" : "texto_libre", data };
+  return { ok: res.ok, status: res.status, to, desde: PHONE_ID, via: "texto_libre", data };
 }
 
 function jsonRes(obj: unknown, status = 200) {
