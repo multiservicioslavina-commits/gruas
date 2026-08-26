@@ -1480,6 +1480,83 @@ export const TOOL_SCHEMAS = [
       required: [],
     },
   },
+  {
+    name: "activar_sos",
+    description:
+      "Activa SOS manual: notifica contactos de emergencia y servicios inmediatamente.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "confirmar_emergencia",
+    description:
+      "Confirma una emergencia detectada automáticamente (caída, impacto) para activar respuesta.",
+    input_schema: {
+      type: "object",
+      properties: {
+        detection_id: { type: "string", description: "ID de la detección (uuid)" },
+      },
+      required: ["detection_id"],
+    },
+  },
+  {
+    name: "cancelar_falso_positivo",
+    description:
+      "Cancela una falsa alarma de emergencia (no fue realmente una emergencia).",
+    input_schema: {
+      type: "object",
+      properties: {
+        detection_id: { type: "string", description: "ID de la detección (uuid)" },
+      },
+      required: ["detection_id"],
+    },
+  },
+  {
+    name: "registrar_contacto_emergencia",
+    description:
+      "Registra un contacto de emergencia (familia, amigo) para ser notificado en caso de accidente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        name: { type: "string", description: "Nombre del contacto" },
+        phone: { type: "string", description: "Teléfono del contacto" },
+        relationship: { type: "string", description: "Relación (madre, amigo, doctor, etc)" },
+      },
+      required: ["name", "phone", "relationship"],
+    },
+  },
+  {
+    name: "actualizar_perfil_medico",
+    description:
+      "Actualiza perfil médico de emergencia: tipo de sangre, alergias, medicamentos, condiciones médicas.",
+    input_schema: {
+      type: "object",
+      properties: {
+        blood_type: { type: "string", description: "Tipo de sangre (O+, A-, etc)" },
+        allergies: { type: "array", items: { type: "string" }, description: "Lista de alergias" },
+        conditions: { type: "array", items: { type: "string" }, description: "Condiciones médicas" },
+        emergency_contact_name: { type: "string", description: "Nombre del contacto de emergencia principal" },
+      },
+      required: ["blood_type"],
+    },
+  },
+  {
+    name: "registrar_reporte_incidente",
+    description:
+      "Registra un reporte de incidente post-accidente: tipo, descripción, lesiones, daño a la moto.",
+    input_schema: {
+      type: "object",
+      properties: {
+        incident_type: { type: "string", description: "Tipo: fall, collision, injury, damage_only" },
+        description: { type: "string", description: "Descripción de lo que pasó" },
+        injuries: { type: "array", items: { type: "string" }, description: "Lesiones reportadas" },
+      },
+      required: ["incident_type", "description"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3994,6 +4071,61 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     }
 
     return { ok: true, data: respuesta };
+  },
+
+  async activar_sos(input, phone) {
+    const { activarSOS } = await import("./emergency.ts");
+    const result = await activarSOS(phone);
+    return { ok: result.ok, data: result.message };
+  },
+
+  async confirmar_emergencia(input, phone) {
+    const { confirmarEmergencia } = await import("./emergency.ts");
+    const detectionId = String(input.detection_id ?? "");
+    const result = await confirmarEmergencia(phone, detectionId);
+    return { ok: result.ok, data: result.message };
+  },
+
+  async cancelar_falso_positivo(input, phone) {
+    const { cancelarFalsoPositivo } = await import("./emergency.ts");
+    const detectionId = String(input.detection_id ?? "");
+    const result = await cancelarFalsoPositivo(phone, detectionId);
+    return { ok: result.ok, data: result.message };
+  },
+
+  async registrar_contacto_emergencia(input, phone) {
+    const { registrarContactoEmergencia } = await import("./emergency.ts");
+    const name = String(input.name ?? "");
+    const contactPhone = String(input.phone ?? "");
+    const relationship = String(input.relationship ?? "");
+    const result = await registrarContactoEmergencia(phone, name, contactPhone, relationship);
+    return { ok: result.ok, data: result.message };
+  },
+
+  async actualizar_perfil_medico(input, phone) {
+    const { actualizarPerfilMedico } = await import("./emergency.ts");
+    const bloodType = String(input.blood_type ?? "");
+    const allergies = Array.isArray(input.allergies) ? input.allergies.map(String) : [];
+    const conditions = Array.isArray(input.conditions) ? input.conditions.map(String) : [];
+    const emergencyContactName = String(input.emergency_contact_name ?? "");
+    const result = await actualizarPerfilMedico(phone, bloodType, allergies, conditions, emergencyContactName);
+    return { ok: result.ok, data: result.message };
+  },
+
+  async registrar_reporte_incidente(input, phone) {
+    const { registrarReporteIncidente } = await import("./emergency.ts");
+    const incidentType = String(input.incident_type ?? "");
+    const description = String(input.description ?? "");
+    const injuries = Array.isArray(input.injuries) ? input.injuries.map(String) : [];
+
+    const { data: rider } = await supabase.from("riders").select("id").eq("telefono", phone.replace(/^57/, "")).maybeSingle();
+    if (!rider) return { ok: false, data: "Rider no encontrado" };
+
+    const { data: lastResponse } = await supabase.from("emergency_responses").select("id").eq("rider_id", rider.id).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    const responseId = lastResponse?.id || "";
+
+    const result = await registrarReporteIncidente(phone, responseId, incidentType, description, injuries);
+    return { ok: result.ok, data: result.message };
   },
 };
 

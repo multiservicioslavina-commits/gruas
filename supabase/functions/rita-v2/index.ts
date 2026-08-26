@@ -544,6 +544,16 @@ COMO USAS LAS HERRAMIENTAS:
   * obtener_progreso_entrenamiento: cuando pregunten "¿cuánto he avanzado?", "mis certificaciones", "qué sigue?"
     Muestra módulos completados, certificaciones activas, badges, siguiente módulo recomendado
   REGLA DURA: Anima a riders a tomar módulos según su riesgo. No obligues, solo sugiere. Las certificaciones (RSA) son verificables y válidas.
+- EMERGENCIAS & ACCIDENTES (PHASE 9):
+  * activar_sos: cuando digan "SOS", "ayuda", "accidente", "caída". Notifica INMEDIATAMENTE contactos emergencia y servicios
+  * confirmar_emergencia: si Rita detecta automáticamente caída/impacto via sensores, pide confirmación. Si confirmas → activa respuesta completa
+  * cancelar_falso_positivo: si fue falsa alarma (no pasó nada realmente). Evita despacho innecesario de servicios
+  * registrar_contacto_emergencia: agrega teléfonos de emergencia (madre, amigo, pareja) para alertas automáticas
+  * actualizar_perfil_medico: registra tipo sangre, alergias, medicamentos, condiciones médicas, contacto emergencia principal
+  * registrar_reporte_incidente: DESPUÉS del accidente, documenta: tipo (caída, colisión, lesión), descripción, lesiones reportadas, daño moto
+    Crea registro para seguimiento y análisis post-accidente
+  REGLA DURA: EMERGENCIAS son tiempo crítico. Si el rider dice "me caí" o "accidente", llama SOS/confirmar sin esperar detalles completos.
+  Después de activar emergencia, ayuda documentar lo que pasó para el reporte post-incidente. Los reportes mejoran la seguridad de la comunidad.
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
@@ -903,7 +913,7 @@ Deno.serve(async (req: Request) => {
       const texto = String(body.message ?? "");
       // Inicializar base de conocimiento legal una sola vez
       await inicializarBaseConocimientoLegal();
-      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento] = await Promise.all([
+      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergenciaData, contextoRecomendaciones, contextoBackup, contextoEntrenamiento, contextoEmergencia] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
         getRiderNombre(phone),
@@ -915,10 +925,11 @@ Deno.serve(async (req: Request) => {
         generarContextoAcademia(phone),
         generarContextoMarketplace(phone),
         generarContextoAnalytics(phone),
-        generarContextoEmergencia(phone),
+        Promise.resolve(""), // placeholder for deprecated emergency position
         generarContextoRecomendaciones(phone),
         generarContextoBackup(),
         generarContextoEntrenamiento(phone),
+        generarContextoEmergencia(phone),
       ]);
       const usarOrquestador = body.orquestador === true;
       const reply = usarOrquestador
@@ -1021,7 +1032,7 @@ Deno.serve(async (req: Request) => {
     // Inicializar base de conocimiento legal una sola vez
     await inicializarBaseConocimientoLegal();
 
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento] = await Promise.all([
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergenciaData, contextoRecomendaciones, contextoBackup, contextoEntrenamiento, contextoEmergencia] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
@@ -1033,10 +1044,11 @@ Deno.serve(async (req: Request) => {
       generarContextoAcademia(from),
       generarContextoMarketplace(from),
       generarContextoAnalytics(from),
-      generarContextoEmergencia(from),
+      Promise.resolve(""), // placeholder for deprecated emergency position
       generarContextoRecomendaciones(from),
       generarContextoBackup(),
       generarContextoEntrenamiento(from),
+      generarContextoEmergencia(from),
     ]);
 
     let reply = "";
