@@ -1009,6 +1009,58 @@ export const TOOL_SCHEMAS = [
       required: ["order_id", "calificacion", "titulo", "contenido"],
     },
   },
+  {
+    name: "estadisticas_personales",
+    description:
+      "Consulta tus estadísticas personales de conducción: sesiones, distancia total, velocidad promedio, seguridad. Usala cuando pregunte por su progreso o estadísticas de viaje.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "rutas_favoritas_analytics",
+    description:
+      "Muestra tus rutas favoritas con análisis de performance: veces recorrida, distancia, velocidad promedio, puntuación de seguridad y dificultad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limite: { type: "number", description: "Número máximo de rutas (default: 5)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "patrones_conduccion",
+    description:
+      "Analiza tus patrones de conducción: hora típica, duración, velocidad, tipo de vía preferida y frecuencia. Usala cuando pregunten sobre cuándo y cómo conducen.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "reporte_progreso",
+    description:
+      "Genera un reporte completo de tu progreso: sesiones, distancia, velocidad, seguridad, rutas principales y patrones.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "comparar_comunidad",
+    description:
+      "Compara tus métricas (velocidad, seguridad, distancia) con los benchmarks de la comunidad. Muestra tu posición en percentiles.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2523,6 +2575,93 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     if (!ok) return { ok: false, data: "No se pudo guardar tu reseña. Intenta de nuevo." };
 
     return { ok: true, data: `✓ Reseña guardada! Gracias por ayudar a la comunidad de riders.` };
+  },
+
+  async estadisticas_personales(_input, phone) {
+    const { obtenerEstadisticasPersonales } = await import("./analytics.ts");
+    const stats = await obtenerEstadisticasPersonales(phone);
+    if (!stats) return { ok: false, data: "No tengo datos de conducción registrados aún. Comienza a registrar tus viajes." };
+
+    return {
+      ok: true,
+      data: `📊 *TUS ESTADÍSTICAS DE CONDUCCIÓN*\n\n` +
+        `🚗 Sesiones: ${stats.totalSesiones} viajes\n` +
+        `📍 Distancia total: ${stats.totalDistancia}km\n` +
+        `⏱️ Duración: ${stats.totalDuracion} minutos\n` +
+        `💨 Velocidad promedio: ${stats.velocidadPromedio}km/h\n` +
+        `⚡ Velocidad máxima: ${stats.velocidadMaxima}km/h\n` +
+        `⛽ Consumo promedio: ${stats.consumoPromedio}L/viaje\n` +
+        `🛡️ Puntuación de seguridad: ${stats.seguridad}/100`
+    };
+  },
+
+  async rutas_favoritas_analytics(input, phone) {
+    const { obtenerRutasFavoritasEstadisticas } = await import("./analytics.ts");
+    const limite = Number(input.limite || 5);
+    const rutas = await obtenerRutasFavoritasEstadisticas(phone, Math.max(1, Math.min(10, limite)));
+
+    if (!rutas.length) return { ok: false, data: "Aún no tienes rutas favoritas registradas." };
+
+    let respuesta = `🛣️ *TUS RUTAS FAVORITAS* (${rutas.length} rutas)\n\n`;
+    rutas.forEach((r, i) => {
+      respuesta += `${i + 1}. *${r.nombre}*\n` +
+        `   📍 ${r.distancia}km | ${r.vecesRecorrida}x recorrida\n` +
+        `   💨 ${r.velocidadPromedio}km/h | ⏱️ ${r.duracionPromedio}min\n` +
+        `   🛡️ Seguridad: ${r.seguridad}/100 | 📊 Dificultad: ${r.dificultad.toFixed(1)}/5\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async patrones_conduccion(_input, phone) {
+    const { obtenerPatronesConduction } = await import("./analytics.ts");
+    const patrones = await obtenerPatronesConduction(phone);
+
+    if (!patrones.length) return { ok: false, data: "No hay patrones de conducción registrados aún." };
+
+    let respuesta = `🌙 *TUS PATRONES DE CONDUCCIÓN*\n\n`;
+    patrones.forEach((p, i) => {
+      respuesta += `${i + 1}. *${p.tipo.toUpperCase()}*\n` +
+        `   🕐 Hora típica: ${p.horaPromedio}\n` +
+        `   ⏱️ Duración: ${p.duracionPromedio}min | 💨 ${p.velocidadTipica}km/h\n` +
+        `   🛣️ Vía: ${p.viaPreferida} | 📊 ${p.frecuencia}x/semana\n` +
+        `   🛡️ Seguridad: ${p.seguridad}/100\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async reporte_progreso(_input, phone) {
+    const { generarReporteProgreso } = await import("./analytics.ts");
+    const reporte = await generarReporteProgreso(phone);
+
+    if (!reporte) return { ok: false, data: "No hay datos disponibles para generar el reporte. Comienza a registrar tus viajes." };
+
+    return { ok: true, data: `📈 *REPORTE DE PROGRESO*\n\n${reporte}` };
+  },
+
+  async comparar_comunidad(_input, phone) {
+    const { compararConComunidad } = await import("./analytics.ts");
+    const benchmarks = await compararConComunidad(phone);
+
+    if (!benchmarks.length) return { ok: false, data: "No hay datos de comunidad disponibles para comparar." };
+
+    let respuesta = `📊 *COMPARACIÓN CON LA COMUNIDAD*\n\n`;
+    benchmarks.forEach((b) => {
+      const metricaLabel =
+        b.metrica === "velocidad_promedio" ? "Velocidad promedio" :
+        b.metrica === "seguridad" ? "Seguridad" :
+        b.metrica === "distancia_mensual" ? "Distancia mensual" :
+        b.metrica;
+
+      respuesta += `*${metricaLabel}*\n` +
+        `👤 Tu valor: ${b.tuValor}\n` +
+        `👥 Promedio comunidad: ${b.promedioComunidad}\n` +
+        `📍 Tu posición: *${b.posicion}*\n` +
+        `📊 Percentiles: P25=${b.percentil25} | P50=${b.percentil50} | P75=${b.percentil75} | P90=${b.percentil90}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
   },
 };
 
