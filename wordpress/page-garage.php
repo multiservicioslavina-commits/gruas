@@ -178,12 +178,12 @@ if (file_exists($data_file)) {
   <div class="g-grid" id="g-grid"></div>
   <div class="g-empty" id="g-empty">
     <p style="font-size:14px;color:var(--text-2)">Sin resultados — <a href="#" onclick="clearSearch();return false;" style="color:var(--accent)">ver todas las motos</a></p>
-    <p style="margin-top:8px;font-size:13px;color:var(--text-3)">¿Tu moto no está? <a href="https://wa.me/573117896717" target="_blank" rel="noopener" style="color:var(--accent)">Escríbele a Rita</a></p>
+    <p style="margin-top:8px;font-size:13px;color:var(--text-3)">¿Tu moto no está? <a href="https://wa.me/573234846550" target="_blank" rel="noopener" style="color:var(--accent)">Escríbele a Rita</a></p>
   </div>
   <div class="g-rita">
     <h3>🏍️ ¿Rita no tiene la respuesta?</h3>
     <p>Escríbele por WhatsApp y ella busca en el garage técnico o te conecta con un experto.</p>
-    <a class="g-wa-btn" href="https://wa.me/573117896717?text=Hola%20Rita%2C%20tengo%20una%20pregunta%20t%C3%A9cnica%20sobre%20mi%20moto" target="_blank" rel="noopener">
+    <a class="g-wa-btn" href="https://wa.me/573234846550?text=Hola%20Rita%2C%20tengo%20una%20pregunta%20t%C3%A9cnica%20sobre%20mi%20moto" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.625.846 5.059 2.284 7.034L.789 23.492a.75.75 0 00.917.918l4.462-1.494A11.945 11.945 0 0012 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-2.386 0-4.592-.83-6.32-2.216l-.442-.369-3.063 1.025 1.025-3.063-.369-.442A9.96 9.96 0 012 12C2 6.486 6.486 2 12 2s10 4.486 10 10-4.486 10-10 10z"/></svg>
       Hablar con Rita
     </a>
