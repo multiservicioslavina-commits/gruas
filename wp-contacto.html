@@ -312,7 +312,13 @@
 
   /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
-  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+  var emailjsListo = false;
+  try {
+    if(EMAILJS_PUBLIC_KEY.indexOf('PEGA') === -1){
+      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+      emailjsListo = true;
+    }
+  } catch(e){ console.warn('EmailJS no iniciado:', e); }
 
   var form    = document.getElementById('rc-form');
   var btn     = document.getElementById('rc-btn');
@@ -393,16 +399,15 @@
       fecha:      fecha
     };
 
-    try {
-      /* Notificación interna → multiservicioslavina@gmail.com + info@ridera.com.co */
-      /* Auto-respuesta    → correo del visitante */
-      await Promise.all([
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
-        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
-      ]);
-    } catch(emailErr) {
-      /* Si el correo falla, el mensaje igual quedó en Supabase */
-      console.warn('EmailJS error:', emailErr);
+    if(emailjsListo){
+      try {
+        await Promise.all([
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
+          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
+        ]);
+      } catch(emailErr) {
+        console.warn('EmailJS error:', emailErr);
+      }
     }
 
     /* 3️⃣ Mostrar confirmación */
