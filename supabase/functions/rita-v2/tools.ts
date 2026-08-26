@@ -1061,6 +1061,78 @@ export const TOOL_SCHEMAS = [
       required: [],
     },
   },
+  {
+    name: "activar_modo_emergencia",
+    description:
+      "Activa el modo SOS/emergencia. Primero requiere registrar contactos de emergencia. Una vez activado, Rita detectará accidentes automáticamente.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "registrar_contactos_emergencia",
+    description:
+      "Registra familiares o amigos a contactar en caso de accidente. Máximo 5 contactos. Formatos: '+57 300 1234567' o '3001234567'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre del contacto" },
+        telefono: { type: "string", description: "Número de teléfono (con o sin +57)" },
+        relacion: { type: "string", description: "Relación: 'familiar', 'amigo', 'vecino', etc" },
+      },
+      required: ["nombre", "telefono"],
+    },
+  },
+  {
+    name: "actualizar_info_medica",
+    description:
+      "Actualiza tu información médica (tipo de sangre, alergias, medicamentos) para paramédicos en caso de emergencia.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo_sangre: { type: "string", description: "Tipo de sangre: O+, O-, A+, A-, B+, B-, AB+, AB-" },
+        alergias: { type: "string", description: "Alergias separadas por coma. Ej: penicilina, ibuprofeno, latex" },
+        medicamentos: { type: "string", description: "Medicamentos actuales. Ej: metformina 500mg, lisinopril 10mg" },
+        condiciones: { type: "string", description: "Condiciones médicas. Ej: diabetes, asma, convulsiones" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "reportar_incidente_manual",
+    description:
+      "Reporta un accidente o emergencia manualmente. Si el detector automático falla, úsalo para alertar a emergencias.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", description: "'accidente' o 'emergencia'" },
+        descripcion: { type: "string", description: "Qué pasó y dónde" },
+      },
+      required: ["tipo"],
+    },
+  },
+  {
+    name: "obtener_incidentes",
+    description:
+      "Ve tu historial de incidentes/emergencias registradas en los últimos 30 días (cuándo, dónde, qué escaló).",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_alertas_seguridad",
+    description:
+      "Obtiene alertas de seguridad de la comunidad: hotspots de accidentes cercanos, retenes agresivos, vías peligrosas en 3km a la redonda.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2662,6 +2734,235 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     });
 
     return { ok: true, data: respuesta };
+  },
+
+  async activar_modo_emergencia(_input, phone) {
+    const { esRiderPreparado } = await import("./emergency.ts");
+    const preparado = await esRiderPreparado(phone);
+
+    if (!preparado) {
+      return {
+        ok: false,
+        data: "⚠️ Primero registra contactos de emergencia. Sin ellos no puedo activar el SOS. ¿Me das los teléfonos de familiares o amigos de confianza?",
+      };
+    }
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (rider) {
+      await supabase.from("emergency_mode_log").insert({
+        rider_id: rider.id,
+        action: "activated",
+        reason: "user_request",
+      });
+    }
+
+    return {
+      ok: true,
+      data: "✅ Modo SOS *activado*. Si tengo un accidente detectaré el impacto y escalaré a emergencias automáticamente. Tus contactos serán avisados en segundos.",
+    };
+  },
+
+  async registrar_contactos_emergencia(input, phone) {
+    const nombre = String(input.nombre || "").trim();
+    const telefono = String(input.telefono || "").trim();
+    const relacion = String(input.relacion || "contacto").trim();
+
+    if (!nombre || nombre.length < 2) {
+      return { ok: false, data: "Necesito el nombre del contacto." };
+    }
+
+    if (!telefono || telefono.length < 7) {
+      return { ok: false, data: "Necesito un número de teléfono válido." };
+    }
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado. Regístrate primero." };
+    }
+
+    // Normalizar teléfono (remover espacios y caracteres especiales)
+    const phoneLimpio = telefono.replace(/\D/g, "");
+    const phoneFormato = phoneLimpio.length === 10 ? `57${phoneLimpio}` : phoneLimpio;
+
+    const { data: existente } = await supabase
+      .from("emergency_contacts")
+      .select("id")
+      .eq("rider_id", rider.id)
+      .eq("phone_number", phoneFormato)
+      .maybeSingle();
+
+    if (existente) {
+      return { ok: true, data: `✅ ${nombre} ya estaba registrado como contacto.` };
+    }
+
+    const { data: contactos } = await supabase
+      .from("emergency_contacts")
+      .select("id")
+      .eq("rider_id", rider.id);
+
+    if ((contactos?.length || 0) >= 5) {
+      return { ok: false, data: "Ya tienes 5 contactos registrados (máximo). Borra uno si quieres agregar otro." };
+    }
+
+    const priority = (contactos?.length || 0) + 1;
+
+    const { error } = await supabase.from("emergency_contacts").insert({
+      rider_id: rider.id,
+      contact_name: nombre,
+      phone_number: phoneFormato,
+      relationship: relacion,
+      priority,
+      consent: true,
+    });
+
+    if (error) {
+      return { ok: false, data: `Error guardando contacto: ${error.message}` };
+    }
+
+    return {
+      ok: true,
+      data: `✅ *${nombre}* registrado como contacto #${priority}. Si tienes más, sigue agregando.`,
+    };
+  },
+
+  async actualizar_info_medica(input, phone) {
+    const tipo_sangre = String(input.tipo_sangre || "").trim();
+    const alergias_str = String(input.alergias || "").trim();
+    const medicamentos_str = String(input.medicamentos || "").trim();
+    const condiciones_str = String(input.condiciones || "").trim();
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const alergias = alergias_str ? alergias_str.split(",").map((a) => a.trim()) : [];
+    const medicamentos = medicamentos_str ? medicamentos_str.split(",").map((m) => m.trim()) : [];
+    const condiciones = condiciones_str ? condiciones_str.split(",").map((c) => c.trim()) : [];
+
+    const { data: existente } = await supabase
+      .from("rider_medical_info")
+      .select("id")
+      .eq("rider_id", rider.id)
+      .maybeSingle();
+
+    if (existente) {
+      await supabase
+        .from("rider_medical_info")
+        .update({
+          blood_type: tipo_sangre || null,
+          allergies: alergias,
+          medications: medicamentos,
+          known_conditions: condiciones,
+        })
+        .eq("rider_id", rider.id);
+    } else {
+      await supabase.from("rider_medical_info").insert({
+        rider_id: rider.id,
+        blood_type: tipo_sangre || null,
+        allergies: alergias,
+        medications: medicamentos,
+        known_conditions: condiciones,
+      });
+    }
+
+    let datos = [];
+    if (tipo_sangre) datos.push(`🩸 Sangre: ${tipo_sangre}`);
+    if (alergias.length) datos.push(`🚫 Alergias: ${alergias.join(", ")}`);
+    if (medicamentos.length) datos.push(`💊 Medicamentos: ${medicamentos.join(", ")}`);
+    if (condiciones.length) datos.push(`⚠️ Condiciones: ${condiciones.join(", ")}`);
+
+    return {
+      ok: true,
+      data: `✅ Información médica guardada:\n${datos.join("\n")}\n\nEsta info está disponible para paramédicos si ocurre un accidente.`,
+    };
+  },
+
+  async reportar_incidente_manual(input, phone) {
+    const tipo = String(input.tipo || "incidente").toLowerCase();
+    const descripcion = String(input.descripcion || "").trim();
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id, nombre")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const { registrarIncidente, escalarA_SMS, escalarA_122 } = await import("./emergency.ts");
+
+    const incident = await registrarIncidente(phone, "manual_report", null, null);
+    if (!incident) {
+      return { ok: false, data: "Error registrando incidente." };
+    }
+
+    // Escalar inmediatamente
+    await escalarA_SMS(incident.id, phone);
+    if (tipo === "accidente") {
+      await escalarA_122(incident.id, phone);
+    }
+
+    return {
+      ok: true,
+      data: `🚨 Incidente registrado y escalado.\n${rider.nombre}, tus contactos han sido avisados.\n\n¿Necesitas ambulancia (122) o solo grúa?`,
+    };
+  },
+
+  async obtener_incidentes(_input, phone) {
+    const { obtenerIncidentesRecientes } = await import("./emergency.ts");
+    const incidents = await obtenerIncidentesRecientes(phone, 30);
+
+    if (!incidents.length) {
+      return { ok: true, data: "✅ No hay incidentes registrados en los últimos 30 días. ¡Sigue así!" };
+    }
+
+    let respuesta = `📋 *INCIDENTES EN 30 DÍAS* (${incidents.length})\n\n`;
+    incidents.forEach((inc, i) => {
+      const tipo_label =
+        inc.incidentType === "impact_detected" ? "🔴 Impacto detectado" :
+        inc.incidentType === "distress_button" ? "🆘 Botón SOS" :
+        "📱 Reportado manualmente";
+
+      const escala_label = `Escaló a Tier ${inc.escalationLevel}`;
+      const esRealLabel = inc.wasRealEmergency === true ? "⚠️ Fue emergencia real" : "✅ Falsa alarma";
+
+      respuesta += `${i + 1}. ${tipo_label}\n   ${new Date(inc.timestamp).toLocaleString("es-CO")}\n   ${escala_label} | ${esRealLabel}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_alertas_seguridad(_input, phone) {
+    const { obtenerAlertasSeguridad } = await import("./emergency.ts");
+    const alertas = await obtenerAlertasSeguridad(phone, 3);
+
+    if (!alertas) {
+      return { ok: true, data: "✅ No hay alertas de seguridad registradas en tu zona." };
+    }
+
+    return { ok: true, data: alertas };
   },
 };
 
