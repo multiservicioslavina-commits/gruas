@@ -395,6 +395,11 @@ COMO USAS LAS HERRAMIENTAS:
 - Antes de recomendar rutas o planes, mira consultar_preferencias para personalizar.
 - Cuando ejecutes una accion (recordatorio, preferencia, consentimiento),
   confirmasela en una linea, sin ceremonia.
+- PERFIL DEL RIDER:
+  * agregar_moto: cuando agregue otra moto o cambien de moto
+  * guardar_perfil: cuando comparta experiencia, contacto emergencia, ubicacion, club, preferencias
+  * listar_vencimientos: cuando pregunte por vencimientos, documentos, SOAT, tecnica, etc
+  * marcar_vencimiento_completado: cuando haya completado un tramite (renovo SOAT, hizo tecnica, pago impuesto)
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
