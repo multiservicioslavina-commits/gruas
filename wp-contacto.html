@@ -4,23 +4,8 @@
      - Los mensajes se guardan en Supabase (tabla: mensajes_contacto)
      - Te llega copia por correo vía EmailJS (gratis hasta 200/mes)
 
-     ══ CONFIGURACIÓN EMAILJS ══
-     1. Crea cuenta en https://www.emailjs.com (gratis)
-     2. Conecta tu Gmail (Email Services → Add Service → Gmail)
-     3. Crea una plantilla (Email Templates → Create New Template) con estas variables:
-           De: {{from_name}} <{{from_email}}>
-           Asunto: Nuevo mensaje de contacto — {{asunto}}
-           Cuerpo:
-             Nombre:   {{from_name}}
-             Correo:   {{from_email}}
-             Teléfono: {{telefono}}
-             Asunto:   {{asunto}}
-             Mensaje:  {{mensaje}}
-     4. En Account → General, copia tu Public Key
-     5. Reemplaza los tres valores de abajo:
-           EMAILJS_PUBLIC_KEY  → tu Public Key
-           EMAILJS_SERVICE_ID  → el Service ID que creaste (ej: service_xxxxx)
-           EMAILJS_TEMPLATE_ID → el Template ID que creaste (ej: template_xxxxx)
+     Las notificaciones (WhatsApp al equipo + correos al visitante) las envía
+     la Edge Function 'contacto-notificar'. No hay que configurar nada aquí.
      ════════════════════════════ -->
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,23 +288,18 @@
   var SB_URL  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
   var SB_KEY  = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
 
-  var EMAILJS_PUBLIC_KEY       = 'SkP6UWJZThu9tdQCc';
-  var EMAILJS_SERVICE_ID       = 'ridera-contacto';
-  var EMAILJS_TEMPLATE_INTERNO = '7qkjo5c';
-  var EMAILJS_TEMPLATE_REPLY   = '8w8ecf8';
+  /* Las notificaciones (WhatsApp + correos) las envía esta Edge Function.
+     Se hace del lado del servidor para no depender de CORS ni de scripts
+     externos que carguen tarde dentro de Elementor. */
+  var FN_NOTIFICAR = SB_URL + '/functions/v1/contacto-notificar';
 
   /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
-  function sendEmail(templateId, params) {
-    return fetch('https://api.emailjs.com/api/v1.0/email/send', {
+  function notificar(datos) {
+    return fetch(FN_NOTIFICAR, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        service_id:      EMAILJS_SERVICE_ID,
-        template_id:     templateId,
-        user_id:         EMAILJS_PUBLIC_KEY,
-        template_params: params
-      })
+      body: JSON.stringify(datos)
     });
   }
 
@@ -327,16 +307,6 @@
   var btn     = document.getElementById('rc-btn');
   var errBar  = document.getElementById('rc-error');
   var success = document.getElementById('rc-success');
-
-  var ASUNTO_LABELS = {
-    gruas:     'Servicio de grúas',
-    almacenes: 'Almacenes de repuestos',
-    clubes:    'Clubes de motos',
-    garaje:    'Garaje / talleres',
-    alianzas:  'Alianzas y negocios',
-    prensa:    'Prensa y medios',
-    otro:      'Otro'
-  };
 
   function showError(msg){
     errBar.textContent = msg;
@@ -381,35 +351,20 @@
       return;
     }
 
-    /* 2️⃣ Enviar los dos correos en paralelo */
-    var asuntoLabel = ASUNTO_LABELS[asunto] || asunto;
-    var fecha       = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' });
-
-    var notifData = {
-      from_name:  nombre,
-      from_email: email,
-      telefono:   telefono || 'No indicó',
-      asunto:     asuntoLabel,
-      mensaje:    mensaje,
-      fecha:      fecha
-    };
-
-    var replyData = {
-      to_name:    nombre,
-      to_email:   email,          /* correo del visitante */
-      asunto:     asuntoLabel,
-      mensaje:    mensaje,
-      fecha:      fecha
-    };
-
+    /* 2️⃣ Notificar (WhatsApp al equipo + correos) — best-effort.
+       Si esto falla el mensaje ya quedó guardado, así que no bloqueamos
+       la confirmación al visitante. */
     try {
-      await Promise.all([
-        sendEmail(EMAILJS_TEMPLATE_INTERNO, notifData),
-        sendEmail(EMAILJS_TEMPLATE_REPLY,   replyData)
-      ]);
-      console.log('Correos enviados OK');
-    } catch(emailErr) {
-      console.warn('Error enviando correos:', emailErr);
+      var resp = await notificar({
+        nombre:   nombre,
+        email:    email,
+        telefono: telefono,
+        asunto:   asunto,
+        mensaje:  mensaje
+      });
+      console.log('Notificación:', await resp.json());
+    } catch(notifErr) {
+      console.warn('Error notificando:', notifErr);
     }
 
     /* 3️⃣ Mostrar confirmación */
