@@ -1,0 +1,353 @@
+<!-- RIDERA — Página de Contacto para WordPress
+     Pega esto en un bloque "HTML personalizado" en la página /contacto/ de ridera.com.co
+     No necesitas ningún plugin. Los mensajes se guardan en Supabase (tabla: mensajes_contacto). -->
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+#ridera-contacto-wrap *{box-sizing:border-box;margin:0;padding:0}
+#ridera-contacto-wrap{
+  font-family:'DM Sans',system-ui,sans-serif;
+  color:#fff;
+  background:#0D0F12;
+  min-height:100vh;
+}
+
+/* ── HERO ── */
+#ridera-contacto-wrap .hero{
+  position:relative;
+  padding:80px 24px 60px;
+  text-align:center;
+  background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(232,93,32,.22) 0%, transparent 70%), #0D0F12;
+  overflow:hidden;
+}
+#ridera-contacto-wrap .hero::before{
+  content:'';
+  position:absolute;inset:0;
+  background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23E85D20' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events:none;
+}
+#ridera-contacto-wrap .hero-label{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:#E85D20;margin-bottom:20px;
+}
+#ridera-contacto-wrap .hero h1{
+  font-family:'Bebas Neue',sans-serif;
+  font-size:clamp(3rem,8vw,5.5rem);
+  line-height:.95;letter-spacing:.02em;
+  color:#fff;margin-bottom:20px;
+}
+#ridera-contacto-wrap .hero h1 span{color:#E85D20}
+#ridera-contacto-wrap .hero p{
+  font-size:17px;color:rgba(255,255,255,.7);
+  max-width:520px;margin:0 auto;line-height:1.6;
+}
+
+/* ── LAYOUT ── */
+#ridera-contacto-wrap .content{
+  max-width:1000px;margin:0 auto;
+  padding:48px 24px 80px;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:48px;
+  align-items:start;
+}
+@media(max-width:700px){
+  #ridera-contacto-wrap .content{grid-template-columns:1fr;gap:32px}
+}
+
+/* ── INFO CARDS ── */
+#ridera-contacto-wrap .info-col{display:flex;flex-direction:column;gap:16px}
+#ridera-contacto-wrap .info-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:16px;padding:24px;
+  display:flex;gap:16px;align-items:flex-start;
+  transition:border-color .25s;
+}
+#ridera-contacto-wrap .info-card:hover{border-color:rgba(232,93,32,.4)}
+#ridera-contacto-wrap .info-icon{
+  width:44px;height:44px;flex-shrink:0;
+  background:rgba(232,93,32,.15);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:22px;
+}
+#ridera-contacto-wrap .info-card h3{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:15px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+  color:rgba(255,255,255,.5);margin-bottom:4px;
+}
+#ridera-contacto-wrap .info-card p,
+#ridera-contacto-wrap .info-card a{
+  font-size:16px;color:#fff;text-decoration:none;line-height:1.4;
+}
+#ridera-contacto-wrap .info-card a:hover{color:#E85D20}
+
+#ridera-contacto-wrap .rita-card{
+  background:linear-gradient(135deg,rgba(232,93,32,.15),rgba(232,93,32,.05));
+  border:1px solid rgba(232,93,32,.3);
+  border-radius:16px;padding:24px;margin-top:8px;
+}
+#ridera-contacto-wrap .rita-card h3{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:18px;font-weight:900;letter-spacing:.06em;text-transform:uppercase;
+  color:#E85D20;margin-bottom:8px;
+}
+#ridera-contacto-wrap .rita-card p{
+  font-size:14px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:16px;
+}
+#ridera-contacto-wrap .rita-btn{
+  display:inline-flex;align-items:center;gap:8px;
+  background:#25D366;color:#fff;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:16px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
+  padding:12px 24px;border-radius:10px;text-decoration:none;
+  transition:background .2s;
+}
+#ridera-contacto-wrap .rita-btn:hover{background:#1eb357}
+
+/* ── FORM ── */
+#ridera-contacto-wrap .form-col{}
+#ridera-contacto-wrap .form-card{
+  background:rgba(255,255,255,.04);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:20px;padding:32px;
+}
+#ridera-contacto-wrap .form-card h2{
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:26px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;
+  color:#fff;margin-bottom:24px;
+}
+#ridera-contacto-wrap .form-group{margin-bottom:18px}
+#ridera-contacto-wrap label{
+  display:block;font-size:13px;font-weight:600;
+  color:rgba(255,255,255,.6);letter-spacing:.04em;text-transform:uppercase;
+  margin-bottom:8px;
+}
+#ridera-contacto-wrap input,
+#ridera-contacto-wrap select,
+#ridera-contacto-wrap textarea{
+  width:100%;background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.12);
+  border-radius:10px;padding:13px 16px;
+  color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;
+  outline:none;transition:border-color .2s;
+  -webkit-appearance:none;
+}
+#ridera-contacto-wrap input::placeholder,
+#ridera-contacto-wrap textarea::placeholder{color:rgba(255,255,255,.3)}
+#ridera-contacto-wrap input:focus,
+#ridera-contacto-wrap select:focus,
+#ridera-contacto-wrap textarea:focus{border-color:#E85D20}
+#ridera-contacto-wrap select option{background:#1a1d22;color:#fff}
+#ridera-contacto-wrap textarea{resize:vertical;min-height:120px}
+
+#ridera-contacto-wrap .form-row{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:480px){#ridera-contacto-wrap .form-row{grid-template-columns:1fr}}
+
+#ridera-contacto-wrap .submit-btn{
+  width:100%;
+  background:#E85D20;color:#fff;border:none;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;
+  font-size:20px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;
+  padding:16px;border-radius:12px;
+  transition:background .2s,transform .15s;
+  margin-top:8px;
+}
+#ridera-contacto-wrap .submit-btn:hover{background:#d14d15;transform:translateY(-1px)}
+#ridera-contacto-wrap .submit-btn:disabled{background:rgba(232,93,32,.4);cursor:not-allowed;transform:none}
+
+/* ── ESTADOS ── */
+#ridera-contacto-wrap .msg-success{
+  display:none;text-align:center;padding:40px 24px;
+}
+#ridera-contacto-wrap .msg-success .check{
+  font-size:56px;margin-bottom:16px;
+}
+#ridera-contacto-wrap .msg-success h3{
+  font-family:'Bebas Neue',sans-serif;font-size:2.2rem;
+  color:#E85D20;margin-bottom:8px;
+}
+#ridera-contacto-wrap .msg-success p{
+  color:rgba(255,255,255,.7);font-size:16px;line-height:1.6;
+}
+#ridera-contacto-wrap .error-bar{
+  display:none;
+  background:rgba(220,38,38,.15);border:1px solid rgba(220,38,38,.4);
+  border-radius:10px;padding:12px 16px;
+  color:#fca5a5;font-size:14px;margin-bottom:16px;
+}
+</style>
+
+<div id="ridera-contacto-wrap">
+
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-label">🏍️ Ridera · Contacto</div>
+    <h1>Hablemos<br><span>sin rodeos</span></h1>
+    <p>¿Tienes una pregunta, quieres unirte a la red o simplemente saludar? Escríbenos y te respondemos rápido.</p>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="content">
+
+    <!-- INFO -->
+    <div class="info-col">
+
+      <div class="info-card">
+        <div class="info-icon">💬</div>
+        <div>
+          <h3>WhatsApp directo</h3>
+          <a href="https://wa.me/573117896717">+57 311 789 6717</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-icon">📧</div>
+        <div>
+          <h3>Correo</h3>
+          <a href="mailto:hola@ridera.com.co">hola@ridera.com.co</a>
+        </div>
+      </div>
+
+      <div class="info-card">
+        <div class="info-icon">📍</div>
+        <div>
+          <h3>Cobertura</h3>
+          <p>Antioquia, Colombia · Expandiéndonos</p>
+        </div>
+      </div>
+
+      <!-- RITA -->
+      <div class="rita-card">
+        <h3>¿Urgente? Habla con Rita</h3>
+        <p>Rita es nuestra asistente en WhatsApp. Responde al instante sobre grúas, almacenes de repuestos y más.</p>
+        <a href="https://wa.me/573117896717?text=Hola%20Rita%2C%20necesito%20ayuda" class="rita-btn">
+          🤖 Chatear con Rita
+        </a>
+      </div>
+
+    </div>
+
+    <!-- FORMULARIO -->
+    <div class="form-col">
+      <div class="form-card">
+        <h2>Envíanos un mensaje</h2>
+
+        <div class="error-bar" id="rc-error"></div>
+
+        <form id="rc-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label for="rc-nombre">Nombre</label>
+              <input type="text" id="rc-nombre" placeholder="Tu nombre" required>
+            </div>
+            <div class="form-group">
+              <label for="rc-telefono">Teléfono / WhatsApp</label>
+              <input type="tel" id="rc-telefono" placeholder="+57 300...">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="rc-email">Correo electrónico</label>
+            <input type="email" id="rc-email" placeholder="tucorreo@ejemplo.com" required>
+          </div>
+
+          <div class="form-group">
+            <label for="rc-asunto">¿Sobre qué nos escribes?</label>
+            <select id="rc-asunto" required>
+              <option value="">Selecciona un tema…</option>
+              <option value="gruas">Servicio de grúas</option>
+              <option value="almacenes">Almacenes de repuestos</option>
+              <option value="clubes">Clubes de motos</option>
+              <option value="garaje">Garaje / talleres</option>
+              <option value="alianzas">Alianzas y negocios</option>
+              <option value="prensa">Prensa y medios</option>
+              <option value="otro">Otro</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="rc-mensaje">Mensaje</label>
+            <textarea id="rc-mensaje" placeholder="Cuéntanos en qué podemos ayudarte…" required></textarea>
+          </div>
+
+          <button type="submit" class="submit-btn" id="rc-btn">Enviar mensaje</button>
+        </form>
+
+        <div class="msg-success" id="rc-success">
+          <div class="check">✅</div>
+          <h3>¡Mensaje enviado!</h3>
+          <p>Lo recibimos. Te respondemos en menos de 24 horas por correo o WhatsApp.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  var SB_KEY = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
+
+  var sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  var form    = document.getElementById('rc-form');
+  var btn     = document.getElementById('rc-btn');
+  var errBar  = document.getElementById('rc-error');
+  var success = document.getElementById('rc-success');
+
+  function showError(msg){
+    errBar.textContent = msg;
+    errBar.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Enviar mensaje';
+  }
+
+  form.addEventListener('submit', async function(e){
+    e.preventDefault();
+    errBar.style.display = 'none';
+    btn.disabled = true;
+    btn.textContent = 'Enviando…';
+
+    var nombre   = document.getElementById('rc-nombre').value.trim();
+    var telefono = document.getElementById('rc-telefono').value.trim();
+    var email    = document.getElementById('rc-email').value.trim();
+    var asunto   = document.getElementById('rc-asunto').value;
+    var mensaje  = document.getElementById('rc-mensaje').value.trim();
+
+    if(!nombre || !email || !asunto || !mensaje){
+      showError('Por favor completa todos los campos requeridos.');
+      return;
+    }
+
+    var record = {
+      nombre:   nombre,
+      email:    email,
+      telefono: telefono || null,
+      asunto:   asunto,
+      mensaje:  mensaje,
+      origen:   'web-contacto',
+      creado_en: new Date().toISOString()
+    };
+
+    var result = await sb.from('mensajes_contacto').insert([record]);
+
+    if(result.error){
+      console.error('Supabase error:', result.error);
+      showError('Hubo un problema al enviar. Intenta de nuevo o escríbenos por WhatsApp.');
+      return;
+    }
+
+    form.style.display = 'none';
+    success.style.display = 'block';
+  });
+})();
+</script>
