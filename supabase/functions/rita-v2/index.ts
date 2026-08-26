@@ -18,6 +18,7 @@ import { generarContextoLegal, inicializarBaseConocimientoLegal } from "./legal.
 import { generarContextoSocial } from "./social.ts";
 import { generarContextoNavigador } from "./navigator.ts";
 import { generarContextoAcademia } from "./academia.ts";
+import { generarContextoMarketplace } from "./marketplace.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -332,6 +333,7 @@ function buildSystemPrompt(
   contextoSocial: string = "",
   contextoNavigador: string = "",
   contextoAcademia: string = "",
+  contextoMarketplace: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
@@ -361,6 +363,10 @@ function buildSystemPrompt(
 
   const bloqueContextoAcademia = contextoAcademia
     ? `\n${contextoAcademia}`
+    : "";
+
+  const bloqueContextoMarketplace = contextoMarketplace
+    ? `\n${contextoMarketplace}`
     : "";
 
   const bloqueEstilo = conVoz
@@ -449,6 +455,12 @@ COMO USAS LAS HERRAMIENTAS:
   * marcar_contenido_completado: cuando haya completado un curso o contenido educativo
   * obtener_certificaciones: cuando pregunte qué ha aprendido o sus logros académicos
   * buscar_mecanicos: cuando busque mecánicos confiables verificados por la comunidad
+- MARKETPLACE (PHASE 4):
+  * buscar_marketplace: cuando busque piezas, accesorios o servicios para la moto (filtrar por categoría, ciudad, precio)
+  * crear_listado_marketplace: cuando quiera vender algo (piezas usadas, accesorios, servicios)
+  * obtener_mis_compras: cuando pregunte qué ha comprado o el estado de sus órdenes
+  * comprar_producto: cuando decida comprar algo que encontró
+  * dejar_resena: cuando quiera evaluar al vendedor después de comprar
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
@@ -536,10 +548,11 @@ RESUMEN - RITA ES EXPERTA EN:
 ✅ Referencias: Catálogo completo de motos, especificaciones
 ✅ Clubes: Comunidades, grupos, rodadas, eventos de Antioquia
 ✅ Recordatorios: Alarmas, programación de actividades, remembranzas
+✅ Marketplace: Compra/venta de piezas, accesorios y servicios entre riders
 
 Rita es una ASISTENTE CORE POTENTE (con modelo económico Haiku).
 Dominio especializado en motociclismo, viajes, seguridad y regulación en Colombia y Latinoamérica.
-
+${bloqueContextoMarketplace}
 ${bloqueConsentimiento}`;
 }
 
@@ -590,8 +603,9 @@ async function responder(
   contextoSocial: string = "",
   contextoNavigador: string = "",
   contextoAcademia: string = "",
+  contextoMarketplace: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -663,8 +677,9 @@ async function responderOrquestado(
   contextoSocial: string = "",
   contextoNavigador: string = "",
   contextoAcademia: string = "",
+  contextoMarketplace: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -905,7 +920,7 @@ Deno.serve(async (req: Request) => {
     // Inicializar base de conocimiento legal una sola vez
     await inicializarBaseConocimientoLegal();
 
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia] = await Promise.all([
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
@@ -915,6 +930,7 @@ Deno.serve(async (req: Request) => {
       generarContextoSocial(from),
       generarContextoNavigador(from),
       generarContextoAcademia(from),
+      generarContextoMarketplace(from),
     ]);
 
     let reply = "";
@@ -923,8 +939,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
