@@ -1557,6 +1557,64 @@ export const TOOL_SCHEMAS = [
       required: ["incident_type", "description"],
     },
   },
+  {
+    name: "obtener_metricas_hoy",
+    description:
+      "Obtiene resumen de conducción de hoy: km, viajes, puntuación de riesgo, ciudad top.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_tendencias_riesgo",
+    description:
+      "Analiza tendencias de riesgo últimos 30 días: evolución, predicción futura, patrón de comportamiento.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dias: { type: "number", description: "Número de días a analizar (default 30)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_rutas_populares",
+    description:
+      "Lista rutas más populares en la comunidad hoy: cantidad de riders, puntuación de riesgo, popularidad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limite: { type: "number", description: "Número de rutas a retornar (default 5)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_insights_personalizados",
+    description:
+      "Obtiene insights personalizados para el rider: mejoras sugeridas, logros, alertas inteligentes.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limite: { type: "number", description: "Número de insights (default 3)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_benchmarks_comunidad",
+    description:
+      "Compara métricas del rider contra benchmarks comunitarios: mediana, percentil, tendencias.",
+    input_schema: {
+      type: "object",
+      properties: {
+        benchmark_type: { type: "string", description: "Tipo: safety, efficiency, participation, training" },
+      },
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -4126,6 +4184,81 @@ CONTACTO: Abogado especializado en responsabilidad civil`
 
     const result = await registrarReporteIncidente(phone, responseId, incidentType, description, injuries);
     return { ok: result.ok, data: result.message };
+  },
+
+  async obtener_metricas_hoy(input, phone) {
+    const { obtenerMetricasDelDia } = await import("./analytics.ts");
+    const metricas = await obtenerMetricasDelDia(phone);
+
+    let respuesta = `📊 *TUS MÉTRICAS HOY*\n\n`;
+    respuesta += `🛣️ Kilómetros: ${metricas.kmTotal} km\n`;
+    respuesta += `🏍️ Viajes: ${metricas.ridesCount}\n`;
+    respuesta += `⚠️ Riesgo: ${metricas.riskScore}%\n`;
+    if (metricas.topCity) {
+      respuesta += `📍 Ciudad: ${metricas.topCity}\n`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_tendencias_riesgo(input, phone) {
+    const { obtenerTendenciasRiesgo } = await import("./analytics.ts");
+    const dias = Number(input.dias ?? 30);
+    const tendencias = await obtenerTendenciasRiesgo(phone, dias);
+
+    let respuesta = `📈 *TENDENCIA DE RIESGO (${dias} DÍAS)*\n\n`;
+    respuesta += `Tendencia: ${tendencias.trend === "improving" ? "✅ Mejorando" : tendencias.trend === "worsening" ? "⚠️ Empeorando" : "➡️ Estable"}\n`;
+    respuesta += `Predicción: ${tendencias.predictedRisk}% de riesgo esperado\n`;
+    respuesta += `Histórico: ${tendencias.riskHistory.length} días registrados\n\n`;
+    respuesta += `${tendencias.trend === "improving" ? "¡Vas bien! Sigue cuidándote en la vía." : "Te recomiendo revisar tus patrones de conducción."}`;
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_rutas_populares(input, phone) {
+    const { obtenerRutasPopulares } = await import("./analytics.ts");
+    const limite = Number(input.limite ?? 5);
+    const rutas = await obtenerRutasPopulares(limite);
+
+    if (rutas.length === 0) return { ok: false, data: "No hay datos de rutas populares aún." };
+
+    let respuesta = `🗺️ *RUTAS POPULARES HOY*\n\n`;
+    rutas.forEach((ruta, idx) => {
+      respuesta += `${idx + 1}. ${ruta.routeName}\n`;
+      respuesta += `   👥 ${ruta.riders} riders | ⚠️ Riesgo: ${ruta.riskScore}%\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_insights_personalizados(input, phone) {
+    const { obtenerInsights } = await import("./analytics.ts");
+    const limite = Number(input.limite ?? 3);
+    const insights = await obtenerInsights(phone, limite);
+
+    if (insights.length === 0) return { ok: false, data: "No hay insights personalizados aún. ¡Sigue montando para descubrir recomendaciones!" };
+
+    let respuesta = `💡 *TUS INSIGHTS*\n\n`;
+    insights.forEach((insight) => {
+      respuesta += `• ${insight.title}\n`;
+      respuesta += `  ${insight.description}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_benchmarks_comunidad(input, phone) {
+    const { obtenerBenchmarksComunitarios } = await import("./analytics.ts");
+    const benchmarkType = String(input.benchmark_type ?? "safety");
+    const benchmarks = await obtenerBenchmarksComunitarios(benchmarkType);
+
+    let respuesta = `📊 *BENCHMARKS COMUNITARIOS (${benchmarkType.toUpperCase()})*\n\n`;
+    respuesta += `Comunidad (mediana): ${benchmarks.median}\n`;
+    respuesta += `Promedio: ${benchmarks.avgCommunity}\n`;
+    respuesta += `Tendencia: ${benchmarks.trend === "improving" ? "✅ Mejorando" : benchmarks.trend === "worsening" ? "⚠️ Empeorando" : "➡️ Estable"}\n\n`;
+    respuesta += `Compárate contra otros riders para conocer cómo conduces.`;
+
+    return { ok: true, data: respuesta };
   },
 };
 
