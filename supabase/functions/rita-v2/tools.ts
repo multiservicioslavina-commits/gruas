@@ -926,6 +926,90 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
+    name: "buscar_marketplace",
+    description:
+      "Busca piezas, accesorios y servicios en el marketplace de riders. Filtra por categoría, ciudad y precio.",
+    input_schema: {
+      type: "object",
+      properties: {
+        categoria: {
+          type: "string",
+          description: "Categoría (pieza, servicio, accesorio, moto_completa)",
+        },
+        ciudad: { type: "string", description: "Ciudad (ej: Medellín)" },
+        precio_min: { type: "number", description: "Precio mínimo" },
+        precio_max: { type: "number", description: "Precio máximo" },
+        termino: { type: "string", description: "Buscar por término (aceite, llantas, etc)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "crear_listado_marketplace",
+    description:
+      "Crea un nuevo listado para vender piezas, accesorios o servicios en el marketplace.",
+    input_schema: {
+      type: "object",
+      properties: {
+        titulo: { type: "string", description: "Título del producto/servicio" },
+        descripcion: { type: "string", description: "Descripción detallada" },
+        categoria: {
+          type: "string",
+          description: "Categoría (pieza, servicio, accesorio, moto_completa)",
+        },
+        precio: { type: "number", description: "Precio en pesos colombianos" },
+        condicion: {
+          type: "string",
+          description: "Condición (nuevo, usado, refurbished)",
+        },
+        ciudad: { type: "string", description: "Ciudad de venta/entrega" },
+      },
+      required: ["titulo", "descripcion", "categoria", "precio"],
+    },
+  },
+  {
+    name: "obtener_mis_compras",
+    description:
+      "Lista tus compras en el marketplace con estado de cada orden (pendiente, confirmado, pagado, entregado).",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "comprar_producto",
+    description:
+      "Compra un producto o solicita un servicio en el marketplace. Inicia una transacción con el vendedor.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listing_id: { type: "string", description: "ID del listado (UUID)" },
+        cantidad: { type: "number", description: "Cantidad a comprar (default: 1)" },
+        metodo_pago: {
+          type: "string",
+          description: "Método de pago (transferencia, efectivo, daviplata, nequi)",
+        },
+      },
+      required: ["listing_id"],
+    },
+  },
+  {
+    name: "dejar_resena",
+    description:
+      "Deja una reseña del vendedor después de comprar. Ayuda a la comunidad de riders.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "ID de la orden (UUID)" },
+        calificacion: { type: "number", description: "Calificación 1-5" },
+        titulo: { type: "string", description: "Título de la reseña" },
+        contenido: { type: "string", description: "Contenido de la reseña" },
+      },
+      required: ["order_id", "calificacion", "titulo", "contenido"],
+    },
+  },
+  {
     name: "estadisticas_personales",
     description:
       "Consulta tus estadísticas personales de conducción: sesiones, distancia total, velocidad promedio, seguridad. Usala cuando pregunte por su progreso o estadísticas de viaje.",
@@ -2395,95 +2479,186 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     return { ok: true, data: respuesta };
   },
 
-  async estadisticas_personales(input, phone) {
-    const { obtenerEstadisticasPersonales } = await import("./analytics.ts");
-    const stats = await obtenerEstadisticasPersonales(phone);
+  // ─── PHASE 4: MARKETPLACE ───────────────────────────────────────
+  async buscar_marketplace(input) {
+    const { buscarProductos } = await import("./marketplace.ts");
+    const categoria = input.categoria ? String(input.categoria) : undefined;
+    const ciudad = input.ciudad ? String(input.ciudad) : undefined;
+    const precioMin = input.precio_min ? Number(input.precio_min) : undefined;
+    const precioMax = input.precio_max ? Number(input.precio_max) : undefined;
+    const termino = input.termino ? String(input.termino) : undefined;
 
-    if (!stats) {
-      return { ok: false, data: "No tengo datos de tus viajes aún. ¡Comienza a registrar tus rutas!" };
+    const productos = await buscarProductos(categoria, ciudad, precioMin, precioMax, termino);
+
+    if (productos.length === 0) {
+      return { ok: true, data: "No encontré productos que coincidan con tu búsqueda. Intenta con otros filtros." };
     }
 
-    let respuesta = "📊 TUS ESTADÍSTICAS:\n\n";
-    respuesta += `• Viajes: ${stats.totalSesiones}\n`;
-    respuesta += `• Distancia total: ${stats.totalDistancia}km\n`;
-    respuesta += `• Tiempo en ruta: ${Math.floor(stats.totalDuracion / 60)}h ${stats.totalDuracion % 60}min\n`;
-    respuesta += `• Velocidad promedio: ${stats.velocidadPromedio}km/h\n`;
-    respuesta += `• Velocidad máxima: ${stats.velocidadMaxima}km/h\n`;
-    respuesta += `• Consumo promedio: ${stats.consumoPromedio}L/100km\n`;
-    respuesta += `• Seguridad: ${stats.seguridad}/100 ✓\n`;
+    let respuesta = `🛵 MARKETPLACE - ${productos.length} productos encontrados:\n\n`;
+    productos.forEach((p) => {
+      const verificado = p.vendedor.verificado ? "✓" : " ";
+      respuesta += `${verificado} ${p.titulo}\n   $${p.precio.toLocaleString()} (${p.condicion}) - ${p.vendedor.nombre}\n   Rating: ${p.rating || "Sin reseñas"}\n\n`;
+    });
 
     return { ok: true, data: respuesta };
+  },
+
+  async crear_listado_marketplace(input, phone) {
+    const { crearListado } = await import("./marketplace.ts");
+    const titulo = String(input.titulo || "").trim();
+    const descripcion = String(input.descripcion || "").trim();
+    const categoria = String(input.categoria || "").trim();
+    const precio = Number(input.precio || 0);
+    const condicion = String(input.condicion || "nuevo");
+    const ciudad = input.ciudad ? String(input.ciudad) : undefined;
+
+    if (!titulo || !descripcion || !categoria || precio <= 0) {
+      return { ok: false, data: "Necesito: título, descripción, categoría y precio válido." };
+    }
+
+    const listingId = await crearListado(phone, titulo, descripcion, categoria, precio, condicion, ciudad);
+    if (!listingId) return { ok: false, data: "No se pudo crear el listado. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Listado creado! "${titulo}" está ahora visible en el marketplace por $${precio.toLocaleString()}.` };
+  },
+
+  async obtener_mis_compras(input, phone) {
+    const { obtenerMisOrdenes } = await import("./marketplace.ts");
+    const ordenes = await obtenerMisOrdenes(phone);
+
+    if (ordenes.length === 0) {
+      return { ok: true, data: "No has realizado compras aún. Explora el marketplace para encontrar productos." };
+    }
+
+    let respuesta = `📦 TUS COMPRAS (${ordenes.length} total):\n\n`;
+    ordenes.slice(0, 10).forEach((o) => {
+      const estados: Record<string, string> = {
+        pendiente: "⏳",
+        confirmado: "✓",
+        pagado: "💳",
+        enviado: "🚚",
+        entregado: "✓✓",
+        cancelado: "✗"
+      };
+      respuesta += `${estados[o.estado] || "?"} ${o.titulo}\n   Estado: ${o.estado} | Total: $${o.precioTotal.toLocaleString()}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async comprar_producto(input, phone) {
+    const { crearOrden } = await import("./marketplace.ts");
+    const listingId = String(input.listing_id || "").trim();
+    const cantidad = Number(input.cantidad || 1);
+    const metodoPago = input.metodo_pago ? String(input.metodo_pago) : undefined;
+
+    if (!listingId) return { ok: false, data: "Necesito el ID del producto para procesar la compra." };
+
+    const orderId = await crearOrden(phone, listingId, cantidad, metodoPago);
+    if (!orderId) return { ok: false, data: "No se pudo procesar la compra. Verifica que el producto exista." };
+
+    return { ok: true, data: `✓ Compra iniciada! Orden #${orderId.slice(0, 8)} creada. El vendedor será notificado pronto.` };
+  },
+
+  async dejar_resena(input, phone) {
+    const { dejarResena } = await import("./marketplace.ts");
+    const orderId = String(input.order_id || "").trim();
+    const calificacion = Number(input.calificacion || 0);
+    const titulo = String(input.titulo || "").trim();
+    const contenido = String(input.contenido || "").trim();
+
+    if (!orderId || calificacion < 1 || calificacion > 5 || !titulo || !contenido) {
+      return { ok: false, data: "Necesito: orden, calificación (1-5), título y contenido de reseña." };
+    }
+
+    const ok = await dejarResena(phone, orderId, Math.round(calificacion), titulo, contenido);
+    if (!ok) return { ok: false, data: "No se pudo guardar tu reseña. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Reseña guardada! Gracias por ayudar a la comunidad de riders.` };
+  },
+
+  async estadisticas_personales(_input, phone) {
+    const { obtenerEstadisticasPersonales } = await import("./analytics.ts");
+    const stats = await obtenerEstadisticasPersonales(phone);
+    if (!stats) return { ok: false, data: "No tengo datos de conducción registrados aún. Comienza a registrar tus viajes." };
+
+    return {
+      ok: true,
+      data: `📊 *TUS ESTADÍSTICAS DE CONDUCCIÓN*\n\n` +
+        `🚗 Sesiones: ${stats.totalSesiones} viajes\n` +
+        `📍 Distancia total: ${stats.totalDistancia}km\n` +
+        `⏱️ Duración: ${stats.totalDuracion} minutos\n` +
+        `💨 Velocidad promedio: ${stats.velocidadPromedio}km/h\n` +
+        `⚡ Velocidad máxima: ${stats.velocidadMaxima}km/h\n` +
+        `⛽ Consumo promedio: ${stats.consumoPromedio}L/viaje\n` +
+        `🛡️ Puntuación de seguridad: ${stats.seguridad}/100`
+    };
   },
 
   async rutas_favoritas_analytics(input, phone) {
     const { obtenerRutasFavoritasEstadisticas } = await import("./analytics.ts");
-    const limite = input.limite ? Number(input.limite) : 5;
-    const rutas = await obtenerRutasFavoritasEstadisticas(phone, limite);
+    const limite = Number(input.limite || 5);
+    const rutas = await obtenerRutasFavoritasEstadisticas(phone, Math.max(1, Math.min(10, limite)));
 
-    if (rutas.length === 0) {
-      return { ok: false, data: "No tienes rutas registradas aún. ¡Comienza a registrar tus viajes!" };
-    }
+    if (!rutas.length) return { ok: false, data: "Aún no tienes rutas favoritas registradas." };
 
-    let respuesta = "🛣️ TUS RUTAS FAVORITAS:\n\n";
-    rutas.forEach((r, idx) => {
-      respuesta += `${idx + 1}. ${r.nombre}\n`;
-      respuesta += `   📍 ${r.distancia}km • ${r.vecesRecorrida}x recorrida\n`;
-      respuesta += `   ⏱️ ${r.duracionPromedio}min • 🚦 ${r.velocidadPromedio}km/h avg\n`;
-      respuesta += `   🛡️ Seguridad: ${r.seguridad}/100 • Dificultad: ${r.dificultad}/5\n\n`;
+    let respuesta = `🛣️ *TUS RUTAS FAVORITAS* (${rutas.length} rutas)\n\n`;
+    rutas.forEach((r, i) => {
+      respuesta += `${i + 1}. *${r.nombre}*\n` +
+        `   📍 ${r.distancia}km | ${r.vecesRecorrida}x recorrida\n` +
+        `   💨 ${r.velocidadPromedio}km/h | ⏱️ ${r.duracionPromedio}min\n` +
+        `   🛡️ Seguridad: ${r.seguridad}/100 | 📊 Dificultad: ${r.dificultad.toFixed(1)}/5\n\n`;
     });
 
     return { ok: true, data: respuesta };
   },
 
-  async patrones_conduccion(input, phone) {
+  async patrones_conduccion(_input, phone) {
     const { obtenerPatronesConduction } = await import("./analytics.ts");
     const patrones = await obtenerPatronesConduction(phone);
 
-    if (patrones.length === 0) {
-      return { ok: false, data: "Aún no hay patrones detectados. Necesito más viajes registrados." };
-    }
+    if (!patrones.length) return { ok: false, data: "No hay patrones de conducción registrados aún." };
 
-    let respuesta = "🌙 TUS PATRONES DE CONDUCCIÓN:\n\n";
-    patrones.forEach((p) => {
-      respuesta += `🕐 ${p.tipo.replace(/_/g, " ").toUpperCase()}\n`;
-      respuesta += `   Hora típica: ${p.horaPromedio}\n`;
-      respuesta += `   Duración: ${p.duracionPromedio}min\n`;
-      respuesta += `   Velocidad típica: ${p.velocidadTipica}km/h\n`;
-      respuesta += `   Vía preferida: ${p.viaPreferida}\n`;
-      respuesta += `   Frecuencia: ${p.frecuencia}x por semana\n`;
-      respuesta += `   Seguridad: ${p.seguridad}/100\n\n`;
+    let respuesta = `🌙 *TUS PATRONES DE CONDUCCIÓN*\n\n`;
+    patrones.forEach((p, i) => {
+      respuesta += `${i + 1}. *${p.tipo.toUpperCase()}*\n` +
+        `   🕐 Hora típica: ${p.horaPromedio}\n` +
+        `   ⏱️ Duración: ${p.duracionPromedio}min | 💨 ${p.velocidadTipica}km/h\n` +
+        `   🛣️ Vía: ${p.viaPreferida} | 📊 ${p.frecuencia}x/semana\n` +
+        `   🛡️ Seguridad: ${p.seguridad}/100\n\n`;
     });
 
     return { ok: true, data: respuesta };
   },
 
-  async reporte_progreso(input, phone) {
+  async reporte_progreso(_input, phone) {
     const { generarReporteProgreso } = await import("./analytics.ts");
     const reporte = await generarReporteProgreso(phone);
 
-    if (!reporte) {
-      return { ok: false, data: "No tengo datos de tu progreso aún. ¡Comienza a registrar viajes!" };
-    }
+    if (!reporte) return { ok: false, data: "No hay datos disponibles para generar el reporte. Comienza a registrar tus viajes." };
 
-    return { ok: true, data: reporte };
+    return { ok: true, data: `📈 *REPORTE DE PROGRESO*\n\n${reporte}` };
   },
 
-  async comparar_comunidad(input, phone) {
+  async comparar_comunidad(_input, phone) {
     const { compararConComunidad } = await import("./analytics.ts");
     const benchmarks = await compararConComunidad(phone);
 
-    if (benchmarks.length === 0) {
-      return { ok: false, data: "No hay datos de comparación disponibles aún." };
-    }
+    if (!benchmarks.length) return { ok: false, data: "No hay datos de comunidad disponibles para comparar." };
 
-    let respuesta = "📈 TU POSICIÓN EN LA COMUNIDAD:\n\n";
+    let respuesta = `📊 *COMPARACIÓN CON LA COMUNIDAD*\n\n`;
     benchmarks.forEach((b) => {
-      const metricaFormato = b.metrica.replace(/_/g, " ").toUpperCase();
-      respuesta += `${metricaFormato}:\n`;
-      respuesta += `  Tu valor: ${b.tuValor}\n`;
-      respuesta += `  Promedio comunidad: ${b.promedioComunidad}\n`;
-      respuesta += `  📊 ${b.posicion}\n`;
-      respuesta += `  Rango: ${b.percentil25} (P25) — ${b.percentil50} (P50) — ${b.percentil75} (P75) — ${b.percentil90} (P90)\n\n`;
+      const metricaLabel =
+        b.metrica === "velocidad_promedio" ? "Velocidad promedio" :
+        b.metrica === "seguridad" ? "Seguridad" :
+        b.metrica === "distancia_mensual" ? "Distancia mensual" :
+        b.metrica;
+
+      respuesta += `*${metricaLabel}*\n` +
+        `👤 Tu valor: ${b.tuValor}\n` +
+        `👥 Promedio comunidad: ${b.promedioComunidad}\n` +
+        `📍 Tu posición: *${b.posicion}*\n` +
+        `📊 Percentiles: P25=${b.percentil25} | P50=${b.percentil50} | P75=${b.percentil75} | P90=${b.percentil90}\n\n`;
     });
 
     return { ok: true, data: respuesta };
