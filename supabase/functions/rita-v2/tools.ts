@@ -423,6 +423,22 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
+    name: "tramites_info",
+    description:
+      "Informacion detallada sobre tramites y legales colombianos: costos de multas (comparendos, casco, velocidad, pico y placa), documentos para transferencia/matricula, procedimientos, contactos. Usala cuando pregunten: '¿cuanto cuesta...?', '¿que documentos...?', '¿como se hace...?', sobre SOAT, multas, transferencia, matricula, certificado de tradicion, pico y placa.",
+    input_schema: {
+      type: "object",
+      properties: {
+        consulta: {
+          type: "string",
+          description:
+            "La pregunta del rider sobre el tramite. Ej: 'cuanto cuesta no llevar casco', 'que documentos para transferir', 'como matricular moto importada'",
+        },
+      },
+      required: ["consulta"],
+    },
+  },
+  {
     name: "crear_recordatorio",
     description:
       "Crea un recordatorio para el rider. Rita le escribira cuando llegue la fecha. Usala cuando pida que le recuerdes algo: cambio de aceite, vencimiento de SOAT, una rodada, revision.",
@@ -635,6 +651,63 @@ export const TOOL_SCHEMAS = [
         descripcion: { type: "string", description: "Detalles adicionales. Opcional." },
       },
       required: ["asunto", "fecha_hora"],
+    },
+  },
+  {
+    name: "agregar_moto",
+    description:
+      "Registra una nueva moto en el perfil del rider. Usala cuando el rider agregue otra moto, cambien de moto, o tengan múltiples motocicletas.",
+    input_schema: {
+      type: "object",
+      properties: {
+        marca: { type: "string", description: "Marca de la moto. Ej: Honda, Yamaha, BMW" },
+        modelo: { type: "string", description: "Modelo. Ej: CB500X, MT-07" },
+        cc: { type: "number", description: "Cilindrada en cc. Opcional." },
+        anio: { type: "number", description: "Año de fabricación. Opcional." },
+        placa: { type: "string", description: "Placa de la moto. Opcional pero recomendado." },
+      },
+      required: ["marca", "modelo"],
+    },
+  },
+  {
+    name: "guardar_perfil",
+    description:
+      "Actualiza información del perfil del rider: experiencia (principiante/intermedio/avanzado), contacto de emergencia, ubicación, club, preferencias de rutas. Usala cuando el rider comparta estos datos.",
+    input_schema: {
+      type: "object",
+      properties: {
+        experiencia: { type: "string", enum: ["principiante", "intermedio", "avanzado"], description: "Nivel de experiencia en conducción" },
+        contacto_emergencia: { type: "string", description: "Nombre del contacto de emergencia. Opcional." },
+        telefono_emergencia: { type: "string", description: "Teléfono del contacto de emergencia. Opcional." },
+        ubicacion_home: { type: "string", description: "Ciudad donde vive. Opcional." },
+        club: { type: "string", description: "Club o grupo motero al que pertenece. Opcional." },
+        preferencias_rutas: { type: "string", enum: ["montaña", "ciudad", "carretera", "variadas"], description: "Tipo de rutas que prefiere. Opcional." },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "listar_vencimientos",
+    description:
+      "Muestra los vencimientos próximos del rider: SOAT, revisión técnica, impuestos, licencia, mantenimiento. Usala cuando pregunte por sus documentos, vencimientos o que tiene pendiente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        incluir_completados: { type: "boolean", description: "Si incluir vencimientos ya completados. Default: false" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "marcar_vencimiento_completado",
+    description:
+      "Marca un vencimiento como completado (SOAT renovado, revisión técnica hecha, impuesto pagado, etc). Usala cuando el rider haya completado un trámite importante.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", description: "Tipo de renovación: soat, tecnica, impuesto, licencia, mantenimiento, etc" },
+      },
+      required: ["tipo"],
     },
   },
 ] as const;
@@ -935,6 +1008,49 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const t = TRAMITES[tipo];
     if (!t) return { ok: false, data: `Tramite "${tipo}" no reconocido.` };
     return { ok: true, data: { [tipo]: t } };
+  },
+
+  async tramites_info(input) {
+    const consulta = String(input.consulta ?? "").toLowerCase();
+    if (!consulta) return { ok: false, data: "Pregunta algo sobre tramites, multas o documentos necesarios." };
+
+    try {
+      const { data, error } = await supabase
+        .from("rita_tramites_detallados")
+        .select("*")
+        .eq("vigente", true)
+        .limit(5);
+
+      if (error || !data || data.length === 0) {
+        return { ok: false, data: "No encontré informacion sobre eso. Consulta directamente con la Secretaria de Transito de tu ciudad." };
+      }
+
+      // Busca coincidencias en pregunta_clave o respuesta_corta
+      const coincidencias = data.filter(t =>
+        t.pregunta_clave.includes(consulta) || t.respuesta_corta.toLowerCase().includes(consulta)
+      );
+
+      if (coincidencias.length > 0) {
+        const resultado = coincidencias[0];
+        let respuesta = resultado.respuesta_corta + "\n\n";
+
+        if (resultado.procedimiento) respuesta += "📋 Procedimiento:\n" + resultado.procedimiento + "\n\n";
+        if (resultado.documentos_requeridos && resultado.documentos_requeridos.length > 0)
+          respuesta += "📄 Documentos: " + resultado.documentos_requeridos.join(", ") + "\n\n";
+        if (resultado.costo) respuesta += "💵 Costo: " + resultado.costo + "\n\n";
+        if (resultado.tiempo_estimado) respuesta += "⏱️ Tiempo: " + resultado.tiempo_estimado + "\n\n";
+        if (resultado.entidad_responsable) respuesta += "🏢 Entidad: " + resultado.entidad_responsable + "\n";
+        if (resultado.telefono_contacto) respuesta += "☎️ Tel: " + resultado.telefono_contacto + "\n";
+        if (resultado.url_oficial) respuesta += "🔗 Oficial: " + resultado.url_oficial + "\n";
+        if (resultado.notas) respuesta += "\n⚠️ " + resultado.notas;
+
+        return { ok: true, data: respuesta.trim() };
+      }
+
+      return { ok: false, data: "No encontré esa información exacta. Consulta en SIMIT.org.co, RUNT.com.co o tu Secretaría de Tránsito local." };
+    } catch (e) {
+      return { ok: false, data: "Error consultando la base de datos de tramites." };
+    }
   },
 
   async crear_recordatorio(input, phone) {
@@ -1629,6 +1745,90 @@ CONTACTO: Abogado especializado en responsabilidad civil`
 
     const fechaFormato = fecha.toLocaleDateString("es-CO") + " a las " + fecha.toLocaleTimeString("es-CO");
     return { ok: true, data: `✓ Recordatorio programado para ${fechaFormato}: "${asunto}"` };
+  },
+
+  async agregar_moto(input, phone) {
+    const { guardarMoto } = await import("./profile.ts");
+    const rider = await riderIdPorTelefono(phone);
+    if (!rider) return { ok: false, data: "No estas registrado. Escribe 'quiero registrarme'." };
+
+    const marca = String(input.marca || "").trim();
+    const modelo = String(input.modelo || "").trim();
+    const cc = typeof input.cc === "number" ? input.cc : null;
+    const anio = typeof input.anio === "number" ? input.anio : null;
+    const placa = String(input.placa || "").trim() || null;
+
+    if (!marca || !modelo) return { ok: false, data: "Necesito marca y modelo de la moto." };
+
+    const exito = await guardarMoto(rider.id, { marca, modelo, cc, anio, placa });
+    if (!exito) return { ok: false, data: "No se pudo registrar la moto. Intenta de nuevo." };
+
+    const motoStr = [marca, modelo, cc ? `${cc}cc` : "", anio].filter(Boolean).join(" ");
+    return { ok: true, data: `✓ ${motoStr} registrada${placa ? ` (${placa})` : ""}. Ahora Rita sabe mas de ti!` };
+  },
+
+  async guardar_perfil(input, phone) {
+    const { actualizarPerfil } = await import("./profile.ts");
+    const rider = await riderIdPorTelefono(phone);
+    if (!rider) return { ok: false, data: "No estas registrado. Escribe 'quiero registrarme'." };
+
+    const datos: Record<string, unknown> = {};
+    if (input.experiencia) datos.experiencia_nivel = input.experiencia;
+    if (input.contacto_emergencia) datos.contacto_emergencia = input.contacto_emergencia;
+    if (input.telefono_emergencia) datos.telefono_emergencia = input.telefono_emergencia;
+    if (input.ubicacion_home) datos.ubicacion_home = input.ubicacion_home;
+    if (input.club) datos.club_motociclista = input.club;
+    if (input.preferencias_rutas) datos.preferencias_rutas = input.preferencias_rutas;
+
+    if (Object.keys(datos).length === 0) return { ok: false, data: "No hay datos para guardar." };
+
+    const exito = await actualizarPerfil(rider.id, datos as Parameters<typeof actualizarPerfil>[1]);
+    if (!exito) return { ok: false, data: "No se pudo actualizar. Intenta de nuevo." };
+
+    const cambios = Object.keys(datos).join(", ");
+    return { ok: true, data: `✓ Perfil actualizado: ${cambios}. Rita te conoce mejor ahora!` };
+  },
+
+  async listar_vencimientos(input, phone) {
+    const { obtenerPerfilCompleto } = await import("./profile.ts");
+    const { proximos_30_dias, vencimientos } = await obtenerPerfilCompleto(phone);
+
+    const lista = input.incluir_completados ? vencimientos : proximos_30_dias;
+    if (lista.length === 0) {
+      return { ok: true, data: "No tienes vencimientos pendientes. ¡Vas al dia!" };
+    }
+
+    let respuesta = "VENCIMIENTOS PENDIENTES:\n";
+    lista.forEach((v) => {
+      const fecha = new Date(v.fecha_proximo_vencimiento);
+      const diasFaltantes = Math.ceil((fecha.getTime() - Date.now()) / (24 * 60 * 60 * 1000));
+      const estado = diasFaltantes <= 0 ? "🔴 VENCIDO" : `${diasFaltantes}d`;
+      respuesta += `• ${v.tipo_renovacion.toUpperCase()}: ${v.fecha_proximo_vencimiento} [${estado}]${
+        v.costo_estimado ? ` ~$${v.costo_estimado}` : ""
+      }\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async marcar_vencimiento_completado(input, phone) {
+    const { obtenerPerfilCompleto, marcarRenovacionCompletada } = await import("./profile.ts");
+    const tipo = String(input.tipo || "").toLowerCase();
+    if (!tipo) return { ok: false, data: "Dime que tipo de vencimiento completaste (soat, tecnica, etc)." };
+
+    const { vencimientos } = await obtenerPerfilCompleto(phone);
+    const vencimiento = vencimientos.find((v) =>
+      v.tipo_renovacion.toLowerCase().includes(tipo),
+    );
+
+    if (!vencimiento) {
+      return { ok: false, data: `No encontre un vencimiento de ${tipo} pendiente.` };
+    }
+
+    const exito = await marcarRenovacionCompletada(vencimiento.id);
+    if (!exito) return { ok: false, data: "No se pudo marcar como completado. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ ${vencimiento.tipo_renovacion} marcado como completado. Estai al dia!` };
   },
 };
 
