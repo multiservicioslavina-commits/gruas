@@ -1408,6 +1408,78 @@ export const TOOL_SCHEMAS = [
       required: ["backup_id"],
     },
   },
+  {
+    name: "realizar_evaluacion_diagnostica",
+    description:
+      "Evaluación inicial de habilidades basada en patrones de conducción reciente. Crea perfil y recomienda módulos.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_modulos_disponibles",
+    description:
+      "Lista módulos de entrenamiento disponibles, filtrados por nivel (beginner/intermediate/advanced) o categoría.",
+    input_schema: {
+      type: "object",
+      properties: {
+        level: { type: "string", description: "Nivel: beginner, intermediate, advanced, expert" },
+        category: { type: "string", description: "Categoría: safety, skills, maintenance, legal, wellness" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "iniciar_modulo_entrenamiento",
+    description:
+      "Inicia un módulo de entrenamiento. Crea progreso y retorna duración estimada.",
+    input_schema: {
+      type: "object",
+      properties: {
+        module_id: { type: "string", description: "ID del módulo (uuid)" },
+      },
+      required: ["module_id"],
+    },
+  },
+  {
+    name: "completar_modulo_entrenamiento",
+    description:
+      "Completa módulo con puntuación de evaluación. Otorga certificación si pasa, registra badges.",
+    input_schema: {
+      type: "object",
+      properties: {
+        module_id: { type: "string", description: "ID del módulo (uuid)" },
+        assessment_score: { type: "number", description: "Puntuación de examen (0-100)" },
+      },
+      required: ["module_id", "assessment_score"],
+    },
+  },
+  {
+    name: "registrar_sesion_practica",
+    description:
+      "Registra una sesión de práctica (simulador/mini-juegos) y proporciona feedback personalizado.",
+    input_schema: {
+      type: "object",
+      properties: {
+        skill_focus: { type: "string", description: "Habilidad: braking, cornering, emergency, weather, urban_navigation" },
+        score: { type: "number", description: "Puntuación (0-100)" },
+        duration_seconds: { type: "number", description: "Duración de la sesión" },
+      },
+      required: ["skill_focus", "score", "duration_seconds"],
+    },
+  },
+  {
+    name: "obtener_progreso_entrenamiento",
+    description:
+      "Ver progreso en entrenamiento: módulos completados, certificaciones, badges, siguiente módulo recomendado.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3774,6 +3846,154 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     respuesta += `Recuperación: ${result.recovery_success ? "✅ Exitosa" : "❌ Fallida"}\n`;
 
     return { ok: result.test_passed, data: respuesta };
+  },
+
+  async realizar_evaluacion_diagnostica(input, phone) {
+    const { realizarEvaluacionDiagnostica } = await import("./training.ts");
+    const result = await realizarEvaluacionDiagnostica(phone);
+
+    let respuesta = `🎯 *EVALUACIÓN DIAGNÓSTICA*\n\n`;
+    respuesta += `Tu nivel: ${result.overall_level.toUpperCase()}\n`;
+    respuesta += `Puntuación de riesgo: ${Math.round(result.risk_score)}/100\n\n`;
+
+    if (result.recommended_modules.length > 0) {
+      respuesta += `📚 Módulos recomendados:\n`;
+      result.recommended_modules.forEach((mod) => {
+        respuesta += `• ${mod}\n`;
+      });
+    } else {
+      respuesta += `✅ ¡Perfecto! No hay áreas críticas de mejora.\n`;
+    }
+
+    respuesta += `\n💡 Dale al botón "Iniciar módulo" para comenzar.`;
+
+    return { ok: result.profile_created, data: respuesta };
+  },
+
+  async obtener_modulos_disponibles(input) {
+    const level = String(input.level || "").trim().toLowerCase() || undefined;
+    const category = String(input.category || "").trim().toLowerCase() || undefined;
+
+    const { obtenerModulosDisponibles } = await import("./training.ts");
+    const modules = await obtenerModulosDisponibles(
+      level as "beginner" | "intermediate" | "advanced" | "expert" | undefined,
+      category
+    );
+
+    let respuesta = `📚 *MÓDULOS DE ENTRENAMIENTO*\n\n`;
+
+    if (modules.length === 0) {
+      respuesta += `No hay módulos disponibles con esos criterios.`;
+      return { ok: false, data: respuesta };
+    }
+
+    modules.slice(0, 5).forEach((mod) => {
+      respuesta += `🔹 ${mod.name}\n`;
+      respuesta += `   Nivel: ${mod.difficulty_level} | ${mod.total_duration_minutes}min\n`;
+      if (mod.awards_certification) {
+        respuesta += `   ✅ Otorga certificación\n`;
+      }
+      respuesta += `\n`;
+    });
+
+    if (modules.length > 5) {
+      respuesta += `...y ${modules.length - 5} más disponibles`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async iniciar_modulo_entrenamiento(input, phone) {
+    const module_id = String(input.module_id || "").trim();
+
+    if (!module_id) {
+      return { ok: false, data: "❌ ID de módulo requerido." };
+    }
+
+    const { iniciarModuloEntrenamiento } = await import("./training.ts");
+    const result = await iniciarModuloEntrenamiento(phone, module_id);
+
+    if (!result.success) {
+      return { ok: false, data: "❌ No se pudo iniciar el módulo." };
+    }
+
+    let respuesta = `▶️ *INICIANDO MÓDULO*\n\n`;
+    respuesta += `📖 ${result.module_name}\n`;
+    respuesta += `⏱️ Duración estimada: ${result.estimated_duration_minutes} minutos\n\n`;
+    respuesta += `Vas a aprender habilidades críticas. ¡Dale! 💪`;
+
+    return { ok: true, data: respuesta };
+  },
+
+  async completar_modulo_entrenamiento(input, phone) {
+    const module_id = String(input.module_id || "").trim();
+    const score = Number(input.assessment_score || 0);
+
+    if (!module_id || score < 0 || score > 100) {
+      return { ok: false, data: "❌ Parámetros inválidos." };
+    }
+
+    const { completarModuloEntrenamiento } = await import("./training.ts");
+    const result = await completarModuloEntrenamiento(phone, module_id, score);
+
+    let respuesta = `✅ *MÓDULO COMPLETADO*\n\n`;
+    respuesta += `Puntuación: ${Math.round(score)}/100\n`;
+    respuesta += `Estado: ${result.assessment_passed ? "✅ APROBADO" : "❌ No aprobado"}\n\n`;
+
+    if (result.certification_earned) {
+      respuesta += `🎓 *¡CERTIFICACIÓN OBTENIDA!*\n`;
+      respuesta += `Número: ${result.certification_number}\n`;
+    }
+
+    if (result.badge_earned) {
+      respuesta += `🌟 *BADGE DESBLOQUEADO: ${result.badge_earned.toUpperCase()}*\n`;
+    }
+
+    respuesta += `\n¡Sigue así! 🚀`;
+
+    return { ok: result.completed, data: respuesta };
+  },
+
+  async registrar_sesion_practica(input, phone) {
+    const skill = String(input.skill_focus || "").trim();
+    const score = Number(input.score || 0);
+    const duration = Number(input.duration_seconds || 0);
+
+    if (!skill || score < 0 || score > 100 || duration <= 0) {
+      return { ok: false, data: "❌ Parámetros inválidos." };
+    }
+
+    const { registrarSesionPractica } = await import("./training.ts");
+    const result = await registrarSesionPractica(phone, skill, score, duration);
+
+    let respuesta = `🎮 *SESIÓN DE PRÁCTICA REGISTRADA*\n\n`;
+    respuesta += `Habilidad: ${skill.toUpperCase()}\n`;
+    respuesta += `Puntuación: ${Math.round(score)}/100\n`;
+    respuesta += `Duración: ${Math.floor(duration / 60)}m ${duration % 60}s\n\n`;
+    respuesta += `💭 ${result.performance_feedback}`;
+
+    return { ok: result.recorded, data: respuesta };
+  },
+
+  async obtener_progreso_entrenamiento(input, phone) {
+    const { obtenerAnalisisProgreso } = await import("./training.ts");
+    const result = await obtenerAnalisisProgreso(phone);
+
+    let respuesta = `📊 *TU PROGRESO EN ENTRENAMIENTO*\n\n`;
+    respuesta += `📚 Módulos completados: ${result.total_modules_completed}\n`;
+    respuesta += `🎓 Certificaciones activas: ${result.certifications_earned}\n`;
+    respuesta += `🌟 Badges desbloqueados: ${result.badges_earned}\n`;
+    respuesta += `📈 Mejora en seguridad: +${result.risk_improvement}%\n\n`;
+
+    if (result.recommended_next_module) {
+      respuesta += `💡 Próximo módulo: ${result.recommended_next_module}\n`;
+      respuesta += `Inicia sesión para continuar tu desarrollo.`;
+    } else {
+      respuesta += `✅ ¡Excelente! Completaste todos los módulos recomendados.\n`;
+      respuesta += `Sigue practicando con sesiones regulares para mantener el nivel.`;
+    }
+
+    return { ok: true, data: respuesta };
   },
 };
 
