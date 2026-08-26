@@ -710,6 +710,104 @@ export const TOOL_SCHEMAS = [
       required: ["tipo"],
     },
   },
+  {
+    name: "actualizar_km",
+    description:
+      "Actualiza los kilómetros actuales de una moto. Usala cuando el rider te diga cuántos km tiene su moto ahora. Rita usa esto para alertas de mantenimiento.",
+    input_schema: {
+      type: "object",
+      properties: {
+        moto: { type: "string", description: "Marca y modelo de la moto (ej: BMW 1200, Yamaha FZ)" },
+        km: { type: "number", description: "Kilómetros actuales" },
+      },
+      required: ["moto", "km"],
+    },
+  },
+  {
+    name: "obtener_alertas",
+    description:
+      "Lee las alertas proactivas del rider: mantenimiento (km), clima, vía cerrada, rodadas del club. Usala cuando pregunten qué alertas tienen.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "info_legal",
+    description:
+      "Información legal verificada: qué documentos mostrar en retén, cómo actuar ante comparendo, derechos del motociclista, checklist para compra usada. Usala cuando pregunten por leyes, derechos, trámites.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tema: {
+          type: "string",
+          enum: ["retén", "comparendo", "accidente", "compra_moto_usada"],
+          description: "Tema legal de interés",
+        },
+      },
+      required: ["tema"],
+    },
+  },
+  {
+    name: "registrar_incidente",
+    description:
+      "Registra un incidente legal en el historial del rider (comparendo, accidente, etc). Rita usa esto para dar consejos contextualizados.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", description: "Tipo: comparendo, accidente, multa, etc" },
+        descripcion: { type: "string", description: "Qué pasó" },
+      },
+      required: ["tipo", "descripcion"],
+    },
+  },
+  {
+    name: "obtener_grupos",
+    description:
+      "Lista los grupos/clubes moteros a los que pertenece el rider. Usala cuando pregunten por sus clubs o grupos.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_rodadas",
+    description:
+      "Lista las rodadas próximas de los clubes del rider (próximas 2 semanas). Usala cuando pregunten qué rodadas hay.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "buscar_companero",
+    description:
+      "Busca otros riders en tus clubs con interés en una ruta específica. Conecta motociclistas para rodar juntos.",
+    input_schema: {
+      type: "object",
+      properties: {
+        destino: { type: "string", description: "Destino de la ruta" },
+        fecha: { type: "string", description: "Fecha tentativa (YYYY-MM-DD)" },
+        dificultad: { type: "string", description: "Nivel: principiante, intermedio, avanzado. Opcional." },
+      },
+      required: ["destino"],
+    },
+  },
+  {
+    name: "unirse_grupo",
+    description:
+      "Añade el rider a un club o grupo motero. Usala cuando quiera unirse a un grupo específico.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre_grupo: { type: "string", description: "Nombre del grupo/club" },
+      },
+      required: ["nombre_grupo"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -1829,6 +1927,155 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     if (!exito) return { ok: false, data: "No se pudo marcar como completado. Intenta de nuevo." };
 
     return { ok: true, data: `✓ ${vencimiento.tipo_renovacion} marcado como completado. Estai al dia!` };
+  },
+
+  async actualizar_km(input, phone) {
+    const { actualizarKm } = await import("./proactive.ts");
+    const { obtenerPerfilCompleto } = await import("./profile.ts");
+    const { perfil, motos } = await obtenerPerfilCompleto(phone);
+    if (!perfil) return { ok: false, data: "No estás registrado. Escribe 'quiero registrarme'." };
+
+    const motoStr = String(input.moto || "").trim();
+    const km = typeof input.km === "number" ? input.km : null;
+    if (!motoStr || km === null) return { ok: false, data: "Necesito marca/modelo y km." };
+
+    const moto = motos.find((m) => `${m.marca} ${m.modelo}`.toLowerCase().includes(motoStr.toLowerCase()));
+    if (!moto) return { ok: false, data: `No encontré tu ${motoStr} registrada.` };
+
+    await actualizarKm(moto.id, km);
+    return { ok: true, data: `✓ Actualicé a ${km.toLocaleString()} km. Rita sabe cuándo es tu próximo mantenimiento!` };
+  },
+
+  async obtener_alertas(input, phone) {
+    const { obtenerAlertasRider } = await import("./proactive.ts");
+    const alertas = await obtenerAlertasRider(phone);
+    if (alertas.length === 0) {
+      return { ok: true, data: "✓ No tienes alertas activas. ¡Todo está bien!" };
+    }
+
+    let respuesta = "TUS ALERTAS ACTIVAS:\n\n";
+    alertas.forEach((a) => {
+      respuesta += `${a.titulo.toUpperCase()} [${a.urgencia}]\n${a.mensaje}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async info_legal(input, phone) {
+    const { obtenerInfoLegal, inicializarBaseConocimientoLegal } = await import("./legal.ts");
+    const tema = String(input.tema || "general").toLowerCase();
+
+    // Inicializar base si no existe
+    await inicializarBaseConocimientoLegal();
+
+    const info = await obtenerInfoLegal(tema);
+    if (!info) {
+      return { ok: false, data: `No tengo información sobre "${tema}". Temas disponibles: retén, comparendo, accidente, compra_moto_usada` };
+    }
+
+    let respuesta = `📋 ${info.titulo.toUpperCase()}\n\n${info.contenido}\n\nPASOS:\n`;
+    info.pasos.forEach((p) => {
+      respuesta += `${p.numero}. ${p.descripcion}`;
+      if (p.recomendacion) respuesta += ` → ${p.recomendacion}`;
+      respuesta += "\n";
+    });
+
+    if (info.documentos_necesarios.length > 0) {
+      respuesta += `\nDOCUMENTOS NECESARIOS:\n${info.documentos_necesarios.map((d) => `• ${d}`).join("\n")}\n`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async registrar_incidente(input, phone) {
+    const { registrarIncidenteLegal } = await import("./legal.ts");
+    const rider = await riderIdPorTelefono(phone);
+    if (!rider) return { ok: false, data: "No estás registrado. Escribe 'quiero registrarme'." };
+
+    const tipo = String(input.tipo || "").trim();
+    const descripcion = String(input.descripcion || "").trim();
+    if (!tipo || !descripcion) return { ok: false, data: "Necesito tipo de incidente y descripción." };
+
+    const exito = await registrarIncidenteLegal(rider.id, tipo, descripcion);
+    if (!exito) return { ok: false, data: "No se pudo registrar el incidente. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Registré tu ${tipo}. Guardé el contexto para ayudarte mejor en el futuro.` };
+  },
+
+  async obtener_grupos(input, phone) {
+    const { obtenerGruposRider } = await import("./social.ts");
+    const grupos = await obtenerGruposRider(phone);
+    if (grupos.length === 0) {
+      return { ok: true, data: "No perteneces a ningún grupo aún. ¿Quieres unirte a alguno?" };
+    }
+
+    let respuesta = "TUS GRUPOS MOTEROS:\n";
+    grupos.forEach((g) => {
+      respuesta += `\n🏍️ ${g.nombre} (${g.cantidad_miembros} miembros)\n   Tipo: ${g.tipo}\n   Ubicación: ${g.ubicacion || "General"}\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_rodadas(input, phone) {
+    const { obtenerRodadasProximas } = await import("./social.ts");
+    const rodadas = await obtenerRodadasProximas(phone);
+    if (rodadas.length === 0) {
+      return { ok: true, data: "No hay rodadas próximas de tus clubs. ¿Quieres crear una?" };
+    }
+
+    let respuesta = "RODADAS PRÓXIMAS (próximas 2 semanas):\n";
+    rodadas.forEach((r) => {
+      respuesta += `\n🏍️ ${r.nombre} (${r.grupo_nombre})\n   Fecha: ${r.fecha}${r.hora_salida ? ` a las ${r.hora_salida}` : ""}\n   Salida: ${r.punto_salida}\n   Destino: ${r.destino}`;
+      if (r.km_aproximados) respuesta += `\n   Distancia: ${r.km_aproximados} km`;
+      respuesta += `\n   Dificultad: ${r.dificultad}\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async buscar_companero(input, phone) {
+    const { buscarCompaneroRuta } = await import("./social.ts");
+    const destino = String(input.destino || "").trim();
+    const fecha = String(input.fecha || "");
+    const dificultad = String(input.dificultad || "");
+
+    if (!destino) return { ok: false, data: "¿A dónde quieres ir? (ej: Jericó, Guatapé)" };
+
+    const companeros = await buscarCompaneroRuta(phone, destino, fecha, dificultad);
+    if (companeros.length === 0) {
+      return { ok: true, data: `No encontré compañeros para ir a ${destino}. Pero puedo compartir tu interés en el grupo!` };
+    }
+
+    let respuesta = `RIDERS INTERESADOS EN ${destino.toUpperCase()}:\n`;
+    companeros.forEach((c) => {
+      respuesta += `\n🏍️ ${c.nombre}\n   Moto: ${c.moto}\n   Tel: ${c.telefono}\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async unirse_grupo(input, phone) {
+    const { obtenerGruposRider, unirsAGrupo } = await import("./social.ts");
+    const nombreGrupo = String(input.nombre_grupo || "").trim();
+
+    if (!nombreGrupo) return { ok: false, data: "¿Cuál es el nombre del grupo?" };
+
+    // Buscar el grupo
+    const { data: grupos } = await supabase
+      .from("rider_groups")
+      .select("id")
+      .ilike("nombre", `%${nombreGrupo}%`)
+      .limit(1);
+
+    if (!grupos || grupos.length === 0) {
+      return { ok: false, data: `No encontré el grupo "${nombreGrupo}". ¿Está registrado?` };
+    }
+
+    const exito = await unirsAGrupo(phone, grupos[0].id);
+    if (!exito) return { ok: false, data: "No se pudo unirse al grupo. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ ¡Bienvenido a ${nombreGrupo}! Ahora verás sus rodadas y podrás conectar con otros riders.` };
   },
 };
 
