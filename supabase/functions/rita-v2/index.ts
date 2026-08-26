@@ -26,7 +26,7 @@ import { generarContextoBackup } from "./backup.ts";
 import { generarContextoEntrenamiento } from "./training.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
+const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "3234846550";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const VERIFY_TOKEN  = Deno.env.get("RITA_VERIFY_TOKEN") ?? "ridera_rita_2026";
 // App Secret de la app de Meta (Configuracion basica > Clave secreta de la app).
