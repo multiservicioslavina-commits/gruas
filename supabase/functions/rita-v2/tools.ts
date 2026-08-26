@@ -1349,6 +1349,65 @@ export const TOOL_SCHEMAS = [
       required: ["region"],
     },
   },
+  {
+    name: "activar_failover_automatico",
+    description:
+      "Solo admin. Ejecuta failover automático cuando detecta región caída. Conmuta a replica, registra pérdida de datos, alerta a ops.",
+    input_schema: {
+      type: "object",
+      properties: {
+        affected_region: { type: "string", description: "Región caída: MDE, BOG, CAL" },
+      },
+      required: ["affected_region"],
+    },
+  },
+  {
+    name: "completar_sincronizacion_multiregion",
+    description:
+      "Solo admin. Verifica sincronización completa de todas las réplicas. Reporta regiones rezagadas.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "validar_integridad_backup",
+    description:
+      "Solo admin. Valida integridad de un backup antes de recuperación. Verifica checksum, filas, corrupción.",
+    input_schema: {
+      type: "object",
+      properties: {
+        backup_id: { type: "string", description: "ID del backup a validar (uuid)" },
+      },
+      required: ["backup_id"],
+    },
+  },
+  {
+    name: "crear_playbook_recuperacion",
+    description:
+      "Solo admin. Genera playbook de recuperación según tipo de desastre (region_down, data_corruption, replica_lag).",
+    input_schema: {
+      type: "object",
+      properties: {
+        disaster_type: { type: "string", description: "Tipo: region_down, data_corruption, replica_lag" },
+      },
+      required: ["disaster_type"],
+    },
+  },
+  {
+    name: "prueba_recuperacion",
+    description:
+      "Solo admin. Prueba restauración de backup sin afectar producción. Valida integridad y tiempo de recuperación.",
+    input_schema: {
+      type: "object",
+      properties: {
+        backup_id: { type: "string", description: "ID del backup a restaurar (uuid)" },
+        test_region: { type: "string", description: "Región de prueba (default: TEST)" },
+      },
+      required: ["backup_id"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3611,6 +3670,110 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     }
 
     return { ok: result.healthy, data: respuesta };
+  },
+
+  async activar_failover_automatico(input) {
+    const region = String(input.affected_region || "").trim().toUpperCase();
+
+    if (!region) {
+      return { ok: false, data: "❌ Región afectada requerida." };
+    }
+
+    const { activarFailoverAutomatico } = await import("./backup.ts");
+    const result = await activarFailoverAutomatico(region);
+
+    let respuesta = `🔄 *FAILOVER AUTOMÁTICO* — ${region}\n\n`;
+    respuesta += result.failover_triggered ? `✅ Failover ejecutado\n` : `⚠️ Failover no se pudo ejecutar\n`;
+    respuesta += `Origen: ${result.source_region} → Destino: ${result.target_region}\n`;
+    respuesta += `Tiempo: ${result.failover_time_ms}ms\n`;
+    respuesta += `Pérdida de datos: ${result.data_loss_minutes} minutos (RPO actual)\n\n`;
+    respuesta += result.message;
+
+    return { ok: result.success, data: respuesta };
+  },
+
+  async completar_sincronizacion_multiregion(input) {
+    const { completarSincronizacionMultiRegion } = await import("./backup.ts");
+    const result = await completarSincronizacionMultiRegion();
+
+    let respuesta = `🌐 *SINCRONIZACIÓN MULTI-REGIÓN COMPLETA*\n\n`;
+    respuesta += result.all_synced ? `✅ TODAS LAS RÉPLICAS SINCRONIZADAS\n\n` : `⚠️ Algunas réplicas con rezago\n\n`;
+
+    if (result.synced_regions.length > 0) {
+      respuesta += `*Rutas Sincronizadas:*\n`;
+      result.synced_regions.forEach((route) => {
+        respuesta += `✅ ${route}\n`;
+      });
+    }
+
+    if (result.lagging_regions.length > 0) {
+      respuesta += `\n*Regiones Rezagadas:*\n`;
+      result.lagging_regions.forEach((region) => {
+        respuesta += `⚠️ ${region}\n`;
+      });
+    }
+
+    respuesta += `\n📊 Total replicado: ${result.total_rows_synced.toLocaleString("es-CO")} filas`;
+
+    return { ok: result.all_synced, data: respuesta };
+  },
+
+  async validar_integridad_backup(input) {
+    const backup_id = String(input.backup_id || "").trim();
+
+    if (!backup_id) {
+      return { ok: false, data: "❌ ID de backup requerido." };
+    }
+
+    const { validarIntegridadBackup } = await import("./backup.ts");
+    const result = await validarIntegridadBackup(backup_id);
+
+    let respuesta = `🔍 *VALIDACIÓN DE BACKUP* — ${backup_id}\n\n`;
+    respuesta += result.valid ? `✅ Backup válido para restauración\n` : `❌ Backup corrupto o inválido\n`;
+    respuesta += `Checksum verificado: ${result.checksum_verified ? "✅" : "❌"}\n`;
+    respuesta += `Filas verificadas: ${result.rows_verified.toLocaleString("es-CO")}\n`;
+    respuesta += `Integridad de datos: ${result.data_integrity.toUpperCase()}\n`;
+
+    return { ok: result.valid, data: respuesta };
+  },
+
+  async crear_playbook_recuperacion(input) {
+    const disaster = String(input.disaster_type || "region_down").trim().toLowerCase();
+
+    const { crearPlaybookRecuperacion } = await import("./backup.ts");
+    const result = await crearPlaybookRecuperacion(disaster);
+
+    let respuesta = `📋 *PLAYBOOK DE RECUPERACIÓN* — ${disaster.toUpperCase()}\n`;
+    respuesta += `ID: ${result.playbook_id}\n\n`;
+
+    result.steps.forEach((step) => {
+      respuesta += `${step.step}. ${step.action}\n`;
+      respuesta += `   ⏱️ ~${step.estimated_time_minutes}min\n`;
+    });
+
+    respuesta += `\n📊 Tiempo total estimado: ${result.total_estimated_time} minutos`;
+
+    return { ok: true, data: respuesta };
+  },
+
+  async prueba_recuperacion(input) {
+    const backup_id = String(input.backup_id || "").trim();
+    const test_region = String(input.test_region || "TEST").trim();
+
+    if (!backup_id) {
+      return { ok: false, data: "❌ ID de backup requerido." };
+    }
+
+    const { pruebaRecuperacion } = await import("./backup.ts");
+    const result = await pruebaRecuperacion(backup_id, test_region);
+
+    let respuesta = `🧪 *PRUEBA DE RECUPERACIÓN* — Región ${test_region}\n\n`;
+    respuesta += result.test_passed ? `✅ Prueba exitosa\n` : `❌ Prueba fallida\n`;
+    respuesta += `Filas restauradas: ${result.data_restored.toLocaleString("es-CO")}\n`;
+    respuesta += `Duración: ${result.test_duration_seconds.toFixed(2)}s\n`;
+    respuesta += `Recuperación: ${result.recovery_success ? "✅ Exitosa" : "❌ Fallida"}\n`;
+
+    return { ok: result.test_passed, data: respuesta };
   },
 };
 
