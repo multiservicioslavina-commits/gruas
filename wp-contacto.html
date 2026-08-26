@@ -27,7 +27,6 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@700;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 
 <style>
 #ridera-contacto-wrap *{box-sizing:border-box;margin:0;padding:0}
@@ -311,13 +310,17 @@
 
   /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
-  var emailjsIniciado = false;
-  function getEmailJS() {
-    if (typeof emailjs === 'undefined') return null;
-    if (!emailjsIniciado) {
-      try { emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); emailjsIniciado = true; } catch(e){}
-    }
-    return emailjsIniciado ? emailjs : null;
+  function sendEmail(templateId, params) {
+    return fetch('https://api.emailjs.com/api/v1.0/email/send', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        service_id:      EMAILJS_SERVICE_ID,
+        template_id:     templateId,
+        user_id:         EMAILJS_PUBLIC_KEY,
+        template_params: params
+      })
+    });
   }
 
   var form    = document.getElementById('rc-form');
@@ -399,19 +402,14 @@
       fecha:      fecha
     };
 
-    var ejs = getEmailJS();
-    if(ejs){
-      try {
-        await Promise.all([
-          ejs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
-          ejs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
-        ]);
-        console.log('EmailJS: correos enviados OK');
-      } catch(emailErr) {
-        console.warn('EmailJS error:', emailErr);
-      }
-    } else {
-      console.warn('EmailJS no disponible al momento del submit');
+    try {
+      await Promise.all([
+        sendEmail(EMAILJS_TEMPLATE_INTERNO, notifData),
+        sendEmail(EMAILJS_TEMPLATE_REPLY,   replyData)
+      ]);
+      console.log('Correos enviados OK');
+    } catch(emailErr) {
+      console.warn('Error enviando correos:', emailErr);
     }
 
     /* 3️⃣ Mostrar confirmación */
