@@ -13,7 +13,9 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
 const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
 const PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "1162210376978137";
-const ADMIN_PHONE = Deno.env.get("CONTACTO_ADMIN_PHONE") ?? "573117896717";
+const ADMIN_PHONE = Deno.env.get("CONTACTO_ADMIN_PHONE") ?? "";
+const WABA_ID = Deno.env.get("WHATSAPP_WABA_ID") ?? "1406061330395268";
+const TPL_WHATSAPP = Deno.env.get("CONTACTO_TEMPLATE") ?? "contacto_web_ridera";
 const GRAPH = "https://graph.facebook.com/v21.0";
 
 const EMAILJS_SERVICE_ID = Deno.env.get("EMAILJS_SERVICE_ID") ?? "ridera-contacto";
@@ -66,22 +68,50 @@ async function enviarCorreo(templateId: string, params: Record<string, string>) 
   return { ok: res.ok, status: res.status, respuesta: texto.slice(0, 300) };
 }
 
-async function avisarWhatsApp(texto: string) {
+// Devuelve el idioma si la plantilla está aprobada; null si no.
+async function plantillaAprobada(name: string): Promise<string | null> {
+  try {
+    const res = await fetch(`${GRAPH}/${WABA_ID}/message_templates?name=${name}&limit=50`, {
+      headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}` },
+    });
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data?.data)) return null;
+    const tpl = data.data.find((t: any) => t.name === name && t.status === "APPROVED");
+    return tpl ? (tpl.language || "es_CO") : null;
+  } catch (_) { return null; }
+}
+
+// Meta solo permite texto libre dentro de las 24 h siguientes a que el
+// destinatario escriba al negocio. Fuera de esa ventana el mensaje se acepta
+// pero nunca se entrega, así que preferimos la plantilla aprobada y dejamos el
+// texto libre como respaldo mientras Meta la revisa.
+async function avisarWhatsApp(campos: string[], textoPlano: string) {
   if (!WHATSAPP_TOKEN) return { ok: false, error: "Falta WHATSAPP_TOKEN" };
   const to = normalizePhone(ADMIN_PHONE);
   if (!to) return { ok: false, error: "CONTACTO_ADMIN_PHONE inválido" };
+
+  const lang = await plantillaAprobada(TPL_WHATSAPP);
+  const payload = lang
+    ? {
+        messaging_product: "whatsapp", to, type: "template",
+        template: {
+          name: TPL_WHATSAPP,
+          language: { code: lang },
+          components: [{
+            type: "body",
+            parameters: campos.map((t) => ({ type: "text", text: String(t || "-") })),
+          }],
+        },
+      }
+    : { messaging_product: "whatsapp", to, type: "text", text: { body: textoPlano } };
+
   const res = await fetch(`${GRAPH}/${PHONE_ID}/messages`, {
     method: "POST",
     headers: { Authorization: `Bearer ${WHATSAPP_TOKEN}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
-      messaging_product: "whatsapp",
-      to,
-      type: "text",
-      text: { body: texto },
-    }),
+    body: JSON.stringify(payload),
   });
   const data = await res.json().catch(() => ({}));
-  return { ok: res.ok, status: res.status, to, data };
+  return { ok: res.ok, status: res.status, to, via: lang ? "plantilla" : "texto_libre", data };
 }
 
 function jsonRes(obj: unknown, status = 200) {
@@ -123,7 +153,10 @@ Deno.serve(async (req: Request) => {
     `_${fecha}_`;
 
   const [whatsapp, correoInterno, correoReply] = await Promise.all([
-    avisarWhatsApp(textoWA).catch((e) => ({ ok: false, error: String(e) })),
+    avisarWhatsApp(
+      [nombre, email, telefono || "No indicó", asunto, mensaje],
+      textoWA,
+    ).catch((e) => ({ ok: false, error: String(e) })),
     enviarCorreo(TPL_INTERNO, {
       from_name: nombre,
       from_email: email,
