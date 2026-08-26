@@ -320,10 +320,11 @@
   var SB_URL  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
   var SB_KEY  = 'sb_publishable_r1ImtuUXs1zM02OgwserGQ_F7R26Niu';
 
-  /* Reemplaza estos 3 valores con los de tu cuenta EmailJS */
-  var EMAILJS_PUBLIC_KEY  = 'PEGA_TU_PUBLIC_KEY_AQUI';
-  var EMAILJS_SERVICE_ID  = 'PEGA_TU_SERVICE_ID_AQUI';
-  var EMAILJS_TEMPLATE_ID = 'PEGA_TU_TEMPLATE_ID_AQUI';
+  /* Reemplaza estos valores con los de tu cuenta EmailJS */
+  var EMAILJS_PUBLIC_KEY       = 'PEGA_TU_PUBLIC_KEY_AQUI';
+  var EMAILJS_SERVICE_ID       = 'PEGA_TU_SERVICE_ID_AQUI';
+  var EMAILJS_TEMPLATE_INTERNO = 'PEGA_TEMPLATE_NOTIFICACION_AQUI'; /* llega a ridera */
+  var EMAILJS_TEMPLATE_REPLY   = 'PEGA_TEMPLATE_RESPUESTA_AQUI';   /* llega al visitante */
 
   /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
@@ -387,21 +388,36 @@
       return;
     }
 
-    /* 2️⃣ Enviar notificación por correo a los dos destinatarios */
-    var emailData = {
+    /* 2️⃣ Enviar los dos correos en paralelo */
+    var asuntoLabel = ASUNTO_LABELS[asunto] || asunto;
+    var fecha       = new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' });
+
+    var notifData = {
       from_name:  nombre,
       from_email: email,
       telefono:   telefono || 'No indicó',
-      asunto:     ASUNTO_LABELS[asunto] || asunto,
+      asunto:     asuntoLabel,
       mensaje:    mensaje,
-      fecha:      new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+      fecha:      fecha
+    };
+
+    var replyData = {
+      to_name:    nombre,
+      to_email:   email,          /* correo del visitante */
+      asunto:     asuntoLabel,
+      mensaje:    mensaje,
+      fecha:      fecha
     };
 
     try {
-      /* La plantilla en EmailJS tiene To: multiservicioslavina@gmail.com, info@ridera.com.co */
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailData);
+      /* Notificación interna → multiservicioslavina@gmail.com + info@ridera.com.co */
+      /* Auto-respuesta    → correo del visitante */
+      await Promise.all([
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
+        emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
+      ]);
     } catch(emailErr) {
-      /* El correo falló pero el mensaje ya quedó en Supabase — no bloqueamos al usuario */
+      /* Si el correo falla, el mensaje igual quedó en Supabase */
       console.warn('EmailJS error:', emailErr);
     }
 
