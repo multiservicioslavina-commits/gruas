@@ -13,6 +13,11 @@ import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from ".
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 import { generarContextoRider } from "./profile.ts";
+import { generarContextoAlertas } from "./proactive.ts";
+import { generarContextoLegal, inicializarBaseConocimientoLegal } from "./legal.ts";
+import { generarContextoSocial } from "./social.ts";
+import { generarContextoNavigador } from "./navigator.ts";
+import { generarContextoAcademia } from "./academia.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -322,6 +327,11 @@ function buildSystemPrompt(
   conVoz = false,
   nombreRider: string | null = null,
   contextoRider: string = "",
+  contextoAlertas: string = "",
+  contextoLegal: string = "",
+  contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
@@ -331,6 +341,26 @@ function buildSystemPrompt(
 
   const bloqueContextoRider = contextoRider
     ? `\n${contextoRider}`
+    : "";
+
+  const bloqueContextoAlertas = contextoAlertas
+    ? `\n${contextoAlertas}`
+    : "";
+
+  const bloqueContextoLegal = contextoLegal
+    ? `\n${contextoLegal}`
+    : "";
+
+  const bloqueContextoSocial = contextoSocial
+    ? `\n${contextoSocial}`
+    : "";
+
+  const bloqueContextoNavigador = contextoNavigador
+    ? `\n${contextoNavigador}`
+    : "";
+
+  const bloqueContextoAcademia = contextoAcademia
+    ? `\n${contextoAcademia}`
     : "";
 
   const bloqueEstilo = conVoz
@@ -372,7 +402,7 @@ cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
 ${bloqueFechaHora()}
 
-${bloqueEstilo}${bloqueContextoRider}
+${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}
 
 REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
@@ -395,11 +425,30 @@ COMO USAS LAS HERRAMIENTAS:
 - Antes de recomendar rutas o planes, mira consultar_preferencias para personalizar.
 - Cuando ejecutes una accion (recordatorio, preferencia, consentimiento),
   confirmasela en una linea, sin ceremonia.
-- PERFIL DEL RIDER:
+- PERFIL DEL RIDER (PHASE 1):
   * agregar_moto: cuando agregue otra moto o cambien de moto
   * guardar_perfil: cuando comparta experiencia, contacto emergencia, ubicacion, club, preferencias
   * listar_vencimientos: cuando pregunte por vencimientos, documentos, SOAT, tecnica, etc
   * marcar_vencimiento_completado: cuando haya completado un tramite (renovo SOAT, hizo tecnica, pago impuesto)
+- PROACTIVE & LEGAL (PHASE 2):
+  * actualizar_km: cuando el rider comparta los km actuales de su moto (para alertas de mantenimiento)
+  * obtener_alertas: cuando pregunte qué alertas tiene (km, clima, vía cerrada, rodadas)
+  * info_legal: cuando pregunte sobre derechos, qué hacer en retén, comparendo, compra usada, etc
+  * registrar_incidente: cuando le pase algo importante (accidente, comparendo, multa)
+- SOCIAL (PHASE 2):
+  * obtener_grupos: cuando pregunte a qué clubes pertenece
+  * obtener_rodadas: cuando pregunte qué rodadas hay próximamente
+  * buscar_companero: cuando quiera rodar acompañado y busque otro rider
+  * unirse_grupo: cuando quiera unirse a un grupo/club motero
+- NAVIGATOR (PHASE 3):
+  * obtener_rutas: cuando pregunte qué rutas tiene guardadas
+  * guardar_ruta: cuando quiera guardar una ruta nueva que recorre frecuentemente
+  * buscar_talleres: cuando pida recomendación de talleres en una ciudad
+- ACADEMIA (PHASE 3):
+  * obtener_contenido_educativo: cuando quiera aprender algo (mecánica, seguridad, viajes, etc)
+  * marcar_contenido_completado: cuando haya completado un curso o contenido educativo
+  * obtener_certificaciones: cuando pregunte qué ha aprendido o sus logros académicos
+  * buscar_mecanicos: cuando busque mecánicos confiables verificados por la comunidad
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
@@ -536,8 +585,13 @@ async function responder(
   conVoz = false,
   nombreRider: string | null = null,
   contextoRider: string = "",
+  contextoAlertas: string = "",
+  contextoLegal: string = "",
+  contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -604,8 +658,13 @@ async function responderOrquestado(
   conVoz = false,
   nombreRider: string | null = null,
   contextoRider: string = "",
+  contextoAlertas: string = "",
+  contextoLegal: string = "",
+  contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -734,16 +793,21 @@ Deno.serve(async (req: Request) => {
     if (body?.test === true) {
       const phone = String(body.phone ?? "573000000000");
       const texto = String(body.message ?? "");
-      const [history, consentimiento, nombreRider, contextoRider] = await Promise.all([
+      // Inicializar base de conocimiento legal una sola vez
+      await inicializarBaseConocimientoLegal();
+      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
         getRiderNombre(phone),
         generarContextoRider(phone),
+        generarContextoAlertas(phone),
+        generarContextoLegal(phone),
+        generarContextoSocial(phone),
       ]);
       const usarOrquestador = body.orquestador === true;
       const reply = usarOrquestador
-        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider)
-        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider);
+        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial)
+        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial);
       return json({ ok: true, reply, motor: usarOrquestador ? "orquestador" : "claude_directo" });
     }
 
@@ -838,11 +902,19 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, flujo: "presupuesto_agotado", gasto: presupuesto.gastoHoy });
     }
 
-    const [history, consentimiento, nombreRider, contextoRider] = await Promise.all([
+    // Inicializar base de conocimiento legal una sola vez
+    await inicializarBaseConocimientoLegal();
+
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
       generarContextoRider(from),
+      generarContextoAlertas(from),
+      generarContextoLegal(from),
+      generarContextoSocial(from),
+      generarContextoNavigador(from),
+      generarContextoAcademia(from),
     ]);
 
     let reply = "";
@@ -851,8 +923,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
