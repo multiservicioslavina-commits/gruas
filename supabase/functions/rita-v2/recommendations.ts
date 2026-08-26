@@ -631,6 +631,169 @@ export async function generarRecomendacionesCompanion(phone: string): Promise<vo
   }
 }
 
+// ─── Marcar recomendación como mostrada en chat ──────────────────────
+export async function marcarRecomendacionMostrada(recommendationId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("rider_product_recommendations")
+      .update({
+        shown_in_chat: true,
+        shown_at: new Date().toISOString(),
+      })
+      .eq("id", recommendationId);
+
+    if (error) {
+      console.error("Error marcando recomendación mostrada:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("Error en marcarRecomendacionMostrada:", e);
+    return false;
+  }
+}
+
+// ─── Marcar recomendación como clickeada ──────────────────────────────
+export async function marcarRecomendacionClickeada(recommendationId: string): Promise<boolean> {
+  try {
+    const { error } = await supabase
+      .from("rider_product_recommendations")
+      .update({
+        clicked: true,
+        clicked_at: new Date().toISOString(),
+      })
+      .eq("id", recommendationId);
+
+    if (error) {
+      console.error("Error marcando click:", error);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error("Error en marcarRecomendacionClickeada:", e);
+    return false;
+  }
+}
+
+// ─── Obtener métricas de rendimiento de recomendaciones ────────────────
+export async function obtenerMetricasRecomendaciones(
+  diasAtras: number = 30
+): Promise<{
+  total_generated: number;
+  total_shown: number;
+  total_clicked: number;
+  total_purchased: number;
+  ctr: number;
+  conversion_rate: number;
+  revenue_total: number;
+  por_tipo: Record<string, { shown: number; purchased: number; revenue: number }>;
+}> {
+  try {
+    const haceDias = new Date(Date.now() - diasAtras * 24 * 60 * 60 * 1000);
+
+    const { data: recomendaciones } = await supabase
+      .from("rider_product_recommendations")
+      .select("recommendation_type, shown_in_chat, clicked, purchased, commission_earned")
+      .gte("recommended_at", haceDias.toISOString());
+
+    if (!recomendaciones || recomendaciones.length === 0) {
+      return {
+        total_generated: 0,
+        total_shown: 0,
+        total_clicked: 0,
+        total_purchased: 0,
+        ctr: 0,
+        conversion_rate: 0,
+        revenue_total: 0,
+        por_tipo: {},
+      };
+    }
+
+    const total_generated = recomendaciones.length;
+    const total_shown = recomendaciones.filter((r) => r.shown_in_chat).length;
+    const total_clicked = recomendaciones.filter((r) => r.clicked).length;
+    const total_purchased = recomendaciones.filter((r) => r.purchased).length;
+    const revenue_total = recomendaciones
+      .filter((r) => r.purchased)
+      .reduce((sum, r) => sum + (r.commission_earned || 0), 0);
+
+    const ctr = total_shown > 0 ? (total_clicked / total_shown) * 100 : 0;
+    const conversion_rate = total_clicked > 0 ? (total_purchased / total_clicked) * 100 : 0;
+
+    // Agrupar por tipo
+    const por_tipo: Record<string, { shown: number; purchased: number; revenue: number }> = {};
+    recomendaciones.forEach((r) => {
+      const tipo = r.recommendation_type;
+      if (!por_tipo[tipo]) {
+        por_tipo[tipo] = { shown: 0, purchased: 0, revenue: 0 };
+      }
+      if (r.shown_in_chat) por_tipo[tipo].shown++;
+      if (r.purchased) {
+        por_tipo[tipo].purchased++;
+        por_tipo[tipo].revenue += r.commission_earned || 0;
+      }
+    });
+
+    return {
+      total_generated,
+      total_shown,
+      total_clicked,
+      total_purchased,
+      ctr: Math.round(ctr * 100) / 100,
+      conversion_rate: Math.round(conversion_rate * 100) / 100,
+      revenue_total: Math.round(revenue_total),
+      por_tipo,
+    };
+  } catch (e) {
+    console.error("Error obteniendo métricas:", e);
+    return {
+      total_generated: 0,
+      total_shown: 0,
+      total_clicked: 0,
+      total_purchased: 0,
+      ctr: 0,
+      conversion_rate: 0,
+      revenue_total: 0,
+      por_tipo: {},
+    };
+  }
+}
+
+// ─── Obtener recomendaciones activas para admin (todas, sin filtro) ─────
+export async function obtenerRecomendacionesAdmin(
+  filtro?: { rider_id?: string; tipo?: string; estado?: "pending" | "purchased" | "ignored" }
+): Promise<any[]> {
+  try {
+    let query = supabase
+      .from("rider_product_recommendations")
+      .select(
+        "id, rider_id, product_name, recommendation_type, reason, estimated_price, shown_in_chat, clicked, purchased, commission_earned, recommended_at"
+      )
+      .order("recommended_at", { ascending: false })
+      .limit(100);
+
+    if (filtro?.rider_id) {
+      query = query.eq("rider_id", filtro.rider_id);
+    }
+
+    if (filtro?.tipo) {
+      query = query.eq("recommendation_type", filtro.tipo);
+    }
+
+    if (filtro?.estado === "pending") {
+      query = query.eq("purchased", false).eq("shown_in_chat", false);
+    } else if (filtro?.estado === "purchased") {
+      query = query.eq("purchased", true);
+    }
+
+    const { data } = await query;
+    return data || [];
+  } catch (e) {
+    console.error("Error obteniendo recomendaciones admin:", e);
+    return [];
+  }
+}
+
 // ─── Generar contexto de recomendaciones para el prompt de Rita ──────
 export async function generarContextoRecomendaciones(phone: string): Promise<string> {
   try {

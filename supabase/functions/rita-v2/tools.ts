@@ -1183,6 +1183,44 @@ export const TOOL_SCHEMAS = [
       required: [],
     },
   },
+  {
+    name: "obtener_metricas_recomendaciones",
+    description:
+      "Solo admin. Obtiene métricas de rendimiento: CTR, conversion rate, ingresos totales por tipo de recomendación.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dias_atras: { type: "number", description: "Últimos N días para analizar (default: 30)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_recomendaciones_admin",
+    description:
+      "Solo admin. Ver todas las recomendaciones generadas con filtros: por rider, tipo, estado (pending/purchased/ignored).",
+    input_schema: {
+      type: "object",
+      properties: {
+        rider_id: { type: "string", description: "Filtrar por rider_id (uuid)" },
+        tipo: { type: "string", description: "Filtrar por tipo: maintenance, seasonal, experience, behavior, companion" },
+        estado: { type: "string", description: "Filtrar por estado: pending, purchased, ignored" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "marcar_recomendacion_mostrada",
+    description:
+      "Marca una recomendación como mostrada en chat. Usado internamente para tracking de impressiones.",
+    input_schema: {
+      type: "object",
+      properties: {
+        recommendation_id: { type: "string", description: "ID de la recomendación (uuid)" },
+      },
+      required: ["recommendation_id"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3146,6 +3184,76 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     respuesta += `\n💰 Total comisión generada: $${Math.round(totalComision).toLocaleString("es-CO")}`;
 
     return { ok: true, data: respuesta };
+  },
+
+  async obtener_metricas_recomendaciones(input) {
+    const dias = Number(input.dias_atras || 30);
+    const { obtenerMetricasRecomendaciones } = await import("./recommendations.ts");
+    const metricas = await obtenerMetricasRecomendaciones(dias);
+
+    let respuesta = `📊 *MÉTRICAS DE RECOMENDACIONES* (últimos ${dias} días)\n\n`;
+    respuesta += `📈 **Generales**\n`;
+    respuesta += `• Generadas: ${metricas.total_generated}\n`;
+    respuesta += `• Mostradas: ${metricas.total_shown}\n`;
+    respuesta += `• Clickeadas: ${metricas.total_clicked}\n`;
+    respuesta += `• Compradas: ${metricas.total_purchased}\n\n`;
+
+    respuesta += `🎯 **Conversión**\n`;
+    respuesta += `• CTR (Click-Through Rate): ${metricas.ctr}%\n`;
+    respuesta += `• Conversion Rate: ${metricas.conversion_rate}%\n`;
+    respuesta += `• Ingresos totales: $${metricas.revenue_total.toLocaleString("es-CO")}\n\n`;
+
+    if (Object.keys(metricas.por_tipo).length > 0) {
+      respuesta += `📋 **Por Tipo**\n`;
+      for (const [tipo, stats] of Object.entries(metricas.por_tipo)) {
+        respuesta += `• ${tipo}: ${stats.shown} mostradas, ${stats.purchased} compradas, $${stats.revenue.toLocaleString("es-CO")}\n`;
+      }
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_recomendaciones_admin(input) {
+    const { obtenerRecomendacionesAdmin } = await import("./recommendations.ts");
+    const recomendaciones = await obtenerRecomendacionesAdmin({
+      rider_id: input.rider_id ? String(input.rider_id) : undefined,
+      tipo: input.tipo ? String(input.tipo) : undefined,
+      estado: input.estado ? (String(input.estado) as "pending" | "purchased" | "ignored") : undefined,
+    });
+
+    if (!recomendaciones || recomendaciones.length === 0) {
+      return { ok: true, data: "No hay recomendaciones que coincidan con los filtros." };
+    }
+
+    let respuesta = `📋 *RECOMENDACIONES* (${recomendaciones.length} encontradas)\n\n`;
+    recomendaciones.slice(0, 20).forEach((r, i) => {
+      const estado = r.purchased ? "✅" : r.clicked ? "👁️" : r.shown_in_chat ? "📌" : "⏳";
+      respuesta += `${i + 1}. ${estado} ${r.product_name} (${r.recommendation_type})\n`;
+      respuesta += `   Precio: $${r.estimated_price}, Comisión: $${r.commission_earned || 0}\n`;
+      respuesta += `   Mostrada: ${r.shown_in_chat ? new Date(r.recommended_at).toLocaleDateString() : "No"}\n\n`;
+    });
+
+    if (recomendaciones.length > 20) {
+      respuesta += `... y ${recomendaciones.length - 20} más`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async marcar_recomendacion_mostrada(input) {
+    const rec_id = String(input.recommendation_id || "").trim();
+    if (!rec_id) {
+      return { ok: false, data: "❌ ID de recomendación requerido." };
+    }
+
+    const { marcarRecomendacionMostrada } = await import("./recommendations.ts");
+    const success = await marcarRecomendacionMostrada(rec_id);
+
+    if (!success) {
+      return { ok: false, data: "❌ Error marcando recomendación." };
+    }
+
+    return { ok: true, data: "✅ Recomendación marcada como mostrada." };
   },
 };
 
