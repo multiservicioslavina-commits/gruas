@@ -311,13 +311,14 @@
 
   /* ── INIT ── */
   var sb = window.supabase.createClient(SB_URL, SB_KEY);
-  var emailjsListo = false;
-  try {
-    if(EMAILJS_PUBLIC_KEY.indexOf('PEGA') === -1){
-      emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-      emailjsListo = true;
+  var emailjsIniciado = false;
+  function getEmailJS() {
+    if (typeof emailjs === 'undefined') return null;
+    if (!emailjsIniciado) {
+      try { emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY }); emailjsIniciado = true; } catch(e){}
     }
-  } catch(e){ console.warn('EmailJS no iniciado:', e); }
+    return emailjsIniciado ? emailjs : null;
+  }
 
   var form    = document.getElementById('rc-form');
   var btn     = document.getElementById('rc-btn');
@@ -398,15 +399,19 @@
       fecha:      fecha
     };
 
-    if(emailjsListo){
+    var ejs = getEmailJS();
+    if(ejs){
       try {
         await Promise.all([
-          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
-          emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
+          ejs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_INTERNO, notifData),
+          ejs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_REPLY,   replyData)
         ]);
+        console.log('EmailJS: correos enviados OK');
       } catch(emailErr) {
         console.warn('EmailJS error:', emailErr);
       }
+    } else {
+      console.warn('EmailJS no disponible al momento del submit');
     }
 
     /* 3️⃣ Mostrar confirmación */
