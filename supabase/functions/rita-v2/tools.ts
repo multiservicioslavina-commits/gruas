@@ -925,6 +925,90 @@ export const TOOL_SCHEMAS = [
       required: ["ciudad"],
     },
   },
+  {
+    name: "buscar_marketplace",
+    description:
+      "Busca piezas, accesorios y servicios en el marketplace de riders. Filtra por categoría, ciudad y precio.",
+    input_schema: {
+      type: "object",
+      properties: {
+        categoria: {
+          type: "string",
+          description: "Categoría (pieza, servicio, accesorio, moto_completa)",
+        },
+        ciudad: { type: "string", description: "Ciudad (ej: Medellín)" },
+        precio_min: { type: "number", description: "Precio mínimo" },
+        precio_max: { type: "number", description: "Precio máximo" },
+        termino: { type: "string", description: "Buscar por término (aceite, llantas, etc)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "crear_listado_marketplace",
+    description:
+      "Crea un nuevo listado para vender piezas, accesorios o servicios en el marketplace.",
+    input_schema: {
+      type: "object",
+      properties: {
+        titulo: { type: "string", description: "Título del producto/servicio" },
+        descripcion: { type: "string", description: "Descripción detallada" },
+        categoria: {
+          type: "string",
+          description: "Categoría (pieza, servicio, accesorio, moto_completa)",
+        },
+        precio: { type: "number", description: "Precio en pesos colombianos" },
+        condicion: {
+          type: "string",
+          description: "Condición (nuevo, usado, refurbished)",
+        },
+        ciudad: { type: "string", description: "Ciudad de venta/entrega" },
+      },
+      required: ["titulo", "descripcion", "categoria", "precio"],
+    },
+  },
+  {
+    name: "obtener_mis_compras",
+    description:
+      "Lista tus compras en el marketplace con estado de cada orden (pendiente, confirmado, pagado, entregado).",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "comprar_producto",
+    description:
+      "Compra un producto o solicita un servicio en el marketplace. Inicia una transacción con el vendedor.",
+    input_schema: {
+      type: "object",
+      properties: {
+        listing_id: { type: "string", description: "ID del listado (UUID)" },
+        cantidad: { type: "number", description: "Cantidad a comprar (default: 1)" },
+        metodo_pago: {
+          type: "string",
+          description: "Método de pago (transferencia, efectivo, daviplata, nequi)",
+        },
+      },
+      required: ["listing_id"],
+    },
+  },
+  {
+    name: "dejar_resena",
+    description:
+      "Deja una reseña del vendedor después de comprar. Ayuda a la comunidad de riders.",
+    input_schema: {
+      type: "object",
+      properties: {
+        order_id: { type: "string", description: "ID de la orden (UUID)" },
+        calificacion: { type: "number", description: "Calificación 1-5" },
+        titulo: { type: "string", description: "Título de la reseña" },
+        contenido: { type: "string", description: "Contenido de la reseña" },
+      },
+      required: ["order_id", "calificacion", "titulo", "contenido"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2341,6 +2425,104 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     });
 
     return { ok: true, data: respuesta };
+  },
+
+  // ─── PHASE 4: MARKETPLACE ───────────────────────────────────────
+  async buscar_marketplace(input) {
+    const { buscarProductos } = await import("./marketplace.ts");
+    const categoria = input.categoria ? String(input.categoria) : undefined;
+    const ciudad = input.ciudad ? String(input.ciudad) : undefined;
+    const precioMin = input.precio_min ? Number(input.precio_min) : undefined;
+    const precioMax = input.precio_max ? Number(input.precio_max) : undefined;
+    const termino = input.termino ? String(input.termino) : undefined;
+
+    const productos = await buscarProductos(categoria, ciudad, precioMin, precioMax, termino);
+
+    if (productos.length === 0) {
+      return { ok: true, data: "No encontré productos que coincidan con tu búsqueda. Intenta con otros filtros." };
+    }
+
+    let respuesta = `🛵 MARKETPLACE - ${productos.length} productos encontrados:\n\n`;
+    productos.forEach((p) => {
+      const verificado = p.vendedor.verificado ? "✓" : " ";
+      respuesta += `${verificado} ${p.titulo}\n   $${p.precio.toLocaleString()} (${p.condicion}) - ${p.vendedor.nombre}\n   Rating: ${p.rating || "Sin reseñas"}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async crear_listado_marketplace(input, phone) {
+    const { crearListado } = await import("./marketplace.ts");
+    const titulo = String(input.titulo || "").trim();
+    const descripcion = String(input.descripcion || "").trim();
+    const categoria = String(input.categoria || "").trim();
+    const precio = Number(input.precio || 0);
+    const condicion = String(input.condicion || "nuevo");
+    const ciudad = input.ciudad ? String(input.ciudad) : undefined;
+
+    if (!titulo || !descripcion || !categoria || precio <= 0) {
+      return { ok: false, data: "Necesito: título, descripción, categoría y precio válido." };
+    }
+
+    const listingId = await crearListado(phone, titulo, descripcion, categoria, precio, condicion, ciudad);
+    if (!listingId) return { ok: false, data: "No se pudo crear el listado. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Listado creado! "${titulo}" está ahora visible en el marketplace por $${precio.toLocaleString()}.` };
+  },
+
+  async obtener_mis_compras(input, phone) {
+    const { obtenerMisOrdenes } = await import("./marketplace.ts");
+    const ordenes = await obtenerMisOrdenes(phone);
+
+    if (ordenes.length === 0) {
+      return { ok: true, data: "No has realizado compras aún. Explora el marketplace para encontrar productos." };
+    }
+
+    let respuesta = `📦 TUS COMPRAS (${ordenes.length} total):\n\n`;
+    ordenes.slice(0, 10).forEach((o) => {
+      const estados: Record<string, string> = {
+        pendiente: "⏳",
+        confirmado: "✓",
+        pagado: "💳",
+        enviado: "🚚",
+        entregado: "✓✓",
+        cancelado: "✗"
+      };
+      respuesta += `${estados[o.estado] || "?"} ${o.titulo}\n   Estado: ${o.estado} | Total: $${o.precioTotal.toLocaleString()}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async comprar_producto(input, phone) {
+    const { crearOrden } = await import("./marketplace.ts");
+    const listingId = String(input.listing_id || "").trim();
+    const cantidad = Number(input.cantidad || 1);
+    const metodoPago = input.metodo_pago ? String(input.metodo_pago) : undefined;
+
+    if (!listingId) return { ok: false, data: "Necesito el ID del producto para procesar la compra." };
+
+    const orderId = await crearOrden(phone, listingId, cantidad, metodoPago);
+    if (!orderId) return { ok: false, data: "No se pudo procesar la compra. Verifica que el producto exista." };
+
+    return { ok: true, data: `✓ Compra iniciada! Orden #${orderId.slice(0, 8)} creada. El vendedor será notificado pronto.` };
+  },
+
+  async dejar_resena(input, phone) {
+    const { dejarResena } = await import("./marketplace.ts");
+    const orderId = String(input.order_id || "").trim();
+    const calificacion = Number(input.calificacion || 0);
+    const titulo = String(input.titulo || "").trim();
+    const contenido = String(input.contenido || "").trim();
+
+    if (!orderId || calificacion < 1 || calificacion > 5 || !titulo || !contenido) {
+      return { ok: false, data: "Necesito: orden, calificación (1-5), título y contenido de reseña." };
+    }
+
+    const ok = await dejarResena(phone, orderId, Math.round(calificacion), titulo, contenido);
+    if (!ok) return { ok: false, data: "No se pudo guardar tu reseña. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Reseña guardada! Gracias por ayudar a la comunidad de riders.` };
   },
 };
 
