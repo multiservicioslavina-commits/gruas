@@ -808,6 +808,123 @@ export const TOOL_SCHEMAS = [
       required: ["nombre_grupo"],
     },
   },
+  // ─── PHASE 3: NAVIGATOR & ACADEMIA ──────────────────────────────
+  {
+    name: "obtener_rutas",
+    description:
+      "Lista las rutas guardadas del rider (favoritas primero). Usala cuando pregunten qué rutas tienen guardadas.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "guardar_ruta",
+    description:
+      "Guarda una nueva ruta (origen, destino, distancia, dificultad). Usala cuando el rider quiera guardar una ruta que recorre frecuentemente.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre de la ruta (ej: 'Ruta Jericó')" },
+        origen_lat: { type: "number", description: "Latitud de origen" },
+        origen_lng: { type: "number", description: "Longitud de origen" },
+        destino_lat: { type: "number", description: "Latitud de destino" },
+        destino_lng: { type: "number", description: "Longitud de destino" },
+        km: { type: "number", description: "Kilómetros aproximados (opcional)" },
+        dificultad: {
+          type: "string",
+          enum: ["fácil", "media", "difícil"],
+          description: "Nivel de dificultad",
+        },
+      },
+      required: ["nombre", "origen_lat", "origen_lng", "destino_lat", "destino_lng"],
+    },
+  },
+  {
+    name: "buscar_talleres",
+    description:
+      "Busca talleres recomendados en una ciudad. Filtra por especialidad. Usala cuando pregunten dónde hay buenos talleres.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ciudad: { type: "string", description: "Ciudad (ej: Medellín)" },
+        especialidad: {
+          type: "string",
+          description: "Especialidad opcional (mantenimiento, motor, frenos, etc)",
+        },
+      },
+      required: ["ciudad"],
+    },
+  },
+  {
+    name: "obtener_contenido_educativo",
+    description:
+      "Busca contenido educativo por categoría: mecánica, seguridad, viajes, técnica. Usala cuando quiera aprender algo.",
+    input_schema: {
+      type: "object",
+      properties: {
+        categoria: {
+          type: "string",
+          enum: ["mecanica", "seguridad", "viajes", "tecnica", "legal"],
+          description: "Categoría del contenido",
+        },
+        nivel: {
+          type: "string",
+          enum: ["principiante", "intermedio", "avanzado"],
+          description: "Nivel educativo (opcional)",
+        },
+      },
+      required: ["categoria"],
+    },
+  },
+  {
+    name: "marcar_contenido_completado",
+    description:
+      "Marca un contenido educativo como completado. Rita usa esto para trackear tu progreso de aprendizaje.",
+    input_schema: {
+      type: "object",
+      properties: {
+        contenido_id: { type: "string", description: "ID del contenido (UUID)" },
+        tiempo_minutos: {
+          type: "number",
+          description: "Tiempo dedicado en minutos (opcional)",
+        },
+        calificacion: { type: "number", description: "Calificación 1-5 (opcional)" },
+      },
+      required: ["contenido_id"],
+    },
+  },
+  {
+    name: "obtener_certificaciones",
+    description:
+      "Lista las certificaciones y logros académicos del rider. Usala cuando pregunten qué ha aprendido.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "buscar_mecanicos",
+    description:
+      "Busca mecánicos confiables verificados por la comunidad. Filtra por ciudad y especialidad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        ciudad: { type: "string", description: "Ciudad (ej: Medellín)" },
+        especialidad: {
+          type: "string",
+          description: "Especialidad (motor, frenos, electricidad, transmisión, etc)",
+        },
+        solo_verificados: {
+          type: "boolean",
+          description: "Solo mostrar mecánicos verificados (default: true)",
+        },
+      },
+      required: ["ciudad"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2076,6 +2193,154 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     if (!exito) return { ok: false, data: "No se pudo unirse al grupo. Intenta de nuevo." };
 
     return { ok: true, data: `✓ ¡Bienvenido a ${nombreGrupo}! Ahora verás sus rodadas y podrás conectar con otros riders.` };
+  },
+
+  // ─── PHASE 3: NAVIGATOR ─────────────────────────────────────────
+  async obtener_rutas(input, phone) {
+    const { obtenerRutasGuardadas } = await import("./navigator.ts");
+    const rutas = await obtenerRutasGuardadas(phone);
+
+    if (rutas.length === 0) {
+      return { ok: true, data: "No tienes rutas guardadas. Puedo ayudarte a guardar una!" };
+    }
+
+    let respuesta = "TUS RUTAS GUARDADAS:\n\n";
+    rutas.forEach((r) => {
+      const favorita = r.esFavorita ? "⭐" : "  ";
+      respuesta += `${favorita} ${r.nombre} (${r.km}km, ${r.dificultad}) - Recorrida ${r.vecesRecorrida}x\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async guardar_ruta(input, phone) {
+    const { guardarRuta } = await import("./navigator.ts");
+    const nombre = String(input.nombre || "").trim();
+    const origenLat = Number(input.origen_lat);
+    const origenLng = Number(input.origen_lng);
+    const destinoLat = Number(input.destino_lat);
+    const destinoLng = Number(input.destino_lng);
+    const km = input.km ? Number(input.km) : undefined;
+    const dificultad = (input.dificultad as "fácil" | "media" | "difícil") || "media";
+
+    if (!nombre || !origenLat || !origenLng || !destinoLat || !destinoLng) {
+      return { ok: false, data: "Necesito nombre, coordenadas de origen y destino." };
+    }
+
+    const rutaId = await guardarRuta(phone, nombre, origenLat, origenLng, destinoLat, destinoLng, km, dificultad);
+    if (!rutaId) return { ok: false, data: "No se pudo guardar la ruta. Intenta de nuevo." };
+
+    return { ok: true, data: `✓ Ruta "${nombre}" guardada! Ahora puedo ayudarte a planificar mejor.` };
+  },
+
+  async buscar_talleres(input, phone) {
+    const { obtenerTalleresRecomendados, buscarPOIs } = await import("./navigator.ts");
+    const ciudad = String(input.ciudad || "").trim();
+    const especialidad = input.especialidad ? String(input.especialidad) : undefined;
+
+    if (!ciudad) return { ok: false, data: "¿En qué ciudad buscas talleres?" };
+
+    const talleres = especialidad
+      ? await buscarPOIs(ciudad, "taller", 5)
+      : await obtenerTalleresRecomendados(ciudad, 5);
+
+    if (talleres.length === 0) {
+      return { ok: true, data: `No encontré talleres verificados en ${ciudad}.` };
+    }
+
+    let respuesta = `TALLERES EN ${ciudad.toUpperCase()}:\n\n`;
+    talleres.forEach((t) => {
+      respuesta += `🔧 ${t.nombre}\n   Rating: ${t.rating}/5 (${t.especialidades?.join(", ") || "General"})\n`;
+      if (t.telefono) respuesta += `   Tel: ${t.telefono}\n`;
+      respuesta += "\n";
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  // ─── PHASE 3: ACADEMIA ──────────────────────────────────────────
+  async obtener_contenido_educativo(input, phone) {
+    const { obtenerContenidoPorCategoria } = await import("./academia.ts");
+    const categoria = String(input.categoria || "").trim();
+    const nivel = input.nivel ? String(input.nivel) : undefined;
+
+    if (!categoria) return { ok: false, data: "¿Qué categoría quieres aprender? (mecanica, seguridad, viajes, tecnica, legal)" };
+
+    const contenido = await obtenerContenidoPorCategoria(categoria, nivel);
+
+    if (contenido.length === 0) {
+      return { ok: true, data: `No hay contenido disponible en ${categoria}. Pronto añadiremos más!` };
+    }
+
+    let respuesta = `CONTENIDO EDUCATIVO: ${categoria.toUpperCase()}\n\n`;
+    contenido.slice(0, 5).forEach((c) => {
+      const oficial = c.esOficial ? "✓" : " ";
+      respuesta += `${oficial} ${c.titulo} (${c.nivel}, ${c.duracion}min)\n`;
+      if (c.autor) respuesta += `   por ${c.autor}\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async marcar_contenido_completado(input, phone) {
+    const { marcarContenidoCompletado } = await import("./academia.ts");
+    const contentId = String(input.contenido_id || "").trim();
+    const tiempoMinutos = input.tiempo_minutos ? Number(input.tiempo_minutos) : undefined;
+    const calificacion = input.calificacion ? Number(input.calificacion) : undefined;
+
+    if (!contentId) return { ok: false, data: "Necesito el ID del contenido." };
+
+    const exito = await marcarContenidoCompletado(phone, contentId, tiempoMinutos, calificacion);
+    if (!exito) return { ok: false, data: "No se pudo marcar como completado. Intenta de nuevo." };
+
+    return { ok: true, data: "✓ Contenido marcado como completado! Sigue aprendiendo 🎓" };
+  },
+
+  async obtener_certificaciones(input, phone) {
+    const { obtenerCertificaciones, obtenerProgreso } = await import("./academia.ts");
+    const certs = await obtenerCertificaciones(phone);
+    const progreso = await obtenerProgreso(phone);
+
+    let respuesta = "TU PROGRESO ACADÉMICO:\n\n";
+    respuesta += `📚 ${progreso.contentosCompletados} contenidos completados (${progreso.totalHorasAprendizaje}h)\n`;
+
+    if (progreso.categoriasFuertes.length > 0) {
+      respuesta += `💪 Especialidades: ${progreso.categoriasFuertes.join(", ")}\n`;
+    }
+
+    if (certs.length > 0) {
+      respuesta += `\n🏆 CERTIFICACIONES:\n`;
+      certs.forEach((c) => {
+        respuesta += `• ${c.titulo} (${c.emiidaPor})\n`;
+      });
+    } else {
+      respuesta += `\n(Sin certificaciones aún. ¡Completa cursos para obtenerlas!)\n`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async buscar_mecanicos(input, phone) {
+    const { buscarMecanicos } = await import("./academia.ts");
+    const ciudad = String(input.ciudad || "").trim();
+    const especialidad = input.especialidad ? String(input.especialidad) : undefined;
+    const soloVerificados = input.solo_verificados !== false;
+
+    if (!ciudad) return { ok: false, data: "¿En qué ciudad buscas mecánicos?" };
+
+    const mecanicos = await buscarMecanicos(ciudad, especialidad, soloVerificados);
+
+    if (mecanicos.length === 0) {
+      return { ok: true, data: `No encontré mecánicos en ${ciudad}.` };
+    }
+
+    let respuesta = `MECÁNICOS EN ${ciudad.toUpperCase()}:\n\n`;
+    mecanicos.forEach((m) => {
+      const verificado = m.verificado ? "✓" : " ";
+      respuesta += `${verificado} ${m.nombre}\n   ${m.especialidad} (${m.experiencia}años exp, rating ${m.rating}/5)\n`;
+    });
+
+    return { ok: true, data: respuesta };
   },
 };
 

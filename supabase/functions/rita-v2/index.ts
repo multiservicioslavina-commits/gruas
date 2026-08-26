@@ -16,6 +16,8 @@ import { generarContextoRider } from "./profile.ts";
 import { generarContextoAlertas } from "./proactive.ts";
 import { generarContextoLegal, inicializarBaseConocimientoLegal } from "./legal.ts";
 import { generarContextoSocial } from "./social.ts";
+import { generarContextoNavigador } from "./navigator.ts";
+import { generarContextoAcademia } from "./academia.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -328,6 +330,8 @@ function buildSystemPrompt(
   contextoAlertas: string = "",
   contextoLegal: string = "",
   contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
@@ -349,6 +353,14 @@ function buildSystemPrompt(
 
   const bloqueContextoSocial = contextoSocial
     ? `\n${contextoSocial}`
+    : "";
+
+  const bloqueContextoNavigador = contextoNavigador
+    ? `\n${contextoNavigador}`
+    : "";
+
+  const bloqueContextoAcademia = contextoAcademia
+    ? `\n${contextoAcademia}`
     : "";
 
   const bloqueEstilo = conVoz
@@ -390,7 +402,7 @@ cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
 ${bloqueFechaHora()}
 
-${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}
+${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}
 
 REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
@@ -428,6 +440,15 @@ COMO USAS LAS HERRAMIENTAS:
   * obtener_rodadas: cuando pregunte qué rodadas hay próximamente
   * buscar_companero: cuando quiera rodar acompañado y busque otro rider
   * unirse_grupo: cuando quiera unirse a un grupo/club motero
+- NAVIGATOR (PHASE 3):
+  * obtener_rutas: cuando pregunte qué rutas tiene guardadas
+  * guardar_ruta: cuando quiera guardar una ruta nueva que recorre frecuentemente
+  * buscar_talleres: cuando pida recomendación de talleres en una ciudad
+- ACADEMIA (PHASE 3):
+  * obtener_contenido_educativo: cuando quiera aprender algo (mecánica, seguridad, viajes, etc)
+  * marcar_contenido_completado: cuando haya completado un curso o contenido educativo
+  * obtener_certificaciones: cuando pregunte qué ha aprendido o sus logros académicos
+  * buscar_mecanicos: cuando busque mecánicos confiables verificados por la comunidad
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
@@ -567,8 +588,10 @@ async function responder(
   contextoAlertas: string = "",
   contextoLegal: string = "",
   contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -638,8 +661,10 @@ async function responderOrquestado(
   contextoAlertas: string = "",
   contextoLegal: string = "",
   contextoSocial: string = "",
+  contextoNavigador: string = "",
+  contextoAcademia: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -880,7 +905,7 @@ Deno.serve(async (req: Request) => {
     // Inicializar base de conocimiento legal una sola vez
     await inicializarBaseConocimientoLegal();
 
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial] = await Promise.all([
+    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
@@ -888,6 +913,8 @@ Deno.serve(async (req: Request) => {
       generarContextoAlertas(from),
       generarContextoLegal(from),
       generarContextoSocial(from),
+      generarContextoNavigador(from),
+      generarContextoAcademia(from),
     ]);
 
     let reply = "";
@@ -896,8 +923,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia);
     } catch (e) {
       console.error("El motor fallo:", e);
     }
