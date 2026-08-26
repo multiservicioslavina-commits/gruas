@@ -393,6 +393,10 @@ COMO USAS LAS HERRAMIENTAS:
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
   pagina de la aseguradora" sin dar el link que ya tienes en la mano.
+- tramites_info devuelve informacion CONCRETA y DETALLADA sobre tramites legales:
+  documentos, costos exactos, tiempos, procedimientos paso a paso, numeros de
+  telefono y URLs. Usala ANTES que info_tramites cuando pregunten datos especificos.
+  Formatea bien lo que te devuelve (respeta su formato con iconos y secciones).
 - RUTAS - REGLA DURA: buscar_ruta solo consulta una base interna que NO se
   actualiza sola; ridera.com.co sube rutas nuevas todos los dias y esa base
   se puede quedar atras. Si buscar_ruta no encuentra la ruta que piden,

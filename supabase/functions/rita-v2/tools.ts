@@ -423,6 +423,22 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
+    name: "tramites_info",
+    description:
+      "Informacion detallada sobre tramites y legales colombianos: costos de multas (comparendos, casco, velocidad, pico y placa), documentos para transferencia/matricula, procedimientos, contactos. Usala cuando pregunten: '¿cuanto cuesta...?', '¿que documentos...?', '¿como se hace...?', sobre SOAT, multas, transferencia, matricula, certificado de tradicion, pico y placa.",
+    input_schema: {
+      type: "object",
+      properties: {
+        consulta: {
+          type: "string",
+          description:
+            "La pregunta del rider sobre el tramite. Ej: 'cuanto cuesta no llevar casco', 'que documentos para transferir', 'como matricular moto importada'",
+        },
+      },
+      required: ["consulta"],
+    },
+  },
+  {
     name: "crear_recordatorio",
     description:
       "Crea un recordatorio para el rider. Rita le escribira cuando llegue la fecha. Usala cuando pida que le recuerdes algo: cambio de aceite, vencimiento de SOAT, una rodada, revision.",
@@ -935,6 +951,49 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const t = TRAMITES[tipo];
     if (!t) return { ok: false, data: `Tramite "${tipo}" no reconocido.` };
     return { ok: true, data: { [tipo]: t } };
+  },
+
+  async tramites_info(input) {
+    const consulta = String(input.consulta ?? "").toLowerCase();
+    if (!consulta) return { ok: false, data: "Pregunta algo sobre tramites, multas o documentos necesarios." };
+
+    try {
+      const { data, error } = await supabase
+        .from("rita_tramites_detallados")
+        .select("*")
+        .eq("vigente", true)
+        .limit(5);
+
+      if (error || !data || data.length === 0) {
+        return { ok: false, data: "No encontré informacion sobre eso. Consulta directamente con la Secretaria de Transito de tu ciudad." };
+      }
+
+      // Busca coincidencias en pregunta_clave o respuesta_corta
+      const coincidencias = data.filter(t =>
+        t.pregunta_clave.includes(consulta) || t.respuesta_corta.toLowerCase().includes(consulta)
+      );
+
+      if (coincidencias.length > 0) {
+        const resultado = coincidencias[0];
+        let respuesta = resultado.respuesta_corta + "\n\n";
+
+        if (resultado.procedimiento) respuesta += "📋 Procedimiento:\n" + resultado.procedimiento + "\n\n";
+        if (resultado.documentos_requeridos && resultado.documentos_requeridos.length > 0)
+          respuesta += "📄 Documentos: " + resultado.documentos_requeridos.join(", ") + "\n\n";
+        if (resultado.costo) respuesta += "💵 Costo: " + resultado.costo + "\n\n";
+        if (resultado.tiempo_estimado) respuesta += "⏱️ Tiempo: " + resultado.tiempo_estimado + "\n\n";
+        if (resultado.entidad_responsable) respuesta += "🏢 Entidad: " + resultado.entidad_responsable + "\n";
+        if (resultado.telefono_contacto) respuesta += "☎️ Tel: " + resultado.telefono_contacto + "\n";
+        if (resultado.url_oficial) respuesta += "🔗 Oficial: " + resultado.url_oficial + "\n";
+        if (resultado.notas) respuesta += "\n⚠️ " + resultado.notas;
+
+        return { ok: true, data: respuesta.trim() };
+      }
+
+      return { ok: false, data: "No encontré esa información exacta. Consulta en SIMIT.org.co, RUNT.com.co o tu Secretaría de Tránsito local." };
+    } catch (e) {
+      return { ok: false, data: "Error consultando la base de datos de tramites." };
+    }
   },
 
   async crear_recordatorio(input, phone) {
