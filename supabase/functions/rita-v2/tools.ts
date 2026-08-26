@@ -925,6 +925,58 @@ export const TOOL_SCHEMAS = [
       required: ["ciudad"],
     },
   },
+  {
+    name: "estadisticas_personales",
+    description:
+      "Consulta tus estadísticas personales de conducción: sesiones, distancia total, velocidad promedio, seguridad. Usala cuando pregunte por su progreso o estadísticas de viaje.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "rutas_favoritas_analytics",
+    description:
+      "Muestra tus rutas favoritas con análisis de performance: veces recorrida, distancia, velocidad promedio, puntuación de seguridad y dificultad.",
+    input_schema: {
+      type: "object",
+      properties: {
+        limite: { type: "number", description: "Número máximo de rutas (default: 5)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "patrones_conduccion",
+    description:
+      "Analiza tus patrones de conducción: hora típica, duración, velocidad, tipo de vía preferida y frecuencia. Usala cuando pregunten sobre cuándo y cómo conducen.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "reporte_progreso",
+    description:
+      "Genera un reporte completo de tu progreso: sesiones, distancia, velocidad, seguridad, rutas principales y patrones.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "comparar_comunidad",
+    description:
+      "Compara tus métricas (velocidad, seguridad, distancia) con los benchmarks de la comunidad. Muestra tu posición en percentiles.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2338,6 +2390,100 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     mecanicos.forEach((m) => {
       const verificado = m.verificado ? "✓" : " ";
       respuesta += `${verificado} ${m.nombre}\n   ${m.especialidad} (${m.experiencia}años exp, rating ${m.rating}/5)\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async estadisticas_personales(input, phone) {
+    const { obtenerEstadisticasPersonales } = await import("./analytics.ts");
+    const stats = await obtenerEstadisticasPersonales(phone);
+
+    if (!stats) {
+      return { ok: false, data: "No tengo datos de tus viajes aún. ¡Comienza a registrar tus rutas!" };
+    }
+
+    let respuesta = "📊 TUS ESTADÍSTICAS:\n\n";
+    respuesta += `• Viajes: ${stats.totalSesiones}\n`;
+    respuesta += `• Distancia total: ${stats.totalDistancia}km\n`;
+    respuesta += `• Tiempo en ruta: ${Math.floor(stats.totalDuracion / 60)}h ${stats.totalDuracion % 60}min\n`;
+    respuesta += `• Velocidad promedio: ${stats.velocidadPromedio}km/h\n`;
+    respuesta += `• Velocidad máxima: ${stats.velocidadMaxima}km/h\n`;
+    respuesta += `• Consumo promedio: ${stats.consumoPromedio}L/100km\n`;
+    respuesta += `• Seguridad: ${stats.seguridad}/100 ✓\n`;
+
+    return { ok: true, data: respuesta };
+  },
+
+  async rutas_favoritas_analytics(input, phone) {
+    const { obtenerRutasFavoritasEstadisticas } = await import("./analytics.ts");
+    const limite = input.limite ? Number(input.limite) : 5;
+    const rutas = await obtenerRutasFavoritasEstadisticas(phone, limite);
+
+    if (rutas.length === 0) {
+      return { ok: false, data: "No tienes rutas registradas aún. ¡Comienza a registrar tus viajes!" };
+    }
+
+    let respuesta = "🛣️ TUS RUTAS FAVORITAS:\n\n";
+    rutas.forEach((r, idx) => {
+      respuesta += `${idx + 1}. ${r.nombre}\n`;
+      respuesta += `   📍 ${r.distancia}km • ${r.vecesRecorrida}x recorrida\n`;
+      respuesta += `   ⏱️ ${r.duracionPromedio}min • 🚦 ${r.velocidadPromedio}km/h avg\n`;
+      respuesta += `   🛡️ Seguridad: ${r.seguridad}/100 • Dificultad: ${r.dificultad}/5\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async patrones_conduccion(input, phone) {
+    const { obtenerPatronesConduction } = await import("./analytics.ts");
+    const patrones = await obtenerPatronesConduction(phone);
+
+    if (patrones.length === 0) {
+      return { ok: false, data: "Aún no hay patrones detectados. Necesito más viajes registrados." };
+    }
+
+    let respuesta = "🌙 TUS PATRONES DE CONDUCCIÓN:\n\n";
+    patrones.forEach((p) => {
+      respuesta += `🕐 ${p.tipo.replace(/_/g, " ").toUpperCase()}\n`;
+      respuesta += `   Hora típica: ${p.horaPromedio}\n`;
+      respuesta += `   Duración: ${p.duracionPromedio}min\n`;
+      respuesta += `   Velocidad típica: ${p.velocidadTipica}km/h\n`;
+      respuesta += `   Vía preferida: ${p.viaPreferida}\n`;
+      respuesta += `   Frecuencia: ${p.frecuencia}x por semana\n`;
+      respuesta += `   Seguridad: ${p.seguridad}/100\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async reporte_progreso(input, phone) {
+    const { generarReporteProgreso } = await import("./analytics.ts");
+    const reporte = await generarReporteProgreso(phone);
+
+    if (!reporte) {
+      return { ok: false, data: "No tengo datos de tu progreso aún. ¡Comienza a registrar viajes!" };
+    }
+
+    return { ok: true, data: reporte };
+  },
+
+  async comparar_comunidad(input, phone) {
+    const { compararConComunidad } = await import("./analytics.ts");
+    const benchmarks = await compararConComunidad(phone);
+
+    if (benchmarks.length === 0) {
+      return { ok: false, data: "No hay datos de comparación disponibles aún." };
+    }
+
+    let respuesta = "📈 TU POSICIÓN EN LA COMUNIDAD:\n\n";
+    benchmarks.forEach((b) => {
+      const metricaFormato = b.metrica.replace(/_/g, " ").toUpperCase();
+      respuesta += `${metricaFormato}:\n`;
+      respuesta += `  Tu valor: ${b.tuValor}\n`;
+      respuesta += `  Promedio comunidad: ${b.promedioComunidad}\n`;
+      respuesta += `  📊 ${b.posicion}\n`;
+      respuesta += `  Rango: ${b.percentil25} (P25) — ${b.percentil50} (P50) — ${b.percentil75} (P75) — ${b.percentil90} (P90)\n\n`;
     });
 
     return { ok: true, data: respuesta };
