@@ -387,17 +387,19 @@
       return;
     }
 
-    /* 2️⃣ Enviar notificación por correo a multiservicioslavina@gmail.com */
+    /* 2️⃣ Enviar notificación por correo a los dos destinatarios */
+    var emailData = {
+      from_name:  nombre,
+      from_email: email,
+      telefono:   telefono || 'No indicó',
+      asunto:     ASUNTO_LABELS[asunto] || asunto,
+      mensaje:    mensaje,
+      fecha:      new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
+    };
+
     try {
-      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-        to_email:  'multiservicioslavina@gmail.com',
-        from_name:  nombre,
-        from_email: email,
-        telefono:   telefono || 'No indicó',
-        asunto:     ASUNTO_LABELS[asunto] || asunto,
-        mensaje:    mensaje,
-        fecha:      new Date().toLocaleString('es-CO', { timeZone: 'America/Bogota' })
-      });
+      /* La plantilla en EmailJS tiene To: multiservicioslavina@gmail.com, info@ridera.com.co */
+      await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailData);
     } catch(emailErr) {
       /* El correo falló pero el mensaje ya quedó en Supabase — no bloqueamos al usuario */
       console.warn('EmailJS error:', emailErr);
