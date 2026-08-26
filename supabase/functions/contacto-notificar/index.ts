@@ -12,7 +12,10 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 // La respuesta siempre detalla qué funcionó y qué no, para poder diagnosticar.
 
 const WHATSAPP_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
-const PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "1162210376978137";
+// El proyecto tiene dos números: el de grúas (usado por 'cartero') y el de
+// Rita. Los avisos de contacto salen por el de Rita, que es con el que el
+// admin conversa y por tanto donde su ventana de 24 h está abierta.
+const PHONE_ID = Deno.env.get("CONTACTO_PHONE_ID") ?? Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ADMIN_PHONE = Deno.env.get("CONTACTO_ADMIN_PHONE") ?? "";
 const WABA_ID = Deno.env.get("WHATSAPP_WABA_ID") ?? "1406061330395268";
 const TPL_WHATSAPP = Deno.env.get("CONTACTO_TEMPLATE") ?? "contacto_web_ridera";
