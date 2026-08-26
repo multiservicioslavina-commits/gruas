@@ -417,6 +417,220 @@ export async function registrarCompraRecomendacion(
   }
 }
 
+// ─── Recomendaciones basadas en patrones de conducción ─────────────
+export async function generarRecomendacionesConducta(phone: string): Promise<void> {
+  try {
+    const tel = phone.replace(/^57/, "");
+
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) return;
+
+    // Obtener patrones de conducción del último mes
+    const ahora = new Date();
+    const haceMes = new Date(ahora.getTime() - 30 * 24 * 60 * 60 * 1000);
+
+    const { data: sesiones } = await supabase
+      .from("rider_sessions")
+      .select("distancia_km, velocidad_promedio, aceleraciones_fuertes, frenadas_fuertes")
+      .eq("rider_id", rider.id)
+      .gte("fecha_inicio", haceMes.toISOString())
+      .order("fecha_inicio", { ascending: false });
+
+    if (!sesiones || sesiones.length === 0) return;
+
+    // Analizar patrones
+    const totalDistancia = sesiones.reduce((sum, s) => sum + (s.distancia_km || 0), 0);
+    const velocidadPromedio = sesiones.reduce((sum, s) => sum + (s.velocidad_promedio || 0), 0) / sesiones.length;
+    const frendasFuertes = sesiones.reduce((sum, s) => sum + (s.frenadas_fuertes || 0), 0);
+    const aceleracionesFuertes = sesiones.reduce((sum, s) => sum + (s.aceleraciones_fuertes || 0), 0);
+
+    const recomendaciones = [];
+
+    // Heavy braking → brake pads, brake fluid
+    if (frendasFuertes > sesiones.length * 2) {
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Detectamos muchas frenadas fuertes en el mes. Revisa tus frenos regularmente.`,
+        product: "Pastillas de freno premium",
+        price: 120000,
+      });
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Mantenimiento preventivo: liquido de freno.`,
+        product: "Líquido de freno DOT 4",
+        price: 35000,
+      });
+    }
+
+    // Long-distance riding → luggage, comfort seat, heated grips
+    if (totalDistancia > 500) {
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Vemos que haces viajes largos. Upgrade de comodidad.`,
+        product: "Asiento confortado gel",
+        price: 350000,
+      });
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Para viajes largos: maletero resistente.`,
+        product: "Maletero trasero aluminio",
+        price: 280000,
+      });
+    }
+
+    // High-speed riding → racing gear, performance exhaust
+    if (velocidadPromedio > 60) {
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Conduces a altas velocidades. Equipo de seguridad avanzado.`,
+        product: "Chaqueta deportiva con armadura",
+        price: 450000,
+      });
+    }
+
+    // City riding (frequent acceleration) → chain lube, tire treatments
+    if (aceleracionesFuertes > sesiones.length * 3) {
+      recomendaciones.push({
+        type: "behavior",
+        reason: `Conducción urbana activa: cuida tu cadena.`,
+        product: "Lubricante de cadena premium",
+        price: 40000,
+      });
+    }
+
+    // Create recommendations if they don't exist
+    for (const rec of recomendaciones) {
+      const { data: existe } = await supabase
+        .from("rider_product_recommendations")
+        .select("id")
+        .eq("rider_id", rider.id)
+        .eq("recommendation_type", rec.type)
+        .eq("product_name", rec.product)
+        .maybeSingle();
+
+      if (!existe) {
+        await supabase.from("rider_product_recommendations").insert({
+          rider_id: rider.id,
+          product_name: rec.product,
+          recommendation_type: rec.type,
+          reason: rec.reason,
+          estimated_price: rec.price,
+          reason_data: {
+            distancia_km: totalDistancia,
+            velocidad_promedio: velocidadPromedio,
+            frenadas_fuertes: frendasFuertes
+          },
+          valid_until: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Error generando recomendaciones de conducta:", e);
+  }
+}
+
+// ─── Recomendaciones companion (cross-sell) ──────────────────────────
+export async function generarRecomendacionesCompanion(phone: string): Promise<void> {
+  try {
+    const tel = phone.replace(/^57/, "");
+
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) return;
+
+    // Obtener compras recientes
+    const { data: compras } = await supabase
+      .from("recommendation_conversions")
+      .select("product_id")
+      .eq("rider_id", rider.id)
+      .gte("purchased_at", new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
+      .order("purchased_at", { ascending: false })
+      .limit(5);
+
+    if (!compras || compras.length === 0) return;
+
+    // Reglas de companion products
+    const companionRules: Record<string, Array<{ product: string; reason: string; price: number }>> = {
+      // Si compró cobertor lluvia → guantes y botas impermeables
+      "cobertor": [
+        { product: "Guantes impermeables reforzados", reason: "Completa tu protección en lluvia.", price: 75000 },
+        { product: "Botas impermeables moto", reason: "Protección completa en temporada de lluvia.", price: 180000 },
+      ],
+      // Si compró cadena/lubricante → limpiador de cadena
+      "lubricante": [
+        { product: "Limpiador de cadena concentrado", reason: "Máximo rendimiento con tu lubricante.", price: 28000 },
+        { product: "Cepillo para limpieza cadena", reason: "Herramienta esencial para mantenimiento.", price: 35000 },
+      ],
+      // Si compró aceite → filtro
+      "aceite": [
+        { product: "Filtro de aceite original", reason: "Cambio completo: aceite + filtro.", price: 65000 },
+        { product: "Llave de filtro de aceite", reason: "Herramienta para cambio de aceite DIY.", price: 22000 },
+      ],
+      // Si compró casco → visera tinted
+      "casco": [
+        { product: "Visera ahumada de repuesto", reason: "Reemplazo y estilo.", price: 95000 },
+        { product: "Antieméticos para casco", reason: "Mantén el casco limpio y despejado.", price: 18000 },
+      ],
+    };
+
+    // Detectar última compra y sugerir companions
+    const ultimaCompra = compras[0];
+    if (!ultimaCompra) return;
+
+    const productName = ultimaCompra.product_id ? String(ultimaCompra.product_id) : "";
+    let recomendaciones: Array<{ product: string; reason: string; price: number }> = [];
+
+    // Buscar en rules
+    for (const [keyword, companions] of Object.entries(companionRules)) {
+      if (productName.toLowerCase().includes(keyword)) {
+        recomendaciones = companions;
+        break;
+      }
+    }
+
+    // Default: herramientas o accesorios
+    if (recomendaciones.length === 0) {
+      recomendaciones = [
+        { product: "Kit básico de herramientas moto", reason: "Mantén lo esencial siempre.", price: 150000 },
+      ];
+    }
+
+    // Create companion recommendations
+    for (const rec of recomendaciones.slice(0, 2)) {
+      const { data: existe } = await supabase
+        .from("rider_product_recommendations")
+        .select("id")
+        .eq("rider_id", rider.id)
+        .eq("recommendation_type", "companion")
+        .eq("product_name", rec.product)
+        .maybeSingle();
+
+      if (!existe) {
+        await supabase.from("rider_product_recommendations").insert({
+          rider_id: rider.id,
+          product_name: rec.product,
+          recommendation_type: "companion",
+          reason: rec.reason,
+          estimated_price: rec.price,
+          reason_data: { related_to: productName },
+          valid_until: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        });
+      }
+    }
+  } catch (e) {
+    console.error("Error generando recomendaciones companion:", e);
+  }
+}
+
 // ─── Generar contexto de recomendaciones para el prompt de Rita ──────
 export async function generarContextoRecomendaciones(phone: string): Promise<string> {
   try {
@@ -424,6 +638,8 @@ export async function generarContextoRecomendaciones(phone: string): Promise<str
     await calcularProximoMantenimiento(phone);
     await generarRecomendacionesEstacionales(phone);
     await generarRecomendacionesExperiencia(phone);
+    await generarRecomendacionesConducta(phone);
+    await generarRecomendacionesCompanion(phone);
 
     const recomendaciones = await obtenerRecomendacionesPendientes(phone, 5);
 
