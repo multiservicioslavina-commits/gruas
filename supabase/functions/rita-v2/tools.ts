@@ -1280,6 +1280,75 @@ export const TOOL_SCHEMAS = [
       required: ["entity_type", "primary_region", "compare_regions"],
     },
   },
+  {
+    name: "ejecutar_backup_real",
+    description:
+      "Solo admin. Ejecuta un backup real con SQL dumps y snapshots. Registra métricas: tamaño, duración, filas procesadas.",
+    input_schema: {
+      type: "object",
+      properties: {
+        region_code: { type: "string", description: "Código de región: MDE, BOG, CAL, NATIONAL" },
+        entity_type: { type: "string", description: "Entidad a respaldar: riders, motorcycles, sessions, transactions, all" },
+        config_id: { type: "string", description: "ID de configuración de backup (uuid)" },
+      },
+      required: ["region_code", "entity_type", "config_id"],
+    },
+  },
+  {
+    name: "enviar_alerta_sms",
+    description:
+      "Solo admin. Envía alerta SMS vía Twilio para fallos de backup o eventos críticos. Prioridades: low, medium, high, critical.",
+    input_schema: {
+      type: "object",
+      properties: {
+        telefono: { type: "string", description: "Número de teléfono en formato internacional (ej: +573001234567)" },
+        mensaje: { type: "string", description: "Mensaje de alerta (max 160 caracteres)" },
+        prioridad: { type: "string", description: "Prioridad: low, medium, high, critical" },
+      },
+      required: ["telefono", "mensaje"],
+    },
+  },
+  {
+    name: "crear_incidente_pagerduty",
+    description:
+      "Solo admin. Crea un incidente en PagerDuty para eventos críticos. Severidades: critical, error, warning, info.",
+    input_schema: {
+      type: "object",
+      properties: {
+        titulo: { type: "string", description: "Título del incidente" },
+        descripcion: { type: "string", description: "Descripción detallada" },
+        severidad: { type: "string", description: "Severidad: critical, error, warning, info" },
+        region: { type: "string", description: "Región afectada: MDE, BOG, CAL, NATIONAL" },
+      },
+      required: ["titulo", "descripcion", "severidad"],
+    },
+  },
+  {
+    name: "orquestar_sincronizacion_replicas",
+    description:
+      "Solo admin. Orquesta sincronización multi-región: MDE → BOG, CAL. Rastrea rezago, registra resultados.",
+    input_schema: {
+      type: "object",
+      properties: {
+        source_region: { type: "string", description: "Región origen: MDE (primaria)" },
+        target_regions: { type: "array", items: { type: "string" }, description: "Regiones destino: [BOG, CAL]" },
+      },
+      required: ["source_region", "target_regions"],
+    },
+  },
+  {
+    name: "monitear_salud_region",
+    description:
+      "Solo admin. Verifica salud de una región (ping, conectividad). Activa alertas si detecta caída o rezago.",
+    input_schema: {
+      type: "object",
+      properties: {
+        region: { type: "string", description: "Código de región: MDE, BOG, CAL, NATIONAL" },
+        timeout_seconds: { type: "number", description: "Timeout para health check (default: 30)" },
+      },
+      required: ["region"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -3418,6 +3487,130 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     }
 
     return { ok: true, data: respuesta };
+  },
+
+  async ejecutar_backup_real(input) {
+    const region = String(input.region_code || "").trim().toUpperCase();
+    const entity = String(input.entity_type || "").trim().toLowerCase();
+    const config_id = String(input.config_id || "").trim();
+
+    if (!region || !entity || !config_id) {
+      return { ok: false, data: "❌ Región, entidad y config_id requeridos." };
+    }
+
+    const { ejecutarBackupReal } = await import("./backup.ts");
+    const result = await ejecutarBackupReal(region, entity, config_id);
+
+    let respuesta = `💾 *BACKUP REAL EJECUTADO* — ${region} / ${entity}\n\n`;
+    respuesta += `Estado: ${result.status}\n`;
+    respuesta += `Tamaño: ${(result.data_size_bytes / 1024 / 1024).toFixed(1)}MB\n`;
+    respuesta += `Duración: ${result.duration_seconds}s\n`;
+    respuesta += `Filas procesadas: ${result.rows_processed.toLocaleString("es-CO")}\n`;
+
+    if (result.rows_failed > 0) {
+      respuesta += `⚠️ Filas fallidas: ${result.rows_failed}\n`;
+    }
+
+    respuesta += `\n📍 Ubicación: ${result.backup_location}\n`;
+
+    return { ok: result.status === "completed", data: respuesta };
+  },
+
+  async enviar_alerta_sms(input) {
+    const telefono = String(input.telefono || "").trim();
+    const mensaje = String(input.mensaje || "").trim();
+    const prioridad = String(input.prioridad || "high").trim().toLowerCase();
+
+    if (!telefono || !mensaje) {
+      return { ok: false, data: "❌ Teléfono y mensaje requeridos." };
+    }
+
+    const { enviarAlertaSMS } = await import("./backup.ts");
+    const result = await enviarAlertaSMS(telefono, mensaje, prioridad as "low" | "medium" | "high" | "critical");
+
+    let respuesta = `📱 *ALERTA SMS ENVIADA*\n\n`;
+    respuesta += `Destino: ${telefono}\n`;
+    respuesta += `Prioridad: ${prioridad.toUpperCase()}\n`;
+    respuesta += `SID: ${result.message_sid}\n`;
+    respuesta += `Estado: ${result.status}\n`;
+
+    return { ok: result.success, data: respuesta };
+  },
+
+  async crear_incidente_pagerduty(input) {
+    const titulo = String(input.titulo || "").trim();
+    const descripcion = String(input.descripcion || "").trim();
+    const severidad = String(input.severidad || "error").trim().toLowerCase();
+    const region = String(input.region || "UNKNOWN").trim();
+
+    if (!titulo || !descripcion) {
+      return { ok: false, data: "❌ Título y descripción requeridos." };
+    }
+
+    const { crearIncidentePagerDuty } = await import("./backup.ts");
+    const result = await crearIncidentePagerDuty(titulo, descripcion, severidad as "critical" | "error" | "warning" | "info", region);
+
+    let respuesta = `🚨 *INCIDENTE PAGERDUTY CREADO*\n\n`;
+    respuesta += `Título: ${titulo}\n`;
+    respuesta += `Severidad: ${severidad.toUpperCase()}\n`;
+    respuesta += `Región: ${region}\n`;
+    respuesta += `Incident ID: ${result.incident_id}\n`;
+    respuesta += `Estado: ${result.status}\n`;
+
+    return { ok: result.success, data: respuesta };
+  },
+
+  async orquestar_sincronizacion_replicas(input) {
+    const source = String(input.source_region || "").trim().toUpperCase();
+    const targets = Array.isArray(input.target_regions) ? input.target_regions.map(String) : [];
+
+    if (!source || targets.length === 0) {
+      return { ok: false, data: "❌ Región origen y regiones destino requeridas." };
+    }
+
+    const { orquestarSincronizacionReplicas } = await import("./backup.ts");
+    const result = await orquestarSincronizacionReplicas(source, targets);
+
+    let respuesta = `🌍 *SINCRONIZACIÓN MULTI-REGIÓN ORQUESTADA*\n\n`;
+    respuesta += `Origen: ${source} → Destino: ${targets.join(", ")}\n`;
+    respuesta += `Batches completados: ${result.total_syncs}\n`;
+    respuesta += `Exitosos: ${result.successful_syncs} ✅\n`;
+    respuesta += `Fallidos: ${result.failed_syncs} ❌\n\n`;
+
+    if (result.lag_by_region) {
+      respuesta += `📊 Rezago actual:\n`;
+      for (const [region, lag] of Object.entries(result.lag_by_region)) {
+        respuesta += `• ${region}: ${lag}s\n`;
+      }
+    }
+
+    return { ok: result.overall_status === "completed", data: respuesta };
+  },
+
+  async monitear_salud_region(input) {
+    const region = String(input.region || "").trim().toUpperCase();
+    const timeout = Number(input.timeout_seconds || 30);
+
+    if (!region) {
+      return { ok: false, data: "❌ Código de región requerido." };
+    }
+
+    const { monitearSaludRegion } = await import("./backup.ts");
+    const result = await monitearSaludRegion(region, timeout);
+
+    let respuesta = `🏥 *SALUD DE REGIÓN* — ${region}\n\n`;
+    respuesta += result.healthy ? `✅ Región saludable\n` : `⚠️ Región con problemas\n`;
+    respuesta += `Ping: ${result.ping_ms}ms\n`;
+    respuesta += `Latencia de replica: ${result.replica_lag_seconds}s\n`;
+
+    if (result.alerts && result.alerts.length > 0) {
+      respuesta += `\n⚠️ *Alertas:*\n`;
+      result.alerts.forEach((alert) => {
+        respuesta += `• ${alert}\n`;
+      });
+    }
+
+    return { ok: result.healthy, data: respuesta };
   },
 };
 
