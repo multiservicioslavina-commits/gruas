@@ -1061,6 +1061,166 @@ export const TOOL_SCHEMAS = [
       required: [],
     },
   },
+  {
+    name: "activar_modo_emergencia",
+    description:
+      "Activa el modo SOS/emergencia. Primero requiere registrar contactos de emergencia. Una vez activado, Rita detectará accidentes automáticamente.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "registrar_contactos_emergencia",
+    description:
+      "Registra familiares o amigos a contactar en caso de accidente. Máximo 5 contactos. Formatos: '+57 300 1234567' o '3001234567'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre del contacto" },
+        telefono: { type: "string", description: "Número de teléfono (con o sin +57)" },
+        relacion: { type: "string", description: "Relación: 'familiar', 'amigo', 'vecino', etc" },
+      },
+      required: ["nombre", "telefono"],
+    },
+  },
+  {
+    name: "actualizar_info_medica",
+    description:
+      "Actualiza tu información médica (tipo de sangre, alergias, medicamentos) para paramédicos en caso de emergencia.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo_sangre: { type: "string", description: "Tipo de sangre: O+, O-, A+, A-, B+, B-, AB+, AB-" },
+        alergias: { type: "string", description: "Alergias separadas por coma. Ej: penicilina, ibuprofeno, latex" },
+        medicamentos: { type: "string", description: "Medicamentos actuales. Ej: metformina 500mg, lisinopril 10mg" },
+        condiciones: { type: "string", description: "Condiciones médicas. Ej: diabetes, asma, convulsiones" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "reportar_incidente_manual",
+    description:
+      "Reporta un accidente o emergencia manualmente. Si el detector automático falla, úsalo para alertar a emergencias.",
+    input_schema: {
+      type: "object",
+      properties: {
+        tipo: { type: "string", description: "'accidente' o 'emergencia'" },
+        descripcion: { type: "string", description: "Qué pasó y dónde" },
+      },
+      required: ["tipo"],
+    },
+  },
+  {
+    name: "obtener_incidentes",
+    description:
+      "Ve tu historial de incidentes/emergencias registradas en los últimos 30 días (cuándo, dónde, qué escaló).",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_alertas_seguridad",
+    description:
+      "Obtiene alertas de seguridad de la comunidad: hotspots de accidentes cercanos, retenes agresivos, vías peligrosas en 3km a la redonda.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_recomendaciones",
+    description:
+      "Obtiene recomendaciones personalizadas basadas en tu moto, km, experiencia y patrones de conducción. Hasta 3 recomendaciones priorizadas.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "registrar_compra_recomendacion",
+    description:
+      "Registra que completaste una compra de un producto recomendado. Usa esto para que Rita pueda ganar comisión y mejorar las recomendaciones.",
+    input_schema: {
+      type: "object",
+      properties: {
+        recommendation_id: { type: "string", description: "ID de la recomendación (uuid)" },
+        amount: { type: "number", description: "Monto de la compra en pesos colombianos" },
+        source: { type: "string", description: "Origen de la compra: 'direct_link', 'search', 'other'" },
+      },
+      required: ["recommendation_id", "amount"],
+    },
+  },
+  {
+    name: "crear_regla_recomendacion",
+    description:
+      "Solo admin. Crea una nueva regla de recomendación automática sin cambiar código. Ej: 'cambio de aceite a 8000km para CB500'.",
+    input_schema: {
+      type: "object",
+      properties: {
+        nombre: { type: "string", description: "Nombre de la regla" },
+        tipo: { type: "string", description: "Tipo: 'maintenance', 'seasonal', 'experience', 'behavior', 'companion'" },
+        condicion_json: { type: "string", description: "Condición en JSON. Ej: {\"km_threshold\": 8000, \"component\": \"oil\"}" },
+        productos: { type: "string", description: "Nombres de productos separados por coma" },
+        prioridad: { type: "number", description: "1=muy alta, 2=alta, 3=normal, 4=baja" },
+      },
+      required: ["nombre", "tipo", "condicion_json"],
+    },
+  },
+  {
+    name: "obtener_historial_recomendaciones",
+    description:
+      "Ve tu historial completo de recomendaciones: cuáles se mostraron, cuáles compraste, comisión generada.",
+    input_schema: {
+      type: "object",
+      properties: {},
+      required: [],
+    },
+  },
+  {
+    name: "obtener_metricas_recomendaciones",
+    description:
+      "Solo admin. Obtiene métricas de rendimiento: CTR, conversion rate, ingresos totales por tipo de recomendación.",
+    input_schema: {
+      type: "object",
+      properties: {
+        dias_atras: { type: "number", description: "Últimos N días para analizar (default: 30)" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "obtener_recomendaciones_admin",
+    description:
+      "Solo admin. Ver todas las recomendaciones generadas con filtros: por rider, tipo, estado (pending/purchased/ignored).",
+    input_schema: {
+      type: "object",
+      properties: {
+        rider_id: { type: "string", description: "Filtrar por rider_id (uuid)" },
+        tipo: { type: "string", description: "Filtrar por tipo: maintenance, seasonal, experience, behavior, companion" },
+        estado: { type: "string", description: "Filtrar por estado: pending, purchased, ignored" },
+      },
+      required: [],
+    },
+  },
+  {
+    name: "marcar_recomendacion_mostrada",
+    description:
+      "Marca una recomendación como mostrada en chat. Usado internamente para tracking de impressiones.",
+    input_schema: {
+      type: "object",
+      properties: {
+        recommendation_id: { type: "string", description: "ID de la recomendación (uuid)" },
+      },
+      required: ["recommendation_id"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -2662,6 +2822,438 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     });
 
     return { ok: true, data: respuesta };
+  },
+
+  async activar_modo_emergencia(_input, phone) {
+    const { esRiderPreparado } = await import("./emergency.ts");
+    const preparado = await esRiderPreparado(phone);
+
+    if (!preparado) {
+      return {
+        ok: false,
+        data: "⚠️ Primero registra contactos de emergencia. Sin ellos no puedo activar el SOS. ¿Me das los teléfonos de familiares o amigos de confianza?",
+      };
+    }
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (rider) {
+      await supabase.from("emergency_mode_log").insert({
+        rider_id: rider.id,
+        action: "activated",
+        reason: "user_request",
+      });
+    }
+
+    return {
+      ok: true,
+      data: "✅ Modo SOS *activado*. Si tengo un accidente detectaré el impacto y escalaré a emergencias automáticamente. Tus contactos serán avisados en segundos.",
+    };
+  },
+
+  async registrar_contactos_emergencia(input, phone) {
+    const nombre = String(input.nombre || "").trim();
+    const telefono = String(input.telefono || "").trim();
+    const relacion = String(input.relacion || "contacto").trim();
+
+    if (!nombre || nombre.length < 2) {
+      return { ok: false, data: "Necesito el nombre del contacto." };
+    }
+
+    if (!telefono || telefono.length < 7) {
+      return { ok: false, data: "Necesito un número de teléfono válido." };
+    }
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado. Regístrate primero." };
+    }
+
+    // Normalizar teléfono (remover espacios y caracteres especiales)
+    const phoneLimpio = telefono.replace(/\D/g, "");
+    const phoneFormato = phoneLimpio.length === 10 ? `57${phoneLimpio}` : phoneLimpio;
+
+    const { data: existente } = await supabase
+      .from("emergency_contacts")
+      .select("id")
+      .eq("rider_id", rider.id)
+      .eq("phone_number", phoneFormato)
+      .maybeSingle();
+
+    if (existente) {
+      return { ok: true, data: `✅ ${nombre} ya estaba registrado como contacto.` };
+    }
+
+    const { data: contactos } = await supabase
+      .from("emergency_contacts")
+      .select("id")
+      .eq("rider_id", rider.id);
+
+    if ((contactos?.length || 0) >= 5) {
+      return { ok: false, data: "Ya tienes 5 contactos registrados (máximo). Borra uno si quieres agregar otro." };
+    }
+
+    const priority = (contactos?.length || 0) + 1;
+
+    const { error } = await supabase.from("emergency_contacts").insert({
+      rider_id: rider.id,
+      contact_name: nombre,
+      phone_number: phoneFormato,
+      relationship: relacion,
+      priority,
+      consent: true,
+    });
+
+    if (error) {
+      return { ok: false, data: `Error guardando contacto: ${error.message}` };
+    }
+
+    return {
+      ok: true,
+      data: `✅ *${nombre}* registrado como contacto #${priority}. Si tienes más, sigue agregando.`,
+    };
+  },
+
+  async actualizar_info_medica(input, phone) {
+    const tipo_sangre = String(input.tipo_sangre || "").trim();
+    const alergias_str = String(input.alergias || "").trim();
+    const medicamentos_str = String(input.medicamentos || "").trim();
+    const condiciones_str = String(input.condiciones || "").trim();
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const alergias = alergias_str ? alergias_str.split(",").map((a) => a.trim()) : [];
+    const medicamentos = medicamentos_str ? medicamentos_str.split(",").map((m) => m.trim()) : [];
+    const condiciones = condiciones_str ? condiciones_str.split(",").map((c) => c.trim()) : [];
+
+    const { data: existente } = await supabase
+      .from("rider_medical_info")
+      .select("id")
+      .eq("rider_id", rider.id)
+      .maybeSingle();
+
+    if (existente) {
+      await supabase
+        .from("rider_medical_info")
+        .update({
+          blood_type: tipo_sangre || null,
+          allergies: alergias,
+          medications: medicamentos,
+          known_conditions: condiciones,
+        })
+        .eq("rider_id", rider.id);
+    } else {
+      await supabase.from("rider_medical_info").insert({
+        rider_id: rider.id,
+        blood_type: tipo_sangre || null,
+        allergies: alergias,
+        medications: medicamentos,
+        known_conditions: condiciones,
+      });
+    }
+
+    let datos = [];
+    if (tipo_sangre) datos.push(`🩸 Sangre: ${tipo_sangre}`);
+    if (alergias.length) datos.push(`🚫 Alergias: ${alergias.join(", ")}`);
+    if (medicamentos.length) datos.push(`💊 Medicamentos: ${medicamentos.join(", ")}`);
+    if (condiciones.length) datos.push(`⚠️ Condiciones: ${condiciones.join(", ")}`);
+
+    return {
+      ok: true,
+      data: `✅ Información médica guardada:\n${datos.join("\n")}\n\nEsta info está disponible para paramédicos si ocurre un accidente.`,
+    };
+  },
+
+  async reportar_incidente_manual(input, phone) {
+    const tipo = String(input.tipo || "incidente").toLowerCase();
+    const descripcion = String(input.descripcion || "").trim();
+
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id, nombre")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const { registrarIncidente, escalarA_SMS, escalarA_122 } = await import("./emergency.ts");
+
+    const incident = await registrarIncidente(phone, "manual_report", null, null);
+    if (!incident) {
+      return { ok: false, data: "Error registrando incidente." };
+    }
+
+    // Escalar inmediatamente
+    await escalarA_SMS(incident.id, phone);
+    if (tipo === "accidente") {
+      await escalarA_122(incident.id, phone);
+    }
+
+    return {
+      ok: true,
+      data: `🚨 Incidente registrado y escalado.\n${rider.nombre}, tus contactos han sido avisados.\n\n¿Necesitas ambulancia (122) o solo grúa?`,
+    };
+  },
+
+  async obtener_incidentes(_input, phone) {
+    const { obtenerIncidentesRecientes } = await import("./emergency.ts");
+    const incidents = await obtenerIncidentesRecientes(phone, 30);
+
+    if (!incidents.length) {
+      return { ok: true, data: "✅ No hay incidentes registrados en los últimos 30 días. ¡Sigue así!" };
+    }
+
+    let respuesta = `📋 *INCIDENTES EN 30 DÍAS* (${incidents.length})\n\n`;
+    incidents.forEach((inc, i) => {
+      const tipo_label =
+        inc.incidentType === "impact_detected" ? "🔴 Impacto detectado" :
+        inc.incidentType === "distress_button" ? "🆘 Botón SOS" :
+        "📱 Reportado manualmente";
+
+      const escala_label = `Escaló a Tier ${inc.escalationLevel}`;
+      const esRealLabel = inc.wasRealEmergency === true ? "⚠️ Fue emergencia real" : "✅ Falsa alarma";
+
+      respuesta += `${i + 1}. ${tipo_label}\n   ${new Date(inc.timestamp).toLocaleString("es-CO")}\n   ${escala_label} | ${esRealLabel}\n\n`;
+    });
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_alertas_seguridad(_input, phone) {
+    const { obtenerAlertasSeguridad } = await import("./emergency.ts");
+    const alertas = await obtenerAlertasSeguridad(phone, 3);
+
+    if (!alertas) {
+      return { ok: true, data: "✅ No hay alertas de seguridad registradas en tu zona." };
+    }
+
+    return { ok: true, data: alertas };
+  },
+
+  async obtener_recomendaciones(_input, phone) {
+    const { obtenerRecomendacionesPendientes } = await import("./recommendations.ts");
+    const recomendaciones = await obtenerRecomendacionesPendientes(phone, 3);
+
+    if (!recomendaciones.length) {
+      return { ok: true, data: "✅ No tienes recomendaciones pendientes en este momento." };
+    }
+
+    let respuesta = `💡 *RECOMENDACIONES PARA TI* (${recomendaciones.length})\n\n`;
+    recomendaciones.forEach((r, i) => {
+      const tipo_emoji = r.type === "maintenance" ? "🛢️" : r.type === "seasonal" ? "🌧️" : "🧤";
+      respuesta += `${i + 1}. ${tipo_emoji} ${r.productName}\n   ${r.reason}\n   Precio: ~$${r.estimatedPrice.toLocaleString("es-CO")}\n   [Comprar](${r.actionUrl})\n\n`;
+    });
+
+    respuesta += `Solo menciono si es relevante. No las fuerzo.`;
+    return { ok: true, data: respuesta };
+  },
+
+  async registrar_compra_recomendacion(input, phone) {
+    const recommendation_id = String(input.recommendation_id || "").trim();
+    const amount = Number(input.amount || 0);
+    const source = String(input.source || "direct_link").trim();
+
+    if (!recommendation_id || amount <= 0) {
+      return { ok: false, data: "❌ Necesito ID de recomendación y monto válido." };
+    }
+
+    const { registrarCompraRecomendacion } = await import("./recommendations.ts");
+    const success = await registrarCompraRecomendacion(phone, recommendation_id, amount, source);
+
+    if (!success) {
+      return { ok: false, data: "❌ Error registrando compra." };
+    }
+
+    const comision = Math.round(amount * 0.1);
+    return {
+      ok: true,
+      data: `✅ Compra registrada por $${amount.toLocaleString("es-CO")}.\n💰 Comisión generada: $${comision.toLocaleString("es-CO")}\n\nGracias por confiar en las recomendaciones de Rita.`,
+    };
+  },
+
+  async crear_regla_recomendacion(input, phone) {
+    const nombre = String(input.nombre || "").trim();
+    const tipo = String(input.tipo || "").trim();
+    const condicion_json = String(input.condicion_json || "").trim();
+    const productos = String(input.productos || "").trim();
+    const prioridad = Number(input.prioridad || 3);
+
+    if (!nombre || !tipo || !condicion_json) {
+      return { ok: false, data: "❌ Nombre, tipo y condición son requeridos." };
+    }
+
+    try {
+      const condicion = JSON.parse(condicion_json);
+      const product_names = productos.split(",").map((p) => p.trim()).filter((p) => p);
+
+      const tel = phone.replace(/^57/, "");
+      const { data: rider } = await supabase
+        .from("riders")
+        .select("id")
+        .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+        .maybeSingle();
+
+      if (!rider) {
+        return { ok: false, data: "No te encuentro registrado." };
+      }
+
+      const { error } = await supabase.from("recommendation_rules").insert({
+        name: nombre,
+        rule_type: tipo,
+        condition: condicion,
+        product_ids: [],
+        product_names: product_names,
+        priority: prioridad,
+        is_active: true,
+      });
+
+      if (error) {
+        return { ok: false, data: `❌ Error: ${error.message}` };
+      }
+
+      return {
+        ok: true,
+        data: `✅ Regla creada: "${nombre}"\nTipo: ${tipo}\nProductos: ${product_names.join(", ") || "N/A"}\n\nLa regla está activa y generará recomendaciones automáticamente.`,
+      };
+    } catch (e) {
+      return { ok: false, data: `❌ JSON inválido en condición: ${(e as Error).message}` };
+    }
+  },
+
+  async obtener_historial_recomendaciones(_input, phone) {
+    const tel = phone.replace(/^57/, "");
+    const { data: rider } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
+      .maybeSingle();
+
+    if (!rider) {
+      return { ok: false, data: "No te encuentro registrado." };
+    }
+
+    const { data: recomendaciones } = await supabase
+      .from("rider_product_recommendations")
+      .select(
+        "id, product_name, recommendation_type, shown_at, clicked, purchased, purchased_amount, commission_earned"
+      )
+      .eq("rider_id", rider.id)
+      .order("recommended_at", { ascending: false })
+      .limit(10);
+
+    if (!recomendaciones || recomendaciones.length === 0) {
+      return { ok: true, data: "✅ No tienes recomendaciones en el historial." };
+    }
+
+    let respuesta = `📊 *HISTORIAL DE RECOMENDACIONES* (últimas 10)\n\n`;
+    let totalComision = 0;
+
+    recomendaciones.forEach((r, i) => {
+      const estado =
+        r.purchased ? "✅ Comprada" : r.clicked ? "👁️ Vista, no comprada" : "📌 Mostrada";
+      const monto = r.purchased_amount ? `\n   Monto: $${r.purchased_amount.toLocaleString("es-CO")}` : "";
+      const comision = r.commission_earned ? r.commission_earned : 0;
+      if (r.purchased) totalComision += comision;
+
+      respuesta += `${i + 1}. ${r.product_name} (${r.recommendation_type})\n   ${estado}${monto}\n\n`;
+    });
+
+    respuesta += `\n💰 Total comisión generada: $${Math.round(totalComision).toLocaleString("es-CO")}`;
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_metricas_recomendaciones(input) {
+    const dias = Number(input.dias_atras || 30);
+    const { obtenerMetricasRecomendaciones } = await import("./recommendations.ts");
+    const metricas = await obtenerMetricasRecomendaciones(dias);
+
+    let respuesta = `📊 *MÉTRICAS DE RECOMENDACIONES* (últimos ${dias} días)\n\n`;
+    respuesta += `📈 **Generales**\n`;
+    respuesta += `• Generadas: ${metricas.total_generated}\n`;
+    respuesta += `• Mostradas: ${metricas.total_shown}\n`;
+    respuesta += `• Clickeadas: ${metricas.total_clicked}\n`;
+    respuesta += `• Compradas: ${metricas.total_purchased}\n\n`;
+
+    respuesta += `🎯 **Conversión**\n`;
+    respuesta += `• CTR (Click-Through Rate): ${metricas.ctr}%\n`;
+    respuesta += `• Conversion Rate: ${metricas.conversion_rate}%\n`;
+    respuesta += `• Ingresos totales: $${metricas.revenue_total.toLocaleString("es-CO")}\n\n`;
+
+    if (Object.keys(metricas.por_tipo).length > 0) {
+      respuesta += `📋 **Por Tipo**\n`;
+      for (const [tipo, stats] of Object.entries(metricas.por_tipo)) {
+        respuesta += `• ${tipo}: ${stats.shown} mostradas, ${stats.purchased} compradas, $${stats.revenue.toLocaleString("es-CO")}\n`;
+      }
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async obtener_recomendaciones_admin(input) {
+    const { obtenerRecomendacionesAdmin } = await import("./recommendations.ts");
+    const recomendaciones = await obtenerRecomendacionesAdmin({
+      rider_id: input.rider_id ? String(input.rider_id) : undefined,
+      tipo: input.tipo ? String(input.tipo) : undefined,
+      estado: input.estado ? (String(input.estado) as "pending" | "purchased" | "ignored") : undefined,
+    });
+
+    if (!recomendaciones || recomendaciones.length === 0) {
+      return { ok: true, data: "No hay recomendaciones que coincidan con los filtros." };
+    }
+
+    let respuesta = `📋 *RECOMENDACIONES* (${recomendaciones.length} encontradas)\n\n`;
+    recomendaciones.slice(0, 20).forEach((r, i) => {
+      const estado = r.purchased ? "✅" : r.clicked ? "👁️" : r.shown_in_chat ? "📌" : "⏳";
+      respuesta += `${i + 1}. ${estado} ${r.product_name} (${r.recommendation_type})\n`;
+      respuesta += `   Precio: $${r.estimated_price}, Comisión: $${r.commission_earned || 0}\n`;
+      respuesta += `   Mostrada: ${r.shown_in_chat ? new Date(r.recommended_at).toLocaleDateString() : "No"}\n\n`;
+    });
+
+    if (recomendaciones.length > 20) {
+      respuesta += `... y ${recomendaciones.length - 20} más`;
+    }
+
+    return { ok: true, data: respuesta };
+  },
+
+  async marcar_recomendacion_mostrada(input) {
+    const rec_id = String(input.recommendation_id || "").trim();
+    if (!rec_id) {
+      return { ok: false, data: "❌ ID de recomendación requerido." };
+    }
+
+    const { marcarRecomendacionMostrada } = await import("./recommendations.ts");
+    const success = await marcarRecomendacionMostrada(rec_id);
+
+    if (!success) {
+      return { ok: false, data: "❌ Error marcando recomendación." };
+    }
+
+    return { ok: true, data: "✅ Recomendación marcada como mostrada." };
   },
 };
 
