@@ -24,8 +24,10 @@ const GRAPH = "https://graph.facebook.com/v21.0";
 const EMAILJS_SERVICE_ID = Deno.env.get("EMAILJS_SERVICE_ID") ?? "ridera-contacto";
 const EMAILJS_PUBLIC_KEY = Deno.env.get("EMAILJS_PUBLIC_KEY") ?? "SkP6UWJZThu9tdQCc";
 const EMAILJS_PRIVATE_KEY = Deno.env.get("EMAILJS_PRIVATE_KEY") ?? "";
-const TPL_INTERNO = Deno.env.get("EMAILJS_TEMPLATE_INTERNO") ?? "7qkjo5c";
-const TPL_REPLY = Deno.env.get("EMAILJS_TEMPLATE_REPLY") ?? "8w8ecf8";
+// Ojo: el identificador que aparece en la URL del panel de EmailJS no es el
+// Template ID. El bueno está en la pestaña Settings de cada plantilla.
+const TPL_INTERNO = Deno.env.get("EMAILJS_TEMPLATE_INTERNO") ?? "template_qh8lzr4";
+const TPL_REPLY = Deno.env.get("EMAILJS_TEMPLATE_REPLY") ?? "template_nfjy6xp";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
