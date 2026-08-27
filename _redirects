@@ -2,6 +2,10 @@
 https://club.ridera.com.co/admin        /connect-admin.html   200!
 https://club.ridera.com.co/admin/*      /connect-admin.html   200!
 
+# taller-motos/ es un producto aparte (Node + PostgreSQL): no corre en Netlify
+# y su codigo no debe servirse desde el sitio de Ridera.
+/taller-motos/*             /index.html                        404
+
 /music                      /app/player.html                   200
 /lyrapp                     /app/lyrapp.apk                    200
 /grueros                    /grueros.html                      200
