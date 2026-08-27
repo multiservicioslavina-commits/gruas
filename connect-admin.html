@@ -663,7 +663,10 @@ async function sendRitaResponse(questionId, memberId) {
 
 // ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
 const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
-const RIDERA_WA = '573104717982'; // WhatsApp de soporte para recuperar clave
+// WhatsApp de Rita: el reseteo de clave lo procesa ella automáticamente
+// (verifica que el número escriba desde el WhatsApp registrado del club),
+// ya no depende de que un humano de soporte lo haga a mano.
+const RITA_WA = '573117896717';
 let loginClubTienePass = false;
 
 async function callAuth(payload) {
@@ -681,7 +684,7 @@ async function loadClubsForLogin() {
   const sel = document.getElementById('login-club');
   const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre.asc');
   if (!clubs || !clubs.length) { sel.innerHTML = '<option value="">No hay clubes</option>'; return; }
-  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
+  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}" data-codigo="${(c.codigo||'').replace(/"/g,'')}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
 }
 
 async function onClubSelect() {
@@ -741,11 +744,13 @@ async function doAdminLogin() {
 }
 
 function forgotPass() {
-  if (confirm('Para recuperar tu clave escríbele a Ridera por WhatsApp. ¿Abrir el chat?')) {
-    const club = document.getElementById('login-club');
-    const nombre = club.options[club.selectedIndex]?.text || '';
-    const txt = encodeURIComponent(`Hola, olvidé la clave del panel de administración del club ${nombre}.`);
-    window.open(`https://wa.me/${RIDERA_WA}?text=${txt}`, '_blank');
+  const club = document.getElementById('login-club');
+  const opt = club.options[club.selectedIndex];
+  const codigo = opt?.dataset.codigo || '';
+  if (!codigo) { alert('Elige tu club primero.'); return; }
+  if (confirm('Rita te va a enviar un link para crear una clave nueva, directo por WhatsApp — pero solo si escribes desde el número registrado del club. ¿Abrir el chat?')) {
+    const txt = encodeURIComponent(`Olvidé mi clave del panel de administración del club. Código: ${codigo}`);
+    window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
   }
 }
 

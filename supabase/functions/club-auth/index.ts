@@ -84,5 +84,28 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, token });
   }
 
+  // Confirma un reseteo de clave iniciado por Rita vía WhatsApp. El token
+  // se genera y valida server-side (rita-whatsapp) solo tras verificar que
+  // quien escribe es el whatsapp/lider_tel registrado del club — este paso
+  // solo confirma que el link no expiró ni fue usado ya.
+  if (action === 'reset-confirm') {
+    const resetToken = (body.token || '').toString();
+    if (!resetToken) return json({ error: 'Falta el token del link' }, 400);
+    if (!datos.reset_token || datos.reset_token !== resetToken) {
+      return json({ error: 'Este link ya fue usado o no es válido. Pide uno nuevo por WhatsApp.' }, 401);
+    }
+    if (!datos.reset_token_expires || new Date(datos.reset_token_expires) < new Date()) {
+      return json({ error: 'Este link expiró. Pide uno nuevo por WhatsApp.' }, 401);
+    }
+    if (newPassword.length < 4) return json({ error: 'La nueva clave debe tener al menos 4 caracteres' }, 400);
+    const nuevo = { ...datos, admin_pass_hash: await hash(newPassword) };
+    delete nuevo.reset_token;
+    delete nuevo.reset_token_expires;
+    const { error } = await sb.from('clubs').update({ datos: nuevo }).eq('id', club.id);
+    if (error) return json({ error: error.message }, 500);
+    const token = await signClubToken(club.id);
+    return json({ ok: true, clubId: club.id, nombre: club.nombre, codigo: club.codigo, token });
+  }
+
   return json({ error: 'Acción no válida' }, 400);
 });

@@ -771,6 +771,44 @@ async function sendWhatsApp(to: string, text: string): Promise<any> {
   return res.json();
 }
 
+function normalizeClubPhone(raw: string): string {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (digits.startsWith("57") && digits.length === 12) return digits;
+  if (digits.length === 10 && digits.startsWith("3")) return "57" + digits;
+  return digits;
+}
+
+// Reseteo de clave del panel de admin de un club, disparado por WhatsApp.
+// Verificación de identidad: el número que escribe debe ser el mismo
+// whatsapp/lider_tel guardado en el registro del club — no se pide ni se
+// valida ningún otro dato porque ese número YA es la prueba de identidad.
+async function handleClubPasswordReset(from: string, codigo: string | null): Promise<string> {
+  if (!codigo) {
+    return "Para recuperar la clave de tu club necesito el código. Escríbeme así: \"Olvidé mi clave del club. Código: TBC\" (el código está en la URL de tu panel, ej: club.ridera.com.co/admin).";
+  }
+  const { data: club } = await supabase
+    .from("clubs")
+    .select("id, nombre, codigo, datos")
+    .eq("codigo", codigo.toLowerCase())
+    .maybeSingle();
+  if (!club) {
+    return `No encontré ningún club con el código "${codigo}". Revisa que esté bien escrito — lo ves en la URL de tu panel.`;
+  }
+  const datos = club.datos || {};
+  const registrado = normalizeClubPhone(datos.whatsapp || datos.lider_tel || "");
+  const remitente = normalizeClubPhone(from);
+  if (!registrado || registrado !== remitente) {
+    return `Por seguridad, solo puedo resetear la clave si escribes desde el WhatsApp registrado como administrador de ${club.nombre}. Este número no coincide con el que tenemos. Si cambiaste de número, contáctanos para verificarte de otra forma.`;
+  }
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  await supabase.from("clubs").update({
+    datos: { ...datos, reset_token: token, reset_token_expires: expires },
+  }).eq("id", club.id);
+  const link = `https://club.ridera.com.co/reset-club?club=${club.codigo}&token=${token}`;
+  return `¡Listo! Verifiqué que escribes desde el WhatsApp registrado de ${club.nombre} 🏍️\n\nCrea tu nueva clave aquí (el link vence en 15 minutos):\n${link}`;
+}
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   if (req.method === "GET") {
@@ -842,6 +880,19 @@ Deno.serve(async (req: Request) => {
       }
 
       await saveMessage(from, "user", message);
+
+      // Reseteo de clave de administrador de club: determinista, NUNCA vía IA
+      // (es una acción sensible). La seguridad real está en que el número que
+      // escribe debe coincidir con el whatsapp/lider_tel registrado del club,
+      // no en el contenido del mensaje.
+      const msgNormReset = norm(message);
+      if (/olvid.{0,15}clave.{0,15}club|recuperar.{0,15}clave.{0,15}club|clave.{0,20}panel.{0,20}administraci/.test(msgNormReset)) {
+        const codigoMatch = /c[oó]digo:?\s*([a-z0-9_-]{2,20})/i.exec(message);
+        const resetReply = await handleClubPasswordReset(from, codigoMatch?.[1] || null);
+        await saveMessage(from, "assistant", resetReply);
+        await sendWhatsApp(from, resetReply);
+        return new Response(JSON.stringify({ ok: true, flow: "club_reset" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
 
       const refMatch = /\bREF[\s-]?([A-Za-z0-9]{4,12})\b/i.exec(message);
       if (refMatch) {
