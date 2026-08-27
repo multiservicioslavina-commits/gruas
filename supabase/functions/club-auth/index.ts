@@ -19,8 +19,10 @@ async function hash(p: string): Promise<string> {
 // claim personalizado, para que las politicas RLS puedan confiar en el
 // dato sin depender de que el navegador "diga la verdad".
 async function signClubToken(clubId: string): Promise<string> {
-  const secret = Deno.env.get('SUPABASE_JWT_SECRET');
-  if (!secret) throw new Error('SUPABASE_JWT_SECRET no configurado en el proyecto');
+  // Supabase reserva el prefijo SUPABASE_ y no permite crear secretos con el,
+  // asi que el JWT secret del proyecto se guarda bajo este nombre.
+  const secret = Deno.env.get('CLUB_JWT_SECRET');
+  if (!secret) throw new Error('CLUB_JWT_SECRET no configurado en el proyecto');
   const key = new TextEncoder().encode(secret);
   return await new SignJWT({ role: 'authenticated', club_id: clubId, aud: 'authenticated' })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
