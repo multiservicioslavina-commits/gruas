@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registra tu taller — Ridera Taller</title>
+<meta name="description" content="Software gratuito para talleres de motos: órdenes de servicio, clientes, inventario y seguimiento para tus clientes.">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E85D20; --orange-hot:#FF6B2B;
+  --carbon:#0D0F12; --carbon2:#15181D; --carbon3:#1E2229; --carbon4:#262D37;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.48);
+  --border:rgba(255,255,255,0.07); --border-hi:rgba(255,255,255,0.13);
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;padding:32px 20px 64px}
+.wrap{max-width:640px;margin:0 auto}
+.brand{color:var(--orange);font-weight:700;font-size:1.1rem;margin-bottom:8px}
+h1{font-size:1.9rem;font-weight:800;line-height:1.2;margin-bottom:10px}
+.lead{color:var(--text-muted);font-size:0.98rem;line-height:1.6;margin-bottom:22px}
+.perks{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:28px}
+.perk{background:var(--carbon2);border:0.5px solid var(--border-hi);border-radius:10px;padding:12px 14px;font-size:0.85rem;color:var(--text-muted)}
+.perk b{display:block;color:#fff;font-size:0.9rem;margin-bottom:3px}
+.card{background:var(--carbon3);border:0.5px solid var(--border-hi);border-radius:16px;padding:28px 24px;margin-bottom:18px}
+.card h2{font-size:1.05rem;font-weight:700;margin-bottom:4px}
+.card .hint{color:var(--text-dim);font-size:0.83rem;margin-bottom:18px}
+.form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:16px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row{grid-template-columns:1fr}}
+label{font-size:0.85rem;font-weight:600;color:rgba(255,255,255,0.9)}
+input,select,textarea{width:100%;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:8px;color:#fff;font-family:inherit;font-size:15px;padding:12px 14px}
+input:focus,select:focus,textarea:focus{outline:none;border-color:rgba(232,93,32,0.5)}
+textarea{resize:vertical;min-height:70px}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
+.chip{position:relative}
+.chip input{position:absolute;opacity:0;pointer-events:none}
+.chip span{display:inline-block;padding:8px 14px;border-radius:20px;background:var(--carbon4);border:0.5px solid var(--border-hi);font-size:0.85rem;cursor:pointer;transition:all .15s}
+.chip input:checked + span{background:rgba(232,93,32,0.18);border-color:var(--orange);color:#fff}
+.btn{width:100%;background:var(--orange);color:#fff;font-weight:700;font-size:1rem;padding:15px;border:none;border-radius:8px;cursor:pointer;transition:background .2s}
+.btn:hover{background:var(--orange-hot)}
+.btn:disabled{background:#333;color:var(--text-dim);cursor:default}
+.status{display:none;font-size:0.88rem;padding:12px 14px;border-radius:8px;margin-bottom:16px;border-left:3px solid;line-height:1.5}
+.status.visible{display:block}
+.status.error{background:rgba(248,113,113,0.1);border-color:#f87171;color:#fca5a5}
+.status.success{background:rgba(74,222,128,0.1);border-color:#4ade80;color:#86efac}
+.status.loading{background:rgba(232,93,32,0.08);border-color:var(--orange);color:var(--text-muted)}
+.foot{text-align:center;margin-top:18px;font-size:0.88rem;color:var(--text-dim)}
+.foot a{color:var(--orange);text-decoration:none}
+.legal{font-size:0.75rem;color:var(--text-dim);line-height:1.6;margin-top:14px;text-align:center}
+#successCard{display:none;text-align:center}
+#successCard.visible{display:block}
+#successCard .tick{font-size:2.5rem;margin-bottom:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">RIDERA TALLER</div>
+  <h1>El software de tu taller de motos</h1>
+  <p class="lead">Registra tu taller y empieza hoy a manejar órdenes de servicio, historial por placa, inventario de repuestos y seguimiento en línea para tus clientes. Sin instalar nada.</p>
+
+  <div class="perks">
+    <div class="perk"><b>Órdenes de servicio</b>Recepción, diagnóstico, repuestos y entrega.</div>
+    <div class="perk"><b>Historial por placa</b>Todo lo que le has hecho a esa moto.</div>
+    <div class="perk"><b>Inventario</b>Stock que se descuenta solo al usarlo.</div>
+    <div class="perk"><b>Seguimiento</b>Tu cliente ve el avance con un código.</div>
+  </div>
+
+  <div class="status" id="status"></div>
+
+  <form id="form" onsubmit="handleSubmit(event)">
+    <div class="card" id="cuentaCard">
+      <h2>Tu cuenta</h2>
+      <p class="hint">Con este correo entras al panel de tu taller.</p>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="t-email" required placeholder="tu@taller.com" autocomplete="email">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Contraseña *</label>
+          <input type="password" id="t-password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Repite la contraseña *</label>
+          <input type="password" id="t-password2" placeholder="••••••••" autocomplete="new-password">
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Datos del taller</h2>
+      <p class="hint">Así te ven los moteros en el directorio de Ridera.</p>
+      <div class="form-group">
+        <label>Nombre del taller *</label>
+        <input type="text" id="t-nombre" required placeholder="Ej: Taller Motos del Sur">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Ciudad *</label>
+          <input type="text" id="t-ciudad" required placeholder="Medellín">
+        </div>
+        <div class="form-group">
+          <label>Barrio</label>
+          <input type="text" id="t-barrio" placeholder="Belén">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Dirección</label>
+        <input type="text" id="t-direccion" placeholder="Cra 70 # 30-15">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>WhatsApp / teléfono *</label>
+          <input type="tel" id="t-telefono" required placeholder="+57 300 000 0000">
+        </div>
+        <div class="form-group">
+          <label>Instagram</label>
+          <input type="text" id="t-instagram" placeholder="@tutaller">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Servicios que prestas</label>
+        <div class="chips" id="t-servicios">
+          <label class="chip"><input type="checkbox" value="Mantenimiento general"><span>Mantenimiento general</span></label>
+          <label class="chip"><input type="checkbox" value="Motor"><span>Motor</span></label>
+          <label class="chip"><input type="checkbox" value="Eléctrico"><span>Eléctrico</span></label>
+          <label class="chip"><input type="checkbox" value="Frenos"><span>Frenos</span></label>
+          <label class="chip"><input type="checkbox" value="Suspensión"><span>Suspensión</span></label>
+          <label class="chip"><input type="checkbox" value="Llantas"><span>Llantas</span></label>
+          <label class="chip"><input type="checkbox" value="Latonería y pintura"><span>Latonería y pintura</span></label>
+          <label class="chip"><input type="checkbox" value="Preparación"><span>Preparación</span></label>
+          <label class="chip"><input type="checkbox" value="Escapes"><span>Escapes</span></label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Marcas que atiendes</label>
+        <input type="text" id="t-marcas" placeholder="Yamaha, Honda, Bajaj, KTM...">
+      </div>
+      <div class="row">
+        <div class="form-group">
+          <label>Abre</label>
+          <input type="time" id="t-abre" value="08:00">
+        </div>
+        <div class="form-group">
+          <label>Cierra</label>
+          <input type="time" id="t-cierra" value="18:00">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Cuéntale al motero de tu taller</label>
+        <textarea id="t-descripcion" maxlength="500" placeholder="Años de experiencia, especialidad, garantía que ofreces..."></textarea>
+      </div>
+    </div>
+
+    <button type="submit" class="btn" id="btnSubmit">Crear mi taller</button>
+    <p class="legal">Al registrarte aceptas que Ridera guarde estos datos para operar tu panel y mostrar tu taller en el directorio.</p>
+  </form>
+
+  <div class="card" id="successCard">
+    <div class="tick">🔧</div>
+    <h2>¡Tu taller está listo!</h2>
+    <p class="hint" style="margin-bottom:18px">Ya puedes crear tu primera orden de servicio.</p>
+    <a class="btn" id="btnPortal" href="/mi-taller.html" style="display:block;text-decoration:none;text-align:center">Entrar a mi taller</a>
+  </div>
+
+  <div class="foot" id="footLink">¿Ya tienes cuenta? <a href="/login-taller.html">Inicia sesión</a></div>
+</div>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let sbClient = null;
+let sessionUser = null;
+
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, ANON_KEY);
+  }
+  return sbClient;
+}
+
+function setStatus(state, msg) {
+  const el = document.getElementById('status');
+  el.className = 'status visible ' + state;
+  el.textContent = msg;
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function getChecked(containerId) {
+  return Array.from(document.querySelectorAll('#' + containerId + ' input:checked')).map(i => i.value);
+}
+
+function slugify(s) {
+  return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60) || 'taller';
+}
+
+async function ensureUniqueSlug(sb, base) {
+  let slug = base, i = 1;
+  while (i < 30) {
+    const { data } = await sb.from('talleres').select('id').eq('slug', slug).maybeSingle();
+    if (!data) return slug;
+    slug = base + '-' + (++i);
+  }
+  return base + '-' + Date.now().toString(36);
+}
+
+// Si ya hay sesión abierta, no volvemos a pedir contraseña.
+(async function checkSession() {
+  try {
+    const sb = await initSupabase();
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    sessionUser = user;
+
+    const { data: equipo } = await sb.from('taller_equipo')
+      .select('taller_id').eq('auth_id', user.id).eq('activo', true).limit(1);
+    if (equipo && equipo.length) { window.location.href = '/mi-taller.html'; return; }
+
+    document.getElementById('cuentaCard').style.display = 'none';
+    document.getElementById('t-email').removeAttribute('required');
+    document.getElementById('footLink').innerHTML =
+      'Sesión iniciada como <b>' + user.email + '</b>. Completa los datos de tu taller.';
+  } catch (e) { /* sin sesión */ }
+})();
+
+async function handleSubmit(e) {
+  e.preventDefault();
+  const btn = document.getElementById('btnSubmit');
+  const nombre = document.getElementById('t-nombre').value.trim();
+  const ciudad = document.getElementById('t-ciudad').value.trim();
+  const telefono = document.getElementById('t-telefono').value.trim();
+  const email = sessionUser ? sessionUser.email : document.getElementById('t-email').value.trim();
+  const password = document.getElementById('t-password').value;
+  const password2 = document.getElementById('t-password2').value;
+
+  if (!sessionUser) {
+    if (password.length < 8) { setStatus('error', 'La contraseña debe tener al menos 8 caracteres.'); return; }
+    if (password !== password2) { setStatus('error', 'Las contraseñas no coinciden.'); return; }
+  }
+
+  btn.disabled = true;
+  setStatus('loading', sessionUser ? 'Creando tu taller...' : 'Creando tu cuenta...');
+
+  try {
+    const sb = await initSupabase();
+    let userId;
+
+    if (sessionUser) {
+      userId = sessionUser.id;
+    } else {
+      const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+      if (signUpError) {
+        if (/already registered|already exists/i.test(signUpError.message || '')) {
+          setStatus('error', 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión y vuelve a esta página para registrar tu taller.');
+          btn.disabled = false;
+          return;
+        }
+        throw signUpError;
+      }
+      userId = signUpData.user && signUpData.user.id;
+      if (!userId) throw new Error('No se pudo crear la cuenta. Intenta con otro correo.');
+      if (!signUpData.session) {
+        setStatus('success', 'Te enviamos un correo para confirmar tu cuenta. Confírmalo, inicia sesión y vuelve a esta página para terminar el registro de tu taller.');
+        btn.disabled = false;
+        return;
+      }
+    }
+
+    setStatus('loading', 'Guardando los datos del taller...');
+    const slug = await ensureUniqueSlug(sb, slugify(nombre));
+
+    const datos = {
+      servicios: getChecked('t-servicios').join(', '),
+      marcas: document.getElementById('t-marcas').value.trim(),
+      hora_abre: document.getElementById('t-abre').value,
+      hora_cierra: document.getElementById('t-cierra').value,
+      descripcion: document.getElementById('t-descripcion').value.trim(),
+      contacto: nombre,
+      timestamp: new Date().toISOString()
+    };
+
+    const { data: taller, error: insErr } = await sb.from('talleres').insert([{
+      nombre,
+      ciudad,
+      barrio: document.getElementById('t-barrio').value.trim(),
+      direccion: document.getElementById('t-direccion').value.trim(),
+      telefono,
+      email,
+      instagram: document.getElementById('t-instagram').value.trim(),
+      datos,
+      slug,
+      created_by: userId,
+      software_at: new Date().toISOString(),
+      estado: 'interesado',
+      aprobado: false
+    }]).select('id').single();
+
+    if (insErr) throw insErr;
+
+    const { error: eqErr } = await sb.from('taller_equipo').insert([{
+      taller_id: taller.id,
+      auth_id: userId,
+      nombre: nombre,
+      email: email,
+      rol: 'dueno'
+    }]);
+    if (eqErr) throw eqErr;
+
+    localStorage.setItem('ridera_taller_id', taller.id);
+    document.getElementById('form').style.display = 'none';
+    document.getElementById('status').className = 'status';
+    document.getElementById('successCard').classList.add('visible');
+    document.getElementById('footLink').style.display = 'none';
+  } catch (err) {
+    console.error(err);
+    setStatus('error', err.message || 'No se pudo completar el registro. Intenta de nuevo.');
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>

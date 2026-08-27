@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Seguimiento de tu moto — Ridera Taller</title>
+<meta name="description" content="Consulta en qué va la reparación de tu moto con el código de tu orden de servicio.">
+<meta name="robots" content="noindex">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --orange:#E85D20; --orange-hot:#FF6B2B;
+  --bg:#0D0F12; --surface:#15181D; --surface2:#1E2229; --surface3:#262D37;
+  --muted:rgba(255,255,255,0.66); --dim:rgba(255,255,255,0.44);
+  --border:rgba(255,255,255,0.13);
+  --green:#4ade80; --yellow:#fbbf24; --red:#f87171; --blue:#60a5fa;
+}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:#fff;min-height:100vh;padding:28px 16px 60px}
+.wrap{max-width:520px;margin:0 auto}
+.brand{color:var(--orange);font-weight:800;font-size:0.95rem;letter-spacing:0.4px;margin-bottom:18px;text-align:center}
+.card{background:var(--surface);border:0.5px solid var(--border);border-radius:14px;padding:22px;margin-bottom:14px}
+h1{font-size:1.35rem;font-weight:800;margin-bottom:6px}
+.sub{color:var(--muted);font-size:0.88rem;line-height:1.55}
+input{width:100%;background:var(--surface3);border:0.5px solid var(--border);border-radius:9px;color:#fff;font-size:1.05rem;padding:14px;text-align:center;letter-spacing:3px;text-transform:uppercase;font-family:ui-monospace,Menlo,monospace}
+input:focus{outline:none;border-color:var(--orange)}
+.btn{width:100%;background:var(--orange);color:#fff;font-weight:700;font-size:0.98rem;padding:14px;border:none;border-radius:9px;cursor:pointer;margin-top:12px;font-family:inherit}
+.btn:hover{background:var(--orange-hot)}
+.btn.sec{background:var(--surface3);border:0.5px solid var(--border)}
+.err{background:rgba(248,113,113,0.1);border-left:3px solid var(--red);color:#fca5a5;padding:12px 14px;border-radius:8px;font-size:0.86rem;margin-top:14px;display:none;line-height:1.5}
+.err.on{display:block}
+.head-row{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px}
+.placa{font-family:ui-monospace,Menlo,monospace;background:var(--surface3);border:0.5px solid var(--border);border-radius:6px;padding:4px 10px;font-size:0.95rem;letter-spacing:1px;display:inline-block}
+.badge{display:inline-block;padding:5px 12px;border-radius:20px;font-size:0.75rem;font-weight:700;text-transform:uppercase;letter-spacing:0.3px}
+.b-recibida,.b-cotizada,.b-diagnostico{background:rgba(96,165,250,0.15);color:var(--blue)}
+.b-aprobada{background:rgba(232,93,32,0.16);color:var(--orange)}
+.b-en_proceso{background:rgba(251,191,36,0.16);color:var(--yellow)}
+.b-espera_repuestos{background:rgba(248,113,113,0.14);color:var(--red)}
+.b-lista{background:rgba(74,222,128,0.16);color:var(--green)}
+.b-entregada{background:rgba(255,255,255,0.09);color:var(--muted)}
+.steps{margin:18px 0 4px;border-left:2px solid var(--surface3);padding-left:18px}
+.step{position:relative;padding-bottom:16px}
+.step::before{content:'';position:absolute;left:-25px;top:3px;width:12px;height:12px;border-radius:50%;background:var(--surface3);border:2px solid var(--bg)}
+.step.done::before{background:var(--orange)}
+.step.now::before{background:var(--green);box-shadow:0 0 0 4px rgba(74,222,128,0.18)}
+.step b{display:block;font-size:0.9rem;margin-bottom:2px}
+.step span{font-size:0.78rem;color:var(--dim)}
+.step.pend b{color:var(--dim);font-weight:600}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:8px 0;border-bottom:0.5px solid rgba(255,255,255,0.06);font-size:0.88rem}
+.kv:last-child{border-bottom:none}
+.kv span:first-child{color:var(--dim)}
+.kv span:last-child{text-align:right;font-weight:600}
+.note{background:var(--surface2);border-radius:10px;padding:14px;font-size:0.86rem;line-height:1.6;color:var(--muted);margin-top:12px}
+.note b{color:#fff;display:block;margin-bottom:4px;font-size:0.8rem;text-transform:uppercase;letter-spacing:0.4px}
+.total{font-size:1.5rem;font-weight:800;color:var(--orange)}
+.foot{text-align:center;font-size:0.78rem;color:var(--dim);margin-top:22px;line-height:1.7}
+.foot a{color:var(--orange);text-decoration:none}
+#resultado{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">RIDERA TALLER</div>
+
+  <div class="card" id="buscador">
+    <h1>¿Cómo va tu moto?</h1>
+    <p class="sub">Escribe el código de tu orden de servicio. Te lo dio el taller cuando dejaste la moto.</p>
+    <div style="margin-top:16px">
+      <input type="text" id="codigo" maxlength="8" placeholder="A1B2C3" autocomplete="off">
+      <button class="btn" id="btn" onclick="buscar()">Ver mi orden</button>
+    </div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <div id="resultado"></div>
+
+  <div class="foot">
+    Seguimiento operado por <a href="https://ridera.com.co">Ridera</a> ·
+    <a href="/talleres">Encuentra talleres de motos</a>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+const ESTADOS = {
+  recibida: 'Recibida en el taller',
+  diagnostico: 'En diagnóstico',
+  cotizada: 'Cotizada — esperando tu visto bueno',
+  aprobada: 'Aprobada',
+  en_proceso: 'En reparación',
+  espera_repuestos: 'Esperando repuestos',
+  lista: '¡Lista para recoger!',
+  entregada: 'Entregada'
+};
+const FLUJO = ['recibida','diagnostico','cotizada','aprobada','en_proceso','espera_repuestos','lista','entregada'];
+
+const esc = s => (s == null ? '' : String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const money = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-CO');
+function fecha(d, hora) {
+  if (!d) return '—';
+  const f = new Date(d);
+  return f.toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' })
+    + (hora ? ' · ' + f.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' }) : '');
+}
+
+let sb = null;
+async function initSupabase() {
+  if (!sb) {
+    const mod = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sb = mod.createClient(SB_URL, ANON_KEY);
+  }
+  return sb;
+}
+
+function codigoDeUrl() {
+  const q = new URLSearchParams(location.search);
+  const porQuery = q.get('c') || q.get('codigo');
+  if (porQuery) return porQuery;
+  const m = location.pathname.match(/\/orden\/([A-Za-z0-9]{4,10})/);
+  return m ? m[1] : '';
+}
+
+function setErr(msg) {
+  const el = document.getElementById('err');
+  el.textContent = msg || '';
+  el.className = msg ? 'err on' : 'err';
+}
+
+async function buscar() {
+  const codigo = (document.getElementById('codigo').value || '').trim().toUpperCase();
+  if (codigo.length < 4) return setErr('Escribe el código completo que te dio el taller.');
+
+  const btn = document.getElementById('btn');
+  btn.disabled = true;
+  btn.textContent = 'Buscando...';
+  setErr('');
+
+  try {
+    const client = await initSupabase();
+    const { data, error } = await client.rpc('taller_seguimiento', { p_codigo: codigo });
+    if (error) throw error;
+    if (!data || !data.length) {
+      setErr('No encontramos ninguna orden con ese código. Revísalo con tu taller.');
+    } else {
+      pintar(data[0]);
+      history.replaceState(null, '', '/orden/' + codigo);
+    }
+  } catch (e) {
+    console.error(e);
+    setErr('No pudimos consultar tu orden en este momento. Intenta más tarde.');
+  }
+  btn.disabled = false;
+  btn.textContent = 'Ver mi orden';
+}
+
+function pintar(o) {
+  const hechos = {};
+  (o.historial || []).forEach(h => { if (!hechos[h.estado]) hechos[h.estado] = h.fecha; });
+  const idxActual = FLUJO.indexOf(o.estado);
+  const saldo = Math.max(Number(o.total || 0) - Number(o.pagado || 0), 0);
+
+  const pasos = FLUJO.filter(e => e !== 'espera_repuestos' || hechos[e] || o.estado === e)
+    .map(e => {
+      const i = FLUJO.indexOf(e);
+      const cls = o.estado === e ? 'now' : (hechos[e] || i < idxActual ? 'done' : 'pend');
+      return `<div class="step ${cls}"><b>${ESTADOS[e]}</b>
+        <span>${hechos[e] ? fecha(hechos[e], true) : (cls === 'pend' ? 'Pendiente' : '')}</span></div>`;
+    }).join('');
+
+  document.getElementById('buscador').style.display = 'none';
+  const res = document.getElementById('resultado');
+  res.style.display = 'block';
+  res.innerHTML = `
+    <div class="card">
+      <div class="head-row">
+        <div>
+          <div class="placa">${esc(o.placa || 'SIN PLACA')}</div>
+          <div class="sub" style="margin-top:6px">${esc(o.moto || 'Tu moto')} · orden #${o.numero}</div>
+        </div>
+        <span class="badge b-${o.estado}">${esc((ESTADOS[o.estado] || o.estado).split('—')[0])}</span>
+      </div>
+      <div class="steps">${pasos}</div>
+    </div>
+
+    <div class="card">
+      <div class="kv"><span>Ingresó</span><span>${fecha(o.fecha_ingreso, true)}</span></div>
+      ${o.fecha_promesa ? `<div class="kv"><span>Entrega prometida</span><span>${fecha(o.fecha_promesa)}</span></div>` : ''}
+      ${o.fecha_entrega ? `<div class="kv"><span>Entregada</span><span>${fecha(o.fecha_entrega, true)}</span></div>` : ''}
+      <div class="kv"><span>Taller</span><span>${esc(o.taller)}</span></div>
+      ${o.taller_telefono ? `<div class="kv"><span>Teléfono</span><span><a href="tel:${esc(o.taller_telefono)}" style="color:var(--orange);text-decoration:none">${esc(o.taller_telefono)}</a></span></div>` : ''}
+      ${o.taller_ciudad ? `<div class="kv"><span>Ciudad</span><span>${esc(o.taller_ciudad)}</span></div>` : ''}
+    </div>
+
+    ${o.motivo ? `<div class="card"><div class="note"><b>Lo que reportaste</b>${esc(o.motivo)}</div>
+      ${o.diagnostico ? `<div class="note"><b>Diagnóstico del taller</b>${esc(o.diagnostico)}</div>` : ''}
+      ${o.recomendaciones ? `<div class="note"><b>Recomendaciones</b>${esc(o.recomendaciones)}</div>` : ''}</div>` : ''}
+
+    ${Number(o.total) > 0 ? `
+    <div class="card">
+      <div class="sub" style="margin-bottom:6px">Total del servicio</div>
+      <div class="total">${money(o.total)}</div>
+      <div style="margin-top:12px">
+        <div class="kv"><span>Abonado</span><span>${money(o.pagado)}</span></div>
+        <div class="kv"><span>Saldo</span><span style="color:${saldo > 0 ? 'var(--red)' : 'var(--green)'}">${money(saldo)}</span></div>
+      </div>
+    </div>` : ''}
+
+    <div class="card">
+      ${o.taller_telefono ? `<a class="btn" style="display:block;text-align:center;text-decoration:none" target="_blank" rel="noopener"
+        href="https://wa.me/${(o.taller_telefono || '').replace(/[^\d]/g,'').replace(/^0+/,'').replace(/^(?!57)/, '57')}?text=${encodeURIComponent('Hola, pregunto por mi orden ' + o.codigo + ' (' + (o.placa || '') + ')')}">
+        Escribirle al taller</a>` : ''}
+      <button class="btn sec" onclick="location.href='/orden.html'">Consultar otro código</button>
+    </div>`;
+}
+
+document.getElementById('codigo').addEventListener('keydown', e => { if (e.key === 'Enter') buscar(); });
+
+(function () {
+  const c = codigoDeUrl();
+  if (c) { document.getElementById('codigo').value = c.toUpperCase(); buscar(); }
+})();
+</script>
+</body>
+</html>
