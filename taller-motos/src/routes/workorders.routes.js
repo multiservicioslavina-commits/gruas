@@ -120,9 +120,16 @@ workOrdersRouter.post('/', wrap(async (req, res) => {
         [workshopId, customerId, data.plate, data.brand || null, data.model || null,
          data.year || null, data.mileage_in || null]);
       motorcycle = rows[0];
-    } else if (data.mileage_in && data.mileage_in > (motorcycle.mileage || 0)) {
-      await client.query('UPDATE motorcycles SET mileage = $1, updated_at = NOW() WHERE id = $2',
-        [data.mileage_in, motorcycle.id]);
+    } else {
+      if (data.mileage_in && data.mileage_in > (motorcycle.mileage || 0)) {
+        await client.query('UPDATE motorcycles SET mileage = $1, updated_at = NOW() WHERE id = $2',
+          [data.mileage_in, motorcycle.id]);
+      }
+      // Moto ya registrada pero sin dueño: se le asigna el cliente de esta visita.
+      if (!motorcycle.customer_id && customerId) {
+        await client.query('UPDATE motorcycles SET customer_id = $1, updated_at = NOW() WHERE id = $2',
+          [customerId, motorcycle.id]);
+      }
     }
 
     // 3. La orden.

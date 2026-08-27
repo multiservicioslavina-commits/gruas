@@ -242,3 +242,20 @@ test('búsqueda de órdenes por placa y por estado', async () => {
   const open = await client.get('/api/work-orders?open=true');
   assert.equal(open.body.total, 2);
 });
+
+test('una moto sin dueño queda vinculada al cliente de su primera orden', async () => {
+  const { client } = await createWorkshop(server.url);
+
+  // La moto se registra suelta, sin cliente (por ejemplo, importada del catálogo).
+  const moto = (await client.post('/api/motorcycles', { plate: 'ORF001', brand: 'KTM' })).body;
+  assert.equal(moto.customer_id, null);
+
+  const order = await receive(client, {
+    plate: 'ORF001', customer_name: 'Dueño Encontrado', customer_phone: '3007778899'
+  });
+  assert.equal(order.motorcycle.id, moto.id, 'reutiliza la moto existente');
+  assert.ok(order.customer, 'crea el cliente');
+
+  const updated = (await client.get(`/api/motorcycles/${moto.id}`)).body;
+  assert.equal(updated.customer_id, order.customer.id, 'la moto queda vinculada a su dueño');
+});

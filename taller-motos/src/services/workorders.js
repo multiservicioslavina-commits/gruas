@@ -165,33 +165,45 @@ export async function changeStatus(client, { workshopId, workOrderId, status, no
 // Carga completa de la orden para la vista de detalle.
 export async function loadFullWorkOrder(client, workshopId, id) {
   const order = await getWorkOrder(client, workshopId, id);
-  const [customer, motorcycle, services, parts, diagnostics, payments, history, quotes, files] =
-    await Promise.all([
-      client.query('SELECT * FROM customers WHERE id = $1', [order.customer_id]),
-      client.query('SELECT * FROM motorcycles WHERE id = $1', [order.motorcycle_id]),
-      client.query(`SELECT s.*, u.name AS mechanic_name FROM work_order_services s
-                    LEFT JOIN users u ON u.id = s.mechanic_id
-                    WHERE s.work_order_id = $1 ORDER BY s.created_at`, [id]),
-      client.query('SELECT * FROM work_order_parts WHERE work_order_id = $1 ORDER BY created_at', [id]),
-      client.query(`SELECT d.*, u.name AS mechanic_name FROM diagnostics d
-                    LEFT JOIN users u ON u.id = d.mechanic_id
-                    WHERE d.work_order_id = $1 ORDER BY d.created_at DESC`, [id]),
-      client.query('SELECT * FROM payments WHERE work_order_id = $1 ORDER BY created_at', [id]),
-      client.query(`SELECT h.*, u.name AS user_name FROM work_order_status_history h
-                    LEFT JOIN users u ON u.id = h.changed_by
-                    WHERE h.work_order_id = $1 ORDER BY h.created_at`, [id]),
-      client.query(`SELECT id, number, status, total, public_token, sent_at, responded_at, valid_until
-                    FROM quotes WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]),
-      client.query(`SELECT id, kind, stage, filename, mime_type, size_bytes, caption, created_at
-                    FROM attachments WHERE entity_type = 'work_order' AND entity_id = $1
-                    ORDER BY created_at`, [id])
-    ]);
+
+  // Un cliente de PostgreSQL atiende una consulta a la vez: dentro de una
+  // transacción hay que encadenarlas, no lanzarlas en paralelo.
+  const customer = order.customer_id
+    ? (await client.query('SELECT * FROM customers WHERE id = $1', [order.customer_id])).rows[0]
+    : null;
+  const motorcycle = order.motorcycle_id
+    ? (await client.query('SELECT * FROM motorcycles WHERE id = $1', [order.motorcycle_id])).rows[0]
+    : null;
+
+  const services = await client.query(
+    `SELECT s.*, u.name AS mechanic_name FROM work_order_services s
+     LEFT JOIN users u ON u.id = s.mechanic_id
+     WHERE s.work_order_id = $1 ORDER BY s.created_at`, [id]);
+  const parts = await client.query(
+    'SELECT * FROM work_order_parts WHERE work_order_id = $1 ORDER BY created_at', [id]);
+  const diagnostics = await client.query(
+    `SELECT d.*, u.name AS mechanic_name FROM diagnostics d
+     LEFT JOIN users u ON u.id = d.mechanic_id
+     WHERE d.work_order_id = $1 ORDER BY d.created_at DESC`, [id]);
+  const payments = await client.query(
+    'SELECT * FROM payments WHERE work_order_id = $1 ORDER BY created_at', [id]);
+  const history = await client.query(
+    `SELECT h.*, u.name AS user_name FROM work_order_status_history h
+     LEFT JOIN users u ON u.id = h.changed_by
+     WHERE h.work_order_id = $1 ORDER BY h.created_at`, [id]);
+  const quotes = await client.query(
+    `SELECT id, number, status, total, public_token, sent_at, responded_at, valid_until
+     FROM quotes WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
+  const files = await client.query(
+    `SELECT id, kind, stage, filename, mime_type, size_bytes, caption, created_at
+     FROM attachments WHERE entity_type = 'work_order' AND entity_id = $1
+     ORDER BY created_at`, [id]);
 
   return {
     ...order,
     balance: round2(Number(order.total) - Number(order.paid_total)),
-    customer: customer.rows[0] || null,
-    motorcycle: motorcycle.rows[0] || null,
+    customer: customer || null,
+    motorcycle: motorcycle || null,
     services: services.rows,
     parts: parts.rows,
     diagnostics: diagnostics.rows,
