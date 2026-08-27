@@ -13,10 +13,12 @@ async function orderWithLines(client, { taxRate = 0 } = {}) {
     customer_name: 'Cliente Cotización',
     complaint: 'Revisión general'
   })).body;
-  await client.post(`/api/work-orders/${order.id}/services`,
+  const first = await client.post(`/api/work-orders/${order.id}/services`,
     { description: 'Mantenimiento básico', unit_price: 60000, approved: true });
-  await client.post(`/api/work-orders/${order.id}/services`,
+  assert.equal(first.status, 201, JSON.stringify(first.body));
+  const second = await client.post(`/api/work-orders/${order.id}/services`,
     { description: 'Cambio de guayas', unit_price: 40000, approved: false });
+  assert.equal(second.status, 201, JSON.stringify(second.body));
   return order;
 }
 

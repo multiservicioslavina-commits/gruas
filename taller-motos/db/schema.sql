@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (lower(email));
 CREATE INDEX IF NOT EXISTS users_workshop_idx ON users (workshop_id);
 
--- Llaves de API para integraciones externas (Ridera u otras plataformas).
+-- Llaves de API para integraciones con plataformas externas.
 CREATE TABLE IF NOT EXISTS api_keys (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,

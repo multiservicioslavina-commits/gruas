@@ -64,6 +64,9 @@ cálculo de totales e impuestos, movimiento de inventario, aprobación del
 cliente, permisos por rol y aislamiento entre talleres. Usa una base
 **distinta** a la de producción: las pruebas escriben en ella.
 
+El comando aplica el esquema y después corre los archivos de prueba, que van en
+paralelo. Cada archivo trabaja sobre su propio taller, así que no se pisan.
+
 ---
 
 ## Cómo está organizado

@@ -1,9 +1,9 @@
 // API de integración para plataformas externas.
 //
-// Es el punto por el que otro sistema (Ridera u cualquier otro) puede
-// consultar el estado de una moto o agendar una cita, sin que el software del
-// taller dependa de ninguno de ellos. Se autentica con una llave por taller
-// (cabecera X-Api-Key) y cada llave lleva sus permisos: read, write.
+// Es el punto por el que otro sistema puede consultar el estado de una moto o
+// agendar una cita, sin que el software del taller dependa de ninguno de ellos.
+// Se autentica con una llave por taller (cabecera X-Api-Key) y cada llave lleva
+// sus permisos: read, write.
 //
 // Versionada desde el primer día (/integration/v1) para poder evolucionarla
 // sin romper a quien ya la use.

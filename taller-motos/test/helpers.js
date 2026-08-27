@@ -11,26 +11,22 @@ process.env.DATABASE_URL ||= 'postgres://postgres@127.0.0.1:5433/taller_test';
 process.env.JWT_SECRET ||= 'secreto-de-pruebas';
 process.env.UPLOADS_DIR ||= '/tmp/taller-motos-test-uploads';
 
-import { readFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-
-const here = dirname(fileURLToPath(import.meta.url));
 
 const { createApp } = await import('../src/app.js');
 const { pool } = await import('../src/db.js');
 
-// Aplica el esquema una vez. El lock serializa a los procesos de prueba que
-// arrancan a la vez, para que no compitan creando las mismas tablas.
+// El esquema lo aplica `npm test` una sola vez antes de arrancar los archivos
+// de prueba. No se reaplica aquí a propósito: el runner corre los archivos en
+// paralelo, y un `ALTER TABLE … ADD CONSTRAINT` de un proceso choca con las
+// escrituras de otro que ya está probando.
 {
-  const client = await pool.connect();
-  try {
-    await client.query('SELECT pg_advisory_lock(918273645)');
-    await client.query(readFileSync(join(here, '..', 'db', 'schema.sql'), 'utf8'));
-  } finally {
-    await client.query('SELECT pg_advisory_unlock(918273645)');
-    client.release();
+  const { rows } = await pool.query(
+    `SELECT to_regclass('public.work_orders') IS NOT NULL AS ready`);
+  if (!rows[0].ready) {
+    throw new Error(
+      'La base de pruebas no tiene el esquema. Corre "npm test", que lo aplica, ' +
+      'o "npm run db:setup" apuntando a la base de pruebas.');
   }
 }
 
