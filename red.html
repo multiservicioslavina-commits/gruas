@@ -155,11 +155,7 @@
 <footer>Ridera · Comunidad motera de Antioquia · <a href="https://ridera.com.co">ridera.com.co</a></footer>
 
 <script>
-// TEMPORAL: mientras el PR #15 siga en borrador, gruas.ridera.com.co/red
-// no existe en producción todavía — el QR debe apuntar al preview de
-// Netlify. Cambiar de vuelta a 'https://gruas.ridera.com.co/red' cuando
-// se fusione a main.
-const PAGE_URL = 'https://deploy-preview-15--gruasridera.netlify.app/red';
+const PAGE_URL = 'https://gruas.ridera.com.co/red';
 
 // QR generado vía servicio público (alto contraste blanco/negro para asegurar buen escaneo)
 const qrApiUrl = 'https://api.qrserver.com/v1/create-qr-code/?size=360x360&margin=8&data=' + encodeURIComponent(PAGE_URL);
