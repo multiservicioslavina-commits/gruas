@@ -122,16 +122,6 @@
   .member-phone { font-size: 12px; color: var(--text2); }
   .member-date { font-size: 11px; color: var(--text2); }
 
-  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .room-card {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; cursor: pointer; transition: all .2s;
-  }
-  .room-card:hover { border-color: var(--accent); }
-  .room-icon { font-size: 28px; margin-bottom: 8px; }
-  .room-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .room-desc { font-size: 12px; color: var(--text2); }
-  .room-msgs { font-size: 11px; color: var(--text2); margin-top: 8px; }
 
   .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
   .empty .icon { font-size: 48px; margin-bottom: 12px; }
@@ -150,29 +140,14 @@
   }
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
-  #preview-section, #tab-members, #tab-rooms, #tab-rita { display: none; }
+  #preview-section, #tab-add, #tab-ajustes { display: none; }
 
-  .rita-question {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; margin-bottom: 12px;
-  }
-  .rita-q-header {
     display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
   }
-  .rita-q-member { font-weight: 600; font-size: 14px; }
-  .rita-q-time { font-size: 11px; color: var(--text2); }
-  .rita-q-text { font-size: 14px; margin-bottom: 12px; line-height: 1.45; }
-  .rita-q-response { background: var(--surface); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
-  .rita-q-response-label { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
-  .rita-q-response-text { font-size: 13px; }
-  .rita-q-input { width: 100%; min-height: 80px; padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; resize: vertical; }
-  .rita-q-input:focus { outline: none; border-color: var(--accent); }
-  .rita-q-actions { display: flex; gap: 8px; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
     .tabs { font-size: 12px; }
-    .rooms-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -215,32 +190,20 @@
 
 <div class="container">
   <div class="stats" id="stats">
+    <div class="stat"><div class="number" id="stat-requests">-</div><div class="label">Por aprobar</div></div>
     <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
-    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
-    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Pendientes</div></div>
-    <div class="stat"><div class="number" id="stat-rooms">-</div><div class="label">Salas</div></div>
+    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Ya entraron</div></div>
+    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Sin entrar</div></div>
   </div>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('add')">Agregar miembros</div>
-    <div class="tab" onclick="switchTab('members')">Miembros</div>
-    <div class="tab" onclick="switchTab('rooms')">Salas</div>
-    <div class="tab" onclick="switchTab('rita')">Preguntas a Rita</div>
+    <div class="tab active" onclick="switchTab('members')">Miembros</div>
+    <div class="tab" onclick="switchTab('add')">Agregar</div>
+    <div class="tab" onclick="switchTab('ajustes')">Ajustes</div>
   </div>
 
   <!-- TAB: Agregar miembros -->
   <div id="tab-add">
-    <div class="card">
-      <h2>Logo del club</h2>
-      <div style="display: flex; gap: 16px; align-items: flex-start;">
-        <div style="flex: 1;">
-          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
-          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
-        </div>
-        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
-      </div>
-    </div>
-
     <div class="card">
       <h2>Compartir link de invitación</h2>
       <p>Comparte este link con los miembros para que se registren directamente</p>
@@ -298,20 +261,19 @@ Pedro Gómez - 3176543210"></textarea>
     </div>
   </div>
 
-  <!-- TAB: Salas -->
-  <div id="tab-rooms">
-    <div class="rooms-grid" id="rooms-grid"></div>
-  </div>
-
-  <!-- TAB: Preguntas a Rita -->
-  <div id="tab-rita">
-    <div class="card" id="rita-card">
-      <div class="empty" id="rita-empty">
-        <div class="icon">🤖</div>
-        <p>No hay preguntas sin responder</p>
+  <!-- TAB: Ajustes -->
+  <div id="tab-ajustes">
+    <div class="card">
+      <h2>Logo del club</h2>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
+          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
+        </div>
+        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
       </div>
-      <div id="rita-questions"></div>
     </div>
+
   </div>
 </div>
 
@@ -325,7 +287,6 @@ let clubId = null;
 let clubCode = null;
 let parsedMembers = [];
 let allMembers = [];
-let ritaMensajes = [];
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -367,7 +328,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
 }
 
 // Las escrituras sobre miembros van por Edge Function (service_role), no por
@@ -387,14 +348,13 @@ async function clubApi(action, extra = {}) {
 
 async function loadStats() {
   const members = await sb(`connect_members?club_id=eq.${clubId}&select=estado`);
-  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=id`);
   const requested = members.filter(m => m.estado === 'solicitado').length;
   const total = members.length - requested;
   const linked = members.filter(m => m.estado === 'vinculado').length;
+  document.getElementById('stat-requests').textContent = requested;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-linked').textContent = linked;
   document.getElementById('stat-pending').textContent = total - linked;
-  document.getElementById('stat-rooms').textContent = rooms.length;
 }
 
 async function loadMembers() {
@@ -477,21 +437,6 @@ function filterMembers(q) {
   renderMembers(filtered);
 }
 
-async function loadRooms() {
-  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=*&order=orden`);
-  const grid = document.getElementById('rooms-grid');
-  if (!rooms.length) {
-    grid.innerHTML = '<div class="empty"><div class="icon">💬</div><p>No hay salas creadas</p></div>';
-    return;
-  }
-  grid.innerHTML = rooms.map(r => `
-    <div class="room-card">
-      <div class="room-icon">${r.icono}</div>
-      <div class="room-name">${r.nombre}</div>
-      <div class="room-desc">${r.descripcion || ''}</div>
-    </div>
-  `).join('');
-}
 
 function normalizePhone(raw) {
   let digits = raw.replace(/\D/g, '');
@@ -583,13 +528,11 @@ async function removeMember(id) {
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['add', 'members', 'rooms', 'rita'][i] === tab);
+    t.classList.toggle('active', ['members', 'add', 'ajustes'][i] === tab);
   });
-  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
   document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
-  document.getElementById('tab-rooms').style.display = tab === 'rooms' ? '' : 'none';
-  document.getElementById('tab-rita').style.display = tab === 'rita' ? '' : 'none';
-  if (tab === 'rita') loadRitaQuestions();
+  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
+  document.getElementById('tab-ajustes').style.display = tab === 'ajustes' ? '' : 'none';
 }
 
 function toast(msg, isError) {
@@ -668,74 +611,8 @@ async function loadLogo() {
   }
 }
 
-// Los DMs van por la Edge Function: sus politicas RLS dependen del claim
-// club_id del token, y PostgREST solo lo honra si acepta la firma HS256 --
-// algo que dejo de ser garantia cuando el proyecto migro a llaves asimetricas.
-async function loadRitaQuestions() {
-  const out = await clubApi('rita-preguntas');
-  ritaMensajes = out.ok ? out.mensajes : [];
-  renderRitaQuestions(ritaMensajes.filter(m => m.sender === 'user'));
-}
 
-function renderRitaQuestions(questions) {
-  const container = document.getElementById('rita-questions');
-  const empty = document.getElementById('rita-empty');
 
-  if (!questions.length) {
-    container.innerHTML = '';
-    empty.style.display = '';
-    return;
-  }
-
-  empty.style.display = 'none';
-  container.innerHTML = questions.map(q => {
-    const time = new Date(q.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    const memberName = q.connect_members ? q.connect_members.nombre : 'Usuario';
-    // Respondida = hay un mensaje de Rita a ese miembro POSTERIOR a la
-    // pregunta. Mirar solo el member_id marcaba como respondidas todas las
-    // preguntas de alguien a quien ya se le habia contestado una vez.
-    const hasResponse = ritaMensajes.some(m =>
-      m.member_id === q.member_id && m.sender === 'rita' && m.created_at > q.created_at);
-
-    return `<div class="rita-question">
-      <div class="rita-q-header">
-        <div>
-          <div class="rita-q-member">${memberName}</div>
-          <div class="rita-q-time">${time}</div>
-        </div>
-      </div>
-      <div class="rita-q-text">${q.content}</div>
-      ${hasResponse ? `<div class="rita-q-response">
-        <div class="rita-q-response-label">Respuesta enviada</div>
-        <div class="rita-q-response-text">✓ Ya respondida</div>
-      </div>` : `<div>
-        <textarea class="rita-q-input" id="resp-${q.id}" placeholder="Escribe la respuesta de Rita..."></textarea>
-        <div class="rita-q-actions">
-          <button class="btn btn-primary" onclick="sendRitaResponse('${q.id}', '${q.member_id}')">Enviar respuesta</button>
-        </div>
-      </div>`}
-    </div>`;
-  }).join('');
-}
-
-async function sendRitaResponse(questionId, memberId) {
-  const textarea = document.getElementById(`resp-${questionId}`);
-  const response = textarea.value.trim();
-  if (!response) return;
-
-  textarea.disabled = true;
-
-  try {
-    const out = await clubApi('rita-responder', { memberId, texto: response });
-    if (!out.ok) throw new Error(out.error || 'no se pudo enviar');
-    toast('Respuesta enviada');
-    await loadRitaQuestions();
-  } catch (e) {
-    toast('Error al enviar: ' + e.message, true);
-  }
-
-  textarea.disabled = false;
-}
 
 // ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
 const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
@@ -855,7 +732,7 @@ function logoutAdmin() {
 }
 
 async function refreshPanel() {
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
   toast('Actualizado');
 }
 

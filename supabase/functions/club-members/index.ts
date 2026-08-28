@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { jwtVerify } from 'https://esm.sh/jose@5';
+import { jwtVerify, SignJWT } from 'https://esm.sh/jose@5';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -38,18 +38,50 @@ async function clubIdFromToken(req: Request): Promise<string | null> {
   }
 }
 
-// Administrador del chat: un miembro al que el dueño del club le dio permiso
-// para moderar. Devuelve la fila del miembro solo si lo es de verdad; el
-// navegador nunca decide esto, se comprueba siempre aqui.
-type Sb = ReturnType<typeof createClient>;
-async function adminDelChat(sb: Sb, memberId: string): Promise<{ id: string; club_id: string } | null> {
-  if (!memberId) return null;
-  const { data } = await sb.from('connect_members')
-    .select('id, club_id, es_admin, estado')
-    .eq('id', memberId).maybeSingle();
-  if (!data || !data.es_admin || data.estado === 'solicitado') return null;
-  return { id: data.id, club_id: data.club_id };
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
+
+function claveSesion(): Uint8Array | null {
+  const secret = Deno.env.get('CLUB_JWT_SECRET');
+  return secret ? new TextEncoder().encode(secret) : null;
+}
+
+// Sesion del miembro del chat. Antes bastaba con mandar un member_id, que es
+// un dato que cualquiera podia leer de la tabla; ahora hay que traer un token
+// firmado que solo se obtiene con un codigo enviado al WhatsApp del miembro.
+async function firmarSesionMiembro(m: { id: string; club_id: string }): Promise<string> {
+  const key = claveSesion();
+  if (!key) throw new Error('CLUB_JWT_SECRET no configurado');
+  return await new SignJWT({ tipo: 'club-member', member_id: m.id, club_id: m.club_id })
+    .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
+    .setIssuedAt()
+    .setExpirationTime('30d')
+    .sign(key);
+}
+
+// Devuelve el miembro de la sesion, releyendo su fila: el rol y el estado
+// mandan como esten AHORA, no como estaban cuando se firmo el token. Asi,
+// quitarle a alguien el rol de admin o sacarlo del club surte efecto de una.
+async function miembroDeSesion(sb: Sb, req: Request): Promise<{ id: string; club_id: string; es_admin: boolean } | null> {
+  const raw = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  const key = claveSesion();
+  if (!raw || !key) return null;
+  try {
+    const { payload } = await jwtVerify(raw, key);
+    if (payload.tipo !== 'club-member' || !payload.member_id) return null;
+    const { data } = await sb.from('connect_members')
+      .select('id, club_id, es_admin, estado')
+      .eq('id', payload.member_id as string).maybeSingle();
+    if (!data || data.estado === 'solicitado') return null;
+    return { id: data.id, club_id: data.club_id, es_admin: !!data.es_admin };
+  } catch {
+    return null;
+  }
+}
+
+type Sb = ReturnType<typeof createClient>;
 
 // La API de WhatsApp solo permite texto libre dentro de las 24h siguientes al
 // ultimo mensaje del lider a Rita. Fuera de esa ventana Meta rechaza el envio,
@@ -113,6 +145,50 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, estado: 'solicitado', avisado });
   }
 
+  // ---------- Publico: canjear el codigo de WhatsApp por una sesion ----------
+  if (action === 'sesion-verificar') {
+    const telefono = normalizePhone((body.telefono || '').toString());
+    const codigo = (body.codigo || '').toString().replace(/\D/g, '');
+    const clubId = (body.clubId || '').toString();
+    if (!telefono || !codigo || !clubId) return json({ error: 'Faltan datos' }, 400);
+
+    const { data: m } = await sb.from('connect_members')
+      .select('id, nombre, club_id, estado, es_admin')
+      .eq('club_id', clubId).eq('telefono', telefono).maybeSingle();
+    if (!m) return json({ error: 'Tu número no está en este club.' }, 404);
+    if (m.estado === 'solicitado') {
+      return json({ error: 'Tu solicitud todavía está esperando aprobación del club.' }, 403);
+    }
+
+    const { data: fila } = await sb.from('connect_login_codes')
+      .select('id, codigo_hash, expira_en, intentos')
+      .eq('member_id', m.id).is('usado_en', null)
+      .order('created_at', { ascending: false }).limit(1).maybeSingle();
+    if (!fila) return json({ error: 'Pide un código nuevo por WhatsApp.' }, 401);
+    if (new Date(fila.expira_en) < new Date()) {
+      return json({ error: 'Ese código venció. Pide uno nuevo por WhatsApp.' }, 401);
+    }
+    // Tope de intentos: seis digitos se adivinan a fuerza bruta si se deja
+    // probar sin limite.
+    if (fila.intentos >= 5) {
+      return json({ error: 'Demasiados intentos. Pide un código nuevo por WhatsApp.' }, 429);
+    }
+    if (fila.codigo_hash !== await sha256Hex(codigo)) {
+      await sb.from('connect_login_codes').update({ intentos: fila.intentos + 1 }).eq('id', fila.id);
+      return json({ error: 'Código incorrecto.' }, 401);
+    }
+
+    await sb.from('connect_login_codes').update({ usado_en: new Date().toISOString() }).eq('id', fila.id);
+    if (m.estado === 'pendiente') {
+      await sb.from('connect_members')
+        .update({ estado: 'vinculado', vinculado_at: new Date().toISOString() })
+        .eq('id', m.id);
+    }
+
+    const token = await firmarSesionMiembro({ id: m.id, club_id: m.club_id });
+    return json({ ok: true, token, miembro: { id: m.id, nombre: m.nombre, es_admin: !!m.es_admin } });
+  }
+
   // ---------- Publico: marcar que el miembro ya entro al chat ----------
   if (action === 'ingreso') {
     const clubId = (body.clubId || '').toString();
@@ -136,9 +212,11 @@ Deno.serve(async (req: Request) => {
   // token propio: la comprobacion de que el mensaje es suyo tiene que
   // hacerse del lado del servidor.
   if (action === 'msg-borrar' || action === 'msg-editar') {
-    const memberId = (body.memberId || '').toString();
+    const sesion = await miembroDeSesion(sb, req);
+    if (!sesion) return json({ error: 'Vuelve a entrar al chat.' }, 401);
+    const memberId = sesion.id;
     const mensajeId = (body.mensajeId || '').toString();
-    if (!memberId || !mensajeId) return json({ error: 'Faltan datos' }, 400);
+    if (!mensajeId) return json({ error: 'Faltan datos' }, 400);
 
     const { data: m } = await sb.from('connect_messages')
       .select('id, member_id, tipo, es_rita, contenido, room_id')
@@ -150,13 +228,10 @@ Deno.serve(async (req: Request) => {
     // Un admin del chat puede borrar lo de cualquiera (moderar), pero editar
     // sigue siendo solo de uno: nadie debe poder cambiar lo que otro dijo.
     let puedeBorrar = esPropio;
-    if (!esPropio && action === 'msg-borrar') {
-      const admin = await adminDelChat(sb, memberId);
-      if (admin) {
-        const { data: sala } = await sb.from('connect_rooms')
-          .select('club_id').eq('id', m.room_id).maybeSingle();
-        puedeBorrar = !!sala && sala.club_id === admin.club_id;
-      }
+    if (!esPropio && action === 'msg-borrar' && sesion.es_admin) {
+      const { data: sala } = await sb.from('connect_rooms')
+        .select('club_id').eq('id', m.room_id).maybeSingle();
+      puedeBorrar = !!sala && sala.club_id === sesion.club_id;
     }
 
     if (action === 'msg-editar' && !esPropio) {
@@ -190,8 +265,10 @@ Deno.serve(async (req: Request) => {
   // Mismas operaciones que el panel del club, pero para un miembro al que el
   // dueño le dio permiso. Siempre acotadas a SU club.
   if (action === 'chat-miembros' || action === 'chat-agregar' || action === 'chat-quitar' || action === 'chat-aprobar') {
-    const admin = await adminDelChat(sb, (body.memberId || '').toString());
-    if (!admin) return json({ error: 'No eres administrador de este chat' }, 403);
+    const sesion = await miembroDeSesion(sb, req);
+    if (!sesion) return json({ error: 'Vuelve a entrar al chat.' }, 401);
+    if (!sesion.es_admin) return json({ error: 'No eres administrador de este chat' }, 403);
+    const admin = { id: sesion.id, club_id: sesion.club_id };
 
     if (action === 'chat-miembros') {
       const { data, error } = await sb.from('connect_members')

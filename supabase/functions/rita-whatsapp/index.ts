@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { jwtVerify } from "https://esm.sh/jose@5";
 
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "3234846550";
@@ -809,6 +810,49 @@ async function handleClubPasswordReset(from: string, codigo: string | null): Pro
   return `¡Listo! Verifiqué que escribes desde el WhatsApp registrado de ${club.nombre} 🏍️\n\nCrea tu nueva clave aquí (el link vence en 15 minutos):\n${link}`;
 }
 
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Codigo de un solo uso para entrar al chat del club.
+// Lo pide el propio miembro escribiendole a Rita, y no al reves, por una razon
+// de la plataforma: WhatsApp solo deja mandar texto libre dentro de las 24h
+// siguientes a un mensaje del usuario. Si Rita escribiera primero, a casi nadie
+// le llegaria. Al escribir el, ademas, su numero queda probado.
+async function handleChatLogin(from: string): Promise<string> {
+  const tel = normalizeClubPhone(from);
+  const { data: miembros } = await supabase
+    .from("connect_members")
+    .select("id, nombre, estado, club_id, clubs(nombre, codigo)")
+    .eq("telefono", tel);
+
+  const activos = (miembros || []).filter((m: any) => m.estado !== "solicitado");
+  if (!activos.length) {
+    const pendiente = (miembros || []).find((m: any) => m.estado === "solicitado");
+    if (pendiente) {
+      return "Tu solicitud todavía está esperando que el club la apruebe. Apenas te aprueben te aviso y ya podrás entrar 🏍️";
+    }
+    return "Este número no está en ningún club de Ridera. Pídele al líder de tu club que te agregue, o entra por el link de invitación que él te comparta.";
+  }
+
+  const codigo = String(Math.floor(100000 + Math.random() * 900000));
+  const hash = await sha256Hex(codigo);
+  const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  // Un codigo por miembro: invalidar los anteriores evita que sirvan varios
+  // a la vez si alguien lo pide dos veces.
+  for (const m of activos) {
+    await supabase.from("connect_login_codes").delete().eq("member_id", m.id).is("usado_en", null);
+    await supabase.from("connect_login_codes").insert({
+      member_id: m.id, codigo_hash: hash, expira_en: expira,
+    });
+  }
+
+  const clubes = activos.map((m: any) => m.clubs?.nombre).filter(Boolean).join(", ");
+  return `Tu código para entrar al chat${clubes ? ` de ${clubes}` : ""} es:\n\n*${codigo}*\n\nEscríbelo en la app. Vence en 10 minutos y solo sirve una vez.`;
+}
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   if (req.method === "GET") {
@@ -833,12 +877,24 @@ Deno.serve(async (req: Request) => {
         const reply = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: cors });
 
         const texto = (body.message || "").toString().trim();
-        const memberId = (body.memberId || "").toString();
         const roomId = (body.roomId || "").toString();
-        if (!texto || !memberId || !roomId) return reply({ error: "Faltan datos" }, 400);
+        if (!texto || !roomId) return reply({ error: "Faltan datos" }, 400);
 
-        // El miembro y la sala tienen que existir y ser del mismo club: es lo
-        // que evita que cualquiera use a Rita desde fuera de la app.
+        // La identidad sale del token firmado, no de un id que venga en el
+        // cuerpo: ese id es legible en la tabla y no prueba nada.
+        const secret = Deno.env.get("CLUB_JWT_SECRET");
+        const raw = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+        if (!secret || !raw) return reply({ error: "Vuelve a entrar al chat." }, 401);
+        let memberId = "";
+        try {
+          const { payload } = await jwtVerify(raw, new TextEncoder().encode(secret));
+          if (payload.tipo !== "club-member") throw new Error("token que no es de miembro");
+          memberId = (payload.member_id as string) || "";
+        } catch {
+          return reply({ error: "Vuelve a entrar al chat." }, 401);
+        }
+        if (!memberId) return reply({ error: "Vuelve a entrar al chat." }, 401);
+
         const { data: miembro } = await supabase
           .from("connect_members")
           .select("id, telefono, club_id, estado")
@@ -945,6 +1001,16 @@ Deno.serve(async (req: Request) => {
       // (es una acción sensible). La seguridad real está en que el número que
       // escribe debe coincidir con el whatsapp/lider_tel registrado del club,
       // no en el contenido del mensaje.
+      // Entrar al chat del club: determinista, nunca via IA. El numero desde
+      // el que escribe ES la prueba de identidad.
+      const msgNormLogin = norm(message);
+      if (/quiero entrar al chat|entrar al chat|codigo (para |de )?(entrar|ingresar|el chat)|ingresar al chat/.test(msgNormLogin)) {
+        const loginReply = await handleChatLogin(from);
+        await saveMessage(from, "assistant", loginReply);
+        await sendWhatsApp(from, loginReply);
+        return new Response(JSON.stringify({ ok: true, flow: "chat_login" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
       const msgNormReset = norm(message);
       if (/olvid.{0,15}clave.{0,15}club|recuperar.{0,15}clave.{0,15}club|clave.{0,20}panel.{0,20}administraci/.test(msgNormReset)) {
         const codigoMatch = /c[oó]digo:?\s*([a-z0-9_-]{2,20})/i.exec(message);
