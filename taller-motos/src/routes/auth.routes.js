@@ -6,13 +6,16 @@ import { wrap, unauthorized, conflict, badRequest } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
 import { revisar, MOTIVOS, venceEl } from '../lib/licencia.js';
+import { rateLimit } from '../lib/ratelimit.js';
 
 export const authRouter = Router();
 
-// Alta de un taller nuevo con su primer usuario administrador.
-// Es el único punto público que crea datos: si el despliegue es de un solo
-// taller, se deshabilita con ALLOW_SIGNUP=false.
-authRouter.post('/register', wrap(async (req, res) => {
+const loginLimiter = rateLimit({ windowMs: 15 * 60_000, max: 10,
+  message: 'Demasiados intentos de inicio de sesión. Espera 15 minutos.' });
+const registerLimiter = rateLimit({ windowMs: 60 * 60_000, max: 5,
+  message: 'Demasiados registros desde esta dirección. Espera una hora.' });
+
+authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
   if (process.env.ALLOW_SIGNUP === 'false') {
     throw conflict('El registro público está deshabilitado en esta instalación');
   }
@@ -73,7 +76,7 @@ authRouter.post('/register', wrap(async (req, res) => {
   });
 }));
 
-authRouter.post('/login', wrap(async (req, res) => {
+authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
   const data = validate(req.body, {
     email:    { type: 'email',  required: true },
     password: { type: 'string', required: true }

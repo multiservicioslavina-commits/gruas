@@ -1,3 +1,4 @@
+import { timingSafeEqual } from 'node:crypto';
 import { query } from '../db.js';
 import { verifyToken, hashApiKey } from '../lib/auth.js';
 import { unauthorized, forbidden, ApiError } from '../lib/errors.js';
@@ -71,7 +72,10 @@ export async function requireApiKey(req, _res, next) {
       [match[1]]
     );
     const key = rows[0];
-    if (!key || !key.active || key.key_hash !== hashApiKey(raw)) {
+    const computedHash = hashApiKey(raw);
+    const hashesMatch = key?.key_hash?.length === computedHash.length &&
+      timingSafeEqual(Buffer.from(key.key_hash), Buffer.from(computedHash));
+    if (!key || !key.active || !hashesMatch) {
       throw unauthorized('Llave de API inválida');
     }
 

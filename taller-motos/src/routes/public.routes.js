@@ -8,11 +8,13 @@ import { query, queryOne, transaction } from '../db.js';
 import { validate } from '../lib/validate.js';
 import { wrap, notFound, conflict, badRequest } from '../lib/errors.js';
 import { applyQuoteResponse } from './quotes.routes.js';
+import { rateLimit } from '../lib/ratelimit.js';
 
 export const publicRouter = Router();
 
-// Seguimiento de la orden por código.
-publicRouter.get('/orders/:code', wrap(async (req, res) => {
+const publicLimiter = rateLimit({ windowMs: 15 * 60_000, max: 30 });
+
+publicRouter.get('/orders/:code', publicLimiter, wrap(async (req, res) => {
   const code = String(req.params.code || '').trim().toUpperCase();
   if (code.length < 4) throw badRequest('Código inválido');
 
@@ -103,8 +105,7 @@ publicRouter.get('/quotes/:token', wrap(async (req, res) => {
   });
 }));
 
-// Aprobar o rechazar. Queda registrado con fecha, IP y navegador (spec §8).
-publicRouter.post('/quotes/:token/respond', wrap(async (req, res) => {
+publicRouter.post('/quotes/:token/respond', publicLimiter, wrap(async (req, res) => {
   const data = validate(req.body, {
     decision:      { type: 'string', required: true, enum: ['approved', 'rejected'] },
     customer_name: { type: 'string', max: 160 },
