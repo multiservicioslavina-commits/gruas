@@ -48,6 +48,7 @@
     padding: 20px; margin-bottom: 16px;
   }
   .card h2 { font-size: 16px; margin-bottom: 4px; }
+  .hint { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
   .card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
 
   textarea {
@@ -281,6 +282,11 @@ Pedro Gómez - 3176543210"></textarea>
 
   <!-- TAB: Lista de miembros -->
   <div id="tab-members">
+    <div class="card" id="requests-card" style="display:none">
+      <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
+      <p class="hint">Estas personas pidieron entrar por el link de invitación. No pueden entrar al chat hasta que las apruebes.</p>
+      <ul class="member-list" id="requests-list"></ul>
+    </div>
     <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
     <div class="card" id="members-card">
       <div class="empty" id="members-empty">
@@ -362,10 +368,26 @@ async function init() {
   await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
 }
 
+// Las escrituras sobre miembros van por Edge Function (service_role), no por
+// PostgREST: la funcion valida el token del club por su cuenta, asi ninguna
+// llave publica puede aprobar, agregar ni borrar miembros de un club ajeno.
+async function clubApi(action, extra = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/club-members`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${window.__authToken || ''}`
+    },
+    body: JSON.stringify({ action, ...extra })
+  });
+  return res.json();
+}
+
 async function loadStats() {
   const members = await sb(`connect_members?club_id=eq.${clubId}&select=estado`);
   const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=id`);
-  const total = members.length;
+  const requested = members.filter(m => m.estado === 'solicitado').length;
+  const total = members.length - requested;
   const linked = members.filter(m => m.estado === 'vinculado').length;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-linked').textContent = linked;
@@ -375,7 +397,34 @@ async function loadStats() {
 
 async function loadMembers() {
   allMembers = await sb(`connect_members?club_id=eq.${clubId}&select=*&order=created_at.desc`);
-  renderMembers(allMembers);
+  renderRequests(allMembers.filter(m => m.estado === 'solicitado'));
+  renderMembers(allMembers.filter(m => m.estado !== 'solicitado'));
+}
+
+function memberRow(m, actions, badge = '') {
+  const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  return `<li class="member-item">
+    <div class="member-avatar">${initials}</div>
+    <div class="member-info">
+      <div class="member-name">${m.nombre} ${badge}</div>
+      <div class="member-phone">${m.telefono}</div>
+    </div>
+    <div class="member-date">${date}</div>
+    ${actions}
+  </li>`;
+}
+
+function renderRequests(requests) {
+  const card = document.getElementById('requests-card');
+  const list = document.getElementById('requests-list');
+  document.getElementById('requests-count').textContent = requests.length;
+  if (!requests.length) { card.style.display = 'none'; list.innerHTML = ''; return; }
+  card.style.display = '';
+  list.innerHTML = requests.map(m => memberRow(m,
+    `<button class="btn btn-sm btn-primary" onclick="approveMember('${m.id}')">Aprobar</button>
+     <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">Rechazar</button>`
+  )).join('');
 }
 
 function renderMembers(members) {
@@ -384,27 +433,29 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
   list.innerHTML = members.map(m => {
-    const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
     const badge = m.estado === 'vinculado'
       ? '<span class="badge badge-linked">Vinculado</span>'
-      : '<span class="badge badge-pending">Pendiente</span>';
-    const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-    return `<li class="member-item">
-      <div class="member-avatar">${initials}</div>
-      <div class="member-info">
-        <div class="member-name">${m.nombre} ${badge}</div>
-        <div class="member-phone">${m.telefono}</div>
-      </div>
-      <div class="member-date">${date}</div>
-      <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>
-    </li>`;
+      : '<span class="badge badge-pending">Sin entrar</span>';
+    return memberRow(
+      m,
+      `<button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>`,
+      badge
+    );
   }).join('');
+}
+
+async function approveMember(id) {
+  const out = await clubApi('aprobar', { memberId: id });
+  if (!out.ok) { toast(out.error || 'No se pudo aprobar', true); return; }
+  toast('Miembro aprobado');
+  await Promise.all([loadStats(), loadMembers()]);
 }
 
 function filterMembers(q) {
   q = q.toLowerCase();
   const filtered = allMembers.filter(m =>
-    m.nombre.toLowerCase().includes(q) || m.telefono.includes(q)
+    m.estado !== 'solicitado' &&
+    (m.nombre.toLowerCase().includes(q) || m.telefono.includes(q))
   );
   renderMembers(filtered);
 }
@@ -485,19 +536,10 @@ async function addMembers() {
   if (!parsedMembers.length || !clubId) return;
   const btn = document.getElementById('btn-confirm');
   btn.disabled = true; btn.textContent = 'Agregando...';
-  const body = parsedMembers.map(m => ({
-    club_id: clubId,
-    nombre: m.nombre,
-    telefono: m.telefono,
-    estado: 'pendiente'
-  }));
   try {
-    await sb('connect_members', {
-      method: 'POST',
-      body,
-      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
-    });
-    toast(`${parsedMembers.length} miembros agregados`);
+    const out = await clubApi('agregar', { miembros: parsedMembers });
+    if (!out.ok) throw new Error(out.error || 'No se pudo agregar');
+    toast(`${out.agregados} miembro(s) agregados`);
     document.getElementById('members-input').value = '';
     hidePreview();
     await Promise.all([loadStats(), loadMembers()]);
@@ -509,7 +551,8 @@ async function addMembers() {
 
 async function removeMember(id) {
   if (!confirm('¿Eliminar este miembro?')) return;
-  await sb(`connect_members?id=eq.${id}`, { method: 'DELETE' });
+  const out = await clubApi('eliminar', { memberId: id });
+  if (!out.ok) { toast(out.error || 'No se pudo eliminar', true); return; }
   toast('Miembro eliminado');
   await Promise.all([loadStats(), loadMembers()]);
 }
@@ -663,7 +706,10 @@ async function sendRitaResponse(questionId, memberId) {
 
 // ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
 const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
-const RIDERA_WA = '573104717982'; // WhatsApp de soporte para recuperar clave
+// WhatsApp de Rita: el reseteo de clave lo procesa ella automáticamente
+// (verifica que el número escriba desde el WhatsApp registrado del club),
+// ya no depende de que un humano de soporte lo haga a mano.
+const RITA_WA = '573117896717';
 let loginClubTienePass = false;
 
 async function callAuth(payload) {
@@ -681,7 +727,7 @@ async function loadClubsForLogin() {
   const sel = document.getElementById('login-club');
   const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre.asc');
   if (!clubs || !clubs.length) { sel.innerHTML = '<option value="">No hay clubes</option>'; return; }
-  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
+  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}" data-codigo="${(c.codigo||'').replace(/"/g,'')}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
 }
 
 async function onClubSelect() {
@@ -741,11 +787,13 @@ async function doAdminLogin() {
 }
 
 function forgotPass() {
-  if (confirm('Para recuperar tu clave escríbele a Ridera por WhatsApp. ¿Abrir el chat?')) {
-    const club = document.getElementById('login-club');
-    const nombre = club.options[club.selectedIndex]?.text || '';
-    const txt = encodeURIComponent(`Hola, olvidé la clave del panel de administración del club ${nombre}.`);
-    window.open(`https://wa.me/${RIDERA_WA}?text=${txt}`, '_blank');
+  const club = document.getElementById('login-club');
+  const opt = club.options[club.selectedIndex];
+  const codigo = opt?.dataset.codigo || '';
+  if (!codigo) { alert('Elige tu club primero.'); return; }
+  if (confirm('Rita te va a enviar un link para crear una clave nueva, directo por WhatsApp — pero solo si escribes desde el número registrado del club. ¿Abrir el chat?')) {
+    const txt = encodeURIComponent(`Olvidé mi clave del panel de administración del club. Código: ${codigo}`);
+    window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
   }
 }
 

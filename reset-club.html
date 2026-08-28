@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nueva clave — Ridera Club</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --border: #2e3345;
+    --text: #e8e9ed; --text2: #8b8fa3; --accent: #f97316; --accent2: #fb923c;
+    --green: #22c55e; --red: #ef4444;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .container { max-width: 420px; margin: 0 auto; padding: 32px 16px; display: flex; flex-direction: column; min-height: 100vh; justify-content: center; }
+  .logo { font-size: 48px; text-align: center; margin-bottom: 16px; }
+  .title { font-size: 24px; font-weight: 700; text-align: center; margin-bottom: 4px; }
+  .title span { color: var(--accent); }
+  .subtitle { font-size: 14px; color: var(--text2); text-align: center; margin-bottom: 24px; }
+  .club-name { font-size: 18px; font-weight: 600; color: var(--accent); text-align: center; margin-bottom: 24px; }
+
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text2); }
+  input { width: 100%; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+  input:focus { outline: none; border-color: var(--accent); }
+
+  .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; transition: all .2s; margin-top: 8px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: var(--accent2); }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+
+  .error { color: var(--red); font-size: 13px; margin-top: 10px; text-align: center; }
+  .success { display: none; text-align: center; }
+  .success .ring { width: 64px; height: 64px; border-radius: 50%; background: rgba(34,197,94,.1); border: 2px solid var(--green); display: grid; place-items: center; margin: 0 auto 18px; font-size: 28px; }
+  .success p { color: var(--text2); font-size: 14px; margin-bottom: 20px; }
+  .link-back { display: block; text-align: center; color: var(--accent); font-size: 13px; margin-top: 18px; text-decoration: none; }
+</style>
+</head>
+<body>
+
+<div class="container" id="app">
+  <div class="logo">🏍️</div>
+  <div class="title"><span>Ridera</span> Club</div>
+  <div class="subtitle">Crea tu nueva clave</div>
+
+  <div id="loading" style="text-align:center;color:var(--text2);font-size:14px">Verificando enlace…</div>
+
+  <div id="form-wrap" style="display:none">
+    <div class="club-name" id="club-name"></div>
+    <form id="reset-form" onsubmit="return submitReset(event)">
+      <div class="form-group">
+        <label>Nueva clave</label>
+        <input id="pass1" type="password" placeholder="Mínimo 4 caracteres" required minlength="4">
+      </div>
+      <div class="form-group">
+        <label>Confirma tu clave</label>
+        <input id="pass2" type="password" placeholder="Repite la clave" required minlength="4">
+      </div>
+      <button class="btn btn-primary" type="submit" id="submit-btn">Crear clave y entrar</button>
+      <div class="error" id="form-error" style="display:none"></div>
+    </form>
+  </div>
+
+  <div class="success" id="success">
+    <div class="ring">✅</div>
+    <p>¡Clave actualizada! Ya puedes entrar a tu panel.</p>
+    <a class="btn btn-primary" href="/admin" style="display:block;text-decoration:none;text-align:center">Ir al panel de administración</a>
+  </div>
+
+  <div id="invalid" style="display:none">
+    <div class="error" id="invalid-msg" style="margin-top:0"></div>
+    <a class="link-back" href="/admin">← Volver al panel para pedir un link nuevo</a>
+  </div>
+</div>
+
+<script>
+const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
+
+async function callAuth(payload) {
+  const r = await fetch(CLUB_AUTH, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+  return r.json();
+}
+
+const params = new URLSearchParams(location.search);
+const codigo = params.get('club') || '';
+const token = params.get('token') || '';
+
+async function init() {
+  if (!codigo || !token) {
+    showInvalid('Este link no es válido. Pide uno nuevo escribiéndole a Rita por WhatsApp.');
+    return;
+  }
+  const est = await callAuth({ action: 'estado', codigo });
+  document.getElementById('loading').style.display = 'none';
+  if (!est.ok) {
+    showInvalid('No encontramos tu club. Pide un link nuevo por WhatsApp.');
+    return;
+  }
+  document.getElementById('club-name').textContent = est.nombre || '';
+  document.getElementById('form-wrap').style.display = 'block';
+}
+
+function showInvalid(msg) {
+  document.getElementById('loading').style.display = 'none';
+  document.getElementById('invalid-msg').textContent = msg;
+  document.getElementById('invalid').style.display = 'block';
+}
+
+async function submitReset(ev) {
+  ev.preventDefault();
+  const pass1 = document.getElementById('pass1').value;
+  const pass2 = document.getElementById('pass2').value;
+  const err = document.getElementById('form-error');
+  err.style.display = 'none';
+
+  if (pass1.length < 4) { err.textContent = 'La clave debe tener al menos 4 caracteres.'; err.style.display = 'block'; return false; }
+  if (pass1 !== pass2) { err.textContent = 'Las claves no coinciden.'; err.style.display = 'block'; return false; }
+
+  const btn = document.getElementById('submit-btn');
+  btn.disabled = true; btn.textContent = 'Creando…';
+
+  const res = await callAuth({ action: 'reset-confirm', codigo, token, newPassword: pass1 });
+  if (res.ok) {
+    document.getElementById('form-wrap').style.display = 'none';
+    document.getElementById('success').style.display = 'block';
+  } else {
+    btn.disabled = false; btn.textContent = 'Crear clave y entrar';
+    if (/expir|usado|inválido|valido/i.test(res.error || '')) {
+      showInvalid(res.error);
+      document.getElementById('form-wrap').style.display = 'none';
+    } else {
+      err.textContent = res.error || 'No se pudo actualizar la clave.'; err.style.display = 'block';
+    }
+  }
+  return false;
+}
+
+init();
+</script>
+</body>
+</html>

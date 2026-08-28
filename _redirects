@@ -1,12 +1,20 @@
 # club.ridera.com.co/admin -> panel admin del club (debe ir primero)
 https://club.ridera.com.co/admin        /connect-admin.html   200!
 https://club.ridera.com.co/admin/*      /connect-admin.html   200!
+https://club.ridera.com.co/reset-club   /reset-club.html      200!
 
+/aliados                    /aliados.html                      200
+/aliado                     /aliados.html                      200
+/red                        /red.html                          200
+/registro-hotel              https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-hotel        200
+/registro-restaurante        https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-restaurante  200
 /music                      /app/player.html                   200
 /lyrapp                     /app/lyrapp.apk                    200
 /grueros                    /grueros.html                      200
 /almacenes                  /almacenes.html                    200
 /seguimiento                /seguimiento.html                  200
+/privacidad                 /politica-privacidad-gruas.html     200
+/eliminar-cuenta            /eliminar-cuenta.html              200
 /info                       /info.html                         200
 /grua/*                     /grua.html?slug=:splat             200
 /almacen/*                  /almacen.html?slug=:splat          200
@@ -18,6 +26,7 @@ https://club.ridera.com.co/admin/*      /connect-admin.html   200!
 /login-almacen              /login-almacen.html                301
 /reset-password              /reset-password.html               200
 /reset-gruero               /reset-gruero.html                 200
+/reset-club                 /reset-club.html                   200
 /login                      /login-gruero.html                 301
 /registro                   /registro-gruero.html              301
 /registro-almacen           /registro-almacen.html             200
