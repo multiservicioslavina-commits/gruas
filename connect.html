@@ -46,6 +46,10 @@
   .login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 20px; }
   .login-ayuda { color: var(--text2); font-size: 13px; line-height: 1.5; max-width: 320px; margin: 0 auto 14px; }
   .login-volver { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; padding: 12px; }
+  .login-pasos {
+    text-align: left; color: var(--text2); font-size: 13px; line-height: 1.6;
+    max-width: 320px; margin: 0 auto 16px; padding-left: 20px;
+  }
 
   /* ── App shell ── */
   .app { display: none; flex-direction: column; height: 100%; }
@@ -378,10 +382,14 @@
 
   <div id="paso-codigo" style="display:none">
     <p class="login-ayuda">
-      Escríbele a Rita por WhatsApp y te responde con un código.<br>
-      Así confirmamos que el número es tuyo.
+      Te mandamos un código por WhatsApp para confirmar que el número es tuyo.
     </p>
-    <button class="login-btn" onclick="pedirCodigo()">Pedirle el código a Rita</button>
+    <ol class="login-pasos">
+      <li>Abre el chat de Rita y envíale el mensaje que aparece.</li>
+      <li>Vuelve aquí y pide el código.</li>
+    </ol>
+    <button class="login-btn" onclick="abrirRita()">1 · Escribirle a Rita</button>
+    <button class="login-btn" id="btn-pedir" onclick="pedirCodigo()">2 · Mandarme el código</button>
     <input class="login-input" id="login-codigo" type="text" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric" style="margin-top:14px">
     <button class="login-btn" id="btn-codigo" onclick="verificarCodigo()">Entrar al chat</button>
     <button class="login-volver" onclick="volverATelefono()">← Usar otro número</button>
@@ -635,9 +643,44 @@ async function login() {
 
 const RITA_WA = '573117896717';
 
-function pedirCodigo() {
+// Abrir la conversación con Rita cumple dos funciones: prueba que el número es
+// tuyo, y abre la ventana de 24h sin la cual WhatsApp no deja que Rita
+// escriba primero.
+function abrirRita() {
   const txt = encodeURIComponent('Quiero entrar al chat de mi club');
   window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
+}
+
+async function pedirCodigo() {
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-pedir');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  errEl.textContent = '';
+
+  let out;
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'sesion-codigo',
+        telefono: state.telefonoPendiente,
+        clubId: state.club.id
+      })
+    });
+    out = await res.json();
+  } catch {
+    out = { error: 'Sin conexión. Intenta de nuevo.' };
+  }
+
+  btn.disabled = false; btn.textContent = '2 · Mandarme el código';
+  if (!out.ok) { errEl.textContent = out.error || 'No se pudo enviar el código.'; return; }
+  if (!out.enviado) {
+    errEl.textContent = 'WhatsApp no dejó enviarlo. Escríbele primero a Rita (paso 1) y vuelve a intentar.';
+    return;
+  }
+  errEl.textContent = '';
+  document.getElementById('login-codigo').focus();
 }
 
 function volverATelefono() {

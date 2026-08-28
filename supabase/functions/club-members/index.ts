@@ -145,6 +145,42 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, estado: 'solicitado', avisado });
   }
 
+  // ---------- Publico: pedir el codigo de entrada ----------
+  // Rita tambien lo entrega cuando el miembro le escribe (rita-whatsapp), pero
+  // se puede pedir desde aqui: el miembro abre la conversacion con ella desde
+  // la app y entonces Meta permite el envio, que fuera de esa ventana de 24h
+  // rechazaria.
+  if (action === 'sesion-codigo') {
+    const telefono = normalizePhone((body.telefono || '').toString());
+    const clubId = (body.clubId || '').toString();
+    if (!telefono || !clubId) return json({ error: 'Faltan datos' }, 400);
+
+    const { data: m } = await sb.from('connect_members')
+      .select('id, nombre, estado').eq('club_id', clubId).eq('telefono', telefono).maybeSingle();
+    // Un numero que no esta no recibe pistas de si existe o no en otro club.
+    if (!m) return json({ error: 'Ese número no está en este club.' }, 404);
+    if (m.estado === 'solicitado') {
+      return json({ error: 'Tu solicitud todavía está esperando aprobación del club.' }, 403);
+    }
+
+    const codigo = String(Math.floor(100000 + Math.random() * 900000));
+    await sb.from('connect_login_codes').delete().eq('member_id', m.id).is('usado_en', null);
+    const { error } = await sb.from('connect_login_codes').insert({
+      member_id: m.id,
+      codigo_hash: await sha256Hex(codigo),
+      expira_en: new Date(Date.now() + 10 * 60 * 1000).toISOString(),
+    });
+    if (error) return json({ error: error.message }, 500);
+
+    const enviado = await notificarLider(
+      telefono,
+      `Tu código para entrar al chat del club es:\n\n*${codigo}*\n\nVence en 10 minutos y solo sirve una vez.`,
+    );
+    // Si Meta lo rechaza (nadie escribio a Rita en 24h) hay que decirlo: si no,
+    // el miembro se queda esperando un mensaje que nunca va a llegar.
+    return json({ ok: true, enviado });
+  }
+
   // ---------- Publico: canjear el codigo de WhatsApp por una sesion ----------
   if (action === 'sesion-verificar') {
     const telefono = normalizePhone((body.telefono || '').toString());
