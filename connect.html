@@ -1066,7 +1066,12 @@ async function aprobarMiembro(id) {
 
 async function quitarMiembro(id, nombre) {
   if (!confirm(`¿Quitar a ${nombre} del club?\n\nDejará de ver el chat.`)) return;
-  const out = await accionMensaje('chat-quitar', { objetivoId: id });
+  // Sus mensajes no se van con él: hay que decidirlo aparte. Para un
+  // infiltrado normalmente se quiere que desaparezca también lo que escribió.
+  const borrarMensajes = confirm(
+    `¿Borrar también los mensajes de ${nombre}?\n\nAceptar: se borra todo lo que escribió.\nCancelar: sus mensajes se quedan en el chat.`
+  );
+  const out = await accionMensaje('chat-quitar', { objetivoId: id, borrarMensajes });
   if (!out.ok) { alert(out.error || 'No se pudo quitar.'); return; }
   await recargarMiembros();
 }

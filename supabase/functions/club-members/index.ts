@@ -231,6 +231,18 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true });
     }
 
+    // Al quitar a alguien sus mensajes NO se van solos: la FK es ON DELETE
+    // SET NULL, asi que quedarian en el chat firmados como "Anonimo". Para un
+    // infiltrado eso es justo lo que no se quiere, por eso se puede pedir que
+    // se borren tambien.
+    if (body.borrarMensajes) {
+      const { data: salas } = await sb.from('connect_rooms').select('id').eq('club_id', admin.club_id);
+      const ids = (salas || []).map((r: { id: string }) => r.id);
+      if (ids.length) {
+        await sb.from('connect_messages').delete().eq('member_id', objetivoId).in('room_id', ids);
+      }
+    }
+
     const { error } = await sb.from('connect_members').delete().eq('id', objetivoId);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true });
@@ -268,6 +280,17 @@ Deno.serve(async (req: Request) => {
   if (action === 'eliminar') {
     const memberId = (body.memberId || '').toString();
     if (!memberId) return json({ error: 'Falta el miembro' }, 400);
+
+    // Igual que en el panel del chat: sin esto sus mensajes se quedan
+    // firmados como "Anonimo" en vez de irse con el.
+    if (body.borrarMensajes) {
+      const { data: salas } = await sb.from('connect_rooms').select('id').eq('club_id', clubId);
+      const ids = (salas || []).map((r: { id: string }) => r.id);
+      if (ids.length) {
+        await sb.from('connect_messages').delete().eq('member_id', memberId).in('room_id', ids);
+      }
+    }
+
     const { error } = await sb.from('connect_members')
       .delete().eq('id', memberId).eq('club_id', clubId);
     if (error) return json({ error: error.message }, 500);

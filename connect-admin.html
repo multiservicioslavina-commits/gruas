@@ -567,8 +567,15 @@ async function addMembers() {
 }
 
 async function removeMember(id) {
-  if (!confirm('¿Eliminar este miembro?')) return;
-  const out = await clubApi('eliminar', { memberId: id });
+  const m = allMembers.find(x => x.id === id);
+  const quien = m ? m.nombre : 'este miembro';
+  if (!confirm(`¿Eliminar a ${quien} del club?`)) return;
+  // Los mensajes no se borran solos al eliminar al miembro: la FK los deja
+  // huérfanos y aparecerían como "Anónimo". Es una decisión aparte.
+  const borrarMensajes = m && m.estado !== 'solicitado'
+    ? confirm(`¿Borrar también los mensajes de ${quien}?\n\nAceptar: se borra lo que escribió en el chat.\nCancelar: sus mensajes se quedan.`)
+    : false;
+  const out = await clubApi('eliminar', { memberId: id, borrarMensajes });
   if (!out.ok) { toast(out.error || 'No se pudo eliminar', true); return; }
   toast('Miembro eliminado');
   await Promise.all([loadStats(), loadMembers()]);
