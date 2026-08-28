@@ -142,3 +142,6 @@ verify_jwt = true
 
 [functions.club-auth]
 verify_jwt = false
+
+[functions.club-members]
+verify_jwt = false

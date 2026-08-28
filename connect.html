@@ -154,6 +154,26 @@
     padding: 12px 0 6px; font-weight: 500;
   }
 
+  /* Aviso para instalar la app (PWA) */
+  .install-bar {
+    display: none; align-items: center; gap: 10px; flex-shrink: 0;
+    padding: 10px 12px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .install-bar.show { display: flex; }
+  .install-text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.35; }
+  .install-text strong { display: block; font-size: 13px; }
+  .install-text span { color: var(--text2); }
+  .install-yes {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .install-no {
+    background: none; border: none; color: var(--text2); font-size: 16px;
+    cursor: pointer; padding: 4px 6px; flex-shrink: 0;
+  }
+
   .empty-room {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; color: var(--text2); text-align: center; padding: 24px;
@@ -297,6 +317,15 @@
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
   </div>
 
+  <div class="install-bar" id="install-bar">
+    <div class="install-text">
+      <strong>Ten el club a un toque</strong>
+      <span id="install-hint">Instálalo en tu pantalla de inicio y entra sin buscar el link.</span>
+    </div>
+    <button class="install-yes" id="install-yes" onclick="instalarApp(event)">Instalar</button>
+    <button class="install-no" onclick="ocultarInstalar()" aria-label="Ahora no">✕</button>
+  </div>
+
   <div class="messages" id="messages"></div>
   <div class="cards-panel" id="cards-panel"></div>
 
@@ -317,6 +346,10 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
+    <a class="drawer-app-link" id="install-link" href="#" onclick="instalarApp(event)" style="display:none">
+      <div class="app-icon">📲</div>
+      Instalar en mi celular
+    </a>
     <a class="drawer-app-link" href="/lyrapp" download="RideraMusic.apk">
       <div class="app-icon" style="background: var(--blue);">🎧</div>
       Ridera Music - Descargar
@@ -642,6 +675,10 @@ function renderMessages() {
     }
   }
 
+  if (state.ritaEscribiendo) {
+    html += `<div class="msg msg-rita"><div class="msg-sender">🤖 Rita</div>escribiendo…</div>`;
+  }
+
   container.innerHTML = html;
   scrollToBottom();
 }
@@ -725,28 +762,37 @@ async function sendMessage() {
 
   await sb('connect_messages', { method: 'POST', body: msg });
 
-  // Si es la sala de Rita, generar respuesta automática
+  // En la sala de Rita responde la MISMA Rita de WhatsApp (clima, vías,
+  // talleres, garaje, trámites, sellos...), no una versión aparte. Ella
+  // guarda su respuesta en la sala; aquí solo refrescamos.
   if (state.currentRoom.slug === 'rita') {
+    mostrarRitaEscribiendo(true);
     try {
-      const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/rita-respond', {
+      const res = await fetch(`${SB_URL}/functions/v1/rita-whatsapp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY },
-        body: JSON.stringify({ record: { content: text, member_id: state.member.id, club_id: state.club.id, sender: 'user' } })
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          mode: 'club-chat',
+          message: text,
+          memberId: state.member.id,
+          roomId: state.currentRoom.id
+        })
       });
       const data = await res.json();
-      if (data.answer) {
-        await sb('connect_messages', { method: 'POST', body: {
-          room_id: state.currentRoom.id,
-          member_id: state.member.id,
-          contenido: data.answer,
-          tipo: 'text',
-          es_rita: true
-        }});
-      }
+      if (!data.ok) console.error('Rita:', data.error);
     } catch (e) {
       console.error('Rita error:', e);
     }
+    mostrarRitaEscribiendo(false);
   }
+}
+
+// El indicador va por bandera y no por un nodo suelto: el poll de la sala
+// reescribe la lista cada 500 ms y se llevaria por delante cualquier
+// elemento añadido a mano.
+function mostrarRitaEscribiendo(activo) {
+  state.ritaEscribiendo = activo;
+  renderMessages();
 }
 
 function handleKey(e) {
@@ -988,6 +1034,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') login();
   });
 });
+
+// ── Instalar en el celular (PWA) ───────────────────────────────────────
+// Sin service worker el navegador no ofrece instalar, por eso se registra
+// aqui. Es propio del club (sw-connect.js): el de gruas, sin conexion,
+// cae a la home de gruas.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw-connect.js').catch(() => {});
+  });
+}
+
+let promptInstalar = null;
+
+function yaInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function esIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+// Chrome/Android avisan cuando la app se puede instalar y dejan lanzar el
+// dialogo. Safari en iPhone no: alli solo se puede explicar el gesto.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  promptInstalar = e;
+  mostrarOpcionInstalar();
+});
+
+window.addEventListener('appinstalled', () => {
+  promptInstalar = null;
+  document.getElementById('install-bar').classList.remove('show');
+  document.getElementById('install-link').style.display = 'none';
+});
+
+function mostrarOpcionInstalar() {
+  if (yaInstalada()) return;
+  document.getElementById('install-link').style.display = '';
+  if (localStorage.getItem('connect_install_off') === '1') return;
+  document.getElementById('install-bar').classList.add('show');
+}
+
+function ocultarInstalar() {
+  localStorage.setItem('connect_install_off', '1');
+  document.getElementById('install-bar').classList.remove('show');
+}
+
+async function instalarApp(ev) {
+  if (ev) ev.preventDefault();
+  if (promptInstalar) {
+    promptInstalar.prompt();
+    const { outcome } = await promptInstalar.userChoice;
+    promptInstalar = null;
+    if (outcome === 'accepted') ocultarInstalar();
+    return;
+  }
+  if (esIOS()) {
+    alert('Para instalarlo en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrito con la flecha ↑)\n2. Desliza y elige "Agregar a inicio"\n3. Toca "Agregar"');
+    return;
+  }
+  alert('Abre el menú de tu navegador (⋮) y elige "Instalar aplicación" o "Agregar a pantalla de inicio".');
+}
+
+// En iPhone no llega beforeinstallprompt, asi que la opcion se ofrece igual
+// y al tocarla se explican los pasos.
+if (esIOS() && !yaInstalada()) mostrarOpcionInstalar();
 
 init();
 </script>

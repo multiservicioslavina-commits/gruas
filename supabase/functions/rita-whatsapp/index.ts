@@ -822,6 +822,66 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST") {
     try {
       const body = await req.json();
+
+      // ── Rita en el chat del club ──────────────────────────────────────
+      // Mismo cerebro que WhatsApp (clima, vias, talleres, garaje, sellos,
+      // tramites...), pero en vez de responder por WhatsApp guarda la
+      // respuesta en la sala y la devuelve. Se resuelve aqui y no en una
+      // funcion aparte para no tener dos Ritas que se desincronicen.
+      if (body?.mode === "club-chat") {
+        const cors = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+        const reply = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: cors });
+
+        const texto = (body.message || "").toString().trim();
+        const memberId = (body.memberId || "").toString();
+        const roomId = (body.roomId || "").toString();
+        if (!texto || !memberId || !roomId) return reply({ error: "Faltan datos" }, 400);
+
+        // El miembro y la sala tienen que existir y ser del mismo club: es lo
+        // que evita que cualquiera use a Rita desde fuera de la app.
+        const { data: miembro } = await supabase
+          .from("connect_members")
+          .select("id, telefono, club_id, estado")
+          .eq("id", memberId).maybeSingle();
+        if (!miembro || miembro.estado === "solicitado") return reply({ error: "No autorizado" }, 403);
+
+        const { data: sala } = await supabase
+          .from("connect_rooms").select("id, club_id").eq("id", roomId).maybeSingle();
+        if (!sala || sala.club_id !== miembro.club_id) return reply({ error: "No autorizado" }, 403);
+
+        const telefono = normalizeClubPhone(miembro.telefono || "");
+
+        // Historial de la propia sala, no el de WhatsApp: son conversaciones
+        // distintas aunque las atienda la misma Rita.
+        const { data: previos } = await supabase
+          .from("connect_messages")
+          .select("contenido, es_rita")
+          .eq("room_id", roomId).order("created_at", { ascending: false }).limit(8);
+        const history = (previos || []).reverse().map((m: any) => ({
+          role: m.es_rita ? "assistant" : "user",
+          content: m.contenido,
+        }));
+
+        const [riderCtx, context, rutaDetail] = await Promise.all([
+          getRiderContext(telefono).catch(() => null),
+          fetchContext(texto, telefono),
+          fetchRutaDetail(texto).catch(() => null),
+        ]);
+        if (rutaDetail) context.rutaDetail = rutaDetail;
+
+        // contenido es NOT NULL: si Claude no devuelve nada hay que poner
+        // algo, no una cadena vacia que reventaria el insert.
+        const answer = (await askClaude(texto, history, context, riderCtx))
+          || "Uy parce, algo se cruzo. Me lo repites?";
+
+        await supabase.from("connect_messages").insert({
+          room_id: roomId, member_id: memberId, contenido: answer,
+          tipo: "text", es_rita: true,
+        });
+
+        return reply({ ok: true, answer });
+      }
+
       const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!msg) return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
 
