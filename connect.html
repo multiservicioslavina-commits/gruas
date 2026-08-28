@@ -174,6 +174,54 @@
   .msg-accion.danger { color: var(--red); }
   .msg-accion .ico { font-size: 18px; width: 22px; text-align: center; }
 
+  /* Panel de miembros (solo administradores del chat) */
+  .panel-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .panel-fondo.open { display: flex; }
+  .panel {
+    width: 100%; max-height: 80vh; background: var(--surface);
+    border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .panel-x { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .panel-add {
+    display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-add input {
+    flex: 1; min-width: 0; padding: 9px 11px; border-radius: 8px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  }
+  .panel-add input:focus { outline: none; border-color: var(--accent); }
+  .panel-add button {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  }
+  .panel-body { overflow-y: auto; padding: 6px 0 14px; }
+  .miembro {
+    display: flex; align-items: center; gap: 10px; padding: 11px 18px;
+  }
+  .miembro-info { flex: 1; min-width: 0; }
+  .miembro-nom { font-size: 14px; }
+  .miembro-tel { font-size: 11px; color: var(--text2); }
+  .miembro-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 5px;
+    background: rgba(251,146,60,.15); color: var(--accent2);
+  }
+  .miembro-tag.admin { background: rgba(59,130,246,.15); color: #60a5fa; }
+  .miembro-btn {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: 7px; padding: 5px 9px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+  }
+  .miembro-btn.ok { border-color: var(--green); color: var(--green); }
+  .miembro-btn.no { border-color: var(--red); color: var(--red); }
+
   /* Aviso para instalar la app (PWA) */
   .install-bar {
     display: none; align-items: center; gap: 10px; flex-shrink: 0;
@@ -366,6 +414,10 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
+    <a class="drawer-app-link" id="admin-link" href="#" onclick="abrirMiembros(event)" style="display:none">
+      <div class="app-icon" style="background: var(--green);">👥</div>
+      Miembros del club
+    </a>
     <a class="drawer-app-link" id="install-link" href="#" onclick="instalarApp(event)" style="display:none">
       <div class="app-icon">📲</div>
       Instalar en mi celular
@@ -402,6 +454,21 @@
 <input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
 <input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
 <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+
+<div class="panel-fondo" id="miembros-fondo" onclick="cerrarMiembros()">
+  <div class="panel" onclick="event.stopPropagation()">
+    <div class="panel-head">
+      <strong>Miembros del club</strong>
+      <button class="panel-x" onclick="cerrarMiembros()">✕</button>
+    </div>
+    <div class="panel-add">
+      <input id="nuevo-nombre" type="text" placeholder="Nombre" maxlength="50">
+      <input id="nuevo-tel" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+      <button onclick="agregarMiembro()" id="btn-agregar-miembro">Agregar</button>
+    </div>
+    <div class="panel-body" id="miembros-lista"></div>
+  </div>
+</div>
 
 <div class="msg-acciones-fondo" id="msg-acciones-fondo" onclick="cerrarAccionesMensaje()">
   <div class="msg-acciones" onclick="event.stopPropagation()">
@@ -566,6 +633,7 @@ async function enterApp() {
   document.getElementById('h-club').textContent = state.club.nombre;
   document.getElementById('d-club').textContent = state.club.nombre;
   renderDrawerRooms();
+  mostrarEnlaceAdmin();
 
   if (state.rooms.length) {
     switchRoom(state.rooms[0].id);
@@ -707,7 +775,9 @@ function renderMessages() {
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
-      html += `<div class="msg msg-other">
+      // Un admin del chat tambien puede actuar sobre los ajenos (moderar).
+      const moderable = state.member?.es_admin ? ` data-msg="${m.id}" data-tipo="${m.tipo || 'text'}" data-ajeno="1"` : '';
+      html += `<div class="msg msg-other"${moderable}>
         <div class="msg-sender">${escapeHtml(sender)}</div>
         ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
@@ -842,15 +912,17 @@ let mensajeActivo = null;
 let pulsacionLarga = null;
 
 function burbujaPropia(target) {
-  const el = target.closest ? target.closest('.msg-mine[data-msg]') : null;
+  const el = target.closest ? target.closest('.msg[data-msg]') : null;
   return el && !String(el.dataset.msg).startsWith('temp-') ? el : null;
 }
 
 function abrirAccionesMensaje(el) {
-  mensajeActivo = { id: el.dataset.msg, tipo: el.dataset.tipo || 'text' };
+  const ajeno = el.dataset.ajeno === '1';
+  mensajeActivo = { id: el.dataset.msg, tipo: el.dataset.tipo || 'text', ajeno };
   const esTexto = mensajeActivo.tipo === 'text';
-  // En una foto o un audio no hay texto que editar ni que copiar.
-  document.getElementById('accion-editar').style.display = esTexto ? '' : 'none';
+  // En una foto o un audio no hay texto que editar ni que copiar. Y sobre un
+  // mensaje ajeno un admin puede borrar, nunca reescribir lo que otro dijo.
+  document.getElementById('accion-editar').style.display = (esTexto && !ajeno) ? '' : 'none';
   document.getElementById('accion-copiar').style.display = esTexto ? '' : 'none';
   document.getElementById('msg-acciones-fondo').classList.add('open');
 }
@@ -868,8 +940,12 @@ function textoDeMensaje(id) {
 async function borrarMensaje() {
   if (!mensajeActivo) return;
   const id = mensajeActivo.id;
+  const ajeno = mensajeActivo.ajeno;
   cerrarAccionesMensaje();
-  if (!confirm('¿Eliminar este mensaje? Se borra para todos.')) return;
+  const aviso = ajeno
+    ? '¿Eliminar este mensaje de otro miembro? Se borra para todos.'
+    : '¿Eliminar este mensaje? Se borra para todos.';
+  if (!confirm(aviso)) return;
   // Se quita de una para que no quede medio segundo en pantalla esperando
   // al siguiente refresco.
   state.messages = state.messages.filter(m => m.id !== id);
@@ -899,6 +975,100 @@ async function copiarMensaje() {
   } catch {
     alert('Tu navegador no dejó copiar. Mantén presionado el texto y usa Copiar.');
   }
+}
+
+// ── Panel de miembros (administradores del chat) ───────────────────────
+// El enlace se muestra segun state.member.es_admin, pero eso es solo la
+// vista: cada accion la vuelve a comprobar el servidor.
+function mostrarEnlaceAdmin() {
+  const el = document.getElementById('admin-link');
+  if (el) el.style.display = state.member?.es_admin ? '' : 'none';
+}
+
+async function abrirMiembros(ev) {
+  if (ev) ev.preventDefault();
+  // Cerrar el menu, no alternarlo: recargar la lista no debe reabrirlo.
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('miembros-fondo').classList.add('open');
+  await recargarMiembros();
+}
+
+async function recargarMiembros() {
+  document.getElementById('miembros-lista').innerHTML =
+    '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
+  const out = await accionMensaje('chat-miembros', {});
+  if (!out.ok) {
+    document.getElementById('miembros-lista').innerHTML =
+      `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">${escapeHtml(out.error || 'No se pudo cargar')}</div>`;
+    return;
+  }
+  pintarMiembros(out.miembros || []);
+}
+
+function cerrarMiembros() {
+  document.getElementById('miembros-fondo').classList.remove('open');
+}
+
+function pintarMiembros(lista) {
+  const cont = document.getElementById('miembros-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Todavía no hay miembros.</div>';
+    return;
+  }
+  // Las solicitudes primero: son lo que pide acción.
+  const orden = { solicitado: 0, pendiente: 1, vinculado: 2 };
+  lista.sort((a, b) => (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3));
+
+  cont.innerHTML = lista.map(m => {
+    const yo = m.id === state.member.id;
+    let tag = '';
+    if (m.es_admin) tag = '<span class="miembro-tag admin">Admin</span>';
+    else if (m.estado === 'solicitado') tag = '<span class="miembro-tag">Pide entrar</span>';
+
+    let acciones = '';
+    if (m.estado === 'solicitado') {
+      acciones += `<button class="miembro-btn ok" onclick="aprobarMiembro('${m.id}')">Aprobar</button>`;
+    }
+    // Ni a uno mismo ni a otro admin: eso lo decide el dueño del club.
+    if (!yo && !m.es_admin) {
+      acciones += `<button class="miembro-btn no" onclick="quitarMiembro('${m.id}','${escapeHtml(m.nombre).replace(/'/g, '')}')">Quitar</button>`;
+    }
+    return `<div class="miembro">
+      <div class="miembro-info">
+        <div class="miembro-nom">${escapeHtml(m.nombre)}${tag}</div>
+        <div class="miembro-tel">${escapeHtml(m.telefono)}</div>
+      </div>
+      ${acciones}
+    </div>`;
+  }).join('');
+}
+
+async function agregarMiembro() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  const telefono = document.getElementById('nuevo-tel').value.trim();
+  if (!nombre || !telefono) { alert('Escribe el nombre y el teléfono.'); return; }
+  const btn = document.getElementById('btn-agregar-miembro');
+  btn.disabled = true;
+  const out = await accionMensaje('chat-agregar', { nombre, telefono });
+  btn.disabled = false;
+  if (!out.ok) { alert(out.error || 'No se pudo agregar.'); return; }
+  document.getElementById('nuevo-nombre').value = '';
+  document.getElementById('nuevo-tel').value = '';
+  await recargarMiembros();
+}
+
+async function aprobarMiembro(id) {
+  const out = await accionMensaje('chat-aprobar', { objetivoId: id });
+  if (!out.ok) { alert(out.error || 'No se pudo aprobar.'); return; }
+  await recargarMiembros();
+}
+
+async function quitarMiembro(id, nombre) {
+  if (!confirm(`¿Quitar a ${nombre} del club?\n\nDejará de ver el chat.`)) return;
+  const out = await accionMensaje('chat-quitar', { objetivoId: id });
+  if (!out.ok) { alert(out.error || 'No se pudo quitar.'); return; }
+  await recargarMiembros();
 }
 
 async function accionMensaje(action, extra) {

@@ -38,6 +38,19 @@ async function clubIdFromToken(req: Request): Promise<string | null> {
   }
 }
 
+// Administrador del chat: un miembro al que el dueño del club le dio permiso
+// para moderar. Devuelve la fila del miembro solo si lo es de verdad; el
+// navegador nunca decide esto, se comprueba siempre aqui.
+type Sb = ReturnType<typeof createClient>;
+async function adminDelChat(sb: Sb, memberId: string): Promise<{ id: string; club_id: string } | null> {
+  if (!memberId) return null;
+  const { data } = await sb.from('connect_members')
+    .select('id, club_id, es_admin, estado')
+    .eq('id', memberId).maybeSingle();
+  if (!data || !data.es_admin || data.estado === 'solicitado') return null;
+  return { id: data.id, club_id: data.club_id };
+}
+
 // La API de WhatsApp solo permite texto libre dentro de las 24h siguientes al
 // ultimo mensaje del lider a Rita. Fuera de esa ventana Meta rechaza el envio,
 // por eso la notificacion es "mejor esfuerzo": el panel siempre muestra las
@@ -128,11 +141,29 @@ Deno.serve(async (req: Request) => {
     if (!memberId || !mensajeId) return json({ error: 'Faltan datos' }, 400);
 
     const { data: m } = await sb.from('connect_messages')
-      .select('id, member_id, tipo, es_rita, contenido')
+      .select('id, member_id, tipo, es_rita, contenido, room_id')
       .eq('id', mensajeId).maybeSingle();
     if (!m) return json({ error: 'Ese mensaje ya no existe' }, 404);
-    if (m.es_rita || m.member_id !== memberId) {
-      return json({ error: 'Solo puedes borrar o corregir tus propios mensajes' }, 403);
+
+    const esPropio = !m.es_rita && m.member_id === memberId;
+
+    // Un admin del chat puede borrar lo de cualquiera (moderar), pero editar
+    // sigue siendo solo de uno: nadie debe poder cambiar lo que otro dijo.
+    let puedeBorrar = esPropio;
+    if (!esPropio && action === 'msg-borrar') {
+      const admin = await adminDelChat(sb, memberId);
+      if (admin) {
+        const { data: sala } = await sb.from('connect_rooms')
+          .select('club_id').eq('id', m.room_id).maybeSingle();
+        puedeBorrar = !!sala && sala.club_id === admin.club_id;
+      }
+    }
+
+    if (action === 'msg-editar' && !esPropio) {
+      return json({ error: 'Solo puedes editar tus propios mensajes' }, 403);
+    }
+    if (action === 'msg-borrar' && !puedeBorrar) {
+      return json({ error: 'No tienes permiso para borrar ese mensaje' }, 403);
     }
 
     if (action === 'msg-borrar') {
@@ -151,6 +182,56 @@ Deno.serve(async (req: Request) => {
     const { error } = await sb.from('connect_messages')
       .update({ contenido: texto, editado_at: new Date().toISOString() })
       .eq('id', mensajeId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
+  // ---------- Administrador del chat: moderar miembros desde la app ----------
+  // Mismas operaciones que el panel del club, pero para un miembro al que el
+  // dueño le dio permiso. Siempre acotadas a SU club.
+  if (action === 'chat-miembros' || action === 'chat-agregar' || action === 'chat-quitar' || action === 'chat-aprobar') {
+    const admin = await adminDelChat(sb, (body.memberId || '').toString());
+    if (!admin) return json({ error: 'No eres administrador de este chat' }, 403);
+
+    if (action === 'chat-miembros') {
+      const { data, error } = await sb.from('connect_members')
+        .select('id, nombre, telefono, estado, es_admin, created_at')
+        .eq('club_id', admin.club_id).order('created_at', { ascending: false });
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true, miembros: data || [] });
+    }
+
+    if (action === 'chat-agregar') {
+      const nombre = (body.nombre || '').toString().trim();
+      const telefono = normalizePhone((body.telefono || '').toString());
+      if (nombre.length < 2) return json({ error: 'Escribe el nombre completo' }, 400);
+      if (telefono.length < 10) return json({ error: 'El teléfono no es válido' }, 400);
+      const { error } = await sb.from('connect_members').upsert({
+        club_id: admin.club_id, nombre, telefono, estado: 'pendiente', agregado_por: 'admin-chat',
+      }, { onConflict: 'club_id,telefono', ignoreDuplicates: true });
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true });
+    }
+
+    const objetivoId = (body.objetivoId || '').toString();
+    if (!objetivoId) return json({ error: 'Falta el miembro' }, 400);
+    if (objetivoId === admin.id) return json({ error: 'No puedes quitarte a ti mismo' }, 400);
+
+    // Un admin del chat no manda sobre otro admin: para eso esta el dueño del
+    // club, que es quien los nombra.
+    const { data: objetivo } = await sb.from('connect_members')
+      .select('id, club_id, es_admin').eq('id', objetivoId).maybeSingle();
+    if (!objetivo || objetivo.club_id !== admin.club_id) return json({ error: 'Ese miembro no es de tu club' }, 403);
+    if (objetivo.es_admin) return json({ error: 'No puedes tocar a otro administrador. Pídeselo al dueño del club.' }, 403);
+
+    if (action === 'chat-aprobar') {
+      const { error } = await sb.from('connect_members')
+        .update({ estado: 'pendiente' }).eq('id', objetivoId).eq('estado', 'solicitado');
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true });
+    }
+
+    const { error } = await sb.from('connect_members').delete().eq('id', objetivoId);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true });
   }
@@ -191,6 +272,22 @@ Deno.serve(async (req: Request) => {
       .delete().eq('id', memberId).eq('club_id', clubId);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true });
+  }
+
+  // Nombrar o quitar administradores del chat. Solo el dueño del club, que es
+  // quien entra con la clave del panel: si un admin pudiera nombrar a otro,
+  // bastaria con colarse una vez para no poder sacarlos nunca.
+  if (action === 'hacer-admin') {
+    const memberId = (body.memberId || '').toString();
+    const esAdmin = body.esAdmin !== false;
+    if (!memberId) return json({ error: 'Falta el miembro' }, 400);
+    const { data, error } = await sb.from('connect_members')
+      .update({ es_admin: esAdmin })
+      .eq('id', memberId).eq('club_id', clubId)
+      .select('id, nombre').maybeSingle();
+    if (error) return json({ error: error.message }, 500);
+    if (!data) return json({ error: 'Ese miembro no es de tu club' }, 404);
+    return json({ ok: true, nombre: data.nombre, esAdmin });
   }
 
   // La tabla clubs solo permite UPDATE a authenticated con auth.uid() =

@@ -104,6 +104,7 @@
   }
   .badge-pending { background: rgba(251,146,60,.15); color: var(--accent2); }
   .badge-linked { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-admin { background: rgba(59,130,246,.15); color: #60a5fa; margin-left: 4px; }
 
   .member-list { list-style: none; }
   .member-item {
@@ -434,15 +435,30 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
   list.innerHTML = members.map(m => {
-    const badge = m.estado === 'vinculado'
+    const badge = (m.estado === 'vinculado'
       ? '<span class="badge badge-linked">Vinculado</span>'
-      : '<span class="badge badge-pending">Sin entrar</span>';
+      : '<span class="badge badge-pending">Sin entrar</span>')
+      + (m.es_admin ? '<span class="badge badge-admin">Admin del chat</span>' : '');
     return memberRow(
       m,
-      `<button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>`,
+      `<button class="btn btn-sm btn-outline" onclick="toggleAdmin('${m.id}', ${!m.es_admin})" title="${m.es_admin ? 'Quitar como administrador' : 'Hacer administrador del chat'}">${m.es_admin ? '★' : '☆'}</button>
+       <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>`,
       badge
     );
   }).join('');
+}
+
+async function toggleAdmin(id, hacerAdmin) {
+  const m = allMembers.find(x => x.id === id);
+  const quien = m ? m.nombre : 'este miembro';
+  const aviso = hacerAdmin
+    ? `¿Hacer a ${quien} administrador del chat?\n\nPodrá borrar mensajes de cualquiera y agregar o quitar miembros.`
+    : `¿Quitarle a ${quien} el rol de administrador del chat?`;
+  if (!confirm(aviso)) return;
+  const out = await clubApi('hacer-admin', { memberId: id, esAdmin: hacerAdmin });
+  if (!out.ok) { toast(out.error || 'No se pudo cambiar', true); return; }
+  toast(hacerAdmin ? `${out.nombre} ya es admin del chat` : `${out.nombre} ya no es admin`);
+  await loadMembers();
 }
 
 async function approveMember(id) {
