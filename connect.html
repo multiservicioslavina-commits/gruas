@@ -317,9 +317,9 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
-    <a class="drawer-app-link" href="/lyrapp" download="Lyrapp.apk">
+    <a class="drawer-app-link" href="/lyrapp" download="RideraMusic.apk">
       <div class="app-icon" style="background: var(--blue);">🎧</div>
-      Lyrapp - Descargar
+      Ridera Music - Descargar
     </a>
     <button class="drawer-logout" onclick="logout()">Cerrar sesión</button>
   </div>
@@ -620,23 +620,23 @@ function renderMessages() {
     const isMine = m.member_id === state.member.id;
 
     if (m.tipo === 'system') {
-      html += `<div class="msg msg-system">${m.contenido}</div>`;
+      html += `<div class="msg msg-system">${escapeHtml(m.contenido)}</div>`;
     } else if (m.es_rita) {
       html += `<div class="msg msg-rita">
         <div class="msg-sender">🤖 Rita</div>
-        ${formatMessage(m.contenido)}
+        ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     } else if (isMine) {
       html += `<div class="msg msg-mine">
-        ${formatMessage(m.contenido)}
+        ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
       html += `<div class="msg msg-other">
-        <div class="msg-sender">${sender}</div>
-        ${formatMessage(m.contenido)}
+        <div class="msg-sender">${escapeHtml(sender)}</div>
+        ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     }
@@ -646,12 +646,50 @@ function renderMessages() {
   scrollToBottom();
 }
 
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 function formatMessage(text) {
-  // Convert URLs to clickable links
-  return text.replace(
+  // Escapar SIEMPRE antes de enlazar: el texto lo escribe cualquier miembro
+  // del club, y sin esto un mensaje con HTML se ejecutaba en el navegador
+  // de todos los demas.
+  return escapeHtml(text).replace(
     /(https?:\/\/[^\s]+)/g,
-    '<a href="$1" target="_blank" style="color: var(--blue); text-decoration: underline;">$1</a>'
+    '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--blue); text-decoration: underline;">$1</a>'
   );
+}
+
+function pesoLegible(bytes) {
+  const kb = Number(bytes) / 1024;
+  return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
+}
+
+// Los adjuntos guardan "url|nombre|tamano" en contenido.
+function renderAdjunto(m) {
+  const [url, nombre, size] = String(m.contenido).split('|');
+  const href = escapeHtml(url);
+  if (m.tipo === 'imagen') {
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">
+      <img src="${href}" alt="${escapeHtml(nombre)}" style="max-width:100%;border-radius:10px;display:block">
+    </a>`;
+  }
+  if (m.tipo === 'voz') {
+    return `<audio controls preload="none" src="${href}" style="max-width:100%"></audio>`;
+  }
+  if (m.tipo === 'video') {
+    return `<video controls preload="metadata" src="${href}" style="max-width:100%;border-radius:10px"></video>`;
+  }
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);text-decoration:underline">
+    📎 ${escapeHtml(nombre) || 'Archivo'} <span style="opacity:.7">(${pesoLegible(size)})</span>
+  </a>`;
+}
+
+const TIPOS_ADJUNTO = ['imagen', 'voz', 'video', 'archivo'];
+function cuerpoMensaje(m) {
+  return TIPOS_ADJUNTO.includes(m.tipo) ? renderAdjunto(m) : formatMessage(m.contenido);
 }
 
 function scrollToBottom() {
@@ -744,9 +782,9 @@ async function toggleCards() {
         const datos = c.datos || {};
         const details = Object.entries(datos).map(([k,v]) => `${k}: ${v}`).join(' · ');
         return `<div class="card-item">
-          <div class="card-type">${c.tipo}</div>
-          <div class="card-name">${c.nombre}</div>
-          ${details ? `<div class="card-detail">${details}</div>` : ''}
+          <div class="card-type">${escapeHtml(c.tipo)}</div>
+          <div class="card-name">${escapeHtml(c.nombre)}</div>
+          ${details ? `<div class="card-detail">${escapeHtml(details)}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -770,88 +808,101 @@ async function sendFile(event) {
     const filename = `${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, '_')}`;
     const path = `${state.club.id}/${state.currentRoom.id}/${filename}`;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     const res = await fetch(
       `${SB_URL}/storage/v1/object/connect-files/${path}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SB_KEY}`,
-          'apikey': SB_KEY
+          'apikey': SB_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
         },
         body: file
       }
     );
 
-    if (!res.ok) throw new Error('Upload failed');
+    if (!res.ok) throw new Error(`el servidor rechazó la subida (${res.status})`);
 
     const fileUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
-    const msg = `📎 ${file.name} (${(file.size/1024).toFixed(0)} KB)\n${fileUrl}`;
+    const esImagen = (file.type || '').startsWith('image/');
+    const esVideo = (file.type || '').startsWith('video/');
 
-    document.getElementById('msg-input').value = msg;
-    document.getElementById('msg-input').focus();
+    // El archivo se manda solo: antes solo dejaba el texto en la caja y habia
+    // que darle enviar a mano, cosa que no era evidente.
+    await enviarAdjunto(
+      esImagen ? 'imagen' : esVideo ? 'video' : 'archivo',
+      fileUrl,
+      file.name,
+      file.size
+    );
   } catch (e) {
     alert('Error al subir archivo: ' + e.message);
   }
 
-  document.getElementById('file-input').value = '';
+  event.target.value = '';
+}
+
+// Guarda un adjunto como mensaje. El contenido lleva la URL y, separado por
+// '|', el nombre y el tamano, para poder pintarlo sin columnas nuevas.
+async function enviarAdjunto(tipo, url, nombre, size) {
+  const contenido = `${url}|${nombre || ''}|${size || 0}`;
+  const msg = {
+    room_id: state.currentRoom.id,
+    member_id: state.member.id,
+    contenido,
+    tipo,
+    es_rita: false
+  };
+  state.messages.push({
+    ...msg,
+    id: 'temp-' + Date.now(),
+    created_at: new Date().toISOString(),
+    connect_members: { nombre: state.member.nombre }
+  });
+  renderMessages();
+  await sb('connect_messages', { method: 'POST', body: msg });
 }
 
 async function toggleVoiceRecording() {
   if (!isRecording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      // El formato lo decide el navegador: Chrome graba webm y Safari mp4.
+      // Antes se forzaba 'audio/mp4' al armar el Blob, con lo que en Chrome
+      // el archivo quedaba con una extension que no correspondia al contenido.
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                 : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       audioChunks = [];
 
       mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/mp4' });
-        const duration = mediaRecorder.stream.getTracks()[0]?.getCapabilities ? '?' : '0:00';
-
-        // Enviar el audio como un mensaje de voz
-        const formData = new FormData();
-        formData.append('file', blob, `voice-${Date.now()}.mp4`);
-
+        const real = mediaRecorder.mimeType || mime || 'audio/webm';
+        const blob = new Blob(audioChunks, { type: real });
         const voiceBtn = document.getElementById('voice-btn');
         voiceBtn.disabled = true;
 
         try {
-          // Subir audio a Supabase Storage
-          const filename = `voice-${state.member.id}-${Date.now()}.mp4`;
-          const path = `voices/${filename}`;
+          const ext = real.includes('webm') ? 'webm' : 'mp4';
+          const path = `${state.club.id}/voces/${state.member.id}-${Date.now()}.${ext}`;
 
           const uploadRes = await fetch(`${SB_URL}/storage/v1/object/connect-files/${path}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SB_KEY}`,
-              'apikey': SB_KEY
+              'apikey': SB_KEY,
+              'Content-Type': real
             },
             body: blob
           });
 
-          if (uploadRes.ok) {
-            const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
-            const msg = `🎙️ [Nota de voz](${voiceUrl})`;
+          if (!uploadRes.ok) throw new Error(`subida rechazada (${uploadRes.status})`);
 
-            // Enviar como mensaje
-            await sb('connect_messages', {
-              method: 'POST',
-              body: {
-                room_id: state.currentRoom,
-                member_id: state.member.id,
-                content: msg
-              }
-            });
-
-            document.getElementById('msg-input').value = '';
-            await subscribeToRoom(state.currentRoom);
-            scrollToBottom();
-          }
+          const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+          await enviarAdjunto('voz', voiceUrl, 'Nota de voz', blob.size);
+          scrollToBottom();
         } catch (e) {
-          console.error('Error subiendo voz:', e);
+          alert('No se pudo enviar la nota de voz: ' + e.message);
         }
 
         voiceBtn.disabled = false;
