@@ -9,10 +9,13 @@
   },
   "scripts": {
     "start": "node src/server.js",
+    "prestart": "node scripts/setup-db.js",
     "dev": "node --watch src/server.js",
     "db:setup": "node scripts/setup-db.js",
     "db:seed": "node scripts/seed-db.js",
-    "test": "node scripts/setup-db.js && node --test test/*.test.js"
+    "test": "node scripts/setup-db.js && node --test test/*.test.js",
+    "licencia:claves": "node scripts/generar-claves.js",
+    "licencia": "node scripts/generar-licencia.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

@@ -23,6 +23,7 @@ export const motorcyclesRouter = crudRouter({
   schema,
   searchColumns: ['plate', 'brand', 'model', 'vin'],
   filters: { customer_id: 'customer_id' },
+  references: { customer_id: 'customers' },
   orderBy: 'plate ASC',
   duplicateMessage: 'Ya tienes una moto registrada con esa placa'
 });
@@ -41,7 +42,8 @@ motorcyclesRouter.get('/:id/history', wrap(async (req, res) => {
     [moto.id, req.auth.workshopId]
   );
   const customer = moto.customer_id
-    ? await queryOne('SELECT * FROM customers WHERE id = $1', [moto.customer_id])
+    ? await queryOne('SELECT * FROM customers WHERE id = $1 AND workshop_id = $2',
+        [moto.customer_id, req.auth.workshopId])
     : null;
 
   res.json({ motorcycle: moto, customer, history: rows });

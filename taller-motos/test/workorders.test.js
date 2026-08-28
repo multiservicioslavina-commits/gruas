@@ -259,3 +259,46 @@ test('una moto sin dueño queda vinculada al cliente de su primera orden', async
   const updated = (await client.get(`/api/motorcycles/${moto.id}`)).body;
   assert.equal(updated.customer_id, order.customer.id, 'la moto queda vinculada a su dueño');
 });
+
+test('se puede recibir una moto sin IVA, para el cliente que no pide factura', async () => {
+  const { client } = await createWorkshop(server.url);   // taller con IVA 19%
+
+  const conIva = await receive(client, { plate: 'IVA001' });
+  assert.equal(conIva.tax_rate, 19, 'por defecto toma el IVA del taller');
+
+  const sinIva = await receive(client, { plate: 'IVA002', tax_rate: 0 });
+  assert.equal(sinIva.tax_rate, 0);
+
+  await client.post(`/api/work-orders/${sinIva.id}/services`,
+    { description: 'Cambio de pastillas', unit_price: 120000 });
+  const actualizada = (await client.get(`/api/work-orders/${sinIva.id}`)).body;
+  assert.equal(actualizada.tax_total, 0, 'sin IVA no se cobra impuesto');
+  assert.equal(actualizada.total, 120000, 'el total es el trabajo, sin más');
+});
+
+test('quitar y volver a poner el IVA recalcula el total de la orden', async () => {
+  const { client } = await createWorkshop(server.url);   // IVA 19%
+  const order = await receive(client);
+  await client.post(`/api/work-orders/${order.id}/services`,
+    { description: 'Mano de obra', unit_price: 50000 });
+  await client.post(`/api/work-orders/${order.id}/parts`,
+    { description: 'Pastillas', unit_price: 120000 });
+
+  const conIva = (await client.get(`/api/work-orders/${order.id}`)).body;
+  assert.equal(conIva.tax_total, 32300);      // 170.000 × 19%
+  assert.equal(conIva.total, 202300);
+
+  const sinIva = await client.patch(`/api/work-orders/${order.id}`, { tax_rate: 0 });
+  assert.equal(sinIva.body.tax_total, 0);
+  assert.equal(sinIva.body.total, 170000, 'el total baja al valor del trabajo');
+
+  const otraVez = await client.patch(`/api/work-orders/${order.id}`, { tax_rate: 19 });
+  assert.equal(otraVez.body.total, 202300, 'vuelve a quedar como estaba');
+});
+
+test('el IVA de la orden no puede ser negativo ni pasar de 100', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await receive(client);
+  assert.equal((await client.patch(`/api/work-orders/${order.id}`, { tax_rate: -5 })).status, 400);
+  assert.equal((await client.patch(`/api/work-orders/${order.id}`, { tax_rate: 150 })).status, 400);
+});

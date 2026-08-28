@@ -1,8 +1,12 @@
 node_modules/
 .env
 .env.*
+# Las plantillas sin secretos si van al repositorio: sin ellas, quien lo
+# clone no sabe que variables necesita.
 !.env.example
+!.env.ejemplo
 uploads/
 *.log
 coverage/
 .DS_Store
+licencia-privada.pem

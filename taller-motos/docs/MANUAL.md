@@ -30,11 +30,26 @@ reclamo:
 - **Kilometraje** y **combustible** con que entra.
 - **Accesorios** que te entregan: casco, baúl, herramientas, documentos.
 - **Daños o rayones que ya trae.** Anótalos aunque el cliente no los mencione.
+- **Fotos de cómo entra la moto.** Desde el celular o la tablet el botón te abre
+  la cámara directamente. Tómale a los daños que anotaste y a la moto completa.
+  Puedes poner varias, las ves antes de guardar y quitas la que salió mal.
 - **Qué reporta el cliente**, con sus palabras.
+
+Las fotos son la parte que más te sirve cuando hay un reclamo: cada una queda
+guardada con la fecha, la hora y el nombre de quien la subió. Sólo tú, como
+administrador, y recepción pueden borrar una foto: el mecánico al que le
+achacarían el daño no puede quitarla. Eso sí, borrada no se recupera.
+Si al guardar se cae el internet, la orden igual queda creada y
+te avisa que las fotos no subieron; entra a la orden y súbelas desde
+**Fotos → + Agregar fotos**.
 
 Al guardar se crea la orden con dos números: el **consecutivo** (#1, #2…) que
 usas tú, y un **código de seis letras** que es el que le das al cliente para
 que siga su moto por internet.
+
+En la ficha de la orden queda una tarjeta **Fotos** con todo lo que le tomes a
+esa moto, marcada según el momento: *Recepción*, *Trabajo* o *Entrega*. Con
+**+ Agregar fotos** puedes seguir sumando mientras reparas y al entregarla.
 
 ### 2. Revisar la moto → **Diagnóstico**
 

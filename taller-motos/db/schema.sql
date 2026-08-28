@@ -29,6 +29,18 @@ CREATE TABLE IF NOT EXISTS workshops (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Licencia del taller: con qué código se activó y hasta cuándo vale.
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_code       TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_id         TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_holder     TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_plan       TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_expires_at TIMESTAMPTZ;
+
+-- Un código sirve una sola vez: el índice lo garantiza en la base, no sólo
+-- en el código de la aplicación.
+CREATE UNIQUE INDEX IF NOT EXISTS workshops_license_id_key
+  ON workshops (license_id) WHERE license_id IS NOT NULL;
+
 -- Consecutivos por taller (órdenes, cotizaciones, facturas...).
 CREATE TABLE IF NOT EXISTS sequences (
   workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,

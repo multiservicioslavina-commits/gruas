@@ -49,8 +49,11 @@ export async function inventoryView() {
     }
 
     const value = rows.reduce((sum, part) => sum + Number(part.stock) * Number(part.cost), 0);
-    document.getElementById('inv-count').textContent =
-      `${number(rows.length)} repuestos · ${money(value)} en costo`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('inv-count');
+    if (!contador) return;
+    contador.textContent = `${number(rows.length)} repuestos · ${money(value)} en costo`;
 
     target.innerHTML = rows.length ? `
       <div class="table-wrap"><table>
@@ -129,8 +132,11 @@ export async function inventoryView() {
   const loadSuppliers = async () => {
     const target = document.getElementById('inv-body');
     const { data } = await api.get('/suppliers?limit=200');
-    document.getElementById('inv-count').textContent =
-      data.length === 1 ? '1 proveedor' : `${number(data.length)} proveedores`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('inv-count');
+    if (!contador) return;
+    contador.textContent = data.length === 1 ? '1 proveedor' : `${number(data.length)} proveedores`;
 
     target.innerHTML = data.length ? data.map((supplier) => `
       <div class="list-item" style="cursor:default">
@@ -168,8 +174,11 @@ export async function inventoryView() {
   const loadMovements = async () => {
     const target = document.getElementById('inv-body');
     const { data } = await api.get('/purchases');
-    document.getElementById('inv-count').textContent =
-      data.length === 1 ? '1 compra' : `${number(data.length)} compras`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('inv-count');
+    if (!contador) return;
+    contador.textContent = data.length === 1 ? '1 compra' : `${number(data.length)} compras`;
 
     target.innerHTML = data.length ? `
       <div class="table-wrap"><table>

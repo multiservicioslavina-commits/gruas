@@ -23,7 +23,6 @@ export async function reportsView() {
     const receivables = await api.get('/reports/receivables');
 
     const maxStatus = Math.max(1, ...report.orders_by_status.map((row) => row.count));
-    const collected = Number(report.sales.invoiced) - Number(report.receivable.amount);
 
     target.innerHTML = `
       <div class="stats">

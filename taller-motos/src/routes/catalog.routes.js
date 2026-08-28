@@ -7,6 +7,7 @@ import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { moveStock } from '../services/workorders.js';
+import { assertDelTaller } from '../lib/pertenencia.js';
 
 // ── Servicios ─────────────────────────────────────────────────────────────
 export const servicesRouter = crudRouter({
@@ -58,6 +59,7 @@ export const partsRouter = crudRouter({
   },
   searchColumns: ['name', 'sku', 'brand', 'category', 'location'],
   filters: { category: 'category', supplier_id: 'supplier_id' },
+  references: { supplier_id: 'suppliers' },
   orderBy: 'name ASC',
   duplicateMessage: 'Ya existe un repuesto con ese SKU'
 });
@@ -152,6 +154,7 @@ purchasesRouter.post('/', requireRole('warehouse'), wrap(async (req, res) => {
   if (!data.items.length) throw badRequest('La compra no tiene ítems');
 
   const purchase = await transaction(async (client) => {
+    await assertDelTaller('suppliers', data.supplier_id, req.auth.workshopId, client);
     const { rows: [created] } = await client.query(
       `INSERT INTO purchases (workshop_id, supplier_id, reference, notes, created_by)
        VALUES ($1,$2,$3,$4,$5) RETURNING *`,

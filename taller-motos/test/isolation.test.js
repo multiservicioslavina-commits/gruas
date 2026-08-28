@@ -2,7 +2,7 @@
 // un taller no puede ver ni tocar los datos de otro por ninguna vía.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, createWorkshop, closePool } from './helpers.js';
+import { startServer, createWorkshop, addUser, closePool } from './helpers.js';
 
 const server = await startServer();
 test.after(async () => { await server.close(); await closePool(); });
@@ -98,4 +98,71 @@ test('el panel de un taller sólo cuenta lo suyo', async () => {
 
   assert.equal((await a.client.get('/api/reports/dashboard')).body.counters.open_orders, 2);
   assert.equal((await b.client.get('/api/reports/dashboard')).body.counters.open_orders, 0);
+});
+
+// El filtro por taller protege lo que se lee. Estas pruebas cubren lo que se
+// escribe: apuntar a un registro ajeno dejaba la referencia guardada, y por ahí
+// se colaban nombres y teléfonos del taller vecino en los listados.
+test('un taller no puede apuntar a registros de otro', async () => {
+  const a = await createWorkshop(server.url);
+  const b = await createWorkshop(server.url);
+
+  const provB = (await b.client.post('/api/suppliers', { name: 'Proveedor de B' })).body;
+  const cliB  = (await b.client.post('/api/customers', { name: 'Cliente de B' })).body;
+  const motoB = (await b.client.post('/api/motorcycles',
+    { plate: 'BBB111', customer_id: cliB.id })).body;
+  const mecB  = (await addUser(server.url, b.client, 'mechanic')).user;
+
+  const manana = new Date(Date.now() + 86400000).toISOString();
+  const intentos = [
+    ['repuesto con proveedor ajeno',
+      a.client.post('/api/parts', { name: 'Filtro', supplier_id: provB.id, price: 100 })],
+    ['compra con proveedor ajeno',
+      a.client.post('/api/purchases', { supplier_id: provB.id,
+        items: [{ description: 'algo', quantity: 1, unit_cost: 10 }] })],
+    ['moto con cliente ajeno',
+      a.client.post('/api/motorcycles', { plate: 'AAA111', customer_id: cliB.id })],
+    ['cita con cliente ajeno',
+      a.client.post('/api/appointments', { customer_id: cliB.id, scheduled_at: manana })],
+    ['cita con moto ajena',
+      a.client.post('/api/appointments', { motorcycle_id: motoB.id, scheduled_at: manana })],
+    ['orden con mecánico ajeno',
+      a.client.post('/api/work-orders', { plate: 'AAA222', customer_name: 'C',
+        complaint: 'x', mechanic_id: mecB.id })]
+  ];
+
+  for (const [etiqueta, promesa] of intentos) {
+    assert.equal((await promesa).status, 404, etiqueta);
+  }
+});
+
+test('el historial de una moto no filtra el cliente de otro taller', async () => {
+  const a = await createWorkshop(server.url);
+  const b = await createWorkshop(server.url);
+
+  const cliB = (await b.client.post('/api/customers',
+    { name: 'Cliente de B', phone: '3009998888' })).body;
+  // Ni siquiera se puede crear la moto con ese cliente; si algún día se
+  // pudiera, el historial tampoco debe devolverlo.
+  const creada = await a.client.post('/api/motorcycles',
+    { plate: 'AAA333', customer_id: cliB.id });
+  assert.equal(creada.status, 404);
+
+  const propia = (await a.client.post('/api/motorcycles', { plate: 'AAA444' })).body;
+  const hist = await a.client.get(`/api/motorcycles/${propia.id}/history`);
+  assert.equal(hist.status, 200);
+  assert.equal(hist.body.customer, null);
+  assert.ok(!JSON.stringify(hist.body).includes('3009998888'));
+});
+
+test('reasignar una orden a un mecánico de otro taller no se permite', async () => {
+  const a = await createWorkshop(server.url);
+  const b = await createWorkshop(server.url);
+  const mecB = (await addUser(server.url, b.client, 'mechanic')).user;
+
+  const orden = (await a.client.post('/api/work-orders',
+    { plate: 'AAA555', customer_name: 'C', complaint: 'x' })).body;
+
+  assert.equal((await a.client.patch(`/api/work-orders/${orden.id}`,
+    { mechanic_id: mecB.id })).status, 404);
 });

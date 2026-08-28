@@ -10,6 +10,7 @@ import { randomUUID } from 'node:crypto';
 import { query, queryOne } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
+import { requireRole } from '../middleware/auth.js';
 import { config } from '../config.js';
 
 const ENTITIES = ['work_order', 'motorcycle', 'customer', 'diagnostic', 'quote'];
@@ -101,7 +102,10 @@ attachmentsRouter.get('/:id/file', wrap(async (req, res) => {
   createReadStream(path).pipe(res);
 }));
 
-attachmentsRouter.delete('/:id', wrap(async (req, res) => {
+// Borrar es sólo del dueño y de recepción. Las fotos de entrada son la prueba
+// del taller si el cliente reclama un rayón: el mecánico al que le achacan el
+// daño no puede ser quien las quita.
+attachmentsRouter.delete('/:id', requireRole('reception'), wrap(async (req, res) => {
   assertUuid(req.params.id);
   const row = await queryOne(
     'DELETE FROM attachments WHERE id = $1 AND workshop_id = $2 RETURNING storage_path',

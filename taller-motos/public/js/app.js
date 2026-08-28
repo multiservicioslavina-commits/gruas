@@ -52,6 +52,26 @@ function currentPath() {
   return hash || '/';
 }
 
+// Aviso de licencia: discreto cuando faltan días, imposible de ignorar
+// cuando ya venció.
+function avisoLicencia() {
+  const vence = session.workshop?.license_expires_at;
+  if (!vence) return '';
+
+  const dias = Math.ceil((new Date(vence) - Date.now()) / 86400000);
+  if (dias > 10) return '';
+
+  if (dias < 0) {
+    return `<div class="alert alert-error" style="margin:14px 16px 0;border-radius:8px">
+      <b>Tu licencia venció.</b> Puedes seguir consultando y exportando tu
+      información, pero para registrar trabajo nuevo necesitas un código vigente.
+      Pídeselo a quien te entregó el software.</div>`;
+  }
+  return `<div class="alert alert-warn" style="margin:14px 16px 0;border-radius:8px">
+    Tu licencia vence ${dias === 0 ? 'hoy' : (dias === 1 ? 'mañana' : `en ${dias} días`)}.
+    Pide un código nuevo para no quedarte sin registrar trabajo.</div>`;
+}
+
 function shell(active, content) {
   return `
     <div class="topbar">
@@ -64,6 +84,7 @@ function shell(active, content) {
       ${NAV.map(([key, href, label]) =>
         `<a href="#${href}" class="${active === key ? 'on' : ''}">${label}</a>`).join('')}
     </nav>
+    ${avisoLicencia()}
     <main id="view">${content}</main>`;
 }
 

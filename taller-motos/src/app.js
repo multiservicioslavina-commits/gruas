@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { config, isProduction } from './config.js';
 import { ApiError } from './lib/errors.js';
-import { requireAuth } from './middleware/auth.js';
+import { requireAuth, requireLicense } from './middleware/auth.js';
 
 import { authRouter } from './routes/auth.routes.js';
 import { customersRouter } from './routes/customers.routes.js';
@@ -22,6 +22,7 @@ import { publicRouter } from './routes/public.routes.js';
 import { apiKeysRouter, integrationRouter } from './routes/integration.routes.js';
 import { attachmentsRouter } from './routes/attachments.routes.js';
 import { workshopRouter } from './routes/workshop.routes.js';
+import { exportRouter } from './routes/export.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -59,7 +60,11 @@ export function createApp() {
   }
 
   app.get('/api/health', (_req, res) =>
-    res.json({ ok: true, service: 'taller-motos', version: '0.1.0', env: config.env }));
+    res.json({
+      ok: true, service: 'taller-motos', version: '0.1.0', env: config.env,
+      // La pantalla de registro pregunta por el código sólo si hace falta.
+      license_required: config.license.required
+    }));
 
   // Públicas: el cliente del taller no tiene cuenta.
   app.use('/api/auth', authRouter);
@@ -68,8 +73,9 @@ export function createApp() {
   // Integraciones externas (llave de API).
   app.use('/api/integration/v1', integrationRouter);
 
-  // Todo lo demás exige usuario del taller.
-  app.use('/api', requireAuth);
+  // Todo lo demás exige usuario del taller, y una licencia vigente para
+  // escribir (leer se permite siempre: sus datos son suyos).
+  app.use('/api', requireAuth, requireLicense);
   app.use('/api/workshop', workshopRouter);
   app.use('/api/users', usersRouter);
   app.use('/api/customers', customersRouter);
@@ -85,6 +91,7 @@ export function createApp() {
   app.use('/api/attachments', attachmentsRouter);
   app.use('/api/reports', reportsRouter);
   app.use('/api/api-keys', apiKeysRouter);
+  app.use('/api/export', exportRouter);
 
   // Frontend estático.
   const publicDir = join(here, '..', 'public');

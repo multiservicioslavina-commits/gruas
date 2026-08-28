@@ -76,3 +76,14 @@ test('un usuario desactivado no puede seguir usando su token', async () => {
   await client.patch(`/api/users/${user.id}`, { active: false });
   assert.equal((await mechanic.get('/api/customers')).status, 401);
 });
+
+test('el login devuelve también el taller, no sólo el usuario', async () => {
+  const { email, password, workshop } = await createWorkshop(server.url);
+
+  const res = await makeClient(server.url).post('/api/auth/login', { email, password });
+  assert.equal(res.status, 200);
+  assert.ok(res.body.workshop, 'sin el taller, la interfaz no sabe su moneda ni su IVA');
+  assert.equal(res.body.workshop.id, workshop.id);
+  assert.equal(res.body.workshop.tax_rate, 19);
+  assert.equal(res.body.user.password_hash, undefined);
+});

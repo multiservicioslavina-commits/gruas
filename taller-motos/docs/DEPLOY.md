@@ -8,7 +8,7 @@
 
 ## Variables de entorno
 
-Copia `.env.example` a `.env` y ajusta:
+Copia `.env.ejemplo` a `.env` y ajusta:
 
 | Variable | Obligatoria | Para qué |
 |---|---|---|

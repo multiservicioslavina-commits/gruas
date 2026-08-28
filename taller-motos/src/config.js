@@ -27,7 +27,7 @@ loadDotEnv();
 const required = (name, fallback) => {
   const value = process.env[name] ?? fallback;
   if (value === undefined) {
-    throw new Error(`Falta la variable de entorno ${name}. Copia .env.example a .env.`);
+    throw new Error(`Falta la variable de entorno ${name}. Copia .env.ejemplo a .env.`);
   }
   return value;
 };
@@ -46,11 +46,49 @@ export const config = {
   },
   // URL pública del frontend, para armar los enlaces que recibe el cliente.
   publicUrl: process.env.PUBLIC_URL || 'http://localhost:3000',
-  bcryptRounds: Number(process.env.BCRYPT_ROUNDS || 10)
+  bcryptRounds: Number(process.env.BCRYPT_ROUNDS || 10),
+
+  // Códigos de activación. La llave pública sólo sirve para comprobar
+  // códigos; la privada, con la que se emiten, nunca vive en el servidor.
+  license: {
+    required: process.env.LICENSE_REQUIRED === 'true',
+    // Se admiten saltos de línea escapados, que es como se pega en un panel.
+    publicKey: (process.env.LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n').trim() || null
+  }
 };
 
 export const isProduction = config.env === 'production';
 
-if (isProduction && config.jwt.secret === 'cambia-esto-en-produccion') {
-  throw new Error('JWT_SECRET debe configurarse con un valor propio en producción.');
+// Los valores que vienen escritos en las plantillas del repositorio. Si alguno
+// llega a producción es que nadie cambió la clave, y como están publicados
+// cualquiera podría firmarse una sesión y entrar al taller.
+const SECRETOS_DE_PLANTILLA = [
+  'cambia-esto-en-produccion',
+  'cambia-esto-por-uno-propio'
+];
+
+if (isProduction) {
+  if (SECRETOS_DE_PLANTILLA.includes(config.jwt.secret)) {
+    throw new Error(
+      'JWT_SECRET sigue con el valor de ejemplo, que está publicado en el ' +
+      'repositorio: cualquiera podría entrar a tu taller. Pon uno propio con ' +
+      '"openssl rand -base64 48".');
+  }
+  if (config.jwt.secret.length < 16) {
+    throw new Error(
+      'JWT_SECRET es demasiado corto para firmar sesiones. Genera uno con ' +
+      '"openssl rand -base64 48".');
+  }
+  if (config.jwt.secret.length < 32) {
+    console.warn(
+      'Aviso: el JWT_SECRET es corto. Conviene uno de 32 caracteres o más, ' +
+      'generado con "openssl rand -base64 48".');
+  }
+}
+
+// Exigir código sin llave con qué comprobarlo dejaría a todos fuera.
+if (config.license.required && !config.license.publicKey) {
+  throw new Error(
+    'LICENSE_REQUIRED=true necesita LICENSE_PUBLIC_KEY. ' +
+    'Genera las llaves con "npm run licencia:claves".');
 }

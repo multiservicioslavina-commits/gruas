@@ -45,8 +45,11 @@ export async function agendaView() {
     target.innerHTML = '<div class="spinner"></div>';
     const { data } = await api.get(`/appointments/calendar/range?from=${state.from}&to=${state.to}`);
 
-    document.getElementById('agenda-count').textContent =
-      data.length === 1 ? '1 cita' : `${number(data.length)} citas`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('agenda-count');
+    if (!contador) return;
+    contador.textContent = data.length === 1 ? '1 cita' : `${number(data.length)} citas`;
 
     if (!data.length) {
       target.innerHTML = empty('No hay citas en este rango de fechas.', '📅');

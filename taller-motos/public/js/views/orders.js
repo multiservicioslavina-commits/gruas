@@ -29,8 +29,11 @@ export async function ordersView() {
     target.innerHTML = '<div class="spinner"></div>';
     const { data, total } = await api.get(`/work-orders?${params}`);
 
-    document.getElementById('orders-count').textContent =
-      total === 1 ? '1 orden' : `${number(total)} órdenes`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('orders-count');
+    if (!contador) return;
+    contador.textContent = total === 1 ? '1 orden' : `${number(total)} órdenes`;
 
     target.innerHTML = data.length ? data.map((order) => {
       const balance = Number(order.balance || 0);
@@ -97,10 +100,45 @@ export async function receptionView() {
     api.get('/users?role=mechanic&active=true').then((r) => r.data).catch(() => [])
   ]);
 
+  // Las fotos se acumulan aquí hasta que la orden exista: sin orden creada
+  // no hay a qué asociarlas.
+  const fotos = [];
+
   onMount(() => {
     const form = document.getElementById('reception-form');
     const plateInput = document.getElementById('f-plate');
     const known = document.getElementById('plate-known');
+    const entradaFotos = document.getElementById('f-fotos');
+    const previas = document.getElementById('fotos-previas');
+
+    const pintarPrevias = () => {
+      previas.innerHTML = fotos.map((foto, i) => `
+        <div style="position:relative">
+          <img src="${URL.createObjectURL(foto)}" alt=""
+               style="width:92px;height:92px;object-fit:cover;border-radius:8px;
+                      border:1px solid var(--border-strong)">
+          <button type="button" data-quitar="${i}" title="Quitar"
+                  style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;
+                         border-radius:50%;border:none;background:var(--red);color:#fff;
+                         cursor:pointer;font-size:13px;line-height:1">×</button>
+        </div>`).join('');
+
+      previas.querySelectorAll('[data-quitar]').forEach((boton) => {
+        boton.addEventListener('click', () => {
+          fotos.splice(Number(boton.dataset.quitar), 1);
+          pintarPrevias();
+        });
+      });
+    };
+
+    entradaFotos.addEventListener('change', () => {
+      for (const archivo of entradaFotos.files) {
+        if (fotos.length >= 10) { toast('Máximo 10 fotos por recepción', true); break; }
+        fotos.push(archivo);
+      }
+      entradaFotos.value = '';   // permite volver a elegir la misma foto
+      pintarPrevias();
+    });
 
     // Al escribir una placa conocida, se rellenan los datos de la moto.
     let lookupTimer;
@@ -143,10 +181,28 @@ export async function receptionView() {
         const raw = Object.fromEntries(new FormData(form).entries());
         const accessories = [...form.querySelectorAll('input[name=accessory]:checked')]
           .map((input) => input.value);
-        const payload = clean(raw, ['year', 'mileage_in']);
+        const payload = clean(raw, ['year', 'mileage_in', 'tax_rate']);
         delete payload.accessory;
         payload.accessories = accessories;
         const order = await api.post('/work-orders', payload);
+
+        // Ya existe la orden: ahora sí se suben las fotos.
+        if (fotos.length) {
+          button.textContent = `Subiendo ${fotos.length} foto(s)…`;
+          const datos = new FormData();
+          datos.append('entity_type', 'work_order');
+          datos.append('entity_id', order.id);
+          datos.append('kind', 'photo');
+          datos.append('stage', 'reception');
+          for (const foto of fotos) datos.append('files', foto);
+          try {
+            await api.upload('/attachments', datos);
+          } catch (err) {
+            // La orden ya se creó: perderla por una foto sería peor.
+            toast('La orden se creó, pero las fotos no subieron: ' + err.message, true);
+          }
+        }
+
         toast(`Orden #${order.number} creada`);
         go(`/ordenes/${order.id}`);
       } catch (err) {
@@ -207,6 +263,15 @@ export async function receptionView() {
             </div>
             ${field('existing_damage', 'Daños o rayones que ya trae', { rows: 2,
               placeholder: 'Rayón en el tanque lado derecho, direccional izquierda partida...' })}
+
+            <div class="field">
+              <label for="f-fotos">Fotos de cómo entra la moto</label>
+              <input type="file" id="f-fotos" accept="image/*" capture="environment" multiple>
+              <div class="faint" style="margin-top:4px">
+                Desde el celular o la tablet abre la cámara. Tómale a los daños que
+                anotaste: es lo que te respalda si después hay un reclamo.</div>
+              <div id="fotos-previas" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:10px"></div>
+            </div>
           </div>
         </div>
       </div>
@@ -223,6 +288,14 @@ export async function receptionView() {
               { options: [['normal', 'Normal'], ['high', 'Alta'], ['low', 'Baja']] })}
             ${field('promised_at', 'Entrega prometida', { type: 'date' })}
           </div>
+          ${Number(session.workshop?.tax_rate) > 0 ? `
+            <div class="row">
+              ${field('tax_rate', 'Facturación', {
+                options: [
+                  [String(session.workshop.tax_rate), `Con IVA (${session.workshop.tax_rate}%)`],
+                  ['0', 'Sin IVA']],
+                hint: 'Se puede cambiar después con un clic en la orden.' })}
+            </div>` : ''}
           ${field('reception_notes', 'Notas internas de recepción', { rows: 2 })}
         </div>
       </div>
@@ -250,6 +323,53 @@ export async function orderDetailView(id) {
   const nextStatuses = (await api.get('/work-orders/statuses'))[order.status] || [];
 
   onMount(() => {
+    // Las imágenes van protegidas por el token, así que no se pueden poner
+    // directamente en un <img src>: se piden y se muestran desde memoria.
+    const pintarFotos = async () => {
+      const caja = document.getElementById('fotos-orden');
+      if (!caja || !order.attachments.length) return;
+
+      const etapas = { reception: 'Recepción', diagnostic: 'Diagnóstico',
+                       work: 'Trabajo', delivery: 'Entrega' };
+      const trozos = await Promise.all(order.attachments.map(async (archivo) => {
+        try {
+          const res = await fetch(`/api/attachments/${archivo.id}/file`, {
+            headers: { Authorization: `Bearer ${session.token}` }
+          });
+          if (!res.ok) throw new Error('no disponible');
+          const url = URL.createObjectURL(await res.blob());
+          return `<a href="${url}" target="_blank" rel="noopener" title="${esc(archivo.filename)}">
+            <img src="${url}" alt="${esc(archivo.caption || archivo.filename)}"
+                 style="width:120px;height:120px;object-fit:cover;border-radius:8px;
+                        border:1px solid var(--border-strong)">
+            <div class="faint" style="text-align:center;margin-top:3px">
+              ${esc(etapas[archivo.stage] || '')}</div></a>`;
+        } catch {
+          return `<div class="faint" style="width:120px">${esc(archivo.filename)}<br>(no disponible)</div>`;
+        }
+      }));
+      caja.innerHTML = `<div style="display:flex;flex-wrap:wrap;gap:10px">${trozos.join('')}</div>`;
+    };
+    pintarFotos();
+
+    // Agregar fotos después de la recepción (avance del trabajo, entrega...).
+    const entradaMas = document.getElementById('mas-fotos');
+    document.getElementById('btn-mas-fotos')?.addEventListener('click', () => entradaMas.click());
+    entradaMas?.addEventListener('change', async () => {
+      if (!entradaMas.files.length) return;
+      const datos = new FormData();
+      datos.append('entity_type', 'work_order');
+      datos.append('entity_id', id);
+      datos.append('kind', 'photo');
+      datos.append('stage', order.status === 'delivered' ? 'delivery' : 'work');
+      for (const archivo of entradaMas.files) datos.append('files', archivo);
+      try {
+        await api.upload('/attachments', datos);
+        toast('Fotos agregadas');
+        refresh();
+      } catch (err) { toast(err.message, true); }
+    });
+
     // Cambio de estado.
     document.querySelectorAll('[data-status]').forEach((button) => {
       button.addEventListener('click', async () => {
@@ -257,6 +377,20 @@ export async function orderDetailView(id) {
         try {
           await api.post(`/work-orders/${id}/status`, { status: button.dataset.status });
           toast(`Estado: ${ORDER_STATUS[button.dataset.status]?.label || button.dataset.status}`);
+          refresh();
+        } catch (err) { toast(err.message, true); button.disabled = false; }
+      });
+    });
+
+    // Con IVA / sin IVA: un clic, sin escribir números.
+    document.querySelectorAll('[data-tax]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        if (button.classList.contains('on')) return;
+        const rate = button.dataset.tax === '0' ? 0 : Number(session.workshop.tax_rate);
+        button.disabled = true;
+        try {
+          await api.patch(`/work-orders/${id}`, { tax_rate: rate });
+          toast(rate > 0 ? `Orden con IVA del ${rate}%` : 'Orden sin IVA');
           refresh();
         } catch (err) { toast(err.message, true); button.disabled = false; }
       });
@@ -301,10 +435,16 @@ export async function orderDetailView(id) {
     document.getElementById('btn-add-service')?.addEventListener('click', async () => {
       const result = await modal({
         title: 'Agregar mano de obra',
-        body: field('service_id', 'Del catálogo', {
-                options: [['', 'Escribir a mano'],
-                  ...catalogServices.map((s) => [s.id, `${s.name} — ${money(s.price)}`])] }) +
-              field('description', 'Descripción') +
+        body: (catalogServices.length
+                ? field('service_id', 'Tomar del catálogo', {
+                    options: [['', 'Escribir a mano'],
+                      ...catalogServices.map((s) => [s.id, `${s.name} — ${money(s.price)}`])],
+                    hint: 'Al elegir uno se llenan solos la descripción y el precio.' })
+                : `<div class="alert alert-info">Todavía no tienes servicios en el catálogo.
+                     Escribe el trabajo aquí abajo. Si lo agregas en
+                     <b>Ajustes → Catálogo de servicios</b>, la próxima vez lo eliges de una
+                     lista y sale con su precio puesto.</div>`) +
+              field('description', 'Descripción', { required: true }) +
               `<div class="row">${field('quantity', 'Cantidad', { type: 'number', value: '1', step: '0.01', min: 0 })}
                ${field('unit_price', 'Precio', { type: 'number', value: '0', min: 0 })}</div>` +
               field('approved', '¿Ya está autorizado?',
@@ -344,10 +484,15 @@ export async function orderDetailView(id) {
     document.getElementById('btn-add-part')?.addEventListener('click', async () => {
       const result = await modal({
         title: 'Cargar repuesto',
-        body: field('part_id', 'Del inventario', {
-                options: [['', 'Escribir a mano'],
-                  ...parts.map((p) => [p.id, `${p.name} — ${money(p.price)} · ${number(p.stock)} en stock`])] }) +
-              field('description', 'Descripción') +
+        body: (parts.length
+                ? field('part_id', 'Tomar del inventario', {
+                    options: [['', 'Escribir a mano'],
+                      ...parts.map((p) => [p.id, `${p.name} — ${money(p.price)} · ${number(p.stock)} en stock`])],
+                    hint: 'Al elegir uno se llenan la descripción y el precio, y se descuenta el stock.' })
+                : `<div class="alert alert-info">Tu inventario está vacío.
+                     Escribe el repuesto aquí abajo. Si lo cargas en <b>Inventario</b>, la próxima
+                     vez lo eliges de una lista y el stock se descuenta solo.</div>`) +
+              field('description', 'Descripción', { required: true }) +
               `<div class="row">${field('quantity', 'Cantidad', { type: 'number', value: '1', step: '0.01', min: 0 })}
                ${field('unit_price', 'Precio', { type: 'number', value: '0', min: 0 })}</div>` +
               field('approved', '¿Ya está autorizado?',
@@ -502,6 +647,13 @@ export async function orderDetailView(id) {
               : empty('Aún no has cargado repuestos ni mano de obra.', '🔧')}
           </div>
           <div class="card-body" style="border-top:1px solid var(--border)">
+            ${Number(session.workshop?.tax_rate) > 0 ? `
+              <div class="btn-group no-print" style="margin-bottom:12px">
+                <button class="chip ${Number(order.tax_rate) > 0 ? 'on' : ''}" data-tax="taller">
+                  Con IVA (${esc(Number(order.tax_rate) > 0 ? order.tax_rate : session.workshop.tax_rate)}%)</button>
+                <button class="chip ${Number(order.tax_rate) > 0 ? '' : 'on'}" data-tax="0">
+                  Sin IVA</button>
+              </div>` : ''}
             <div class="totals">
               <div class="line"><span>Mano de obra</span><span>${money(order.labor_total)}</span></div>
               <div class="line"><span>Repuestos</span><span>${money(order.parts_total)}</span></div>
@@ -592,6 +744,22 @@ export async function orderDetailView(id) {
               </div>
               <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
             </form>` : ''}
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h2>Fotos</h2>
+            ${editable ? `<div class="no-print">
+              <input type="file" id="mas-fotos" accept="image/*" capture="environment"
+                     multiple style="display:none">
+              <button class="btn btn-default btn-sm" id="btn-mas-fotos">+ Agregar fotos</button>
+            </div>` : ''}
+          </div>
+          <div class="card-body" id="fotos-orden">
+            ${order.attachments.length
+              ? '<div class="spinner"></div>'
+              : '<p class="faint" style="margin:0">Sin fotos. Las de recepción son las que te respaldan en la entrega.</p>'}
           </div>
         </div>
 

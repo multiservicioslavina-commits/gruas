@@ -4,6 +4,8 @@ import { hashPassword, verifyPassword, signToken } from '../lib/auth.js';
 import { validate } from '../lib/validate.js';
 import { wrap, unauthorized, conflict, badRequest } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
+import { config } from '../config.js';
+import { revisar, MOTIVOS, venceEl } from '../lib/licencia.js';
 
 export const authRouter = Router();
 
@@ -21,17 +23,40 @@ authRouter.post('/register', wrap(async (req, res) => {
     password:      { type: 'string', required: true, min: 8, max: 100 },
     phone:         { type: 'string', max: 40 },
     city:          { type: 'string', max: 80 },
-    tax_rate:      { type: 'number', min: 0, max: 100, default: 0 }
+    tax_rate:      { type: 'number', min: 0, max: 100, default: 0 },
+    license_code:  { type: 'string', max: 600 }
   });
+
+  // Código de activación: sin él no se abre un taller nuevo en esta
+  // instalación. Se comprueba antes de tocar nada.
+  let licencia = null;
+  if (config.license.required) {
+    if (!data.license_code) {
+      throw badRequest('Necesitas un código de activación para registrar tu taller.');
+    }
+    const revision = revisar(data.license_code, config.license.publicKey);
+    if (!revision.valido) {
+      throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
+    }
+    licencia = revision.datos;
+
+    const yaUsado = await queryOne(
+      'SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
+    if (yaUsado) throw conflict(MOTIVOS.usado);
+  }
 
   const exists = await queryOne('SELECT id FROM users WHERE lower(email) = lower($1)', [data.email]);
   if (exists) throw conflict('Ese correo ya tiene una cuenta');
 
   const result = await transaction(async (client) => {
     const { rows: [workshop] } = await client.query(
-      `INSERT INTO workshops (name, phone, city, email, tax_rate)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate]
+      `INSERT INTO workshops (name, phone, city, email, tax_rate,
+                              license_code, license_id, license_holder, license_plan,
+                              license_expires_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+      [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate,
+       licencia ? data.license_code : null, licencia?.id || null, licencia?.t || null,
+       licencia?.p || null, licencia ? venceEl(licencia) : null]
     );
     const { rows: [user] } = await client.query(
       `INSERT INTO users (workshop_id, email, name, password_hash, role, phone)
@@ -68,7 +93,11 @@ authRouter.post('/login', wrap(async (req, res) => {
   if (!user.active) throw unauthorized('Tu usuario está desactivado. Habla con el administrador del taller.');
 
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
-  res.json({ token: signToken(user), user: publicUser(user) });
+
+  // Devolver también el taller evita que el frontend arranque sin saber su
+  // moneda, su IVA ni su nombre hasta la siguiente recarga.
+  const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [user.workshop_id]);
+  res.json({ token: signToken(user), user: publicUser(user), workshop });
 }));
 
 authRouter.get('/me', requireAuth, wrap(async (req, res) => {

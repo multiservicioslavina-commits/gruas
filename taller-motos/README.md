@@ -23,13 +23,32 @@ mismo backend.
 
 ## Puesta en marcha
 
+### Con Docker (una sola orden)
+
+Si sólo quieres tenerlo funcionando, sin instalar Node ni PostgreSQL:
+
+```bash
+./instalar.sh          # Linux y Mac
+```
+
+En Windows, con Docker Desktop: copia `.env.ejemplo` a `.env`, pon un
+`JWT_SECRET` propio y ejecuta `docker compose up -d --build`.
+
+Guía completa en [docs/INSTALAR.md](docs/INSTALAR.md).
+
+> Recuerda que **un solo despliegue atiende a muchos talleres**, cada uno
+> aislado del resto. Para dar pruebas no hace falta instalar nada: basta
+> compartir el enlace y que cada taller registre el suyo.
+
+### Para desarrollar
+
 ```bash
 # 1. Dependencias
 npm install
 
 # 2. Configuración
-cp .env.example .env
-#    Edita DATABASE_URL y genera un JWT_SECRET propio:
+cp .env.ejemplo .env
+#    Descomenta DATABASE_URL y genera un JWT_SECRET propio:
 #    node -e "console.log(require('crypto').randomBytes(48).toString('base64url'))"
 
 # 3. Base de datos (crea o actualiza las tablas; se puede repetir sin riesgo)
@@ -97,7 +116,10 @@ entrada, abren la transacción y llaman a esas funciones.
 |---|---|
 | [docs/API.md](docs/API.md) | Referencia de la API REST y de la API de integración |
 | [docs/DATABASE.md](docs/DATABASE.md) | Modelo de datos, tabla por tabla, y decisiones de diseño |
-| [docs/DEPLOY.md](docs/DEPLOY.md) | Despliegue, copias de seguridad y actualización |
+| [docs/INSTALAR.md](docs/INSTALAR.md) | Instalación con Docker, copias de seguridad y preguntas frecuentes |
+| [docs/CODIGOS.md](docs/CODIGOS.md) | Códigos de activación: cómo emitirlos y qué protegen |
+| [docs/DATOS.md](docs/DATOS.md) | Dónde viven los datos, cómo se exportan y quién responde por las copias |
+| [docs/DEPLOY.md](docs/DEPLOY.md) | Despliegue en servidor propio, variables y proxy inverso |
 | [docs/MANUAL.md](docs/MANUAL.md) | Manual de uso para el taller |
 
 ## Roles

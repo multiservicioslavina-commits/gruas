@@ -1,6 +1,6 @@
 import { query } from '../db.js';
 import { verifyToken, hashApiKey } from '../lib/auth.js';
-import { unauthorized, forbidden } from '../lib/errors.js';
+import { unauthorized, forbidden, ApiError } from '../lib/errors.js';
 
 function bearer(req) {
   const header = req.headers.authorization || '';
@@ -24,9 +24,13 @@ export async function requireAuth(req, _res, next) {
     }
 
     // Se relee el usuario para que desactivarlo o cambiarle el rol tenga
-    // efecto inmediato, sin esperar a que expire el token.
+    // efecto inmediato, sin esperar a que expire el token. De paso viene la
+    // licencia del taller, para no hacer una segunda consulta por petición.
     const { rows } = await query(
-      'SELECT id, workshop_id, email, name, role, active FROM users WHERE id = $1',
+      `SELECT u.id, u.workshop_id, u.email, u.name, u.role, u.active,
+              w.license_expires_at
+       FROM users u JOIN workshops w ON w.id = u.workshop_id
+       WHERE u.id = $1`,
       [payload.sub]
     );
     const user = rows[0];
@@ -38,6 +42,7 @@ export async function requireAuth(req, _res, next) {
       role: user.role,
       name: user.name,
       email: user.email,
+      licenseExpiresAt: user.license_expires_at,
       via: 'user'
     };
     next();
@@ -83,6 +88,19 @@ export async function requireApiKey(req, _res, next) {
   } catch (err) {
     next(err);
   }
+}
+
+// Licencia vencida: el taller sigue viendo y exportando lo suyo, pero no
+// puede seguir registrando trabajo. Quitarle el acceso a sus propios datos
+// seria retenerlos como rehenes.
+export function requireLicense(req, _res, next) {
+  const vence = req.auth?.licenseExpiresAt;
+  if (!vence || req.method === 'GET') return next();
+  if (new Date(vence) > new Date()) return next();
+
+  next(new ApiError(402,
+    'Tu licencia venció. Puedes seguir consultando y exportando tu información, ' +
+    'pero para registrar trabajo nuevo necesitas un código vigente.'));
 }
 
 export const requireScope = (scope) => (req, _res, next) => {

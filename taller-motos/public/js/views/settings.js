@@ -127,6 +127,43 @@ export async function settingsView() {
       });
     });
 
+    // Descarga de los datos. Se pide con el token y se guarda en el equipo.
+    document.querySelectorAll('[data-bajar]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Preparando…';
+        try {
+          const respuesta = await fetch(`/api/export/${button.dataset.bajar}`, {
+            headers: { Authorization: `Bearer ${session.token}` }
+          });
+          if (!respuesta.ok) {
+            const detalle = await respuesta.json().catch(() => ({}));
+            throw new Error(detalle.error || 'No se pudo preparar la descarga');
+          }
+
+          // El nombre del archivo lo manda el servidor.
+          const cabecera = respuesta.headers.get('Content-Disposition') || '';
+          const nombre = (cabecera.match(/filename="([^"]+)"/) || [])[1] || 'taller.json';
+
+          const blob = await respuesta.blob();
+          const url = URL.createObjectURL(blob);
+          const enlace = document.createElement('a');
+          enlace.href = url;
+          enlace.download = nombre;
+          document.body.appendChild(enlace);
+          enlace.click();
+          enlace.remove();
+          URL.revokeObjectURL(url);
+          toast('Descargado: ' + nombre);
+        } catch (err) {
+          toast(err.message, true);
+        }
+        button.disabled = false;
+        button.textContent = original;
+      });
+    });
+
     // Llaves de API.
     document.getElementById('btn-new-key')?.addEventListener('click', async () => {
       const created = await modal({
@@ -273,6 +310,29 @@ export async function settingsView() {
     </div>
 
     ${isAdmin ? `
+    <div class="card">
+      <div class="card-head"><h2>Tus datos</h2></div>
+      <div class="card-body">
+        <p class="small muted" style="margin-bottom:14px">
+          Toda la información de tu taller es tuya y te la puedes llevar cuando
+          quieras, sin pedirle permiso a nadie. Descárgala cada tanto y guárdala
+          en tu computador.</p>
+
+        <div class="btn-group">
+          <button class="btn btn-primary btn-sm" data-bajar="">Descargar todo (JSON)</button>
+          <button class="btn btn-default btn-sm" data-bajar="clientes.csv">Clientes</button>
+          <button class="btn btn-default btn-sm" data-bajar="motos.csv">Motos</button>
+          <button class="btn btn-default btn-sm" data-bajar="ordenes.csv">Órdenes</button>
+          <button class="btn btn-default btn-sm" data-bajar="inventario.csv">Inventario</button>
+          <button class="btn btn-default btn-sm" data-bajar="pagos.csv">Pagos</button>
+        </div>
+
+        <p class="faint" style="margin-top:12px">
+          El archivo JSON lleva absolutamente todo, incluidas las órdenes con sus
+          repuestos, diagnósticos y pagos. Los CSV se abren en Excel.</p>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-head">
         <h2>Integraciones (API)</h2>

@@ -8,6 +8,7 @@ import { Router } from 'express';
 import { query, queryOne } from '../db.js';
 import { validate, assertUuid } from './validate.js';
 import { wrap, notFound, conflict } from './errors.js';
+import { assertDelTaller } from './pertenencia.js';
 
 function isUniqueViolation(err) { return err?.code === '23505'; }
 
@@ -20,12 +21,20 @@ export function crudRouter({
   filters = {},           // { queryParam: 'columna' } para filtros exactos
   duplicateMessage = 'Ya existe un registro con esos datos',
   afterCreate,            // hook(row, req) opcional
+  references = {},        // { columna: 'tabla' } que deben ser del mismo taller
   hidden = []             // columnas que nunca se devuelven
 }) {
   const router = Router();
   const relaxed = updateSchema || Object.fromEntries(
     Object.entries(schema).map(([k, rule]) => [k, { ...rule, required: false }])
   );
+  // Un taller sólo puede apuntar a registros suyos.
+  const comprobarReferencias = async (data, workshopId) => {
+    for (const [columna, tabla] of Object.entries(references)) {
+      if (data[columna]) await assertDelTaller(tabla, data[columna], workshopId);
+    }
+  };
+
   const strip = (row) => {
     if (!row || !hidden.length) return row;
     const copy = { ...row };
@@ -79,6 +88,7 @@ export function crudRouter({
 
   router.post('/', wrap(async (req, res) => {
     const data = validate(req.body, schema);
+    await comprobarReferencias(data, req.auth.workshopId);
     const keys = Object.keys(data);
     const columns = ['workshop_id', ...keys];
     const values = [req.auth.workshopId, ...keys.map((k) => data[k])];
@@ -101,6 +111,7 @@ export function crudRouter({
   router.patch('/:id', wrap(async (req, res) => {
     assertUuid(req.params.id);
     const data = validate(req.body, relaxed);
+    await comprobarReferencias(data, req.auth.workshopId);
     const keys = Object.keys(data);
     if (!keys.length) throw conflict('No enviaste ningún campo para actualizar');
 

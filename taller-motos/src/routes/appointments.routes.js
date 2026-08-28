@@ -15,6 +15,7 @@ export const appointmentsRouter = crudRouter({
   },
   searchColumns: ['reason', 'notes'],
   filters: { status: 'status', customer_id: 'customer_id' },
+  references: { customer_id: 'customers', motorcycle_id: 'motorcycles' },
   orderBy: 'scheduled_at ASC'
 });
 

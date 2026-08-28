@@ -59,6 +59,12 @@ export async function loginView() {
 }
 
 export async function registerView() {
+  // Una instalación puede no exigir código (por ejemplo, la del propio taller
+  // que la aloja). Preguntar por él en ese caso sólo estorbaría.
+  const exigeCodigo = await api.get('/health', { anonymous: true })
+    .then((r) => Boolean(r.license_required))
+    .catch(() => false);
+
   onMount(() => {
     const form = document.getElementById('register-form');
     form.addEventListener('submit', async (event) => {
@@ -101,6 +107,10 @@ export async function registerView() {
               Creas el taller y tu usuario administrador. Después podrás sumar a tu equipo.</p>
             <div id="register-error"></div>
             <form id="register-form">
+              ${exigeCodigo ? field('license_code', 'Código de activación', {
+                required: true,
+                placeholder: 'TM1....',
+                hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
               ${field('workshop_name', 'Nombre del taller', { required: true, placeholder: 'Taller Motos del Sur' })}
               <div class="row">
                 ${field('city', 'Ciudad', { placeholder: 'Medellín' })}

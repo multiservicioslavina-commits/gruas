@@ -4,6 +4,7 @@ import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { publicCode } from '../lib/ids.js';
+import { assertDelTaller } from '../lib/pertenencia.js';
 import {
   recalcWorkOrder, changeStatus, loadFullWorkOrder, getWorkOrder,
   syncPartStock, moveStock, OPEN_STATUSES, STATUS_FLOW
@@ -78,7 +79,10 @@ workOrdersRouter.post('/', wrap(async (req, res) => {
     customer_signature: { type: 'string', max: 200000 },
     mechanic_id:        { type: 'string', max: 40 },
     priority:           { type: 'string', enum: ['low','normal','high'], default: 'normal' },
-    promised_at:        { type: 'date' }
+    promised_at:        { type: 'date' },
+    // Muchos clientes no piden factura: se decide desde la recepción.
+    // Si no viene, se usa el IVA por defecto del taller.
+    tax_rate:           { type: 'number', min: 0, max: 100 }
   });
 
   if (!data.motorcycle_id && !data.plate) {
@@ -87,6 +91,11 @@ workOrdersRouter.post('/', wrap(async (req, res) => {
 
   const order = await transaction(async (client) => {
     const workshopId = req.auth.workshopId;
+
+    // El cliente y el mecánico que llegan por id tienen que ser de este taller.
+    // La moto se comprueba unas líneas más abajo, al buscarla.
+    await assertDelTaller('customers', data.customer_id, workshopId, client);
+    await assertDelTaller('users', data.mechanic_id, workshopId, client);
 
     // 1. Moto: por id, por placa existente, o nueva.
     let motorcycle = null;
@@ -157,7 +166,8 @@ workOrdersRouter.post('/', wrap(async (req, res) => {
        data.fuel_level || null, JSON.stringify(data.accessories || []),
        data.visual_condition || null, data.existing_damage || null, data.reception_notes || null,
        data.customer_signature || null, data.customer_signature ? new Date() : null,
-       data.complaint, data.promised_at || null, workshop.tax_rate]
+       data.complaint, data.promised_at || null,
+       data.tax_rate ?? workshop.tax_rate]
     );
 
     await client.query(
@@ -211,6 +221,7 @@ workOrdersRouter.patch('/:id', wrap(async (req, res) => {
 
   const order = await transaction(async (client) => {
     await getWorkOrder(client, req.auth.workshopId, req.params.id);
+    await assertDelTaller('users', data.mechanic_id, req.auth.workshopId, client);
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const values = keys.map((k) => (k === 'accessories' ? JSON.stringify(data[k]) : data[k]));
     values.push(req.params.id, req.auth.workshopId);

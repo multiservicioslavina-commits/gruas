@@ -63,8 +63,11 @@ export async function customersView() {
     target.innerHTML = '<div class="spinner"></div>';
     const { data, total } = await api.get(
       `/customers?limit=200${search ? `&search=${encodeURIComponent(search)}` : ''}`);
-    document.getElementById('customers-count').textContent =
-      total === 1 ? '1 cliente' : `${number(total)} clientes`;
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('customers-count');
+    if (!contador) return;
+    contador.textContent = total === 1 ? '1 cliente' : `${number(total)} clientes`;
 
     target.innerHTML = data.length ? data.map((customer) => `
       <a class="list-item" href="#/clientes/${esc(customer.id)}"

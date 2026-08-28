@@ -223,7 +223,7 @@ sistema registra la diferencia contra lo que tenía.
 | `POST` | `/attachments` | `multipart/form-data`: `files[]`, `entity_type`, `entity_id`, `kind`, `stage` |
 | `GET` | `/attachments?entity_type=&entity_id=` | Listado |
 | `GET` | `/attachments/:id/file` | Descarga |
-| `DELETE` | `/attachments/:id` | Borra registro y archivo |
+| `DELETE` | `/attachments/:id` | Borra registro y archivo. Sólo `admin` y `reception` |
 
 Acepta JPEG, PNG, WebP, HEIC y PDF, hasta `UPLOADS_MAX_BYTES` (8 MB por
 defecto). Se guardan en disco, en un directorio por taller.
