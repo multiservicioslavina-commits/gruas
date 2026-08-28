@@ -44,6 +44,8 @@
   .login-btn:hover { background: var(--accent2); }
   .login-btn:disabled { opacity: .5; cursor: not-allowed; }
   .login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 20px; }
+  .login-ayuda { color: var(--text2); font-size: 13px; line-height: 1.5; max-width: 320px; margin: 0 auto 14px; }
+  .login-volver { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; padding: 12px; }
 
   /* ── App shell ── */
   .app { display: none; flex-direction: column; height: 100%; }
@@ -152,6 +154,94 @@
   .msg-date-divider {
     text-align: center; color: var(--text2); font-size: 11px;
     padding: 12px 0 6px; font-weight: 500;
+  }
+
+  /* Acciones sobre un mensaje propio (mantener presionado) */
+  .msg-editado { font-size: 10px; opacity: .75; margin-right: 6px; font-style: italic; }
+  .msg-acciones-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .msg-acciones-fondo.open { display: flex; }
+  .msg-acciones {
+    width: 100%; background: var(--surface); border-radius: 16px 16px 0 0;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .msg-accion {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 15px 22px; background: none; border: none; color: var(--text);
+    font-size: 15px; font-family: inherit; text-align: left; cursor: pointer;
+  }
+  .msg-accion:active { background: var(--surface2); }
+  .msg-accion.danger { color: var(--red); }
+  .msg-accion .ico { font-size: 18px; width: 22px; text-align: center; }
+
+  /* Panel de miembros (solo administradores del chat) */
+  .panel-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .panel-fondo.open { display: flex; }
+  .panel {
+    width: 100%; max-height: 80vh; background: var(--surface);
+    border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .panel-x { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .panel-add {
+    display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-add input {
+    flex: 1; min-width: 0; padding: 9px 11px; border-radius: 8px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  }
+  .panel-add input:focus { outline: none; border-color: var(--accent); }
+  .panel-add button {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  }
+  .panel-body { overflow-y: auto; padding: 6px 0 14px; }
+  .miembro {
+    display: flex; align-items: center; gap: 10px; padding: 11px 18px;
+  }
+  .miembro-info { flex: 1; min-width: 0; }
+  .miembro-nom { font-size: 14px; }
+  .miembro-tel { font-size: 11px; color: var(--text2); }
+  .miembro-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 5px;
+    background: rgba(251,146,60,.15); color: var(--accent2);
+  }
+  .miembro-tag.admin { background: rgba(59,130,246,.15); color: #60a5fa; }
+  .miembro-btn {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: 7px; padding: 5px 9px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+  }
+  .miembro-btn.ok { border-color: var(--green); color: var(--green); }
+  .miembro-btn.no { border-color: var(--red); color: var(--red); }
+
+  /* Aviso para instalar la app (PWA) */
+  .install-bar {
+    display: none; align-items: center; gap: 10px; flex-shrink: 0;
+    padding: 10px 12px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .install-bar.show { display: flex; }
+  .install-text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.35; }
+  .install-text strong { display: block; font-size: 13px; }
+  .install-text span { color: var(--text2); }
+  .install-yes {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .install-no {
+    background: none; border: none; color: var(--text2); font-size: 16px;
+    cursor: pointer; padding: 4px 6px; flex-shrink: 0;
   }
 
   .empty-room {
@@ -281,8 +371,22 @@
   <div class="login-title"><span>Ridera</span> Club</div>
   <div class="login-sub">El espacio de tu club</div>
   <div class="login-club" id="login-club-name"></div>
-  <input class="login-input" id="login-phone" type="tel" placeholder="Tu número de celular" maxlength="15" inputmode="numeric">
-  <button class="login-btn" id="login-btn" onclick="login()">Entrar</button>
+  <div id="paso-telefono">
+    <input class="login-input" id="login-phone" type="tel" placeholder="Tu número de celular" maxlength="15" inputmode="numeric">
+    <button class="login-btn" id="login-btn" onclick="login()">Entrar</button>
+  </div>
+
+  <div id="paso-codigo" style="display:none">
+    <p class="login-ayuda">
+      Escríbele a Rita por WhatsApp y te responde con un código.<br>
+      Así confirmamos que el número es tuyo.
+    </p>
+    <button class="login-btn" onclick="pedirCodigo()">Pedirle el código a Rita</button>
+    <input class="login-input" id="login-codigo" type="text" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric" style="margin-top:14px">
+    <button class="login-btn" id="btn-codigo" onclick="verificarCodigo()">Entrar al chat</button>
+    <button class="login-volver" onclick="volverATelefono()">← Usar otro número</button>
+  </div>
+
   <div class="login-error" id="login-error"></div>
 </div>
 
@@ -295,6 +399,15 @@
       <div class="header-room" id="h-room"></div>
     </div>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
+  </div>
+
+  <div class="install-bar" id="install-bar">
+    <div class="install-text">
+      <strong>Ten el club a un toque</strong>
+      <span id="install-hint">Instálalo en tu pantalla de inicio y entra sin buscar el link.</span>
+    </div>
+    <button class="install-yes" id="install-yes" onclick="instalarApp(event)">Instalar</button>
+    <button class="install-no" onclick="ocultarInstalar()" aria-label="Ahora no">✕</button>
   </div>
 
   <div class="messages" id="messages"></div>
@@ -317,6 +430,14 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
+    <a class="drawer-app-link" id="admin-link" href="#" onclick="abrirMiembros(event)" style="display:none">
+      <div class="app-icon" style="background: var(--green);">👥</div>
+      Miembros del club
+    </a>
+    <a class="drawer-app-link" id="install-link" href="#" onclick="instalarApp(event)" style="display:none">
+      <div class="app-icon">📲</div>
+      Instalar en mi celular
+    </a>
     <a class="drawer-app-link" href="/lyrapp" download="RideraMusic.apk">
       <div class="app-icon" style="background: var(--blue);">🎧</div>
       Ridera Music - Descargar
@@ -349,6 +470,38 @@
 <input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
 <input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
 <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+
+<div class="panel-fondo" id="miembros-fondo" onclick="cerrarMiembros()">
+  <div class="panel" onclick="event.stopPropagation()">
+    <div class="panel-head">
+      <strong>Miembros del club</strong>
+      <button class="panel-x" onclick="cerrarMiembros()">✕</button>
+    </div>
+    <div class="panel-add">
+      <input id="nuevo-nombre" type="text" placeholder="Nombre" maxlength="50">
+      <input id="nuevo-tel" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+      <button onclick="agregarMiembro()" id="btn-agregar-miembro">Agregar</button>
+    </div>
+    <div class="panel-body" id="miembros-lista"></div>
+  </div>
+</div>
+
+<div class="msg-acciones-fondo" id="msg-acciones-fondo" onclick="cerrarAccionesMensaje()">
+  <div class="msg-acciones" onclick="event.stopPropagation()">
+    <button class="msg-accion" id="accion-editar" onclick="editarMensaje()">
+      <span class="ico">✏️</span> Editar mensaje
+    </button>
+    <button class="msg-accion" id="accion-copiar" onclick="copiarMensaje()">
+      <span class="ico">📋</span> Copiar texto
+    </button>
+    <button class="msg-accion danger" onclick="borrarMensaje()">
+      <span class="ico">🗑️</span> Eliminar mensaje
+    </button>
+    <button class="msg-accion" onclick="cerrarAccionesMensaje()">
+      <span class="ico">✕</span> Cancelar
+    </button>
+  </div>
+</div>
 
 
 <script>
@@ -432,9 +585,12 @@ async function init() {
   if (saved) {
     try {
       const s = JSON.parse(saved);
-      if (s.clubId === state.club.id) {
+      // Sin token la sesion guardada ya no vale: las de antes solo llevaban
+      // un memberId, que no prueba nada.
+      if (s.clubId === state.club.id && s.token) {
         const members = await sb(`connect_members?id=eq.${s.memberId}&select=*`);
         if (members.length && members[0].estado !== 'solicitado') {
+          state.token = s.token;
           state.member = members[0];
           await enterApp();
           return;
@@ -467,23 +623,70 @@ async function login() {
     return;
   }
 
-  state.member = members[0];
-  localStorage.setItem('connect_session', JSON.stringify({
-    memberId: state.member.id, clubId: state.club.id
-  }));
+  // El numero solo dice quien DICE ser. La prueba es el codigo que Rita manda
+  // a ese WhatsApp: sin el, bastaba conocer el telefono de un miembro para
+  // entrar en su lugar.
+  state.telefonoPendiente = phone;
+  btn.disabled = false; btn.textContent = 'Entrar';
+  document.getElementById('paso-telefono').style.display = 'none';
+  document.getElementById('paso-codigo').style.display = '';
+  document.getElementById('login-codigo').focus();
+}
 
-  // Marcar el primer ingreso. Va por Edge Function porque la tabla no expone
-  // UPDATE a la llave publica (si lo hiciera, cualquiera podria auto-aprobarse).
-  if (state.member.estado === 'pendiente') {
-    fetch(`${SB_URL}/functions/v1/club-members`, {
+const RITA_WA = '573117896717';
+
+function pedirCodigo() {
+  const txt = encodeURIComponent('Quiero entrar al chat de mi club');
+  window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
+}
+
+function volverATelefono() {
+  state.telefonoPendiente = null;
+  document.getElementById('login-error').textContent = '';
+  document.getElementById('login-codigo').value = '';
+  document.getElementById('paso-codigo').style.display = 'none';
+  document.getElementById('paso-telefono').style.display = '';
+}
+
+async function verificarCodigo() {
+  const codigo = document.getElementById('login-codigo').value.replace(/\D/g, '');
+  const errEl = document.getElementById('login-error');
+  const btn = document.getElementById('btn-codigo');
+  if (codigo.length !== 6) { errEl.textContent = 'El código son 6 dígitos.'; return; }
+
+  btn.disabled = true; btn.textContent = 'Verificando...';
+  errEl.textContent = '';
+
+  let out;
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'ingreso', clubId: state.club.id, telefono: phone })
-    }).catch(() => {});
+      body: JSON.stringify({
+        action: 'sesion-verificar',
+        telefono: state.telefonoPendiente,
+        codigo,
+        clubId: state.club.id
+      })
+    });
+    out = await res.json();
+  } catch {
+    out = { error: 'Sin conexión. Intenta de nuevo.' };
   }
 
-  btn.disabled = false; btn.textContent = 'Entrar';
+  btn.disabled = false; btn.textContent = 'Entrar al chat';
+  if (!out.ok) { errEl.textContent = out.error || 'No se pudo entrar.'; return; }
+
+  guardarSesion(out.token, out.miembro);
   await enterApp();
+}
+
+function guardarSesion(token, miembro) {
+  state.token = token;
+  state.member = { id: miembro.id, nombre: miembro.nombre, es_admin: miembro.es_admin };
+  localStorage.setItem('connect_session', JSON.stringify({
+    token, memberId: miembro.id, clubId: state.club.id
+  }));
 }
 
 async function enterApp() {
@@ -496,6 +699,7 @@ async function enterApp() {
   document.getElementById('h-club').textContent = state.club.nombre;
   document.getElementById('d-club').textContent = state.club.nombre;
   renderDrawerRooms();
+  mostrarEnlaceAdmin();
 
   if (state.rooms.length) {
     switchRoom(state.rooms[0].id);
@@ -628,18 +832,27 @@ function renderMessages() {
         <div class="msg-time">${time}</div>
       </div>`;
     } else if (isMine) {
-      html += `<div class="msg msg-mine">
+      // Los propios llevan su id: es lo que permite mantener presionado para
+      // borrarlos o corregirlos.
+      const editado = m.editado_at ? '<span class="msg-editado">editado</span>' : '';
+      html += `<div class="msg msg-mine" data-msg="${m.id}" data-tipo="${m.tipo || 'text'}">
         ${cuerpoMensaje(m)}
-        <div class="msg-time">${time}</div>
+        <div class="msg-time">${editado}${time}</div>
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
-      html += `<div class="msg msg-other">
+      // Un admin del chat tambien puede actuar sobre los ajenos (moderar).
+      const moderable = state.member?.es_admin ? ` data-msg="${m.id}" data-tipo="${m.tipo || 'text'}" data-ajeno="1"` : '';
+      html += `<div class="msg msg-other"${moderable}>
         <div class="msg-sender">${escapeHtml(sender)}</div>
         ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     }
+  }
+
+  if (state.ritaEscribiendo) {
+    html += `<div class="msg msg-rita"><div class="msg-sender">🤖 Rita</div>escribiendo…</div>`;
   }
 
   container.innerHTML = html;
@@ -725,29 +938,259 @@ async function sendMessage() {
 
   await sb('connect_messages', { method: 'POST', body: msg });
 
-  // Si es la sala de Rita, generar respuesta automática
+  // En la sala de Rita responde la MISMA Rita de WhatsApp (clima, vías,
+  // talleres, garaje, trámites, sellos...), no una versión aparte. Ella
+  // guarda su respuesta en la sala; aquí solo refrescamos.
   if (state.currentRoom.slug === 'rita') {
+    mostrarRitaEscribiendo(true);
     try {
-      const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/rita-respond', {
+      const res = await fetch(`${SB_URL}/functions/v1/rita-whatsapp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY },
-        body: JSON.stringify({ record: { content: text, member_id: state.member.id, club_id: state.club.id, sender: 'user' } })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token || ''}`
+        },
+        body: JSON.stringify({
+          mode: 'club-chat',
+          message: text,
+          roomId: state.currentRoom.id
+        })
       });
       const data = await res.json();
-      if (data.answer) {
-        await sb('connect_messages', { method: 'POST', body: {
-          room_id: state.currentRoom.id,
-          member_id: state.member.id,
-          contenido: data.answer,
-          tipo: 'text',
-          es_rita: true
-        }});
-      }
+      if (!data.ok) console.error('Rita:', data.error);
     } catch (e) {
       console.error('Rita error:', e);
     }
+    mostrarRitaEscribiendo(false);
   }
 }
+
+// El indicador va por bandera y no por un nodo suelto: el poll de la sala
+// reescribe la lista cada 500 ms y se llevaria por delante cualquier
+// elemento añadido a mano.
+function mostrarRitaEscribiendo(activo) {
+  state.ritaEscribiendo = activo;
+  renderMessages();
+}
+
+// ── Borrar / corregir un mensaje propio ────────────────────────────────
+// Los mensajes se repintan cada 500 ms, asi que los escuchadores van
+// delegados en el contenedor: los puestos en cada burbuja se perderian.
+let mensajeActivo = null;
+let pulsacionLarga = null;
+
+function burbujaPropia(target) {
+  const el = target.closest ? target.closest('.msg[data-msg]') : null;
+  return el && !String(el.dataset.msg).startsWith('temp-') ? el : null;
+}
+
+function abrirAccionesMensaje(el) {
+  const ajeno = el.dataset.ajeno === '1';
+  mensajeActivo = { id: el.dataset.msg, tipo: el.dataset.tipo || 'text', ajeno };
+  const esTexto = mensajeActivo.tipo === 'text';
+  // En una foto o un audio no hay texto que editar ni que copiar. Y sobre un
+  // mensaje ajeno un admin puede borrar, nunca reescribir lo que otro dijo.
+  document.getElementById('accion-editar').style.display = (esTexto && !ajeno) ? '' : 'none';
+  document.getElementById('accion-copiar').style.display = esTexto ? '' : 'none';
+  document.getElementById('msg-acciones-fondo').classList.add('open');
+}
+
+function cerrarAccionesMensaje() {
+  mensajeActivo = null;
+  document.getElementById('msg-acciones-fondo').classList.remove('open');
+}
+
+function textoDeMensaje(id) {
+  const m = state.messages.find(x => x.id === id);
+  return m ? m.contenido : '';
+}
+
+async function borrarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  const ajeno = mensajeActivo.ajeno;
+  cerrarAccionesMensaje();
+  const aviso = ajeno
+    ? '¿Eliminar este mensaje de otro miembro? Se borra para todos.'
+    : '¿Eliminar este mensaje? Se borra para todos.';
+  if (!confirm(aviso)) return;
+  // Se quita de una para que no quede medio segundo en pantalla esperando
+  // al siguiente refresco.
+  state.messages = state.messages.filter(m => m.id !== id);
+  renderMessages();
+  const out = await accionMensaje('msg-borrar', { mensajeId: id });
+  if (!out.ok) alert(out.error || 'No se pudo eliminar.');
+}
+
+async function editarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  const actual = textoDeMensaje(id);
+  cerrarAccionesMensaje();
+  const nuevo = prompt('Editar mensaje:', actual);
+  if (nuevo === null) return;
+  if (!nuevo.trim()) { alert('El mensaje no puede quedar vacío. Si querías quitarlo, usa Eliminar.'); return; }
+  const out = await accionMensaje('msg-editar', { mensajeId: id, texto: nuevo });
+  if (!out.ok) alert(out.error || 'No se pudo editar.');
+}
+
+async function copiarMensaje() {
+  if (!mensajeActivo) return;
+  const texto = textoDeMensaje(mensajeActivo.id);
+  cerrarAccionesMensaje();
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    alert('Tu navegador no dejó copiar. Mantén presionado el texto y usa Copiar.');
+  }
+}
+
+// ── Panel de miembros (administradores del chat) ───────────────────────
+// El enlace se muestra segun state.member.es_admin, pero eso es solo la
+// vista: cada accion la vuelve a comprobar el servidor.
+function mostrarEnlaceAdmin() {
+  const el = document.getElementById('admin-link');
+  if (el) el.style.display = state.member?.es_admin ? '' : 'none';
+}
+
+async function abrirMiembros(ev) {
+  if (ev) ev.preventDefault();
+  // Cerrar el menu, no alternarlo: recargar la lista no debe reabrirlo.
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('miembros-fondo').classList.add('open');
+  await recargarMiembros();
+}
+
+async function recargarMiembros() {
+  document.getElementById('miembros-lista').innerHTML =
+    '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
+  const out = await accionMensaje('chat-miembros', {});
+  if (!out.ok) {
+    document.getElementById('miembros-lista').innerHTML =
+      `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">${escapeHtml(out.error || 'No se pudo cargar')}</div>`;
+    return;
+  }
+  pintarMiembros(out.miembros || []);
+}
+
+function cerrarMiembros() {
+  document.getElementById('miembros-fondo').classList.remove('open');
+}
+
+function pintarMiembros(lista) {
+  const cont = document.getElementById('miembros-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Todavía no hay miembros.</div>';
+    return;
+  }
+  // Las solicitudes primero: son lo que pide acción.
+  const orden = { solicitado: 0, pendiente: 1, vinculado: 2 };
+  lista.sort((a, b) => (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3));
+
+  cont.innerHTML = lista.map(m => {
+    const yo = m.id === state.member.id;
+    let tag = '';
+    if (m.es_admin) tag = '<span class="miembro-tag admin">Admin</span>';
+    else if (m.estado === 'solicitado') tag = '<span class="miembro-tag">Pide entrar</span>';
+
+    let acciones = '';
+    if (m.estado === 'solicitado') {
+      acciones += `<button class="miembro-btn ok" onclick="aprobarMiembro('${m.id}')">Aprobar</button>`;
+    }
+    // Ni a uno mismo ni a otro admin: eso lo decide el dueño del club.
+    if (!yo && !m.es_admin) {
+      acciones += `<button class="miembro-btn no" onclick="quitarMiembro('${m.id}','${escapeHtml(m.nombre).replace(/'/g, '')}')">Quitar</button>`;
+    }
+    return `<div class="miembro">
+      <div class="miembro-info">
+        <div class="miembro-nom">${escapeHtml(m.nombre)}${tag}</div>
+        <div class="miembro-tel">${escapeHtml(m.telefono)}</div>
+      </div>
+      ${acciones}
+    </div>`;
+  }).join('');
+}
+
+async function agregarMiembro() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  const telefono = document.getElementById('nuevo-tel').value.trim();
+  if (!nombre || !telefono) { alert('Escribe el nombre y el teléfono.'); return; }
+  const btn = document.getElementById('btn-agregar-miembro');
+  btn.disabled = true;
+  const out = await accionMensaje('chat-agregar', { nombre, telefono });
+  btn.disabled = false;
+  if (!out.ok) { alert(out.error || 'No se pudo agregar.'); return; }
+  document.getElementById('nuevo-nombre').value = '';
+  document.getElementById('nuevo-tel').value = '';
+  await recargarMiembros();
+}
+
+async function aprobarMiembro(id) {
+  const out = await accionMensaje('chat-aprobar', { objetivoId: id });
+  if (!out.ok) { alert(out.error || 'No se pudo aprobar.'); return; }
+  await recargarMiembros();
+}
+
+async function quitarMiembro(id, nombre) {
+  if (!confirm(`¿Quitar a ${nombre} del club?\n\nDejará de ver el chat.`)) return;
+  // Sus mensajes no se van con él: hay que decidirlo aparte. Para un
+  // infiltrado normalmente se quiere que desaparezca también lo que escribió.
+  const borrarMensajes = confirm(
+    `¿Borrar también los mensajes de ${nombre}?\n\nAceptar: se borra todo lo que escribió.\nCancelar: sus mensajes se quedan en el chat.`
+  );
+  const out = await accionMensaje('chat-quitar', { objetivoId: id, borrarMensajes });
+  if (!out.ok) { alert(out.error || 'No se pudo quitar.'); return; }
+  await recargarMiembros();
+}
+
+// El servidor saca la identidad del token, no del cuerpo del mensaje.
+async function accionMensaje(action, extra) {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token || ''}`
+      },
+      body: JSON.stringify({ action, ...extra })
+    });
+    const out = await res.json();
+    if (res.status === 401) {
+      alert('Tu sesión venció. Vuelve a entrar al chat.');
+      logout();
+    }
+    return out;
+  } catch (e) {
+    return { ok: false, error: 'Sin conexión.' };
+  }
+}
+
+(function activarGestosMensaje() {
+  const cont = document.getElementById('messages');
+
+  cont.addEventListener('contextmenu', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    e.preventDefault();
+    abrirAccionesMensaje(el);
+  });
+
+  cont.addEventListener('touchstart', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    pulsacionLarga = setTimeout(() => {
+      pulsacionLarga = null;
+      if (navigator.vibrate) navigator.vibrate(15);
+      abrirAccionesMensaje(el);
+    }, 450);
+  }, { passive: true });
+
+  const cancelar = () => { if (pulsacionLarga) { clearTimeout(pulsacionLarga); pulsacionLarga = null; } };
+  cont.addEventListener('touchend', cancelar);
+  cont.addEventListener('touchmove', cancelar, { passive: true });
+  cont.addEventListener('scroll', cancelar, { passive: true });
+})();
 
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -988,6 +1431,71 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.key === 'Enter') login();
   });
 });
+
+// ── Instalar en el celular (PWA) ───────────────────────────────────────
+// Sin service worker el navegador no ofrece instalar, por eso se registra
+// aqui. Es propio del club (sw-connect.js): el de gruas, sin conexion,
+// cae a la home de gruas.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw-connect.js').catch(() => {});
+  });
+}
+
+let promptInstalar = null;
+
+function yaInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function esIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+// Chrome/Android avisan cuando la app se puede instalar y dejan lanzar el
+// dialogo. Safari en iPhone no: alli solo se puede explicar el gesto.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  promptInstalar = e;
+  mostrarOpcionInstalar();
+});
+
+window.addEventListener('appinstalled', () => {
+  promptInstalar = null;
+  document.getElementById('install-bar').classList.remove('show');
+  document.getElementById('install-link').style.display = 'none';
+});
+
+function mostrarOpcionInstalar() {
+  if (yaInstalada()) return;
+  document.getElementById('install-link').style.display = '';
+  if (localStorage.getItem('connect_install_off') === '1') return;
+  document.getElementById('install-bar').classList.add('show');
+}
+
+function ocultarInstalar() {
+  localStorage.setItem('connect_install_off', '1');
+  document.getElementById('install-bar').classList.remove('show');
+}
+
+async function instalarApp(ev) {
+  if (ev) ev.preventDefault();
+  if (promptInstalar) {
+    promptInstalar.prompt();
+    const { outcome } = await promptInstalar.userChoice;
+    promptInstalar = null;
+    if (outcome === 'accepted') ocultarInstalar();
+    return;
+  }
+  if (esIOS()) {
+    alert('Para instalarlo en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrito con la flecha ↑)\n2. Desliza y elige "Agregar a inicio"\n3. Toca "Agregar"');
+    return;
+  }
+  alert('Abre el menú de tu navegador (⋮) y elige "Instalar aplicación" o "Agregar a pantalla de inicio".');
+}
+
+// En iPhone no llega beforeinstallprompt, asi que la opcion se ofrece igual
+// y al tocarla se explican los pasos.
+if (esIOS() && !yaInstalada()) mostrarOpcionInstalar();
 
 init();
 </script>
