@@ -145,6 +145,37 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, estado: 'solicitado', avisado });
   }
 
+  // ---------- Publico: entrar al chat con el telefono ----------
+  // El control de quien entra es la aprobacion del lider, no un codigo: un
+  // club es gente que se conoce, y pedir codigo cada vez espantaba a la
+  // mayoria. Aun asi se entrega una sesion firmada, para que borrar mensajes,
+  // moderar o gestionar miembros no dependa de un id que viaja en el cuerpo.
+  //
+  // El mecanismo de codigo sigue abajo ('sesion-codigo' y 'sesion-verificar')
+  // por si el dia de manana se quiere exigir: es cambiar la pantalla, no esto.
+  if (action === 'sesion-telefono') {
+    const telefono = normalizePhone((body.telefono || '').toString());
+    const clubId = (body.clubId || '').toString();
+    if (!telefono || !clubId) return json({ error: 'Faltan datos' }, 400);
+
+    const { data: m } = await sb.from('connect_members')
+      .select('id, nombre, club_id, estado, es_admin')
+      .eq('club_id', clubId).eq('telefono', telefono).maybeSingle();
+    if (!m) return json({ error: 'Tu número no está registrado en este club. Pídele al líder que te agregue.' }, 404);
+    if (m.estado === 'solicitado') {
+      return json({ error: 'Tu solicitud todavía está esperando que el club la apruebe.' }, 403);
+    }
+
+    if (m.estado === 'pendiente') {
+      await sb.from('connect_members')
+        .update({ estado: 'vinculado', vinculado_at: new Date().toISOString() })
+        .eq('id', m.id);
+    }
+
+    const token = await firmarSesionMiembro({ id: m.id, club_id: m.club_id });
+    return json({ ok: true, token, miembro: { id: m.id, nombre: m.nombre, es_admin: !!m.es_admin } });
+  }
+
   // ---------- Publico: pedir el codigo de entrada ----------
   // Rita tambien lo entrega cuando el miembro le escribe (rita-whatsapp), pero
   // se puede pedir desde aqui: el miembro abre la conversacion con ella desde
