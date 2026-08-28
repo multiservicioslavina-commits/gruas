@@ -118,6 +118,43 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true });
   }
 
+  // ---------- Publico: borrar o corregir un mensaje propio ----------
+  // Va por aqui y no por PostgREST porque los miembros del chat no tienen
+  // token propio: la comprobacion de que el mensaje es suyo tiene que
+  // hacerse del lado del servidor.
+  if (action === 'msg-borrar' || action === 'msg-editar') {
+    const memberId = (body.memberId || '').toString();
+    const mensajeId = (body.mensajeId || '').toString();
+    if (!memberId || !mensajeId) return json({ error: 'Faltan datos' }, 400);
+
+    const { data: m } = await sb.from('connect_messages')
+      .select('id, member_id, tipo, es_rita, contenido')
+      .eq('id', mensajeId).maybeSingle();
+    if (!m) return json({ error: 'Ese mensaje ya no existe' }, 404);
+    if (m.es_rita || m.member_id !== memberId) {
+      return json({ error: 'Solo puedes borrar o corregir tus propios mensajes' }, 403);
+    }
+
+    if (action === 'msg-borrar') {
+      const { error } = await sb.from('connect_messages').delete().eq('id', mensajeId);
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true });
+    }
+
+    // Editar solo aplica a texto: en una foto o un audio no hay nada que
+    // reescribir, esos se borran y se vuelven a mandar.
+    if (m.tipo !== 'text') return json({ error: 'Este tipo de mensaje no se puede editar, solo borrar' }, 400);
+    const texto = (body.texto || '').toString().trim();
+    if (!texto) return json({ error: 'El mensaje no puede quedar vacío' }, 400);
+    if (texto === m.contenido) return json({ ok: true, sinCambios: true });
+
+    const { error } = await sb.from('connect_messages')
+      .update({ contenido: texto, editado_at: new Date().toISOString() })
+      .eq('id', mensajeId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   // ---------- De aqui en adelante hay que ser el admin del club ----------
   const clubId = await clubIdFromToken(req);
   if (!clubId) return json({ error: 'Sesión no válida. Vuelve a entrar al panel.' }, 401);

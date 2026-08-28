@@ -154,6 +154,26 @@
     padding: 12px 0 6px; font-weight: 500;
   }
 
+  /* Acciones sobre un mensaje propio (mantener presionado) */
+  .msg-editado { font-size: 10px; opacity: .75; margin-right: 6px; font-style: italic; }
+  .msg-acciones-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .msg-acciones-fondo.open { display: flex; }
+  .msg-acciones {
+    width: 100%; background: var(--surface); border-radius: 16px 16px 0 0;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .msg-accion {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 15px 22px; background: none; border: none; color: var(--text);
+    font-size: 15px; font-family: inherit; text-align: left; cursor: pointer;
+  }
+  .msg-accion:active { background: var(--surface2); }
+  .msg-accion.danger { color: var(--red); }
+  .msg-accion .ico { font-size: 18px; width: 22px; text-align: center; }
+
   /* Aviso para instalar la app (PWA) */
   .install-bar {
     display: none; align-items: center; gap: 10px; flex-shrink: 0;
@@ -382,6 +402,23 @@
 <input id="camera-input" type="file" style="display: none;" accept="video/*" onchange="sendFile(event)">
 <input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
 <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
+
+<div class="msg-acciones-fondo" id="msg-acciones-fondo" onclick="cerrarAccionesMensaje()">
+  <div class="msg-acciones" onclick="event.stopPropagation()">
+    <button class="msg-accion" id="accion-editar" onclick="editarMensaje()">
+      <span class="ico">✏️</span> Editar mensaje
+    </button>
+    <button class="msg-accion" id="accion-copiar" onclick="copiarMensaje()">
+      <span class="ico">📋</span> Copiar texto
+    </button>
+    <button class="msg-accion danger" onclick="borrarMensaje()">
+      <span class="ico">🗑️</span> Eliminar mensaje
+    </button>
+    <button class="msg-accion" onclick="cerrarAccionesMensaje()">
+      <span class="ico">✕</span> Cancelar
+    </button>
+  </div>
+</div>
 
 
 <script>
@@ -661,9 +698,12 @@ function renderMessages() {
         <div class="msg-time">${time}</div>
       </div>`;
     } else if (isMine) {
-      html += `<div class="msg msg-mine">
+      // Los propios llevan su id: es lo que permite mantener presionado para
+      // borrarlos o corregirlos.
+      const editado = m.editado_at ? '<span class="msg-editado">editado</span>' : '';
+      html += `<div class="msg msg-mine" data-msg="${m.id}" data-tipo="${m.tipo || 'text'}">
         ${cuerpoMensaje(m)}
-        <div class="msg-time">${time}</div>
+        <div class="msg-time">${editado}${time}</div>
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
@@ -794,6 +834,111 @@ function mostrarRitaEscribiendo(activo) {
   state.ritaEscribiendo = activo;
   renderMessages();
 }
+
+// ── Borrar / corregir un mensaje propio ────────────────────────────────
+// Los mensajes se repintan cada 500 ms, asi que los escuchadores van
+// delegados en el contenedor: los puestos en cada burbuja se perderian.
+let mensajeActivo = null;
+let pulsacionLarga = null;
+
+function burbujaPropia(target) {
+  const el = target.closest ? target.closest('.msg-mine[data-msg]') : null;
+  return el && !String(el.dataset.msg).startsWith('temp-') ? el : null;
+}
+
+function abrirAccionesMensaje(el) {
+  mensajeActivo = { id: el.dataset.msg, tipo: el.dataset.tipo || 'text' };
+  const esTexto = mensajeActivo.tipo === 'text';
+  // En una foto o un audio no hay texto que editar ni que copiar.
+  document.getElementById('accion-editar').style.display = esTexto ? '' : 'none';
+  document.getElementById('accion-copiar').style.display = esTexto ? '' : 'none';
+  document.getElementById('msg-acciones-fondo').classList.add('open');
+}
+
+function cerrarAccionesMensaje() {
+  mensajeActivo = null;
+  document.getElementById('msg-acciones-fondo').classList.remove('open');
+}
+
+function textoDeMensaje(id) {
+  const m = state.messages.find(x => x.id === id);
+  return m ? m.contenido : '';
+}
+
+async function borrarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  cerrarAccionesMensaje();
+  if (!confirm('¿Eliminar este mensaje? Se borra para todos.')) return;
+  // Se quita de una para que no quede medio segundo en pantalla esperando
+  // al siguiente refresco.
+  state.messages = state.messages.filter(m => m.id !== id);
+  renderMessages();
+  const out = await accionMensaje('msg-borrar', { mensajeId: id });
+  if (!out.ok) alert(out.error || 'No se pudo eliminar.');
+}
+
+async function editarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  const actual = textoDeMensaje(id);
+  cerrarAccionesMensaje();
+  const nuevo = prompt('Editar mensaje:', actual);
+  if (nuevo === null) return;
+  if (!nuevo.trim()) { alert('El mensaje no puede quedar vacío. Si querías quitarlo, usa Eliminar.'); return; }
+  const out = await accionMensaje('msg-editar', { mensajeId: id, texto: nuevo });
+  if (!out.ok) alert(out.error || 'No se pudo editar.');
+}
+
+async function copiarMensaje() {
+  if (!mensajeActivo) return;
+  const texto = textoDeMensaje(mensajeActivo.id);
+  cerrarAccionesMensaje();
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    alert('Tu navegador no dejó copiar. Mantén presionado el texto y usa Copiar.');
+  }
+}
+
+async function accionMensaje(action, extra) {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action, memberId: state.member.id, ...extra })
+    });
+    return await res.json();
+  } catch (e) {
+    return { ok: false, error: 'Sin conexión.' };
+  }
+}
+
+(function activarGestosMensaje() {
+  const cont = document.getElementById('messages');
+
+  cont.addEventListener('contextmenu', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    e.preventDefault();
+    abrirAccionesMensaje(el);
+  });
+
+  cont.addEventListener('touchstart', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    pulsacionLarga = setTimeout(() => {
+      pulsacionLarga = null;
+      if (navigator.vibrate) navigator.vibrate(15);
+      abrirAccionesMensaje(el);
+    }, 450);
+  }, { passive: true });
+
+  const cancelar = () => { if (pulsacionLarga) { clearTimeout(pulsacionLarga); pulsacionLarga = null; } };
+  cont.addEventListener('touchend', cancelar);
+  cont.addEventListener('touchmove', cancelar, { passive: true });
+  cont.addEventListener('scroll', cancelar, { passive: true });
+})();
 
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
