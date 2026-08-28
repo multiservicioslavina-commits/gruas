@@ -997,10 +997,6 @@ Deno.serve(async (req: Request) => {
 
       await saveMessage(from, "user", message);
 
-      // Reseteo de clave de administrador de club: determinista, NUNCA vía IA
-      // (es una acción sensible). La seguridad real está en que el número que
-      // escribe debe coincidir con el whatsapp/lider_tel registrado del club,
-      // no en el contenido del mensaje.
       // Entrar al chat del club: determinista, nunca via IA. El numero desde
       // el que escribe ES la prueba de identidad.
       const msgNormLogin = norm(message);
@@ -1011,6 +1007,8 @@ Deno.serve(async (req: Request) => {
         return new Response(JSON.stringify({ ok: true, flow: "chat_login" }), { status: 200, headers: { "Content-Type": "application/json" } });
       }
 
+      // Reseteo de clave del panel: igual de determinista y por la misma
+      // razon — la seguridad esta en el numero que escribe, no en el texto.
       const msgNormReset = norm(message);
       if (/olvid.{0,15}clave.{0,15}club|recuperar.{0,15}clave.{0,15}club|clave.{0,20}panel.{0,20}administraci/.test(msgNormReset)) {
         const codigoMatch = /c[oó]digo:?\s*([a-z0-9_-]{2,20})/i.exec(message);

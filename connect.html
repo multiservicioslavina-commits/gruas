@@ -44,8 +44,6 @@
   .login-btn:hover { background: var(--accent2); }
   .login-btn:disabled { opacity: .5; cursor: not-allowed; }
   .login-error { color: var(--red); font-size: 13px; margin-top: 12px; min-height: 20px; }
-  .login-ayuda { color: var(--text2); font-size: 13px; line-height: 1.5; max-width: 320px; margin: 0 auto 14px; }
-  .login-volver { background: none; border: none; color: var(--text2); font-size: 13px; cursor: pointer; padding: 12px; }
 
   /* ── App shell ── */
   .app { display: none; flex-direction: column; height: 100%; }
@@ -371,22 +369,8 @@
   <div class="login-title"><span>Ridera</span> Club</div>
   <div class="login-sub">El espacio de tu club</div>
   <div class="login-club" id="login-club-name"></div>
-  <div id="paso-telefono">
-    <input class="login-input" id="login-phone" type="tel" placeholder="Tu número de celular" maxlength="15" inputmode="numeric">
-    <button class="login-btn" id="login-btn" onclick="login()">Entrar</button>
-  </div>
-
-  <div id="paso-codigo" style="display:none">
-    <p class="login-ayuda">
-      Escríbele a Rita por WhatsApp y te responde con un código.<br>
-      Así confirmamos que el número es tuyo.
-    </p>
-    <button class="login-btn" onclick="pedirCodigo()">Pedirle el código a Rita</button>
-    <input class="login-input" id="login-codigo" type="text" placeholder="Código de 6 dígitos" maxlength="6" inputmode="numeric" style="margin-top:14px">
-    <button class="login-btn" id="btn-codigo" onclick="verificarCodigo()">Entrar al chat</button>
-    <button class="login-volver" onclick="volverATelefono()">← Usar otro número</button>
-  </div>
-
+  <input class="login-input" id="login-phone" type="tel" placeholder="Tu número de celular" maxlength="15" inputmode="numeric">
+  <button class="login-btn" id="login-btn" onclick="login()">Entrar</button>
   <div class="login-error" id="login-error"></div>
 </div>
 
@@ -610,76 +594,31 @@ async function login() {
   btn.disabled = true; btn.textContent = 'Verificando...';
   errEl.textContent = '';
 
-  const members = await sb(`connect_members?club_id=eq.${state.club.id}&telefono=eq.${phone}&select=*`);
-  if (!members.length) {
-    errEl.textContent = 'Tu número no está registrado en este club. Pide al admin que te agregue.';
-    btn.disabled = false; btn.textContent = 'Entrar';
-    return;
-  }
-
-  if (members[0].estado === 'solicitado') {
-    errEl.textContent = 'Tu solicitud todavía está esperando aprobación del club. Te avisamos por WhatsApp cuando te aprueben.';
-    btn.disabled = false; btn.textContent = 'Entrar';
-    return;
-  }
-
-  // El numero solo dice quien DICE ser. La prueba es el codigo que Rita manda
-  // a ese WhatsApp: sin el, bastaba conocer el telefono de un miembro para
-  // entrar en su lugar.
-  state.telefonoPendiente = phone;
-  btn.disabled = false; btn.textContent = 'Entrar';
-  document.getElementById('paso-telefono').style.display = 'none';
-  document.getElementById('paso-codigo').style.display = '';
-  document.getElementById('login-codigo').focus();
-}
-
-const RITA_WA = '573117896717';
-
-function pedirCodigo() {
-  const txt = encodeURIComponent('Quiero entrar al chat de mi club');
-  window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
-}
-
-function volverATelefono() {
-  state.telefonoPendiente = null;
-  document.getElementById('login-error').textContent = '';
-  document.getElementById('login-codigo').value = '';
-  document.getElementById('paso-codigo').style.display = 'none';
-  document.getElementById('paso-telefono').style.display = '';
-}
-
-async function verificarCodigo() {
-  const codigo = document.getElementById('login-codigo').value.replace(/\D/g, '');
-  const errEl = document.getElementById('login-error');
-  const btn = document.getElementById('btn-codigo');
-  if (codigo.length !== 6) { errEl.textContent = 'El código son 6 dígitos.'; return; }
-
-  btn.disabled = true; btn.textContent = 'Verificando...';
-  errEl.textContent = '';
-
+  // Quien puede entrar lo decide el líder al aprobar, no un código: el
+  // servidor comprueba que el número esté aprobado y devuelve la sesión.
   let out;
   try {
     const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'sesion-verificar',
-        telefono: state.telefonoPendiente,
-        codigo,
-        clubId: state.club.id
-      })
+      body: JSON.stringify({ action: 'sesion-telefono', telefono: phone, clubId: state.club.id })
     });
     out = await res.json();
   } catch {
     out = { error: 'Sin conexión. Intenta de nuevo.' };
   }
 
-  btn.disabled = false; btn.textContent = 'Entrar al chat';
+  btn.disabled = false; btn.textContent = 'Entrar';
   if (!out.ok) { errEl.textContent = out.error || 'No se pudo entrar.'; return; }
 
   guardarSesion(out.token, out.miembro);
   await enterApp();
 }
+
+
+
+
+
 
 function guardarSesion(token, miembro) {
   state.token = token;
