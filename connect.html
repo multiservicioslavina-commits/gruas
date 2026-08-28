@@ -434,7 +434,7 @@ async function init() {
       const s = JSON.parse(saved);
       if (s.clubId === state.club.id) {
         const members = await sb(`connect_members?id=eq.${s.memberId}&select=*`);
-        if (members.length) {
+        if (members.length && members[0].estado !== 'solicitado') {
           state.member = members[0];
           await enterApp();
           return;
@@ -461,17 +461,25 @@ async function login() {
     return;
   }
 
+  if (members[0].estado === 'solicitado') {
+    errEl.textContent = 'Tu solicitud todavía está esperando aprobación del club. Te avisamos por WhatsApp cuando te aprueben.';
+    btn.disabled = false; btn.textContent = 'Entrar';
+    return;
+  }
+
   state.member = members[0];
   localStorage.setItem('connect_session', JSON.stringify({
     memberId: state.member.id, clubId: state.club.id
   }));
 
-  // Mark as vinculado if pending
+  // Marcar el primer ingreso. Va por Edge Function porque la tabla no expone
+  // UPDATE a la llave publica (si lo hiciera, cualquiera podria auto-aprobarse).
   if (state.member.estado === 'pendiente') {
-    await sb(`connect_members?id=eq.${state.member.id}`, {
-      method: 'PATCH',
-      body: { estado: 'vinculado', vinculado_at: new Date().toISOString() }
-    });
+    fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'ingreso', clubId: state.club.id, telefono: phone })
+    }).catch(() => {});
   }
 
   btn.disabled = false; btn.textContent = 'Entrar';

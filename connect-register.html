@@ -110,6 +110,7 @@ async function init() {
   }
 
   window.clubId = clubs[0].id;
+  window.clubCodigo = slug;
   document.getElementById('club-name').textContent = clubs[0].nombre;
 }
 
@@ -133,26 +134,37 @@ async function register() {
   }
 
   btn.disabled = true;
-  btn.textContent = 'Registrando...';
+  btn.textContent = 'Enviando...';
 
   try {
-    const result = await sb('connect_members', {
+    // El registro NO entra directo al club: crea una solicitud que el lider
+    // tiene que aprobar en su panel. La insercion la hace la Edge Function
+    // (con service_role) para que nadie pueda auto-aprobarse escribiendo
+    // 'vinculado' directamente contra la API.
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
       method: 'POST',
-      body: {
-        club_id: window.clubId,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'solicitar',
+        codigo: window.clubCodigo,
         nombre: name,
-        telefono: normalized,
-        estado: 'vinculado'
-      },
-      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
+        telefono: normalized
+      })
     });
+    const out = await res.json();
 
-    document.getElementById('success').textContent = '¡Bienvenido! Ya puedes entrar al chat.';
-    document.getElementById('name').value = '';
-    document.getElementById('phone').value = '';
-    setTimeout(() => {
-      window.location.href = `/tbc`;
-    }, 2000);
+    if (!out.ok) {
+      document.getElementById('error').textContent = out.error || 'No se pudo enviar la solicitud.';
+    } else if (out.estado === 'solicitado') {
+      document.getElementById('success').textContent = out.repetido
+        ? 'Ya tienes una solicitud enviada. El club la revisará pronto.'
+        : '¡Solicitud enviada! Te avisamos por WhatsApp cuando el club te apruebe.';
+      document.getElementById('name').value = '';
+      document.getElementById('phone').value = '';
+    } else {
+      document.getElementById('success').textContent = 'Ya eres parte del club. Entra al chat.';
+      setTimeout(() => { window.location.href = `/${window.clubCodigo}`; }, 2000);
+    }
   } catch (e) {
     document.getElementById('error').textContent = 'Error al registrarse. Intenta de nuevo.';
   }
