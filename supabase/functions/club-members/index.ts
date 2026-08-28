@@ -156,6 +156,46 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true });
   }
 
+  // La tabla clubs solo permite UPDATE a authenticated con auth.uid() =
+  // lider_id, y los clubes no tienen lider_id (son cuentas de club, no de
+  // usuario de Supabase Auth), asi que guardar el logo tiene que pasar por aqui.
+  if (action === 'logo') {
+    const logoUrl = (body.logoUrl || '').toString();
+    if (!/^https:\/\/[\w.-]+\.supabase\.co\/storage\/v1\/object\/public\//.test(logoUrl)) {
+      return json({ error: 'URL de logo no válida' }, 400);
+    }
+    const { error } = await sb.from('clubs').update({ logo_url: logoUrl }).eq('id', clubId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, logoUrl });
+  }
+
+  if (action === 'rita-preguntas') {
+    const { data, error } = await sb.from('connect_rita_dms')
+      .select('*, connect_members(nombre,telefono)')
+      .eq('club_id', clubId)
+      .order('created_at', { ascending: false });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, mensajes: data || [] });
+  }
+
+  if (action === 'rita-responder') {
+    const memberId = (body.memberId || '').toString();
+    const texto = (body.texto || '').toString().trim();
+    if (!memberId || !texto) return json({ error: 'Falta el mensaje' }, 400);
+
+    // El miembro tiene que ser de este club: si no, un club podria escribirle
+    // a los miembros de otro pasando un member_id ajeno.
+    const { data: m } = await sb.from('connect_members')
+      .select('id').eq('id', memberId).eq('club_id', clubId).maybeSingle();
+    if (!m) return json({ error: 'Ese miembro no es de tu club' }, 403);
+
+    const { error } = await sb.from('connect_rita_dms').insert({
+      member_id: memberId, club_id: clubId, sender: 'rita', content: texto,
+    });
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   if (action === 'agregar') {
     const miembros = Array.isArray(body.miembros) ? body.miembros : [];
     const filas = miembros

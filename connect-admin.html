@@ -324,6 +324,7 @@ let clubId = null;
 let clubCode = null;
 let parsedMembers = [];
 let allMembers = [];
+let ritaMensajes = [];
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -576,11 +577,18 @@ function toast(msg, isError) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-function copyInviteLink() {
+async function copyInviteLink() {
   const link = document.getElementById('invite-link');
-  link.select();
-  document.execCommand('copy');
-  toast('Link copiado al portapapeles');
+  try {
+    // execCommand('copy') esta deprecado y en varios navegadores moviles no
+    // copia nada; la API moderna es la que funciona ahi.
+    await navigator.clipboard.writeText(link.value);
+    toast('Link copiado al portapapeles');
+  } catch {
+    link.select();
+    link.setSelectionRange(0, 99999);
+    toast('Mantén presionado el link y elige "Copiar"', true);
+  }
 }
 
 async function uploadLogo(event) {
@@ -596,29 +604,30 @@ async function uploadLogo(event) {
   btn.disabled = true;
 
   try {
-    const filename = `${clubId}-logo.${file.name.split('.').pop()}`;
-    const path = `club-logos/${filename}`;
+    // Bucket 'clubes': es el que existe y tiene politica de subida publica.
+    // El nombre lleva timestamp porque la politica solo permite INSERT, no
+    // UPDATE, asi que reescribir la misma ruta daria 409.
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const path = `${clubCode}/${Date.now()}_logo.${ext}`;
 
     const res = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/connect-files/${path}`,
+      `${SUPABASE_URL}/storage/v1/object/clubes/${path}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'apikey': SUPABASE_KEY
+          'apikey': SUPABASE_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
         },
         body: file
       }
     );
 
-    if (!res.ok) throw new Error('Upload failed');
+    if (!res.ok) throw new Error(`no se pudo subir la imagen (${res.status})`);
 
-    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/connect-files/${path}`;
-
-    await sb(`clubs?id=eq.${clubId}`, {
-      method: 'PATCH',
-      body: { logo_url: logoUrl }
-    });
+    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/clubes/${path}`;
+    const out = await clubApi('logo', { logoUrl });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
 
     document.getElementById('logo-preview').innerHTML = `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
     toast('Logo actualizado');
@@ -636,9 +645,13 @@ async function loadLogo() {
   }
 }
 
+// Los DMs van por la Edge Function: sus politicas RLS dependen del claim
+// club_id del token, y PostgREST solo lo honra si acepta la firma HS256 --
+// algo que dejo de ser garantia cuando el proyecto migro a llaves asimetricas.
 async function loadRitaQuestions() {
-  const questions = await sb(`connect_rita_dms?club_id=eq.${clubId}&sender=eq.user&select=*,connect_members(nombre,telefono)&order=created_at.desc`);
-  renderRitaQuestions(questions || []);
+  const out = await clubApi('rita-preguntas');
+  ritaMensajes = out.ok ? out.mensajes : [];
+  renderRitaQuestions(ritaMensajes.filter(m => m.sender === 'user'));
 }
 
 function renderRitaQuestions(questions) {
@@ -655,7 +668,11 @@ function renderRitaQuestions(questions) {
   container.innerHTML = questions.map(q => {
     const time = new Date(q.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
     const memberName = q.connect_members ? q.connect_members.nombre : 'Usuario';
-    const hasResponse = questions.some(m => m.member_id === q.member_id && m.sender === 'rita' && m.id !== q.id);
+    // Respondida = hay un mensaje de Rita a ese miembro POSTERIOR a la
+    // pregunta. Mirar solo el member_id marcaba como respondidas todas las
+    // preguntas de alguien a quien ya se le habia contestado una vez.
+    const hasResponse = ritaMensajes.some(m =>
+      m.member_id === q.member_id && m.sender === 'rita' && m.created_at > q.created_at);
 
     return `<div class="rita-question">
       <div class="rita-q-header">
@@ -686,15 +703,8 @@ async function sendRitaResponse(questionId, memberId) {
   textarea.disabled = true;
 
   try {
-    await sb('connect_rita_dms', {
-      method: 'POST',
-      body: {
-        member_id: memberId,
-        club_id: clubId,
-        sender: 'rita',
-        content: response
-      }
-    });
+    const out = await clubApi('rita-responder', { memberId, texto: response });
+    if (!out.ok) throw new Error(out.error || 'no se pudo enviar');
     toast('Respuesta enviada');
     await loadRitaQuestions();
   } catch (e) {
