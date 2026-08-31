@@ -341,6 +341,30 @@
   .empty-room .icon { font-size: 48px; margin-bottom: 12px; }
   .empty-room p { font-size: 14px; }
 
+  /* Search bar */
+  .search-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; display: none; flex-shrink: 0;
+  }
+  .search-bar.show { display: flex; }
+  .search-bar input {
+    flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    outline: none;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text2); }
+  .search-close {
+    background: none; border: none; color: var(--text2); cursor: pointer;
+    padding: 4px 8px; font-size: 18px;
+  }
+  .search-results {
+    font-size: 11px; color: var(--text2); padding: 4px 12px;
+  }
+  .msg-highlight {
+    background: rgba(249, 115, 22, 0.2); border-left: 3px solid var(--accent);
+  }
+
   /* Input bar */
   .input-bar {
     background: var(--surface); border-top: 1px solid var(--border);
@@ -478,6 +502,7 @@
       <div class="status-dot"></div>
       <span class="online-members-badge" id="online-count">0</span>
     </button>
+    <button class="cards-btn" onclick="toggleBusqueda()" title="Buscar mensajes">🔍</button>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
     <button class="install-btn hidden" id="install-header-btn" onclick="showInstallModal()" title="Instalar app">📲</button>
   </div>
@@ -489,6 +514,12 @@
     </div>
     <button class="install-yes" id="install-yes" onclick="instalarApp(event)">Instalar</button>
     <button class="install-no" onclick="ocultarInstalar()" aria-label="Ahora no">✕</button>
+  </div>
+
+  <div class="search-bar" id="search-bar">
+    <input id="search-input" type="text" placeholder="Buscar mensajes..." onkeyup="buscarMensajes(this.value)" onkeydown="if(event.key==='Enter') event.preventDefault()">
+    <span class="search-results" id="search-results"></span>
+    <button class="search-close" onclick="cerrarBusqueda()">✕</button>
   </div>
 
   <div class="messages" id="messages"></div>
@@ -748,10 +779,10 @@ async function enterApp() {
   renderDrawerRooms();
   mostrarEnlaceAdmin();
 
-  // Start updating online counter
+  // Start updating online counter (debounced to 30s to avoid performance hit)
   if (state.onlineCountInterval) clearInterval(state.onlineCountInterval);
   actualizarContadorEnLinea();
-  state.onlineCountInterval = setInterval(actualizarContadorEnLinea, 10000); // Update every 10s
+  state.onlineCountInterval = setInterval(actualizarContadorEnLinea, 30000); // Update every 30s
 
   if (state.rooms.length) {
     switchRoom(state.rooms[0].id);
@@ -1569,6 +1600,70 @@ function showInstallModal() {
   modal.classList.add('open');
 }
 
+// ── Search functionality ───────────────────────────────────────────────
+function toggleBusqueda() {
+  const searchBar = document.getElementById('search-bar');
+  searchBar.classList.toggle('show');
+  if (searchBar.classList.contains('show')) {
+    document.getElementById('search-input').focus();
+  } else {
+    cerrarBusqueda();
+  }
+}
+
+function cerrarBusqueda() {
+  document.getElementById('search-bar').classList.remove('show');
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').textContent = '';
+  renderMessages();
+}
+
+function buscarMensajes(query) {
+  if (!query.trim()) {
+    renderMessages();
+    document.getElementById('search-results').textContent = '';
+    return;
+  }
+
+  const regex = new RegExp(query.trim(), 'i');
+  const resultados = state.messages.filter(m => {
+    if (m.tipo === 'text') return regex.test(m.contenido);
+    if (['image', 'video', 'voice', 'file'].includes(m.tipo)) {
+      const [, nombre] = String(m.contenido).split('|');
+      return regex.test(nombre);
+    }
+    return false;
+  });
+
+  document.getElementById('search-results').textContent =
+    resultados.length > 0 ? `${resultados.length} resultado${resultados.length !== 1 ? 's' : ''}` : 'Sin resultados';
+
+  const container = document.getElementById('messages');
+  let html = '';
+  let lastDate = '';
+
+  for (const m of resultados) {
+    const date = new Date(m.created_at);
+    const dateStr = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+    if (dateStr !== lastDate) {
+      html += `<div class="msg-date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+
+    const time = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const isMine = m.member_id === state.member.id;
+    const sender = m.connect_members?.nombre || 'Anónimo';
+
+    html += `<div class="msg msg-other msg-highlight">
+      <div class="msg-sender">${escapeHtml(sender)}</div>
+      ${cuerpoMensaje(m)}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }
+
+  container.innerHTML = html || '<div class="empty-room"><div class="icon">🔍</div><p>No se encontraron mensajes.</p></div>';
+}
+
 // ── Online members panel ───────────────────────────────────────────────
 async function abrirOnlineMembers(ev) {
   if (ev) ev.preventDefault();
@@ -1585,17 +1680,12 @@ async function cargarMiembrosEnLinea() {
   container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
 
   try {
-    const miembros = await sb(`connect_members?club_id=eq.${state.club.id}&select=*&order=nombre`);
-    const ahora = new Date();
-    const hace5min = new Date(ahora - 5 * 60 * 1000);
-
-    const enLinea = miembros.filter(m => {
-      if (!m.last_activity_at) return false;
-      const lastActivity = new Date(m.last_activity_at);
-      return lastActivity > hace5min && m.estado === 'vinculado';
-    });
-
-    pintarMiembrosEnLinea(enLinea);
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized query: only fetch linked members with recent activity
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id,nombre,last_activity_at&order=last_activity_at.desc`
+    );
+    pintarMiembrosEnLinea(miembros || []);
   } catch (e) {
     container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">Error al cargar</div>`;
   }
@@ -1629,17 +1719,12 @@ async function actualizarContadorEnLinea() {
   if (!state.club) return;
 
   try {
-    const miembros = await sb(`connect_members?club_id=eq.${state.club.id}&select=*`);
-    const ahora = new Date();
-    const hace5min = new Date(ahora - 5 * 60 * 1000);
-
-    const enLinea = miembros.filter(m => {
-      if (!m.last_activity_at) return false;
-      const lastActivity = new Date(m.last_activity_at);
-      return lastActivity > hace5min && m.estado === 'vinculado';
-    }).length;
-
-    document.getElementById('online-count').textContent = enLinea;
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized: only count, don't fetch full records
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id`
+    );
+    document.getElementById('online-count').textContent = (miembros || []).length;
   } catch (e) {
     console.error('Error actualizando contador en línea:', e);
   }
