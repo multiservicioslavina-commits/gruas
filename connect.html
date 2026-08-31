@@ -365,6 +365,23 @@
     background: rgba(249, 115, 22, 0.2); border-left: 3px solid var(--accent);
   }
 
+  /* Connection indicator */
+  .connection-badge {
+    display: flex; align-items: center; gap: 5px; font-size: 11px;
+    padding: 2px 8px; border-radius: 12px; margin-left: auto;
+  }
+  .connection-badge.online {
+    background: rgba(34, 197, 94, 0.15); color: var(--green);
+  }
+  .connection-badge.offline {
+    background: rgba(239, 68, 68, 0.15); color: var(--red);
+  }
+  .connection-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+  }
+  .connection-badge.online .dot { background: var(--green); }
+  .connection-badge.offline .dot { background: var(--red); }
+
   /* Input bar */
   .input-bar {
     background: var(--surface); border-top: 1px solid var(--border);
@@ -496,7 +513,13 @@
     <button class="menu-btn" onclick="toggleDrawer()">☰</button>
     <div class="header-info">
       <div class="header-club" id="h-club"></div>
-      <div class="header-room" id="h-room"></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="header-room" id="h-room"></div>
+        <div class="connection-badge online" id="connection-badge">
+          <span class="dot"></span>
+          <span>Conectado</span>
+        </div>
+      </div>
     </div>
     <button class="online-members-btn" id="online-members-btn" onclick="abrirOnlineMembers()" title="Miembros en línea">
       <div class="status-dot"></div>
@@ -638,7 +661,8 @@ let state = {
   messages: [],
   realtimeChannel: null,
   showingCards: false,
-  onlineCountInterval: null
+  onlineCountInterval: null,
+  isOnline: true
 };
 
 let isRecording = false;
@@ -1754,6 +1778,38 @@ window.addEventListener('beforeinstallprompt', () => {
 // Cerrar modal al hacer click afuera
 document.getElementById('install-modal')?.addEventListener('click', (e) => {
   if (e.target.id === 'install-modal') closeInstallModal();
+});
+
+// ── Connection monitoring ─────────────────────────────────────────────
+function actualizarEstadoConexion(online) {
+  state.isOnline = online;
+  const badge = document.getElementById('connection-badge');
+  if (!badge) return;
+
+  if (online) {
+    badge.className = 'connection-badge online';
+    badge.innerHTML = '<span class="dot"></span><span>Conectado</span>';
+  } else {
+    badge.className = 'connection-badge offline';
+    badge.innerHTML = '<span class="dot"></span><span>Sin conexión</span>';
+  }
+}
+
+window.addEventListener('online', () => {
+  actualizarEstadoConexion(true);
+  // Recargar datos cuando se recupera la conexión
+  if (state.currentRoom) {
+    subscribeToRoom(state.currentRoom.id);
+  }
+});
+
+window.addEventListener('offline', () => {
+  actualizarEstadoConexion(false);
+});
+
+// Check initial connection state
+window.addEventListener('load', () => {
+  actualizarEstadoConexion(navigator.onLine);
 });
 
 init();
