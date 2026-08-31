@@ -64,6 +64,53 @@
   .header-room { font-size: 16px; font-weight: 600; }
   .header-room .room-icon { margin-right: 6px; }
   .header-members { font-size: 11px; color: var(--text2); }
+  .install-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0; transition: background .2s;
+  }
+  .install-btn:hover { background: var(--accent2); }
+  .install-btn.hidden { display: none; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 16px; padding: 24px;
+    max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .modal p { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+  .modal-tabs {
+    display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .modal-tab {
+    flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600;
+    border: none; background: none; color: var(--text2); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .modal-tab.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+  }
+  .modal-content { display: none; }
+  .modal-content.active { display: block; }
+  .modal-content ol { padding-left: 20px; }
+  .modal-content li { margin-bottom: 12px; font-size: 14px; line-height: 1.5; color: var(--text); }
+  .modal-content strong { color: var(--accent); }
+  .modal-buttons {
+    display: flex; gap: 8px; margin-top: 20px;
+  }
+  .modal-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600;
+    cursor: pointer; font-size: 13px; transition: all .2s;
+  }
+  .modal-btn.primary { background: var(--accent); color: #fff; }
+  .modal-btn.primary:hover { background: var(--accent2); }
+  .modal-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .modal-btn.secondary:hover { background: var(--border); }
 
   /* Rooms drawer */
   .drawer-overlay {
@@ -383,6 +430,7 @@
       <div class="header-room" id="h-room"></div>
     </div>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
+    <button class="install-btn hidden" id="install-header-btn" onclick="showInstallModal()" title="Instalar app">📲</button>
   </div>
 
   <div class="install-bar" id="install-bar">
@@ -1438,6 +1486,38 @@ async function instalarApp(ev) {
 // En iPhone no llega beforeinstallprompt, asi que la opcion se ofrece igual
 // y al tocarla se explican los pasos.
 if (esIOS() && !yaInstalada()) mostrarOpcionInstalar();
+
+// Modal de instalación
+function showInstallModal() {
+  const modal = document.getElementById('install-modal');
+  modal.classList.add('open');
+}
+
+function closeInstallModal() {
+  const modal = document.getElementById('install-modal');
+  modal.classList.remove('open');
+}
+
+function switchInstallTab(tab) {
+  // Tabs
+  document.querySelectorAll('.modal-tab').forEach(t => {
+    t.classList.toggle('active', (t.textContent.includes('Android') && tab === 'android') ||
+                                  (t.textContent.includes('iPhone') && tab === 'ios'));
+  });
+  // Content
+  document.getElementById('install-android').classList.toggle('active', tab === 'android');
+  document.getElementById('install-ios').classList.toggle('active', tab === 'ios');
+}
+
+// Mostrar botón de instalación en header si el dispositivo lo soporta
+window.addEventListener('beforeinstallprompt', () => {
+  document.getElementById('install-header-btn').classList.remove('hidden');
+});
+
+// Cerrar modal al hacer click afuera
+document.getElementById('install-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'install-modal') closeInstallModal();
+});
 
 init();
 </script>
