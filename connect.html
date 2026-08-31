@@ -289,12 +289,98 @@
     cursor: pointer; padding: 4px 6px; flex-shrink: 0;
   }
 
+  /* Online members panel */
+  .online-members-btn {
+    background: none; border: none; color: var(--text2); font-size: 18px;
+    cursor: pointer; padding: 4px 8px; display: flex; align-items: center; gap: 4px;
+    border-radius: 6px; transition: background .2s;
+  }
+  .online-members-btn:hover { background: var(--surface2); }
+  .online-members-btn .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  }
+  .online-members-badge {
+    font-size: 12px; color: var(--green); font-weight: 600;
+  }
+
+  .online-panel-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .online-panel-fondo.open { display: flex; }
+  .online-panel {
+    width: 100%; max-height: 70vh; background: var(--surface);
+    border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .online-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .online-panel-title { font-size: 16px; font-weight: 600; }
+  .online-panel-x { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .online-panel-body { overflow-y: auto; padding: 8px; }
+  .online-member {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    border-radius: 10px; background: var(--surface2); margin-bottom: 6px;
+  }
+  .online-member-status {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--green); flex-shrink: 0;
+  }
+  .online-member-info { flex: 1; min-width: 0; }
+  .online-member-name { font-size: 14px; font-weight: 500; }
+  .online-member-time { font-size: 11px; color: var(--text2); }
+  .online-empty {
+    padding: 40px 20px; text-align: center; color: var(--text2); font-size: 14px;
+  }
+
   .empty-room {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; color: var(--text2); text-align: center; padding: 24px;
   }
   .empty-room .icon { font-size: 48px; margin-bottom: 12px; }
   .empty-room p { font-size: 14px; }
+
+  /* Search bar */
+  .search-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; display: none; flex-shrink: 0;
+  }
+  .search-bar.show { display: flex; }
+  .search-bar input {
+    flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    outline: none;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text2); }
+  .search-close {
+    background: none; border: none; color: var(--text2); cursor: pointer;
+    padding: 4px 8px; font-size: 18px;
+  }
+  .search-results {
+    font-size: 11px; color: var(--text2); padding: 4px 12px;
+  }
+  .msg-highlight {
+    background: rgba(249, 115, 22, 0.2); border-left: 3px solid var(--accent);
+  }
+
+  /* Connection indicator */
+  .connection-badge {
+    display: flex; align-items: center; gap: 5px; font-size: 11px;
+    padding: 2px 8px; border-radius: 12px; margin-left: auto;
+  }
+  .connection-badge.online {
+    background: rgba(34, 197, 94, 0.15); color: var(--green);
+  }
+  .connection-badge.offline {
+    background: rgba(239, 68, 68, 0.15); color: var(--red);
+  }
+  .connection-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+  }
+  .connection-badge.online .dot { background: var(--green); }
+  .connection-badge.offline .dot { background: var(--red); }
 
   /* Input bar */
   .input-bar {
@@ -427,8 +513,19 @@
     <button class="menu-btn" onclick="toggleDrawer()">☰</button>
     <div class="header-info">
       <div class="header-club" id="h-club"></div>
-      <div class="header-room" id="h-room"></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="header-room" id="h-room"></div>
+        <div class="connection-badge online" id="connection-badge">
+          <span class="dot"></span>
+          <span>Conectado</span>
+        </div>
+      </div>
     </div>
+    <button class="online-members-btn" id="online-members-btn" onclick="abrirOnlineMembers()" title="Miembros en línea">
+      <div class="status-dot"></div>
+      <span class="online-members-badge" id="online-count">0</span>
+    </button>
+    <button class="cards-btn" onclick="toggleBusqueda()" title="Buscar mensajes">🔍</button>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
     <button class="install-btn hidden" id="install-header-btn" onclick="showInstallModal()" title="Instalar app">📲</button>
   </div>
@@ -440,6 +537,12 @@
     </div>
     <button class="install-yes" id="install-yes" onclick="instalarApp(event)">Instalar</button>
     <button class="install-no" onclick="ocultarInstalar()" aria-label="Ahora no">✕</button>
+  </div>
+
+  <div class="search-bar" id="search-bar">
+    <input id="search-input" type="text" placeholder="Buscar mensajes..." onkeyup="buscarMensajes(this.value)" onkeydown="if(event.key==='Enter') event.preventDefault()">
+    <span class="search-results" id="search-results"></span>
+    <button class="search-close" onclick="cerrarBusqueda()">✕</button>
   </div>
 
   <div class="messages" id="messages"></div>
@@ -518,6 +621,16 @@
   </div>
 </div>
 
+<div class="online-panel-fondo" id="online-panel-fondo" onclick="cerrarOnlineMembers()">
+  <div class="online-panel" onclick="event.stopPropagation()">
+    <div class="online-panel-head">
+      <div class="online-panel-title">En línea ahora</div>
+      <button class="online-panel-x" onclick="cerrarOnlineMembers()">✕</button>
+    </div>
+    <div class="online-panel-body" id="online-members-list"></div>
+  </div>
+</div>
+
 <div class="msg-acciones-fondo" id="msg-acciones-fondo" onclick="cerrarAccionesMensaje()">
   <div class="msg-acciones" onclick="event.stopPropagation()">
     <button class="msg-accion" id="accion-editar" onclick="editarMensaje()">
@@ -547,7 +660,9 @@ let state = {
   currentRoom: null,
   messages: [],
   realtimeChannel: null,
-  showingCards: false
+  showingCards: false,
+  onlineCountInterval: null,
+  isOnline: true
 };
 
 let isRecording = false;
@@ -687,6 +802,11 @@ async function enterApp() {
   document.getElementById('d-club').textContent = state.club.nombre;
   renderDrawerRooms();
   mostrarEnlaceAdmin();
+
+  // Start updating online counter (debounced to 30s to avoid performance hit)
+  if (state.onlineCountInterval) clearInterval(state.onlineCountInterval);
+  actualizarContadorEnLinea();
+  state.onlineCountInterval = setInterval(actualizarContadorEnLinea, 30000); // Update every 30s
 
   if (state.rooms.length) {
     switchRoom(state.rooms[0].id);
@@ -933,6 +1053,9 @@ async function sendMessage() {
     method: 'PATCH',
     body: { last_activity_at: new Date().toISOString() }
   });
+
+  // Update online counter
+  actualizarContadorEnLinea();
 
   // En la sala de Rita responde la MISMA Rita de WhatsApp (clima, vías,
   // talleres, garaje, trámites, sellos...), no una versión aparte. Ella
@@ -1366,6 +1489,8 @@ async function toggleVoiceRecording() {
 function logout() {
   localStorage.removeItem('connect_session');
   if (state.pollInterval) clearInterval(state.pollInterval);
+  if (state.onlineCountInterval) clearInterval(state.onlineCountInterval);
+  if (state.globalPollInterval) clearInterval(state.globalPollInterval);
   location.reload();
 }
 
@@ -1499,6 +1624,136 @@ function showInstallModal() {
   modal.classList.add('open');
 }
 
+// ── Search functionality ───────────────────────────────────────────────
+function toggleBusqueda() {
+  const searchBar = document.getElementById('search-bar');
+  searchBar.classList.toggle('show');
+  if (searchBar.classList.contains('show')) {
+    document.getElementById('search-input').focus();
+  } else {
+    cerrarBusqueda();
+  }
+}
+
+function cerrarBusqueda() {
+  document.getElementById('search-bar').classList.remove('show');
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').textContent = '';
+  renderMessages();
+}
+
+function buscarMensajes(query) {
+  if (!query.trim()) {
+    renderMessages();
+    document.getElementById('search-results').textContent = '';
+    return;
+  }
+
+  const regex = new RegExp(query.trim(), 'i');
+  const resultados = state.messages.filter(m => {
+    if (m.tipo === 'text') return regex.test(m.contenido);
+    if (['image', 'video', 'voice', 'file'].includes(m.tipo)) {
+      const [, nombre] = String(m.contenido).split('|');
+      return regex.test(nombre);
+    }
+    return false;
+  });
+
+  document.getElementById('search-results').textContent =
+    resultados.length > 0 ? `${resultados.length} resultado${resultados.length !== 1 ? 's' : ''}` : 'Sin resultados';
+
+  const container = document.getElementById('messages');
+  let html = '';
+  let lastDate = '';
+
+  for (const m of resultados) {
+    const date = new Date(m.created_at);
+    const dateStr = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+    if (dateStr !== lastDate) {
+      html += `<div class="msg-date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+
+    const time = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const isMine = m.member_id === state.member.id;
+    const sender = m.connect_members?.nombre || 'Anónimo';
+
+    html += `<div class="msg msg-other msg-highlight">
+      <div class="msg-sender">${escapeHtml(sender)}</div>
+      ${cuerpoMensaje(m)}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }
+
+  container.innerHTML = html || '<div class="empty-room"><div class="icon">🔍</div><p>No se encontraron mensajes.</p></div>';
+}
+
+// ── Online members panel ───────────────────────────────────────────────
+async function abrirOnlineMembers(ev) {
+  if (ev) ev.preventDefault();
+  document.getElementById('online-panel-fondo').classList.add('open');
+  await cargarMiembrosEnLinea();
+}
+
+function cerrarOnlineMembers() {
+  document.getElementById('online-panel-fondo').classList.remove('open');
+}
+
+async function cargarMiembrosEnLinea() {
+  const container = document.getElementById('online-members-list');
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
+
+  try {
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized query: only fetch linked members with recent activity
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id,nombre,last_activity_at&order=last_activity_at.desc`
+    );
+    pintarMiembrosEnLinea(miembros || []);
+  } catch (e) {
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">Error al cargar</div>`;
+  }
+}
+
+function pintarMiembrosEnLinea(miembros) {
+  const container = document.getElementById('online-members-list');
+
+  if (!miembros.length) {
+    container.innerHTML = '<div class="online-empty">No hay miembros en línea</div>';
+    return;
+  }
+
+  container.innerHTML = miembros.map(m => {
+    const lastActivity = new Date(m.last_activity_at);
+    const ahora = new Date();
+    const minutos = Math.floor((ahora - lastActivity) / 60000);
+    const tiempoTexto = minutos === 0 ? 'Hace un momento' : `Hace ${minutos}m`;
+
+    return `<div class="online-member">
+      <div class="online-member-status"></div>
+      <div class="online-member-info">
+        <div class="online-member-name">${escapeHtml(m.nombre)}</div>
+        <div class="online-member-time">${tiempoTexto}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function actualizarContadorEnLinea() {
+  if (!state.club) return;
+
+  try {
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized: only count, don't fetch full records
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id`
+    );
+    document.getElementById('online-count').textContent = (miembros || []).length;
+  } catch (e) {
+    console.error('Error actualizando contador en línea:', e);
+  }
+}
+
 function closeInstallModal() {
   const modal = document.getElementById('install-modal');
   modal.classList.remove('open');
@@ -1523,6 +1778,38 @@ window.addEventListener('beforeinstallprompt', () => {
 // Cerrar modal al hacer click afuera
 document.getElementById('install-modal')?.addEventListener('click', (e) => {
   if (e.target.id === 'install-modal') closeInstallModal();
+});
+
+// ── Connection monitoring ─────────────────────────────────────────────
+function actualizarEstadoConexion(online) {
+  state.isOnline = online;
+  const badge = document.getElementById('connection-badge');
+  if (!badge) return;
+
+  if (online) {
+    badge.className = 'connection-badge online';
+    badge.innerHTML = '<span class="dot"></span><span>Conectado</span>';
+  } else {
+    badge.className = 'connection-badge offline';
+    badge.innerHTML = '<span class="dot"></span><span>Sin conexión</span>';
+  }
+}
+
+window.addEventListener('online', () => {
+  actualizarEstadoConexion(true);
+  // Recargar datos cuando se recupera la conexión
+  if (state.currentRoom) {
+    subscribeToRoom(state.currentRoom.id);
+  }
+});
+
+window.addEventListener('offline', () => {
+  actualizarEstadoConexion(false);
+});
+
+// Check initial connection state
+window.addEventListener('load', () => {
+  actualizarEstadoConexion(navigator.onLine);
 });
 
 init();

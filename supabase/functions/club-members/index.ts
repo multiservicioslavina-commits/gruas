@@ -92,16 +92,23 @@ type Sb = ReturnType<typeof createClient>;
 // por eso la notificacion es "mejor esfuerzo": el panel siempre muestra las
 // solicitudes aunque el WhatsApp no llegue.
 async function notificarLider(telefono: string, texto: string): Promise<boolean> {
-  if (!WA_TOKEN || !telefono) return false;
+  if (!WA_TOKEN || !telefono) {
+    console.error('notificarLider: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
+    return false;
+  }
   try {
-    const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+    const url = `${GRAPH}/${RITA_PHONE}/messages`;
+    console.log('notificarLider: enviando a', { url, telefono, RITA_PHONE });
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: texto } }),
     });
     const out = await res.json();
+    console.log('notificarLider: respuesta de Meta', { status: res.status, data: out });
     return !!out?.messages?.length;
-  } catch {
+  } catch (e) {
+    console.error('notificarLider: error', e);
     return false;
   }
 }
@@ -418,11 +425,11 @@ Deno.serve(async (req: Request) => {
     if (!data) return json({ error: 'Esa solicitud ya no existe' }, 404);
 
     const { data: club } = await sb.from('clubs').select('nombre,codigo').eq('id', clubId).maybeSingle();
-    await notificarLider(
+    const notificadoAlUsuario = await notificarLider(
       data.telefono,
       `✅ ¡Tu solicitud para entrar a ${club?.nombre || 'el club'} fue aprobada!\n\nEntra al chat aquí:\nhttps://club.ridera.com.co/${club?.codigo || ''}`,
     );
-    return json({ ok: true });
+    return json({ ok: true, notificado: notificadoAlUsuario });
   }
 
   if (action === 'eliminar') {
