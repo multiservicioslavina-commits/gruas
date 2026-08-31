@@ -140,7 +140,10 @@
   }
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
-  #preview-section, #tab-add, #tab-ajustes { display: none; }
+  #preview-section { display: none; }
+  #tab-members { display: block; }
+  #tab-add, #tab-ajustes { display: none; }
+  #tab-add.visible, #tab-ajustes.visible { display: block !important; }
 
     display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
   }
@@ -566,9 +569,9 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
     t.classList.toggle('active', ['members', 'add', 'ajustes'][i] === tab);
   });
-  document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
-  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
-  document.getElementById('tab-ajustes').style.display = tab === 'ajustes' ? '' : 'none';
+  document.getElementById('tab-members').classList.toggle('visible', tab === 'members');
+  document.getElementById('tab-add').classList.toggle('visible', tab === 'add');
+  document.getElementById('tab-ajustes').classList.toggle('visible', tab === 'ajustes');
 }
 
 function toast(msg, isError) {
