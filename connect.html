@@ -823,23 +823,26 @@ function pesoLegible(bytes) {
 function renderAdjunto(m) {
   const [url, nombre, size] = String(m.contenido).split('|');
   const href = escapeHtml(url);
-  if (m.tipo === 'imagen') {
+  if (m.tipo === 'image') {
+    // El alto tambien va limitado: una foto vertical con solo max-width se
+    // comia la pantalla entera y tapaba el resto de la conversacion.
     return `<a href="${href}" target="_blank" rel="noopener noreferrer">
-      <img src="${href}" alt="${escapeHtml(nombre)}" style="max-width:100%;border-radius:10px;display:block">
+      <img src="${href}" alt="${escapeHtml(nombre)}" loading="lazy"
+           style="max-width:100%;max-height:45vh;object-fit:cover;border-radius:10px;display:block">
     </a>`;
   }
-  if (m.tipo === 'voz') {
+  if (m.tipo === 'voice') {
     return `<audio controls preload="none" src="${href}" style="max-width:100%"></audio>`;
   }
   if (m.tipo === 'video') {
-    return `<video controls preload="metadata" src="${href}" style="max-width:100%;border-radius:10px"></video>`;
+    return `<video controls preload="metadata" src="${href}" style="max-width:100%;max-height:45vh;border-radius:10px;display:block"></video>`;
   }
   return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);text-decoration:underline">
     📎 ${escapeHtml(nombre) || 'Archivo'} <span style="opacity:.7">(${pesoLegible(size)})</span>
   </a>`;
 }
 
-const TIPOS_ADJUNTO = ['imagen', 'voz', 'video', 'archivo'];
+const TIPOS_ADJUNTO = ['image', 'voice', 'video', 'file'];
 function cuerpoMensaje(m) {
   return TIPOS_ADJUNTO.includes(m.tipo) ? renderAdjunto(m) : formatMessage(m.contenido);
 }
@@ -1212,7 +1215,7 @@ async function sendFile(event) {
     // El archivo se manda solo: antes solo dejaba el texto en la caja y habia
     // que darle enviar a mano, cosa que no era evidente.
     await enviarAdjunto(
-      esImagen ? 'imagen' : esVideo ? 'video' : 'archivo',
+      esImagen ? 'image' : esVideo ? 'video' : 'file',
       fileUrl,
       file.name,
       file.size
@@ -1281,7 +1284,7 @@ async function toggleVoiceRecording() {
           if (!uploadRes.ok) throw new Error(`subida rechazada (${uploadRes.status})`);
 
           const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
-          await enviarAdjunto('voz', voiceUrl, 'Nota de voz', blob.size);
+          await enviarAdjunto('voice', voiceUrl, 'Nota de voz', blob.size);
           scrollToBottom();
         } catch (e) {
           alert('No se pudo enviar la nota de voz: ' + e.message);
