@@ -205,16 +205,19 @@
   <!-- TAB: Agregar miembros -->
   <div id="tab-add">
     <div class="card">
-      <h2>Compartir link de invitación</h2>
-      <p>Comparte este link con los miembros para que se registren directamente</p>
-      <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
-        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
+      <h2>Agregar un miembro</h2>
+      <p>Para uno solo, sin pegar listas ni previsualizar.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <input id="uno-nombre" type="text" placeholder="Nombre" maxlength="50"
+               style="flex:2; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="uno-tel" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15"
+               style="flex:1; min-width:120px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <button class="btn btn-primary" id="btn-uno" onclick="addOneMember()">Agregar</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Agregar miembros al club</h2>
+      <h2>Agregar varios de una vez</h2>
       <p>Pega la lista de miembros, un miembro por línea. Formato: <strong>Nombre, Teléfono</strong></p>
       <textarea id="members-input" placeholder="Juan Pérez, 3101234567
 María López, 3209876543
@@ -246,9 +249,21 @@ Pedro Gómez - 3176543210"></textarea>
 
   <!-- TAB: Lista de miembros -->
   <div id="tab-members">
-    <div class="card" id="requests-card" style="display:none">
+    <div class="card">
+      <h2>Compartir link de invitación</h2>
+      <p>Comparte este link con los miembros para que se registren directamente</p>
+      <div style="display: flex; gap: 8px; margin-top: 12px;">
+        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
+        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
+      </div>
+    </div>
+
+    <div class="card" id="requests-card">
       <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
-      <p class="hint">Estas personas pidieron entrar por el link de invitación. No pueden entrar al chat hasta que las apruebes.</p>
+      <p class="hint">Quien entra por el link de invitación aparece aquí. No puede entrar al chat hasta que lo apruebes.</p>
+      <div class="empty" id="requests-empty" style="padding:20px 0">
+        <p>Ninguna solicitud pendiente.</p>
+      </div>
       <ul class="member-list" id="requests-list"></ul>
     </div>
     <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
@@ -378,11 +393,13 @@ function memberRow(m, actions, badge = '') {
 }
 
 function renderRequests(requests) {
-  const card = document.getElementById('requests-card');
   const list = document.getElementById('requests-list');
+  const vacio = document.getElementById('requests-empty');
   document.getElementById('requests-count').textContent = requests.length;
-  if (!requests.length) { card.style.display = 'none'; list.innerHTML = ''; return; }
-  card.style.display = '';
+  // La sección se queda siempre a la vista: si desaparecía al no haber
+  // solicitudes, parecía que el botón de aprobar no existía.
+  if (!requests.length) { vacio.style.display = ''; list.innerHTML = ''; return; }
+  vacio.style.display = 'none';
   list.innerHTML = requests.map(m => memberRow(m,
     `<button class="btn btn-sm btn-primary" onclick="approveMember('${m.id}')">Aprobar</button>
      <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">Rechazar</button>`
@@ -509,6 +526,21 @@ async function addMembers() {
     toast('Error al agregar: ' + e.message, true);
   }
   btn.disabled = false; btn.textContent = 'Agregar al club';
+}
+
+async function addOneMember() {
+  const nombre = document.getElementById('uno-nombre').value.trim();
+  const tel = document.getElementById('uno-tel').value.trim();
+  if (!nombre || !tel) { toast('Escribe el nombre y el teléfono', true); return; }
+  const btn = document.getElementById('btn-uno');
+  btn.disabled = true;
+  const out = await clubApi('agregar', { miembros: [{ nombre, telefono: normalizePhone(tel) }] });
+  btn.disabled = false;
+  if (!out.ok) { toast(out.error || 'No se pudo agregar', true); return; }
+  document.getElementById('uno-nombre').value = '';
+  document.getElementById('uno-tel').value = '';
+  toast(`${nombre} agregado al club`);
+  await Promise.all([loadStats(), loadMembers()]);
 }
 
 async function removeMember(id) {

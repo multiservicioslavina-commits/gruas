@@ -32,6 +32,10 @@ async function clubIdFromToken(req: Request): Promise<string | null> {
   if (!secret) return null;
   try {
     const { payload } = await jwtVerify(raw, new TextEncoder().encode(secret));
+    // La sesion de un miembro del chat se firma con esta misma clave y tambien
+    // lleva club_id: sin descartarla aqui, cualquier miembro podria usar su
+    // token para las acciones del dueño (borrar miembros, nombrar admins).
+    if (payload.tipo === 'club-member') return null;
     return (payload.club_id as string) || null;
   } catch {
     return null;
