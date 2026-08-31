@@ -189,6 +189,19 @@
 </div>
 
 <div class="container">
+  <!-- BANNER: Link de invitación destacado -->
+  <div style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; gap: 12px; align-items: center;">
+    <div style="font-size: 24px;">🔗</div>
+    <div style="flex: 1;">
+      <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Invita nuevos miembros</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,.85); margin-bottom: 8px;">Copia este link y comparte en WhatsApp, Telegram o donde quieras</div>
+      <div style="display: flex; gap: 8px;">
+        <input id="invite-link" type="text" readonly style="flex: 1; padding: 8px 10px; border-radius: 6px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 12px; min-width: 200px;">
+        <button class="btn" style="background: rgba(255,255,255,.25); color: #fff; border: 1px solid rgba(255,255,255,.4); padding: 8px 14px;" onclick="copyInviteLink()">📋 Copiar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="stats" id="stats">
     <div class="stat"><div class="number" id="stat-requests">-</div><div class="label">Por aprobar</div></div>
     <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
@@ -249,15 +262,6 @@ Pedro Gómez - 3176543210"></textarea>
 
   <!-- TAB: Lista de miembros -->
   <div id="tab-members">
-    <div class="card">
-      <h2>Compartir link de invitación</h2>
-      <p>Comparte este link con los miembros para que se registren directamente</p>
-      <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
-        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
-      </div>
-    </div>
-
     <div class="card" id="requests-card">
       <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
       <p class="hint">Quien entra por el link de invitación aparece aquí. No puede entrar al chat hasta que lo apruebes.</p>
