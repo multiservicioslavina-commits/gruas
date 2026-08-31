@@ -10,7 +10,7 @@ const cors = {
 const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: { ...cors, 'Content-Type': 'application/json' } });
 
 const WA_TOKEN = Deno.env.get('WHATSAPP_TOKEN') ?? '';
-const RITA_PHONE = Deno.env.get('RITA_PHONE_ID') ?? '1238785075974458';
+const RITA_PHONE = Deno.env.get('RITA_PHONE_ID') ?? '1260857797114684';
 const GRAPH = 'https://graph.facebook.com/v25.0';
 
 function normalizePhone(raw: string): string {

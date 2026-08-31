@@ -3,7 +3,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { jwtVerify } from "https://esm.sh/jose@5";
 
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "3234846550";
+const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const OPENAI_KEY   = Deno.env.get("OPENAI_API_KEY") ?? "";
 const SB_URL       = Deno.env.get("SUPABASE_URL")!;

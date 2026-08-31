@@ -3,7 +3,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.2'
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 const waToken = Deno.env.get('WHATSAPP_TOKEN') || ''
-const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '3234846550'
+const waPhoneId = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '1260857797114684'
 const GRAPH = 'https://graph.facebook.com/v25.0'
 const REACTIVATION_TEMPLATE = Deno.env.get('REACTIVATION_TEMPLATE_NAME') || ''
 
