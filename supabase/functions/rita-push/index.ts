@@ -14,7 +14,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 const SB_URL  = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY  = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WA_TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
+const RITA_PHONE = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
 const GRAPH = "https://graph.facebook.com/v25.0";
 
 const supabase = createClient(SB_URL, SB_KEY);

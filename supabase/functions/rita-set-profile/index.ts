@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 
-const PHONE_NUMBER_ID = Deno.env.get("RITA_PHONE_ID") || "1238785075974458";
+const PHONE_NUMBER_ID = Deno.env.get("RITA_PHONE_ID") || "1260857797114684";
 const TOKEN = Deno.env.get("WHATSAPP_TOKEN") || "";
 const BASE = "https://graph.facebook.com/v25.0";
 

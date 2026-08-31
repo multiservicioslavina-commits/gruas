@@ -20,7 +20,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 const WA_TOKEN    = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE  = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
+const RITA_PHONE  = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
 const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "rid3ra_cron_2026";
 const SB_URL      = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
