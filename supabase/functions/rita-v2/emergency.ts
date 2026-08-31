@@ -194,7 +194,7 @@ export async function notificarContactosEmergencia(phone: string, message: strin
         method: "POST",
         headers: {
           "Content-Type": "application/x-www-form-urlencoded",
-          "Authorization": `Basic ${btoa(`${Deno.env.get("TWILIO_ACCOUNT_SID")}:${Deno.env.get("TWILIO_AUTH_TOKEN"}`)}`,
+          "Authorization": `Basic ${btoa(`${Deno.env.get("TWILIO_ACCOUNT_SID")}:${Deno.env.get("TWILIO_AUTH_TOKEN")}`)}`,
         },
         body: new URLSearchParams({
           From: Deno.env.get("TWILIO_PHONE_FROM") || "",
