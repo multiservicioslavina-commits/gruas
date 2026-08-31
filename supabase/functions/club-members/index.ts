@@ -92,16 +92,23 @@ type Sb = ReturnType<typeof createClient>;
 // por eso la notificacion es "mejor esfuerzo": el panel siempre muestra las
 // solicitudes aunque el WhatsApp no llegue.
 async function notificarLider(telefono: string, texto: string): Promise<boolean> {
-  if (!WA_TOKEN || !telefono) return false;
+  if (!WA_TOKEN || !telefono) {
+    console.error('notificarLider: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
+    return false;
+  }
   try {
-    const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+    const url = `${GRAPH}/${RITA_PHONE}/messages`;
+    console.log('notificarLider: enviando a', { url, telefono, RITA_PHONE });
+    const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: texto } }),
     });
     const out = await res.json();
+    console.log('notificarLider: respuesta de Meta', { status: res.status, data: out });
     return !!out?.messages?.length;
-  } catch {
+  } catch (e) {
+    console.error('notificarLider: error', e);
     return false;
   }
 }
