@@ -135,7 +135,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const { error } = await sb.from('connect_members').insert({
-      club_id: club.id, nombre, telefono, estado: 'solicitado', agregado_por: 'link',
+      club_id: club.id, nombre, telefono, estado: 'solicitado', agregado_por: 'link', es_admin: false,
     });
     if (error) return json({ error: error.message }, 500);
 
