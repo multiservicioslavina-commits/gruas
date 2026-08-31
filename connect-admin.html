@@ -135,8 +135,8 @@
   .toast.show { opacity: 1; }
 
   .search-bar {
-    width: 100%; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
-    border: 1px solid var(--border); color: var(--text); font-size: 14px; margin-bottom: 16px;
+    flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text); font-size: 14px;
   }
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
@@ -144,9 +144,6 @@
   #tab-members { display: block; }
   #tab-add, #tab-ajustes { display: none; }
   #tab-add.visible, #tab-ajustes.visible { display: block !important; }
-
-    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
-  }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -273,7 +270,10 @@ Pedro Gómez - 3176543210"></textarea>
       </div>
       <ul class="member-list" id="requests-list"></ul>
     </div>
-    <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
+    <div style="display:flex; gap:8px; margin-bottom:16px">
+      <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)" style="margin-bottom:0">
+      <button class="btn btn-outline btn-sm" id="btn-active-filter" onclick="toggleActiveFilter()" title="Mostrar solo en línea">🟢 En línea</button>
+    </div>
     <div class="card" id="members-card">
       <div class="empty" id="members-empty">
         <div class="icon">👥</div>
@@ -309,6 +309,7 @@ let clubId = null;
 let clubCode = null;
 let parsedMembers = [];
 let allMembers = [];
+let filterActive = false;
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -385,14 +386,34 @@ async function loadMembers() {
   renderMembers(allMembers.filter(m => m.estado !== 'solicitado'));
 }
 
+function getActivityStatus(lastActivityAt) {
+  if (!lastActivityAt) return 'Sin actividad';
+  const now = new Date();
+  const last = new Date(lastActivityAt);
+  const diffMs = now - last;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) return 'En línea ahora';
+  if (diffMin < 5) return `En línea hace ${diffMin}m`;
+  if (diffMin < 60) return `Activo hace ${diffMin}m`;
+  if (diffHr < 24) return `Activo hace ${diffHr}h`;
+  if (diffDay < 7) return `Activo hace ${diffDay}d`;
+  return 'Sin actividad reciente';
+}
+
 function memberRow(m, actions, badge = '') {
   const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
   const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  const activity = getActivityStatus(m.last_activity_at);
+  const isActive = m.last_activity_at && (new Date() - new Date(m.last_activity_at)) < 300000; // 5 min
   return `<li class="member-item">
-    <div class="member-avatar">${initials}</div>
+    <div class="member-avatar" style="${isActive ? 'background:rgba(34,197,94,.3);color:var(--green)' : ''}">${initials}</div>
     <div class="member-info">
       <div class="member-name">${m.nombre} ${badge}</div>
       <div class="member-phone">${m.telefono}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${activity}</div>
     </div>
     <div class="member-date">${date}</div>
     ${actions}
@@ -454,11 +475,31 @@ async function approveMember(id) {
 
 function filterMembers(q) {
   q = q.toLowerCase();
-  const filtered = allMembers.filter(m =>
+  let filtered = allMembers.filter(m =>
     m.estado !== 'solicitado' &&
     (m.nombre.toLowerCase().includes(q) || m.telefono.includes(q))
   );
+  if (filterActive) {
+    filtered = filtered.filter(m =>
+      m.last_activity_at && (new Date() - new Date(m.last_activity_at)) < 300000
+    );
+  }
   renderMembers(filtered);
+}
+
+function toggleActiveFilter() {
+  filterActive = !filterActive;
+  const btn = document.getElementById('btn-active-filter');
+  if (filterActive) {
+    btn.style.background = 'rgba(34,197,94,.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
+  }
+  filterMembers(document.querySelector('.search-bar').value);
 }
 
 

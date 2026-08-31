@@ -928,6 +928,12 @@ async function sendMessage() {
 
   await sb('connect_messages', { method: 'POST', body: msg });
 
+  // Actualizar última actividad
+  await sb(`connect_members?id=eq.${state.member.id}`, {
+    method: 'PATCH',
+    body: { last_activity_at: new Date().toISOString() }
+  });
+
   // En la sala de Rita responde la MISMA Rita de WhatsApp (clima, vías,
   // talleres, garaje, trámites, sellos...), no una versión aparte. Ella
   // guarda su respuesta en la sala; aquí solo refrescamos.
