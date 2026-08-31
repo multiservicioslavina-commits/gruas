@@ -469,7 +469,10 @@ async function toggleAdmin(id, hacerAdmin) {
 async function approveMember(id) {
   const out = await clubApi('aprobar', { memberId: id });
   if (!out.ok) { toast(out.error || 'No se pudo aprobar', true); return; }
-  toast('Miembro aprobado');
+  const msg = out.notificado
+    ? '✅ Aprobado y notificado por WhatsApp'
+    : '✅ Aprobado (notificación no llegó)';
+  toast(msg);
   await Promise.all([loadStats(), loadMembers()]);
 }
 

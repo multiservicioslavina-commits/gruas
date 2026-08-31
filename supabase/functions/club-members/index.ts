@@ -418,11 +418,11 @@ Deno.serve(async (req: Request) => {
     if (!data) return json({ error: 'Esa solicitud ya no existe' }, 404);
 
     const { data: club } = await sb.from('clubs').select('nombre,codigo').eq('id', clubId).maybeSingle();
-    await notificarLider(
+    const notificadoAlUsuario = await notificarLider(
       data.telefono,
       `✅ ¡Tu solicitud para entrar a ${club?.nombre || 'el club'} fue aprobada!\n\nEntra al chat aquí:\nhttps://club.ridera.com.co/${club?.codigo || ''}`,
     );
-    return json({ ok: true });
+    return json({ ok: true, notificado: notificadoAlUsuario });
   }
 
   if (action === 'eliminar') {
