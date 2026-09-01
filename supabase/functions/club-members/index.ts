@@ -87,42 +87,65 @@ async function miembroDeSesion(sb: Sb, req: Request): Promise<{ id: string; club
 
 type Sb = ReturnType<typeof createClient>;
 
-// Mensaje de bienvenida al aprobar: incluye el link de entrada y una
-// explicacion de las salas del panel (dinamica, sirve para cualquier club)
-// para que quien entra por primera vez entienda que hay y le den ganas de
-// usarlo. Compartida entre la aprobacion desde el panel del dueño y desde
-// el chat (admin delegado), para que ambas avisen igual.
+// Aviso de aprobacion: usa una PLANTILLA aprobada por Meta (club_aprobado_v2,
+// categoria UTILITY/MARKETING, aprobada 2026-09-01) en vez de texto libre.
+// Las plantillas se entregan siempre, sin depender de que el miembro le haya
+// escrito antes a Rita (el texto libre solo funciona dentro de esa ventana de
+// 24h y fallaba en silencio para miembros nuevos que nunca hablaron con ella
+// - por eso el cambio). Trae las salas del club dinamicamente, para que sirva
+// igual para cualquier club. Compartida entre la aprobacion desde el panel
+// del dueño y desde el chat (admin delegado), para que ambas avisen igual.
 async function avisarAprobado(sb: Sb, clubId: string, miembro: { nombre: string; telefono: string }): Promise<boolean> {
   const { data: club } = await sb.from('clubs').select('nombre,codigo').eq('id', clubId).maybeSingle();
   const { data: salas } = await sb.from('connect_rooms')
-    .select('nombre,icono').eq('club_id', clubId).order('orden');
+    .select('nombre').eq('club_id', clubId).order('orden');
 
-  const primerNombre = (miembro.nombre || '').trim().split(/\s+/)[0] || '';
-  const listaSalas = ((salas || []) as { nombre: string; icono: string | null }[])
-    .map((s) => `${s.icono || '💬'} *${s.nombre}*`)
-    .join('\n');
+  const nombreClub = (club as any)?.nombre || 'el club';
+  const link = `https://club.ridera.com.co/${(club as any)?.codigo || ''}`;
+  const listaSalas = ((salas || []) as { nombre: string }[]).map((s) => s.nombre).join(', ') || 'Chat general';
 
-  const mensaje = [
-    `✅ ¡${primerNombre ? primerNombre + ', tu' : 'Tu'} solicitud para entrar a *${(club as any)?.nombre || 'el club'}* fue aprobada! 🏍️`,
-    ``,
-    `Entra al chat aquí 👇`,
-    `https://club.ridera.com.co/${(club as any)?.codigo || ''}`,
-    ``,
-    `Así funciona el panel del club:`,
-    listaSalas || `💬 Chat general con todos los del club`,
-    ``,
-    `Puedes enviar fotos y notas de voz, editar o borrar tus propios mensajes, y en la sala 🤖 Rita le preguntas lo que quieras sobre tu moto: mantenimiento, rutas, trámites, lo que sea.`,
-    ``,
-    `¡Bienvenido a la comunidad! 🙌`,
-  ].join('\n');
+  return await enviarPlantilla(miembro.telefono, 'club_aprobado_v2', [nombreClub, link, listaSalas]);
+}
 
-  return await notificarLider(miembro.telefono, mensaje);
+// Envia un mensaje de PLANTILLA (no texto libre): Meta lo entrega siempre,
+// sin ventana de 24h, siempre que la plantilla este aprobada para este WABA.
+async function enviarPlantilla(telefono: string, nombrePlantilla: string, parametros: string[]): Promise<boolean> {
+  if (!WA_TOKEN || !telefono) {
+    console.error('enviarPlantilla: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
+    return false;
+  }
+  try {
+    const url = `${GRAPH}/${RITA_PHONE}/messages`;
+    console.log('enviarPlantilla: enviando a', { url, telefono, nombrePlantilla });
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: telefono,
+        type: 'template',
+        template: {
+          name: nombrePlantilla,
+          language: { code: 'es_CO' },
+          components: [{ type: 'body', parameters: parametros.map((texto) => ({ type: 'text', text: texto })) }],
+        },
+      }),
+    });
+    const out = await res.json();
+    console.log('enviarPlantilla: respuesta de Meta', { status: res.status, data: out });
+    return !!out?.messages?.length;
+  } catch (e) {
+    console.error('enviarPlantilla: error', e);
+    return false;
+  }
 }
 
 // La API de WhatsApp solo permite texto libre dentro de las 24h siguientes al
 // ultimo mensaje del lider a Rita. Fuera de esa ventana Meta rechaza el envio,
 // por eso la notificacion es "mejor esfuerzo": el panel siempre muestra las
-// solicitudes aunque el WhatsApp no llegue.
+// solicitudes aunque el WhatsApp no llegue. Sigue en uso para el aviso de
+// nueva solicitud (al lider) y el codigo de acceso, que aun no tienen
+// plantilla aprobada.
 async function notificarLider(telefono: string, texto: string): Promise<boolean> {
   if (!WA_TOKEN || !telefono) {
     console.error('notificarLider: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
