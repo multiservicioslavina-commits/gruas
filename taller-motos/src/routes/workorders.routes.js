@@ -9,7 +9,7 @@ import {
   recalcWorkOrder, changeStatus, loadFullWorkOrder, getWorkOrder,
   syncPartStock, moveStock, OPEN_STATUSES, STATUS_FLOW
 } from '../services/workorders.js';
-import { notifyOrdenRecibida, notifyMotoLista } from '../lib/whatsapp.js';
+import { notifyMotoRecibida, notifyMotoLista } from '../lib/whatsapp.js';
 
 export const workOrdersRouter = Router();
 
@@ -267,7 +267,7 @@ workOrdersRouter.post('/:id/status', wrap(async (req, res) => {
   if (data.status === 'received' || data.status === 'ready') {
     queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId])
       .then((workshop) => {
-        const notify = data.status === 'received' ? notifyOrdenRecibida : notifyMotoLista;
+        const notify = data.status === 'received' ? notifyMotoRecibida : notifyMotoLista;
         return notify(workshop, order);
       })
       .catch((err) => console.error('WhatsApp:', err.message));

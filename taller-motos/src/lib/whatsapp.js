@@ -10,7 +10,7 @@ import { config } from '../config.js';
 // Nombre y cantidad de variables de cada plantilla, tal como se aprobaron
 // en Meta (ver docs/CODIGOS.md... y el hilo de configuración inicial).
 const TEMPLATES = {
-  orden_recibida:       3,
+  moto_recibida:        3,
   cotizacion_pendiente: 4,
   moto_lista:           3
 };
@@ -94,10 +94,10 @@ function motoLabel(order) {
     || `orden #${order.number}`;
 }
 
-export function notifyOrdenRecibida(workshop, order) {
+export function notifyMotoRecibida(workshop, order) {
   if (!order.customer?.phone) return;
   const link = `${config.publicUrl}/orden/${order.public_code}`;
-  return sendTemplate(workshop, 'orden_recibida', order.customer.phone,
+  return sendTemplate(workshop, 'moto_recibida', order.customer.phone,
     [order.customer.name || 'cliente', motoLabel(order), link]);
 }
 
