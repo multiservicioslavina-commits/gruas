@@ -62,7 +62,7 @@ export async function sendTemplate(workshop, template, to, params) {
     type: 'template',
     template: {
       name: template,
-      language: { code: 'es' },
+      language: { code: 'es_CO' },
       components: [{
         type: 'body',
         parameters: params.map((text) => ({ type: 'text', text: String(text) }))
