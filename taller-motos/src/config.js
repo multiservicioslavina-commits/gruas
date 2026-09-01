@@ -54,6 +54,17 @@ export const config = {
     required: process.env.LICENSE_REQUIRED === 'true',
     // Se admiten saltos de línea escapados, que es como se pega en un panel.
     publicKey: (process.env.LICENSE_PUBLIC_KEY || '').replace(/\\n/g, '\n').trim() || null
+  },
+
+  // Cuenta de WhatsApp Business compartida de Ridera (plan pago, modo
+  // "ridera"). Un taller que prefiera su propia cuenta la guarda en su
+  // registro y no depende de esto.
+  whatsapp: {
+    apiVersion: process.env.WHATSAPP_API_VERSION || 'v20.0',
+    ridera: {
+      phoneNumberId: process.env.RIDERA_WHATSAPP_PHONE_NUMBER_ID || null,
+      accessToken:   process.env.RIDERA_WHATSAPP_ACCESS_TOKEN || null
+    }
   }
 };
 

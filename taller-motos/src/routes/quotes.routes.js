@@ -14,6 +14,7 @@ import { config } from '../config.js';
 import {
   getWorkOrder, recalcWorkOrder, changeStatus, syncPartStock, STATUS_FLOW
 } from '../services/workorders.js';
+import { notifyCotizacionPendiente } from '../lib/whatsapp.js';
 
 export const quotesRouter = Router();
 
@@ -118,6 +119,8 @@ quotesRouter.get('/quotes/:id', wrap(async (req, res) => {
 // Enviar al cliente: deja la orden esperando su respuesta.
 quotesRouter.post('/quotes/:id/send', wrap(async (req, res) => {
   assertUuid(req.params.id);
+  let customer = null;
+  let workshop = null;
   const quote = await transaction(async (client) => {
     const current = await loadQuote(client, req.auth.workshopId, req.params.id);
     if (['approved', 'rejected'].includes(current.status)) {
@@ -139,9 +142,22 @@ quotesRouter.post('/quotes/:id/send', wrap(async (req, res) => {
           note: 'Esperando aprobación del cliente', userId: req.auth.userId });
       }
     }
+    if (wo.customer_id) {
+      customer = (await client.query('SELECT * FROM customers WHERE id = $1', [wo.customer_id])).rows[0];
+    }
+    workshop = (await client.query('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId])).rows[0];
     return loadQuote(client, req.auth.workshopId, current.id);
   });
   res.json(quote);
+
+  // Igual que con los cambios de estado: el aviso va después de responder,
+  // para que un fallo de WhatsApp nunca retrase ni tumbe el envío al taller.
+  if (customer?.phone && workshop) {
+    notifyCotizacionPendiente(workshop, {
+      customerName: customer.name, customerPhone: customer.phone,
+      moto: `orden #${quote.number}`, total: quote.total, url: quote.public_url
+    })?.catch((err) => console.error('WhatsApp:', err.message));
+  }
 }));
 
 quotesRouter.patch('/quotes/:id', wrap(async (req, res) => {

@@ -7,9 +7,16 @@ import { requireRole } from '../middleware/auth.js';
 
 export const workshopRouter = Router();
 
+// El token de WhatsApp no debe volver al navegador: sólo el servidor lo
+// necesita para llamar a la API de Meta.
+function redactWhatsapp(workshop) {
+  const { whatsapp_access_token, ...rest } = workshop;
+  return { ...rest, whatsapp_configured: Boolean(whatsapp_access_token) };
+}
+
 workshopRouter.get('/', wrap(async (req, res) => {
   const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
-  res.json(workshop);
+  res.json(redactWhatsapp(workshop));
 }));
 
 workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
@@ -26,7 +33,10 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
     tax_rate:   { type: 'number', min: 0, max: 100 },
     timezone:   { type: 'string', max: 60 },
     logo_url:   { type: 'string', max: 500 },
-    settings:   { type: 'object' }
+    settings:   { type: 'object' },
+    whatsapp_mode:            { type: 'string', enum: ['off', 'ridera', 'own'] },
+    whatsapp_phone_number_id: { type: 'string', max: 60 },
+    whatsapp_access_token:    { type: 'string', max: 500 }
   });
   const keys = Object.keys(data);
   if (!keys.length) throw badRequest('No enviaste ningún campo para actualizar');
@@ -38,5 +48,5 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
   const row = await queryOne(
     `UPDATE workshops SET ${sets.join(', ')}, updated_at = NOW()
      WHERE id = $${values.length} RETURNING *`, values);
-  res.json(row);
+  res.json(redactWhatsapp(row));
 }));

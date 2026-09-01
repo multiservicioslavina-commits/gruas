@@ -41,6 +41,13 @@ ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_expires_at TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS workshops_license_id_key
   ON workshops (license_id) WHERE license_id IS NOT NULL;
 
+-- Notificaciones al cliente por WhatsApp (plan pago). 'off': no envía nada.
+-- 'ridera': usa la cuenta compartida de Ridera (variables de entorno del
+-- servidor). 'own': el taller conectó su propia cuenta de WhatsApp Business.
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_mode TEXT NOT NULL DEFAULT 'off';
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_phone_number_id TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_access_token    TEXT;
+
 -- Consecutivos por taller (órdenes, cotizaciones, facturas...).
 CREATE TABLE IF NOT EXISTS sequences (
   workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,

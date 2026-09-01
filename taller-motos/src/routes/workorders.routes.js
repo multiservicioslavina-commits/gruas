@@ -9,6 +9,7 @@ import {
   recalcWorkOrder, changeStatus, loadFullWorkOrder, getWorkOrder,
   syncPartStock, moveStock, OPEN_STATUSES, STATUS_FLOW
 } from '../services/workorders.js';
+import { notifyOrdenRecibida, notifyMotoLista } from '../lib/whatsapp.js';
 
 export const workOrdersRouter = Router();
 
@@ -258,6 +259,19 @@ workOrdersRouter.post('/:id/status', wrap(async (req, res) => {
     return loadFullWorkOrder(client, req.auth.workshopId, req.params.id);
   });
   res.json(order);
+
+  // El aviso al cliente va después de responder: si WhatsApp falla o tarda,
+  // no debe hacer esperar (ni fallar) a quien cambió el estado en el taller.
+  // Las cabeceras ya se enviaron, así que cualquier error se registra aquí
+  // mismo en vez de dejarlo llegar a `wrap`.
+  if (data.status === 'received' || data.status === 'ready') {
+    queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId])
+      .then((workshop) => {
+        const notify = data.status === 'received' ? notifyOrdenRecibida : notifyMotoLista;
+        return notify(workshop, order);
+      })
+      .catch((err) => console.error('WhatsApp:', err.message));
+  }
 }));
 
 // ── Mano de obra ──────────────────────────────────────────────────────────

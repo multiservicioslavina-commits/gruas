@@ -43,6 +43,28 @@ export async function settingsView() {
       } catch (err) { toast(err.message, true); button.disabled = false; }
     });
 
+    // Notificaciones por WhatsApp.
+    const whatsappForm = document.getElementById('whatsapp-form');
+    whatsappForm?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = event.target.querySelector('[type=submit]');
+      button.disabled = true;
+      try {
+        const raw = Object.fromEntries(new FormData(event.target).entries());
+        const updated = await api.patch('/workshop', clean(raw));
+        session.workshop = updated;
+        toast('Configuración de WhatsApp guardada');
+        refresh();
+      } catch (err) { toast(err.message, true); button.disabled = false; }
+    });
+    const whatsappMode = document.getElementById('f-whatsapp_mode');
+    const whatsappOwnFields = document.getElementById('whatsapp-own-fields');
+    const toggleWhatsappOwn = () => {
+      if (whatsappOwnFields) whatsappOwnFields.hidden = whatsappMode?.value !== 'own';
+    };
+    whatsappMode?.addEventListener('change', toggleWhatsappOwn);
+    toggleWhatsappOwn();
+
     // Cambio de mi contraseña.
     document.getElementById('password-form').addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -310,6 +332,34 @@ export async function settingsView() {
     </div>
 
     ${isAdmin ? `
+    <div class="card">
+      <div class="card-head"><h2>Notificaciones por WhatsApp</h2></div>
+      <div class="card-body">
+        <p class="small muted" style="margin-bottom:14px">
+          Avisa a tus clientes por WhatsApp cuando reciben su moto, cuando hay
+          una cotización pendiente y cuando ya está lista para recoger.</p>
+        <form id="whatsapp-form">
+          ${field('whatsapp_mode', 'Modo de envío', {
+            value: workshop.whatsapp_mode || 'off',
+            options: [
+              ['off', 'Desactivado'],
+              ['ridera', 'Usar la cuenta de Ridera'],
+              ['own', 'Usar mi propia cuenta de WhatsApp Business']
+            ]
+          })}
+          <div id="whatsapp-own-fields">
+            ${field('whatsapp_phone_number_id', 'Phone Number ID',
+              { value: workshop.whatsapp_phone_number_id || '' })}
+            ${field('whatsapp_access_token', 'Token de acceso', { type: 'password',
+              hint: workshop.whatsapp_configured
+                ? 'Ya tienes uno guardado. Déjalo vacío para conservarlo.'
+                : 'Se genera como Usuario del sistema en Meta Business Suite.' })}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+        </form>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-head"><h2>Tus datos</h2></div>
       <div class="card-body">
