@@ -3,6 +3,8 @@ import { api, session } from '../api.js';
 import { esc, field, errorBox, toast } from '../ui.js';
 import { onMount } from '../app.js';
 
+const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.9 4.9l2.9 2.9m8.4 8.4l2.9 2.9M1 12h4m14 0h4M4.9 19.1l2.9-2.9m8.4-8.4l2.9-2.9"/></svg>`;
+
 function afterLogin(result) {
   session.token = result.token;
   session.user = result.user;
@@ -34,26 +36,34 @@ export async function loginView() {
   });
 
   return `
-    <div class="centered">
-      <div class="panel">
-        <div class="panel-brand">TALLER MOTOS</div>
-        <div class="card">
-          <div class="card-body">
-            <h1>Entra a tu taller</h1>
-            <p class="muted small" style="margin:6px 0 20px">
-              Órdenes de trabajo, clientes, inventario y caja.</p>
-            <div id="login-error"></div>
-            <form id="login-form">
-              ${field('email', 'Correo', { type: 'email', required: true, placeholder: 'tu@taller.com' })}
-              ${field('password', 'Contraseña', { type: 'password', required: true })}
-              <button type="submit" class="btn btn-primary btn-block" style="margin-top:6px">Entrar</button>
-            </form>
-          </div>
+    <div class="auth-page">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">
+          <div class="auth-brand-icon">${GEAR_SVG}</div>
+          <div class="auth-brand-title">TALLER<b>MOTOS</b></div>
         </div>
-        <p class="center small muted">¿Aún no tienes taller registrado?
-          <a href="#/registrar">Crea uno</a></p>
-        <p class="center small muted" style="margin-top:10px">
-          ¿Eres cliente y quieres ver tu moto? <a href="#/orden/">Consulta con tu código</a></p>
+        <div class="auth-brand-sub">Gestiona tu taller de motos de forma profesional:<br>
+          órdenes de trabajo, clientes, inventario y caja.</div>
+      </div>
+      <div class="auth-form">
+        <div class="auth-inner">
+          <h1>Entra a tu taller</h1>
+          <p class="subtitle">Gestión de órdenes, clientes, inventario y caja.</p>
+          <div class="card">
+            <div class="card-body">
+              <div id="login-error"></div>
+              <form id="login-form">
+                ${field('email', 'Correo', { type: 'email', required: true, placeholder: 'tu@taller.com' })}
+                ${field('password', 'Contraseña', { type: 'password', required: true })}
+                <button type="submit" class="btn btn-primary btn-block" style="margin-top:6px">Entrar</button>
+              </form>
+            </div>
+          </div>
+          <div class="auth-links">¿Aún no tienes taller registrado?
+            <a href="#/registrar">Crea uno</a></div>
+          <div class="auth-links">¿Eres cliente y quieres ver tu moto?
+            <a href="#/orden/">Consulta con tu código</a></div>
+        </div>
       </div>
     </div>`;
 }
@@ -97,41 +107,49 @@ export async function registerView() {
   });
 
   return `
-    <div class="centered">
-      <div class="panel wide">
-        <div class="panel-brand">TALLER MOTOS</div>
-        <div class="card">
-          <div class="card-body">
-            <h1>Registra tu taller</h1>
-            <p class="muted small" style="margin:6px 0 20px">
-              Creas el taller y tu usuario administrador. Después podrás sumar a tu equipo.</p>
-            <div id="register-error"></div>
-            <form id="register-form">
-              ${exigeCodigo ? field('license_code', 'Código de activación', {
-                required: true,
-                placeholder: 'TM1....',
-                hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
-              ${field('workshop_name', 'Nombre del taller', { required: true, placeholder: 'Taller Motos del Sur' })}
-              <div class="row">
-                ${field('city', 'Ciudad', { placeholder: 'Medellín' })}
-                ${field('phone', 'Teléfono', { type: 'tel', placeholder: '+57 300 000 0000' })}
-              </div>
-              ${field('tax_rate', 'IVA por defecto (%)', { type: 'number', value: '19', min: 0, step: '0.01',
-                hint: 'Puedes cambiarlo después, y ajustarlo orden por orden.' })}
-              <fieldset style="margin-top:20px">
-                <legend>Tu usuario</legend>
-                ${field('name', 'Tu nombre', { required: true })}
-                ${field('email', 'Correo', { type: 'email', required: true })}
-                <div class="row">
-                  ${field('password', 'Contraseña', { type: 'password', required: true, hint: 'Mínimo 8 caracteres' })}
-                  ${field('password2', 'Repite la contraseña', { type: 'password', required: true })}
-                </div>
-              </fieldset>
-              <button type="submit" class="btn btn-primary btn-block">Crear mi taller</button>
-            </form>
-          </div>
+    <div class="auth-page">
+      <div class="auth-brand">
+        <div class="auth-brand-logo">
+          <div class="auth-brand-icon">${GEAR_SVG}</div>
+          <div class="auth-brand-title">TALLER<b>MOTOS</b></div>
         </div>
-        <p class="center small muted">¿Ya tienes cuenta? <a href="#/entrar">Entra aquí</a></p>
+        <div class="auth-brand-sub">Software profesional para talleres de motos.<br>
+          Empieza en minutos.</div>
+      </div>
+      <div class="auth-form">
+        <div class="auth-inner">
+          <h1>Registra tu taller</h1>
+          <p class="subtitle">Creas el taller y tu usuario administrador. Después podrás sumar a tu equipo.</p>
+          <div class="card">
+            <div class="card-body">
+              <div id="register-error"></div>
+              <form id="register-form">
+                ${exigeCodigo ? field('license_code', 'Código de activación', {
+                  required: true,
+                  placeholder: 'TM1....',
+                  hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
+                ${field('workshop_name', 'Nombre del taller', { required: true, placeholder: 'Taller Motos del Sur' })}
+                <div class="row">
+                  ${field('city', 'Ciudad', { placeholder: 'Medellín' })}
+                  ${field('phone', 'Teléfono', { type: 'tel', placeholder: '+57 300 000 0000' })}
+                </div>
+                ${field('tax_rate', 'IVA por defecto (%)', { type: 'number', value: '19', min: 0, step: '0.01',
+                  hint: 'Puedes cambiarlo después, y ajustarlo orden por orden.' })}
+                <fieldset style="margin-top:20px">
+                  <legend>Tu usuario</legend>
+                  ${field('name', 'Tu nombre', { required: true })}
+                  ${field('email', 'Correo', { type: 'email', required: true })}
+                  <div class="row">
+                    ${field('password', 'Contraseña', { type: 'password', required: true, hint: 'Mínimo 8 caracteres' })}
+                    ${field('password2', 'Repite la contraseña', { type: 'password', required: true })}
+                  </div>
+                </fieldset>
+                <button type="submit" class="btn btn-primary btn-block">Crear mi taller</button>
+              </form>
+            </div>
+          </div>
+          <div class="auth-links">¿Ya tienes cuenta? <a href="#/entrar">Entra aquí</a></div>
+        </div>
       </div>
     </div>`;
 }

@@ -61,8 +61,8 @@ reportsRouter.get('/dashboard', wrap(async (req, res) => {
        WHERE workshop_id = $1 AND created_at >= date_trunc('day', NOW())`, w),
 
     query(
-      `SELECT wo.id, wo.number, wo.status, wo.received_at, wo.total, m.plate,
-              c.name AS customer_name
+      `SELECT wo.id, wo.number, wo.status, wo.received_at, wo.total,
+              m.plate, m.brand, m.model, c.name AS customer_name, c.phone
        FROM work_orders wo
        LEFT JOIN motorcycles m ON m.id = wo.motorcycle_id
        LEFT JOIN customers c   ON c.id = wo.customer_id
