@@ -16,6 +16,16 @@ function afterLogin(result) {
 
 export async function loginView() {
   onMount(() => {
+    document.getElementById('forgot-link').addEventListener('click', (event) => {
+      event.preventDefault();
+      const slot = document.getElementById('login-error');
+      slot.innerHTML = `<div class="alert alert-info">
+        <b>¿Olvidaste tu contraseña?</b><br>
+        Pídele al administrador de tu taller que la restablezca desde
+        <b>Configuración → Equipo</b>. Si tú eres el administrador,
+        contacta a quien te entregó el software.</div>`;
+    });
+
     const form = document.getElementById('login-form');
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -59,6 +69,7 @@ export async function loginView() {
               </form>
             </div>
           </div>
+          <div class="auth-links"><a href="#" id="forgot-link">¿Olvidaste tu contraseña?</a></div>
           <div class="auth-links">¿Aún no tienes taller registrado?
             <a href="#/registrar">Crea uno</a></div>
           <div class="auth-links">¿Eres cliente y quieres ver tu moto?

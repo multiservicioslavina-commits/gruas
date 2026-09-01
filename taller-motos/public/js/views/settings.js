@@ -102,6 +102,19 @@ export async function settingsView() {
       });
     });
 
+    document.querySelectorAll('[data-reset-pw]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const result = await modal({
+          title: `Nueva contraseña para ${button.dataset.resetName}`,
+          body: field('password', 'Nueva contraseña', { type: 'password', required: true,
+            hint: 'Mínimo 8 caracteres. Dásela al usuario para que entre.' }),
+          confirmText: 'Restablecer',
+          onSubmit: (data) => api.patch(`/users/${button.dataset.resetPw}`, { password: data.password })
+        });
+        if (result) toast('Contraseña restablecida');
+      });
+    });
+
     document.querySelectorAll('[data-toggle-user]').forEach((button) => {
       button.addEventListener('click', async () => {
         const user = users.find((u) => u.id === button.dataset.toggleUser);
@@ -298,6 +311,8 @@ export async function settingsView() {
               <td class="num nowrap">
                 ${isAdmin ? `
                   <button class="btn btn-quiet btn-sm" data-user="${esc(user.id)}">Editar</button>
+                  ${user.id !== session.user?.id ? `<button class="btn btn-quiet btn-sm"
+                    data-reset-pw="${esc(user.id)}" data-reset-name="${esc(user.name)}">Contraseña</button>` : ''}
                   ${user.id !== session.user?.id ? `<button class="btn btn-quiet btn-sm"
                     data-toggle-user="${esc(user.id)}">${user.active ? 'Desactivar' : 'Activar'}</button>` : ''}
                 ` : ''}
