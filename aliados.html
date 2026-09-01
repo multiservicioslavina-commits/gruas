@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Sé Aliado Ridera — Talleres, Almacenes, Grúas, Clubes, Restaurantes y Hoteles</title>
+<meta name="description" content="Únete a la red Ridera. Miles de moteros te encuentran en Rita (chatbot) y en nuestro directorio. Gratis, sin comisiones. Talleres, almacenes, grúas, clubes, restaurantes y hoteles bienvenidos.">
+<link rel="canonical" href="https://gruas.ridera.com.co/aliados" />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Ridera" />
+<meta property="og:title" content="Sé Aliado Ridera — Haz crecer tu negocio con la comunidad motera" />
+<meta property="og:description" content="Talleres, almacenes, grúas, clubes, restaurantes y hoteles: regístrate gratis y aparece frente a miles de moteros en Rita y el directorio Ridera." />
+<meta property="og:url" content="https://gruas.ridera.com.co/aliados" />
+<meta property="og:image" content="https://gruas.ridera.com.co/og-home.png" />
+<meta name="twitter:card" content="summary_large_image" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange:#E85D20; --orange-hot:#FF6B2B; --orange-dim:rgba(232,93,32,0.14);
+  --carbon:#0D0F12; --carbon2:#141720; --carbon3:#1E2229; --carbon4:#262D37;
+  --text-muted:rgba(255,255,255,0.82); --text-dim:rgba(255,255,255,0.5);
+  --border:rgba(255,255,255,0.08); --border-hi:rgba(255,255,255,0.14);
+  --green:#4ade80; --radius-sm:10px; --radius-md:14px; --radius-lg:22px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--carbon);color:#fff;min-height:100vh;overflow-x:hidden}
+
+.topbar{background:rgba(13,15,18,0.97);backdrop-filter:blur(20px);border-bottom:0.5px solid var(--border);padding:0 20px;height:58px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100}
+.topbar-logo{display:flex;align-items:center;gap:9px;font-family:'Barlow Condensed';font-weight:800;font-size:19px;letter-spacing:.5px}
+.topbar-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--orange);background:rgba(232,93,32,0.1);border:0.5px solid rgba(232,93,32,0.28);padding:4px 10px;border-radius:99px}
+
+.hero{position:relative;padding:52px 20px 36px;text-align:center;overflow:hidden;background:radial-gradient(ellipse 80% 60% at 50% 100%,rgba(232,93,32,0.14) 0%,transparent 70%)}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 120% 80% at 50% -10%,rgba(232,93,32,0.08),transparent 60%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--orange);margin-bottom:20px}
+.hero-eyebrow::before,.hero-eyebrow::after{content:'';width:22px;height:1px;background:var(--orange);opacity:.5}
+.hero h1{font-family:'Barlow Condensed';font-size:clamp(36px,9vw,64px);font-weight:900;text-transform:uppercase;line-height:.94;letter-spacing:-.5px;margin-bottom:16px}
+.hero h1 em{color:var(--orange);font-style:normal;display:block}
+.hero p{font-size:clamp(15px,3vw,17px);color:var(--text-muted);line-height:1.6;max-width:480px;margin:0 auto}
+
+.stats{display:flex;gap:10px;max-width:520px;margin:26px auto 0;padding:0 4px}
+.stat{flex:1;background:var(--carbon2);border:0.5px solid var(--border);border-radius:14px;padding:14px 8px}
+.stat b{display:block;font-family:'Barlow Condensed';font-size:26px;color:var(--orange);line-height:1}
+.stat span{display:block;font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.06em;margin-top:3px}
+
+main{max-width:640px;margin:0 auto;padding:8px 20px 70px}
+
+/* SELECTOR DE NEGOCIO */
+.picker-label{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);text-align:center;margin:34px 0 14px}
+.picker{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+@media(max-width:420px){.picker{grid-template-columns:repeat(2,1fr)}}
+.pick{background:var(--carbon2);border:0.5px solid var(--border-hi);border-radius:var(--radius-md);padding:16px 8px;text-align:center;cursor:pointer;transition:all .15s;user-select:none}
+.pick:hover{border-color:rgba(232,93,32,.4)}
+.pick .ic{font-size:26px;display:block;margin-bottom:6px}
+.pick .lbl{font-family:'Barlow Condensed';font-weight:700;font-size:14px;text-transform:uppercase;letter-spacing:.03em}
+.pick.active{background:var(--orange-dim);border-color:var(--orange)}
+
+/* PANEL DINÁMICO */
+.panel{display:none;margin-top:26px;background:var(--carbon2);border:0.5px solid var(--border);border-radius:var(--radius-lg);padding:26px 22px;animation:fade .25s ease}
+.panel.show{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.panel h2{font-family:'Barlow Condensed';font-size:26px;font-weight:800;text-transform:uppercase;margin-bottom:6px}
+.panel h2 em{color:var(--orange);font-style:normal}
+.panel .sub{color:var(--text-muted);font-size:14.5px;line-height:1.55;margin-bottom:20px}
+
+/* REDIRECT / WHATSAPP CARDS */
+.ext-card{text-align:center;padding:6px 0 4px}
+.ext-btn{display:inline-flex;align-items:center;justify-content:center;gap:10px;width:100%;background:var(--orange);color:#fff;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans';font-weight:700;font-size:16px;text-decoration:none;cursor:pointer;transition:filter .15s}
+.ext-btn:hover{filter:brightness(1.06)}
+.ext-btn.wa{background:#25D366}
+
+footer{text-align:center;padding:30px 20px;color:var(--text-dim);font-size:12.5px}
+footer a{color:var(--orange);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-logo">🏍️ RIDERA</div>
+  <div class="topbar-badge">Aliados</div>
+</div>
+
+<div class="hero">
+  <div class="hero-eyebrow">Red de aliados Ridera</div>
+  <h1>Súmate a la<br><em>comunidad motera</em></h1>
+  <p>Talleres, almacenes, grúas, clubes, restaurantes y hoteles: aparece frente a miles de moteros en Rita (nuestro chatbot) y en el directorio Ridera. Gratis, sin comisiones.</p>
+  <div class="stats">
+    <div class="stat"><b>125</b><span>Municipios</span></div>
+    <div class="stat"><b>24/7</b><span>Rita atiende</span></div>
+    <div class="stat"><b>$0</b><span>Costo unirte</span></div>
+  </div>
+</div>
+
+<main>
+  <div class="picker-label">¿Qué tipo de negocio tienes?</div>
+  <div class="picker" id="picker">
+    <div class="pick" data-type="taller"><span class="ic">🔧</span><span class="lbl">Taller</span></div>
+    <div class="pick" data-type="almacen"><span class="ic">🛠️</span><span class="lbl">Almacén</span></div>
+    <div class="pick" data-type="grua"><span class="ic">🚚</span><span class="lbl">Grúa</span></div>
+    <div class="pick" data-type="club"><span class="ic">🏍️</span><span class="lbl">Club</span></div>
+    <div class="pick" data-type="restaurante"><span class="ic">🍽️</span><span class="lbl">Restaurante</span></div>
+    <div class="pick" data-type="hotel"><span class="ic">🛏️</span><span class="lbl">Hotel</span></div>
+  </div>
+
+  <!-- ALMACÉN: ya tiene formulario propio -->
+  <div class="panel" id="panel-almacen">
+    <h2>Registra tu <em>almacén</em></h2>
+    <div class="sub">Ya tenemos un formulario especial para almacenes de repuestos y accesorios, con catálogo y perfil propio.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro-almacen">Ir al registro de almacén →</a></div>
+  </div>
+
+  <!-- GRÚA: ya tiene formulario propio -->
+  <div class="panel" id="panel-grua">
+    <h2>Sé <em>gruero</em> Ridera</h2>
+    <div class="sub">Conecta con moteros varados cerca de ti. Tenemos un registro dedicado para grueros.</div>
+    <div class="ext-card"><a class="ext-btn" href="/registro">Ir al registro de grúa →</a></div>
+  </div>
+
+  <!-- CLUB: ya tiene registro propio en WordPress -->
+  <div class="panel" id="panel-club">
+    <h2>Registra tu <em>club</em></h2>
+    <div class="sub">Registra tu club de motos y activa tu chat privado con rodadas en vivo.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/registro-clubes/">Ir al registro de club →</a></div>
+  </div>
+
+  <!-- TALLER -->
+  <!-- TALLER: ya tiene formulario propio en WordPress -->
+  <div class="panel" id="panel-taller">
+    <h2>Registra tu <em>taller</em></h2>
+    <div class="sub">Aparece cuando un motero le pregunta a Rita dónde arreglar su moto cerca.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/registrar-talleres/">Ir al registro de taller →</a></div>
+  </div>
+
+  <!-- RESTAURANTE: ya tiene formulario propio (form-restaurante) -->
+  <div class="panel" id="panel-restaurante">
+    <h2>Registra tu <em>restaurante</em></h2>
+    <div class="sub">Los moteros paran a comer en ruta. Tenemos un formulario completo con horario, tipo de cocina y descuentos.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/restaurantes/">Ir al registro de restaurante →</a></div>
+  </div>
+
+  <!-- HOTEL: ya tiene formulario propio (form-hotel) -->
+  <div class="panel" id="panel-hotel">
+    <h2>Registra tu <em>hotel</em></h2>
+    <div class="sub">Los moteros buscan dónde quedarse en ruta. Tenemos un formulario completo con ubicación GPS, habitaciones y servicios.</div>
+    <div class="ext-card"><a class="ext-btn" href="https://ridera.com.co/hoteles-form/">Ir al registro de hotel →</a></div>
+  </div>
+</main>
+
+<footer>Ridera © 2026 · <a href="https://ridera.com.co">ridera.com.co</a></footer>
+
+<script>
+// Selector de tipo de negocio
+const picks = document.querySelectorAll('.pick');
+const panels = document.querySelectorAll('.panel');
+picks.forEach(p => {
+  p.addEventListener('click', () => {
+    picks.forEach(x => x.classList.remove('active'));
+    p.classList.add('active');
+    panels.forEach(x => x.classList.remove('show'));
+    document.getElementById('panel-' + p.dataset.type).classList.add('show');
+    document.getElementById('panel-' + p.dataset.type).scrollIntoView({behavior:'smooth', block:'nearest'});
+  });
+});
+
+// Preseleccionar desde ?tipo= en la URL (para links directos desde redes)
+(function(){
+  const tipo = new URLSearchParams(location.search).get('tipo');
+  const target = tipo && document.querySelector('.pick[data-type="' + tipo + '"]');
+  (target || picks[0]).click();
+})();
+
+</script>
+</body>
+</html>

@@ -12,21 +12,9 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
-import { generarContextoRider } from "./profile.ts";
-import { generarContextoAlertas } from "./proactive.ts";
-import { generarContextoLegal, inicializarBaseConocimientoLegal } from "./legal.ts";
-import { generarContextoSocial } from "./social.ts";
-import { generarContextoNavigador } from "./navigator.ts";
-import { generarContextoAcademia } from "./academia.ts";
-import { generarContextoAnalytics } from "./analytics.ts";
-import { generarContextoMarketplace } from "./marketplace.ts";
-import { generarContextoEmergencia } from "./emergency.ts";
-import { generarContextoRecomendaciones } from "./recommendations.ts";
-import { generarContextoBackup } from "./backup.ts";
-import { generarContextoEntrenamiento } from "./training.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "3234846550";
+const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const VERIFY_TOKEN  = Deno.env.get("RITA_VERIFY_TOKEN") ?? "ridera_rita_2026";
 // App Secret de la app de Meta (Configuracion basica > Clave secreta de la app).
@@ -332,71 +320,11 @@ function buildSystemPrompt(
   consentimiento: { registrado: boolean; acepta: boolean },
   conVoz = false,
   nombreRider: string | null = null,
-  contextoRider: string = "",
-  contextoAlertas: string = "",
-  contextoLegal: string = "",
-  contextoSocial: string = "",
-  contextoNavigador: string = "",
-  contextoAcademia: string = "",
-  contextoMarketplace: string = "",
-  contextoAnalytics: string = "",
-  contextoEmergencia: string = "",
-  contextoRecomendaciones: string = "",
-  contextoBackup: string = "",
-  contextoEntrenamiento: string = "",
 ): string {
   const bloqueNombre = nombreRider
     ? `\n- Este rider se llama ${nombreRider}. Alternalo con "parce"/"parcero": llamalo por su nombre
   de vez en cuando (por ejemplo al saludar o cuando la respuesta se sienta mas personal),
   sin que sea en cada mensaje ni suene forzado o repetitivo.`
-    : "";
-
-  const bloqueContextoRider = contextoRider
-    ? `\n${contextoRider}`
-    : "";
-
-  const bloqueContextoAlertas = contextoAlertas
-    ? `\n${contextoAlertas}`
-    : "";
-
-  const bloqueContextoLegal = contextoLegal
-    ? `\n${contextoLegal}`
-    : "";
-
-  const bloqueContextoSocial = contextoSocial
-    ? `\n${contextoSocial}`
-    : "";
-
-  const bloqueContextoNavigador = contextoNavigador
-    ? `\n${contextoNavigador}`
-    : "";
-
-  const bloqueContextoAcademia = contextoAcademia
-    ? `\n${contextoAcademia}`
-    : "";
-
-  const bloqueContextoMarketplace = contextoMarketplace
-    ? `\n${contextoMarketplace}`
-    : "";
-
-  const bloqueContextoAnalytics = contextoAnalytics
-    ? `\n${contextoAnalytics}`
-    : "";
-
-  const bloqueContextoEmergencia = contextoEmergencia
-    ? `\n${contextoEmergencia}`
-    : "";
-
-  const bloqueContextoRecomendaciones = contextoRecomendaciones
-    ? `\n${contextoRecomendaciones}`
-    : "";
-
-  const bloqueContextoBackup = contextoBackup
-    ? `\n${contextoBackup}`
-    : "";
-
-  const bloqueContextoEntrenamiento = contextoEntrenamiento
-    ? `\n${contextoEntrenamiento}`
     : "";
 
   const bloqueEstilo = conVoz
@@ -438,7 +366,7 @@ cuando no quedo nada, y ese registro es un requisito legal, no un detalle.`;
 
 ${bloqueFechaHora()}
 
-${bloqueEstilo}${bloqueContextoRider}${bloqueContextoAlertas}${bloqueContextoLegal}${bloqueContextoSocial}${bloqueContextoNavigador}${bloqueContextoAcademia}${bloqueContextoMarketplace}${bloqueContextoAnalytics}${bloqueContextoEmergencia}${bloqueContextoRecomendaciones}${bloqueContextoBackup}${bloqueContextoEntrenamiento}
+${bloqueEstilo}
 
 REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
@@ -461,121 +389,10 @@ COMO USAS LAS HERRAMIENTAS:
 - Antes de recomendar rutas o planes, mira consultar_preferencias para personalizar.
 - Cuando ejecutes una accion (recordatorio, preferencia, consentimiento),
   confirmasela en una linea, sin ceremonia.
-- PERFIL DEL RIDER (PHASE 1):
-  * agregar_moto: cuando agregue otra moto o cambien de moto
-  * guardar_perfil: cuando comparta experiencia, contacto emergencia, ubicacion, club, preferencias
-  * listar_vencimientos: cuando pregunte por vencimientos, documentos, SOAT, tecnica, etc
-  * marcar_vencimiento_completado: cuando haya completado un tramite (renovo SOAT, hizo tecnica, pago impuesto)
-- PROACTIVE & LEGAL (PHASE 2):
-  * actualizar_km: cuando el rider comparta los km actuales de su moto (para alertas de mantenimiento)
-  * obtener_alertas: cuando pregunte qué alertas tiene (km, clima, vía cerrada, rodadas)
-  * info_legal: cuando pregunte sobre derechos, qué hacer en retén, comparendo, compra usada, etc
-  * registrar_incidente: cuando le pase algo importante (accidente, comparendo, multa)
-- SOCIAL (PHASE 2):
-  * obtener_grupos: cuando pregunte a qué clubes pertenece
-  * obtener_rodadas: cuando pregunte qué rodadas hay próximamente
-  * buscar_companero: cuando quiera rodar acompañado y busque otro rider
-  * unirse_grupo: cuando quiera unirse a un grupo/club motero
-- NAVIGATOR (PHASE 3):
-  * obtener_rutas: cuando pregunte qué rutas tiene guardadas
-  * guardar_ruta: cuando quiera guardar una ruta nueva que recorre frecuentemente
-  * buscar_talleres: cuando pida recomendación de talleres en una ciudad
-- ACADEMIA (PHASE 3):
-  * obtener_contenido_educativo: cuando quiera aprender algo (mecánica, seguridad, viajes, etc)
-  * marcar_contenido_completado: cuando haya completado un curso o contenido educativo
-  * obtener_certificaciones: cuando pregunte qué ha aprendido o sus logros académicos
-  * buscar_mecanicos: cuando busque mecánicos confiables verificados por la comunidad
-- MARKETPLACE (PHASE 4):
-  * buscar_marketplace: cuando busque piezas, accesorios o servicios para la moto (filtrar por categoría, ciudad, precio)
-  * crear_listado_marketplace: cuando quiera vender algo (piezas usadas, accesorios, servicios)
-  * obtener_mis_compras: cuando pregunte qué ha comprado o el estado de sus órdenes
-  * comprar_producto: cuando decida comprar algo que encontró
-  * dejar_resena: cuando quiera evaluar al vendedor después de comprar
-- ANALYTICS (PHASE 5):
-  * estadisticas_personales: cuando pregunte por su progreso, estadísticas de viaje o datos de conducción
-  * rutas_favoritas_analytics: cuando quiera ver análisis de sus rutas más recorridas
-  * patrones_conduccion: cuando pregunte cuándo, cómo y con qué frecuencia conducen
-  * reporte_progreso: cuando pida un reporte completo de su progreso y logros
-  * comparar_comunidad: cuando quiera conocer su posición respecto a otros riders (benchmarks)
-- EMERGENCIA Y SEGURIDAD (PHASE 9):
-  * activar_modo_emergencia: cuando pida "activa emergencias", "pon el SOS", "quiero protección en caso de accidente"
-    IMPORTANTE: primero debe registrar contactos (no se puede sin ellos)
-  * registrar_contactos_emergencia: cuando da teléfono de familia/amigos. Máx 5. Formatos: "+57 300 1234567" o "3001234567"
-  * actualizar_info_medica: tipo de sangre, alergias, medicamentos. Crítico para paramédicos.
-  * reportar_incidente_manual: si tuvo accidente pero sensor NO detectó. Escala inmediato a SMS y 122
-  * obtener_incidentes: historial de emergencias últimos 30 días
-  * obtener_alertas_seguridad: alertas de comunidad (retenes agresivos, vías peligrosas, accidentes en 3km radio)
-- RECOMENDACIONES INTELIGENTES (PHASE 6):
-  * obtener_recomendaciones: cuando pregunten "qué me recomiendas", "tienes algo para mi moto", "qué puedo mejorar"
-    Devuelve hasta 3 recomendaciones priorizadas basadas en mantenimiento predictivo, estacionalidad, experiencia y patrones de conducción.
-    Dale contexto: "Veo que llevas 8.500km, toca mantenimiento" o "Como llueve mucho en tu zona, te recomiendo..."
-  * registrar_compra_recomendacion: SIEMPRE después de que el rider compre algo recomendado
-    Esto es cómo Rita gana comisión (7% base + 3% bonus si viene de recomendación). No olvides.
-  * obtener_historial_recomendaciones: cuando pidan historial de recomendaciones, comisión generada o confirmación de compras
-  * crear_regla_recomendacion: solo admin. Crea reglas de recomendación automática sin cambiar código
-  * REGLA DURA: NO insistas en recomendar. Solo sugiere si el rider pregunta. Recomendaciones forzadas = mala experiencia = abandono.
-- BACKUPS & MULTI-REGIÓN (PHASE 7 WEEK 1, 2, & 3):
-  * obtener_estado_backups: solo admin. Ver status de todos los backups: último ejecutado, próximo programado, tamaño, duración
-  * activar_backup_manual: solo admin. Dispara un backup manual inmediato para una región
-  * obtener_estado_replicacion: solo admin. Ver salud de replicación multi-región (MDE → BOG, CAL): rezago, última sincronización
-  * obtener_eventos_desastres: solo admin. Historial de eventos DR (últimos 30 días): región caída, corrupción, failover, recuperación
-  * verificar_consistencia: solo admin. Compara row counts y checksums entre región primaria y réplicas. Detecta y reparar discrepancias
-  * ejecutar_backup_real: solo admin. Ejecuta backup real con SQL dumps + snapshots. Registra tamaño, duración, filas procesadas
-  * enviar_alerta_sms: solo admin. Envía SMS vía Twilio para fallos críticos (prioridades: low/medium/high/critical)
-  * crear_incidente_pagerduty: solo admin. Crea incidente en PagerDuty (severidades: critical/error/warning/info)
-  * orquestar_sincronizacion_replicas: solo admin. Orquesta multi-región sync MDE → BOG, CAL. Rastrea rezago, registra resultados
-  * monitear_salud_region: solo admin. Health check de región: ping, conectividad, lag. Activa alertas si falla/rezaga
-  WEEK 3 - AUTOMATED FAILOVER & DISASTER RECOVERY:
-  * activar_failover_automatico: cuando detectes región caída. Conmuta a replica automáticamente, registra pérdida de datos (RPO), alerta a ops
-  * completar_sincronizacion_multiregion: después de failover. Verifica que TODAS las réplicas estén sincronizadas. Reporta regiones rezagadas
-  * validar_integridad_backup: ANTES de cualquier restauración. Verifica checksum, filas, corrupción. Solo restaura si pasa validación
-  * crear_playbook_recuperacion: genera procedimiento paso-a-paso según tipo de desastre (region_down, data_corruption, replica_lag)
-  * prueba_recuperacion: simula restauración en región de prueba sin tocar producción. Valida RTO, tiempo de recuperación, integridad
-  REGLA DURA: backups/replicación/DR/failover son SOLO admin. Nunca revelar a riders estado de backups ni detalles de DR. En caso de failover, notificar DESPUÉS sin alarmar.
-- ENTRENAMIENTO & CERTIFICACIÓN (PHASE 8):
-  * realizar_evaluacion_diagnostica: cuando pregunten "quiero mejorar", "cómo conduzco", "evaluame"
-    Crea perfil de habilidades basado en km + patrones conducción últimas 30 días, recomienda módulos personalizados
-  * obtener_modulos_disponibles: cuando pidan "qué puedo aprender", "módulos de entrenamiento"
-    Filtra por nivel (beginner/intermediate/advanced/expert) o categoría (safety/skills/maintenance/legal/wellness)
-  * iniciar_modulo_entrenamiento: cuando diga "empiezo el módulo de X", registra inicio, retorna duración estimada
-  * completar_modulo_entrenamiento: cuando termine módulo con puntuación. Otorga certificación (RSA verificable), badges, progreso
-  * registrar_sesion_practica: cuando practique en simulador/mini-juegos (braking, cornering, emergency, weather, urban_navigation)
-    Registra puntuación y proporciona feedback motivacional personalizado
-  * obtener_progreso_entrenamiento: cuando pregunten "¿cuánto he avanzado?", "mis certificaciones", "qué sigue?"
-    Muestra módulos completados, certificaciones activas, badges, siguiente módulo recomendado
-  REGLA DURA: Anima a riders a tomar módulos según su riesgo. No obligues, solo sugiere. Las certificaciones (RSA) son verificables y válidas.
-- ANALYTICS & INSIGHTS (PHASE 10):
-  * obtener_metricas_hoy: cuando pregunten "cómo iba hoy", "mis estadísticas", "cuánto rodé"
-    Devuelve km totales, tiempo en ruta, velocidad promedio, puntuación de seguridad, violaciones detectadas
-    Da contexto: "Llevás 45km hoy, velocidad media 52km/h, 1 frenada fuerte detectada"
-  * obtener_tendencias_riesgo: cuando pregunten "¿mejoro?", "¿cómo iba?", "mi evolución últimas semanas"
-    Analiza últimos 30 días: tendencia de riesgo (mejorando/estable/empeorando), cambios en velocidad, frenadas, aceleraciones
-  * obtener_rutas_populares: cuando pregunten "¿qué rutas le gustan a otros?", "rutas recomendadas", "dónde ruedan"
-    Devuelve TOP 3 rutas por popularidad, ratings, horarios de pico, condiciones de seguridad promedio
-  * obtener_insights_personalizados: cuando pregunten "¿qué me recomiendas mejorar?", "análisis personal", "mis puntos fuertes"
-    Compara contra benchmarks comunitarios, identifica fortalezas y áreas de mejora basadas en su conducción
-  * obtener_benchmarks_comunidad: cuando pregunten "¿cómo comparo?", "¿qué tal ando?", "soy mejor o peor"
-    Muestra percentiles: velocidad promedio, seguridad, frenadas, aceleraciones vs otros riders de su nivel/ciudad
-  REGLA DURA: Analytics sirven para motivar y mejorar, nunca para avergonzar. Framing positivo siempre.
-  "Veo que mejoraste en suavidad de frenadas" no "detecté que frenabas muy brusco"
-- EMERGENCIAS & ACCIDENTES (PHASE 9):
-  * activar_sos: cuando digan "SOS", "ayuda", "accidente", "caída". Notifica INMEDIATAMENTE contactos emergencia y servicios
-  * confirmar_emergencia: si Rita detecta automáticamente caída/impacto via sensores, pide confirmación. Si confirmas → activa respuesta completa
-  * cancelar_falso_positivo: si fue falsa alarma (no pasó nada realmente). Evita despacho innecesario de servicios
-  * registrar_contacto_emergencia: agrega teléfonos de emergencia (madre, amigo, pareja) para alertas automáticas
-  * actualizar_perfil_medico: registra tipo sangre, alergias, medicamentos, condiciones médicas, contacto emergencia principal
-  * registrar_reporte_incidente: DESPUÉS del accidente, documenta: tipo (caída, colisión, lesión), descripción, lesiones reportadas, daño moto
-    Crea registro para seguimiento y análisis post-accidente
-  REGLA DURA: EMERGENCIAS son tiempo crítico. Si el rider dice "me caí" o "accidente", llama SOS/confirmar sin esperar detalles completos.
-  Después de activar emergencia, ayuda documentar lo que pasó para el reporte post-incidente. Los reportes mejoran la seguridad de la comunidad.
 - Para saludos, charla y preguntas generales de moto no necesitas herramientas.
 - info_tramites te devuelve URLs oficiales: PEGALAS TAL CUAL en tu respuesta,
   una por linea con el nombre de la entidad. De nada sirve decir "entra a la
   pagina de la aseguradora" sin dar el link que ya tienes en la mano.
-- tramites_info devuelve informacion CONCRETA y DETALLADA sobre tramites legales:
-  documentos, costos exactos, tiempos, procedimientos paso a paso, numeros de
-  telefono y URLs. Usala ANTES que info_tramites cuando pregunten datos especificos.
-  Formatea bien lo que te devuelve (respeta su formato con iconos y secciones).
 - RUTAS - REGLA DURA: buscar_ruta solo consulta una base interna que NO se
   actualiza sola; ridera.com.co sube rutas nuevas todos los dias y esa base
   se puede quedar atras. Si buscar_ruta no encuentra la ruta que piden,
@@ -655,11 +472,10 @@ RESUMEN - RITA ES EXPERTA EN:
 ✅ Referencias: Catálogo completo de motos, especificaciones
 ✅ Clubes: Comunidades, grupos, rodadas, eventos de Antioquia
 ✅ Recordatorios: Alarmas, programación de actividades, remembranzas
-✅ Marketplace: Compra/venta de piezas, accesorios y servicios entre riders
 
 Rita es una ASISTENTE CORE POTENTE (con modelo económico Haiku).
 Dominio especializado en motociclismo, viajes, seguridad y regulación en Colombia y Latinoamérica.
-${bloqueContextoMarketplace}
+
 ${bloqueConsentimiento}`;
 }
 
@@ -704,20 +520,8 @@ async function responder(
   consentimiento: { registrado: boolean; acepta: boolean },
   conVoz = false,
   nombreRider: string | null = null,
-  contextoRider: string = "",
-  contextoAlertas: string = "",
-  contextoLegal: string = "",
-  contextoSocial: string = "",
-  contextoNavigador: string = "",
-  contextoAcademia: string = "",
-  contextoMarketplace: string = "",
-  contextoAnalytics: string = "",
-  contextoEmergencia: string = "",
-  contextoRecomendaciones: string = "",
-  contextoBackup: string = "",
-  contextoEntrenamiento: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -783,20 +587,8 @@ async function responderOrquestado(
   consentimiento: { registrado: boolean; acepta: boolean },
   conVoz = false,
   nombreRider: string | null = null,
-  contextoRider: string = "",
-  contextoAlertas: string = "",
-  contextoLegal: string = "",
-  contextoSocial: string = "",
-  contextoNavigador: string = "",
-  contextoAcademia: string = "",
-  contextoMarketplace: string = "",
-  contextoAnalytics: string = "",
-  contextoEmergencia: string = "",
-  contextoRecomendaciones: string = "",
-  contextoBackup: string = "",
-  contextoEntrenamiento: string = "",
 ): Promise<string> {
-  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento);
+  const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
   const messages: Mensaje[] = [
     ...history.map(h => ({ role: h.role, content: h.content })),
     { role: "user", content: message },
@@ -925,30 +717,15 @@ Deno.serve(async (req: Request) => {
     if (body?.test === true) {
       const phone = String(body.phone ?? "573000000000");
       const texto = String(body.message ?? "");
-      // Inicializar base de conocimiento legal una sola vez
-      await inicializarBaseConocimientoLegal();
-      const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergenciaData, contextoRecomendaciones, contextoBackup, contextoEntrenamiento, contextoEmergencia] = await Promise.all([
+      const [history, consentimiento, nombreRider] = await Promise.all([
         getHistory(phone, 10),
         estadoConsentimiento(phone),
         getRiderNombre(phone),
-        generarContextoRider(phone),
-        generarContextoAlertas(phone),
-        generarContextoLegal(phone),
-        generarContextoSocial(phone),
-        generarContextoNavigador(phone),
-        generarContextoAcademia(phone),
-        generarContextoMarketplace(phone),
-        generarContextoAnalytics(phone),
-        Promise.resolve(""), // placeholder for deprecated emergency position
-        generarContextoRecomendaciones(phone),
-        generarContextoBackup(),
-        generarContextoEntrenamiento(phone),
-        generarContextoEmergencia(phone),
       ]);
       const usarOrquestador = body.orquestador === true;
       const reply = usarOrquestador
-        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento)
-        : await responder(texto, history, phone, consentimiento, false, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento);
+        ? await responderOrquestado(texto, history, phone, consentimiento, false, nombreRider)
+        : await responder(texto, history, phone, consentimiento, false, nombreRider);
       return json({ ok: true, reply, motor: usarOrquestador ? "orquestador" : "claude_directo" });
     }
 
@@ -1043,26 +820,10 @@ Deno.serve(async (req: Request) => {
       return json({ ok: true, flujo: "presupuesto_agotado", gasto: presupuesto.gastoHoy });
     }
 
-    // Inicializar base de conocimiento legal una sola vez
-    await inicializarBaseConocimientoLegal();
-
-    const [history, consentimiento, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergenciaData, contextoRecomendaciones, contextoBackup, contextoEntrenamiento, contextoEmergencia] = await Promise.all([
+    const [history, consentimiento, nombreRider] = await Promise.all([
       getHistory(from, 10),
       estadoConsentimiento(from),
       getRiderNombre(from),
-      generarContextoRider(from),
-      generarContextoAlertas(from),
-      generarContextoLegal(from),
-      generarContextoSocial(from),
-      generarContextoNavigador(from),
-      generarContextoAcademia(from),
-      generarContextoMarketplace(from),
-      generarContextoAnalytics(from),
-      Promise.resolve(""), // placeholder for deprecated emergency position
-      generarContextoRecomendaciones(from),
-      generarContextoBackup(),
-      generarContextoEntrenamiento(from),
-      generarContextoEmergencia(from),
     ]);
 
     let reply = "";
@@ -1071,8 +832,8 @@ Deno.serve(async (req: Request) => {
       // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
       // camino directo de Claude sin necesidad de redeploy.
       reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider, contextoRider, contextoAlertas, contextoLegal, contextoSocial, contextoNavigador, contextoAcademia, contextoMarketplace, contextoAnalytics, contextoEmergencia, contextoRecomendaciones, contextoBackup, contextoEntrenamiento);
+        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
+        : await responder(message, history, from, consentimiento, conVoz, nombreRider);
     } catch (e) {
       console.error("El motor fallo:", e);
     }

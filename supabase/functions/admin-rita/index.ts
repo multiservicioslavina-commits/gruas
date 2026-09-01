@@ -13,7 +13,7 @@ const CATEGORIAS = ['noticias','rodadas','marketplace','eventos','mantenimiento'
 const DEBUG_TOOLS = new Set(['sintesis_debug','transcripcion_debug']);
 
 const WA_TOKEN = Deno.env.get('WHATSAPP_TOKEN') || '';
-const PHONE_ID = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '3234846550';
+const PHONE_ID = Deno.env.get('RITA_PHONE_ID') || Deno.env.get('WHATSAPP_PHONE_ID') || '1260857797114684';
 const GRAPH = 'https://graph.facebook.com/v25.0';
 
 type MediaType = 'image' | 'video';

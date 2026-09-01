@@ -1,8 +1,9 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { jwtVerify } from "https://esm.sh/jose@5";
 
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
-const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "3234846550";
+const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
 const ANTHROPIC_KEY = Deno.env.get("ANTHROPIC_API_KEY") ?? "";
 const OPENAI_KEY   = Deno.env.get("OPENAI_API_KEY") ?? "";
 const SB_URL       = Deno.env.get("SUPABASE_URL")!;
@@ -771,6 +772,87 @@ async function sendWhatsApp(to: string, text: string): Promise<any> {
   return res.json();
 }
 
+function normalizeClubPhone(raw: string): string {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (digits.startsWith("57") && digits.length === 12) return digits;
+  if (digits.length === 10 && digits.startsWith("3")) return "57" + digits;
+  return digits;
+}
+
+// Reseteo de clave del panel de admin de un club, disparado por WhatsApp.
+// Verificación de identidad: el número que escribe debe ser el mismo
+// whatsapp/lider_tel guardado en el registro del club — no se pide ni se
+// valida ningún otro dato porque ese número YA es la prueba de identidad.
+async function handleClubPasswordReset(from: string, codigo: string | null): Promise<string> {
+  if (!codigo) {
+    return "Para recuperar la clave de tu club necesito el código. Escríbeme así: \"Olvidé mi clave del club. Código: TBC\" (el código está en la URL de tu panel, ej: club.ridera.com.co/admin).";
+  }
+  const { data: club } = await supabase
+    .from("clubs")
+    .select("id, nombre, codigo, datos")
+    .eq("codigo", codigo.toLowerCase())
+    .maybeSingle();
+  if (!club) {
+    return `No encontré ningún club con el código "${codigo}". Revisa que esté bien escrito — lo ves en la URL de tu panel.`;
+  }
+  const datos = club.datos || {};
+  const registrado = normalizeClubPhone(datos.whatsapp || datos.lider_tel || "");
+  const remitente = normalizeClubPhone(from);
+  if (!registrado || registrado !== remitente) {
+    return `Por seguridad, solo puedo resetear la clave si escribes desde el WhatsApp registrado como administrador de ${club.nombre}. Este número no coincide con el que tenemos. Si cambiaste de número, contáctanos para verificarte de otra forma.`;
+  }
+  const token = crypto.randomUUID();
+  const expires = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+  await supabase.from("clubs").update({
+    datos: { ...datos, reset_token: token, reset_token_expires: expires },
+  }).eq("id", club.id);
+  const link = `https://club.ridera.com.co/reset-club?club=${club.codigo}&token=${token}`;
+  return `¡Listo! Verifiqué que escribes desde el WhatsApp registrado de ${club.nombre} 🏍️\n\nCrea tu nueva clave aquí (el link vence en 15 minutos):\n${link}`;
+}
+
+async function sha256Hex(s: string): Promise<string> {
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
+
+// Codigo de un solo uso para entrar al chat del club.
+// Lo pide el propio miembro escribiendole a Rita, y no al reves, por una razon
+// de la plataforma: WhatsApp solo deja mandar texto libre dentro de las 24h
+// siguientes a un mensaje del usuario. Si Rita escribiera primero, a casi nadie
+// le llegaria. Al escribir el, ademas, su numero queda probado.
+async function handleChatLogin(from: string): Promise<string> {
+  const tel = normalizeClubPhone(from);
+  const { data: miembros } = await supabase
+    .from("connect_members")
+    .select("id, nombre, estado, club_id, clubs(nombre, codigo)")
+    .eq("telefono", tel);
+
+  const activos = (miembros || []).filter((m: any) => m.estado !== "solicitado");
+  if (!activos.length) {
+    const pendiente = (miembros || []).find((m: any) => m.estado === "solicitado");
+    if (pendiente) {
+      return "Tu solicitud todavía está esperando que el club la apruebe. Apenas te aprueben te aviso y ya podrás entrar 🏍️";
+    }
+    return "Este número no está en ningún club de Ridera. Pídele al líder de tu club que te agregue, o entra por el link de invitación que él te comparta.";
+  }
+
+  const codigo = String(Math.floor(100000 + Math.random() * 900000));
+  const hash = await sha256Hex(codigo);
+  const expira = new Date(Date.now() + 10 * 60 * 1000).toISOString();
+
+  // Un codigo por miembro: invalidar los anteriores evita que sirvan varios
+  // a la vez si alguien lo pide dos veces.
+  for (const m of activos) {
+    await supabase.from("connect_login_codes").delete().eq("member_id", m.id).is("usado_en", null);
+    await supabase.from("connect_login_codes").insert({
+      member_id: m.id, codigo_hash: hash, expira_en: expira,
+    });
+  }
+
+  const clubes = activos.map((m: any) => m.clubs?.nombre).filter(Boolean).join(", ");
+  return `Tu código para entrar al chat${clubes ? ` de ${clubes}` : ""} es:\n\n*${codigo}*\n\nEscríbelo en la app. Vence en 10 minutos y solo sirve una vez.`;
+}
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
   if (req.method === "GET") {
@@ -784,6 +866,78 @@ Deno.serve(async (req: Request) => {
   if (req.method === "POST") {
     try {
       const body = await req.json();
+
+      // ── Rita en el chat del club ──────────────────────────────────────
+      // Mismo cerebro que WhatsApp (clima, vias, talleres, garaje, sellos,
+      // tramites...), pero en vez de responder por WhatsApp guarda la
+      // respuesta en la sala y la devuelve. Se resuelve aqui y no en una
+      // funcion aparte para no tener dos Ritas que se desincronicen.
+      if (body?.mode === "club-chat") {
+        const cors = { "Access-Control-Allow-Origin": "*", "Content-Type": "application/json" };
+        const reply = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: s, headers: cors });
+
+        const texto = (body.message || "").toString().trim();
+        const roomId = (body.roomId || "").toString();
+        if (!texto || !roomId) return reply({ error: "Faltan datos" }, 400);
+
+        // La identidad sale del token firmado, no de un id que venga en el
+        // cuerpo: ese id es legible en la tabla y no prueba nada.
+        const secret = Deno.env.get("CLUB_JWT_SECRET");
+        const raw = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "").trim();
+        if (!secret || !raw) return reply({ error: "Vuelve a entrar al chat." }, 401);
+        let memberId = "";
+        try {
+          const { payload } = await jwtVerify(raw, new TextEncoder().encode(secret));
+          if (payload.tipo !== "club-member") throw new Error("token que no es de miembro");
+          memberId = (payload.member_id as string) || "";
+        } catch {
+          return reply({ error: "Vuelve a entrar al chat." }, 401);
+        }
+        if (!memberId) return reply({ error: "Vuelve a entrar al chat." }, 401);
+
+        const { data: miembro } = await supabase
+          .from("connect_members")
+          .select("id, telefono, club_id, estado")
+          .eq("id", memberId).maybeSingle();
+        if (!miembro || miembro.estado === "solicitado") return reply({ error: "No autorizado" }, 403);
+
+        const { data: sala } = await supabase
+          .from("connect_rooms").select("id, club_id").eq("id", roomId).maybeSingle();
+        if (!sala || sala.club_id !== miembro.club_id) return reply({ error: "No autorizado" }, 403);
+
+        const telefono = normalizeClubPhone(miembro.telefono || "");
+
+        // Historial de la propia sala, no el de WhatsApp: son conversaciones
+        // distintas aunque las atienda la misma Rita.
+        const { data: previos } = await supabase
+          .from("connect_messages")
+          .select("contenido, es_rita")
+          .eq("room_id", roomId).order("created_at", { ascending: false }).limit(8);
+        const history = (previos || []).reverse().map((m: any) => ({
+          role: m.es_rita ? "assistant" : "user",
+          content: m.contenido,
+        }));
+
+        const [riderCtx, context, rutaDetail] = await Promise.all([
+          getRiderContext(telefono).catch(() => null),
+          fetchContext(texto, telefono),
+          fetchRutaDetail(texto).catch(() => null),
+        ]);
+        if (rutaDetail) context.rutaDetail = rutaDetail;
+
+        // contenido es NOT NULL: si Claude no devuelve nada hay que poner
+        // algo, no una cadena vacia que reventaria el insert.
+        const answer = (await askClaude(texto, history, context, riderCtx))
+          || "Uy parce, algo se cruzo. Me lo repites?";
+
+        await supabase.from("connect_messages").insert({
+          room_id: roomId, member_id: memberId, contenido: answer,
+          tipo: "text", es_rita: true,
+        });
+
+        return reply({ ok: true, answer });
+      }
+
       const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
       if (!msg) return new Response(JSON.stringify({ ok: true, skip: true }), { status: 200, headers: { "Content-Type": "application/json" } });
 
@@ -842,6 +996,27 @@ Deno.serve(async (req: Request) => {
       }
 
       await saveMessage(from, "user", message);
+
+      // Entrar al chat del club: determinista, nunca via IA. El numero desde
+      // el que escribe ES la prueba de identidad.
+      const msgNormLogin = norm(message);
+      if (/quiero entrar al chat|entrar al chat|codigo (para |de )?(entrar|ingresar|el chat)|ingresar al chat/.test(msgNormLogin)) {
+        const loginReply = await handleChatLogin(from);
+        await saveMessage(from, "assistant", loginReply);
+        await sendWhatsApp(from, loginReply);
+        return new Response(JSON.stringify({ ok: true, flow: "chat_login" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
+      // Reseteo de clave del panel: igual de determinista y por la misma
+      // razon — la seguridad esta en el numero que escribe, no en el texto.
+      const msgNormReset = norm(message);
+      if (/olvid.{0,15}clave.{0,15}club|recuperar.{0,15}clave.{0,15}club|clave.{0,20}panel.{0,20}administraci/.test(msgNormReset)) {
+        const codigoMatch = /c[oó]digo:?\s*([a-z0-9_-]{2,20})/i.exec(message);
+        const resetReply = await handleClubPasswordReset(from, codigoMatch?.[1] || null);
+        await saveMessage(from, "assistant", resetReply);
+        await sendWhatsApp(from, resetReply);
+        return new Response(JSON.stringify({ ok: true, flow: "club_reset" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
 
       const refMatch = /\bREF[\s-]?([A-Za-z0-9]{4,12})\b/i.exec(message);
       if (refMatch) {

@@ -19,8 +19,10 @@ async function hash(p: string): Promise<string> {
 // claim personalizado, para que las politicas RLS puedan confiar en el
 // dato sin depender de que el navegador "diga la verdad".
 async function signClubToken(clubId: string): Promise<string> {
-  const secret = Deno.env.get('SUPABASE_JWT_SECRET');
-  if (!secret) throw new Error('SUPABASE_JWT_SECRET no configurado en el proyecto');
+  // Supabase reserva el prefijo SUPABASE_ y no permite crear secretos con el,
+  // asi que el JWT secret del proyecto se guarda bajo este nombre.
+  const secret = Deno.env.get('CLUB_JWT_SECRET');
+  if (!secret) throw new Error('CLUB_JWT_SECRET no configurado en el proyecto');
   const key = new TextEncoder().encode(secret);
   return await new SignJWT({ role: 'authenticated', club_id: clubId, aud: 'authenticated' })
     .setProtectedHeader({ alg: 'HS256', typ: 'JWT' })
@@ -82,6 +84,29 @@ Deno.serve(async (req: Request) => {
     if (error) return json({ error: error.message }, 500);
     const token = await signClubToken(club.id);
     return json({ ok: true, token });
+  }
+
+  // Confirma un reseteo de clave iniciado por Rita vía WhatsApp. El token
+  // se genera y valida server-side (rita-whatsapp) solo tras verificar que
+  // quien escribe es el whatsapp/lider_tel registrado del club — este paso
+  // solo confirma que el link no expiró ni fue usado ya.
+  if (action === 'reset-confirm') {
+    const resetToken = (body.token || '').toString();
+    if (!resetToken) return json({ error: 'Falta el token del link' }, 400);
+    if (!datos.reset_token || datos.reset_token !== resetToken) {
+      return json({ error: 'Este link ya fue usado o no es válido. Pide uno nuevo por WhatsApp.' }, 401);
+    }
+    if (!datos.reset_token_expires || new Date(datos.reset_token_expires) < new Date()) {
+      return json({ error: 'Este link expiró. Pide uno nuevo por WhatsApp.' }, 401);
+    }
+    if (newPassword.length < 4) return json({ error: 'La nueva clave debe tener al menos 4 caracteres' }, 400);
+    const nuevo = { ...datos, admin_pass_hash: await hash(newPassword) };
+    delete nuevo.reset_token;
+    delete nuevo.reset_token_expires;
+    const { error } = await sb.from('clubs').update({ datos: nuevo }).eq('id', club.id);
+    if (error) return json({ error: error.message }, 500);
+    const token = await signClubToken(club.id);
+    return json({ ok: true, clubId: club.id, nombre: club.nombre, codigo: club.codigo, token });
   }
 
   return json({ error: 'Acción no válida' }, 400);

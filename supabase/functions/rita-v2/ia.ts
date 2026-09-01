@@ -24,7 +24,6 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta } from "./tools.ts";
-import { clasificarPregunta, buscarRespuestaAnterior, guardarRespuesta, seleccionarModelo } from "./knowledge.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -129,11 +128,7 @@ async function auditarIA(
 }
 
 // ─── Motor Claude ────────────────────────────────────────────────
-async function llamarClaudeRaw(
-  system: string,
-  messages: Mensaje[],
-  modelo: string = CLAUDE_MODEL,
-): Promise<Record<string, unknown>> {
+async function llamarClaudeRaw(system: string, messages: Mensaje[]): Promise<Record<string, unknown>> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
@@ -141,7 +136,7 @@ async function llamarClaudeRaw(
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: modelo, max_tokens: 1024, system, tools: TOOL_SCHEMAS, messages }),
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1024, system, tools: TOOL_SCHEMAS, messages }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return await res.json();
@@ -194,16 +189,12 @@ function mensajesAOpenAI(system: string, messages: Mensaje[]): Record<string, un
   return out;
 }
 
-async function llamarOpenAIRaw(
-  system: string,
-  messages: Mensaje[],
-  modelo: string = OPENAI_MODEL,
-): Promise<Record<string, unknown>> {
+async function llamarOpenAIRaw(system: string, messages: Mensaje[]): Promise<Record<string, unknown>> {
   const res = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
     body: JSON.stringify({
-      model: modelo,
+      model: OPENAI_MODEL,
       messages: mensajesAOpenAI(system, messages),
       tools: schemasOpenAI(),
       tool_choice: "auto",
@@ -244,21 +235,18 @@ async function ejecutarConversacion(
   messagesIniciales: Mensaje[],
   phone: string,
   tipoAuditoria: "normal" | "fallback" | "comparacion",
-  modeloOverride?: { claude: string; openai: string },
 ): Promise<{ texto: string; herramientasUsadas: string[] }> {
   const messages: Mensaje[] = [...messagesIniciales];
   const herramientasUsadas: string[] = [];
   let huboHerramientas = false;
   let tokensEntrada = 0;
   let tokensSalida = 0;
-  const modelo = proveedor === "claude"
-    ? (modeloOverride?.claude ?? CLAUDE_MODEL)
-    : (modeloOverride?.openai ?? OPENAI_MODEL);
+  const modelo = proveedor === "claude" ? CLAUDE_MODEL : OPENAI_MODEL;
 
   for (let ronda = 0; ronda < MAX_TOOL_ROUNDS; ronda++) {
     const dataCruda = proveedor === "claude"
-      ? await llamarClaudeRaw(system, messages, modelo)
-      : await llamarOpenAIRaw(system, messages, modelo);
+      ? await llamarClaudeRaw(system, messages)
+      : await llamarOpenAIRaw(system, messages);
     const { bloques, stop_reason, usage } = proveedor === "claude"
       ? normalizarClaude(dataCruda)
       : normalizarOpenAI(dataCruda);
@@ -322,51 +310,21 @@ corresponde. No menciones que hubo dos borradores ni que sos un revisor.`;
 // Recibe el system prompt ya armado y el historial + mensaje actual.
 // Devuelve el texto final sin que el llamador sepa que proveedor
 // respondio ni si hubo comparacion.
-//
-// Ahora con búsqueda en knowledge base: si ya respondimos esta pregunta,
-// la reutiliza sin costo. Si no, llama a la IA y la guarda.
 export async function responderConOrquestador(
   system: string,
   messages: Mensaje[],
   phone: string,
 ): Promise<string> {
-  // ─── Extraer la pregunta actual (último mensaje del usuario) ───
-  const ultimoMensaje = messages[messages.length - 1];
-  const preguntaTexto = typeof ultimoMensaje?.content === "string" ? ultimoMensaje.content : "";
-
-  if (!preguntaTexto.trim()) {
-    // Sin pregunta, no puedo hacer nada
-    return "";
-  }
-
-  // ─── 0) Clasificar y buscar en BD ───
-  const tipoPregunta = clasificarPregunta(preguntaTexto);
-  console.log(`Pregunta clasificada como: ${tipoPregunta}`);
-
-  const respuestaAnterior = await buscarRespuestaAnterior(preguntaTexto, tipoPregunta);
-  if (respuestaAnterior) {
-    console.log(`Reutilizando respuesta anterior para: ${preguntaTexto.slice(0, 50)}...`);
-    return respuestaAnterior.respuesta;
-  }
-
-  // ─── Seleccionar modelos según tipo ───
-  const modelos = seleccionarModelo(tipoPregunta);
-  console.log(`Modelos seleccionados: Claude=${modelos.claude}, OpenAI=${modelos.openai}`);
-
   let resultado: { texto: string; herramientasUsadas: string[] };
   let proveedorPrimario: "claude" | "openai" = "claude";
-  let modeloUsado = modelos.claude;
-  let tokensEntrada = 0;
-  let tokensSalida = 0;
-  let proveedorUsado = "claude";
 
-  // 1) Intento primario: Claude con modelo dinámico.
+  // 1) Intento primario: Claude.
   try {
-    resultado = await ejecutarConversacion("claude", system, messages, phone, "normal", modelos);
-    modeloUsado = modelos.claude;
+    resultado = await ejecutarConversacion("claude", system, messages, phone, "normal");
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
     console.error("Claude fallo en el orquestador, cae a OpenAI:", mensaje);
+    // Log temporal de diagnostico: por que fallo Claude en el orquestador.
     try {
       await supabase.from("rita_acciones_log").insert({
         telefono: phone,
@@ -380,24 +338,7 @@ export async function responderConOrquestador(
       throw new Error("Claude fallo y no hay OPENAI_API_KEY configurada para el fallback");
     }
     proveedorPrimario = "openai";
-    modeloUsado = modelos.openai;
-    proveedorUsado = "openai";
-    resultado = await ejecutarConversacion("openai", system, messages, phone, "fallback", modelos);
-  }
-
-  // ─── Guardar en knowledge base ───
-  if (resultado.texto) {
-    await guardarRespuesta(
-      phone,
-      preguntaTexto,
-      resultado.texto,
-      tipoPregunta,
-      modeloUsado,
-      proveedorUsado,
-      tokensEntrada,
-      tokensSalida,
-      0, // Costo se calcula en auditoría
-    );
+    resultado = await ejecutarConversacion("openai", system, messages, phone, "fallback");
   }
 
   const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
@@ -409,15 +350,7 @@ export async function responderConOrquestador(
   // la mejor antes de contestar.
   try {
     const proveedorSecundario = proveedorPrimario === "claude" ? "openai" : "claude";
-    const segundoModelo = proveedorSecundario === "claude" ? modelos.claude : modelos.openai;
-    const segundo = await ejecutarConversacion(
-      proveedorSecundario,
-      system,
-      messages,
-      phone,
-      "comparacion",
-      { claude: modelos.claude, openai: modelos.openai },
-    );
+    const segundo = await ejecutarConversacion(proveedorSecundario, system, messages, phone, "comparacion");
     if (!segundo.texto) return resultado.texto;
 
     const [borradorA, borradorB] = proveedorPrimario === "claude"

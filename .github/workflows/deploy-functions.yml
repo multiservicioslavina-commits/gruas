@@ -36,7 +36,7 @@ env:
   PROJECT_REF: vzzxsdtsaahhzyctvmhx
   # Lista explicita de funciones a desplegar. Solo estas se suben.
   # Agrega una funcion aqui SOLO cuando este validada y en config.toml.
-  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios"
+  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios rita-whatsapp club-auth club-members"
 
 jobs:
   deploy:
@@ -68,3 +68,25 @@ jobs:
             supabase functions deploy "$fn" --project-ref "$PROJECT_REF"
             echo "::endgroup::"
           done
+
+      # Smoke test: confirma que cada funcion ARRANCA (no BOOT_ERROR).
+      # Si una funcion no arranca, el workflow queda en ROJO de inmediato,
+      # en vez de descubrir la caida por los usuarios horas despues.
+      # Un 401/403 (firma/JWT) cuenta como OK: significa que arranco y corrio.
+      - name: Smoke test (verificar arranque)
+        run: |
+          fail=0
+          for fn in $FUNCIONES; do
+            url="https://${PROJECT_REF}.supabase.co/functions/v1/$fn"
+            code=$(curl -s -o /tmp/smoke_body.txt -w "%{http_code}" -m 30 \
+              -X POST "$url" -H "Content-Type: application/json" -d '{"smoke":true}')
+            body="$(cat /tmp/smoke_body.txt 2>/dev/null)"
+            echo "$fn -> HTTP $code"
+            if [ "$code" = "503" ] || printf '%s' "$body" | grep -qi "BOOT_ERROR\|failed to start"; then
+              echo "::error::$fn NO ARRANCA (boot error). Revisa el codigo o revierte esta version."
+              printf '%s\n' "$body" | head -c 500
+              fail=1
+            fi
+          done
+          if [ "$fail" = "1" ]; then exit 1; fi
+          echo "Todas las funciones arrancan correctamente."

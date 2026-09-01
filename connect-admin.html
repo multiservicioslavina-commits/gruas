@@ -48,6 +48,7 @@
     padding: 20px; margin-bottom: 16px;
   }
   .card h2 { font-size: 16px; margin-bottom: 4px; }
+  .hint { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
   .card p { font-size: 13px; color: var(--text2); margin-bottom: 16px; }
 
   textarea {
@@ -103,6 +104,7 @@
   }
   .badge-pending { background: rgba(251,146,60,.15); color: var(--accent2); }
   .badge-linked { background: rgba(34,197,94,.15); color: var(--green); }
+  .badge-admin { background: rgba(59,130,246,.15); color: #60a5fa; margin-left: 4px; }
 
   .member-list { list-style: none; }
   .member-item {
@@ -120,16 +122,6 @@
   .member-phone { font-size: 12px; color: var(--text2); }
   .member-date { font-size: 11px; color: var(--text2); }
 
-  .rooms-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
-  .room-card {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; cursor: pointer; transition: all .2s;
-  }
-  .room-card:hover { border-color: var(--accent); }
-  .room-icon { font-size: 28px; margin-bottom: 8px; }
-  .room-name { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
-  .room-desc { font-size: 12px; color: var(--text2); }
-  .room-msgs { font-size: 11px; color: var(--text2); margin-top: 8px; }
 
   .empty { text-align: center; padding: 40px 20px; color: var(--text2); }
   .empty .icon { font-size: 48px; margin-bottom: 12px; }
@@ -143,34 +135,19 @@
   .toast.show { opacity: 1; }
 
   .search-bar {
-    width: 100%; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
-    border: 1px solid var(--border); color: var(--text); font-size: 14px; margin-bottom: 16px;
+    flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2);
+    border: 1px solid var(--border); color: var(--text); font-size: 14px;
   }
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
-  #preview-section, #tab-members, #tab-rooms, #tab-rita { display: none; }
-
-  .rita-question {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 10px;
-    padding: 16px; margin-bottom: 12px;
-  }
-  .rita-q-header {
-    display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px;
-  }
-  .rita-q-member { font-weight: 600; font-size: 14px; }
-  .rita-q-time { font-size: 11px; color: var(--text2); }
-  .rita-q-text { font-size: 14px; margin-bottom: 12px; line-height: 1.45; }
-  .rita-q-response { background: var(--surface); padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid var(--accent); }
-  .rita-q-response-label { font-size: 11px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
-  .rita-q-response-text { font-size: 13px; }
-  .rita-q-input { width: 100%; min-height: 80px; padding: 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 13px; resize: vertical; }
-  .rita-q-input:focus { outline: none; border-color: var(--accent); }
-  .rita-q-actions { display: flex; gap: 8px; }
+  #preview-section { display: none; }
+  #tab-members { display: block; }
+  #tab-add, #tab-ajustes { display: none; }
+  #tab-add.visible, #tab-ajustes.visible { display: block !important; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
     .tabs { font-size: 12px; }
-    .rooms-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
@@ -212,44 +189,48 @@
 </div>
 
 <div class="container">
+  <!-- BANNER: Link de invitación destacado -->
+  <div style="background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; display: flex; gap: 12px; align-items: center;">
+    <div style="font-size: 24px;">🔗</div>
+    <div style="flex: 1;">
+      <div style="font-weight: 600; font-size: 14px; color: #fff; margin-bottom: 4px;">Invita nuevos miembros</div>
+      <div style="font-size: 12px; color: rgba(255,255,255,.85); margin-bottom: 8px;">Copia este link y comparte en WhatsApp, Telegram o donde quieras</div>
+      <div style="display: flex; gap: 8px;">
+        <input id="invite-link" type="text" readonly style="flex: 1; padding: 8px 10px; border-radius: 6px; background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3); color: #fff; font-size: 12px; min-width: 200px;">
+        <button class="btn" style="background: rgba(255,255,255,.25); color: #fff; border: 1px solid rgba(255,255,255,.4); padding: 8px 14px;" onclick="copyInviteLink()">📋 Copiar</button>
+      </div>
+    </div>
+  </div>
+
   <div class="stats" id="stats">
+    <div class="stat"><div class="number" id="stat-requests">-</div><div class="label">Por aprobar</div></div>
     <div class="stat"><div class="number" id="stat-total">-</div><div class="label">Miembros</div></div>
-    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Vinculados</div></div>
-    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Pendientes</div></div>
-    <div class="stat"><div class="number" id="stat-rooms">-</div><div class="label">Salas</div></div>
+    <div class="stat"><div class="number" id="stat-linked">-</div><div class="label">Ya entraron</div></div>
+    <div class="stat"><div class="number" id="stat-pending">-</div><div class="label">Sin entrar</div></div>
   </div>
 
   <div class="tabs">
-    <div class="tab active" onclick="switchTab('add')">Agregar miembros</div>
-    <div class="tab" onclick="switchTab('members')">Miembros</div>
-    <div class="tab" onclick="switchTab('rooms')">Salas</div>
-    <div class="tab" onclick="switchTab('rita')">Preguntas a Rita</div>
+    <div class="tab active" onclick="switchTab('members')">Miembros</div>
+    <div class="tab" onclick="switchTab('add')">Agregar</div>
+    <div class="tab" onclick="switchTab('ajustes')">Ajustes</div>
   </div>
 
   <!-- TAB: Agregar miembros -->
   <div id="tab-add">
     <div class="card">
-      <h2>Logo del club</h2>
-      <div style="display: flex; gap: 16px; align-items: flex-start;">
-        <div style="flex: 1;">
-          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
-          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
-        </div>
-        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
+      <h2>Agregar un miembro</h2>
+      <p>Para uno solo, sin pegar listas ni previsualizar.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap">
+        <input id="uno-nombre" type="text" placeholder="Nombre" maxlength="50"
+               style="flex:2; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="uno-tel" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15"
+               style="flex:1; min-width:120px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <button class="btn btn-primary" id="btn-uno" onclick="addOneMember()">Agregar</button>
       </div>
     </div>
 
     <div class="card">
-      <h2>Compartir link de invitación</h2>
-      <p>Comparte este link con los miembros para que se registren directamente</p>
-      <div style="display: flex; gap: 8px; margin-top: 12px;">
-        <input id="invite-link" type="text" readonly style="flex: 1; padding: 10px 12px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); color: var(--text); font-size: 13px;">
-        <button class="btn btn-primary" onclick="copyInviteLink()" style="padding: 10px 16px;">Copiar</button>
-      </div>
-    </div>
-
-    <div class="card">
-      <h2>Agregar miembros al club</h2>
+      <h2>Agregar varios de una vez</h2>
       <p>Pega la lista de miembros, un miembro por línea. Formato: <strong>Nombre, Teléfono</strong></p>
       <textarea id="members-input" placeholder="Juan Pérez, 3101234567
 María López, 3209876543
@@ -281,7 +262,18 @@ Pedro Gómez - 3176543210"></textarea>
 
   <!-- TAB: Lista de miembros -->
   <div id="tab-members">
-    <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)">
+    <div class="card" id="requests-card">
+      <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
+      <p class="hint">Quien entra por el link de invitación aparece aquí. No puede entrar al chat hasta que lo apruebes.</p>
+      <div class="empty" id="requests-empty" style="padding:20px 0">
+        <p>Ninguna solicitud pendiente.</p>
+      </div>
+      <ul class="member-list" id="requests-list"></ul>
+    </div>
+    <div style="display:flex; gap:8px; margin-bottom:16px">
+      <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)" style="margin-bottom:0">
+      <button class="btn btn-outline btn-sm" id="btn-active-filter" onclick="toggleActiveFilter()" title="Mostrar solo en línea">🟢 En línea</button>
+    </div>
     <div class="card" id="members-card">
       <div class="empty" id="members-empty">
         <div class="icon">👥</div>
@@ -291,20 +283,19 @@ Pedro Gómez - 3176543210"></textarea>
     </div>
   </div>
 
-  <!-- TAB: Salas -->
-  <div id="tab-rooms">
-    <div class="rooms-grid" id="rooms-grid"></div>
-  </div>
-
-  <!-- TAB: Preguntas a Rita -->
-  <div id="tab-rita">
-    <div class="card" id="rita-card">
-      <div class="empty" id="rita-empty">
-        <div class="icon">🤖</div>
-        <p>No hay preguntas sin responder</p>
+  <!-- TAB: Ajustes -->
+  <div id="tab-ajustes">
+    <div class="card">
+      <h2>Logo del club</h2>
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <div style="flex: 1;">
+          <input id="logo-input" type="file" accept="image/*" style="display: block; margin-bottom: 12px;" onchange="uploadLogo(event)">
+          <small style="color: var(--text2);">Máximo 2MB. Formatos: PNG, JPG</small>
+        </div>
+        <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
       </div>
-      <div id="rita-questions"></div>
     </div>
+
   </div>
 </div>
 
@@ -318,6 +309,7 @@ let clubId = null;
 let clubCode = null;
 let parsedMembers = [];
 let allMembers = [];
+let filterActive = false;
 
 async function sb(path, opts = {}) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
@@ -359,23 +351,87 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
+}
+
+// Las escrituras sobre miembros van por Edge Function (service_role), no por
+// PostgREST: la funcion valida el token del club por su cuenta, asi ninguna
+// llave publica puede aprobar, agregar ni borrar miembros de un club ajeno.
+async function clubApi(action, extra = {}) {
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/club-members`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${window.__authToken || ''}`
+    },
+    body: JSON.stringify({ action, ...extra })
+  });
+  return res.json();
 }
 
 async function loadStats() {
   const members = await sb(`connect_members?club_id=eq.${clubId}&select=estado`);
-  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=id`);
-  const total = members.length;
+  const requested = members.filter(m => m.estado === 'solicitado').length;
+  const total = members.length - requested;
   const linked = members.filter(m => m.estado === 'vinculado').length;
+  document.getElementById('stat-requests').textContent = requested;
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-linked').textContent = linked;
   document.getElementById('stat-pending').textContent = total - linked;
-  document.getElementById('stat-rooms').textContent = rooms.length;
 }
 
 async function loadMembers() {
   allMembers = await sb(`connect_members?club_id=eq.${clubId}&select=*&order=created_at.desc`);
-  renderMembers(allMembers);
+  renderRequests(allMembers.filter(m => m.estado === 'solicitado'));
+  renderMembers(allMembers.filter(m => m.estado !== 'solicitado'));
+}
+
+function getActivityStatus(lastActivityAt) {
+  if (!lastActivityAt) return 'Sin actividad';
+  const now = new Date();
+  const last = new Date(lastActivityAt);
+  const diffMs = now - last;
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+
+  if (diffMin < 1) return 'En línea ahora';
+  if (diffMin < 5) return `En línea hace ${diffMin}m`;
+  if (diffMin < 60) return `Activo hace ${diffMin}m`;
+  if (diffHr < 24) return `Activo hace ${diffHr}h`;
+  if (diffDay < 7) return `Activo hace ${diffDay}d`;
+  return 'Sin actividad reciente';
+}
+
+function memberRow(m, actions, badge = '') {
+  const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+  const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+  const activity = getActivityStatus(m.last_activity_at);
+  const isActive = m.last_activity_at && (new Date() - new Date(m.last_activity_at)) < 300000; // 5 min
+  return `<li class="member-item">
+    <div class="member-avatar" style="${isActive ? 'background:rgba(34,197,94,.3);color:var(--green)' : ''}">${initials}</div>
+    <div class="member-info">
+      <div class="member-name">${m.nombre} ${badge}</div>
+      <div class="member-phone">${m.telefono}</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:2px">${activity}</div>
+    </div>
+    <div class="member-date">${date}</div>
+    ${actions}
+  </li>`;
+}
+
+function renderRequests(requests) {
+  const list = document.getElementById('requests-list');
+  const vacio = document.getElementById('requests-empty');
+  document.getElementById('requests-count').textContent = requests.length;
+  // La sección se queda siempre a la vista: si desaparecía al no haber
+  // solicitudes, parecía que el botón de aprobar no existía.
+  if (!requests.length) { vacio.style.display = ''; list.innerHTML = ''; return; }
+  vacio.style.display = 'none';
+  list.innerHTML = requests.map(m => memberRow(m,
+    `<button class="btn btn-sm btn-primary" onclick="approveMember('${m.id}')">Aprobar</button>
+     <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">Rechazar</button>`
+  )).join('');
 }
 
 function renderMembers(members) {
@@ -384,46 +440,71 @@ function renderMembers(members) {
   if (!members.length) { list.innerHTML = ''; empty.style.display = ''; return; }
   empty.style.display = 'none';
   list.innerHTML = members.map(m => {
-    const initials = m.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
-    const badge = m.estado === 'vinculado'
+    const badge = (m.estado === 'vinculado'
       ? '<span class="badge badge-linked">Vinculado</span>'
-      : '<span class="badge badge-pending">Pendiente</span>';
-    const date = new Date(m.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
-    return `<li class="member-item">
-      <div class="member-avatar">${initials}</div>
-      <div class="member-info">
-        <div class="member-name">${m.nombre} ${badge}</div>
-        <div class="member-phone">${m.telefono}</div>
-      </div>
-      <div class="member-date">${date}</div>
-      <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>
-    </li>`;
+      : '<span class="badge badge-pending">Sin entrar</span>')
+      + (m.es_admin ? '<span class="badge badge-admin">Admin del chat</span>' : '');
+    return memberRow(
+      m,
+      `<button class="btn btn-sm btn-outline" onclick="toggleAdmin('${m.id}', ${!m.es_admin})" title="${m.es_admin ? 'Quitar como administrador' : 'Hacer administrador del chat'}">${m.es_admin ? '★' : '☆'}</button>
+       <button class="btn btn-sm btn-outline" onclick="removeMember('${m.id}')">✕</button>`,
+      badge
+    );
   }).join('');
+}
+
+async function toggleAdmin(id, hacerAdmin) {
+  const m = allMembers.find(x => x.id === id);
+  const quien = m ? m.nombre : 'este miembro';
+  const aviso = hacerAdmin
+    ? `¿Hacer a ${quien} administrador del chat?\n\nPodrá borrar mensajes de cualquiera y agregar o quitar miembros.`
+    : `¿Quitarle a ${quien} el rol de administrador del chat?`;
+  if (!confirm(aviso)) return;
+  const out = await clubApi('hacer-admin', { memberId: id, esAdmin: hacerAdmin });
+  if (!out.ok) { toast(out.error || 'No se pudo cambiar', true); return; }
+  toast(hacerAdmin ? `${out.nombre} ya es admin del chat` : `${out.nombre} ya no es admin`);
+  await loadMembers();
+}
+
+async function approveMember(id) {
+  const out = await clubApi('aprobar', { memberId: id });
+  if (!out.ok) { toast(out.error || 'No se pudo aprobar', true); return; }
+  const msg = out.notificado
+    ? '✅ Aprobado y notificado por WhatsApp'
+    : '✅ Aprobado (notificación no llegó)';
+  toast(msg);
+  await Promise.all([loadStats(), loadMembers()]);
 }
 
 function filterMembers(q) {
   q = q.toLowerCase();
-  const filtered = allMembers.filter(m =>
-    m.nombre.toLowerCase().includes(q) || m.telefono.includes(q)
+  let filtered = allMembers.filter(m =>
+    m.estado !== 'solicitado' &&
+    (m.nombre.toLowerCase().includes(q) || m.telefono.includes(q))
   );
+  if (filterActive) {
+    filtered = filtered.filter(m =>
+      m.last_activity_at && (new Date() - new Date(m.last_activity_at)) < 300000
+    );
+  }
   renderMembers(filtered);
 }
 
-async function loadRooms() {
-  const rooms = await sb(`connect_rooms?club_id=eq.${clubId}&select=*&order=orden`);
-  const grid = document.getElementById('rooms-grid');
-  if (!rooms.length) {
-    grid.innerHTML = '<div class="empty"><div class="icon">💬</div><p>No hay salas creadas</p></div>';
-    return;
+function toggleActiveFilter() {
+  filterActive = !filterActive;
+  const btn = document.getElementById('btn-active-filter');
+  if (filterActive) {
+    btn.style.background = 'rgba(34,197,94,.2)';
+    btn.style.borderColor = 'var(--green)';
+    btn.style.color = 'var(--green)';
+  } else {
+    btn.style.background = '';
+    btn.style.borderColor = '';
+    btn.style.color = '';
   }
-  grid.innerHTML = rooms.map(r => `
-    <div class="room-card">
-      <div class="room-icon">${r.icono}</div>
-      <div class="room-name">${r.nombre}</div>
-      <div class="room-desc">${r.descripcion || ''}</div>
-    </div>
-  `).join('');
+  filterMembers(document.querySelector('.search-bar').value);
 }
+
 
 function normalizePhone(raw) {
   let digits = raw.replace(/\D/g, '');
@@ -485,19 +566,10 @@ async function addMembers() {
   if (!parsedMembers.length || !clubId) return;
   const btn = document.getElementById('btn-confirm');
   btn.disabled = true; btn.textContent = 'Agregando...';
-  const body = parsedMembers.map(m => ({
-    club_id: clubId,
-    nombre: m.nombre,
-    telefono: m.telefono,
-    estado: 'pendiente'
-  }));
   try {
-    await sb('connect_members', {
-      method: 'POST',
-      body,
-      headers: { 'Prefer': 'return=minimal,resolution=merge-duplicates' }
-    });
-    toast(`${parsedMembers.length} miembros agregados`);
+    const out = await clubApi('agregar', { miembros: parsedMembers });
+    if (!out.ok) throw new Error(out.error || 'No se pudo agregar');
+    toast(`${out.agregados} miembro(s) agregados`);
     document.getElementById('members-input').value = '';
     hidePreview();
     await Promise.all([loadStats(), loadMembers()]);
@@ -507,22 +579,43 @@ async function addMembers() {
   btn.disabled = false; btn.textContent = 'Agregar al club';
 }
 
+async function addOneMember() {
+  const nombre = document.getElementById('uno-nombre').value.trim();
+  const tel = document.getElementById('uno-tel').value.trim();
+  if (!nombre || !tel) { toast('Escribe el nombre y el teléfono', true); return; }
+  const btn = document.getElementById('btn-uno');
+  btn.disabled = true;
+  const out = await clubApi('agregar', { miembros: [{ nombre, telefono: normalizePhone(tel) }] });
+  btn.disabled = false;
+  if (!out.ok) { toast(out.error || 'No se pudo agregar', true); return; }
+  document.getElementById('uno-nombre').value = '';
+  document.getElementById('uno-tel').value = '';
+  toast(`${nombre} agregado al club`);
+  await Promise.all([loadStats(), loadMembers()]);
+}
+
 async function removeMember(id) {
-  if (!confirm('¿Eliminar este miembro?')) return;
-  await sb(`connect_members?id=eq.${id}`, { method: 'DELETE' });
+  const m = allMembers.find(x => x.id === id);
+  const quien = m ? m.nombre : 'este miembro';
+  if (!confirm(`¿Eliminar a ${quien} del club?`)) return;
+  // Los mensajes no se borran solos al eliminar al miembro: la FK los deja
+  // huérfanos y aparecerían como "Anónimo". Es una decisión aparte.
+  const borrarMensajes = m && m.estado !== 'solicitado'
+    ? confirm(`¿Borrar también los mensajes de ${quien}?\n\nAceptar: se borra lo que escribió en el chat.\nCancelar: sus mensajes se quedan.`)
+    : false;
+  const out = await clubApi('eliminar', { memberId: id, borrarMensajes });
+  if (!out.ok) { toast(out.error || 'No se pudo eliminar', true); return; }
   toast('Miembro eliminado');
   await Promise.all([loadStats(), loadMembers()]);
 }
 
 function switchTab(tab) {
   document.querySelectorAll('.tab').forEach((t, i) => {
-    t.classList.toggle('active', ['add', 'members', 'rooms', 'rita'][i] === tab);
+    t.classList.toggle('active', ['members', 'add', 'ajustes'][i] === tab);
   });
-  document.getElementById('tab-add').style.display = tab === 'add' ? '' : 'none';
-  document.getElementById('tab-members').style.display = tab === 'members' ? '' : 'none';
-  document.getElementById('tab-rooms').style.display = tab === 'rooms' ? '' : 'none';
-  document.getElementById('tab-rita').style.display = tab === 'rita' ? '' : 'none';
-  if (tab === 'rita') loadRitaQuestions();
+  document.getElementById('tab-members').classList.toggle('visible', tab === 'members');
+  document.getElementById('tab-add').classList.toggle('visible', tab === 'add');
+  document.getElementById('tab-ajustes').classList.toggle('visible', tab === 'ajustes');
 }
 
 function toast(msg, isError) {
@@ -533,11 +626,18 @@ function toast(msg, isError) {
   setTimeout(() => el.classList.remove('show'), 3000);
 }
 
-function copyInviteLink() {
+async function copyInviteLink() {
   const link = document.getElementById('invite-link');
-  link.select();
-  document.execCommand('copy');
-  toast('Link copiado al portapapeles');
+  try {
+    // execCommand('copy') esta deprecado y en varios navegadores moviles no
+    // copia nada; la API moderna es la que funciona ahi.
+    await navigator.clipboard.writeText(link.value);
+    toast('Link copiado al portapapeles');
+  } catch {
+    link.select();
+    link.setSelectionRange(0, 99999);
+    toast('Mantén presionado el link y elige "Copiar"', true);
+  }
 }
 
 async function uploadLogo(event) {
@@ -553,29 +653,30 @@ async function uploadLogo(event) {
   btn.disabled = true;
 
   try {
-    const filename = `${clubId}-logo.${file.name.split('.').pop()}`;
-    const path = `club-logos/${filename}`;
+    // Bucket 'clubes': es el que existe y tiene politica de subida publica.
+    // El nombre lleva timestamp porque la politica solo permite INSERT, no
+    // UPDATE, asi que reescribir la misma ruta daria 409.
+    const ext = (file.name.split('.').pop() || 'png').toLowerCase();
+    const path = `${clubCode}/${Date.now()}_logo.${ext}`;
 
     const res = await fetch(
-      `${SUPABASE_URL}/storage/v1/object/connect-files/${path}`,
+      `${SUPABASE_URL}/storage/v1/object/clubes/${path}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SUPABASE_KEY}`,
-          'apikey': SUPABASE_KEY
+          'apikey': SUPABASE_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
         },
         body: file
       }
     );
 
-    if (!res.ok) throw new Error('Upload failed');
+    if (!res.ok) throw new Error(`no se pudo subir la imagen (${res.status})`);
 
-    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/connect-files/${path}`;
-
-    await sb(`clubs?id=eq.${clubId}`, {
-      method: 'PATCH',
-      body: { logo_url: logoUrl }
-    });
+    const logoUrl = `${SUPABASE_URL}/storage/v1/object/public/clubes/${path}`;
+    const out = await clubApi('logo', { logoUrl });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
 
     document.getElementById('logo-preview').innerHTML = `<img src="${logoUrl}" style="width: 100%; height: 100%; object-fit: cover;">`;
     toast('Logo actualizado');
@@ -593,77 +694,15 @@ async function loadLogo() {
   }
 }
 
-async function loadRitaQuestions() {
-  const questions = await sb(`connect_rita_dms?club_id=eq.${clubId}&sender=eq.user&select=*,connect_members(nombre,telefono)&order=created_at.desc`);
-  renderRitaQuestions(questions || []);
-}
 
-function renderRitaQuestions(questions) {
-  const container = document.getElementById('rita-questions');
-  const empty = document.getElementById('rita-empty');
 
-  if (!questions.length) {
-    container.innerHTML = '';
-    empty.style.display = '';
-    return;
-  }
-
-  empty.style.display = 'none';
-  container.innerHTML = questions.map(q => {
-    const time = new Date(q.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
-    const memberName = q.connect_members ? q.connect_members.nombre : 'Usuario';
-    const hasResponse = questions.some(m => m.member_id === q.member_id && m.sender === 'rita' && m.id !== q.id);
-
-    return `<div class="rita-question">
-      <div class="rita-q-header">
-        <div>
-          <div class="rita-q-member">${memberName}</div>
-          <div class="rita-q-time">${time}</div>
-        </div>
-      </div>
-      <div class="rita-q-text">${q.content}</div>
-      ${hasResponse ? `<div class="rita-q-response">
-        <div class="rita-q-response-label">Respuesta enviada</div>
-        <div class="rita-q-response-text">✓ Ya respondida</div>
-      </div>` : `<div>
-        <textarea class="rita-q-input" id="resp-${q.id}" placeholder="Escribe la respuesta de Rita..."></textarea>
-        <div class="rita-q-actions">
-          <button class="btn btn-primary" onclick="sendRitaResponse('${q.id}', '${q.member_id}')">Enviar respuesta</button>
-        </div>
-      </div>`}
-    </div>`;
-  }).join('');
-}
-
-async function sendRitaResponse(questionId, memberId) {
-  const textarea = document.getElementById(`resp-${questionId}`);
-  const response = textarea.value.trim();
-  if (!response) return;
-
-  textarea.disabled = true;
-
-  try {
-    await sb('connect_rita_dms', {
-      method: 'POST',
-      body: {
-        member_id: memberId,
-        club_id: clubId,
-        sender: 'rita',
-        content: response
-      }
-    });
-    toast('Respuesta enviada');
-    await loadRitaQuestions();
-  } catch (e) {
-    toast('Error al enviar: ' + e.message, true);
-  }
-
-  textarea.disabled = false;
-}
 
 // ── LOGIN / SEGURIDAD DEL CLUB ─────────────────────────────────────────
 const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-auth';
-const RIDERA_WA = '573104717982'; // WhatsApp de soporte para recuperar clave
+// WhatsApp de Rita: el reseteo de clave lo procesa ella automáticamente
+// (verifica que el número escriba desde el WhatsApp registrado del club),
+// ya no depende de que un humano de soporte lo haga a mano.
+const RITA_WA = '573117896717';
 let loginClubTienePass = false;
 
 async function callAuth(payload) {
@@ -681,7 +720,7 @@ async function loadClubsForLogin() {
   const sel = document.getElementById('login-club');
   const clubs = await sb('clubs?select=id,nombre,codigo&order=nombre.asc');
   if (!clubs || !clubs.length) { sel.innerHTML = '<option value="">No hay clubes</option>'; return; }
-  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
+  sel.innerHTML = '<option value="">— Elige tu club —</option>' + clubs.map(c => `<option value="${c.id}" data-codigo="${(c.codigo||'').replace(/"/g,'')}">${(c.nombre||'Club').replace(/</g,'')}</option>`).join('');
 }
 
 async function onClubSelect() {
@@ -741,11 +780,13 @@ async function doAdminLogin() {
 }
 
 function forgotPass() {
-  if (confirm('Para recuperar tu clave escríbele a Ridera por WhatsApp. ¿Abrir el chat?')) {
-    const club = document.getElementById('login-club');
-    const nombre = club.options[club.selectedIndex]?.text || '';
-    const txt = encodeURIComponent(`Hola, olvidé la clave del panel de administración del club ${nombre}.`);
-    window.open(`https://wa.me/${RIDERA_WA}?text=${txt}`, '_blank');
+  const club = document.getElementById('login-club');
+  const opt = club.options[club.selectedIndex];
+  const codigo = opt?.dataset.codigo || '';
+  if (!codigo) { alert('Elige tu club primero.'); return; }
+  if (confirm('Rita te va a enviar un link para crear una clave nueva, directo por WhatsApp — pero solo si escribes desde el número registrado del club. ¿Abrir el chat?')) {
+    const txt = encodeURIComponent(`Olvidé mi clave del panel de administración del club. Código: ${codigo}`);
+    window.open(`https://wa.me/${RITA_WA}?text=${txt}`, '_blank');
   }
 }
 
@@ -774,7 +815,7 @@ function logoutAdmin() {
 }
 
 async function refreshPanel() {
-  await Promise.all([loadStats(), loadMembers(), loadRooms(), loadLogo(), loadRitaQuestions()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
   toast('Actualizado');
 }
 

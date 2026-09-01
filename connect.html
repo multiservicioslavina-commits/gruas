@@ -64,6 +64,53 @@
   .header-room { font-size: 16px; font-weight: 600; }
   .header-room .room-icon { margin-right: 6px; }
   .header-members { font-size: 11px; color: var(--text2); }
+  .install-btn {
+    background: var(--accent); color: #fff; border: none; border-radius: 6px;
+    padding: 6px 12px; font-size: 12px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0; transition: background .2s;
+  }
+  .install-btn:hover { background: var(--accent2); }
+  .install-btn.hidden { display: none; }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 100;
+    display: none; align-items: center; justify-content: center; padding: 24px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--surface); border-radius: 16px; padding: 24px;
+    max-width: 400px; width: 100%; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal h2 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+  .modal p { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
+  .modal-tabs {
+    display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--border);
+  }
+  .modal-tab {
+    flex: 1; padding: 12px; text-align: center; font-size: 13px; font-weight: 600;
+    border: none; background: none; color: var(--text2); cursor: pointer;
+    border-bottom: 2px solid transparent; transition: all .2s;
+  }
+  .modal-tab.active {
+    color: var(--accent); border-bottom-color: var(--accent);
+  }
+  .modal-content { display: none; }
+  .modal-content.active { display: block; }
+  .modal-content ol { padding-left: 20px; }
+  .modal-content li { margin-bottom: 12px; font-size: 14px; line-height: 1.5; color: var(--text); }
+  .modal-content strong { color: var(--accent); }
+  .modal-buttons {
+    display: flex; gap: 8px; margin-top: 20px;
+  }
+  .modal-btn {
+    flex: 1; padding: 10px; border-radius: 8px; border: none; font-weight: 600;
+    cursor: pointer; font-size: 13px; transition: all .2s;
+  }
+  .modal-btn.primary { background: var(--accent); color: #fff; }
+  .modal-btn.primary:hover { background: var(--accent2); }
+  .modal-btn.secondary { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+  .modal-btn.secondary:hover { background: var(--border); }
 
   /* Rooms drawer */
   .drawer-overlay {
@@ -154,12 +201,186 @@
     padding: 12px 0 6px; font-weight: 500;
   }
 
+  /* Acciones sobre un mensaje propio (mantener presionado) */
+  .msg-editado { font-size: 10px; opacity: .75; margin-right: 6px; font-style: italic; }
+  .msg-acciones-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .msg-acciones-fondo.open { display: flex; }
+  .msg-acciones {
+    width: 100%; background: var(--surface); border-radius: 16px 16px 0 0;
+    padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  }
+  .msg-accion {
+    display: flex; align-items: center; gap: 14px; width: 100%;
+    padding: 15px 22px; background: none; border: none; color: var(--text);
+    font-size: 15px; font-family: inherit; text-align: left; cursor: pointer;
+  }
+  .msg-accion:active { background: var(--surface2); }
+  .msg-accion.danger { color: var(--red); }
+  .msg-accion .ico { font-size: 18px; width: 22px; text-align: center; }
+
+  /* Panel de miembros (solo administradores del chat) */
+  .panel-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .panel-fondo.open { display: flex; }
+  .panel {
+    width: 100%; max-height: 80vh; background: var(--surface);
+    border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .panel-x { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .panel-add {
+    display: flex; gap: 6px; padding: 12px 14px; border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+  .panel-add input {
+    flex: 1; min-width: 0; padding: 9px 11px; border-radius: 8px; font-size: 13px;
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+  }
+  .panel-add input:focus { outline: none; border-color: var(--accent); }
+  .panel-add button {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 9px 14px; font-size: 13px; font-weight: 600; cursor: pointer; flex-shrink: 0;
+  }
+  .panel-body { overflow-y: auto; padding: 6px 0 14px; }
+  .miembro {
+    display: flex; align-items: center; gap: 10px; padding: 11px 18px;
+  }
+  .miembro-info { flex: 1; min-width: 0; }
+  .miembro-nom { font-size: 14px; }
+  .miembro-tel { font-size: 11px; color: var(--text2); }
+  .miembro-tag {
+    font-size: 10px; padding: 2px 7px; border-radius: 10px; margin-left: 5px;
+    background: rgba(251,146,60,.15); color: var(--accent2);
+  }
+  .miembro-tag.admin { background: rgba(59,130,246,.15); color: #60a5fa; }
+  .miembro-btn {
+    background: none; border: 1px solid var(--border); color: var(--text2);
+    border-radius: 7px; padding: 5px 9px; font-size: 12px; cursor: pointer; flex-shrink: 0;
+  }
+  .miembro-btn.ok { border-color: var(--green); color: var(--green); }
+  .miembro-btn.no { border-color: var(--red); color: var(--red); }
+
+  /* Aviso para instalar la app (PWA) */
+  .install-bar {
+    display: none; align-items: center; gap: 10px; flex-shrink: 0;
+    padding: 10px 12px; background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .install-bar.show { display: flex; }
+  .install-text { flex: 1; min-width: 0; font-size: 12px; line-height: 1.35; }
+  .install-text strong { display: block; font-size: 13px; }
+  .install-text span { color: var(--text2); }
+  .install-yes {
+    background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+    flex-shrink: 0;
+  }
+  .install-no {
+    background: none; border: none; color: var(--text2); font-size: 16px;
+    cursor: pointer; padding: 4px 6px; flex-shrink: 0;
+  }
+
+  /* Online members panel */
+  .online-members-btn {
+    background: none; border: none; color: var(--text2); font-size: 18px;
+    cursor: pointer; padding: 4px 8px; display: flex; align-items: center; gap: 4px;
+    border-radius: 6px; transition: background .2s;
+  }
+  .online-members-btn:hover { background: var(--surface2); }
+  .online-members-btn .status-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--green);
+  }
+  .online-members-badge {
+    font-size: 12px; color: var(--green); font-weight: 600;
+  }
+
+  .online-panel-fondo {
+    position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 60;
+    display: none; align-items: flex-end;
+  }
+  .online-panel-fondo.open { display: flex; }
+  .online-panel {
+    width: 100%; max-height: 70vh; background: var(--surface);
+    border-radius: 16px 16px 0 0; display: flex; flex-direction: column;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .online-panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  }
+  .online-panel-title { font-size: 16px; font-weight: 600; }
+  .online-panel-x { background: none; border: none; color: var(--text2); font-size: 18px; cursor: pointer; }
+  .online-panel-body { overflow-y: auto; padding: 8px; }
+  .online-member {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    border-radius: 10px; background: var(--surface2); margin-bottom: 6px;
+  }
+  .online-member-status {
+    width: 10px; height: 10px; border-radius: 50%; background: var(--green); flex-shrink: 0;
+  }
+  .online-member-info { flex: 1; min-width: 0; }
+  .online-member-name { font-size: 14px; font-weight: 500; }
+  .online-member-time { font-size: 11px; color: var(--text2); }
+  .online-empty {
+    padding: 40px 20px; text-align: center; color: var(--text2); font-size: 14px;
+  }
+
   .empty-room {
     flex: 1; display: flex; flex-direction: column; align-items: center;
     justify-content: center; color: var(--text2); text-align: center; padding: 24px;
   }
   .empty-room .icon { font-size: 48px; margin-bottom: 12px; }
   .empty-room p { font-size: 14px; }
+
+  /* Search bar */
+  .search-bar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 8px 12px; display: none; flex-shrink: 0;
+  }
+  .search-bar.show { display: flex; }
+  .search-bar input {
+    flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border);
+    background: var(--surface2); color: var(--text); font-size: 14px;
+    outline: none;
+  }
+  .search-bar input:focus { border-color: var(--accent); }
+  .search-bar input::placeholder { color: var(--text2); }
+  .search-close {
+    background: none; border: none; color: var(--text2); cursor: pointer;
+    padding: 4px 8px; font-size: 18px;
+  }
+  .search-results {
+    font-size: 11px; color: var(--text2); padding: 4px 12px;
+  }
+  .msg-highlight {
+    background: rgba(249, 115, 22, 0.2); border-left: 3px solid var(--accent);
+  }
+
+  /* Connection indicator */
+  .connection-badge {
+    display: flex; align-items: center; gap: 5px; font-size: 11px;
+    padding: 2px 8px; border-radius: 12px; margin-left: auto;
+  }
+  .connection-badge.online {
+    background: rgba(34, 197, 94, 0.15); color: var(--green);
+  }
+  .connection-badge.offline {
+    background: rgba(239, 68, 68, 0.15); color: var(--red);
+  }
+  .connection-badge .dot {
+    width: 6px; height: 6px; border-radius: 50%; display: inline-block;
+  }
+  .connection-badge.online .dot { background: var(--green); }
+  .connection-badge.offline .dot { background: var(--red); }
 
   /* Input bar */
   .input-bar {
@@ -292,9 +513,36 @@
     <button class="menu-btn" onclick="toggleDrawer()">☰</button>
     <div class="header-info">
       <div class="header-club" id="h-club"></div>
-      <div class="header-room" id="h-room"></div>
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <div class="header-room" id="h-room"></div>
+        <div class="connection-badge online" id="connection-badge">
+          <span class="dot"></span>
+          <span>Conectado</span>
+        </div>
+      </div>
     </div>
+    <button class="online-members-btn" id="online-members-btn" onclick="abrirOnlineMembers()" title="Miembros en línea">
+      <div class="status-dot"></div>
+      <span class="online-members-badge" id="online-count">0</span>
+    </button>
+    <button class="cards-btn" onclick="toggleBusqueda()" title="Buscar mensajes">🔍</button>
     <button class="cards-btn" onclick="toggleCards()" title="Tarjetas guardadas">🗂️</button>
+    <button class="install-btn hidden" id="install-header-btn" onclick="showInstallModal()" title="Instalar app">📲</button>
+  </div>
+
+  <div class="install-bar" id="install-bar">
+    <div class="install-text">
+      <strong>Ten el club a un toque</strong>
+      <span id="install-hint">Instálalo en tu pantalla de inicio y entra sin buscar el link.</span>
+    </div>
+    <button class="install-yes" id="install-yes" onclick="instalarApp(event)">Instalar</button>
+    <button class="install-no" onclick="ocultarInstalar()" aria-label="Ahora no">✕</button>
+  </div>
+
+  <div class="search-bar" id="search-bar">
+    <input id="search-input" type="text" placeholder="Buscar mensajes..." onkeyup="buscarMensajes(this.value)" onkeydown="if(event.key==='Enter') event.preventDefault()">
+    <span class="search-results" id="search-results"></span>
+    <button class="search-close" onclick="cerrarBusqueda()">✕</button>
   </div>
 
   <div class="messages" id="messages"></div>
@@ -317,9 +565,17 @@
   </div>
   <div class="drawer-rooms" id="d-rooms"></div>
   <div class="drawer-footer">
-    <a class="drawer-app-link" href="/lyrapp" download="Lyrapp.apk">
+    <a class="drawer-app-link" id="admin-link" href="#" onclick="abrirMiembros(event)" style="display:none">
+      <div class="app-icon" style="background: var(--green);">👥</div>
+      Miembros del club
+    </a>
+    <a class="drawer-app-link" id="install-link" href="#" onclick="instalarApp(event)" style="display:none">
+      <div class="app-icon">📲</div>
+      Instalar en mi celular
+    </a>
+    <a class="drawer-app-link" href="/lyrapp" download="RideraMusic.apk">
       <div class="app-icon" style="background: var(--blue);">🎧</div>
-      Lyrapp - Descargar
+      Ridera Music - Descargar
     </a>
     <button class="drawer-logout" onclick="logout()">Cerrar sesión</button>
   </div>
@@ -350,6 +606,48 @@
 <input id="photo-input" type="file" style="display: none;" accept="image/*" onchange="sendFile(event)">
 <input id="file-input" type="file" style="display: none;" onchange="sendFile(event)">
 
+<div class="panel-fondo" id="miembros-fondo" onclick="cerrarMiembros()">
+  <div class="panel" onclick="event.stopPropagation()">
+    <div class="panel-head">
+      <strong>Miembros del club</strong>
+      <button class="panel-x" onclick="cerrarMiembros()">✕</button>
+    </div>
+    <div class="panel-add">
+      <input id="nuevo-nombre" type="text" placeholder="Nombre" maxlength="50">
+      <input id="nuevo-tel" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+      <button onclick="agregarMiembro()" id="btn-agregar-miembro">Agregar</button>
+    </div>
+    <div class="panel-body" id="miembros-lista"></div>
+  </div>
+</div>
+
+<div class="online-panel-fondo" id="online-panel-fondo" onclick="cerrarOnlineMembers()">
+  <div class="online-panel" onclick="event.stopPropagation()">
+    <div class="online-panel-head">
+      <div class="online-panel-title">En línea ahora</div>
+      <button class="online-panel-x" onclick="cerrarOnlineMembers()">✕</button>
+    </div>
+    <div class="online-panel-body" id="online-members-list"></div>
+  </div>
+</div>
+
+<div class="msg-acciones-fondo" id="msg-acciones-fondo" onclick="cerrarAccionesMensaje()">
+  <div class="msg-acciones" onclick="event.stopPropagation()">
+    <button class="msg-accion" id="accion-editar" onclick="editarMensaje()">
+      <span class="ico">✏️</span> Editar mensaje
+    </button>
+    <button class="msg-accion" id="accion-copiar" onclick="copiarMensaje()">
+      <span class="ico">📋</span> Copiar texto
+    </button>
+    <button class="msg-accion danger" onclick="borrarMensaje()">
+      <span class="ico">🗑️</span> Eliminar mensaje
+    </button>
+    <button class="msg-accion" onclick="cerrarAccionesMensaje()">
+      <span class="ico">✕</span> Cancelar
+    </button>
+  </div>
+</div>
+
 
 <script>
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
@@ -362,7 +660,9 @@ let state = {
   currentRoom: null,
   messages: [],
   realtimeChannel: null,
-  showingCards: false
+  showingCards: false,
+  onlineCountInterval: null,
+  isOnline: true
 };
 
 let isRecording = false;
@@ -432,9 +732,12 @@ async function init() {
   if (saved) {
     try {
       const s = JSON.parse(saved);
-      if (s.clubId === state.club.id) {
+      // Sin token la sesion guardada ya no vale: las de antes solo llevaban
+      // un memberId, que no prueba nada.
+      if (s.clubId === state.club.id && s.token) {
         const members = await sb(`connect_members?id=eq.${s.memberId}&select=*`);
-        if (members.length) {
+        if (members.length && members[0].estado !== 'solicitado') {
+          state.token = s.token;
           state.member = members[0];
           await enterApp();
           return;
@@ -454,28 +757,38 @@ async function login() {
   btn.disabled = true; btn.textContent = 'Verificando...';
   errEl.textContent = '';
 
-  const members = await sb(`connect_members?club_id=eq.${state.club.id}&telefono=eq.${phone}&select=*`);
-  if (!members.length) {
-    errEl.textContent = 'Tu número no está registrado en este club. Pide al admin que te agregue.';
-    btn.disabled = false; btn.textContent = 'Entrar';
-    return;
-  }
-
-  state.member = members[0];
-  localStorage.setItem('connect_session', JSON.stringify({
-    memberId: state.member.id, clubId: state.club.id
-  }));
-
-  // Mark as vinculado if pending
-  if (state.member.estado === 'pendiente') {
-    await sb(`connect_members?id=eq.${state.member.id}`, {
-      method: 'PATCH',
-      body: { estado: 'vinculado', vinculado_at: new Date().toISOString() }
+  // Quien puede entrar lo decide el líder al aprobar, no un código: el
+  // servidor comprueba que el número esté aprobado y devuelve la sesión.
+  let out;
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'sesion-telefono', telefono: phone, clubId: state.club.id })
     });
+    out = await res.json();
+  } catch {
+    out = { error: 'Sin conexión. Intenta de nuevo.' };
   }
 
   btn.disabled = false; btn.textContent = 'Entrar';
+  if (!out.ok) { errEl.textContent = out.error || 'No se pudo entrar.'; return; }
+
+  guardarSesion(out.token, out.miembro);
   await enterApp();
+}
+
+
+
+
+
+
+function guardarSesion(token, miembro) {
+  state.token = token;
+  state.member = { id: miembro.id, nombre: miembro.nombre, es_admin: miembro.es_admin };
+  localStorage.setItem('connect_session', JSON.stringify({
+    token, memberId: miembro.id, clubId: state.club.id
+  }));
 }
 
 async function enterApp() {
@@ -488,6 +801,12 @@ async function enterApp() {
   document.getElementById('h-club').textContent = state.club.nombre;
   document.getElementById('d-club').textContent = state.club.nombre;
   renderDrawerRooms();
+  mostrarEnlaceAdmin();
+
+  // Start updating online counter (debounced to 30s to avoid performance hit)
+  if (state.onlineCountInterval) clearInterval(state.onlineCountInterval);
+  actualizarContadorEnLinea();
+  state.onlineCountInterval = setInterval(actualizarContadorEnLinea, 30000); // Update every 30s
 
   if (state.rooms.length) {
     switchRoom(state.rooms[0].id);
@@ -612,38 +931,88 @@ function renderMessages() {
     const isMine = m.member_id === state.member.id;
 
     if (m.tipo === 'system') {
-      html += `<div class="msg msg-system">${m.contenido}</div>`;
+      html += `<div class="msg msg-system">${escapeHtml(m.contenido)}</div>`;
     } else if (m.es_rita) {
       html += `<div class="msg msg-rita">
         <div class="msg-sender">🤖 Rita</div>
-        ${formatMessage(m.contenido)}
+        ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     } else if (isMine) {
-      html += `<div class="msg msg-mine">
-        ${formatMessage(m.contenido)}
-        <div class="msg-time">${time}</div>
+      // Los propios llevan su id: es lo que permite mantener presionado para
+      // borrarlos o corregirlos.
+      const editado = m.editado_at ? '<span class="msg-editado">editado</span>' : '';
+      html += `<div class="msg msg-mine" data-msg="${m.id}" data-tipo="${m.tipo || 'text'}">
+        ${cuerpoMensaje(m)}
+        <div class="msg-time">${editado}${time}</div>
       </div>`;
     } else {
       const sender = m.connect_members?.nombre || 'Anónimo';
-      html += `<div class="msg msg-other">
-        <div class="msg-sender">${sender}</div>
-        ${formatMessage(m.contenido)}
+      // Un admin del chat tambien puede actuar sobre los ajenos (moderar).
+      const moderable = state.member?.es_admin ? ` data-msg="${m.id}" data-tipo="${m.tipo || 'text'}" data-ajeno="1"` : '';
+      html += `<div class="msg msg-other"${moderable}>
+        <div class="msg-sender">${escapeHtml(sender)}</div>
+        ${cuerpoMensaje(m)}
         <div class="msg-time">${time}</div>
       </div>`;
     }
+  }
+
+  if (state.ritaEscribiendo) {
+    html += `<div class="msg msg-rita"><div class="msg-sender">🤖 Rita</div>escribiendo…</div>`;
   }
 
   container.innerHTML = html;
   scrollToBottom();
 }
 
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
+  ));
+}
+
 function formatMessage(text) {
-  // Convert URLs to clickable links
-  return text.replace(
+  // Escapar SIEMPRE antes de enlazar: el texto lo escribe cualquier miembro
+  // del club, y sin esto un mensaje con HTML se ejecutaba en el navegador
+  // de todos los demas.
+  return escapeHtml(text).replace(
     /(https?:\/\/[^\s]+)/g,
-    '<a href="$1" target="_blank" style="color: var(--blue); text-decoration: underline;">$1</a>'
+    '<a href="$1" target="_blank" rel="noopener noreferrer" style="color: var(--blue); text-decoration: underline;">$1</a>'
   );
+}
+
+function pesoLegible(bytes) {
+  const kb = Number(bytes) / 1024;
+  return kb >= 1024 ? `${(kb / 1024).toFixed(1)} MB` : `${Math.round(kb)} KB`;
+}
+
+// Los adjuntos guardan "url|nombre|tamano" en contenido.
+function renderAdjunto(m) {
+  const [url, nombre, size] = String(m.contenido).split('|');
+  const href = escapeHtml(url);
+  if (m.tipo === 'image') {
+    // El alto tambien va limitado: una foto vertical con solo max-width se
+    // comia la pantalla entera y tapaba el resto de la conversacion.
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer">
+      <img src="${href}" alt="${escapeHtml(nombre)}" loading="lazy"
+           style="max-width:100%;max-height:45vh;object-fit:cover;border-radius:10px;display:block">
+    </a>`;
+  }
+  if (m.tipo === 'voice') {
+    return `<audio controls preload="none" src="${href}" style="max-width:100%"></audio>`;
+  }
+  if (m.tipo === 'video') {
+    return `<video controls preload="metadata" src="${href}" style="max-width:100%;max-height:45vh;border-radius:10px;display:block"></video>`;
+  }
+  return `<a href="${href}" target="_blank" rel="noopener noreferrer" style="color:var(--blue);text-decoration:underline">
+    📎 ${escapeHtml(nombre) || 'Archivo'} <span style="opacity:.7">(${pesoLegible(size)})</span>
+  </a>`;
+}
+
+const TIPOS_ADJUNTO = ['image', 'voice', 'video', 'file'];
+function cuerpoMensaje(m) {
+  return TIPOS_ADJUNTO.includes(m.tipo) ? renderAdjunto(m) : formatMessage(m.contenido);
 }
 
 function scrollToBottom() {
@@ -679,29 +1048,268 @@ async function sendMessage() {
 
   await sb('connect_messages', { method: 'POST', body: msg });
 
-  // Si es la sala de Rita, generar respuesta automática
+  // Actualizar última actividad
+  await sb(`connect_members?id=eq.${state.member.id}`, {
+    method: 'PATCH',
+    body: { last_activity_at: new Date().toISOString() }
+  });
+
+  // Update online counter
+  actualizarContadorEnLinea();
+
+  // En la sala de Rita responde la MISMA Rita de WhatsApp (clima, vías,
+  // talleres, garaje, trámites, sellos...), no una versión aparte. Ella
+  // guarda su respuesta en la sala; aquí solo refrescamos.
   if (state.currentRoom.slug === 'rita') {
+    mostrarRitaEscribiendo(true);
     try {
-      const res = await fetch('https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/rita-respond', {
+      const res = await fetch(`${SB_URL}/functions/v1/rita-whatsapp`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + SB_KEY },
-        body: JSON.stringify({ record: { content: text, member_id: state.member.id, club_id: state.club.id, sender: 'user' } })
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.token || ''}`
+        },
+        body: JSON.stringify({
+          mode: 'club-chat',
+          message: text,
+          roomId: state.currentRoom.id
+        })
       });
       const data = await res.json();
-      if (data.answer) {
-        await sb('connect_messages', { method: 'POST', body: {
-          room_id: state.currentRoom.id,
-          member_id: state.member.id,
-          contenido: data.answer,
-          tipo: 'text',
-          es_rita: true
-        }});
-      }
+      if (!data.ok) console.error('Rita:', data.error);
     } catch (e) {
       console.error('Rita error:', e);
     }
+    mostrarRitaEscribiendo(false);
   }
 }
+
+// El indicador va por bandera y no por un nodo suelto: el poll de la sala
+// reescribe la lista cada 500 ms y se llevaria por delante cualquier
+// elemento añadido a mano.
+function mostrarRitaEscribiendo(activo) {
+  state.ritaEscribiendo = activo;
+  renderMessages();
+}
+
+// ── Borrar / corregir un mensaje propio ────────────────────────────────
+// Los mensajes se repintan cada 500 ms, asi que los escuchadores van
+// delegados en el contenedor: los puestos en cada burbuja se perderian.
+let mensajeActivo = null;
+let pulsacionLarga = null;
+
+function burbujaPropia(target) {
+  const el = target.closest ? target.closest('.msg[data-msg]') : null;
+  return el && !String(el.dataset.msg).startsWith('temp-') ? el : null;
+}
+
+function abrirAccionesMensaje(el) {
+  const ajeno = el.dataset.ajeno === '1';
+  mensajeActivo = { id: el.dataset.msg, tipo: el.dataset.tipo || 'text', ajeno };
+  const esTexto = mensajeActivo.tipo === 'text';
+  // En una foto o un audio no hay texto que editar ni que copiar. Y sobre un
+  // mensaje ajeno un admin puede borrar, nunca reescribir lo que otro dijo.
+  document.getElementById('accion-editar').style.display = (esTexto && !ajeno) ? '' : 'none';
+  document.getElementById('accion-copiar').style.display = esTexto ? '' : 'none';
+  document.getElementById('msg-acciones-fondo').classList.add('open');
+}
+
+function cerrarAccionesMensaje() {
+  mensajeActivo = null;
+  document.getElementById('msg-acciones-fondo').classList.remove('open');
+}
+
+function textoDeMensaje(id) {
+  const m = state.messages.find(x => x.id === id);
+  return m ? m.contenido : '';
+}
+
+async function borrarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  const ajeno = mensajeActivo.ajeno;
+  cerrarAccionesMensaje();
+  const aviso = ajeno
+    ? '¿Eliminar este mensaje de otro miembro? Se borra para todos.'
+    : '¿Eliminar este mensaje? Se borra para todos.';
+  if (!confirm(aviso)) return;
+  // Se quita de una para que no quede medio segundo en pantalla esperando
+  // al siguiente refresco.
+  state.messages = state.messages.filter(m => m.id !== id);
+  renderMessages();
+  const out = await accionMensaje('msg-borrar', { mensajeId: id });
+  if (!out.ok) alert(out.error || 'No se pudo eliminar.');
+}
+
+async function editarMensaje() {
+  if (!mensajeActivo) return;
+  const id = mensajeActivo.id;
+  const actual = textoDeMensaje(id);
+  cerrarAccionesMensaje();
+  const nuevo = prompt('Editar mensaje:', actual);
+  if (nuevo === null) return;
+  if (!nuevo.trim()) { alert('El mensaje no puede quedar vacío. Si querías quitarlo, usa Eliminar.'); return; }
+  const out = await accionMensaje('msg-editar', { mensajeId: id, texto: nuevo });
+  if (!out.ok) alert(out.error || 'No se pudo editar.');
+}
+
+async function copiarMensaje() {
+  if (!mensajeActivo) return;
+  const texto = textoDeMensaje(mensajeActivo.id);
+  cerrarAccionesMensaje();
+  try {
+    await navigator.clipboard.writeText(texto);
+  } catch {
+    alert('Tu navegador no dejó copiar. Mantén presionado el texto y usa Copiar.');
+  }
+}
+
+// ── Panel de miembros (administradores del chat) ───────────────────────
+// El enlace se muestra segun state.member.es_admin, pero eso es solo la
+// vista: cada accion la vuelve a comprobar el servidor.
+function mostrarEnlaceAdmin() {
+  const el = document.getElementById('admin-link');
+  if (el) el.style.display = state.member?.es_admin ? '' : 'none';
+}
+
+async function abrirMiembros(ev) {
+  if (ev) ev.preventDefault();
+  // Cerrar el menu, no alternarlo: recargar la lista no debe reabrirlo.
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('open');
+  document.getElementById('miembros-fondo').classList.add('open');
+  await recargarMiembros();
+}
+
+async function recargarMiembros() {
+  document.getElementById('miembros-lista').innerHTML =
+    '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
+  const out = await accionMensaje('chat-miembros', {});
+  if (!out.ok) {
+    document.getElementById('miembros-lista').innerHTML =
+      `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">${escapeHtml(out.error || 'No se pudo cargar')}</div>`;
+    return;
+  }
+  pintarMiembros(out.miembros || []);
+}
+
+function cerrarMiembros() {
+  document.getElementById('miembros-fondo').classList.remove('open');
+}
+
+function pintarMiembros(lista) {
+  const cont = document.getElementById('miembros-lista');
+  if (!lista.length) {
+    cont.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Todavía no hay miembros.</div>';
+    return;
+  }
+  // Las solicitudes primero: son lo que pide acción.
+  const orden = { solicitado: 0, pendiente: 1, vinculado: 2 };
+  lista.sort((a, b) => (orden[a.estado] ?? 3) - (orden[b.estado] ?? 3));
+
+  cont.innerHTML = lista.map(m => {
+    const yo = m.id === state.member.id;
+    let tag = '';
+    if (m.es_admin) tag = '<span class="miembro-tag admin">Admin</span>';
+    else if (m.estado === 'solicitado') tag = '<span class="miembro-tag">Pide entrar</span>';
+
+    let acciones = '';
+    if (m.estado === 'solicitado') {
+      acciones += `<button class="miembro-btn ok" onclick="aprobarMiembro('${m.id}')">Aprobar</button>`;
+    }
+    // Ni a uno mismo ni a otro admin: eso lo decide el dueño del club.
+    if (!yo && !m.es_admin) {
+      acciones += `<button class="miembro-btn no" onclick="quitarMiembro('${m.id}','${escapeHtml(m.nombre).replace(/'/g, '')}')">Quitar</button>`;
+    }
+    return `<div class="miembro">
+      <div class="miembro-info">
+        <div class="miembro-nom">${escapeHtml(m.nombre)}${tag}</div>
+        <div class="miembro-tel">${escapeHtml(m.telefono)}</div>
+      </div>
+      ${acciones}
+    </div>`;
+  }).join('');
+}
+
+async function agregarMiembro() {
+  const nombre = document.getElementById('nuevo-nombre').value.trim();
+  const telefono = document.getElementById('nuevo-tel').value.trim();
+  if (!nombre || !telefono) { alert('Escribe el nombre y el teléfono.'); return; }
+  const btn = document.getElementById('btn-agregar-miembro');
+  btn.disabled = true;
+  const out = await accionMensaje('chat-agregar', { nombre, telefono });
+  btn.disabled = false;
+  if (!out.ok) { alert(out.error || 'No se pudo agregar.'); return; }
+  document.getElementById('nuevo-nombre').value = '';
+  document.getElementById('nuevo-tel').value = '';
+  await recargarMiembros();
+}
+
+async function aprobarMiembro(id) {
+  const out = await accionMensaje('chat-aprobar', { objetivoId: id });
+  if (!out.ok) { alert(out.error || 'No se pudo aprobar.'); return; }
+  await recargarMiembros();
+}
+
+async function quitarMiembro(id, nombre) {
+  if (!confirm(`¿Quitar a ${nombre} del club?\n\nDejará de ver el chat.`)) return;
+  // Sus mensajes no se van con él: hay que decidirlo aparte. Para un
+  // infiltrado normalmente se quiere que desaparezca también lo que escribió.
+  const borrarMensajes = confirm(
+    `¿Borrar también los mensajes de ${nombre}?\n\nAceptar: se borra todo lo que escribió.\nCancelar: sus mensajes se quedan en el chat.`
+  );
+  const out = await accionMensaje('chat-quitar', { objetivoId: id, borrarMensajes });
+  if (!out.ok) { alert(out.error || 'No se pudo quitar.'); return; }
+  await recargarMiembros();
+}
+
+// El servidor saca la identidad del token, no del cuerpo del mensaje.
+async function accionMensaje(action, extra) {
+  try {
+    const res = await fetch(`${SB_URL}/functions/v1/club-members`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.token || ''}`
+      },
+      body: JSON.stringify({ action, ...extra })
+    });
+    const out = await res.json();
+    if (res.status === 401) {
+      alert('Tu sesión venció. Vuelve a entrar al chat.');
+      logout();
+    }
+    return out;
+  } catch (e) {
+    return { ok: false, error: 'Sin conexión.' };
+  }
+}
+
+(function activarGestosMensaje() {
+  const cont = document.getElementById('messages');
+
+  cont.addEventListener('contextmenu', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    e.preventDefault();
+    abrirAccionesMensaje(el);
+  });
+
+  cont.addEventListener('touchstart', (e) => {
+    const el = burbujaPropia(e.target);
+    if (!el) return;
+    pulsacionLarga = setTimeout(() => {
+      pulsacionLarga = null;
+      if (navigator.vibrate) navigator.vibrate(15);
+      abrirAccionesMensaje(el);
+    }, 450);
+  }, { passive: true });
+
+  const cancelar = () => { if (pulsacionLarga) { clearTimeout(pulsacionLarga); pulsacionLarga = null; } };
+  cont.addEventListener('touchend', cancelar);
+  cont.addEventListener('touchmove', cancelar, { passive: true });
+  cont.addEventListener('scroll', cancelar, { passive: true });
+})();
 
 function handleKey(e) {
   if (e.key === 'Enter' && !e.shiftKey) {
@@ -736,9 +1344,9 @@ async function toggleCards() {
         const datos = c.datos || {};
         const details = Object.entries(datos).map(([k,v]) => `${k}: ${v}`).join(' · ');
         return `<div class="card-item">
-          <div class="card-type">${c.tipo}</div>
-          <div class="card-name">${c.nombre}</div>
-          ${details ? `<div class="card-detail">${details}</div>` : ''}
+          <div class="card-type">${escapeHtml(c.tipo)}</div>
+          <div class="card-name">${escapeHtml(c.nombre)}</div>
+          ${details ? `<div class="card-detail">${escapeHtml(details)}</div>` : ''}
         </div>`;
       }).join('');
     }
@@ -762,88 +1370,101 @@ async function sendFile(event) {
     const filename = `${Date.now()}-${file.name.replace(/[^a-z0-9.-]/gi, '_')}`;
     const path = `${state.club.id}/${state.currentRoom.id}/${filename}`;
 
-    const formData = new FormData();
-    formData.append('file', file);
-
     const res = await fetch(
       `${SB_URL}/storage/v1/object/connect-files/${path}`,
       {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${SB_KEY}`,
-          'apikey': SB_KEY
+          'apikey': SB_KEY,
+          'Content-Type': file.type || 'application/octet-stream'
         },
         body: file
       }
     );
 
-    if (!res.ok) throw new Error('Upload failed');
+    if (!res.ok) throw new Error(`el servidor rechazó la subida (${res.status})`);
 
     const fileUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
-    const msg = `📎 ${file.name} (${(file.size/1024).toFixed(0)} KB)\n${fileUrl}`;
+    const esImagen = (file.type || '').startsWith('image/');
+    const esVideo = (file.type || '').startsWith('video/');
 
-    document.getElementById('msg-input').value = msg;
-    document.getElementById('msg-input').focus();
+    // El archivo se manda solo: antes solo dejaba el texto en la caja y habia
+    // que darle enviar a mano, cosa que no era evidente.
+    await enviarAdjunto(
+      esImagen ? 'image' : esVideo ? 'video' : 'file',
+      fileUrl,
+      file.name,
+      file.size
+    );
   } catch (e) {
     alert('Error al subir archivo: ' + e.message);
   }
 
-  document.getElementById('file-input').value = '';
+  event.target.value = '';
+}
+
+// Guarda un adjunto como mensaje. El contenido lleva la URL y, separado por
+// '|', el nombre y el tamano, para poder pintarlo sin columnas nuevas.
+async function enviarAdjunto(tipo, url, nombre, size) {
+  const contenido = `${url}|${nombre || ''}|${size || 0}`;
+  const msg = {
+    room_id: state.currentRoom.id,
+    member_id: state.member.id,
+    contenido,
+    tipo,
+    es_rita: false
+  };
+  state.messages.push({
+    ...msg,
+    id: 'temp-' + Date.now(),
+    created_at: new Date().toISOString(),
+    connect_members: { nombre: state.member.nombre }
+  });
+  renderMessages();
+  await sb('connect_messages', { method: 'POST', body: msg });
 }
 
 async function toggleVoiceRecording() {
   if (!isRecording) {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      mediaRecorder = new MediaRecorder(stream);
+      // El formato lo decide el navegador: Chrome graba webm y Safari mp4.
+      // Antes se forzaba 'audio/mp4' al armar el Blob, con lo que en Chrome
+      // el archivo quedaba con una extension que no correspondia al contenido.
+      const mime = MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                 : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : '';
+      mediaRecorder = new MediaRecorder(stream, mime ? { mimeType: mime } : undefined);
       audioChunks = [];
 
       mediaRecorder.ondataavailable = (e) => audioChunks.push(e.data);
       mediaRecorder.onstop = async () => {
-        const blob = new Blob(audioChunks, { type: 'audio/mp4' });
-        const duration = mediaRecorder.stream.getTracks()[0]?.getCapabilities ? '?' : '0:00';
-
-        // Enviar el audio como un mensaje de voz
-        const formData = new FormData();
-        formData.append('file', blob, `voice-${Date.now()}.mp4`);
-
+        const real = mediaRecorder.mimeType || mime || 'audio/webm';
+        const blob = new Blob(audioChunks, { type: real });
         const voiceBtn = document.getElementById('voice-btn');
         voiceBtn.disabled = true;
 
         try {
-          // Subir audio a Supabase Storage
-          const filename = `voice-${state.member.id}-${Date.now()}.mp4`;
-          const path = `voices/${filename}`;
+          const ext = real.includes('webm') ? 'webm' : 'mp4';
+          const path = `${state.club.id}/voces/${state.member.id}-${Date.now()}.${ext}`;
 
           const uploadRes = await fetch(`${SB_URL}/storage/v1/object/connect-files/${path}`, {
             method: 'POST',
             headers: {
               'Authorization': `Bearer ${SB_KEY}`,
-              'apikey': SB_KEY
+              'apikey': SB_KEY,
+              'Content-Type': real
             },
             body: blob
           });
 
-          if (uploadRes.ok) {
-            const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
-            const msg = `🎙️ [Nota de voz](${voiceUrl})`;
+          if (!uploadRes.ok) throw new Error(`subida rechazada (${uploadRes.status})`);
 
-            // Enviar como mensaje
-            await sb('connect_messages', {
-              method: 'POST',
-              body: {
-                room_id: state.currentRoom,
-                member_id: state.member.id,
-                content: msg
-              }
-            });
-
-            document.getElementById('msg-input').value = '';
-            await subscribeToRoom(state.currentRoom);
-            scrollToBottom();
-          }
+          const voiceUrl = `${SB_URL}/storage/v1/object/public/connect-files/${path}`;
+          await enviarAdjunto('voice', voiceUrl, 'Nota de voz', blob.size);
+          scrollToBottom();
         } catch (e) {
-          console.error('Error subiendo voz:', e);
+          alert('No se pudo enviar la nota de voz: ' + e.message);
         }
 
         voiceBtn.disabled = false;
@@ -868,6 +1489,8 @@ async function toggleVoiceRecording() {
 function logout() {
   localStorage.removeItem('connect_session');
   if (state.pollInterval) clearInterval(state.pollInterval);
+  if (state.onlineCountInterval) clearInterval(state.onlineCountInterval);
+  if (state.globalPollInterval) clearInterval(state.globalPollInterval);
   location.reload();
 }
 
@@ -928,6 +1551,265 @@ document.addEventListener('DOMContentLoaded', () => {
   phoneInput.addEventListener('keydown', e => {
     if (e.key === 'Enter') login();
   });
+});
+
+// ── Instalar en el celular (PWA) ───────────────────────────────────────
+// Sin service worker el navegador no ofrece instalar, por eso se registra
+// aqui. Es propio del club (sw-connect.js): el de gruas, sin conexion,
+// cae a la home de gruas.
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/sw-connect.js').catch(() => {});
+  });
+}
+
+let promptInstalar = null;
+
+function yaInstalada() {
+  return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+}
+function esIOS() {
+  return /iphone|ipad|ipod/i.test(navigator.userAgent);
+}
+
+// Chrome/Android avisan cuando la app se puede instalar y dejan lanzar el
+// dialogo. Safari en iPhone no: alli solo se puede explicar el gesto.
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  promptInstalar = e;
+  mostrarOpcionInstalar();
+});
+
+window.addEventListener('appinstalled', () => {
+  promptInstalar = null;
+  document.getElementById('install-bar').classList.remove('show');
+  document.getElementById('install-link').style.display = 'none';
+});
+
+function mostrarOpcionInstalar() {
+  if (yaInstalada()) return;
+  document.getElementById('install-link').style.display = '';
+  if (localStorage.getItem('connect_install_off') === '1') return;
+  document.getElementById('install-bar').classList.add('show');
+}
+
+function ocultarInstalar() {
+  localStorage.setItem('connect_install_off', '1');
+  document.getElementById('install-bar').classList.remove('show');
+}
+
+async function instalarApp(ev) {
+  if (ev) ev.preventDefault();
+  if (promptInstalar) {
+    promptInstalar.prompt();
+    const { outcome } = await promptInstalar.userChoice;
+    promptInstalar = null;
+    if (outcome === 'accepted') ocultarInstalar();
+    return;
+  }
+  if (esIOS()) {
+    alert('Para instalarlo en tu iPhone:\n\n1. Toca el botón Compartir (el cuadrito con la flecha ↑)\n2. Desliza y elige "Agregar a inicio"\n3. Toca "Agregar"');
+    return;
+  }
+  alert('Abre el menú de tu navegador (⋮) y elige "Instalar aplicación" o "Agregar a pantalla de inicio".');
+}
+
+// En iPhone no llega beforeinstallprompt, asi que la opcion se ofrece igual
+// y al tocarla se explican los pasos.
+if (esIOS() && !yaInstalada()) mostrarOpcionInstalar();
+
+// Modal de instalación
+function showInstallModal() {
+  const modal = document.getElementById('install-modal');
+  modal.classList.add('open');
+}
+
+// ── Search functionality ───────────────────────────────────────────────
+function toggleBusqueda() {
+  const searchBar = document.getElementById('search-bar');
+  searchBar.classList.toggle('show');
+  if (searchBar.classList.contains('show')) {
+    document.getElementById('search-input').focus();
+  } else {
+    cerrarBusqueda();
+  }
+}
+
+function cerrarBusqueda() {
+  document.getElementById('search-bar').classList.remove('show');
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-results').textContent = '';
+  renderMessages();
+}
+
+function buscarMensajes(query) {
+  if (!query.trim()) {
+    renderMessages();
+    document.getElementById('search-results').textContent = '';
+    return;
+  }
+
+  const regex = new RegExp(query.trim(), 'i');
+  const resultados = state.messages.filter(m => {
+    if (m.tipo === 'text') return regex.test(m.contenido);
+    if (['image', 'video', 'voice', 'file'].includes(m.tipo)) {
+      const [, nombre] = String(m.contenido).split('|');
+      return regex.test(nombre);
+    }
+    return false;
+  });
+
+  document.getElementById('search-results').textContent =
+    resultados.length > 0 ? `${resultados.length} resultado${resultados.length !== 1 ? 's' : ''}` : 'Sin resultados';
+
+  const container = document.getElementById('messages');
+  let html = '';
+  let lastDate = '';
+
+  for (const m of resultados) {
+    const date = new Date(m.created_at);
+    const dateStr = date.toLocaleDateString('es-CO', { day: 'numeric', month: 'long' });
+    if (dateStr !== lastDate) {
+      html += `<div class="msg-date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+
+    const time = date.toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    const isMine = m.member_id === state.member.id;
+    const sender = m.connect_members?.nombre || 'Anónimo';
+
+    html += `<div class="msg msg-other msg-highlight">
+      <div class="msg-sender">${escapeHtml(sender)}</div>
+      ${cuerpoMensaje(m)}
+      <div class="msg-time">${time}</div>
+    </div>`;
+  }
+
+  container.innerHTML = html || '<div class="empty-room"><div class="icon">🔍</div><p>No se encontraron mensajes.</p></div>';
+}
+
+// ── Online members panel ───────────────────────────────────────────────
+async function abrirOnlineMembers(ev) {
+  if (ev) ev.preventDefault();
+  document.getElementById('online-panel-fondo').classList.add('open');
+  await cargarMiembrosEnLinea();
+}
+
+function cerrarOnlineMembers() {
+  document.getElementById('online-panel-fondo').classList.remove('open');
+}
+
+async function cargarMiembrosEnLinea() {
+  const container = document.getElementById('online-members-list');
+  container.innerHTML = '<div style="padding:20px;text-align:center;color:var(--text2);font-size:13px">Cargando…</div>';
+
+  try {
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized query: only fetch linked members with recent activity
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id,nombre,last_activity_at&order=last_activity_at.desc`
+    );
+    pintarMiembrosEnLinea(miembros || []);
+  } catch (e) {
+    container.innerHTML = `<div style="padding:20px;text-align:center;color:var(--red);font-size:13px">Error al cargar</div>`;
+  }
+}
+
+function pintarMiembrosEnLinea(miembros) {
+  const container = document.getElementById('online-members-list');
+
+  if (!miembros.length) {
+    container.innerHTML = '<div class="online-empty">No hay miembros en línea</div>';
+    return;
+  }
+
+  container.innerHTML = miembros.map(m => {
+    const lastActivity = new Date(m.last_activity_at);
+    const ahora = new Date();
+    const minutos = Math.floor((ahora - lastActivity) / 60000);
+    const tiempoTexto = minutos === 0 ? 'Hace un momento' : `Hace ${minutos}m`;
+
+    return `<div class="online-member">
+      <div class="online-member-status"></div>
+      <div class="online-member-info">
+        <div class="online-member-name">${escapeHtml(m.nombre)}</div>
+        <div class="online-member-time">${tiempoTexto}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function actualizarContadorEnLinea() {
+  if (!state.club) return;
+
+  try {
+    const hace5min = new Date(new Date() - 5 * 60 * 1000).toISOString();
+    // Optimized: only count, don't fetch full records
+    const miembros = await sb(
+      `connect_members?club_id=eq.${state.club.id}&estado=eq.vinculado&last_activity_at=gte.${hace5min}&select=id`
+    );
+    document.getElementById('online-count').textContent = (miembros || []).length;
+  } catch (e) {
+    console.error('Error actualizando contador en línea:', e);
+  }
+}
+
+function closeInstallModal() {
+  const modal = document.getElementById('install-modal');
+  modal.classList.remove('open');
+}
+
+function switchInstallTab(tab) {
+  // Tabs
+  document.querySelectorAll('.modal-tab').forEach(t => {
+    t.classList.toggle('active', (t.textContent.includes('Android') && tab === 'android') ||
+                                  (t.textContent.includes('iPhone') && tab === 'ios'));
+  });
+  // Content
+  document.getElementById('install-android').classList.toggle('active', tab === 'android');
+  document.getElementById('install-ios').classList.toggle('active', tab === 'ios');
+}
+
+// Mostrar botón de instalación en header si el dispositivo lo soporta
+window.addEventListener('beforeinstallprompt', () => {
+  document.getElementById('install-header-btn').classList.remove('hidden');
+});
+
+// Cerrar modal al hacer click afuera
+document.getElementById('install-modal')?.addEventListener('click', (e) => {
+  if (e.target.id === 'install-modal') closeInstallModal();
+});
+
+// ── Connection monitoring ─────────────────────────────────────────────
+function actualizarEstadoConexion(online) {
+  state.isOnline = online;
+  const badge = document.getElementById('connection-badge');
+  if (!badge) return;
+
+  if (online) {
+    badge.className = 'connection-badge online';
+    badge.innerHTML = '<span class="dot"></span><span>Conectado</span>';
+  } else {
+    badge.className = 'connection-badge offline';
+    badge.innerHTML = '<span class="dot"></span><span>Sin conexión</span>';
+  }
+}
+
+window.addEventListener('online', () => {
+  actualizarEstadoConexion(true);
+  // Recargar datos cuando se recupera la conexión
+  if (state.currentRoom) {
+    subscribeToRoom(state.currentRoom.id);
+  }
+});
+
+window.addEventListener('offline', () => {
+  actualizarEstadoConexion(false);
+});
+
+// Check initial connection state
+window.addEventListener('load', () => {
+  actualizarEstadoConexion(navigator.onLine);
 });
 
 init();
