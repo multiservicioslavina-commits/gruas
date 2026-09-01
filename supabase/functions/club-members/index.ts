@@ -87,6 +87,38 @@ async function miembroDeSesion(sb: Sb, req: Request): Promise<{ id: string; club
 
 type Sb = ReturnType<typeof createClient>;
 
+// Mensaje de bienvenida al aprobar: incluye el link de entrada y una
+// explicacion de las salas del panel (dinamica, sirve para cualquier club)
+// para que quien entra por primera vez entienda que hay y le den ganas de
+// usarlo. Compartida entre la aprobacion desde el panel del dueño y desde
+// el chat (admin delegado), para que ambas avisen igual.
+async function avisarAprobado(sb: Sb, clubId: string, miembro: { nombre: string; telefono: string }): Promise<boolean> {
+  const { data: club } = await sb.from('clubs').select('nombre,codigo').eq('id', clubId).maybeSingle();
+  const { data: salas } = await sb.from('connect_rooms')
+    .select('nombre,icono').eq('club_id', clubId).order('orden');
+
+  const primerNombre = (miembro.nombre || '').trim().split(/\s+/)[0] || '';
+  const listaSalas = ((salas || []) as { nombre: string; icono: string | null }[])
+    .map((s) => `${s.icono || '💬'} *${s.nombre}*`)
+    .join('\n');
+
+  const mensaje = [
+    `✅ ¡${primerNombre ? primerNombre + ', tu' : 'Tu'} solicitud para entrar a *${(club as any)?.nombre || 'el club'}* fue aprobada! 🏍️`,
+    ``,
+    `Entra al chat aquí 👇`,
+    `https://club.ridera.com.co/${(club as any)?.codigo || ''}`,
+    ``,
+    `Así funciona el panel del club:`,
+    listaSalas || `💬 Chat general con todos los del club`,
+    ``,
+    `Puedes enviar fotos y notas de voz, editar o borrar tus propios mensajes, y en la sala 🤖 Rita le preguntas lo que quieras sobre tu moto: mantenimiento, rutas, trámites, lo que sea.`,
+    ``,
+    `¡Bienvenido a la comunidad! 🙌`,
+  ].join('\n');
+
+  return await notificarLider(miembro.telefono, mensaje);
+}
+
 // La API de WhatsApp solo permite texto libre dentro de las 24h siguientes al
 // ultimo mensaje del lider a Rita. Fuera de esa ventana Meta rechaza el envio,
 // por eso la notificacion es "mejor esfuerzo": el panel siempre muestra las
@@ -380,10 +412,13 @@ Deno.serve(async (req: Request) => {
     if (objetivo.es_admin) return json({ error: 'No puedes tocar a otro administrador. Pídeselo al dueño del club.' }, 403);
 
     if (action === 'chat-aprobar') {
-      const { error } = await sb.from('connect_members')
-        .update({ estado: 'pendiente' }).eq('id', objetivoId).eq('estado', 'solicitado');
+      const { data: aprobado, error } = await sb.from('connect_members')
+        .update({ estado: 'pendiente' }).eq('id', objetivoId).eq('estado', 'solicitado')
+        .select('nombre,telefono').maybeSingle();
       if (error) return json({ error: error.message }, 500);
-      return json({ ok: true });
+      if (!aprobado) return json({ error: 'Esa solicitud ya no existe' }, 404);
+      const notificado = await avisarAprobado(sb, admin.club_id, { nombre: aprobado.nombre, telefono: aprobado.telefono });
+      return json({ ok: true, notificado });
     }
 
     // Al quitar a alguien sus mensajes NO se van solos: la FK es ON DELETE
@@ -424,11 +459,7 @@ Deno.serve(async (req: Request) => {
     if (error) return json({ error: error.message }, 500);
     if (!data) return json({ error: 'Esa solicitud ya no existe' }, 404);
 
-    const { data: club } = await sb.from('clubs').select('nombre,codigo').eq('id', clubId).maybeSingle();
-    const notificadoAlUsuario = await notificarLider(
-      data.telefono,
-      `✅ ¡Tu solicitud para entrar a ${club?.nombre || 'el club'} fue aprobada!\n\nEntra al chat aquí:\nhttps://club.ridera.com.co/${club?.codigo || ''}`,
-    );
+    const notificadoAlUsuario = await avisarAprobado(sb, clubId, { nombre: data.nombre, telefono: data.telefono });
     return json({ ok: true, notificado: notificadoAlUsuario });
   }
 
