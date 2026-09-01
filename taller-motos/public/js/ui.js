@@ -200,6 +200,12 @@ export function field(name, label, { type = 'text', value = '', required = false
     }).join('')}</select>`;
   } else if (rows) {
     control = `<textarea ${common} rows="${rows}">${esc(value)}</textarea>`;
+  } else if (type === 'password') {
+    control = `<div class="pw-wrap"><input ${common} type="password" value="${esc(value)}">` +
+      `<button type="button" class="pw-toggle" tabindex="-1" aria-label="Mostrar contraseña" onclick="` +
+      `const i=this.previousElementSibling;const show=i.type==='password';` +
+      `i.type=show?'text':'password';this.textContent=show?'🙈':'👁️';` +
+      `this.setAttribute('aria-label',show?'Ocultar contraseña':'Mostrar contraseña')">👁️</button></div>`;
   } else {
     control = `<input ${common} type="${type}" value="${esc(value)}"` +
       `${step !== null ? ` step="${step}"` : ''}${min !== null ? ` min="${min}"` : ''}>`;
