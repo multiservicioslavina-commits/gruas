@@ -15,8 +15,10 @@ const METHODS = ['cash', 'transfer', 'card', 'nequi', 'daviplata', 'other'];
 
 export async function loadFullSale(client, workshopId, id) {
   const { rows: [sale] } = await client.query(
-    `SELECT s.*, c.name AS customer_name_saved, c.phone AS customer_phone
+    `SELECT s.*, c.name AS customer_name_saved, c.phone AS customer_phone,
+            u.name AS created_by_name
      FROM sales s LEFT JOIN customers c ON c.id = s.customer_id
+     LEFT JOIN users u ON u.id = s.created_by
      WHERE s.id = $1 AND s.workshop_id = $2`, [id, workshopId]);
   if (!sale) throw notFound('Venta no encontrada');
 
@@ -37,6 +39,10 @@ salesRouter.get('/', wrap(async (req, res) => {
   const where = ['s.workshop_id = $1'];
   if (req.query.from) { params.push(req.query.from); where.push(`s.created_at::date >= $${params.length}`); }
   if (req.query.to)   { params.push(req.query.to);   where.push(`s.created_at::date <= $${params.length}`); }
+  if (req.query.search) {
+    params.push(`%${req.query.search}%`);
+    where.push(`(s.number::text ILIKE $${params.length} OR c.name ILIKE $${params.length} OR s.customer_name ILIKE $${params.length})`);
+  }
 
   const { rows } = await query(
     `SELECT s.*, c.name AS customer_name_saved,

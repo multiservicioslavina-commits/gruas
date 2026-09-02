@@ -7,7 +7,7 @@ import { dashboardView } from './views/dashboard.js';
 import { ordersView, receptionView, orderDetailView } from './views/orders.js';
 import { customersView, customerDetailView, motorcycleHistoryView } from './views/customers.js';
 import { inventoryView } from './views/inventory.js';
-import { salesView } from './views/sales.js';
+import { salesView, saleDetailView, newSaleView } from './views/sales.js';
 import { agendaView } from './views/agenda.js';
 import { reportsView } from './views/reports.js';
 import { accountingView } from './views/accounting.js';
@@ -31,6 +31,8 @@ const ROUTES = [
   { path: /^\/motos\/([^/]+)$/,     view: motorcycleHistoryView, nav: 'clientes' },
   { path: /^\/inventario$/,         view: inventoryView,  nav: 'inventario', plan: 'completo' },
   { path: /^\/ventas$/,             view: salesView,      nav: 'ventas', plan: 'completo' },
+  { path: /^\/ventas\/nueva$/,      view: newSaleView,    nav: 'ventas', plan: 'completo' },
+  { path: /^\/ventas\/([^/]+)$/,    view: saleDetailView, nav: 'ventas', plan: 'completo' },
   { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes',   plan: 'completo' },
   { path: /^\/contabilidad$/,       view: accountingView, nav: 'contabilidad', plan: 'premium' },
   { path: /^\/crm$/,                view: crmView,         nav: 'crm', plan: 'premium' },
