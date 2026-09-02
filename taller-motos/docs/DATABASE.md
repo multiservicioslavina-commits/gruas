@@ -94,7 +94,7 @@ autorizar el trabajo concreto ni disparar la salida de bodega.
 | Tabla | Notas |
 |---|---|
 | `payments` | Abonos; `amount > 0` por restricción |
-| `invoices` | Preparada para facturación electrónica: `external_id` y `payload` guardan lo que devuelva el proveedor cuando se integre |
+| `invoices` | Facturación electrónica DIAN (plan Premium), vía Factus. `external_id` es el número de documento que asigna Factus (no el consecutivo interno), `payload` la respuesta completa. Credenciales en `workshops.factus_*`. Ver `docs/FACTURACION.md` |
 | `accounting_categories`, `cash_entries` | Contabilidad básica (plan Premium): plan de cuentas simple y libro de ingresos/gastos manual. No duplica `payments` ni `purchases` — es para lo que esas dos no cubren (arriendo, servicios, nómina, ventas fuera de una orden). Ver `docs/CODIGOS.md` §Planes |
 
 ### Inventario

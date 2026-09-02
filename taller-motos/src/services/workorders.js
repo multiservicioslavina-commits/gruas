@@ -194,6 +194,9 @@ export async function loadFullWorkOrder(client, workshopId, id) {
   const quotes = await client.query(
     `SELECT id, number, status, total, public_token, sent_at, responded_at, valid_until
      FROM quotes WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
+  const invoices = await client.query(
+    `SELECT id, number, status, total, external_id, cufe, issued_at, created_at
+     FROM invoices WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
   const files = await client.query(
     `SELECT id, kind, stage, filename, mime_type, size_bytes, caption, created_at
      FROM attachments WHERE entity_type = 'work_order' AND entity_id = $1
@@ -210,6 +213,7 @@ export async function loadFullWorkOrder(client, workshopId, id) {
     payments: payments.rows,
     history: history.rows,
     quotes: quotes.rows,
+    invoices: invoices.rows,
     attachments: files.rows
   };
 }

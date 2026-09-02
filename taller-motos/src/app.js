@@ -26,6 +26,7 @@ import { workshopRouter } from './routes/workshop.routes.js';
 import { exportRouter } from './routes/export.routes.js';
 import { accountingRouter } from './routes/accounting.routes.js';
 import { crmRouter } from './routes/crm.routes.js';
+import { invoicesRouter } from './routes/invoices.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -87,6 +88,10 @@ export function createApp() {
   app.use('/api/appointments', appointmentsRouter);
   app.use('/api/work-orders', workOrdersRouter);
   app.use('/api', quotesRouter);              // /work-orders/:id/quotes y /quotes/:id
+  // /work-orders/:id/invoice y /invoices/:id/pdf. Cada ruta se protege con
+  // requirePlan('premium') por dentro (ver invoices.routes.js): montar en
+  // '/api' a secas no filtra por plan las demás rutas de este prefijo.
+  app.use('/api', invoicesRouter);
   app.use('/api/services', servicesRouter);
   // Inventario (repuestos, proveedores, compras) es un módulo del plan
   // Completo en adelante.

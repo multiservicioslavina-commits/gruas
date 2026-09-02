@@ -67,6 +67,19 @@ ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_mode TEXT NOT NULL DEFAU
 ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_phone_number_id TEXT;
 ALTER TABLE workshops ADD COLUMN IF NOT EXISTS whatsapp_access_token    TEXT;
 
+-- Facturación electrónica DIAN (plan Premium), vía Factus. Cada taller
+-- factura bajo su propio NIT: no hay modo "compartido" como con WhatsApp.
+-- `factus_numbering_range_id` es el rango de numeración (la resolución
+-- DIAN) que ese taller eligió usar, entre los que tiene registrados en
+-- Factus.
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_client_id     TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_client_secret TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_username      TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_password      TEXT;
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_environment   TEXT NOT NULL DEFAULT 'sandbox'
+  CHECK (factus_environment IN ('sandbox','production'));
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS factus_numbering_range_id INTEGER;
+
 -- Consecutivos por taller (órdenes, cotizaciones, facturas...).
 CREATE TABLE IF NOT EXISTS sequences (
   workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
@@ -486,8 +499,9 @@ CREATE TABLE IF NOT EXISTS payments (
 CREATE INDEX IF NOT EXISTS payments_wo_idx        ON payments (work_order_id);
 CREATE INDEX IF NOT EXISTS payments_workshop_idx  ON payments (workshop_id, created_at DESC);
 
--- Preparada para facturación electrónica: `external_id` y `payload` guardan
--- lo que devuelva el proveedor cuando se integre (spec §3).
+-- Facturación electrónica DIAN (plan Premium), vía Factus. `external_id`
+-- guarda el número de documento que asigna Factus (no el consecutivo interno
+-- de arriba) y `payload` la respuesta completa (cufe, qr, totales...).
 CREATE TABLE IF NOT EXISTS invoices (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id    UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
@@ -505,6 +519,13 @@ CREATE TABLE IF NOT EXISTS invoices (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS invoices_number_key ON invoices (workshop_id, number);
+CREATE INDEX IF NOT EXISTS invoices_wo_idx ON invoices (work_order_id);
+
+-- La tabla ya existía (preparada desde antes para facturación); estas dos
+-- son nuevas, así que van con ALTER: un CREATE TABLE IF NOT EXISTS no toca
+-- una tabla que ya está creada.
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reference_code TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cufe           TEXT;
 
 -- ── Adjuntos, notificaciones y reglas de mantenimiento ────────────────────
 CREATE TABLE IF NOT EXISTS attachments (

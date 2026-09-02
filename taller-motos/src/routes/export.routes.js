@@ -96,6 +96,10 @@ exportRouter.get('/', wrap(async (req, res) => {
               COALESCE((SELECT json_agg(f ORDER BY f.due_at) FROM follow_ups f
                         WHERE f.lead_id = l.id), '[]'::json) AS seguimientos
        FROM leads l WHERE l.workshop_id = $1 ORDER BY l.created_at`, w),
+    facturas: await filas(
+      `SELECT i.*, o.number AS orden FROM invoices i
+       JOIN work_orders o ON o.id = i.work_order_id
+       WHERE i.workshop_id = $1 ORDER BY i.created_at`, w),
     // De los archivos va la ficha, no el contenido: se descargan aparte.
     archivos: await filas(
       `SELECT id, entity_type, entity_id, kind, stage, filename, mime_type,

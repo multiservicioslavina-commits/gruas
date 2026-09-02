@@ -65,6 +65,40 @@ export async function settingsView() {
     whatsappMode?.addEventListener('change', toggleWhatsappOwn);
     toggleWhatsappOwn();
 
+    // Facturación electrónica (Factus).
+    document.getElementById('factus-form')?.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const button = event.target.querySelector('[type=submit]');
+      button.disabled = true;
+      try {
+        const raw = Object.fromEntries(new FormData(event.target).entries());
+        const updated = await api.patch('/workshop', clean(raw));
+        session.workshop = updated;
+        toast('Credenciales de Factus guardadas');
+        refresh();
+      } catch (err) { toast(err.message, true); button.disabled = false; }
+    });
+
+    document.getElementById('btn-factus-range')?.addEventListener('click', async () => {
+      let ranges;
+      try {
+        ranges = await api.get('/workshop/factus/numbering-ranges');
+      } catch (err) { toast(err.message, true); return; }
+      if (!ranges.length) { toast('Factus no devolvió ningún rango de numeración activo', true); return; }
+
+      const result = await modal({
+        title: 'Rango de numeración',
+        body: field('factus_numbering_range_id', 'Rango', {
+          value: workshop.factus_numbering_range_id || '',
+          options: ranges.map((r) => [r.id,
+            `${r.prefix || ''} · resolución ${r.resolution_number} (${r.from}-${r.to})`])
+        }),
+        confirmText: 'Guardar',
+        onSubmit: (data) => api.patch('/workshop', { factus_numbering_range_id: Number(data.factus_numbering_range_id) })
+      });
+      if (result) { toast('Rango de numeración guardado'); refresh(); }
+    });
+
     // Cambio de mi contraseña.
     document.getElementById('password-form').addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -374,6 +408,42 @@ export async function settingsView() {
         </form>
       </div>
     </div>
+
+    ${workshop.license_plan === 'premium' ? `
+    <div class="card">
+      <div class="card-head"><h2>Facturación electrónica (DIAN)</h2></div>
+      <div class="card-body">
+        <p class="small muted" style="margin-bottom:14px">
+          Se factura con <a href="https://developers.factus.com.co/" target="_blank" rel="noopener">Factus</a>,
+          proveedor autorizado por la DIAN. Necesitas una cuenta con ellos:
+          RUT con responsabilidad de facturación electrónica, certificado
+          digital y resolución de numeración vigente.</p>
+        <form id="factus-form">
+          ${field('factus_environment', 'Ambiente', {
+            value: workshop.factus_environment || 'sandbox',
+            options: [['sandbox', 'Pruebas (sandbox)'], ['production', 'Producción']],
+            hint: 'Prueba primero en sandbox: no genera documentos válidos ante la DIAN.' })}
+          <div class="row">
+            ${field('factus_client_id', 'Client ID', { value: workshop.factus_client_id || '' })}
+            ${field('factus_client_secret', 'Client Secret', { type: 'password',
+              hint: workshop.factus_configured ? 'Ya tienes uno guardado. Déjalo vacío para conservarlo.' : '' })}
+          </div>
+          <div class="row">
+            ${field('factus_username', 'Usuario', { value: workshop.factus_username || '' })}
+            ${field('factus_password', 'Contraseña', { type: 'password',
+              hint: workshop.factus_configured ? 'Déjala vacía para conservarla.' : '' })}
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
+        </form>
+        <div class="kv" style="margin-top:16px">
+          <span class="k">Rango de numeración</span>
+          <span class="v">${workshop.factus_numbering_range_id
+            ? `#${esc(workshop.factus_numbering_range_id)}` : 'Sin elegir'}</span>
+        </div>
+        <button class="btn btn-default btn-sm" id="btn-factus-range" style="margin-top:8px">
+          ${workshop.factus_numbering_range_id ? 'Cambiar rango' : 'Elegir rango de numeración'}</button>
+      </div>
+    </div>` : ''}
 
     <div class="card">
       <div class="card-head"><h2>Tus datos</h2></div>
