@@ -741,6 +741,7 @@ export async function orderDetailView(id) {
                 ? '<button class="btn btn-default btn-sm" id="btn-payment">Registrar pago</button>' : ''}
               ${editable ? '<button class="btn btn-default btn-sm" id="btn-quote">Crear cotización</button>' : ''}
               ${session.workshop?.license_plan === 'premium' && session.can('cashier')
+                && !order.invoices.some((i) => i.status === 'issued')
                 ? '<button class="btn btn-default btn-sm" id="btn-invoice">Facturar electrónicamente</button>' : ''}
             </div>
             ${order.payments.length ? `<div class="timeline" style="margin-top:16px">

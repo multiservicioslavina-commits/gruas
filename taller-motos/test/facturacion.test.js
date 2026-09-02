@@ -4,7 +4,7 @@
 // al servidor de pruebas (loopback) se deja pasar tal cual.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, createWorkshop, closePool } from './helpers.js';
+import { startServer, createWorkshop, addUser, closePool } from './helpers.js';
 
 const server = await startServer();
 test.after(async () => { await server.close(); await closePool(); });
@@ -37,6 +37,31 @@ const datosDian = {
   legal_organization_code: '2', names: 'Cliente Facturable',
   municipality_code: '05001', payment_method_code: '10'
 };
+
+async function conectarFactus(client, overrides = {}) {
+  await client.patch('/api/workshop', {
+    factus_client_id: 'cid', factus_client_secret: 'csecret',
+    factus_username: 'u@t.test', factus_password: 'clave', factus_numbering_range_id: 7,
+    ...overrides
+  });
+}
+
+function mockFactusOk(onBill) {
+  let n = 0;
+  withFactusMock(async (url, options) => {
+    if (url.endsWith('/oauth/token')) {
+      return { ok: true, status: 200, json: async () => ({ access_token: 'tok', refresh_token: 'r', expires_in: 3600 }) };
+    }
+    if (url.endsWith('/v2/bills/validate')) {
+      if (onBill) onBill(JSON.parse(options.body));
+      n += 1;
+      return { ok: true, status: 200, json: async () => ({
+        status: 'OK', data: { number: `SETP99000${n}`, cufe: `cufe-${n}` }
+      }) };
+    }
+    throw new Error(`URL de Factus inesperada: ${url}`);
+  });
+}
 
 test('sin credenciales de Factus, facturar responde con un mensaje claro', async () => {
   const { client } = await createWorkshop(server.url);
@@ -145,4 +170,54 @@ test('descargar el PDF de una factura de otro taller da 404, no la factura ajena
 
   const res = await b.get(`/api/invoices/${creada.body.id}/pdf`);
   assert.equal(res.status, 404);
+});
+
+test('un mecánico no puede facturar, sólo administradores y cajeros', async () => {
+  const { client: admin } = await createWorkshop(server.url);
+  const order = await orderConServicio(admin);
+  await conectarFactus(admin);
+  const { client: mecanico } = await addUser(server.url, admin, 'mechanic');
+
+  mockFactusOk();
+  const res = await mecanico.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(res.status, 403);
+
+  const releida = await admin.get(`/api/work-orders/${order.id}`);
+  assert.equal(releida.body.invoices.length, 0);
+});
+
+test('una orden ya facturada no se puede volver a facturar', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  mockFactusOk();
+  const primera = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(primera.status, 201);
+
+  const segunda = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(segunda.status, 409);
+  assert.match(segunda.body.error, /ya tiene una factura electrónica/);
+
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  assert.equal(releida.body.invoices.length, 1);
+});
+
+test('el descuento de la orden se reparte proporcionalmente entre los ítems', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  const conDescuento = await client.patch(`/api/work-orders/${order.id}`, { discount: 25000 });
+  assert.equal(conDescuento.status, 200);
+
+  let cuerpoEnviado;
+  mockFactusOk((body) => { cuerpoEnviado = body; });
+
+  const res = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+
+  // 25000 de descuento sobre 100000 de mano de obra = 25%.
+  assert.equal(cuerpoEnviado.items.length, 1);
+  assert.equal(cuerpoEnviado.items[0].discount_rate, 25);
 });

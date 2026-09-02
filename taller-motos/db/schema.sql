@@ -527,6 +527,12 @@ CREATE INDEX IF NOT EXISTS invoices_wo_idx ON invoices (work_order_id);
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reference_code TEXT;
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cufe           TEXT;
 
+-- Una orden no puede tener dos facturas electrónicas emitidas a la vez: la
+-- ruta ya lo comprueba antes de llamar a Factus, pero esto lo garantiza
+-- también contra una condición de carrera (doble clic, reintento).
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_wo_issued_key
+  ON invoices (work_order_id) WHERE status = 'issued';
+
 -- ── Adjuntos, notificaciones y reglas de mantenimiento ────────────────────
 CREATE TABLE IF NOT EXISTS attachments (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

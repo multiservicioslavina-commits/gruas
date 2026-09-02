@@ -9,8 +9,8 @@
 import { Router } from 'express';
 import { queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
-import { wrap, notFound, badRequest } from '../lib/errors.js';
-import { requirePlan } from '../middleware/auth.js';
+import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
+import { requirePlan, requireRole } from '../middleware/auth.js';
 import { loadFullWorkOrder } from '../services/workorders.js';
 import { createBill, downloadPdf, credentialsFor } from '../lib/factus.js';
 
@@ -33,7 +33,7 @@ const CUSTOMER_SCHEMA = {
   observation:                    { type: 'string', max: 500 }
 };
 
-invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), wrap(async (req, res) => {
+invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireRole('cashier'), wrap(async (req, res) => {
   assertUuid(req.params.id);
   const data = validate(req.body, CUSTOMER_SCHEMA);
 
@@ -47,22 +47,43 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), wrap(asy
     throw badRequest('Configura primero tu rango de numeración de Factus, en Ajustes → Facturación electrónica.');
   }
 
+  // Una orden ya facturada no se vuelve a facturar: un doble clic o un
+  // reintento no debe generar dos documentos oficiales ante la DIAN, que no
+  // se pueden deshacer desde aquí (haría falta una nota crédito en Factus).
+  const yaFacturada = await queryOne(
+    `SELECT id, external_id FROM invoices WHERE work_order_id = $1 AND status = 'issued'`,
+    [req.params.id]);
+  if (yaFacturada) {
+    throw conflict(`Esta orden ya tiene una factura electrónica (${yaFacturada.external_id}). ` +
+      'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.');
+  }
+
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
 
-  const items = [
+  const lines = [
     ...order.services.filter((s) => s.approved !== false),
     ...order.parts.filter((p) => p.approved !== false)
-  ].map((line, index) => ({
+  ];
+  if (!lines.length) throw badRequest('Esta orden no tiene mano de obra ni repuestos que facturar');
+
+  // El descuento de la orden es un monto global, pero Factus lo pide por
+  // ítem (discount_rate, en %): se reparte proporcionalmente para que la
+  // suma de los ítems ya descontados coincida con lo que de verdad se cobró
+  // (payment_details.amount = order.total). Sin esto, cualquier orden con
+  // descuento facturaba de más y la DIAN podía rechazarla.
+  const bruto = Number(order.labor_total) + Number(order.parts_total);
+  const discountRate = bruto > 0 ? Math.min(100, (Number(order.discount) / bruto) * 100) : 0;
+
+  const items = lines.map((line, index) => ({
     code_reference: `ITEM-${index + 1}`,
     name: line.description,
     quantity: Number(line.quantity),
     price: Number(line.unit_price),
-    discount_rate: 0,
+    discount_rate: discountRate,
     unit_measure_code: '94', // "Unidad" (UN/CEFACT rec. 20): sirve para mano de obra y repuestos por igual.
     standard_code: '999',    // Sin catálogo estándar (UNSPSC/GTIN): el taller no clasifica así sus ítems.
     taxes: [{ code: '01', rate: String(order.tax_rate || 0) }]
   }));
-  if (!items.length) throw badRequest('Esta orden no tiene mano de obra ni repuestos que facturar');
 
   const referenceCode = `${order.public_code}-${Date.now()}`;
   const billInput = {
