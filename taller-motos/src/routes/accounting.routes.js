@@ -131,7 +131,7 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
   if (req.query.type) params.push(req.query.type);
 
   const { rows } = await query(
-    `SELECT * FROM (
+    `SELECT *, count(*) OVER() AS full_count FROM (
        SELECT i.id, 'invoice' AS source,
          CASE WHEN i.kind = 'electronic' THEN 'Factura electrónica' ELSE 'Factura de venta' END AS doc_type,
          CASE WHEN i.kind = 'electronic' THEN i.external_id
@@ -170,7 +170,10 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
      ORDER BY doc_date DESC LIMIT 300`,
     params
   );
-  res.json({ data: rows, total: rows.length });
+  // full_count viene del mismo query (count(*) OVER()): es el total real que
+  // cumple el filtro, no sólo lo que trae esta página de 300.
+  const total = rows.length ? Number(rows[0].full_count) : 0;
+  res.json({ data: rows.map(({ full_count, ...row }) => row), total });
 }));
 
 // ── Balance de caja por periodo ──────────────────────────────────────────
