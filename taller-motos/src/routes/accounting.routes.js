@@ -138,11 +138,14 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
          CASE WHEN i.kind = 'electronic' THEN i.external_id
               ELSE '10-' || lpad(i.number::text, 6, '0') END AS doc_code,
          COALESCE(i.issued_at, i.created_at)::date AS doc_date,
-         cu.name AS counterparty, ('Orden ' || wo.public_code) AS detail,
+         COALESCE(cu.name, sc.name, sa.customer_name) AS counterparty,
+         COALESCE('Orden ' || wo.public_code, 'Venta de mostrador #' || sa.number::text) AS detail,
          i.total AS amount, 'income' AS direction, 'Emitida' AS status
        FROM invoices i
-       JOIN work_orders wo ON wo.id = i.work_order_id
-       LEFT JOIN customers cu ON cu.id = wo.customer_id
+       LEFT JOIN work_orders wo ON wo.id = i.work_order_id
+       LEFT JOIN customers cu   ON cu.id = wo.customer_id
+       LEFT JOIN sales sa       ON sa.id = i.sale_id
+       LEFT JOIN customers sc   ON sc.id = sa.customer_id
        WHERE i.workshop_id = $1 AND i.status = 'issued'
 
        UNION ALL
@@ -190,17 +193,20 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
 
 // ── Balance de caja por periodo ──────────────────────────────────────────
 // Junta las fuentes de movimiento de caja: lo que pagaron los clientes
-// (`payments`), lo que se compró a proveedores (`purchases`), lo que se le
-// pagó a los empleados (`payroll_payments`) y las entradas manuales de este
-// módulo (`cash_entries`).
+// (`payments`), lo que se vendió en mostrador (`sales`), lo que se compró a
+// proveedores (`purchases`), lo que se le pagó a los empleados
+// (`payroll_payments`) y las entradas manuales de este módulo
+// (`cash_entries`).
 accountingRouter.get('/summary', wrap(async (req, res) => {
   const from = req.query.from || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().slice(0, 10);
   const to = req.query.to || today();
   const w = [req.auth.workshopId, from, to];
 
-  const [payments, purchases, payroll, byCategory] = await Promise.all([
+  const [payments, sales, purchases, payroll, byCategory] = await Promise.all([
     query(`SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*)::int AS count FROM payments
+           WHERE workshop_id = $1 AND created_at::date BETWEEN $2 AND $3`, w),
+    query(`SELECT COALESCE(SUM(total), 0) AS total, COUNT(*)::int AS count FROM sales
            WHERE workshop_id = $1 AND created_at::date BETWEEN $2 AND $3`, w),
     query(`SELECT COALESCE(SUM(total), 0) AS total, COUNT(*)::int AS count FROM purchases
            WHERE workshop_id = $1 AND purchased_at::date BETWEEN $2 AND $3`, w),
@@ -214,6 +220,7 @@ accountingRouter.get('/summary', wrap(async (req, res) => {
   ]);
 
   const incomeFromOrders = Number(payments.rows[0].total);
+  const incomeFromSales = Number(sales.rows[0].total);
   const expenseFromPurchases = Number(purchases.rows[0].total);
   const expenseFromPayroll = Number(payroll.rows[0].total);
   const manualIncome = byCategory.rows.filter((r) => r.kind === 'income')
@@ -221,7 +228,7 @@ accountingRouter.get('/summary', wrap(async (req, res) => {
   const manualExpense = byCategory.rows.filter((r) => r.kind === 'expense')
     .map((r) => ({ category: r.category, total: Number(r.total) }));
 
-  const income = incomeFromOrders + manualIncome.reduce((s, r) => s + r.total, 0);
+  const income = incomeFromOrders + incomeFromSales + manualIncome.reduce((s, r) => s + r.total, 0);
   const expense = expenseFromPurchases + expenseFromPayroll + manualExpense.reduce((s, r) => s + r.total, 0);
 
   res.json({
@@ -230,6 +237,7 @@ accountingRouter.get('/summary', wrap(async (req, res) => {
       total: income,
       by_category: [
         { category: 'Órdenes (pagos recibidos)', total: incomeFromOrders },
+        { category: 'Ventas de mostrador', total: incomeFromSales },
         ...manualIncome
       ].filter((r) => r.total > 0)
     },

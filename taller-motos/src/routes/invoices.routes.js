@@ -1,35 +1,39 @@
-// Facturación de una orden, de dos maneras: factura de venta normal (todos
-// los planes, sin la DIAN) o factura electrónica (plan Premium, vía Factus).
+// Facturación de una orden o de una venta de mostrador, de dos maneras:
+// factura de venta normal (todos los planes, sin la DIAN) o factura
+// electrónica (plan Premium, vía Factus; sólo para órdenes por ahora).
 //
-// Ninguna duplica la lógica de órdenes: arman la factura a partir de lo que
-// ya hay cargado (servicios, repuestos, total). La electrónica además pide
-// lo que la DIAN exige y no vive en el modelo del taller — el tipo/número
-// de documento del cliente, su municipio, cómo pagó. `requirePlan(...)` va
-// en cada ruta, no en el router entero: este archivo se monta en '/api'
-// junto a otros que no son de pago (ver src/app.js).
+// Ninguna duplica la lógica de órdenes/ventas: arman la factura a partir de
+// lo que ya hay cargado (servicios, repuestos, total). La electrónica
+// además pide lo que la DIAN exige y no vive en el modelo del taller — el
+// tipo/número de documento del cliente, su municipio, cómo pagó.
+// `requirePlan(...)` va en cada ruta, no en el router entero: este archivo
+// se monta en '/api' junto a otros que no son de pago (ver src/app.js).
 import { Router } from 'express';
 import { queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requirePlan, requireRole } from '../middleware/auth.js';
 import { loadFullWorkOrder } from '../services/workorders.js';
+import { loadFullSale } from './sales.routes.js';
 import { createBill, downloadPdf, credentialsFor } from '../lib/factus.js';
 import { docCode } from '../lib/invoices.js';
 
 export const invoicesRouter = Router();
 
-// Una orden sólo se factura una vez, sea normal o electrónica: compartido
-// entre las dos rutas de creación. Filtra por workshop_id porque el id de la
-// orden llega del cliente antes de que loadFullWorkOrder compruebe a quién
-// pertenece — sin el filtro, un taller podía asomarse al código de la
-// factura de otro con sólo adivinar un UUID de orden ajeno.
-async function assertSinFacturar(workshopId, workOrderId) {
+// Una orden o una venta sólo se factura una vez, sea normal o electrónica:
+// compartido entre las rutas de creación. Filtra por workshop_id porque el
+// id llega del cliente antes de comprobar a quién pertenece — sin el
+// filtro, un taller podía asomarse al código de la factura de otro con
+// sólo adivinar un UUID ajeno.
+async function assertSinFacturar(workshopId, { workOrderId, saleId }) {
+  const columna = workOrderId ? 'work_order_id' : 'sale_id';
+  const valor = workOrderId || saleId;
   const yaFacturada = await queryOne(
     `SELECT id, kind, number, external_id FROM invoices
-     WHERE work_order_id = $1 AND workshop_id = $2 AND status = 'issued'`,
-    [workOrderId, workshopId]);
+     WHERE ${columna} = $1 AND workshop_id = $2 AND status = 'issued'`,
+    [valor, workshopId]);
   if (!yaFacturada) return;
-  throw conflict(`Esta orden ya tiene una factura (${docCode(yaFacturada)}). ` +
+  throw conflict(`Esta ${workOrderId ? 'orden' : 'venta'} ya tiene una factura (${docCode(yaFacturada)}). ` +
     (yaFacturada.kind === 'electronic'
       ? 'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.'
       : 'Para corregirla, contacta a quien te entregó el software.'));
@@ -39,7 +43,7 @@ invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('basico'), re
   assertUuid(req.params.id);
   const data = validate(req.body, { observation: { type: 'string', max: 500 } });
 
-  await assertSinFacturar(req.auth.workshopId, req.params.id);
+  await assertSinFacturar(req.auth.workshopId, { workOrderId: req.params.id });
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
   const lines = [
@@ -56,6 +60,32 @@ invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('basico'), re
                               issued_at, payload)
        VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7) RETURNING *`,
       [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
+       JSON.stringify({ observation: data.observation || null })]
+    );
+    return row;
+  });
+
+  res.status(201).json({ ...invoice, doc_code: docCode(invoice) });
+}));
+
+// Misma idea, para una venta de mostrador: ya está cobrada y con todos sus
+// totales calculados al crearla, así que aquí no hay nada que recomputar.
+invoicesRouter.post('/sales/:id/invoice-normal', requirePlan('basico'), requireRole('cashier'), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, { observation: { type: 'string', max: 500 } });
+
+  await assertSinFacturar(req.auth.workshopId, { saleId: req.params.id });
+
+  const sale = await transaction((client) => loadFullSale(client, req.auth.workshopId, req.params.id));
+  if (!sale.items.length) throw badRequest('Esta venta no tiene ítems que facturar');
+
+  const invoice = await transaction(async (client) => {
+    const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+    const { rows: [row] } = await client.query(
+      `INSERT INTO invoices (workshop_id, sale_id, number, kind, status, subtotal, tax_total, total,
+                              issued_at, payload)
+       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7) RETURNING *`,
+      [req.auth.workshopId, sale.id, num, sale.subtotal, sale.tax_total, sale.total,
        JSON.stringify({ observation: data.observation || null })]
     );
     return row;
@@ -98,7 +128,7 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   // Una orden ya facturada no se vuelve a facturar: un doble clic o un
   // reintento no debe generar dos documentos oficiales ante la DIAN, que no
   // se pueden deshacer desde aquí (haría falta una nota crédito en Factus).
-  await assertSinFacturar(req.auth.workshopId, req.params.id);
+  await assertSinFacturar(req.auth.workshopId, { workOrderId: req.params.id });
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
 

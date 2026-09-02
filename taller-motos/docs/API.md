@@ -217,6 +217,18 @@ se responde una vez, y no después de su fecha de validez.
 En un movimiento de tipo `adjust`, `quantity` es **el conteo físico real**: el
 sistema registra la diferencia contra lo que tenía.
 
+## Ventas de mostrador
+
+| Método | Ruta | Descripción |
+|---|---|---|
+| `GET` | `/sales` | Listado de ventas |
+| `GET` | `/sales/:id` | Una venta con sus ítems y facturas |
+| `POST` | `/sales` | Registra una venta y descuenta inventario (`items: [{part_id, quantity, unit_price?}]`) |
+| `POST` | `/sales/:id/invoice-normal` | Genera la factura de venta (código 10) de esa venta |
+
+Igual que en una orden, `unit_price` es opcional: si no se manda, se toma el
+precio del repuesto. Una venta sólo admite una factura.
+
 ## Adjuntos
 
 | Método | Ruta | Descripción |
