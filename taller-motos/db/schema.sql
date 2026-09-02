@@ -482,6 +482,43 @@ CREATE TABLE IF NOT EXISTS approvals (
 
 CREATE INDEX IF NOT EXISTS approvals_quote_idx ON approvals (quote_id);
 
+-- ── Ventas de mostrador (todos los planes) ─────────────────────────────────
+-- Venta directa de repuestos sin pasar por una orden de trabajo: el taller
+-- también vende mostrador (un cliente que sólo necesita un repuesto o un
+-- accesorio, sin que su moto entre a reparación). Se cobra al momento —a
+-- diferencia de una orden, no tiene saldo pendiente— y descuenta inventario
+-- igual que un repuesto cargado a una orden.
+CREATE TABLE IF NOT EXISTS sales (
+  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id    UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  number         INTEGER NOT NULL,
+  customer_id    UUID REFERENCES customers(id) ON DELETE SET NULL,
+  customer_name  TEXT,
+  subtotal       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  discount       NUMERIC(12,2) NOT NULL DEFAULT 0,
+  tax_rate       NUMERIC(5,2) NOT NULL DEFAULT 0,
+  tax_total      NUMERIC(12,2) NOT NULL DEFAULT 0,
+  total          NUMERIC(12,2) NOT NULL DEFAULT 0,
+  payment_method TEXT NOT NULL DEFAULT 'cash'
+                 CHECK (payment_method IN ('cash','transfer','card','nequi','daviplata','other')),
+  created_by     UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS sales_number_key ON sales (workshop_id, number);
+CREATE INDEX IF NOT EXISTS sales_workshop_idx ON sales (workshop_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS sale_items (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  sale_id      UUID NOT NULL REFERENCES sales(id) ON DELETE CASCADE,
+  part_id      UUID REFERENCES parts(id) ON DELETE SET NULL,
+  description  TEXT NOT NULL,
+  quantity     NUMERIC(12,2) NOT NULL DEFAULT 1,
+  unit_price   NUMERIC(12,2) NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id);
+
 -- ── Pagos y facturación ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS payments (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -540,6 +577,18 @@ ALTER TABLE invoices ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'electr
 -- garantiza también contra una condición de carrera (doble clic, reintento).
 CREATE UNIQUE INDEX IF NOT EXISTS invoices_wo_issued_key
   ON invoices (work_order_id) WHERE status = 'issued';
+
+-- Una factura también puede venir de una venta de mostrador, no sólo de una
+-- orden: work_order_id se vuelve opcional y se agrega sale_id. La ruta que
+-- inserta cada fila es la única que decide cuál de los dos se llena —no hay
+-- una restricción CHECK que lo obligue a nivel de base de datos, para no
+-- arriesgar el reinicio de esta migración en producción con un ALTER que no
+-- es idempotente si ya existiera con otro nombre.
+ALTER TABLE invoices ALTER COLUMN work_order_id DROP NOT NULL;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS sale_id UUID REFERENCES sales(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS invoices_sale_idx ON invoices (sale_id);
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_sale_issued_key
+  ON invoices (sale_id) WHERE status = 'issued';
 
 -- ── Adjuntos, notificaciones y reglas de mantenimiento ────────────────────
 CREATE TABLE IF NOT EXISTS attachments (

@@ -1,6 +1,7 @@
 # Facturación
 
-Desde una orden de trabajo se puede emitir un comprobante de venta de dos
+Desde una orden de trabajo o una venta de mostrador (ver
+[MANUAL.md](MANUAL.md#ventas)) se puede emitir un comprobante de venta de dos
 maneras, según el plan del taller:
 
 | Tipo | Código | Plan | Qué es |
@@ -8,11 +9,13 @@ maneras, según el plan del taller:
 | **Factura de venta** | `10` | Básico | Comprobante propio del taller, con su propio consecutivo. No pasa por la DIAN. |
 | **Factura electrónica** | `1010` | Premium | Documento válido ante la DIAN, firmado y transmitido vía [Factus](https://www.factus.com.co/) (proveedor tecnológico autorizado). |
 
-Una orden sólo admite **una** factura, de cualquiera de los dos tipos —no
-se puede facturar dos veces la misma orden—. El resto de este documento
-describe la electrónica, que es la que exige configuración externa; la
-normal no necesita nada de esto: el botón "Factura de venta" en la orden
-la genera al toque, con los datos que la orden ya tiene.
+Una orden o una venta sólo admite **una** factura, de cualquiera de los dos
+tipos —no se puede facturar dos veces el mismo origen—. Por ahora la
+factura electrónica sólo aplica a órdenes; las ventas de mostrador sólo
+emiten factura de venta normal. El resto de este documento describe la
+electrónica, que es la que exige configuración externa; la normal no
+necesita nada de esto: el botón "Factura de venta" (en la orden o en la
+venta) la genera al toque, con los datos que ya tiene.
 
 ---
 

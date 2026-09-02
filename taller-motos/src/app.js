@@ -27,6 +27,7 @@ import { exportRouter } from './routes/export.routes.js';
 import { accountingRouter } from './routes/accounting.routes.js';
 import { crmRouter } from './routes/crm.routes.js';
 import { payrollRouter } from './routes/payroll.routes.js';
+import { salesRouter } from './routes/sales.routes.js';
 import { invoicesRouter } from './routes/invoices.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -99,6 +100,9 @@ export function createApp() {
   app.use('/api/parts', requirePlan('completo'), partsRouter);
   app.use('/api/suppliers', requirePlan('completo'), suppliersRouter);
   app.use('/api/purchases', requirePlan('completo'), purchasesRouter);
+  // Ventas de mostrador vende del mismo inventario, así que va con el mismo
+  // plan que Inventario — no tendría mucho sentido sin él.
+  app.use('/api/sales', requirePlan('completo'), salesRouter);
   app.use('/api/maintenance-rules', maintenanceRouter);
   app.use('/api/attachments', attachmentsRouter);
   app.use('/api/reports', reportsRouter);

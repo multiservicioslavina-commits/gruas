@@ -155,6 +155,15 @@ súbelo de nuevo con **Cargar CSV**: si un repuesto ya existe (mismo SKU) lo
 actualiza, si no, lo crea. Los cambios de existencia quedan en el historial
 de movimientos del repuesto, igual que un ajuste manual.
 
+### Ventas
+
+Para cuando alguien llega al mostrador a comprar un repuesto sin dejar la
+moto: **Nueva venta**, eliges los repuestos y la cantidad, y de una vez
+descuenta el inventario. No pasa por una orden de trabajo.
+
+Cada venta se puede facturar con el mismo botón **Facturar** que usan las
+órdenes (factura de venta código 10, ver [FACTURACION.md](FACTURACION.md)).
+
 ### Reportes
 
 Elige el periodo. Verás cuánto facturaste, cuánto fue mano de obra y cuánto
