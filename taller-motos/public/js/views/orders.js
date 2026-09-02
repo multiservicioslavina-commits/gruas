@@ -675,7 +675,22 @@ export async function orderDetailView(id) {
                 data-kind="${kind}" title="Quitar">✕</button></td>` : '<td></td>'}
     </tr>`;
 
+  const w = session.workshop || {};
+  const letterhead = `
+    <div class="print-only" style="align-items:center;gap:14px;margin-bottom:16px;
+                                    border-bottom:2px solid #000;padding-bottom:12px">
+      ${w.logo_url ? `<img src="/api/public/workshop/${esc(w.id)}/logo"
+           style="width:64px;height:64px;object-fit:contain">` : ''}
+      <div>
+        <div style="font-weight:700;font-size:1.1rem">${esc(w.legal_name || w.name || '')}</div>
+        ${w.tax_id ? `<div>NIT ${esc(w.tax_id)}</div>` : ''}
+        <div>${[w.address, w.city].filter(Boolean).map(esc).join(', ')}
+          ${w.phone ? ` · Tel. ${esc(w.phone)}` : ''}</div>
+      </div>
+    </div>`;
+
   return `
+    ${letterhead}
     <div class="page-head">
       <div>
         <h1>Orden #${esc(order.number)}
@@ -755,7 +770,7 @@ export async function orderDetailView(id) {
               ${session.can('cashier', 'reception') && order.status !== 'cancelled'
                 ? '<button class="btn btn-default btn-sm" id="btn-payment">Registrar pago</button>' : ''}
               ${editable ? '<button class="btn btn-default btn-sm" id="btn-quote">Crear cotización</button>' : ''}
-              ${session.hasPlan('completo') && session.can('cashier')
+              ${session.can('cashier')
                 && !order.invoices.some((i) => i.status === 'issued')
                 ? '<button class="btn btn-default btn-sm" id="btn-invoice-normal">Factura de venta</button>' : ''}
               ${session.hasPlan('premium') && session.can('cashier')

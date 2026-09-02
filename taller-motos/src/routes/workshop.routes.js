@@ -1,12 +1,28 @@
 // Configuración del taller (spec §3: empresa, impuestos, parámetros).
 import { Router } from 'express';
+import multer from 'multer';
+import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
+import { join, extname, resolve } from 'node:path';
 import { queryOne } from '../db.js';
 import { validate } from '../lib/validate.js';
 import { wrap, badRequest } from '../lib/errors.js';
 import { requireRole, requirePlan } from '../middleware/auth.js';
 import { listNumberingRanges } from '../lib/factus.js';
+import { config } from '../config.js';
 
 export const workshopRouter = Router();
+
+const LOGO_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/svg+xml'];
+const logoUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * 1024 * 1024 },
+  fileFilter(_req, file, cb) {
+    if (!LOGO_MIME.includes(file.mimetype)) {
+      return cb(badRequest(`Tipo de imagen no permitido: ${file.mimetype}`));
+    }
+    cb(null, true);
+  }
+});
 
 // El token de WhatsApp y las credenciales de Factus no deben volver al
 // navegador: sólo el servidor los necesita para llamar a esas APIs.
@@ -37,7 +53,6 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
     currency:   { type: 'string', max: 5 },
     tax_rate:   { type: 'number', min: 0, max: 100 },
     timezone:   { type: 'string', max: 60 },
-    logo_url:   { type: 'string', max: 500 },
     settings:   { type: 'object' },
     whatsapp_mode:            { type: 'string', enum: ['off', 'ridera', 'own'] },
     whatsapp_phone_number_id: { type: 'string', max: 60 },
@@ -59,6 +74,29 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
   const row = await queryOne(
     `UPDATE workshops SET ${sets.join(', ')}, updated_at = NOW()
      WHERE id = $${values.length} RETURNING *`, values);
+  res.json(redact(row));
+}));
+
+// Logo del taller: un solo archivo por taller (se reemplaza el anterior si
+// ya había uno), servido sin autenticación en /api/public/workshop/:id/logo
+// para que aparezca en la factura impresa y en las páginas públicas del
+// cliente (seguimiento, cotizaciones) sin pedirle que inicie sesión.
+workshopRouter.post('/logo', requireRole(), logoUpload.single('logo'), wrap(async (req, res) => {
+  if (!req.file) throw badRequest('No enviaste ninguna imagen');
+
+  const dir = join(resolve(config.uploads.dir), req.auth.workshopId);
+  mkdirSync(dir, { recursive: true });
+  // Se borra cualquier logo.* anterior: sólo hay uno vigente por taller.
+  for (const name of readdirSync(dir)) {
+    if (name.startsWith('logo.')) unlinkSync(join(dir, name));
+  }
+  const ext = extname(req.file.originalname).toLowerCase() || '.png';
+  const filename = `logo${ext}`;
+  writeFileSync(join(dir, filename), req.file.buffer);
+
+  const row = await queryOne(
+    `UPDATE workshops SET logo_url = $1, updated_at = NOW() WHERE id = $2 RETURNING *`,
+    [filename, req.auth.workshopId]);
   res.json(redact(row));
 }));
 

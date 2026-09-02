@@ -600,10 +600,12 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .dash-cards { grid-template-columns: 1fr; }
 }
 
+.print-only { display: none; }
 @media print {
   .sidebar, .topbar, .sidebar-overlay, .no-print, .toast { display: none !important; }
   .main-wrap { margin-left: 0 !important; }
   body { background: #fff; }
   .card { box-shadow: none; border-color: #ccc; break-inside: avoid; }
   main { max-width: 100%; padding: 0; }
+  .print-only { display: flex !important; }
 }

@@ -29,6 +29,22 @@ export async function settingsView() {
     field('specialty', 'Especialidad (mecánicos)', { value: user.specialty || '' });
 
   onMount(() => {
+    // Logo del taller.
+    document.getElementById('btn-logo')?.addEventListener('click', () =>
+      document.getElementById('logo-input').click());
+    document.getElementById('logo-input')?.addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const datos = new FormData();
+      datos.append('logo', file);
+      try {
+        const updated = await api.upload('/workshop/logo', datos);
+        session.workshop = updated;
+        toast('Logo actualizado');
+        refresh();
+      } catch (err) { toast(err.message, true); }
+    });
+
     // Datos del taller.
     document.getElementById('workshop-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -283,7 +299,20 @@ export async function settingsView() {
       <div class="card">
         <div class="card-head"><h2>Datos del taller</h2></div>
         <div class="card-body">
-          ${isAdmin ? `<form id="workshop-form">
+          ${isAdmin ? `
+            <div class="row" style="align-items:center;margin-bottom:14px">
+              <img id="logo-preview" src="${workshop.logo_url ? `/api/public/workshop/${esc(workshop.id)}/logo?v=${Date.now()}` : ''}"
+                   alt="Logo del taller"
+                   style="width:64px;height:64px;object-fit:contain;border-radius:8px;
+                          border:1px solid var(--border);background:#fff;${workshop.logo_url ? '' : 'display:none'}">
+              <div>
+                <button type="button" class="btn btn-default btn-sm" id="btn-logo">
+                  ${workshop.logo_url ? 'Cambiar logo' : 'Subir logo'}</button>
+                <input type="file" id="logo-input" accept="image/png,image/jpeg,image/webp,image/svg+xml" hidden>
+                <p class="faint" style="margin-top:4px">Aparece en la factura de venta impresa. Máx. 2MB.</p>
+              </div>
+            </div>
+            <form id="workshop-form">
             ${field('name', 'Nombre', { required: true, value: workshop.name })}
             <div class="row">
               ${field('legal_name', 'Razón social', { value: workshop.legal_name || '' })}
