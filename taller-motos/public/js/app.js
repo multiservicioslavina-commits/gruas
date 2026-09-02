@@ -25,13 +25,35 @@ const ROUTES = [
   { path: /^\/clientes$/,           view: customersView,  nav: 'clientes' },
   { path: /^\/clientes\/([^/]+)$/,  view: customerDetailView, nav: 'clientes' },
   { path: /^\/motos\/([^/]+)$/,     view: motorcycleHistoryView, nav: 'clientes' },
-  { path: /^\/inventario$/,         view: inventoryView,  nav: 'inventario' },
-  { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes' },
+  { path: /^\/inventario$/,         view: inventoryView,  nav: 'inventario', plan: 'completo' },
+  { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes',   plan: 'completo' },
   { path: /^\/ajustes$/,            view: settingsView,   nav: 'ajustes' }
 ];
 
 function ni(d) {
   return `<svg class="ni" viewBox="0 0 24 24">${d}</svg>`;
+}
+
+// Talleres sin plan asignado (instalaciones sin código, o activados antes
+// de que existiera este control) mantienen acceso completo: nunca se le
+// cierra una función a quien nunca compró un plan.
+const PLAN_RANK = { basico: 0, completo: 1, premium: 2 };
+function entitled(minPlan) {
+  if (!minPlan) return true;
+  const plan = session.workshop?.license_plan;
+  if (!plan) return true;
+  return (PLAN_RANK[plan] ?? PLAN_RANK.completo) >= PLAN_RANK[minPlan];
+}
+
+function upsellCard(minPlan) {
+  const nombre = minPlan === 'premium' ? 'Premium' : 'Completo';
+  return `<div class="centered"><div class="panel card"><div class="card-body center">
+    <h2>Función del plan ${esc(nombre)}</h2>
+    <p class="muted" style="margin:10px 0 18px">Tu taller tiene el plan
+      ${esc(session.workshop?.license_plan || 'básico')}. Pide un código del
+      plan ${esc(nombre)} a quien te entregó el software para desbloquear esto.</p>
+    <a class="btn btn-primary" href="#/">Volver al panel</a>
+  </div></div></div>`;
 }
 
 const NAV = [
@@ -102,7 +124,8 @@ function shell(active, content) {
         <div class="brand-text">TALLER<b>MOTOS</b></div>
       </div>
       <nav class="sidebar-nav">
-        ${NAV.map(([key, href, label, icon]) =>
+        ${NAV.filter(([key]) => entitled(ROUTES.find((r) => r.nav === key)?.plan))
+          .map(([key, href, label, icon]) =>
           `<a href="#${href}" class="nav-item${active === key ? ' on' : ''}" data-key="${key}">
             ${icon}<span>${label}</span></a>`).join('')}
       </nav>
@@ -201,6 +224,11 @@ async function render() {
 
   if (route.open && session.user && ['/entrar', '/registrar'].includes(path)) {
     location.hash = '#/';
+    return;
+  }
+
+  if (route.plan && !entitled(route.plan)) {
+    paint(route, upsellCard(route.plan));
     return;
   }
 

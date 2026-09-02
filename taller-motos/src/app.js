@@ -5,9 +5,10 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { config, isProduction } from './config.js';
 import { ApiError } from './lib/errors.js';
-import { requireAuth, requireLicense } from './middleware/auth.js';
+import { requireAuth, requireLicense, requirePlan } from './middleware/auth.js';
 
 import { authRouter } from './routes/auth.routes.js';
+import { licenseAdminRouter } from './routes/license-admin.routes.js';
 import { customersRouter } from './routes/customers.routes.js';
 import { motorcyclesRouter } from './routes/motorcycles.routes.js';
 import { appointmentsRouter } from './routes/appointments.routes.js';
@@ -69,6 +70,7 @@ export function createApp() {
   // Públicas: el cliente del taller no tiene cuenta.
   app.use('/api/auth', authRouter);
   app.use('/api/public', publicRouter);
+  app.use('/api/license-admin', licenseAdminRouter);
 
   // Integraciones externas (llave de API).
   app.use('/api/integration/v1', integrationRouter);
@@ -84,9 +86,11 @@ export function createApp() {
   app.use('/api/work-orders', workOrdersRouter);
   app.use('/api', quotesRouter);              // /work-orders/:id/quotes y /quotes/:id
   app.use('/api/services', servicesRouter);
-  app.use('/api/parts', partsRouter);
-  app.use('/api/suppliers', suppliersRouter);
-  app.use('/api/purchases', purchasesRouter);
+  // Inventario (repuestos, proveedores, compras) es un módulo del plan
+  // Completo en adelante.
+  app.use('/api/parts', requirePlan('completo'), partsRouter);
+  app.use('/api/suppliers', requirePlan('completo'), suppliersRouter);
+  app.use('/api/purchases', requirePlan('completo'), purchasesRouter);
   app.use('/api/maintenance-rules', maintenanceRouter);
   app.use('/api/attachments', attachmentsRouter);
   app.use('/api/reports', reportsRouter);

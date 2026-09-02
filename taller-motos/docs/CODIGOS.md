@@ -1,24 +1,37 @@
 # Códigos de activación
 
 Sirven para que el software no se use sin tu permiso: quien lo instale o quiera
-registrar un taller necesita un código que sólo tú puedes emitir.
+registrar un taller necesita un código que sólo tú puedes emitir. También
+determinan el **plan** del taller: qué módulos ve (ver más abajo).
 
 ---
 
 ## Cómo funciona
 
-Un código es un texto firmado criptográficamente. Lleva dentro a quién se lo
-diste y hasta cuándo vale, y **no se puede fabricar sin tu llave privada**.
+El código en sí es corto y al azar —tipo `TM-C4X9-K3M7`—, para poder dictarlo
+por teléfono o pasarlo por WhatsApp sin copiar y pegar. No lleva nada
+codificado adentro: el servidor guarda en una tabla a qué taller, plan y
+plazo corresponde cada uno.
 
-Hay dos llaves:
+Para que **emitirlo** siga sin necesitar tu llave privada en el servidor
+(ese es el punto: que nadie con acceso al servidor pueda fabricar códigos),
+el script de emisión no genera el código él solo. En cambio:
+
+1. Firma una **solicitud** ("quiero un código para tal taller, tal plan,
+   tantos días") con tu llave privada — eso pasa en tu computador.
+2. Se la manda al servidor.
+3. El servidor comprueba la firma con la llave pública que ya tiene
+   configurada, y sólo si es válida, genera el código y lo guarda.
+
+Hay dos llaves, igual que antes:
 
 | Llave | Dónde vive | Para qué |
 |---|---|---|
-| **Privada** | Sólo en tu computador | Emitir códigos |
-| **Pública** | En el servidor | Comprobar códigos (no puede crearlos) |
+| **Privada** | Sólo en tu computador | Firmar solicitudes de emisión |
+| **Pública** | En el servidor | Comprobar la firma (no puede crear códigos) |
 
-Que la pública esté en el servidor no es un riesgo: comprobar una firma y
-crearla son operaciones distintas.
+Por eso emitir un código **necesita internet**: el paso 2 de arriba habla con
+tu servidor. A cambio, el código que le das al taller es corto de verdad.
 
 ---
 
@@ -51,18 +64,46 @@ En Railway: proyecto → servicio `app` → pestaña **Variables**.
 ## Emitir un código
 
 ```bash
-# Prueba de 30 días
+# Plan completo, 30 días de prueba
 npm run licencia -- --taller "Motos del Sur" --dias 30
 
-# Sin vencimiento
-npm run licencia -- --taller "Motos del Sur"
+# Plan básico, sin vencimiento
+npm run licencia -- --taller "Motos del Sur" --plan basico
+
+# Si el servidor no es el de siempre (local, otro ambiente)
+npm run licencia -- --taller "Motos del Sur" --url https://taller.ridera.com.co
 ```
 
-Sale un texto que empieza por `TM1.`. Cópialo completo y pásaselo por WhatsApp
-a quien va a usar el software. Lo pega en la pantalla de registro y listo.
+Por defecto habla con `http://localhost:3000`; en producción usa `--url` o
+la variable `LICENSE_API_URL`.
+
+Sale un código corto tipo `TM-C4X9-K3M7`. Mándaselo por WhatsApp o díctaselo
+por teléfono a quien va a usar el software. Lo escribe en la pantalla de
+registro y listo.
 
 Cada código **sirve una sola vez**: activa un taller y ya no vuelve a servir,
 ni siquiera en otra instalación de la misma base de datos.
+
+---
+
+## Planes
+
+El código determina el plan con el que arranca el taller (`--plan`):
+
+| Plan | Incluye |
+|---|---|
+| **basico** | Órdenes, recepción digital, clientes y motos, agenda, cotizaciones y aprobación del cliente |
+| **completo** *(por defecto)* | Todo lo anterior + inventario (repuestos, proveedores, compras), reportes de periodo, notificaciones por WhatsApp e integraciones (API) |
+| **premium** | Reservado para los módulos que faltan por construir: facturación electrónica, contabilidad, CRM |
+
+Un taller sin código (instalaciones que no exigen `LICENSE_REQUIRED`) o
+activado antes de que existiera esta distinción queda con acceso completo:
+nunca se le cierra una función a quien nunca compró un plan.
+
+Para agregarle un módulo nuevo a esta lista: envuélvelo con
+`requirePlan('completo')` (o `'premium'`) desde `src/middleware/auth.js`,
+igual que están hoy `parts`/`suppliers`/`purchases`, `reports.summary` y
+`api-keys` en `src/app.js` y sus respectivos archivos de rutas.
 
 ---
 

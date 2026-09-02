@@ -2,6 +2,7 @@
 import { Router } from 'express';
 import { query } from '../db.js';
 import { wrap } from '../lib/errors.js';
+import { requirePlan } from '../middleware/auth.js';
 import { OPEN_STATUSES } from '../services/workorders.js';
 
 export const reportsRouter = Router();
@@ -82,7 +83,9 @@ reportsRouter.get('/dashboard', wrap(async (req, res) => {
 }));
 
 // Reporte de un periodo: ventas, servicios, inventario y productividad.
-reportsRouter.get('/summary', wrap(async (req, res) => {
+// Es el módulo de análisis, parte del plan Completo en adelante; el panel
+// de arriba (lo esencial del día a día) queda abierto para todos.
+reportsRouter.get('/summary', requirePlan('completo'), wrap(async (req, res) => {
   const from = req.query.from || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().slice(0, 10);
   const to = req.query.to || new Date().toISOString().slice(0, 10);

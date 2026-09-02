@@ -41,6 +41,25 @@ ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_expires_at TIMESTAMPTZ;
 CREATE UNIQUE INDEX IF NOT EXISTS workshops_license_id_key
   ON workshops (license_id) WHERE license_id IS NOT NULL;
 
+-- Códigos de activación cortos (formato TM-XXXX-XXXX). A diferencia del
+-- código largo autocontenido (que lleva la firma dentro del propio texto),
+-- el corto es sólo una llave de consulta al azar: aquí vive a qué plan y
+-- hasta cuándo corresponde. Se emiten desde el endpoint /api/license-admin,
+-- protegido con la firma de la llave privada (ver src/lib/licencia.js).
+CREATE TABLE IF NOT EXISTS license_codes (
+  id                   UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  code                 TEXT NOT NULL,
+  plan                 TEXT NOT NULL DEFAULT 'completo'
+                       CHECK (plan IN ('basico','completo','premium')),
+  holder               TEXT,
+  expires_at           TIMESTAMPTZ,
+  used_by_workshop_id  UUID REFERENCES workshops(id) ON DELETE SET NULL,
+  used_at              TIMESTAMPTZ,
+  created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS license_codes_code_key ON license_codes (upper(code));
+
 -- Notificaciones al cliente por WhatsApp (plan pago). 'off': no envía nada.
 -- 'ridera': usa la cuenta compartida de Ridera (variables de entorno del
 -- servidor). 'own': el taller conectó su propia cuenta de WhatsApp Business.

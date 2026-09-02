@@ -2,6 +2,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { query } from '../db.js';
 import { verifyToken, hashApiKey } from '../lib/auth.js';
 import { unauthorized, forbidden, ApiError } from '../lib/errors.js';
+import { config } from '../config.js';
 
 function bearer(req) {
   const header = req.headers.authorization || '';
@@ -29,7 +30,7 @@ export async function requireAuth(req, _res, next) {
     // licencia del taller, para no hacer una segunda consulta por petición.
     const { rows } = await query(
       `SELECT u.id, u.workshop_id, u.email, u.name, u.role, u.active,
-              w.license_expires_at
+              w.license_expires_at, w.license_plan
        FROM users u JOIN workshops w ON w.id = u.workshop_id
        WHERE u.id = $1`,
       [payload.sub]
@@ -44,6 +45,7 @@ export async function requireAuth(req, _res, next) {
       name: user.name,
       email: user.email,
       licenseExpiresAt: user.license_expires_at,
+      licensePlan: user.license_plan,
       via: 'user'
     };
     next();
@@ -111,4 +113,21 @@ export const requireScope = (scope) => (req, _res, next) => {
   if (req.auth?.via !== 'api_key') return next(forbidden('Requiere llave de API'));
   if (!req.auth.scopes?.includes(scope)) return next(forbidden(`La llave no tiene el permiso "${scope}"`));
   next();
+};
+
+// Módulos avanzados (inventario, reportes, integraciones...) que sólo
+// vienen en los planes de pago. Instalaciones que no exigen código
+// (LICENSE_REQUIRED=false) o talleres activados antes de que existiera el
+// campo `license_plan` quedan con acceso completo: no hay por qué
+// restringir a nadie a quien nunca se le vendió un plan.
+const PLAN_RANK = { basico: 0, completo: 1, premium: 2 };
+const NOMBRE_PLAN = { completo: 'Completo', premium: 'Premium' };
+
+export const requirePlan = (minPlan) => (req, _res, next) => {
+  if (!config.license.required) return next();
+  const actual = PLAN_RANK[req.auth?.licensePlan] ?? PLAN_RANK.completo;
+  if (actual >= PLAN_RANK[minPlan]) return next();
+  next(new ApiError(402,
+    `Esta función es parte del plan ${NOMBRE_PLAN[minPlan] || minPlan}. ` +
+    'Pide un código de ese plan a quien te entregó el software.'));
 };

@@ -5,7 +5,7 @@ import { validate } from '../lib/validate.js';
 import { wrap, unauthorized, conflict, badRequest } from '../lib/errors.js';
 import { requireAuth } from '../middleware/auth.js';
 import { config } from '../config.js';
-import { revisar, MOTIVOS, venceEl } from '../lib/licencia.js';
+import { revisar, tipoCodigo, MOTIVOS, venceEl } from '../lib/licencia.js';
 import { rateLimit } from '../lib/ratelimit.js';
 
 export const authRouter = Router();
@@ -32,20 +32,42 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
 
   // Código de activación: sin él no se abre un taller nuevo en esta
   // instalación. Se comprueba antes de tocar nada.
+  //
+  // Hay dos formatos posibles (ver src/lib/licencia.js): el largo TM1.…,
+  // autocontenido y comprobable sin tocar la base de datos, y el corto
+  // TM-XXXX-XXXX, que es sólo una llave de consulta contra `license_codes`
+  // —lo que se emite ahora, porque se puede dictar por teléfono—.
   let licencia = null;
+  let codigoCorto = null;
   if (config.license.required) {
     if (!data.license_code) {
       throw badRequest('Necesitas un código de activación para registrar tu taller.');
     }
-    const revision = revisar(data.license_code, config.license.publicKey);
-    if (!revision.valido) {
-      throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
-    }
-    licencia = revision.datos;
+    const tipo = tipoCodigo(data.license_code);
 
-    const yaUsado = await queryOne(
-      'SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
-    if (yaUsado) throw conflict(MOTIVOS.usado);
+    if (tipo === 'corto') {
+      codigoCorto = await queryOne(
+        'SELECT * FROM license_codes WHERE upper(code) = upper($1)', [data.license_code.trim()]);
+      if (!codigoCorto) throw badRequest(MOTIVOS.firma);
+      if (codigoCorto.used_by_workshop_id) throw conflict(MOTIVOS.usado);
+      if (codigoCorto.expires_at && new Date(codigoCorto.expires_at) < new Date()) {
+        throw badRequest(MOTIVOS.vencido);
+      }
+      licencia = {
+        t: codigoCorto.holder,
+        p: codigoCorto.plan,
+        e: codigoCorto.expires_at ? Math.floor(new Date(codigoCorto.expires_at).getTime() / 1000) : null
+      };
+    } else if (tipo === 'largo') {
+      const revision = revisar(data.license_code, config.license.publicKey);
+      if (!revision.valido) throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
+      licencia = revision.datos;
+
+      const yaUsado = await queryOne('SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
+      if (yaUsado) throw conflict(MOTIVOS.usado);
+    } else {
+      throw badRequest(MOTIVOS.formato);
+    }
   }
 
   const exists = await queryOne('SELECT id FROM users WHERE lower(email) = lower($1)', [data.email]);
@@ -58,9 +80,22 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
                               license_expires_at)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
       [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate,
-       licencia ? data.license_code : null, licencia?.id || null, licencia?.t || null,
+       licencia ? data.license_code : null, licencia?.id || codigoCorto?.id || null, licencia?.t || null,
        licencia?.p || null, licencia ? venceEl(licencia) : null]
     );
+
+    // El código corto se marca usado dentro de la misma transacción, con
+    // una condición en el UPDATE (no un SELECT previo) para que dos
+    // registros a la vez con el mismo código no se lo lleven ambos.
+    if (codigoCorto) {
+      const { rowCount } = await client.query(
+        `UPDATE license_codes SET used_by_workshop_id = $1, used_at = NOW()
+         WHERE id = $2 AND used_by_workshop_id IS NULL`,
+        [workshop.id, codigoCorto.id]
+      );
+      if (rowCount === 0) throw conflict(MOTIVOS.usado);
+    }
+
     const { rows: [user] } = await client.query(
       `INSERT INTO users (workshop_id, email, name, password_hash, role, phone)
        VALUES ($1, $2, $3, $4, 'admin', $5) RETURNING *`,

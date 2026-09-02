@@ -1,4 +1,5 @@
 import { ApiError } from './errors.js';
+import { config } from '../config.js';
 
 // Limitador de intentos en memoria. Suficiente para una instancia: si escala
 // a varias réplicas, se sustituye por Redis. No añade dependencias.
@@ -14,6 +15,11 @@ setInterval(() => {
 
 export function rateLimit({ windowMs = 15 * 60_000, max = 10, keyFn, message } = {}) {
   return (req, _res, next) => {
+    // En pruebas todas las peticiones "vienen" de 127.0.0.1: sin esta
+    // salida, cualquier archivo de test que registre o inicie sesión más
+    // de `max` veces se bloquearía a sí mismo, sin que sea ninguna señal
+    // de abuso real.
+    if (config.env === 'test') return next();
     const key = keyFn
       ? keyFn(req)
       : (req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress);

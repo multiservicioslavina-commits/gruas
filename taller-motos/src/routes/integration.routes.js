@@ -12,11 +12,12 @@ import { query, queryOne, transaction } from '../db.js';
 import { generateApiKey } from '../lib/auth.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
-import { requireAuth, requireRole, requireApiKey, requireScope } from '../middleware/auth.js';
+import { requireAuth, requireRole, requireApiKey, requireScope, requirePlan } from '../middleware/auth.js';
 
 // ── Administración de llaves (usuario admin del taller) ───────────────────
+// Las integraciones externas son un módulo del plan Completo en adelante.
 export const apiKeysRouter = Router();
-apiKeysRouter.use(requireAuth, requireRole());
+apiKeysRouter.use(requireAuth, requireRole(), requirePlan('completo'));
 
 apiKeysRouter.get('/', wrap(async (req, res) => {
   const { rows } = await query(
