@@ -209,6 +209,7 @@ se responde una vez, y no después de su fecha de validez.
 | `GET` | `/parts/alerts/low-stock` | Lo que hay que pedir |
 | `POST` | `/parts/:id/movements` | Entrada, salida o ajuste por conteo |
 | `GET` | `/parts/:id/movements` | Historial de movimientos |
+| `POST` | `/parts/import` | Carga masiva desde CSV (multipart, campo `file`) — empareja por SKU |
 | `GET` `POST` `PATCH` `DELETE` | `/suppliers[/:id]` | Proveedores |
 | `GET` `POST` | `/purchases` | Compras (entran al inventario) |
 | `GET` `POST` `PATCH` `DELETE` | `/maintenance-rules[/:id]` | Reglas de mantenimiento |

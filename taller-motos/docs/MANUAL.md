@@ -149,6 +149,12 @@ Con **Movimiento** en cada repuesto registras una entrada, una salida o un
 **ajuste por conteo**. En el ajuste escribe la cantidad *real* que contaste: el
 sistema calcula la diferencia.
 
+**Descargar CSV** te da el inventario completo en un archivo que se abre en
+Excel. Edítalo ahí (agrega repuestos, corrige precios o existencias) y
+súbelo de nuevo con **Cargar CSV**: si un repuesto ya existe (mismo SKU) lo
+actualiza, si no, lo crea. Los cambios de existencia quedan en el historial
+de movimientos del repuesto, igual que un ajuste manual.
+
 ### Reportes
 
 Elige el periodo. Verás cuánto facturaste, cuánto fue mano de obra y cuánto
