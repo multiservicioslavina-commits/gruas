@@ -11,6 +11,7 @@ import { agendaView } from './views/agenda.js';
 import { reportsView } from './views/reports.js';
 import { accountingView } from './views/accounting.js';
 import { crmView } from './views/crm.js';
+import { payrollView } from './views/payroll.js';
 import { settingsView } from './views/settings.js';
 
 const ROUTES = [
@@ -31,6 +32,7 @@ const ROUTES = [
   { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes',   plan: 'completo' },
   { path: /^\/contabilidad$/,       view: accountingView, nav: 'contabilidad', plan: 'premium' },
   { path: /^\/crm$/,                view: crmView,         nav: 'crm', plan: 'premium' },
+  { path: /^\/nomina$/,             view: payrollView,     nav: 'nomina', plan: 'premium' },
   { path: /^\/ajustes$/,            view: settingsView,   nav: 'ajustes' }
 ];
 
@@ -77,6 +79,8 @@ const NAV = [
     ni('<path d="M18 20V10M12 20V4M6 20v-6"/>')],
   ['contabilidad', '/contabilidad', 'Contabilidad',
     ni('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>')],
+  ['nomina',     '/nomina',     'Nómina',
+    ni('<rect x="2" y="7" width="20" height="14" rx="2"/><path d="M16 21V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v16"/>')],
   ['ajustes',    '/ajustes',    'Configuración',
     ni('<path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6M9 8h6m2 8h6"/>')]
 ];

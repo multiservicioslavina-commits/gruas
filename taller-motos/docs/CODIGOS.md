@@ -94,7 +94,7 @@ El código determina el plan con el que arranca el taller (`--plan`):
 |---|---|
 | **basico** | Órdenes, recepción digital, clientes y motos, agenda, cotizaciones y aprobación del cliente, y factura de venta normal (sin la DIAN) |
 | **completo** *(por defecto)* | Todo lo anterior + inventario (repuestos, proveedores, compras), reportes de periodo, notificaciones por WhatsApp e integraciones (API) |
-| **premium** | Todo lo anterior + contabilidad básica, CRM y facturación electrónica DIAN vía Factus (ver [docs/FACTURACION.md](FACTURACION.md)) |
+| **premium** | Todo lo anterior + contabilidad básica, CRM, nómina y facturación electrónica DIAN vía Factus (ver [docs/FACTURACION.md](FACTURACION.md)) |
 
 Un taller sin código (instalaciones que no exigen `LICENSE_REQUIRED`) o
 activado antes de que existiera esta distinción queda con acceso completo:

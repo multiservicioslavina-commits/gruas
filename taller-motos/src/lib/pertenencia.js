@@ -19,7 +19,8 @@ const TABLAS = {
   quotes:                'Cotización',
   work_orders:           'Orden',
   accounting_categories: 'Categoría contable',
-  leads:                 'Prospecto'
+  leads:                 'Prospecto',
+  employees:             'Empleado'
 };
 
 export async function assertDelTaller(tabla, id, workshopId, cliente = null) {

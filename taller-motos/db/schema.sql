@@ -683,6 +683,48 @@ CREATE TABLE IF NOT EXISTS follow_ups (
 
 CREATE INDEX IF NOT EXISTS follow_ups_workshop_idx ON follow_ups (workshop_id, done, due_at);
 
+-- ── Nómina (plan Premium) ──────────────────────────────────────────────────
+-- Versión simple, a propósito: lista de empleados y un registro de "se le
+-- pagó tanto este mes". No liquida automáticamente salud/pensión/ARL ni
+-- prestaciones sociales (cesantías, prima, vacaciones) — esas reglas
+-- cambian cada año con el SMMLV/UVT y merecen su propio desarrollo. Un
+-- empleado no necesariamente es un usuario del sistema (`users`): puede ser
+-- alguien que nunca necesita entrar a la aplicación.
+CREATE TABLE IF NOT EXISTS employees (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  name          TEXT NOT NULL,
+  position      TEXT,
+  base_salary   NUMERIC(12,2) NOT NULL DEFAULT 0,
+  phone         TEXT,
+  hired_at      DATE,
+  active        BOOLEAN NOT NULL DEFAULT TRUE,
+  notes         TEXT,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS employees_workshop_idx ON employees (workshop_id);
+
+-- Un pago por empleado por periodo (mes calendario, 'YYYY-MM'); nada impide
+-- registrar más de uno si hace falta un ajuste o un pago parcial.
+CREATE TABLE IF NOT EXISTS payroll_payments (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  employee_id   UUID NOT NULL REFERENCES employees(id) ON DELETE CASCADE,
+  period        TEXT NOT NULL,             -- 'YYYY-MM'
+  amount        NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  paid_at       DATE NOT NULL DEFAULT CURRENT_DATE,
+  method        TEXT NOT NULL DEFAULT 'transfer'
+                CHECK (method IN ('cash','transfer','card','nequi','daviplata','other')),
+  notes         TEXT,
+  created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS payroll_payments_workshop_idx ON payroll_payments (workshop_id, paid_at DESC);
+CREATE INDEX IF NOT EXISTS payroll_payments_employee_idx ON payroll_payments (employee_id);
+
 -- ── Historial de servicio de cada moto (spec §10) ─────────────────────────
 -- Vista derivada de las órdenes: no duplica datos.
 CREATE OR REPLACE VIEW service_history AS
