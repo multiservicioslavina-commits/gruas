@@ -1,7 +1,7 @@
 // Ventas de mostrador: vender un repuesto sin que pase por una orden de
 // trabajo. Se cobra al momento y descuenta inventario solo.
 import { api, session } from '../api.js';
-import { esc, money, date, empty, toast, field, modal, PAYMENT_METHODS } from '../ui.js';
+import { esc, money, date, empty, toast, field, modal, clean, PAYMENT_METHODS } from '../ui.js';
 import { onMount } from '../app.js';
 
 export async function salesView() {
@@ -61,20 +61,62 @@ export async function salesView() {
     }));
   };
 
+  // Crea un repuesto sin salir de la venta — para cuando llega alguien a
+  // comprar algo que todavía no está cargado en Inventario.
+  const createPartInline = () => modal({
+    title: 'Nuevo repuesto',
+    body:
+      field('name', 'Nombre', { required: true }) +
+      `<div class="row">
+         ${field('sku', 'SKU')}
+         ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
+       </div>
+       <div class="row">
+         ${field('cost', 'Costo', { type: 'number', min: 0, value: '0' })}
+         ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}
+       </div>`,
+    confirmText: 'Crear repuesto',
+    onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'stock']))
+  });
+
   const newSale = async () => {
-    const parts = (await api.get('/parts?active=true&limit=500')).data;
-    if (!parts.length) {
-      toast('Primero carga repuestos en Inventario para poder venderlos', true);
-      return;
-    }
+    let parts = (await api.get('/parts?active=true&limit=500')).data;
+
+    const partOptions = (selected) => parts.length
+      ? parts.map((part) =>
+          `<option value="${esc(part.id)}"${part.id === selected ? ' selected' : ''}>` +
+          `${esc(part.name)} · ${money(part.price)} (${part.stock} disp.)</option>`).join('')
+      : '<option value="">Sin repuestos — créalo con el botón +</option>';
 
     const lineRow = () => `
       <div class="row-3" data-line style="margin-bottom:8px">
-        <select name="part_id">${parts.map((part) =>
-          `<option value="${esc(part.id)}">${esc(part.name)} · ${money(part.price)} (${part.stock} disp.)</option>`).join('')}</select>
+        <div style="display:flex;gap:6px">
+          <select name="part_id" style="flex:1">${partOptions()}</select>
+          <button type="button" class="btn btn-default btn-sm" data-new-part
+                  title="Crear repuesto nuevo">+</button>
+        </div>
         <input name="quantity" type="number" step="0.01" min="0.01" placeholder="Cantidad" value="1">
         <input name="unit_price" type="number" min="0" placeholder="Precio (opcional)">
       </div>`;
+
+    const bindNewPartButtons = () => {
+      document.querySelectorAll('[data-new-part]').forEach((button) => {
+        // El modal de repuesto se puede abrir varias veces; evita doble enlace.
+        if (button.dataset.bound) return;
+        button.dataset.bound = '1';
+        button.addEventListener('click', async () => {
+          const created = await createPartInline();
+          if (!created) return;
+          parts.push(created);
+          toast(`Repuesto "${created.name}" creado`);
+          document.querySelectorAll('#sale-lines [name=part_id]').forEach((select) => {
+            const current = select.value;
+            select.innerHTML = partOptions(current);
+          });
+          button.closest('[data-line]').querySelector('[name=part_id]').value = created.id;
+        });
+      });
+    };
 
     const pending = modal({
       title: 'Nueva venta de mostrador',
@@ -112,8 +154,10 @@ export async function salesView() {
       }
     });
 
+    bindNewPartButtons();
     document.getElementById('btn-add-line')?.addEventListener('click', () => {
       document.getElementById('sale-lines').insertAdjacentHTML('beforeend', lineRow());
+      bindNewPartButtons();
     });
 
     const result = await pending;

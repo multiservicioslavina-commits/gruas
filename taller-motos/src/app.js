@@ -29,6 +29,7 @@ import { crmRouter } from './routes/crm.routes.js';
 import { payrollRouter } from './routes/payroll.routes.js';
 import { salesRouter } from './routes/sales.routes.js';
 import { invoicesRouter } from './routes/invoices.routes.js';
+import { inventoryAdjustmentsRouter } from './routes/inventory-adjustments.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -103,6 +104,7 @@ export function createApp() {
   // Ventas de mostrador vende del mismo inventario, así que va con el mismo
   // plan que Inventario — no tendría mucho sentido sin él.
   app.use('/api/sales', requirePlan('completo'), salesRouter);
+  app.use('/api/inventory-adjustments', requirePlan('completo'), inventoryAdjustmentsRouter);
   app.use('/api/maintenance-rules', maintenanceRouter);
   app.use('/api/attachments', attachmentsRouter);
   app.use('/api/reports', reportsRouter);
