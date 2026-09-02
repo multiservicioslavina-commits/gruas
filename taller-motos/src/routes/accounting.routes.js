@@ -117,6 +117,62 @@ accountingRouter.delete('/entries/:id', wrap(async (req, res) => {
   res.status(204).end();
 }));
 
+// ── Operaciones ───────────────────────────────────────────────────────────
+// Un solo listado con todos los documentos de plata del taller —facturas
+// (normal y electrónica), compras y movimientos manuales— como en el
+// "manejador de operaciones" de un ERP tradicional. No agrega datos nuevos:
+// junta lo que ya vive en tres tablas distintas para verlo en un solo lugar.
+accountingRouter.get('/operations', wrap(async (req, res) => {
+  const from = req.query.from || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
+    .toISOString().slice(0, 10);
+  const to = req.query.to || today();
+  const params = [req.auth.workshopId, from, to];
+  const typeFilter = req.query.type ? `AND source = $4` : '';
+  if (req.query.type) params.push(req.query.type);
+
+  const { rows } = await query(
+    `SELECT * FROM (
+       SELECT i.id, 'invoice' AS source,
+         CASE WHEN i.kind = 'electronic' THEN 'Factura electrónica' ELSE 'Factura de venta' END AS doc_type,
+         CASE WHEN i.kind = 'electronic' THEN i.external_id
+              ELSE '10-' || lpad(i.number::text, 6, '0') END AS doc_code,
+         COALESCE(i.issued_at, i.created_at)::date AS doc_date,
+         cu.name AS counterparty, ('Orden ' || wo.public_code) AS detail,
+         i.total AS amount, 'income' AS direction, 'Emitida' AS status
+       FROM invoices i
+       JOIN work_orders wo ON wo.id = i.work_order_id
+       LEFT JOIN customers cu ON cu.id = wo.customer_id
+       WHERE i.workshop_id = $1 AND i.status = 'issued'
+
+       UNION ALL
+
+       SELECT p.id, 'purchase' AS source, 'Compra' AS doc_type,
+         COALESCE(p.reference, 'C-' || substring(p.id::text, 1, 8)) AS doc_code,
+         p.purchased_at::date AS doc_date,
+         s.name AS counterparty, COALESCE(p.notes, '') AS detail,
+         p.total AS amount, 'expense' AS direction, 'Registrada' AS status
+       FROM purchases p
+       LEFT JOIN suppliers s ON s.id = p.supplier_id
+       WHERE p.workshop_id = $1
+
+       UNION ALL
+
+       SELECT e.id, 'cash_entry' AS source, 'Movimiento contable' AS doc_type,
+         'M-' || substring(e.id::text, 1, 8) AS doc_code,
+         e.entry_date AS doc_date,
+         COALESCE(c.name, 'Sin categoría') AS counterparty, e.description AS detail,
+         e.amount AS amount, e.kind AS direction, 'Registrado' AS status
+       FROM cash_entries e
+       LEFT JOIN accounting_categories c ON c.id = e.category_id
+       WHERE e.workshop_id = $1
+     ) ops
+     WHERE doc_date BETWEEN $2 AND $3 ${typeFilter}
+     ORDER BY doc_date DESC LIMIT 300`,
+    params
+  );
+  res.json({ data: rows, total: rows.length });
+}));
+
 // ── Balance de caja por periodo ──────────────────────────────────────────
 // Junta las tres fuentes de movimiento de caja: lo que pagaron los
 // clientes (`payments`), lo que se compró a proveedores (`purchases`) y
