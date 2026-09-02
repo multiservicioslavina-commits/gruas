@@ -94,6 +94,7 @@ autorizar el trabajo concreto ni disparar la salida de bodega.
 |---|---|
 | `payments` | Abonos; `amount > 0` por restricción |
 | `invoices` | Preparada para facturación electrónica: `external_id` y `payload` guardan lo que devuelva el proveedor cuando se integre |
+| `accounting_categories`, `cash_entries` | Contabilidad básica (plan Premium): plan de cuentas simple y libro de ingresos/gastos manual. No duplica `payments` ni `purchases` — es para lo que esas dos no cubren (arriendo, servicios, nómina, ventas fuera de una orden). Ver `docs/CODIGOS.md` §Planes |
 
 ### Inventario
 

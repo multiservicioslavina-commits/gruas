@@ -11,13 +11,14 @@ import { notFound } from './errors.js';
 // Lista cerrada: el nombre de la tabla se interpola en el SQL, así que nunca
 // puede venir de fuera.
 const TABLAS = {
-  customers:   'Cliente',
-  motorcycles: 'Moto',
-  suppliers:   'Proveedor',
-  parts:       'Repuesto',
-  users:       'Usuario',
-  quotes:      'Cotización',
-  work_orders: 'Orden'
+  customers:            'Cliente',
+  motorcycles:          'Moto',
+  suppliers:            'Proveedor',
+  parts:                'Repuesto',
+  users:                'Usuario',
+  quotes:               'Cotización',
+  work_orders:          'Orden',
+  accounting_categories: 'Categoría contable'
 };
 
 export async function assertDelTaller(tabla, id, workshopId, cliente = null) {

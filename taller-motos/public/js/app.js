@@ -9,6 +9,7 @@ import { customersView, customerDetailView, motorcycleHistoryView } from './view
 import { inventoryView } from './views/inventory.js';
 import { agendaView } from './views/agenda.js';
 import { reportsView } from './views/reports.js';
+import { accountingView } from './views/accounting.js';
 import { settingsView } from './views/settings.js';
 
 const ROUTES = [
@@ -27,6 +28,7 @@ const ROUTES = [
   { path: /^\/motos\/([^/]+)$/,     view: motorcycleHistoryView, nav: 'clientes' },
   { path: /^\/inventario$/,         view: inventoryView,  nav: 'inventario', plan: 'completo' },
   { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes',   plan: 'completo' },
+  { path: /^\/contabilidad$/,       view: accountingView, nav: 'contabilidad', plan: 'premium' },
   { path: /^\/ajustes$/,            view: settingsView,   nav: 'ajustes' }
 ];
 
@@ -69,6 +71,8 @@ const NAV = [
     ni('<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>')],
   ['reportes',   '/reportes',   'Reportes',
     ni('<path d="M18 20V10M12 20V4M6 20v-6"/>')],
+  ['contabilidad', '/contabilidad', 'Contabilidad',
+    ni('<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M6 15h4"/>')],
   ['ajustes',    '/ajustes',    'Configuración',
     ni('<path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6M9 8h6m2 8h6"/>')]
 ];

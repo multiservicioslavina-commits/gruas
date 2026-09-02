@@ -559,6 +559,43 @@ CREATE TABLE IF NOT EXISTS maintenance_rules (
 
 CREATE INDEX IF NOT EXISTS maintenance_rules_workshop_idx ON maintenance_rules (workshop_id);
 
+-- ── Contabilidad básica (plan Premium) ────────────────────────────────────
+-- Plan de cuentas simple y libro de ingresos/gastos, para todo lo que no
+-- queda ya registrado solo por las órdenes (pagos de clientes, en
+-- `payments`) o las compras a proveedores (`purchases`): arriendo,
+-- servicios, nómina, una venta que no pasó por una orden, etc. El balance
+-- de caja por periodo junta las tres fuentes (ver reports.summary y
+-- accounting.summary).
+CREATE TABLE IF NOT EXISTS accounting_categories (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  kind         TEXT NOT NULL DEFAULT 'expense' CHECK (kind IN ('income','expense')),
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS accounting_categories_workshop_idx ON accounting_categories (workshop_id);
+
+CREATE TABLE IF NOT EXISTS cash_entries (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  category_id   UUID REFERENCES accounting_categories(id) ON DELETE SET NULL,
+  kind          TEXT NOT NULL CHECK (kind IN ('income','expense')),
+  description   TEXT NOT NULL,
+  amount        NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  method        TEXT NOT NULL DEFAULT 'cash'
+                CHECK (method IN ('cash','transfer','card','nequi','daviplata','other')),
+  entry_date    DATE NOT NULL DEFAULT CURRENT_DATE,
+  notes         TEXT,
+  created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS cash_entries_workshop_idx ON cash_entries (workshop_id, entry_date DESC);
+CREATE INDEX IF NOT EXISTS cash_entries_category_idx ON cash_entries (category_id);
+
 -- ── Historial de servicio de cada moto (spec §10) ─────────────────────────
 -- Vista derivada de las órdenes: no duplica datos.
 CREATE OR REPLACE VIEW service_history AS
