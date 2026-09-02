@@ -4,15 +4,39 @@
 // de la cotización. Por eso estas respuestas exponen lo mínimo — nunca costos
 // internos, teléfonos de otros clientes ni datos del equipo.
 import { Router } from 'express';
+import { existsSync, createReadStream } from 'node:fs';
+import { join, resolve, extname } from 'node:path';
 import { query, queryOne, transaction } from '../db.js';
-import { validate } from '../lib/validate.js';
+import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, conflict, badRequest } from '../lib/errors.js';
 import { applyQuoteResponse } from './quotes.routes.js';
 import { rateLimit } from '../lib/ratelimit.js';
+import { config } from '../config.js';
 
 export const publicRouter = Router();
 
 const publicLimiter = rateLimit({ windowMs: 15 * 60_000, max: 30 });
+
+const LOGO_CONTENT_TYPE = {
+  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+  '.webp': 'image/webp', '.svg': 'image/svg+xml'
+};
+
+// El logo no es información sensible: es lo que el taller le muestra a sus
+// propios clientes (factura impresa, seguimiento de orden). Por eso no pide
+// autenticación, igual que el resto de este archivo.
+publicRouter.get('/workshop/:id/logo', wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const workshop = await queryOne('SELECT logo_url FROM workshops WHERE id = $1', [req.params.id]);
+  if (!workshop?.logo_url) throw notFound();
+
+  const path = join(resolve(config.uploads.dir), req.params.id, workshop.logo_url);
+  if (!path.startsWith(resolve(config.uploads.dir)) || !existsSync(path)) throw notFound();
+
+  res.setHeader('Content-Type', LOGO_CONTENT_TYPE[extname(path).toLowerCase()] || 'application/octet-stream');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  createReadStream(path).pipe(res);
+}));
 
 publicRouter.get('/orders/:code', publicLimiter, wrap(async (req, res) => {
   const code = String(req.params.code || '').trim().toUpperCase();

@@ -1,5 +1,5 @@
-// Facturación de una orden, de dos maneras: factura de venta normal (plan
-// Completo, sin la DIAN) o factura electrónica (plan Premium, vía Factus).
+// Facturación de una orden, de dos maneras: factura de venta normal (todos
+// los planes, sin la DIAN) o factura electrónica (plan Premium, vía Factus).
 //
 // Ninguna duplica la lógica de órdenes: arman la factura a partir de lo que
 // ya hay cargado (servicios, repuestos, total). La electrónica además pide
@@ -35,7 +35,7 @@ async function assertSinFacturar(workshopId, workOrderId) {
       : 'Para corregirla, contacta a quien te entregó el software.'));
 }
 
-invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('completo'), requireRole('cashier'), wrap(async (req, res) => {
+invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('basico'), requireRole('cashier'), wrap(async (req, res) => {
   assertUuid(req.params.id);
   const data = validate(req.body, { observation: { type: 'string', max: 500 } });
 

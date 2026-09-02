@@ -5,7 +5,7 @@ maneras, según el plan del taller:
 
 | Tipo | Código | Plan | Qué es |
 |---|---|---|---|
-| **Factura de venta** | `10` | Completo | Comprobante propio del taller, con su propio consecutivo. No pasa por la DIAN. |
+| **Factura de venta** | `10` | Básico | Comprobante propio del taller, con su propio consecutivo. No pasa por la DIAN. |
 | **Factura electrónica** | `1010` | Premium | Documento válido ante la DIAN, firmado y transmitido vía [Factus](https://www.factus.com.co/) (proveedor tecnológico autorizado). |
 
 Una orden sólo admite **una** factura, de cualquiera de los dos tipos —no
