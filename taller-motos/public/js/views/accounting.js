@@ -28,7 +28,7 @@ export async function accountingView() {
     ${field('description', 'Descripción', { required: true, value: entry.description || '',
       placeholder: 'Arriendo de enero, venta de una herramienta usada...' })}
     <div class="row">
-      ${field('amount', 'Monto', { type: 'number', required: true, min: 0.01,
+      ${field('amount', 'Monto', { type: 'number', required: true, min: 0.01, step: 'any',
         value: entry.amount || '' })}
       ${field('method', 'Método', { value: entry.method || 'cash',
         options: Object.entries(PAYMENT_METHODS) })}
@@ -202,8 +202,10 @@ export async function accountingView() {
     });
   };
 
-  onMount(() => {
-    load();
+  onMount(async () => {
+    // Se espera a que cargue: "Nuevo movimiento"/"Nueva categoría" viven
+    // dentro del contenido que arma load(), no en la plantilla estática.
+    await load();
     for (const id of ['acc-from', 'acc-to']) {
       document.getElementById(id).addEventListener('change', (event) => {
         state[id === 'acc-from' ? 'from' : 'to'] = event.target.value;

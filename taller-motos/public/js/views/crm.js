@@ -191,8 +191,10 @@ export async function crmView() {
     });
   };
 
-  onMount(() => {
-    load();
+  onMount(async () => {
+    // Se espera a que cargue: "Nuevo prospecto" vive dentro del contenido
+    // que arma load(), no en la plantilla estática.
+    await load();
     document.getElementById('btn-new-lead').addEventListener('click', async () => {
       const result = await modal({
         title: 'Nuevo prospecto',

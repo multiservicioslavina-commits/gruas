@@ -1,7 +1,7 @@
 // Contabilidad básica (plan Premium): plan de cuentas y libro de
 // ingresos/gastos, más un balance de caja por periodo que junta esas
 // entradas manuales con lo que ya se registra solo (pagos de clientes,
-// compras a proveedores).
+// compras a proveedores, nómina).
 import { Router } from 'express';
 import { query, queryOne } from '../db.js';
 import { crudRouter } from '../lib/crud.js';
@@ -119,9 +119,10 @@ accountingRouter.delete('/entries/:id', wrap(async (req, res) => {
 
 // ── Operaciones ───────────────────────────────────────────────────────────
 // Un solo listado con todos los documentos de plata del taller —facturas
-// (normal y electrónica), compras y movimientos manuales— como en el
-// "manejador de operaciones" de un ERP tradicional. No agrega datos nuevos:
-// junta lo que ya vive en tres tablas distintas para verlo en un solo lugar.
+// (normal y electrónica), compras, nómina y movimientos manuales— como en
+// el "manejador de operaciones" de un ERP tradicional. No agrega datos
+// nuevos: junta lo que ya vive en varias tablas distintas para verlo en un
+// solo lugar.
 accountingRouter.get('/operations', wrap(async (req, res) => {
   const from = req.query.from || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().slice(0, 10);
@@ -165,6 +166,17 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
        FROM cash_entries e
        LEFT JOIN accounting_categories c ON c.id = e.category_id
        WHERE e.workshop_id = $1
+
+       UNION ALL
+
+       SELECT pp.id, 'payroll' AS source, 'Nómina' AS doc_type,
+         pp.period AS doc_code,
+         pp.paid_at AS doc_date,
+         emp.name AS counterparty, ('Pago de nómina ' || pp.period) AS detail,
+         pp.amount AS amount, 'expense' AS direction, 'Pagado' AS status
+       FROM payroll_payments pp
+       JOIN employees emp ON emp.id = pp.employee_id
+       WHERE pp.workshop_id = $1
      ) ops
      WHERE doc_date BETWEEN $2 AND $3 ${typeFilter}
      ORDER BY doc_date DESC LIMIT 300`,
@@ -177,20 +189,23 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
 }));
 
 // ── Balance de caja por periodo ──────────────────────────────────────────
-// Junta las tres fuentes de movimiento de caja: lo que pagaron los
-// clientes (`payments`), lo que se compró a proveedores (`purchases`) y
-// las entradas manuales de este módulo (`cash_entries`).
+// Junta las fuentes de movimiento de caja: lo que pagaron los clientes
+// (`payments`), lo que se compró a proveedores (`purchases`), lo que se le
+// pagó a los empleados (`payroll_payments`) y las entradas manuales de este
+// módulo (`cash_entries`).
 accountingRouter.get('/summary', wrap(async (req, res) => {
   const from = req.query.from || new Date(new Date().getFullYear(), new Date().getMonth(), 1)
     .toISOString().slice(0, 10);
   const to = req.query.to || today();
   const w = [req.auth.workshopId, from, to];
 
-  const [payments, purchases, byCategory] = await Promise.all([
+  const [payments, purchases, payroll, byCategory] = await Promise.all([
     query(`SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*)::int AS count FROM payments
            WHERE workshop_id = $1 AND created_at::date BETWEEN $2 AND $3`, w),
     query(`SELECT COALESCE(SUM(total), 0) AS total, COUNT(*)::int AS count FROM purchases
            WHERE workshop_id = $1 AND purchased_at::date BETWEEN $2 AND $3`, w),
+    query(`SELECT COALESCE(SUM(amount), 0) AS total, COUNT(*)::int AS count FROM payroll_payments
+           WHERE workshop_id = $1 AND paid_at BETWEEN $2 AND $3`, w),
     query(
       `SELECT e.kind, COALESCE(c.name, 'Sin categoría') AS category, SUM(e.amount) AS total
        FROM cash_entries e LEFT JOIN accounting_categories c ON c.id = e.category_id
@@ -200,13 +215,14 @@ accountingRouter.get('/summary', wrap(async (req, res) => {
 
   const incomeFromOrders = Number(payments.rows[0].total);
   const expenseFromPurchases = Number(purchases.rows[0].total);
+  const expenseFromPayroll = Number(payroll.rows[0].total);
   const manualIncome = byCategory.rows.filter((r) => r.kind === 'income')
     .map((r) => ({ category: r.category, total: Number(r.total) }));
   const manualExpense = byCategory.rows.filter((r) => r.kind === 'expense')
     .map((r) => ({ category: r.category, total: Number(r.total) }));
 
   const income = incomeFromOrders + manualIncome.reduce((s, r) => s + r.total, 0);
-  const expense = expenseFromPurchases + manualExpense.reduce((s, r) => s + r.total, 0);
+  const expense = expenseFromPurchases + expenseFromPayroll + manualExpense.reduce((s, r) => s + r.total, 0);
 
   res.json({
     from, to,
@@ -221,6 +237,7 @@ accountingRouter.get('/summary', wrap(async (req, res) => {
       total: expense,
       by_category: [
         { category: 'Repuestos y compras', total: expenseFromPurchases },
+        { category: 'Nómina', total: expenseFromPayroll },
         ...manualExpense
       ].filter((r) => r.total > 0)
     },

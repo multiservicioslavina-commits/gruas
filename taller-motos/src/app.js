@@ -26,6 +26,7 @@ import { workshopRouter } from './routes/workshop.routes.js';
 import { exportRouter } from './routes/export.routes.js';
 import { accountingRouter } from './routes/accounting.routes.js';
 import { crmRouter } from './routes/crm.routes.js';
+import { payrollRouter } from './routes/payroll.routes.js';
 import { invoicesRouter } from './routes/invoices.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -106,6 +107,7 @@ export function createApp() {
   // Contabilidad y CRM son del plan Premium en adelante.
   app.use('/api/accounting', requirePlan('premium'), accountingRouter);
   app.use('/api/crm', requirePlan('premium'), crmRouter);
+  app.use('/api/payroll', requirePlan('premium'), payrollRouter);
 
   // Frontend estático.
   const publicDir = join(here, '..', 'public');
