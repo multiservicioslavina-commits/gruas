@@ -216,8 +216,47 @@ export async function inventoryView() {
         document.getElementById('btn-new').textContent =
           state.tab === 'suppliers' ? 'Nuevo proveedor'
             : state.tab === 'purchases' ? 'Registrar compra' : 'Nuevo repuesto';
+        document.getElementById('btn-inv-export').hidden = state.tab !== 'parts';
+        document.getElementById('btn-inv-import').hidden = state.tab !== 'parts';
         load();
       });
+    });
+
+    document.getElementById('btn-inv-export').addEventListener('click', async () => {
+      const button = document.getElementById('btn-inv-export');
+      button.disabled = true;
+      try {
+        const respuesta = await fetch('/api/export/inventario.csv', {
+          headers: { Authorization: `Bearer ${session.token}` }
+        });
+        if (!respuesta.ok) throw new Error('No se pudo preparar la descarga');
+        const cabecera = respuesta.headers.get('Content-Disposition') || '';
+        const nombre = (cabecera.match(/filename="([^"]+)"/) || [])[1] || 'inventario.csv';
+        const url = URL.createObjectURL(await respuesta.blob());
+        const enlace = document.createElement('a');
+        enlace.href = url; enlace.download = nombre;
+        document.body.appendChild(enlace); enlace.click(); enlace.remove();
+        URL.revokeObjectURL(url);
+      } catch (err) { toast(err.message, true); }
+      button.disabled = false;
+    });
+
+    document.getElementById('btn-inv-import').addEventListener('click', () =>
+      document.getElementById('inv-import-input').click());
+    document.getElementById('inv-import-input').addEventListener('change', async (event) => {
+      const file = event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      const datos = new FormData();
+      datos.append('file', file);
+      try {
+        const resultado = await api.upload('/parts/import', datos);
+        const detalle = resultado.errores?.length
+          ? ` (${resultado.errores.length} fila(s) con problemas, revisa el archivo)` : '';
+        toast(`${resultado.creados} repuesto(s) nuevo(s), ${resultado.actualizados} actualizado(s)${detalle}`,
+          Boolean(resultado.errores?.length));
+        load();
+      } catch (err) { toast(err.message, true); }
     });
 
     document.querySelectorAll('[data-filter]').forEach((chip) => {
@@ -257,7 +296,12 @@ export async function inventoryView() {
   return `
     <div class="page-head">
       <div><h1>Inventario</h1><p id="inv-count">Cargando…</p></div>
-      <button class="btn btn-primary" id="btn-new">Nuevo repuesto</button>
+      <div class="btn-group">
+        <button class="btn btn-default" id="btn-inv-export">Descargar CSV</button>
+        <button class="btn btn-default" id="btn-inv-import">Cargar CSV</button>
+        <input type="file" id="inv-import-input" accept=".csv,text/csv" hidden>
+        <button class="btn btn-primary" id="btn-new">Nuevo repuesto</button>
+      </div>
     </div>
     <div class="chips">
       <button class="chip on" data-tab="parts">Repuestos</button>

@@ -1,6 +1,7 @@
 // Catálogo del taller: servicios (mano de obra), repuestos, proveedores,
 // compras y reglas de mantenimiento.
 import { Router } from 'express';
+import multer from 'multer';
 import { query, queryOne, transaction } from '../db.js';
 import { crudRouter } from '../lib/crud.js';
 import { validate, assertUuid } from '../lib/validate.js';
@@ -8,6 +9,32 @@ import { wrap, notFound, badRequest } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { moveStock } from '../services/workorders.js';
 import { assertDelTaller } from '../lib/pertenencia.js';
+
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+// Mismo dialecto que arma export.routes.js: separado por ";", comillas
+// dobles para escapar (y "" para una comilla literal dentro del campo).
+function parseCsv(texto) {
+  const limpio = texto.replace(/^﻿/, '');
+  const filas = [];
+  let fila = [];
+  let campo = '';
+  let entreComillas = false;
+  for (let i = 0; i < limpio.length; i++) {
+    const c = limpio[i];
+    if (entreComillas) {
+      if (c === '"') {
+        if (limpio[i + 1] === '"') { campo += '"'; i++; } else entreComillas = false;
+      } else campo += c;
+    } else if (c === '"') entreComillas = true;
+    else if (c === ';') { fila.push(campo); campo = ''; }
+    else if (c === '\r') { /* se ignora, \n cierra la fila */ }
+    else if (c === '\n') { fila.push(campo); filas.push(fila); fila = []; campo = ''; }
+    else campo += c;
+  }
+  if (campo !== '' || fila.length) { fila.push(campo); filas.push(fila); }
+  return filas.filter((f) => f.some((v) => v.trim() !== ''));
+}
 
 // ── Servicios ─────────────────────────────────────────────────────────────
 export const servicesRouter = crudRouter({
@@ -63,6 +90,114 @@ export const partsRouter = crudRouter({
   orderBy: 'name ASC',
   duplicateMessage: 'Ya existe un repuesto con ese SKU'
 });
+
+// Carga masiva desde un CSV — el mismo formato que descarga
+// GET /export/inventario.csv, para poder editarlo en Excel y volver a
+// subirlo. Empareja por SKU: si ya existe uno con ese SKU en el taller,
+// lo actualiza; si no, lo crea. Sin SKU, siempre crea uno nuevo (no hay
+// con qué emparejar). Los cambios de existencia pasan por moveStock(),
+// igual que una compra o un ajuste manual, para no perder el rastro en
+// inventory_movements.
+partsRouter.post('/import', requireRole('warehouse'), csvUpload.single('file'), wrap(async (req, res) => {
+  if (!req.file) throw badRequest('No enviaste ningún archivo');
+  const filas = parseCsv(req.file.buffer.toString('utf8'));
+  if (filas.length < 2) throw badRequest('El archivo no tiene filas de datos');
+
+  const encabezado = filas[0].map((h) => h.trim().toLowerCase());
+  const col = (...nombres) => nombres.map((n) => encabezado.indexOf(n)).find((i) => i !== -1) ?? -1;
+  const c = {
+    nombre: col('nombre'), sku: col('sku'), categoria: col('categoría', 'categoria'),
+    marca: col('marca'), costo: col('costo'), precio: col('precio'),
+    existencia: col('existencia'), minimo: col('mínimo', 'minimo'),
+    ubicacion: col('ubicación', 'ubicacion'), proveedor: col('proveedor')
+  };
+  if (c.nombre === -1) throw badRequest('El archivo debe tener una columna "Nombre"');
+
+  const { rows: proveedores } = await query(
+    'SELECT id, name FROM suppliers WHERE workshop_id = $1', [req.auth.workshopId]);
+  const proveedorPorNombre = new Map(proveedores.map((p) => [p.name.toLowerCase(), p.id]));
+  const num = (v) => { const n = Number(String(v ?? '').replace(',', '.')); return Number.isFinite(n) ? n : null; };
+
+  let creados = 0;
+  let actualizados = 0;
+  const errores = [];
+  const skusDeEstaCarga = new Map(); // sku -> id, para no chocar entre filas del mismo archivo
+
+  await transaction(async (client) => {
+    for (let i = 1; i < filas.length; i++) {
+      const f = filas[i];
+      const nombre = (f[c.nombre] || '').trim();
+      if (!nombre) { errores.push(`Fila ${i + 1}: falta el nombre`); continue; }
+      const sku = c.sku !== -1 ? (f[c.sku] || '').trim() : '';
+
+      let existenteId = sku ? skusDeEstaCarga.get(sku) : null;
+      if (!existenteId && sku) {
+        const { rows: encontrado } = await client.query(
+          'SELECT id FROM parts WHERE workshop_id = $1 AND sku = $2', [req.auth.workshopId, sku]);
+        existenteId = encontrado[0]?.id || null;
+      }
+
+      const supplierId = c.proveedor !== -1 && f[c.proveedor]
+        ? proveedorPorNombre.get(f[c.proveedor].trim().toLowerCase()) || null : null;
+      const costo = c.costo !== -1 ? num(f[c.costo]) : null;
+      const existencia = c.existencia !== -1 ? num(f[c.existencia]) : null;
+
+      if (existenteId) {
+        const campos = {
+          name: nombre, sku: sku || null,
+          category: c.categoria !== -1 ? (f[c.categoria] || null) : undefined,
+          brand: c.marca !== -1 ? (f[c.marca] || null) : undefined,
+          cost: costo !== null ? costo : undefined,
+          price: c.precio !== -1 ? num(f[c.precio]) : undefined,
+          min_stock: c.minimo !== -1 ? num(f[c.minimo]) : undefined,
+          location: c.ubicacion !== -1 ? (f[c.ubicacion] || null) : undefined,
+          supplier_id: supplierId
+        };
+        const entradas = Object.entries(campos).filter(([, v]) => v !== undefined);
+        if (entradas.length) {
+          const sets = entradas.map(([k], idx) => `${k} = $${idx + 1}`);
+          const values = entradas.map(([, v]) => v);
+          values.push(existenteId, req.auth.workshopId);
+          await client.query(
+            `UPDATE parts SET ${sets.join(', ')}, updated_at = NOW()
+             WHERE id = $${values.length - 1} AND workshop_id = $${values.length}`, values);
+        }
+        if (existencia !== null) {
+          const { rows: [actual] } = await client.query('SELECT stock, cost FROM parts WHERE id = $1', [existenteId]);
+          const delta = existencia - Number(actual.stock);
+          if (delta !== 0) {
+            await moveStock(client, {
+              workshopId: req.auth.workshopId, partId: existenteId, delta,
+              unitCost: costo ?? actual.cost, reason: 'Carga masiva de inventario', userId: req.auth.userId
+            });
+          }
+        }
+        if (sku) skusDeEstaCarga.set(sku, existenteId);
+        actualizados++;
+      } else {
+        const { rows: [nuevo] } = await client.query(
+          `INSERT INTO parts (workshop_id, name, sku, category, brand, cost, price, min_stock, location, supplier_id)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+          [req.auth.workshopId, nombre, sku || null,
+           c.categoria !== -1 ? (f[c.categoria] || null) : null,
+           c.marca !== -1 ? (f[c.marca] || null) : null,
+           costo || 0, c.precio !== -1 ? (num(f[c.precio]) || 0) : 0,
+           c.minimo !== -1 ? (num(f[c.minimo]) || 0) : 0,
+           c.ubicacion !== -1 ? (f[c.ubicacion] || null) : null, supplierId]);
+        if (existencia) {
+          await moveStock(client, {
+            workshopId: req.auth.workshopId, partId: nuevo.id, delta: existencia,
+            unitCost: costo || 0, reason: 'Carga masiva de inventario', userId: req.auth.userId
+          });
+        }
+        if (sku) skusDeEstaCarga.set(sku, nuevo.id);
+        creados++;
+      }
+    }
+  });
+
+  res.json({ creados, actualizados, errores });
+}));
 
 // Lo que hay que pedir: stock por debajo del mínimo.
 partsRouter.get('/alerts/low-stock', wrap(async (req, res) => {
