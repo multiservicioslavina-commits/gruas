@@ -571,6 +571,77 @@ export async function orderDetailView(id) {
       });
       if (result) { toast('Pago registrado'); refresh(); }
     });
+
+    // Facturación electrónica DIAN (plan Premium).
+    document.getElementById('btn-invoice')?.addEventListener('click', async () => {
+      const lastMethod = order.payments[order.payments.length - 1]?.method;
+      const result = await modal({
+        title: 'Facturar electrónicamente',
+        wide: true,
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Estos datos son los que exige la DIAN y no viven en la ficha del
+                 cliente. Se completan aquí cada vez porque cambian según a nombre
+                 de quién se factura.</p>
+               <div class="row">
+                 ${field('identification_document_code', 'Tipo de documento', { value: '13', options: [
+                   ['13', 'Cédula de ciudadanía'], ['31', 'NIT'], ['22', 'Cédula de extranjería'],
+                   ['12', 'Tarjeta de identidad'], ['41', 'Pasaporte'], ['91', 'NUIP']
+                 ] })}
+                 ${field('identification', 'Número de documento', { required: true,
+                   value: order.customer?.document_number || '' })}
+               </div>
+               <div class="row">
+                 ${field('legal_organization_code', 'Tipo de persona', { value: '2', options: [
+                   ['2', 'Persona natural'], ['1', 'Persona jurídica'] ] })}
+                 ${field('dv', 'DV (sólo NIT)', { placeholder: 'Dígito de verificación' })}
+               </div>
+               ${field('names', 'Nombre completo o razón social', { required: true,
+                 value: order.customer?.name || '' })}
+               ${field('address', 'Dirección', { value: order.customer?.address || '' })}
+               <div class="row">
+                 ${field('email', 'Correo', { type: 'email', value: order.customer?.email || '' })}
+                 ${field('phone', 'Teléfono', { type: 'tel', value: order.customer?.phone || '' })}
+               </div>
+               <div class="row">
+                 ${field('municipality_code', 'Código DANE del municipio', { required: true,
+                   placeholder: '05001', hint: 'Medellín 05001 · Bogotá 11001 · Cali 76001' })}
+                 ${field('tribute_code', 'Responsabilidad de IVA', {
+                   value: Number(order.tax_rate) > 0 ? '01' : 'ZZ',
+                   options: [['01', 'Responsable de IVA'], ['ZZ', 'No aplica']] })}
+               </div>
+               ${field('payment_method_code', 'Método de pago', {
+                 value: { cash: '10', transfer: '47', card: '48' }[lastMethod] || '10',
+                 options: [['10', 'Efectivo'], ['47', 'Transferencia'], ['48', 'Tarjeta crédito'],
+                   ['49', 'Tarjeta débito'], ['42', 'Consignación bancaria'], ['ZZZ', 'Otro']] })}
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Facturar',
+        onSubmit: (data) => api.post(`/work-orders/${id}/invoice`, data)
+      });
+      if (result) { toast(`Factura ${result.external_id} emitida`); refresh(); }
+    });
+
+    document.querySelectorAll('[data-invoice-pdf]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const original = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Preparando…';
+        try {
+          const res = await fetch(`/api/invoices/${button.dataset.invoicePdf}/pdf`, {
+            headers: { Authorization: `Bearer ${session.token}` }
+          });
+          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo descargar');
+          const cabecera = res.headers.get('Content-Disposition') || '';
+          const nombre = (cabecera.match(/filename="([^"]+)"/) || [])[1] || 'factura.pdf';
+          const url = URL.createObjectURL(await res.blob());
+          const enlace = document.createElement('a');
+          enlace.href = url; enlace.download = nombre;
+          document.body.appendChild(enlace); enlace.click(); enlace.remove();
+          URL.revokeObjectURL(url);
+        } catch (err) { toast(err.message, true); }
+        button.disabled = false;
+        button.textContent = original;
+      });
+    });
   });
 
   const lineRow = (line, kind) => `
@@ -669,6 +740,8 @@ export async function orderDetailView(id) {
               ${session.can('cashier', 'reception') && order.status !== 'cancelled'
                 ? '<button class="btn btn-default btn-sm" id="btn-payment">Registrar pago</button>' : ''}
               ${editable ? '<button class="btn btn-default btn-sm" id="btn-quote">Crear cotización</button>' : ''}
+              ${session.workshop?.license_plan === 'premium' && session.can('cashier')
+                ? '<button class="btn btn-default btn-sm" id="btn-invoice">Facturar electrónicamente</button>' : ''}
             </div>
             ${order.payments.length ? `<div class="timeline" style="margin-top:16px">
               ${order.payments.map((payment) => `<div class="tl-item done">
@@ -700,6 +773,23 @@ export async function orderDetailView(id) {
                     : `<button class="btn btn-default btn-sm"
                          data-quote-link="${esc(location.origin)}/#/aprobar/${esc(quote.public_token)}">Copiar enlace</button>`}
                 </div>
+              </div>`).join('')}
+          </div>
+        </div>` : ''}
+
+        ${order.invoices.length ? `
+        <div class="card">
+          <div class="card-head"><h2>Facturación electrónica</h2></div>
+          <div class="card-body tight">
+            ${order.invoices.map((invoice) => `
+              <div class="list-item" style="cursor:default">
+                <div class="grow">
+                  <div class="t">${esc(invoice.external_id)} · ${money(invoice.total)}</div>
+                  <div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
+                    ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>
+                </div>
+                <button class="btn btn-default btn-sm no-print" data-invoice-pdf="${esc(invoice.id)}">
+                  Descargar PDF</button>
               </div>`).join('')}
           </div>
         </div>` : ''}

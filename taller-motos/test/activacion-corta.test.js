@@ -151,3 +151,14 @@ test('CRM es del plan Premium: Completo no basta, Premium sí', async () => {
   const permitido = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, altaPremium.body.token);
   assert.equal(permitido.status, 201);
 });
+
+test('facturar electrónicamente es del plan Premium: Completo no basta', async () => {
+  const completo = await emitir({ plan: 'completo', dias: 30 });
+  const altaCompleta = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: completo.body.code }));
+
+  const bloqueado = await pedir('POST', '/api/work-orders/00000000-0000-0000-0000-000000000000/invoice',
+    {}, altaCompleta.body.token);
+  assert.equal(bloqueado.status, 402);
+  assert.match(bloqueado.body.error, /plan Premium/i);
+});

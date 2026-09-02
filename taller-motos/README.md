@@ -121,6 +121,7 @@ entrada, abren la transacción y llaman a esas funciones.
 | [docs/DATOS.md](docs/DATOS.md) | Dónde viven los datos, cómo se exportan y quién responde por las copias |
 | [docs/DEPLOY.md](docs/DEPLOY.md) | Despliegue en servidor propio, variables y proxy inverso |
 | [docs/MANUAL.md](docs/MANUAL.md) | Manual de uso para el taller |
+| [docs/FACTURACION.md](docs/FACTURACION.md) | Facturación electrónica DIAN vía Factus: qué necesitas y cómo configurarla |
 
 ## Roles
 
