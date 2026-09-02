@@ -1,0 +1,52 @@
+# Instalación completa: la aplicación y su base de datos.
+#
+#   1. Copia .env.ejemplo a .env y pon un JWT_SECRET propio
+#   2. docker compose up -d
+#   3. Abre http://localhost:3000
+#
+# En Linux y Mac, ./instalar.sh hace los tres pasos por ti.
+
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: taller
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-taller}
+      POSTGRES_DB: taller_motos
+    volumes:
+      # Aquí viven los datos. Mientras este volumen exista, no se pierde nada
+      # aunque se borre y se vuelva a crear el contenedor.
+      - datos-taller:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taller -d taller_motos"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        # Espera a que la base acepte conexiones: si no, el primer arranque
+        # falla al aplicar el esquema.
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://taller:${DB_PASSWORD:-taller}@db:5432/taller_motos
+      JWT_SECRET: ${JWT_SECRET:?Falta JWT_SECRET. Copia .env.ejemplo a .env y pon uno propio.}
+      PUBLIC_URL: ${PUBLIC_URL:-http://localhost:3000}
+      ALLOW_SIGNUP: ${ALLOW_SIGNUP:-true}
+      LICENSE_REQUIRED: ${LICENSE_REQUIRED:-false}
+      LICENSE_PUBLIC_KEY: ${LICENSE_PUBLIC_KEY:-}
+      NODE_ENV: production
+    ports:
+      - "${PORT:-3000}:3000"
+    volumes:
+      # Las fotos de recepción no van en la base: guárdalas fuera del
+      # contenedor o se pierden al actualizar.
+      - archivos-taller:/app/uploads
+
+volumes:
+  datos-taller:
+  archivos-taller:
