@@ -10,6 +10,7 @@ import { inventoryView } from './views/inventory.js';
 import { agendaView } from './views/agenda.js';
 import { reportsView } from './views/reports.js';
 import { accountingView } from './views/accounting.js';
+import { crmView } from './views/crm.js';
 import { settingsView } from './views/settings.js';
 
 const ROUTES = [
@@ -29,6 +30,7 @@ const ROUTES = [
   { path: /^\/inventario$/,         view: inventoryView,  nav: 'inventario', plan: 'completo' },
   { path: /^\/reportes$/,           view: reportsView,    nav: 'reportes',   plan: 'completo' },
   { path: /^\/contabilidad$/,       view: accountingView, nav: 'contabilidad', plan: 'premium' },
+  { path: /^\/crm$/,                view: crmView,         nav: 'crm', plan: 'premium' },
   { path: /^\/ajustes$/,            view: settingsView,   nav: 'ajustes' }
 ];
 
@@ -67,6 +69,8 @@ const NAV = [
     ni('<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>')],
   ['clientes',   '/clientes',   'Clientes',
     ni('<path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/>')],
+  ['crm',        '/crm',        'CRM',
+    ni('<path d="M21 21l-4.35-4.35"/><circle cx="11" cy="11" r="8"/><circle cx="11" cy="11" r="4"/>')],
   ['inventario', '/inventario',  'Inventario',
     ni('<path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 003 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><path d="M3.27 6.96L12 12.01l8.73-5.05M12 22.08V12"/>')],
   ['reportes',   '/reportes',   'Reportes',

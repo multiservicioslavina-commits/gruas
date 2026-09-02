@@ -89,6 +89,13 @@ exportRouter.get('/', wrap(async (req, res) => {
       'SELECT * FROM accounting_categories WHERE workshop_id = $1 ORDER BY name', w),
     movimientos_caja: await filas(
       'SELECT * FROM cash_entries WHERE workshop_id = $1 ORDER BY entry_date', w),
+    prospectos: await filas(
+      `SELECT l.*,
+              COALESCE((SELECT json_agg(c ORDER BY c.created_at) FROM contact_log c
+                        WHERE c.lead_id = l.id), '[]'::json) AS contactos,
+              COALESCE((SELECT json_agg(f ORDER BY f.due_at) FROM follow_ups f
+                        WHERE f.lead_id = l.id), '[]'::json) AS seguimientos
+       FROM leads l WHERE l.workshop_id = $1 ORDER BY l.created_at`, w),
     // De los archivos va la ficha, no el contenido: se descargan aparte.
     archivos: await filas(
       `SELECT id, entity_type, entity_id, kind, stage, filename, mime_type,
@@ -190,6 +197,15 @@ const TABLAS = {
                  e.description AS descripcion, e.amount AS monto, e.method AS metodo, e.notes AS notas
           FROM cash_entries e LEFT JOIN accounting_categories c ON c.id = e.category_id
           WHERE e.workshop_id = $1 ORDER BY e.entry_date`
+  },
+  prospectos: {
+    columnas: [
+      ['Nombre', 'nombre'], ['Teléfono', 'telefono'], ['Correo', 'correo'],
+      ['Origen', 'origen'], ['Interés', 'interes'], ['Etapa', 'etapa'], ['Registrado', 'registrado']
+    ],
+    sql: `SELECT name AS nombre, phone AS telefono, email AS correo, source AS origen,
+                 interest AS interes, stage AS etapa, created_at AS registrado
+          FROM leads WHERE workshop_id = $1 ORDER BY created_at`
   }
 };
 

@@ -57,6 +57,7 @@ una sola persona.
 |---|---|
 | `customers` | Índices por teléfono y por nombre en minúsculas, que es como se busca |
 | `motorcycles` | Placa única por taller sobre `upper(replace(plate,' ',''))`: `ABC 12D` y `abc12d` son la misma moto |
+| `leads`, `contact_log`, `follow_ups` | CRM (plan Premium): embudo de prospectos, bitácora de contacto y recordatorios. Un `lead` puede apuntar a un `customer_id` si ya se convirtió, sin perder su historial. Ver `docs/CODIGOS.md` §Planes |
 
 ### Operación
 
