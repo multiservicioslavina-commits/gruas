@@ -193,8 +193,32 @@ export async function inventoryView() {
       </table></div>` : empty('Aún no has registrado compras a proveedores.', '🧾');
   };
 
+  const loadAdjustments = async () => {
+    const target = document.getElementById('inv-body');
+    const { data } = await api.get('/inventory-adjustments');
+    // Si el usuario ya navegó a otra pantalla mientras cargaba, no hay
+    // dónde escribir: salir en vez de reventar sobre un elemento muerto.
+    const contador = document.getElementById('inv-count');
+    if (!contador) return;
+    contador.textContent = data.length === 1 ? '1 ajuste' : `${number(data.length)} ajustes`;
+
+    target.innerHTML = data.length ? `
+      <div class="table-wrap"><table>
+        <thead><tr><th>Fecha</th><th>N°</th><th>Motivo</th><th class="num">Ítems</th><th>Usuario</th></tr></thead>
+        <tbody>${data.map((adj) => `
+          <tr>
+            <td class="small muted">${date(adj.created_at, true)}</td>
+            <td class="strong">#${esc(adj.number)}</td>
+            <td class="small muted">${esc(adj.reason || 'Conteo de inventario')}</td>
+            <td class="num">${esc(adj.item_count)}</td>
+            <td class="small muted">${esc(adj.created_by_name || '—')}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>` : empty('Aún no has registrado ningún ajuste de inventario en lote.', '📋');
+  };
+
   const load = () => (state.tab === 'parts' ? loadParts()
-    : state.tab === 'suppliers' ? loadSuppliers() : loadMovements());
+    : state.tab === 'suppliers' ? loadSuppliers()
+    : state.tab === 'purchases' ? loadMovements() : loadAdjustments());
 
   onMount(() => {
     load();
@@ -215,7 +239,8 @@ export async function inventoryView() {
           state.tab === 'parts' ? 'flex' : 'none';
         document.getElementById('btn-new').textContent =
           state.tab === 'suppliers' ? 'Nuevo proveedor'
-            : state.tab === 'purchases' ? 'Registrar compra' : 'Nuevo repuesto';
+            : state.tab === 'purchases' ? 'Registrar compra'
+            : state.tab === 'adjustments' ? 'Registrar ajuste' : 'Nuevo repuesto';
         document.getElementById('btn-inv-export').hidden = state.tab !== 'parts';
         document.getElementById('btn-inv-import').hidden = state.tab !== 'parts';
         load();
@@ -283,6 +308,11 @@ export async function inventoryView() {
         load();
         return;
       }
+      if (state.tab === 'adjustments') {
+        await registerAdjustment();
+        load();
+        return;
+      }
       const result = await modal({
         title: 'Nuevo repuesto',
         body: partFields({}, suppliers),
@@ -307,6 +337,7 @@ export async function inventoryView() {
       <button class="chip on" data-tab="parts">Repuestos</button>
       <button class="chip" data-tab="suppliers">Proveedores</button>
       <button class="chip" data-tab="purchases">Compras</button>
+      <button class="chip" data-tab="adjustments">Ajustes</button>
     </div>
     <div class="toolbar">
       <input class="search" id="inv-search" type="search"
@@ -372,5 +403,53 @@ async function registerPurchase(suppliers) {
 
   const result = await pending;
   if (result) toast('Compra registrada y stock actualizado');
+  return result;
+}
+
+// Ajuste de inventario en lote: un solo documento con el conteo físico de
+// varios repuestos a la vez, como un conteo de bodega.
+async function registerAdjustment() {
+  const parts = (await api.get('/parts?active=true&limit=500')).data;
+  if (!parts.length) {
+    toast('Primero crea los repuestos que vas a contar', true);
+    return null;
+  }
+
+  const lineRow = () => `
+    <div class="row-3" data-line style="margin-bottom:8px">
+      <select name="part_id">${parts.map((part) =>
+        `<option value="${esc(part.id)}">${esc(part.name)} (actual: ${number(part.stock)})</option>`).join('')}</select>
+      <input name="counted_stock" type="number" step="0.01" min="0" placeholder="Conteo real">
+    </div>`;
+
+  const pending = modal({
+    title: 'Ajuste de inventario',
+    wide: true,
+    body:
+      field('reason', 'Motivo', { placeholder: 'Conteo físico de fin de mes' }) +
+      `<p class="small muted" style="margin:6px 0 10px">
+         Escribe la cantidad <strong>real</strong> que contaste de cada repuesto: el sistema
+         calcula la diferencia contra lo que dice el sistema.</p>
+       <div id="adjustment-lines">${lineRow()}</div>
+       <button type="button" class="btn btn-default btn-sm" id="btn-add-adj-line">+ Otro repuesto</button>`,
+    confirmText: 'Registrar ajuste',
+    onSubmit: (data, form) => {
+      const items = [...form.querySelectorAll('[data-line]')].map((row) => ({
+        part_id: row.querySelector('[name=part_id]').value,
+        counted_stock: row.querySelector('[name=counted_stock]').value === ''
+          ? null : Number(row.querySelector('[name=counted_stock]').value)
+      })).filter((item) => item.part_id && item.counted_stock !== null);
+
+      if (!items.length) throw new Error('Escribe el conteo real de al menos un repuesto');
+      return api.post('/inventory-adjustments', { reason: data.reason || undefined, items });
+    }
+  });
+
+  document.getElementById('btn-add-adj-line')?.addEventListener('click', () => {
+    document.getElementById('adjustment-lines').insertAdjacentHTML('beforeend', lineRow());
+  });
+
+  const result = await pending;
+  if (result) toast('Ajuste registrado y stock actualizado');
   return result;
 }

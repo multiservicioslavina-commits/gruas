@@ -271,6 +271,36 @@ CREATE TABLE IF NOT EXISTS purchase_items (
 
 CREATE INDEX IF NOT EXISTS purchase_items_purchase_idx ON purchase_items (purchase_id);
 
+-- ── Ajustes de inventario en lote ─────────────────────────────────────────
+-- Un solo documento con varias líneas (conteo físico de varios repuestos a
+-- la vez), como un conteo de bodega. Cada línea genera su propio movimiento
+-- en inventory_movements (ver moveStock), agrupados por adjustment_id.
+CREATE TABLE IF NOT EXISTS inventory_adjustments (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  number       INTEGER NOT NULL,
+  reason       TEXT,
+  created_by   UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS inventory_adjustments_number_key
+  ON inventory_adjustments (workshop_id, number);
+CREATE INDEX IF NOT EXISTS inventory_adjustments_workshop_idx
+  ON inventory_adjustments (workshop_id, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS inventory_adjustment_items (
+  id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  adjustment_id   UUID NOT NULL REFERENCES inventory_adjustments(id) ON DELETE CASCADE,
+  part_id         UUID NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+  previous_stock  NUMERIC(12,2) NOT NULL,
+  counted_stock   NUMERIC(12,2) NOT NULL,
+  delta           NUMERIC(12,2) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS inventory_adjustment_items_adjustment_idx
+  ON inventory_adjustment_items (adjustment_id);
+
 CREATE TABLE IF NOT EXISTS inventory_movements (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id    UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
@@ -287,6 +317,11 @@ CREATE TABLE IF NOT EXISTS inventory_movements (
 );
 
 CREATE INDEX IF NOT EXISTS inventory_movements_part_idx ON inventory_movements (part_id, created_at DESC);
+
+ALTER TABLE inventory_movements
+  ADD COLUMN IF NOT EXISTS adjustment_id UUID REFERENCES inventory_adjustments(id) ON DELETE SET NULL;
+CREATE INDEX IF NOT EXISTS inventory_movements_adjustment_idx
+  ON inventory_movements (adjustment_id);
 
 -- ── Órdenes de trabajo ────────────────────────────────────────────────────
 -- Flujo (spec §7): scheduled → received → diagnosing → quoted → pending_approval

@@ -149,6 +149,12 @@ Con **Movimiento** en cada repuesto registras una entrada, una salida o un
 **ajuste por conteo**. En el ajuste escribe la cantidad *real* que contaste: el
 sistema calcula la diferencia.
 
+Cuando el conteo es de varios repuestos a la vez (por ejemplo, el inventario
+físico de fin de mes), la pestaña **Ajustes** te deja registrar un solo
+documento con todas las líneas: eliges cada repuesto y escribes su cantidad
+real, y el sistema calcula y aplica la diferencia de cada uno, con el mismo
+rastro en el historial de movimientos que un ajuste manual.
+
 **Descargar CSV** te da el inventario completo en un archivo que se abre en
 Excel. Edítalo ahí (agrega repuestos, corrige precios o existencias) y
 súbelo de nuevo con **Cargar CSV**: si un repuesto ya existe (mismo SKU) lo

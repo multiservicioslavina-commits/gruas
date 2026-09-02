@@ -92,7 +92,7 @@ export async function recalcWorkOrder(client, workshopId, workOrderId) {
 
 // Mueve stock y deja el movimiento registrado. `delta` negativo = salida.
 export async function moveStock(client, { workshopId, partId, workOrderId, purchaseId,
-                                          delta, unitCost, reason, userId }) {
+                                          adjustmentId, delta, unitCost, reason, userId }) {
   if (!partId || !delta) return null;
 
   const { rows } = await client.query(
@@ -105,10 +105,10 @@ export async function moveStock(client, { workshopId, partId, workOrderId, purch
 
   await client.query(
     `INSERT INTO inventory_movements
-       (workshop_id, part_id, work_order_id, purchase_id, type, quantity,
+       (workshop_id, part_id, work_order_id, purchase_id, adjustment_id, type, quantity,
         unit_cost, balance_after, reason, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-    [workshopId, partId, workOrderId || null, purchaseId || null,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+    [workshopId, partId, workOrderId || null, purchaseId || null, adjustmentId || null,
      delta > 0 ? 'in' : 'out', Math.abs(delta), unitCost ?? null,
      rows[0].stock, reason || null, userId || null]
   );
