@@ -559,6 +559,95 @@ CREATE TABLE IF NOT EXISTS maintenance_rules (
 
 CREATE INDEX IF NOT EXISTS maintenance_rules_workshop_idx ON maintenance_rules (workshop_id);
 
+-- ── Contabilidad básica (plan Premium) ────────────────────────────────────
+-- Plan de cuentas simple y libro de ingresos/gastos, para todo lo que no
+-- queda ya registrado solo por las órdenes (pagos de clientes, en
+-- `payments`) o las compras a proveedores (`purchases`): arriendo,
+-- servicios, nómina, una venta que no pasó por una orden, etc. El balance
+-- de caja por periodo junta las tres fuentes (ver reports.summary y
+-- accounting.summary).
+CREATE TABLE IF NOT EXISTS accounting_categories (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  name         TEXT NOT NULL,
+  kind         TEXT NOT NULL DEFAULT 'expense' CHECK (kind IN ('income','expense')),
+  active       BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS accounting_categories_workshop_idx ON accounting_categories (workshop_id);
+
+CREATE TABLE IF NOT EXISTS cash_entries (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  category_id   UUID REFERENCES accounting_categories(id) ON DELETE SET NULL,
+  kind          TEXT NOT NULL CHECK (kind IN ('income','expense')),
+  description   TEXT NOT NULL,
+  amount        NUMERIC(12,2) NOT NULL CHECK (amount > 0),
+  method        TEXT NOT NULL DEFAULT 'cash'
+                CHECK (method IN ('cash','transfer','card','nequi','daviplata','other')),
+  entry_date    DATE NOT NULL DEFAULT CURRENT_DATE,
+  notes         TEXT,
+  created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS cash_entries_workshop_idx ON cash_entries (workshop_id, entry_date DESC);
+CREATE INDEX IF NOT EXISTS cash_entries_category_idx ON cash_entries (category_id);
+
+-- ── CRM (plan Premium) ─────────────────────────────────────────────────────
+-- Seguimiento comercial más allá de las órdenes: embudo de prospectos,
+-- bitácora de contacto y recordatorios. Un prospecto puede convertirse en
+-- cliente real (`customer_id`) sin perder su historial.
+CREATE TABLE IF NOT EXISTS leads (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  customer_id   UUID REFERENCES customers(id) ON DELETE SET NULL,
+  name          TEXT NOT NULL,
+  phone         TEXT,
+  email         TEXT,
+  source        TEXT,                    -- de dónde llegó: redes, referido, letrero...
+  interest      TEXT,                    -- qué está buscando
+  stage         TEXT NOT NULL DEFAULT 'new'
+                CHECK (stage IN ('new','contacted','interested','quoted','won','lost')),
+  lost_reason   TEXT,
+  assigned_to   UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS leads_workshop_idx ON leads (workshop_id, stage);
+CREATE INDEX IF NOT EXISTS leads_customer_idx ON leads (customer_id);
+
+-- Bitácora de contacto de cada prospecto: llamadas, WhatsApp, visitas...
+CREATE TABLE IF NOT EXISTS contact_log (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  lead_id       UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  channel       TEXT NOT NULL DEFAULT 'call' CHECK (channel IN ('call','whatsapp','visit','email','other')),
+  note          TEXT NOT NULL,
+  created_by    UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS contact_log_lead_idx ON contact_log (lead_id, created_at DESC);
+
+-- Recordatorios de seguimiento: "llamar el 15", "enviar cotización otra vez".
+CREATE TABLE IF NOT EXISTS follow_ups (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  lead_id       UUID NOT NULL REFERENCES leads(id) ON DELETE CASCADE,
+  note          TEXT NOT NULL,
+  due_at        TIMESTAMPTZ NOT NULL,
+  done          BOOLEAN NOT NULL DEFAULT FALSE,
+  done_at       TIMESTAMPTZ,
+  assigned_to   UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS follow_ups_workshop_idx ON follow_ups (workshop_id, done, due_at);
+
 -- ── Historial de servicio de cada moto (spec §10) ─────────────────────────
 -- Vista derivada de las órdenes: no duplica datos.
 CREATE OR REPLACE VIEW service_history AS

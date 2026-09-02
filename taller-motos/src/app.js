@@ -24,6 +24,8 @@ import { apiKeysRouter, integrationRouter } from './routes/integration.routes.js
 import { attachmentsRouter } from './routes/attachments.routes.js';
 import { workshopRouter } from './routes/workshop.routes.js';
 import { exportRouter } from './routes/export.routes.js';
+import { accountingRouter } from './routes/accounting.routes.js';
+import { crmRouter } from './routes/crm.routes.js';
 
 const here = dirname(fileURLToPath(import.meta.url));
 
@@ -96,6 +98,9 @@ export function createApp() {
   app.use('/api/reports', reportsRouter);
   app.use('/api/api-keys', apiKeysRouter);
   app.use('/api/export', exportRouter);
+  // Contabilidad y CRM son del plan Premium en adelante.
+  app.use('/api/accounting', requirePlan('premium'), accountingRouter);
+  app.use('/api/crm', requirePlan('premium'), crmRouter);
 
   // Frontend estático.
   const publicDir = join(here, '..', 'public');

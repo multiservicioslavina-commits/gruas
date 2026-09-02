@@ -390,6 +390,8 @@ export async function settingsView() {
           <button class="btn btn-default btn-sm" data-bajar="ordenes.csv">Órdenes</button>
           <button class="btn btn-default btn-sm" data-bajar="inventario.csv">Inventario</button>
           <button class="btn btn-default btn-sm" data-bajar="pagos.csv">Pagos</button>
+          <button class="btn btn-default btn-sm" data-bajar="contabilidad.csv">Contabilidad</button>
+          <button class="btn btn-default btn-sm" data-bajar="prospectos.csv">Prospectos</button>
         </div>
 
         <p class="faint" style="margin-top:12px">

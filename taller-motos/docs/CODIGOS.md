@@ -94,7 +94,7 @@ El código determina el plan con el que arranca el taller (`--plan`):
 |---|---|
 | **basico** | Órdenes, recepción digital, clientes y motos, agenda, cotizaciones y aprobación del cliente |
 | **completo** *(por defecto)* | Todo lo anterior + inventario (repuestos, proveedores, compras), reportes de periodo, notificaciones por WhatsApp e integraciones (API) |
-| **premium** | Reservado para los módulos que faltan por construir: facturación electrónica, contabilidad, CRM |
+| **premium** | Todo lo anterior + contabilidad básica (plan de cuentas, libro de ingresos/gastos, balance de caja) y CRM (embudo de prospectos, bitácora de contacto, seguimientos). Reservado también para lo que falta: facturación electrónica |
 
 Un taller sin código (instalaciones que no exigen `LICENSE_REQUIRED`) o
 activado antes de que existiera esta distinción queda con acceso completo:
@@ -103,7 +103,8 @@ nunca se le cierra una función a quien nunca compró un plan.
 Para agregarle un módulo nuevo a esta lista: envuélvelo con
 `requirePlan('completo')` (o `'premium'`) desde `src/middleware/auth.js`,
 igual que están hoy `parts`/`suppliers`/`purchases`, `reports.summary` y
-`api-keys` en `src/app.js` y sus respectivos archivos de rutas.
+`api-keys` (plan Completo) o `accounting`/`crm` (plan Premium) en
+`src/app.js` y sus respectivos archivos de rutas.
 
 ---
 

@@ -115,3 +115,39 @@ test('el plan del taller limita los módulos avanzados: inventario es del plan C
   const permitido = await pedir('POST', '/api/parts', { name: 'Bujía' }, altaCompleta.body.token);
   assert.equal(permitido.status, 201);
 });
+
+test('contabilidad es del plan Premium: Completo no basta, Premium sí', async () => {
+  const completo = await emitir({ plan: 'completo', dias: 30 });
+  const altaCompleta = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: completo.body.code }));
+
+  const bloqueado = await pedir('POST', '/api/accounting/categories',
+    { name: 'Arriendo', kind: 'expense' }, altaCompleta.body.token);
+  assert.equal(bloqueado.status, 402);
+  assert.match(bloqueado.body.error, /plan Premium/i);
+
+  const premium = await emitir({ plan: 'premium', dias: 30 });
+  const altaPremium = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: premium.body.code }));
+
+  const permitido = await pedir('POST', '/api/accounting/categories',
+    { name: 'Arriendo', kind: 'expense' }, altaPremium.body.token);
+  assert.equal(permitido.status, 201);
+});
+
+test('CRM es del plan Premium: Completo no basta, Premium sí', async () => {
+  const completo = await emitir({ plan: 'completo', dias: 30 });
+  const altaCompleta = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: completo.body.code }));
+
+  const bloqueado = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, altaCompleta.body.token);
+  assert.equal(bloqueado.status, 402);
+  assert.match(bloqueado.body.error, /plan Premium/i);
+
+  const premium = await emitir({ plan: 'premium', dias: 30 });
+  const altaPremium = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: premium.body.code }));
+
+  const permitido = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, altaPremium.body.token);
+  assert.equal(permitido.status, 201);
+});
