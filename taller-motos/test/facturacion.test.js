@@ -203,6 +203,19 @@ test('una orden ya facturada no se puede volver a facturar', async () => {
   assert.equal(releida.body.invoices.length, 1);
 });
 
+test('un taller no puede saber, ni siquiera por el mensaje de error, si la orden de otro ya tiene factura', async () => {
+  const { client: a } = await createWorkshop(server.url);
+  const { client: b } = await createWorkshop(server.url);
+  const orderDeA = await orderConServicio(a);
+  const facturaDeA = await a.post(`/api/work-orders/${orderDeA.id}/invoice-normal`, {});
+  assert.equal(facturaDeA.status, 201);
+
+  // B intenta facturar la orden de A: como no es suya, debe dar 404 (ni
+  // rastro del código de la factura de A), nunca un 409 que la revele.
+  const res = await b.post(`/api/work-orders/${orderDeA.id}/invoice-normal`, {});
+  assert.equal(res.status, 404);
+});
+
 test('el descuento de la orden se reparte proporcionalmente entre los ítems', async () => {
   const { client } = await createWorkshop(server.url);
   const order = await orderConServicio(client);

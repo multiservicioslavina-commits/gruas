@@ -3,6 +3,7 @@
 // una orden nunca quede con totales o stock a medias.
 import { computeTotals, round2 } from '../lib/money.js';
 import { badRequest, conflict, notFound } from '../lib/errors.js';
+import { docCode } from '../lib/invoices.js';
 
 // Flujo de la spec §7. Un estado terminal (closed, cancelled) no admite salida.
 export const STATUS_FLOW = {
@@ -197,15 +198,7 @@ export async function loadFullWorkOrder(client, workshopId, id) {
   const invoices = await client.query(
     `SELECT id, number, kind, status, total, external_id, cufe, issued_at, created_at
      FROM invoices WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
-  // Código a mostrar: la electrónica ya trae el suyo (el que le asignó
-  // Factus); la normal no tiene autoridad externa, así que se arma uno con
-  // el mismo consecutivo interno, con el tipo de documento como prefijo
-  // (10 = venta normal), igual que en un ERP tradicional.
-  for (const invoice of invoices.rows) {
-    invoice.doc_code = invoice.kind === 'electronic'
-      ? invoice.external_id
-      : `10-${String(invoice.number).padStart(6, '0')}`;
-  }
+  for (const invoice of invoices.rows) invoice.doc_code = docCode(invoice);
   const files = await client.query(
     `SELECT id, kind, stage, filename, mime_type, size_bytes, caption, created_at
      FROM attachments WHERE entity_type = 'work_order' AND entity_id = $1

@@ -14,30 +14,32 @@ import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requirePlan, requireRole } from '../middleware/auth.js';
 import { loadFullWorkOrder } from '../services/workorders.js';
 import { createBill, downloadPdf, credentialsFor } from '../lib/factus.js';
+import { docCode } from '../lib/invoices.js';
 
 export const invoicesRouter = Router();
 
 // Una orden sólo se factura una vez, sea normal o electrónica: compartido
-// entre las dos rutas de creación.
-async function assertSinFacturar(workOrderId) {
+// entre las dos rutas de creación. Filtra por workshop_id porque el id de la
+// orden llega del cliente antes de que loadFullWorkOrder compruebe a quién
+// pertenece — sin el filtro, un taller podía asomarse al código de la
+// factura de otro con sólo adivinar un UUID de orden ajeno.
+async function assertSinFacturar(workshopId, workOrderId) {
   const yaFacturada = await queryOne(
-    `SELECT id, kind, number, external_id FROM invoices WHERE work_order_id = $1 AND status = 'issued'`,
-    [workOrderId]);
+    `SELECT id, kind, number, external_id FROM invoices
+     WHERE work_order_id = $1 AND workshop_id = $2 AND status = 'issued'`,
+    [workOrderId, workshopId]);
   if (!yaFacturada) return;
-  const codigo = yaFacturada.kind === 'electronic'
-    ? yaFacturada.external_id
-    : `10-${String(yaFacturada.number).padStart(6, '0')}`;
-  throw conflict(`Esta orden ya tiene una factura (${codigo}). ` +
+  throw conflict(`Esta orden ya tiene una factura (${docCode(yaFacturada)}). ` +
     (yaFacturada.kind === 'electronic'
       ? 'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.'
-      : 'Para corregirla, anúlala primero.'));
+      : 'Para corregirla, contacta a quien te entregó el software.'));
 }
 
 invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('completo'), requireRole('cashier'), wrap(async (req, res) => {
   assertUuid(req.params.id);
   const data = validate(req.body, { observation: { type: 'string', max: 500 } });
 
-  await assertSinFacturar(req.params.id);
+  await assertSinFacturar(req.auth.workshopId, req.params.id);
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
   const lines = [
@@ -59,7 +61,7 @@ invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('completo'), 
     return row;
   });
 
-  res.status(201).json({ ...invoice, doc_code: `10-${String(invoice.number).padStart(6, '0')}` });
+  res.status(201).json({ ...invoice, doc_code: docCode(invoice) });
 }));
 
 // Únicos que Factus/la DIAN piden y que el taller no tiene ya guardados en
@@ -96,7 +98,7 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   // Una orden ya facturada no se vuelve a facturar: un doble clic o un
   // reintento no debe generar dos documentos oficiales ante la DIAN, que no
   // se pueden deshacer desde aquí (haría falta una nota crédito en Factus).
-  await assertSinFacturar(req.params.id);
+  await assertSinFacturar(req.auth.workshopId, req.params.id);
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
 
