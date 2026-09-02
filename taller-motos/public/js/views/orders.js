@@ -572,6 +572,21 @@ export async function orderDetailView(id) {
       if (result) { toast('Pago registrado'); refresh(); }
     });
 
+    // Factura de venta normal (plan Completo): sin DIAN, sin Factus, sólo
+    // formaliza el total de la orden con su propio consecutivo.
+    document.getElementById('btn-invoice-normal')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Factura de venta',
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Es un comprobante de venta normal, no electrónico ante la DIAN.
+                 Para eso está "Facturar electrónicamente" (plan Premium).</p>
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Generar factura',
+        onSubmit: (data) => api.post(`/work-orders/${id}/invoice-normal`, clean(data))
+      });
+      if (result) { toast(`Factura ${result.doc_code} generada`); refresh(); }
+    });
+
     // Facturación electrónica DIAN (plan Premium).
     document.getElementById('btn-invoice')?.addEventListener('click', async () => {
       const lastMethod = order.payments[order.payments.length - 1]?.method;
@@ -740,7 +755,10 @@ export async function orderDetailView(id) {
               ${session.can('cashier', 'reception') && order.status !== 'cancelled'
                 ? '<button class="btn btn-default btn-sm" id="btn-payment">Registrar pago</button>' : ''}
               ${editable ? '<button class="btn btn-default btn-sm" id="btn-quote">Crear cotización</button>' : ''}
-              ${session.workshop?.license_plan === 'premium' && session.can('cashier')
+              ${session.hasPlan('completo') && session.can('cashier')
+                && !order.invoices.some((i) => i.status === 'issued')
+                ? '<button class="btn btn-default btn-sm" id="btn-invoice-normal">Factura de venta</button>' : ''}
+              ${session.hasPlan('premium') && session.can('cashier')
                 && !order.invoices.some((i) => i.status === 'issued')
                 ? '<button class="btn btn-default btn-sm" id="btn-invoice">Facturar electrónicamente</button>' : ''}
             </div>
@@ -780,17 +798,21 @@ export async function orderDetailView(id) {
 
         ${order.invoices.length ? `
         <div class="card">
-          <div class="card-head"><h2>Facturación electrónica</h2></div>
+          <div class="card-head"><h2>Facturación</h2></div>
           <div class="card-body tight">
             ${order.invoices.map((invoice) => `
               <div class="list-item" style="cursor:default">
                 <div class="grow">
-                  <div class="t">${esc(invoice.external_id)} · ${money(invoice.total)}</div>
+                  <div class="t">${esc(invoice.doc_code)}
+                    · ${money(invoice.total)}
+                    <span class="tag ${invoice.kind === 'electronic' ? 'tag-green' : 'tag-grey'}"
+                      style="margin-left:6px">${invoice.kind === 'electronic' ? 'Electrónica DIAN' : 'Venta'}</span></div>
                   <div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
                     ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>
                 </div>
-                <button class="btn btn-default btn-sm no-print" data-invoice-pdf="${esc(invoice.id)}">
-                  Descargar PDF</button>
+                ${invoice.kind === 'electronic'
+                  ? `<button class="btn btn-default btn-sm no-print" data-invoice-pdf="${esc(invoice.id)}">
+                       Descargar PDF</button>` : ''}
               </div>`).join('')}
           </div>
         </div>` : ''}

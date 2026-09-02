@@ -1,11 +1,12 @@
-// Facturación electrónica DIAN (plan Premium), vía Factus.
+// Facturación de una orden, de dos maneras: factura de venta normal (plan
+// Completo, sin la DIAN) o factura electrónica (plan Premium, vía Factus).
 //
-// No duplica la lógica de órdenes: arma la factura a partir de lo que ya
-// hay cargado (servicios, repuestos, total) y sólo pide lo que la DIAN
-// exige y no vive en el modelo del taller — el tipo/número de documento del
-// cliente, su municipio, cómo pagó. `requirePlan('premium')` va en cada
-// ruta, no en el router entero: este archivo se monta en '/api' junto a
-// otros que no son de pago (ver src/app.js).
+// Ninguna duplica la lógica de órdenes: arman la factura a partir de lo que
+// ya hay cargado (servicios, repuestos, total). La electrónica además pide
+// lo que la DIAN exige y no vive en el modelo del taller — el tipo/número
+// de documento del cliente, su municipio, cómo pagó. `requirePlan(...)` va
+// en cada ruta, no en el router entero: este archivo se monta en '/api'
+// junto a otros que no son de pago (ver src/app.js).
 import { Router } from 'express';
 import { queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
@@ -15,6 +16,51 @@ import { loadFullWorkOrder } from '../services/workorders.js';
 import { createBill, downloadPdf, credentialsFor } from '../lib/factus.js';
 
 export const invoicesRouter = Router();
+
+// Una orden sólo se factura una vez, sea normal o electrónica: compartido
+// entre las dos rutas de creación.
+async function assertSinFacturar(workOrderId) {
+  const yaFacturada = await queryOne(
+    `SELECT id, kind, number, external_id FROM invoices WHERE work_order_id = $1 AND status = 'issued'`,
+    [workOrderId]);
+  if (!yaFacturada) return;
+  const codigo = yaFacturada.kind === 'electronic'
+    ? yaFacturada.external_id
+    : `10-${String(yaFacturada.number).padStart(6, '0')}`;
+  throw conflict(`Esta orden ya tiene una factura (${codigo}). ` +
+    (yaFacturada.kind === 'electronic'
+      ? 'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.'
+      : 'Para corregirla, anúlala primero.'));
+}
+
+invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('completo'), requireRole('cashier'), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, { observation: { type: 'string', max: 500 } });
+
+  await assertSinFacturar(req.params.id);
+
+  const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
+  const lines = [
+    ...order.services.filter((s) => s.approved !== false),
+    ...order.parts.filter((p) => p.approved !== false)
+  ];
+  if (!lines.length) throw badRequest('Esta orden no tiene mano de obra ni repuestos que facturar');
+
+  const subtotal = Number(order.labor_total) + Number(order.parts_total) - Number(order.discount);
+  const invoice = await transaction(async (client) => {
+    const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+    const { rows: [row] } = await client.query(
+      `INSERT INTO invoices (workshop_id, work_order_id, number, kind, status, subtotal, tax_total, total,
+                              issued_at, payload)
+       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7) RETURNING *`,
+      [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
+       JSON.stringify({ observation: data.observation || null })]
+    );
+    return row;
+  });
+
+  res.status(201).json({ ...invoice, doc_code: `10-${String(invoice.number).padStart(6, '0')}` });
+}));
 
 // Únicos que Factus/la DIAN piden y que el taller no tiene ya guardados en
 // otra parte: el resto (items, total, IVA) sale de la orden.
@@ -50,13 +96,7 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   // Una orden ya facturada no se vuelve a facturar: un doble clic o un
   // reintento no debe generar dos documentos oficiales ante la DIAN, que no
   // se pueden deshacer desde aquí (haría falta una nota crédito en Factus).
-  const yaFacturada = await queryOne(
-    `SELECT id, external_id FROM invoices WHERE work_order_id = $1 AND status = 'issued'`,
-    [req.params.id]);
-  if (yaFacturada) {
-    throw conflict(`Esta orden ya tiene una factura electrónica (${yaFacturada.external_id}). ` +
-      'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.');
-  }
+  await assertSinFacturar(req.params.id);
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
 

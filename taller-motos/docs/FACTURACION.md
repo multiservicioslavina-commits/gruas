@@ -1,8 +1,18 @@
-# Facturación electrónica DIAN
+# Facturación
 
-Es un módulo del plan **Premium**. Genera facturas de venta electrónicas
-válidas ante la DIAN a partir de una orden de trabajo, usando
-[Factus](https://www.factus.com.co/) como proveedor tecnológico autorizado.
+Desde una orden de trabajo se puede emitir un comprobante de venta de dos
+maneras, según el plan del taller:
+
+| Tipo | Código | Plan | Qué es |
+|---|---|---|---|
+| **Factura de venta** | `10` | Completo | Comprobante propio del taller, con su propio consecutivo. No pasa por la DIAN. |
+| **Factura electrónica** | `1010` | Premium | Documento válido ante la DIAN, firmado y transmitido vía [Factus](https://www.factus.com.co/) (proveedor tecnológico autorizado). |
+
+Una orden sólo admite **una** factura, de cualquiera de los dos tipos —no
+se puede facturar dos veces la misma orden—. El resto de este documento
+describe la electrónica, que es la que exige configuración externa; la
+normal no necesita nada de esto: el botón "Factura de venta" en la orden
+la genera al toque, con los datos que la orden ya tiene.
 
 ---
 

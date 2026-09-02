@@ -527,9 +527,17 @@ CREATE INDEX IF NOT EXISTS invoices_wo_idx ON invoices (work_order_id);
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS reference_code TEXT;
 ALTER TABLE invoices ADD COLUMN IF NOT EXISTS cufe           TEXT;
 
--- Una orden no puede tener dos facturas electrónicas emitidas a la vez: la
--- ruta ya lo comprueba antes de llamar a Factus, pero esto lo garantiza
--- también contra una condición de carrera (doble clic, reintento).
+-- Factura de venta normal (plan Completo): un comprobante propio del taller,
+-- sin pasar por la DIAN/Factus, para quien no tiene o no necesita facturación
+-- electrónica. Comparte tabla y consecutivo con la electrónica porque a la
+-- vista del taller son la misma cosa (un documento de venta); lo único que
+-- cambia es si se le pidió a Factus que la valide ante la DIAN.
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS kind TEXT NOT NULL DEFAULT 'electronic'
+  CHECK (kind IN ('normal','electronic'));
+
+-- Una orden no puede tener dos facturas emitidas a la vez, sea normal o
+-- electrónica: la ruta ya lo comprueba antes de emitir, pero esto lo
+-- garantiza también contra una condición de carrera (doble clic, reintento).
 CREATE UNIQUE INDEX IF NOT EXISTS invoices_wo_issued_key
   ON invoices (work_order_id) WHERE status = 'issued';
 

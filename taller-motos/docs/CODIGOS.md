@@ -93,7 +93,7 @@ El código determina el plan con el que arranca el taller (`--plan`):
 | Plan | Incluye |
 |---|---|
 | **basico** | Órdenes, recepción digital, clientes y motos, agenda, cotizaciones y aprobación del cliente |
-| **completo** *(por defecto)* | Todo lo anterior + inventario (repuestos, proveedores, compras), reportes de periodo, notificaciones por WhatsApp e integraciones (API) |
+| **completo** *(por defecto)* | Todo lo anterior + inventario (repuestos, proveedores, compras), reportes de periodo, notificaciones por WhatsApp, integraciones (API) y factura de venta normal |
 | **premium** | Todo lo anterior + contabilidad básica, CRM y facturación electrónica DIAN vía Factus (ver [docs/FACTURACION.md](FACTURACION.md)) |
 
 Un taller sin código (instalaciones que no exigen `LICENSE_REQUIRED`) o
@@ -102,9 +102,11 @@ nunca se le cierra una función a quien nunca compró un plan.
 
 Para agregarle un módulo nuevo a esta lista: envuélvelo con
 `requirePlan('completo')` (o `'premium'`) desde `src/middleware/auth.js`,
-igual que están hoy `parts`/`suppliers`/`purchases`, `reports.summary` y
-`api-keys` (plan Completo) o `accounting`/`crm`/`invoices` (plan Premium)
-en `src/app.js` y sus respectivos archivos de rutas.
+igual que están hoy `parts`/`suppliers`/`purchases`, `reports.summary`,
+`api-keys` y la factura de venta normal (plan Completo) o `accounting`/`crm`
+y la factura electrónica DIAN (plan Premium) en `src/app.js` y sus
+respectivos archivos de rutas — `requirePlan` va por ruta, no por router,
+como en `src/routes/invoices.routes.js`.
 
 ---
 

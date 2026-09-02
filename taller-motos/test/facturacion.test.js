@@ -197,7 +197,7 @@ test('una orden ya facturada no se puede volver a facturar', async () => {
 
   const segunda = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
   assert.equal(segunda.status, 409);
-  assert.match(segunda.body.error, /ya tiene una factura electrónica/);
+  assert.match(segunda.body.error, /ya tiene una factura.*nota crédito/);
 
   const releida = await client.get(`/api/work-orders/${order.id}`);
   assert.equal(releida.body.invoices.length, 1);
@@ -220,4 +220,47 @@ test('el descuento de la orden se reparte proporcionalmente entre los ítems', a
   // 25000 de descuento sobre 100000 de mano de obra = 25%.
   assert.equal(cuerpoEnviado.items.length, 1);
   assert.equal(cuerpoEnviado.items[0].discount_rate, 25);
+});
+
+test('factura de venta normal: no necesita Factus ni datos de la DIAN', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+
+  const res = await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(res.body.kind, 'normal');
+  assert.match(res.body.doc_code, /^10-\d{6}$/);
+  assert.equal(Number(res.body.total), Number(order.total));
+
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  assert.equal(releida.body.invoices.length, 1);
+  assert.equal(releida.body.invoices[0].doc_code, res.body.doc_code);
+});
+
+test('un mecánico no puede emitir una factura de venta normal', async () => {
+  const { client: admin } = await createWorkshop(server.url);
+  const order = await orderConServicio(admin);
+  const { client: mecanico } = await addUser(server.url, admin, 'mechanic');
+
+  const res = await mecanico.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+  assert.equal(res.status, 403);
+});
+
+test('una orden con factura normal no se puede volver a facturar, ni normal ni electrónicamente', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+
+  const normal = await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+  assert.equal(normal.status, 201);
+
+  const otraNormal = await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+  assert.equal(otraNormal.status, 409);
+
+  await conectarFactus(client);
+  mockFactusOk();
+  const electronica = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(electronica.status, 409);
+
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  assert.equal(releida.body.invoices.length, 1);
 });

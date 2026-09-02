@@ -10,7 +10,17 @@ export const session = {
   user: null,
   workshop: null,
   get role() { return this.user?.role; },
-  can(...roles) { return this.role === 'admin' || roles.includes(this.role); }
+  can(...roles) { return this.role === 'admin' || roles.includes(this.role); },
+  // Un taller sin plan asignado (instalación sin código, o activado antes de
+  // que existiera esta distinción) tiene acceso completo: igual que en el
+  // backend (requirePlan), nunca se le cierra una función a quien nunca
+  // compró un plan.
+  hasPlan(minPlan) {
+    const plan = this.workshop?.license_plan;
+    if (!plan) return true;
+    const rank = { basico: 0, completo: 1, premium: 2 };
+    return (rank[plan] ?? rank.completo) >= rank[minPlan];
+  }
 };
 
 export class ApiError extends Error {
