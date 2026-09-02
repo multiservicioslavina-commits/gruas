@@ -93,9 +93,11 @@ en su propio panel, y también está en el
   falta una nota crédito, que Factus soporta pero este software aún no
   genera. Mientras tanto, esas correcciones se hacen directamente desde
   el panel de Factus.
-- **Descuentos de la orden**: si la orden tiene un descuento general, no
-  se traslada a la factura electrónica (los ítems se facturan a su
-  precio de lista). Es poco común en este tipo de negocio, pero si lo
-  necesitas, avísale a quien te dio el software.
 - **Envío automático por correo**: la factura queda lista para descargar
   en PDF; enviarla por correo al cliente es un paso manual por ahora.
+- **Una orden, una factura**: cada orden sólo se puede facturar una vez.
+  Si algo salió mal en la factura, la corrección se hace en Factus (nota
+  crédito), no volviendo a facturar la misma orden.
+- **Quién puede facturar**: sólo administradores y cajeros, igual que con
+  registrar un pago — es un documento oficial ante la DIAN, no una tarea
+  de mostrador.
