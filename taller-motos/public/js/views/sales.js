@@ -7,7 +7,7 @@ import { onMount, go } from '../app.js';
 
 // ── Listado ──────────────────────────────────────────────────────────
 export async function salesView() {
-  const state = { search: '' };
+  const state = { search: '', from: '', to: '' };
   let sales = [];
 
   const load = async () => {
@@ -15,11 +15,15 @@ export async function salesView() {
     target.innerHTML = '<div class="spinner"></div>';
     const params = new URLSearchParams();
     if (state.search) params.set('search', state.search);
+    if (state.from) params.set('from', state.from);
+    if (state.to) params.set('to', state.to);
     sales = (await api.get(`/sales?${params}`)).data;
 
     const counter = document.getElementById('sales-count');
     if (!counter) return;
-    counter.textContent = sales.length === 1 ? '1 venta' : `${number(sales.length)} ventas`;
+    const sumTotal = sales.reduce((s, v) => s + Number(v.total), 0);
+    counter.textContent = (sales.length === 1 ? '1 venta' : `${number(sales.length)} ventas`) +
+      ` · Total: ${money(sumTotal)}`;
 
     target.innerHTML = sales.length ? `<div class="table-wrap"><table>
         <thead><tr><th>Fecha</th><th>N°</th><th>Cliente</th><th class="num">Ítems</th>
@@ -83,6 +87,14 @@ export async function salesView() {
       clearTimeout(window.__salesSearch);
       window.__salesSearch = setTimeout(load, 260);
     });
+    document.getElementById('sales-from')?.addEventListener('change', (e) => {
+      state.from = e.target.value;
+      load();
+    });
+    document.getElementById('sales-to')?.addEventListener('change', (e) => {
+      state.to = e.target.value;
+      load();
+    });
   });
 
   return `
@@ -90,9 +102,15 @@ export async function salesView() {
       <div><h1>Ventas</h1><p id="sales-count">Cargando…</p></div>
       <a class="btn btn-primary" href="#/ventas/nueva">Nueva venta</a>
     </div>
-    <div class="toolbar">
+    <div class="toolbar" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
       <input class="search" id="sales-search" type="search"
-             placeholder="Buscar por número, cliente…">
+             placeholder="Buscar por número, cliente…" style="flex:1;min-width:180px">
+      <div style="display:flex;gap:6px;align-items:center">
+        <label class="small muted" for="sales-from" style="white-space:nowrap">Desde</label>
+        <input type="date" id="sales-from" style="width:auto">
+        <label class="small muted" for="sales-to" style="white-space:nowrap">Hasta</label>
+        <input type="date" id="sales-to" style="width:auto">
+      </div>
     </div>
     <div class="card"><div class="card-body tight" id="sales-body"></div></div>`;
 }
@@ -112,8 +130,11 @@ export async function saleDetailView(id) {
       <div class="card" style="margin-bottom:18px">
         <div class="card-head">
           <h2>Datos de la venta</h2>
-          ${!issued && session.can('cashier')
-            ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Facturar</button>` : ''}
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-default btn-sm" id="btn-print-sale" type="button">Imprimir</button>
+            ${!issued && session.can('cashier')
+              ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Facturar</button>` : ''}
+          </div>
         </div>
         <div class="card-body">
           <div class="grid cols-2">
@@ -121,6 +142,7 @@ export async function saleDetailView(id) {
               <div class="kv"><span class="k">Número</span><span class="v">#${esc(sale.number)}</span></div>
               <div class="kv"><span class="k">Fecha</span><span class="v">${date(sale.created_at, true)}</span></div>
               <div class="kv"><span class="k">Cliente</span><span class="v">${esc(sale.customer_name_saved || sale.customer_name || 'Mostrador')}</span></div>
+              ${sale.customer_phone ? `<div class="kv"><span class="k">Teléfono</span><span class="v">${esc(sale.customer_phone)}</span></div>` : ''}
               <div class="kv"><span class="k">Método de pago</span><span class="v">${esc(PAYMENT_METHODS[sale.payment_method] || sale.payment_method)}</span></div>
             </div>
             <div>
@@ -166,6 +188,45 @@ export async function saleDetailView(id) {
         toast(`Factura ${result.doc_code} generada`);
         load();
       } catch (err) { toast(err.message, true); e.target.disabled = false; }
+    });
+
+    document.getElementById('btn-print-sale')?.addEventListener('click', () => {
+      const w = session.workshop || {};
+      const printHtml = `<!doctype html><html><head><meta charset="utf-8">
+        <title>Venta #${sale.number}</title>
+        <style>
+          body{font-family:system-ui,sans-serif;max-width:700px;margin:20px auto;font-size:13px;color:#222}
+          h1{font-size:18px;margin:0 0 4px} .shop{margin-bottom:14px;color:#555}
+          table{width:100%;border-collapse:collapse;margin:12px 0}
+          th,td{padding:5px 8px;text-align:left;border-bottom:1px solid #ddd}
+          th{font-weight:600;font-size:12px;text-transform:uppercase;color:#555}
+          .num{text-align:right} .totals{margin-left:auto;max-width:280px}
+          .totals .line{display:flex;justify-content:space-between;padding:3px 0}
+          .totals .total{font-weight:700;font-size:15px;border-top:2px solid #222;margin-top:4px;padding-top:6px}
+          .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+          .meta span{font-size:12px;color:#555}
+          @media print{body{margin:0}}
+        </style></head><body>
+        <h1>${esc(w.name || 'Taller')}</h1>
+        <div class="shop">${[w.address, w.city, w.phone].filter(Boolean).map(esc).join(' · ')}</div>
+        <div class="meta">
+          <span><b>Venta #${esc(sale.number)}</b></span>
+          <span>${date(sale.created_at, true)}</span>
+          <span>Cliente: ${esc(sale.customer_name_saved || sale.customer_name || 'Mostrador')}</span>
+          <span>Pago: ${esc(PAYMENT_METHODS[sale.payment_method] || sale.payment_method)}</span>
+        </div>
+        <table><thead><tr><th>Descripción</th><th class="num">Cant.</th><th class="num">Precio</th><th class="num">Subtotal</th></tr></thead>
+        <tbody>${sale.items.map((i) => `<tr><td>${esc(i.description)}</td><td class="num">${i.quantity}</td><td class="num">${money(i.unit_price)}</td><td class="num">${money(i.quantity * i.unit_price)}</td></tr>`).join('')}</tbody></table>
+        <div class="totals">
+          <div class="line"><span>Subtotal</span><span>${money(sale.subtotal)}</span></div>
+          ${Number(sale.discount) ? `<div class="line"><span>Descuento</span><span>-${money(sale.discount)}</span></div>` : ''}
+          ${Number(sale.tax_total) ? `<div class="line"><span>IVA (${sale.tax_rate}%)</span><span>${money(sale.tax_total)}</span></div>` : ''}
+          <div class="line total"><span>Total</span><span>${money(sale.total)}</span></div>
+        </div>
+        <script>window.print();<\/script></body></html>`;
+      const win = window.open('', '_blank');
+      win.document.write(printHtml);
+      win.document.close();
     });
   };
 
@@ -230,18 +291,20 @@ export async function newSaleView() {
 
   const lineRowHtml = (line) => `
     <tr data-line-seq="${line.seq}">
-      <td style="min-width:240px">
+      <td style="min-width:200px">
         <div style="display:flex;gap:4px">
           <select data-field="part_id" style="flex:1">${partOptions(line.part_id)}</select>
           <button type="button" class="btn btn-default btn-sm" data-new-part
                   title="Crear producto nuevo" style="flex-shrink:0">+</button>
         </div>
       </td>
-      <td style="width:100px"><input data-field="quantity" type="number" step="0.01"
+      <td style="min-width:140px"><input data-field="description" type="text"
+          value="${esc(line.description)}" placeholder="Descripción"></td>
+      <td style="width:90px"><input data-field="quantity" type="number" step="0.01"
           min="0.01" value="${line.quantity}" style="text-align:right"></td>
-      <td style="width:130px"><input data-field="unit_price" type="number" min="0"
+      <td style="width:120px"><input data-field="unit_price" type="number" min="0"
           step="1" value="${line.unit_price || ''}" placeholder="Auto" style="text-align:right"></td>
-      <td class="num strong" data-line-subtotal style="width:120px">${money(line.quantity * line.unit_price)}</td>
+      <td class="num strong" data-line-subtotal style="width:110px">${money(line.quantity * line.unit_price)}</td>
       <td style="width:44px"><button type="button" class="btn btn-quiet btn-sm" data-remove-line
           title="Quitar línea" style="color:var(--red)">&times;</button></td>
     </tr>`;
@@ -264,18 +327,27 @@ export async function newSaleView() {
       row.dataset.bound = '1';
 
       const partSelect = row.querySelector('[data-field="part_id"]');
+      const descInput = row.querySelector('[data-field="description"]');
       const qtyInput = row.querySelector('[data-field="quantity"]');
       const priceInput = row.querySelector('[data-field="unit_price"]');
 
       partSelect.addEventListener('change', () => {
         line.part_id = partSelect.value;
         const opt = partSelect.selectedOptions[0];
-        if (opt && opt.dataset.price) {
-          const price = Number(opt.dataset.price);
-          line.unit_price = price;
-          priceInput.value = price;
+        if (opt && opt.value) {
+          const part = parts.find((p) => p.id === opt.value);
+          if (part) {
+            line.description = part.name;
+            descInput.value = part.name;
+            line.unit_price = Number(part.price) || 0;
+            priceInput.value = line.unit_price;
+          }
         }
         recalcLine(row, line);
+      });
+
+      descInput.addEventListener('input', () => {
+        line.description = descInput.value;
       });
 
       qtyInput.addEventListener('input', () => {
@@ -364,14 +436,15 @@ export async function newSaleView() {
 
     try {
       const items = lines
-        .filter((l) => l.part_id && l.quantity > 0)
+        .filter((l) => (l.part_id || l.description) && l.quantity > 0)
         .map((l) => ({
-          part_id: l.part_id,
+          part_id: l.part_id || undefined,
+          description: l.description || undefined,
           quantity: l.quantity,
           unit_price: l.unit_price || undefined
         }));
 
-      if (!items.length) throw new Error('Agrega al menos un producto con cantidad');
+      if (!items.length) throw new Error('Agrega al menos un ítem con descripción o producto');
 
       const customerSelect = document.getElementById('f-customer_id');
       const customerId = customerSelect?.value || undefined;
@@ -403,9 +476,8 @@ export async function newSaleView() {
     const custSelect = document.getElementById('f-customer_id');
     if (custSelect) custSelect.innerHTML = customerOptions();
 
-    const custToggle = document.getElementById('toggle-customer-name');
     const custNameField = document.getElementById('customer-name-wrap');
-    if (custSelect && custToggle && custNameField) {
+    if (custSelect && custNameField) {
       custSelect.addEventListener('change', () => {
         custNameField.style.display = custSelect.value ? 'none' : '';
       });
@@ -477,7 +549,7 @@ export async function newSaleView() {
         <div class="card-body tight">
           <div class="table-wrap"><table>
             <thead><tr>
-              <th>Producto</th><th class="num">Cantidad</th>
+              <th>Producto</th><th>Descripción</th><th class="num">Cantidad</th>
               <th class="num">Precio un.</th><th class="num">Subtotal</th><th></th>
             </tr></thead>
             <tbody id="sale-lines-body"></tbody>
