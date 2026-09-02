@@ -46,9 +46,10 @@ export async function accountingView() {
     target.innerHTML = '<div class="spinner"></div>';
 
     await loadCategories();
-    const [summary, entries] = await Promise.all([
+    const [summary, entries, operations] = await Promise.all([
       api.get(`/accounting/summary?from=${state.from}&to=${state.to}`),
-      api.get(`/accounting/entries?from=${state.from}&to=${state.to}`)
+      api.get(`/accounting/entries?from=${state.from}&to=${state.to}`),
+      api.get(`/accounting/operations?from=${state.from}&to=${state.to}`)
     ]);
 
     const categoryList = (rows) => rows.length ? `<div class="totals">
@@ -65,6 +66,28 @@ export async function accountingView() {
         <div class="stat ${summary.net >= 0 ? 'accent' : 'red'}">
           <div class="v">${money(summary.net)}</div>
           <div class="k">Balance neto</div></div>
+      </div>
+
+      <div class="card">
+        <div class="card-head"><h2>Operaciones</h2></div>
+        <div class="card-body tight">
+          ${operations.data.length ? `<div class="table-wrap"><table>
+            <thead><tr><th>Fecha</th><th>Documento</th><th>Código</th><th>Tercero</th>
+              <th>Detalle</th><th class="num">Monto</th><th>Estado</th></tr></thead>
+            <tbody>${operations.data.map((op) => `
+              <tr>
+                <td class="small muted">${date(op.doc_date)}</td>
+                <td><span class="tag ${op.direction === 'income' ? 'tag-green' : 'tag-red'}">
+                  ${esc(op.doc_type)}</span></td>
+                <td class="small muted">${esc(op.doc_code || '—')}</td>
+                <td class="strong">${esc(op.counterparty || '—')}</td>
+                <td class="small muted">${esc(op.detail || '—')}</td>
+                <td class="num strong" style="color:var(--${op.direction === 'income' ? 'green' : 'red'})">
+                  ${op.direction === 'income' ? '+' : '-'}${money(op.amount)}</td>
+                <td class="small muted">${esc(op.status)}</td>
+              </tr>`).join('')}</tbody>
+          </table></div>` : empty('Sin operaciones en este periodo.', '📋')}
+        </div>
       </div>
 
       <div class="grid cols-2">
@@ -209,7 +232,7 @@ export async function accountingView() {
 
   return `
     <div class="page-head">
-      <div><h1>Contabilidad</h1><p>Plan de cuentas, ingresos, gastos y balance de caja.</p></div>
+      <div><h1>Contabilidad</h1><p>Operaciones, plan de cuentas, ingresos, gastos y balance de caja.</p></div>
     </div>
     <div class="toolbar no-print">
       <div class="field" style="margin:0"><label>Desde</label>

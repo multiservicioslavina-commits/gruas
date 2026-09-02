@@ -104,6 +104,51 @@ test('el balance de caja junta pagos de órdenes, compras y movimientos manuales
   assert.equal(gastoArriendo.total, 800000);
 });
 
+test('operaciones: junta facturas, compras y movimientos manuales en un solo listado', async () => {
+  const { client } = await createWorkshop(server.url);
+
+  const order = await client.post('/api/work-orders', {
+    plate: `OPS${Math.floor(Math.random() * 900 + 100)}`,
+    customer_name: 'Cliente Operaciones', customer_phone: '3005554433',
+    brand: 'Bajaj', model: 'Pulsar', complaint: 'Cambio de llantas'
+  });
+  assert.equal(order.status, 201);
+  await client.post(`/api/work-orders/${order.body.id}/services`, {
+    description: 'Cambio de llantas', unit_price: 300000
+  });
+  const factura = await client.post(`/api/work-orders/${order.body.id}/invoice-normal`, {});
+  assert.equal(factura.status, 201);
+
+  const compra = await client.post('/api/purchases', {
+    items: [{ description: 'Llantas', quantity: 2, unit_cost: 100000 }]
+  });
+  assert.equal(compra.status, 201);
+
+  await client.post('/api/accounting/entries', {
+    kind: 'income', description: 'Venta de chatarra', amount: 30000, entry_date: hoy()
+  });
+
+  const ops = await client.get(`/api/accounting/operations?from=${hoy()}&to=${hoy()}`);
+  assert.equal(ops.status, 200);
+  assert.equal(ops.body.data.length, 3);
+
+  const factOp = ops.body.data.find((o) => o.source === 'invoice');
+  assert.equal(factOp.doc_type, 'Factura de venta');
+  assert.equal(factOp.doc_code, factura.body.doc_code);
+  assert.equal(factOp.direction, 'income');
+  assert.equal(Number(factOp.amount), Number(factura.body.total));
+
+  const compraOp = ops.body.data.find((o) => o.source === 'purchase');
+  assert.equal(compraOp.doc_type, 'Compra');
+  assert.equal(compraOp.direction, 'expense');
+  assert.equal(Number(compraOp.amount), 200000);
+
+  const entradaOp = ops.body.data.find((o) => o.source === 'cash_entry');
+  assert.equal(entradaOp.doc_type, 'Movimiento contable');
+  assert.equal(entradaOp.direction, 'income');
+  assert.equal(Number(entradaOp.amount), 30000);
+});
+
 test('cada taller ve sólo su propia contabilidad', async () => {
   const { client: a } = await createWorkshop(server.url);
   const { client: b } = await createWorkshop(server.url);
