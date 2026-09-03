@@ -22,6 +22,11 @@ export function money(amount, currency) {
 
 export const number = (value) => Number(value || 0).toLocaleString('es-CO');
 
+// Para comparar texto ignorando tildes: quien busca "bujia" espera encontrar
+// "Bujía". Sin esto, cualquier buscador en español falla con el uso normal.
+export const normalizeSearch = (value) =>
+  String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+
 export function date(value, withTime = false) {
   if (!value) return '—';
   const d = new Date(value);

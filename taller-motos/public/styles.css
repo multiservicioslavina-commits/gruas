@@ -2,6 +2,11 @@
    Taller Motos — hoja de estilos
    ═══════════════════════════════════════════════════════════════════════ */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+/* El CSS de autor siempre gana sobre la hoja del navegador, así que cualquier
+   regla nuestra con un display propio (como .btn) rompe silenciosamente
+   `elemento.hidden = true` en ese elemento. Se restaura el contrato nativo
+   del atributo `hidden` para toda la app, de una vez. */
+[hidden] { display: none !important; }
 
 :root {
   --accent:        #E8611A;
