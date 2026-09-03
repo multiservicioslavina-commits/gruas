@@ -154,6 +154,33 @@ export async function accountingView() {
 
     bindEntryEvents(entries.data);
     bindCategoryEvents();
+    bindHeaderButtons();
+  };
+
+  // "Nuevo movimiento" y "Nueva categoría" viven dentro del contenido que
+  // arma load(), así que cada vez que load() vuelve a pintar (al crear,
+  // editar, borrar, cambiar el rango de fechas...) esos botones son nodos
+  // nuevos sin oyentes: hay que re-enlazarlos en cada pintada, igual que
+  // bindEntryEvents/bindCategoryEvents.
+  const bindHeaderButtons = () => {
+    document.getElementById('btn-new-entry')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Nuevo movimiento',
+        body: entryFields(),
+        onSubmit: (data) => api.post('/accounting/entries', clean(data, ['amount']))
+      });
+      if (result) { toast('Movimiento registrado'); load(); }
+    });
+    document.getElementById('btn-new-category')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Nueva categoría',
+        body: field('name', 'Nombre', { required: true, placeholder: 'Arriendo, servicios, nómina...' }) +
+              field('kind', 'Tipo', { value: 'expense',
+                options: [['expense', 'Gasto'], ['income', 'Ingreso']] }),
+        onSubmit: (data) => api.post('/accounting/categories', data)
+      });
+      if (result) { toast('Categoría creada'); load(); }
+    });
   };
 
   const bindEntryEvents = (entries) => {
@@ -203,8 +230,6 @@ export async function accountingView() {
   };
 
   onMount(async () => {
-    // Se espera a que cargue: "Nuevo movimiento"/"Nueva categoría" viven
-    // dentro del contenido que arma load(), no en la plantilla estática.
     await load();
     for (const id of ['acc-from', 'acc-to']) {
       document.getElementById(id).addEventListener('change', (event) => {
@@ -212,24 +237,6 @@ export async function accountingView() {
         load();
       });
     }
-    document.getElementById('btn-new-entry').addEventListener('click', async () => {
-      const result = await modal({
-        title: 'Nuevo movimiento',
-        body: entryFields(),
-        onSubmit: (data) => api.post('/accounting/entries', clean(data, ['amount']))
-      });
-      if (result) { toast('Movimiento registrado'); load(); }
-    });
-    document.getElementById('btn-new-category').addEventListener('click', async () => {
-      const result = await modal({
-        title: 'Nueva categoría',
-        body: field('name', 'Nombre', { required: true, placeholder: 'Arriendo, servicios, nómina...' }) +
-              field('kind', 'Tipo', { value: 'expense',
-                options: [['expense', 'Gasto'], ['income', 'Ingreso']] }),
-        onSubmit: (data) => api.post('/accounting/categories', data)
-      });
-      if (result) { toast('Categoría creada'); load(); }
-    });
   });
 
   return `
