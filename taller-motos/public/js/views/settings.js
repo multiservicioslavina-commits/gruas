@@ -14,19 +14,23 @@ export async function settingsView() {
     isAdmin ? api.get('/api-keys').then((r) => r.data).catch(() => []) : Promise.resolve([])
   ]);
 
+  // idPrefix 'user-': este modal convive con el formulario "Datos del
+  // taller", que ya usa los mismos nombres de campo (name, email, phone).
+  // Sin un prefijo distinto, ambos generarían el mismo id="f-name" y
+  // <label for> terminaría enfocando el campo equivocado.
   const userFields = (user = {}, isNew = false) =>
-    field('name', 'Nombre', { required: true, value: user.name || '' }) +
-    (isNew ? field('email', 'Correo', { type: 'email', required: true }) : '') +
+    field('name', 'Nombre', { required: true, value: user.name || '', idPrefix: 'user-' }) +
+    (isNew ? field('email', 'Correo', { type: 'email', required: true, idPrefix: 'user-' }) : '') +
     (isNew ? field('password', 'Contraseña', { type: 'password', required: true,
-      hint: 'Mínimo 8 caracteres' })
+      hint: 'Mínimo 8 caracteres', idPrefix: 'user-' })
            : field('password', 'Nueva contraseña', { type: 'password',
-             hint: 'Déjalo vacío para no cambiarla' })) +
+             hint: 'Déjalo vacío para no cambiarla', idPrefix: 'user-' })) +
     `<div class="row">
        ${field('role', 'Rol', { value: user.role || 'reception',
-          options: Object.entries(ROLES) })}
-       ${field('phone', 'Teléfono', { type: 'tel', value: user.phone || '' })}
+          options: Object.entries(ROLES), idPrefix: 'user-' })}
+       ${field('phone', 'Teléfono', { type: 'tel', value: user.phone || '', idPrefix: 'user-' })}
      </div>` +
-    field('specialty', 'Especialidad (mecánicos)', { value: user.specialty || '' });
+    field('specialty', 'Especialidad (mecánicos)', { value: user.specialty || '', idPrefix: 'user-' });
 
   onMount(() => {
     // Logo del taller.
@@ -180,7 +184,9 @@ export async function settingsView() {
     document.getElementById('btn-new-service').addEventListener('click', async () => {
       const result = await modal({
         title: 'Nuevo servicio',
-        body: field('name', 'Nombre', { required: true, placeholder: 'Mantenimiento básico' }) +
+        // idPrefix 'svc-': "Nombre" también existe en el formulario "Datos
+        // del taller" de esta misma página; sin prefijo compartirían id.
+        body: field('name', 'Nombre', { required: true, placeholder: 'Mantenimiento básico', idPrefix: 'svc-' }) +
               `<div class="row">
                  ${field('code', 'Código')}
                  ${field('price', 'Precio', { type: 'number', value: '0', min: 0 })}
@@ -197,7 +203,7 @@ export async function settingsView() {
         const service = services.find((s) => s.id === button.dataset.service);
         const result = await modal({
           title: 'Editar servicio',
-          body: field('name', 'Nombre', { required: true, value: service.name }) +
+          body: field('name', 'Nombre', { required: true, value: service.name, idPrefix: 'svc-' }) +
                 `<div class="row">
                    ${field('code', 'Código', { value: service.code || '' })}
                    ${field('price', 'Precio', { type: 'number', value: service.price, min: 0 })}
@@ -256,8 +262,8 @@ export async function settingsView() {
         body: `<p class="small muted" style="margin-bottom:14px">
                  Sirve para que otra plataforma consulte el estado de una moto o agende
                  una cita en tu taller. El secreto se muestra una sola vez.</p>` +
-              field('name', 'Nombre', { required: true, placeholder: '¿Para qué la vas a usar?' }) +
-              field('scopes', 'Permisos', { options: [
+              field('name', 'Nombre', { required: true, placeholder: '¿Para qué la vas a usar?', idPrefix: 'key-' }) +
+              field('scopes', 'Permisos', { idPrefix: 'key-', options: [
                 ['read', 'Sólo consultar'],
                 ['read,write', 'Consultar y agendar']] }),
         confirmText: 'Crear llave',
