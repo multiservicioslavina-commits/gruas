@@ -11,7 +11,7 @@
 import { Router } from 'express';
 import { queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
-import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
+import { wrap, notFound, badRequest, conflict, ApiError } from '../lib/errors.js';
 import { requirePlan, requireRole } from '../middleware/auth.js';
 import { loadFullWorkOrder } from '../services/workorders.js';
 import { loadFullSale } from './sales.routes.js';
@@ -186,17 +186,35 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   const bill = result.data;
 
   const subtotal = Number(order.labor_total) + Number(order.parts_total) - Number(order.discount);
-  const invoice = await transaction(async (client) => {
-    const num = await nextSequence(client, req.auth.workshopId, 'invoices');
-    const { rows: [row] } = await client.query(
-      `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total,
-                              issued_at, external_id, reference_code, cufe, payload)
-       VALUES ($1,$2,$3,'issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
-      [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
-       bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill)]
-    );
-    return row;
-  });
+  let invoice;
+  try {
+    invoice = await transaction(async (client) => {
+      const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+      const { rows: [row] } = await client.query(
+        `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total,
+                                issued_at, external_id, reference_code, cufe, payload)
+         VALUES ($1,$2,$3,'issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
+        [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
+         bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill)]
+      );
+      return row;
+    });
+  } catch (err) {
+    // createBill() ya registró un documento real e irreversible ante la DIAN
+    // (Factus lo validó y le asignó número): lo que falló fue guardarlo
+    // aquí. Si esto se tratara como un error cualquiera, alguien reintentaría
+    // "Facturar" y generaría una SEGUNDA factura electrónica para la misma
+    // orden -- assertSinFacturar no la habría bloqueado, porque sin esta fila
+    // el sistema no sabe que ya existe. Un duplicado así sólo se corrige con
+    // una nota crédito directamente en Factus, no se puede deshacer desde acá.
+    console.error('Factura DIAN creada en Factus pero no se pudo guardar localmente:',
+      { workOrderId: order.id, documentNumber: bill.number, cufe: bill.cufe, error: err });
+    throw new ApiError(500,
+      `La factura electrónica SÍ se creó ante la DIAN (documento ${bill.number}). ` +
+      'No se pudo guardar en este sistema por un error interno: no la vuelvas a generar, ' +
+      'eso crearía una segunda factura. Contacta a quien te entregó el software con ese ' +
+      'número de documento para que la registre a mano.');
+  }
 
   res.status(201).json(invoice);
 }));

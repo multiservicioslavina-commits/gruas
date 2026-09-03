@@ -5,6 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer, createWorkshop, addUser, closePool } from './helpers.js';
+import { pool } from '../src/db.js';
 
 const server = await startServer();
 test.after(async () => { await server.close(); await closePool(); });
@@ -233,6 +234,39 @@ test('el descuento de la orden se reparte proporcionalmente entre los ítems', a
   // 25000 de descuento sobre 100000 de mano de obra = 25%.
   assert.equal(cuerpoEnviado.items.length, 1);
   assert.equal(cuerpoEnviado.items[0].discount_rate, 25);
+});
+
+test('si la factura ya validada en la DIAN no se puede guardar localmente, el error lo dice claro y no la pierde', async () => {
+  // Simula el peor caso: Factus ya aceptó y numeró el documento (algo real
+  // e irreversible), pero guardarlo en este sistema falla. No debe verse
+  // como un error cualquiera -- si lo fuera, alguien reintentaría
+  // "Facturar" y generaría una SEGUNDA factura electrónica para la misma
+  // orden, que sólo se corrige con una nota crédito en Factus.
+  const { client, workshop } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  // Otra orden del mismo taller, con una factura ya guardada en el número 1:
+  // fuerza a que la próxima (la de `order`, que usará el mismo consecutivo
+  // por ser el primero para este taller) choque de verdad contra el índice
+  // único (workshop_id, number) al intentar guardarse -- un fallo real de
+  // Postgres, no uno simulado.
+  const otraOrden = await orderConServicio(client);
+  await pool.query(
+    `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total, issued_at, external_id, payload)
+     VALUES ($1, $2, 1, 'issued', 0, 0, 0, NOW(), 'YA-EXISTE', '{}')`,
+    [workshop.id, otraOrden.id]);
+
+  mockFactusOk();
+  const res = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+
+  assert.equal(res.status, 500, JSON.stringify(res.body));
+  assert.match(res.body.error, /SÍ se creó ante la DIAN/i);
+  assert.match(res.body.error, /no la vuelvas a generar/i);
+
+  // Y de verdad no quedó guardada: no hay que fingir que sí.
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  assert.equal(releida.body.invoices.length, 0);
 });
 
 test('factura de venta normal: no necesita Factus ni datos de la DIAN', async () => {
