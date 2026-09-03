@@ -1,7 +1,10 @@
 // Reportes de periodo: ventas, servicios, inventario, productividad y cartera.
-import { api } from '../api.js';
+import { api, session } from '../api.js';
 import { esc, money, number, date, empty, statusTag, ORDER_STATUS, PAYMENT_METHODS } from '../ui.js';
 import { onMount } from '../app.js';
+
+// Normaliza un teléfono colombiano a formato wa.me (agrega 57 si falta).
+const waLink = (phone) => `https://wa.me/${String(phone).replace(/\D/g, '').replace(/^0+/, '').replace(/^(?!57)/, '57')}`;
 
 const firstOfMonth = () => {
   const now = new Date();
@@ -21,6 +24,7 @@ export async function reportsView() {
     target.innerHTML = '<div class="spinner"></div>';
     const report = await api.get(`/reports/summary?from=${state.from}&to=${state.to}`);
     const receivables = await api.get('/reports/receivables');
+    const maintenance = await api.get('/reports/maintenance-due');
 
     const maxStatus = Math.max(1, ...report.orders_by_status.map((row) => row.count));
 
@@ -151,6 +155,43 @@ export async function reportsView() {
                 <td class="num strong" style="color:var(--red)">${money(row.balance)}</td>
               </tr>`).join('')}</tbody>
           </table></div>` : empty('Nadie te debe. 👏', '✅')}
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Mantenimientos pendientes</h2>
+          <span class="tag tag-amber">${number(maintenance.total)} moto(s)</span>
+        </div>
+        <div class="card-body tight">
+          ${maintenance.data.length ? `<div class="table-wrap"><table>
+            <thead><tr><th>Moto</th><th>Cliente</th><th>Motivo</th><th class="no-print"></th></tr></thead>
+            <tbody>${maintenance.data.map((row) => {
+              const reasons = [];
+              if (row.next_service_mileage && row.mileage != null &&
+                  Number(row.mileage) >= Number(row.next_service_mileage)) {
+                reasons.push(`Pasó los ${number(row.next_service_mileage)} km (va en ${number(row.mileage)})`);
+              }
+              if (row.next_service_date && new Date(row.next_service_date) <= new Date()) {
+                reasons.push(`Revisión programada para ${date(row.next_service_date)}`);
+              }
+              const message = `Hola ${(row.customer_name || '').split(' ')[0]}, te escribimos de ` +
+                `${session.workshop?.name || 'el taller'} para recordarte que tu moto ` +
+                `${row.plate} ya está lista para su próximo mantenimiento.`;
+              return `
+              <tr>
+                <td><span class="plate">${esc(row.plate)}</span>
+                  ${esc([row.brand, row.model].filter(Boolean).join(' '))}</td>
+                <td>${esc(row.customer_name || '—')}
+                  <div class="faint">${esc(row.customer_phone || '')}</div></td>
+                <td class="small muted">${reasons.map(esc).join(' · ')}</td>
+                <td class="num no-print">${row.customer_phone
+                  ? `<a class="btn btn-default btn-sm" target="_blank" rel="noopener"
+                       href="${waLink(row.customer_phone)}?text=${encodeURIComponent(message)}">WhatsApp</a>`
+                  : ''}</td>
+              </tr>`;
+            }).join('')}</tbody>
+          </table></div>` : empty('Ninguna moto está pendiente de mantenimiento.', '✅')}
         </div>
       </div>`;
   };
