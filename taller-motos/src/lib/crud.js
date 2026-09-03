@@ -49,7 +49,8 @@ export function crudRouter({
     if (req.query.search && searchColumns.length) {
       params.push(`%${String(req.query.search).trim()}%`);
       const idx = params.length;
-      where.push('(' + searchColumns.map((c) => `${c} ILIKE $${idx}`).join(' OR ') + ')');
+      // unaccent() en ambos lados: que buscar "bujia" encuentre "Bujía".
+      where.push('(' + searchColumns.map((c) => `unaccent(${c}) ILIKE unaccent($${idx})`).join(' OR ') + ')');
     }
     for (const [param, column] of Object.entries(filters)) {
       if (req.query[param] !== undefined && req.query[param] !== '') {

@@ -41,7 +41,9 @@ salesRouter.get('/', wrap(async (req, res) => {
   if (req.query.to)   { params.push(req.query.to);   where.push(`s.created_at::date <= $${params.length}`); }
   if (req.query.search) {
     params.push(`%${req.query.search}%`);
-    where.push(`(s.number::text ILIKE $${params.length} OR c.name ILIKE $${params.length} OR s.customer_name ILIKE $${params.length})`);
+    // unaccent() en los nombres, para que "jose" encuentre "José".
+    where.push(`(s.number::text ILIKE $${params.length} OR unaccent(c.name) ILIKE unaccent($${params.length})
+                 OR unaccent(s.customer_name) ILIKE unaccent($${params.length}))`);
   }
 
   const { rows } = await query(
