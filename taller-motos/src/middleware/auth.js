@@ -125,7 +125,13 @@ const NOMBRE_PLAN = { completo: 'Completo', premium: 'Premium' };
 
 export const requirePlan = (minPlan) => (req, _res, next) => {
   if (!config.license.required) return next();
-  const actual = PLAN_RANK[req.auth?.licensePlan] ?? PLAN_RANK.completo;
+  // Sin plan asignado: acceso completo, igual que entitled() en el
+  // frontend (app.js) y como dice el comentario de arriba. Antes esto
+  // caía a PLAN_RANK.completo, que sigue bloqueando con 402 los módulos
+  // Premium (Contabilidad, CRM, Nómina, Factus) para un taller sin plan
+  // -- justo lo que el comentario dice que no debía pasar.
+  if (!req.auth?.licensePlan) return next();
+  const actual = PLAN_RANK[req.auth.licensePlan] ?? PLAN_RANK.completo;
   if (actual >= PLAN_RANK[minPlan]) return next();
   next(new ApiError(402,
     `Esta función es parte del plan ${NOMBRE_PLAN[minPlan] || minPlan}. ` +

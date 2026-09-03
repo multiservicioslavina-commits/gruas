@@ -99,6 +99,22 @@ test('un taller no puede ver las fotos de otro', async () => {
     'y el dueño las sigue teniendo');
 });
 
+test('un taller no puede adjuntar un archivo a la orden de otro', async () => {
+  const a = await createWorkshop(server.url);
+  const b = await createWorkshop(server.url);
+  const ordenDeA = await ordenDePrueba(a.client);
+
+  // B intenta subir un archivo usando el id de una orden que es de A.
+  const res = await subir(b.token, {
+    entity_type: 'work_order', entity_id: ordenDeA.id, stage: 'reception'
+  });
+  assert.equal(res.status, 404, 'no debe poder adjuntar a una orden que no es suya');
+
+  // Y ese archivo no puede haber quedado colado en la ficha de A.
+  const ficha = (await a.client.get(`/api/work-orders/${ordenDeA.id}`)).body;
+  assert.equal(ficha.attachments.length, 0);
+});
+
 test('borrar una foto la quita de la orden', async () => {
   const { client, token } = await createWorkshop(server.url);
   const orden = await ordenDePrueba(client);

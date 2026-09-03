@@ -152,6 +152,27 @@ test('CRM es del plan Premium: Completo no basta, Premium sí', async () => {
   assert.equal(permitido.status, 201);
 });
 
+test('un taller sin plan asignado (activado antes de que existiera license_plan) tiene acceso completo', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register',
+    datosTaller({ license_code: basico.body.code }));
+
+  // Simula un taller de antes de que existiera el campo `license_plan`
+  // (o uno activado sin exigir código): license_plan queda en NULL.
+  await pool.query(`UPDATE workshops SET license_plan = NULL WHERE id = $1`,
+    [alta.body.workshop.id]);
+
+  const inventario = await pedir('POST', '/api/parts', { name: 'Bujía' }, alta.body.token);
+  assert.equal(inventario.status, 201);
+
+  const contabilidad = await pedir('POST', '/api/accounting/categories',
+    { name: 'Arriendo', kind: 'expense' }, alta.body.token);
+  assert.equal(contabilidad.status, 201);
+
+  const crm = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, alta.body.token);
+  assert.equal(crm.status, 201);
+});
+
 test('facturar electrónicamente es del plan Premium: Completo no basta', async () => {
   const completo = await emitir({ plan: 'completo', dias: 30 });
   const altaCompleta = await pedir('POST', '/api/auth/register',

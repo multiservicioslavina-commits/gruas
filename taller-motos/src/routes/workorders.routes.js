@@ -292,6 +292,7 @@ workOrdersRouter.post('/:id/services', wrap(async (req, res) => {
   const order = await transaction(async (client) => {
     const wo = await getWorkOrder(client, req.auth.workshopId, req.params.id);
     assertEditable(wo);
+    await assertDelTaller('users', data.mechanic_id, req.auth.workshopId, client);
 
     let { description, unit_price } = data;
     if (data.service_id) {
@@ -420,6 +421,7 @@ workOrdersRouter.post('/:id/diagnostics', wrap(async (req, res) => {
 
   const order = await transaction(async (client) => {
     const wo = await getWorkOrder(client, req.auth.workshopId, req.params.id);
+    await assertDelTaller('users', data.mechanic_id, req.auth.workshopId, client);
     await client.query(
       `INSERT INTO diagnostics
          (workshop_id, work_order_id, findings, tests_performed, recommendations, notes, mechanic_id)
