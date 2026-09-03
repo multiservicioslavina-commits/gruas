@@ -148,6 +148,14 @@ export async function payrollView() {
   };
 
   const bindEmployeeEvents = () => {
+    document.getElementById('btn-new-employee')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Nuevo empleado',
+        body: employeeFields(),
+        onSubmit: (data) => api.post('/payroll/employees', clean(data, ['base_salary']))
+      });
+      if (result) { toast('Empleado creado'); load(); }
+    });
     document.querySelectorAll('[data-edit-emp]').forEach((button) => {
       button.addEventListener('click', async () => {
         const emp = employees.find((e) => e.id === button.dataset.editEmp);
@@ -170,8 +178,6 @@ export async function payrollView() {
   };
 
   onMount(async () => {
-    // Se espera a que cargue: "Nuevo empleado" vive dentro del contenido
-    // que arma load(), no en la plantilla estática.
     await load();
     for (const id of ['pay-from', 'pay-to']) {
       document.getElementById(id).addEventListener('change', (event) => {
@@ -179,14 +185,6 @@ export async function payrollView() {
         load();
       });
     }
-    document.getElementById('btn-new-employee').addEventListener('click', async () => {
-      const result = await modal({
-        title: 'Nuevo empleado',
-        body: employeeFields(),
-        onSubmit: (data) => api.post('/payroll/employees', clean(data, ['base_salary']))
-      });
-      if (result) { toast('Empleado creado'); load(); }
-    });
   });
 
   return `
