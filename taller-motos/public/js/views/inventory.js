@@ -1,7 +1,7 @@
 // Inventario de repuestos, proveedores y compras.
 import { api, session } from '../api.js';
 import {
-  esc, money, number, date, empty, toast, field, modal, confirmDialog, clean
+  esc, money, number, date, empty, toast, field, modal, confirmDialog, clean, normalizeSearch
 } from '../ui.js';
 import { onMount, refresh } from '../app.js';
 
@@ -350,6 +350,84 @@ export async function inventoryView() {
     <div class="card"><div class="card-body tight" id="inv-body"></div></div>`;
 }
 
+// Campo de búsqueda de repuesto para una línea de compra/ajuste: reemplaza
+// el <select> con cientos de opciones en texto plano por un buscador con
+// resultados clicables (nombre, SKU, precio, existencias), igual que en
+// Ventas. El repuesto elegido queda en un input oculto `name="part_id"`,
+// así que el resto del formulario (validación, lectura al enviar) no cambia.
+const partSearchLineHtml = () => `
+  <div class="field sale-search-wrap" style="margin-bottom:0">
+    <input type="text" class="line-part-search" autocomplete="off"
+        placeholder="Buscar producto o SKU...">
+    <input type="hidden" name="part_id">
+  </div>`;
+
+function bindPartSearchLine(row, parts) {
+  const searchInput = row.querySelector('.line-part-search');
+  const hiddenInput = row.querySelector('[name="part_id"]');
+  if (!searchInput || searchInput.dataset.bound) return;
+  searchInput.dataset.bound = '1';
+  let dd = null;
+  let timer = null;
+
+  // Se monta en <body> con posición fija en vez de anidado en el modal:
+  // evita quedar recortado por cualquier ancestro con scroll propio.
+  const close = () => { dd?.remove(); dd = null; };
+  const position = () => {
+    if (!dd) return;
+    const rect = searchInput.getBoundingClientRect();
+    dd.style.left = `${rect.left}px`;
+    dd.style.top = `${rect.bottom + 2}px`;
+    dd.style.width = `${rect.width}px`;
+  };
+  const open = () => {
+    if (!dd) {
+      dd = document.createElement('div');
+      dd.className = 'sale-search-dd sale-search-dd-floating';
+      document.body.appendChild(dd);
+    }
+    position();
+    dd.style.display = 'block';
+  };
+  const pick = (part) => {
+    hiddenInput.value = part.id;
+    searchInput.value = `${part.name}${part.sku ? ` [${part.sku}]` : ''}`;
+    close();
+  };
+  const render = (query) => {
+    const q = normalizeSearch(query.trim());
+    if (!q.length) { close(); return; }
+    const results = parts
+      .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q))
+      .slice(0, 8);
+
+    open();
+    dd.innerHTML = results.length
+      ? results.map((p) => `<div class="sale-sr-item" data-pid="${esc(p.id)}">
+          <div class="sale-sr-name">${esc(p.name)}${p.sku ? ` <span class="faint">[${esc(p.sku)}]</span>` : ''}</div>
+          <div class="sale-sr-meta">${money(p.price)} &middot; ${number(p.stock)} disponibles</div>
+        </div>`).join('')
+      : `<div class="sale-sr-empty">Sin resultados para "${esc(query)}"</div>`;
+    dd.querySelectorAll('.sale-sr-item').forEach((el) => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const part = parts.find((p) => p.id === el.dataset.pid);
+        if (part) pick(part);
+      });
+    });
+  };
+
+  searchInput.addEventListener('input', () => {
+    hiddenInput.value = '';
+    clearTimeout(timer);
+    timer = setTimeout(() => render(searchInput.value), 150);
+  });
+  searchInput.addEventListener('focus', () => {
+    if (searchInput.value.trim().length && !hiddenInput.value) render(searchInput.value);
+  });
+  searchInput.addEventListener('blur', () => { setTimeout(close, 180); });
+}
+
 // Compra a proveedor: entra al inventario y actualiza el costo.
 async function registerPurchase(suppliers) {
   const parts = (await api.get('/parts?active=true&limit=500')).data;
@@ -359,12 +437,14 @@ async function registerPurchase(suppliers) {
   }
 
   const lineRow = () => `
-    <div class="row-3" data-line style="margin-bottom:8px">
-      <select name="part_id">${parts.map((part) =>
-        `<option value="${esc(part.id)}">${esc(part.name)}</option>`).join('')}</select>
+    <div class="row-3" data-line style="margin-bottom:8px;align-items:flex-start">
+      ${partSearchLineHtml()}
       <input name="quantity" type="number" step="0.01" min="0" placeholder="Cantidad" value="1">
       <input name="unit_cost" type="number" min="0" placeholder="Costo unitario">
     </div>`;
+
+  const bindAllLines = () =>
+    document.querySelectorAll('#purchase-lines [data-line]').forEach((row) => bindPartSearchLine(row, parts));
 
   // El modal se pinta de inmediato; se guarda la promesa para poder enlazar
   // el botón de "otra línea" mientras sigue abierto.
@@ -397,8 +477,10 @@ async function registerPurchase(suppliers) {
     }
   });
 
+  bindAllLines();
   document.getElementById('btn-add-line')?.addEventListener('click', () => {
     document.getElementById('purchase-lines').insertAdjacentHTML('beforeend', lineRow());
+    bindAllLines();
   });
 
   const result = await pending;
@@ -416,11 +498,13 @@ async function registerAdjustment() {
   }
 
   const lineRow = () => `
-    <div class="row-3" data-line style="margin-bottom:8px">
-      <select name="part_id">${parts.map((part) =>
-        `<option value="${esc(part.id)}">${esc(part.name)} (actual: ${number(part.stock)})</option>`).join('')}</select>
+    <div class="row" data-line style="margin-bottom:8px;align-items:flex-start">
+      ${partSearchLineHtml()}
       <input name="counted_stock" type="number" step="0.01" min="0" placeholder="Conteo real">
     </div>`;
+
+  const bindAllLines = () =>
+    document.querySelectorAll('#adjustment-lines [data-line]').forEach((row) => bindPartSearchLine(row, parts));
 
   const pending = modal({
     title: 'Ajuste de inventario',
@@ -445,8 +529,10 @@ async function registerAdjustment() {
     }
   });
 
+  bindAllLines();
   document.getElementById('btn-add-adj-line')?.addEventListener('click', () => {
     document.getElementById('adjustment-lines').insertAdjacentHTML('beforeend', lineRow());
+    bindAllLines();
   });
 
   const result = await pending;

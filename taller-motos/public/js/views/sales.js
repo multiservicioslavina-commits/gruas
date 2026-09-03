@@ -1,7 +1,7 @@
 import { api, session } from '../api.js';
 import {
   esc, money, number, date, empty, toast, field, modal, clean,
-  errorBox, PAYMENT_METHODS
+  errorBox, PAYMENT_METHODS, normalizeSearch
 } from '../ui.js';
 import { onMount, go } from '../app.js';
 
@@ -516,10 +516,10 @@ export async function newSaleView() {
       };
 
       const renderPartResults = (query) => {
-        const q = query.trim().toLowerCase();
+        const q = normalizeSearch(query.trim());
         if (!q.length) { closePartDd(); return; }
         const results = parts
-          .filter((p) => p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q))
+          .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q))
           .slice(0, 8);
 
         openPartDd();
