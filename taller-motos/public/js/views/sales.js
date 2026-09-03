@@ -245,24 +245,179 @@ export async function saleDetailView(id) {
     <div id="sale-detail"><div class="spinner"></div></div>`;
 }
 
-// ── Nueva venta (formulario completo) ────────────────────────────────
+// ── Nueva venta (formulario profesional) ────────────────────────────
+const DOC_TYPES = [
+  ['', '-- Tipo --'],
+  ['CC', 'CC - Cedula'],
+  ['NIT', 'NIT'],
+  ['CE', 'CE - Extranjeria'],
+  ['PP', 'Pasaporte'],
+  ['TI', 'TI - Tarjeta Id.']
+];
+
 export async function newSaleView() {
   let parts = [];
-  let customers = [];
+  let selectedCustomer = null;
+  let walkIn = false;
   let lines = [];
   let lineSeq = 0;
+  let searchTimer = null;
 
-  const loadData = async () => {
-    [parts, customers] = await Promise.all([
-      api.get('/parts?active=true&limit=500').then((r) => r.data),
-      api.get('/customers?limit=500').then((r) => r.data).catch(() => [])
-    ]);
+  const loadParts = async () => {
+    parts = (await api.get('/parts?active=true&limit=500')).data;
   };
 
+  // ── Cliente: búsqueda ────────────────────────────────────────────
+  const searchCustomers = async (q) => {
+    if (!q || q.length < 2) return [];
+    return (await api.get(`/customers?search=${encodeURIComponent(q)}&limit=8`)).data;
+  };
+
+  const renderCustomerArea = () => {
+    const area = document.getElementById('customer-area');
+    if (!area) return;
+
+    if (selectedCustomer) {
+      const c = selectedCustomer;
+      const docLine = [c.document_type, c.document_number].filter(Boolean).join(' ');
+      const details = [
+        docLine,
+        c.phone ? `Tel: ${c.phone}` : '',
+        c.email || '',
+        c.address ? `${c.address}${c.city ? `, ${c.city}` : ''}` : ''
+      ].filter(Boolean);
+
+      area.innerHTML = `
+        <div class="sale-cust-card">
+          <div class="sale-cust-info">
+            <div class="sale-cust-name">${esc(c.name)}</div>
+            <div class="sale-cust-detail">
+              ${details.map((d) => `<span>${esc(d)}</span>`).join('')}
+            </div>
+          </div>
+          <button type="button" class="btn btn-quiet btn-sm" id="btn-change-cust">Cambiar</button>
+        </div>`;
+      document.getElementById('btn-change-cust')?.addEventListener('click', () => {
+        selectedCustomer = null;
+        renderCustomerArea();
+      });
+      return;
+    }
+
+    if (walkIn) {
+      area.innerHTML = `
+        <div class="row" style="margin-bottom:10px">
+          ${field('customer_name', 'Nombre', { placeholder: 'Consumidor final' })}
+          ${field('customer_phone_walkin', 'Telefono', { type: 'tel' })}
+        </div>
+        <button type="button" class="btn btn-quiet btn-sm" id="btn-back-search">Buscar cliente existente</button>`;
+      document.getElementById('btn-back-search')?.addEventListener('click', () => {
+        walkIn = false;
+        renderCustomerArea();
+      });
+      return;
+    }
+
+    area.innerHTML = `
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:10px">
+        <div class="field sale-search-wrap" style="flex:1;margin-bottom:0">
+          <label for="cust-search-input">Buscar por nombre, cedula o telefono</label>
+          <input id="cust-search-input" type="search"
+                 placeholder="Ej: Juan Perez, 1098765432..." autocomplete="off">
+          <div id="cust-search-dd" class="sale-search-dd"></div>
+        </div>
+        <button type="button" class="btn btn-primary btn-sm" id="btn-new-cust"
+                style="height:40px;white-space:nowrap">+ Nuevo cliente</button>
+      </div>
+      <button type="button" class="btn btn-quiet btn-sm" id="btn-walkin">Venta sin cliente registrado</button>`;
+
+    const input = document.getElementById('cust-search-input');
+    const dd = document.getElementById('cust-search-dd');
+
+    input?.addEventListener('input', () => {
+      clearTimeout(searchTimer);
+      const q = input.value.trim();
+      if (q.length < 2) { dd.style.display = 'none'; return; }
+      searchTimer = setTimeout(async () => {
+        try {
+          const results = await searchCustomers(q);
+          if (!results.length) {
+            dd.innerHTML = `<div class="sale-sr-empty">Sin resultados.
+              <button type="button" class="btn-link" id="btn-create-dd">Crear cliente</button></div>`;
+            dd.style.display = '';
+            document.getElementById('btn-create-dd')?.addEventListener('click', () => {
+              dd.style.display = 'none';
+              openNewCustomer(q);
+            });
+          } else {
+            dd.innerHTML = results.map((c) => {
+              const doc = [c.document_type, c.document_number].filter(Boolean).join(' ');
+              return `<div class="sale-sr-item" data-cid="${esc(c.id)}">
+                <div class="sale-sr-name">${esc(c.name)}</div>
+                <div class="sale-sr-meta">${[doc, c.phone, c.email].filter(Boolean).map(esc).join(' · ')}</div>
+              </div>`;
+            }).join('');
+            dd.style.display = '';
+            dd.querySelectorAll('.sale-sr-item').forEach((el) => {
+              el.addEventListener('mousedown', (e) => {
+                e.preventDefault();
+                selectedCustomer = results.find((c) => c.id === el.dataset.cid);
+                renderCustomerArea();
+              });
+            });
+          }
+        } catch { /* ignore */ }
+      }, 250);
+    });
+
+    input?.addEventListener('blur', () => {
+      setTimeout(() => { if (dd) dd.style.display = 'none'; }, 180);
+    });
+    input?.addEventListener('focus', () => {
+      if (dd?.innerHTML) dd.style.display = '';
+    });
+
+    document.getElementById('btn-new-cust')?.addEventListener('click', () => openNewCustomer());
+    document.getElementById('btn-walkin')?.addEventListener('click', () => {
+      walkIn = true;
+      renderCustomerArea();
+    });
+
+    input?.focus();
+  };
+
+  const openNewCustomer = async (prefillName = '') => {
+    const created = await modal({
+      title: 'Nuevo cliente',
+      body:
+        field('name', 'Nombre completo', { required: true, value: prefillName }) +
+        `<div class="row">
+           ${field('document_type', 'Tipo de documento', { options: DOC_TYPES })}
+           ${field('document_number', 'Numero de documento', { placeholder: 'Ej: 1098765432' })}
+         </div>
+         <div class="row">
+           ${field('phone', 'Telefono / WhatsApp', { type: 'tel' })}
+           ${field('email', 'Correo electronico', { type: 'email' })}
+         </div>` +
+        field('address', 'Direccion', { placeholder: 'Calle, carrera, numero...' }) +
+        `<div class="row">
+           ${field('city', 'Ciudad')}
+           ${field('notes', 'Notas', { placeholder: 'Opcional' })}
+         </div>`,
+      confirmText: 'Crear cliente',
+      onSubmit: (data) => api.post('/customers', clean(data))
+    });
+    if (created) {
+      selectedCustomer = created;
+      toast(`Cliente "${created.name}" registrado`);
+      renderCustomerArea();
+    }
+  };
+
+  // ── Líneas de producto ───────────────────────────────────────────
   const addLine = () => {
-    const seq = ++lineSeq;
-    lines.push({ seq, part_id: '', quantity: 1, unit_price: 0, description: '' });
-    return seq;
+    lines.push({ seq: ++lineSeq, part_id: '', quantity: 1, unit_price: 0, description: '' });
+    return lineSeq;
   };
 
   const removeLine = (seq) => {
@@ -273,18 +428,10 @@ export async function newSaleView() {
   };
 
   const partOptions = (selected) => {
-    let html = '<option value="">— Seleccionar producto —</option>';
+    let html = '<option value="">-- Seleccionar producto --</option>';
     html += parts.map((p) =>
-      `<option value="${esc(p.id)}"${p.id === selected ? ' selected' : ''} data-price="${p.price}" data-stock="${p.stock}">` +
-      `${esc(p.name)}${p.sku ? ` [${esc(p.sku)}]` : ''} — ${money(p.price)} (${number(p.stock)} disp.)</option>`
-    ).join('');
-    return html;
-  };
-
-  const customerOptions = () => {
-    let html = '<option value="">Mostrador (sin cliente)</option>';
-    html += customers.map((c) =>
-      `<option value="${esc(c.id)}">${esc(c.name)}${c.phone ? ` · ${esc(c.phone)}` : ''}</option>`
+      `<option value="${esc(p.id)}"${p.id === selected ? ' selected' : ''}>` +
+      `${esc(p.name)}${p.sku ? ` [${esc(p.sku)}]` : ''} - ${money(p.price)} (${number(p.stock)} disp.)</option>`
     ).join('');
     return html;
   };
@@ -299,14 +446,14 @@ export async function newSaleView() {
         </div>
       </td>
       <td style="min-width:140px"><input data-field="description" type="text"
-          value="${esc(line.description)}" placeholder="Descripción"></td>
+          value="${esc(line.description)}" placeholder="Descripcion"></td>
       <td style="width:90px"><input data-field="quantity" type="number" step="0.01"
           min="0.01" value="${line.quantity}" style="text-align:right"></td>
       <td style="width:120px"><input data-field="unit_price" type="number" min="0"
           step="1" value="${line.unit_price || ''}" placeholder="Auto" style="text-align:right"></td>
       <td class="num strong" data-line-subtotal style="width:110px">${money(line.quantity * line.unit_price)}</td>
       <td style="width:44px"><button type="button" class="btn btn-quiet btn-sm" data-remove-line
-          title="Quitar línea" style="color:var(--red)">&times;</button></td>
+          title="Quitar linea" style="color:var(--red)">&times;</button></td>
     </tr>`;
 
   const renderLines = () => {
@@ -333,9 +480,8 @@ export async function newSaleView() {
 
       partSelect.addEventListener('change', () => {
         line.part_id = partSelect.value;
-        const opt = partSelect.selectedOptions[0];
-        if (opt && opt.value) {
-          const part = parts.find((p) => p.id === opt.value);
+        if (partSelect.value) {
+          const part = parts.find((p) => p.id === partSelect.value);
           if (part) {
             line.description = part.name;
             descInput.value = part.name;
@@ -346,19 +492,9 @@ export async function newSaleView() {
         recalcLine(row, line);
       });
 
-      descInput.addEventListener('input', () => {
-        line.description = descInput.value;
-      });
-
-      qtyInput.addEventListener('input', () => {
-        line.quantity = Number(qtyInput.value) || 0;
-        recalcLine(row, line);
-      });
-
-      priceInput.addEventListener('input', () => {
-        line.unit_price = Number(priceInput.value) || 0;
-        recalcLine(row, line);
-      });
+      descInput.addEventListener('input', () => { line.description = descInput.value; });
+      qtyInput.addEventListener('input', () => { line.quantity = Number(qtyInput.value) || 0; recalcLine(row, line); });
+      priceInput.addEventListener('input', () => { line.unit_price = Number(priceInput.value) || 0; recalcLine(row, line); });
 
       row.querySelector('[data-remove-line]').addEventListener('click', () => removeLine(seq));
 
@@ -385,8 +521,7 @@ export async function newSaleView() {
   };
 
   const recalcLine = (row, line) => {
-    const sub = line.quantity * line.unit_price;
-    row.querySelector('[data-line-subtotal]').textContent = money(sub);
+    row.querySelector('[data-line-subtotal]').textContent = money(line.quantity * line.unit_price);
     recalcTotals();
   };
 
@@ -416,7 +551,7 @@ export async function newSaleView() {
     body:
       field('name', 'Nombre', { required: true }) +
       `<div class="row">
-         ${field('sku', 'SKU / Código')}
+         ${field('sku', 'SKU / Codigo')}
          ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
        </div>
        <div class="row">
@@ -427,8 +562,8 @@ export async function newSaleView() {
     onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'stock']))
   });
 
+  // ── Enviar ───────────────────────────────────────────────────────
   const submitSale = async () => {
-    const form = document.getElementById('sale-form');
     const errSlot = document.getElementById('sale-error');
     const submitBtn = document.getElementById('btn-submit-sale');
     errSlot.innerHTML = '';
@@ -444,17 +579,18 @@ export async function newSaleView() {
           unit_price: l.unit_price || undefined
         }));
 
-      if (!items.length) throw new Error('Agrega al menos un ítem con descripción o producto');
+      if (!items.length) throw new Error('Agrega al menos un item con descripcion o producto');
 
-      const customerSelect = document.getElementById('f-customer_id');
-      const customerId = customerSelect?.value || undefined;
-      const customerName = document.getElementById('f-customer_name')?.value || undefined;
+      const customerId = selectedCustomer?.id || undefined;
+      const customerName = walkIn
+        ? (document.getElementById('f-customer_name')?.value || undefined)
+        : undefined;
       const paymentMethod = document.getElementById('f-payment_method')?.value || 'cash';
       const discount = Number(document.getElementById('f-discount')?.value) || 0;
       const taxRate = Number(document.getElementById('f-tax_rate')?.value) || 0;
 
       const result = await api.post('/sales', {
-        customer_id: customerId || undefined,
+        customer_id: customerId,
         customer_name: !customerId ? customerName : undefined,
         payment_method: paymentMethod,
         discount,
@@ -470,18 +606,10 @@ export async function newSaleView() {
     }
   };
 
+  // ── Montar ───────────────────────────────────────────────────────
   onMount(async () => {
-    await loadData();
-
-    const custSelect = document.getElementById('f-customer_id');
-    if (custSelect) custSelect.innerHTML = customerOptions();
-
-    const custNameField = document.getElementById('customer-name-wrap');
-    if (custSelect && custNameField) {
-      custSelect.addEventListener('change', () => {
-        custNameField.style.display = custSelect.value ? 'none' : '';
-      });
-    }
+    await loadParts();
+    renderCustomerArea();
 
     addLine();
     renderLines();
@@ -506,8 +634,9 @@ export async function newSaleView() {
       <div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <a href="#/ventas" class="btn btn-quiet btn-sm" style="margin:-2px 0">&larr; Ventas</a>
-          <h1>Nueva venta de mostrador</h1>
+          <h1>Nueva venta</h1>
         </div>
+        <p class="muted small" style="margin-top:2px">Registra una venta de mostrador con cliente y productos</p>
       </div>
     </div>
 
@@ -516,23 +645,17 @@ export async function newSaleView() {
     <form id="sale-form" onsubmit="return false">
       <div class="grid cols-2" style="margin-bottom:18px">
         <div class="card">
-          <div class="card-head"><h2>Cliente</h2></div>
-          <div class="card-body">
-            <div class="field">
-              <label for="f-customer_id">Cliente registrado</label>
-              <select id="f-customer_id" name="customer_id">
-                <option value="">Cargando…</option>
-              </select>
-            </div>
-            <div id="customer-name-wrap">
-              ${field('customer_name', 'Nombre del cliente (si no está registrado)', { placeholder: 'Mostrador' })}
-            </div>
+          <div class="card-head">
+            <h2>Cliente</h2>
+          </div>
+          <div class="card-body" id="customer-area">
+            <div class="spinner"></div>
           </div>
         </div>
         <div class="card">
           <div class="card-head"><h2>Condiciones</h2></div>
           <div class="card-body">
-            ${field('payment_method', 'Método de pago', { value: 'cash', options: Object.entries(PAYMENT_METHODS) })}
+            ${field('payment_method', 'Metodo de pago', { value: 'cash', options: Object.entries(PAYMENT_METHODS) })}
             <div class="row">
               ${field('discount', 'Descuento ($)', { type: 'number', min: 0, value: '0' })}
               ${field('tax_rate', 'IVA (%)', { type: 'number', min: 0, max: 100, value: defaultTax })}
@@ -544,12 +667,12 @@ export async function newSaleView() {
       <div class="card" style="margin-bottom:18px">
         <div class="card-head">
           <h2>Productos</h2>
-          <button type="button" class="btn btn-default btn-sm" id="btn-add-line">+ Agregar línea</button>
+          <button type="button" class="btn btn-default btn-sm" id="btn-add-line">+ Agregar linea</button>
         </div>
         <div class="card-body tight">
           <div class="table-wrap"><table>
             <thead><tr>
-              <th>Producto</th><th>Descripción</th><th class="num">Cantidad</th>
+              <th>Producto</th><th>Descripcion</th><th class="num">Cantidad</th>
               <th class="num">Precio un.</th><th class="num">Subtotal</th><th></th>
             </tr></thead>
             <tbody id="sale-lines-body"></tbody>

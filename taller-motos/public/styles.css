@@ -600,6 +600,44 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   .dash-cards { grid-template-columns: 1fr; }
 }
 
+/* ── Venta: búsqueda de cliente ─────────────────────────────────── */
+.sale-cust-card {
+  display: flex; align-items: flex-start; gap: 14px;
+  padding: 14px 16px; background: var(--accent-soft);
+  border: 1px solid var(--accent); border-radius: 8px;
+}
+.sale-cust-info { flex: 1; min-width: 0; }
+.sale-cust-name { font-weight: 700; font-size: 1rem; margin-bottom: 2px; }
+.sale-cust-detail {
+  display: flex; flex-wrap: wrap; gap: 2px 14px;
+  font-size: .82rem; color: var(--muted);
+}
+.sale-search-wrap { position: relative; }
+.sale-search-dd {
+  position: absolute; top: 100%; left: 0; right: 0;
+  background: var(--surface); border: 1px solid var(--border-strong);
+  border-top: none; border-radius: 0 0 8px 8px;
+  box-shadow: var(--shadow-md); z-index: 20;
+  max-height: 280px; overflow-y: auto; display: none;
+}
+.sale-sr-item {
+  padding: 10px 14px; cursor: pointer;
+  border-bottom: 1px solid var(--border);
+}
+.sale-sr-item:last-child { border-bottom: none; }
+.sale-sr-item:hover { background: var(--surface-2); }
+.sale-sr-name { font-weight: 600; font-size: .88rem; }
+.sale-sr-meta { font-size: .78rem; color: var(--muted); margin-top: 1px; }
+.sale-sr-empty {
+  padding: 14px; font-size: .85rem; color: var(--muted); text-align: center;
+}
+.btn-link {
+  background: none; border: none; color: var(--accent);
+  font: inherit; font-weight: 600; cursor: pointer;
+  padding: 0; text-decoration: underline;
+}
+.btn-link:hover { color: var(--accent-strong); }
+
 .print-only { display: none; }
 @media print {
   .sidebar, .topbar, .sidebar-overlay, .no-print, .toast { display: none !important; }
