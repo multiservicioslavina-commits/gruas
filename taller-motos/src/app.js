@@ -37,7 +37,13 @@ export function createApp() {
   const app = express();
 
   app.disable('x-powered-by');
-  app.set('trust proxy', true);
+  // Un solo salto de confianza: el proxy de borde de Railway, que es lo único
+  // entre el cliente y este proceso. Con `true` se confía en toda la cadena
+  // de X-Forwarded-For, incluida la parte que pone el propio cliente, así
+  // que cualquiera podría falsificar su IP y saltarse el límite de intentos.
+  // Si algún día se agrega otro proxy delante (p. ej. Cloudflare), este
+  // número sube a 2.
+  app.set('trust proxy', 1);
   app.use(express.json({ limit: '2mb' }));
   app.use(express.urlencoded({ extended: true }));
 

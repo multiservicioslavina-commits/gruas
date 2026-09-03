@@ -157,7 +157,7 @@ publicRouter.post('/quotes/:token/respond', publicLimiter, wrap(async (req, res)
       itemDecisions: data.items,
       customerName: data.customer_name,
       note: data.note,
-      ip: req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress,
+      ip: req.ip,
       userAgent: req.headers['user-agent']
     });
   });
