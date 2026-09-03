@@ -20,9 +20,12 @@ export function rateLimit({ windowMs = 15 * 60_000, max = 10, keyFn, message } =
     // de `max` veces se bloquearía a sí mismo, sin que sea ninguna señal
     // de abuso real.
     if (config.env === 'test') return next();
-    const key = keyFn
-      ? keyFn(req)
-      : (req.headers['x-forwarded-for']?.split(',')[0].trim() || req.socket.remoteAddress);
+    // `req.ip`, no la cabecera a mano: Express ya la calcula respetando
+    // `trust proxy`, tomando sólo el salto que de verdad viene del proxy de
+    // Railway. Leer x-forwarded-for directo aquí (como se hacía antes)
+    // ignora esa configuración y deja que cualquier cliente ponga el valor
+    // que quiera, cambiándolo en cada petición para esquivar el límite.
+    const key = keyFn ? keyFn(req) : req.ip;
     const now = Date.now();
     let b = buckets.get(key);
 
