@@ -3,11 +3,12 @@ import { Router } from 'express';
 import multer from 'multer';
 import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, extname, resolve } from 'node:path';
-import { queryOne } from '../db.js';
+import { queryOne, transaction } from '../db.js';
 import { validate } from '../lib/validate.js';
-import { wrap, badRequest } from '../lib/errors.js';
+import { wrap, badRequest, conflict } from '../lib/errors.js';
 import { requireRole, requirePlan } from '../middleware/auth.js';
 import { listNumberingRanges } from '../lib/factus.js';
+import { tipoCodigo, revisar, MOTIVOS, venceEl } from '../lib/licencia.js';
 import { config } from '../config.js';
 
 export const workshopRouter = Router();
@@ -75,6 +76,83 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
     `UPDATE workshops SET ${sets.join(', ')}, updated_at = NOW()
      WHERE id = $${values.length} RETURNING *`, values);
   res.json(redact(row));
+}));
+
+// Cambiar de plan (o extender la licencia) de un taller que ya existe, con
+// un código nuevo. Mismo mecanismo que el registro (auth.routes.js) —
+// código corto (llave de consulta contra license_codes) o largo
+// (autocontenido, firmado) — aplicado a un taller existente en vez de crear
+// uno. El taller se lleva su código actual como referencia hasta que activa
+// uno nuevo, que lo reemplaza entero (plan, vigencia, titular).
+workshopRouter.post('/license', requireRole(), wrap(async (req, res) => {
+  const data = validate(req.body, {
+    license_code: { type: 'string', required: true, max: 600 }
+  });
+
+  const tipo = tipoCodigo(data.license_code);
+  let licencia = null;
+  let codigoCorto = null;
+
+  if (tipo === 'corto') {
+    codigoCorto = await queryOne(
+      'SELECT * FROM license_codes WHERE upper(code) = upper($1)', [data.license_code.trim()]);
+    if (!codigoCorto) throw badRequest(MOTIVOS.firma);
+    if (codigoCorto.used_by_workshop_id) throw conflict(MOTIVOS.usado);
+    if (codigoCorto.expires_at && new Date(codigoCorto.expires_at) < new Date()) {
+      throw badRequest(MOTIVOS.vencido);
+    }
+    licencia = {
+      t: codigoCorto.holder,
+      p: codigoCorto.plan,
+      e: codigoCorto.expires_at ? Math.floor(new Date(codigoCorto.expires_at).getTime() / 1000) : null
+    };
+  } else if (tipo === 'largo') {
+    const revision = revisar(data.license_code, config.license.publicKey);
+    if (!revision.valido) throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
+    licencia = revision.datos;
+
+    const yaUsado = await queryOne('SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
+    if (yaUsado) throw conflict(MOTIVOS.usado);
+  } else {
+    throw badRequest(MOTIVOS.formato);
+  }
+
+  let workshop;
+  try {
+    workshop = await transaction(async (client) => {
+      // Mismo resguardo que en el registro: el UPDATE con la condición
+      // (no un SELECT previo) es lo que impide que dos activaciones a la
+      // vez con el mismo código corto se lo lleven ambas.
+      if (codigoCorto) {
+        const { rowCount } = await client.query(
+          `UPDATE license_codes SET used_by_workshop_id = $1, used_at = NOW()
+           WHERE id = $2 AND used_by_workshop_id IS NULL`,
+          [req.auth.workshopId, codigoCorto.id]
+        );
+        if (rowCount === 0) throw conflict(MOTIVOS.usado);
+      }
+
+      const { rows: [row] } = await client.query(
+        `UPDATE workshops SET
+           license_code = $1, license_id = $2, license_holder = $3,
+           license_plan = $4, license_expires_at = $5, updated_at = NOW()
+         WHERE id = $6 RETURNING *`,
+        [data.license_code, licencia.id || codigoCorto?.id || null, licencia.t || null,
+         licencia.p, venceEl(licencia), req.auth.workshopId]
+      );
+      return row;
+    });
+  } catch (err) {
+    // Igual que en el registro: dos activaciones a la vez con el mismo
+    // código largo pueden pasar el SELECT de "no usado" las dos; el índice
+    // único de la base es la última barrera.
+    if (err?.code === '23505' && err?.constraint === 'workshops_license_id_key') {
+      throw conflict(MOTIVOS.usado);
+    }
+    throw err;
+  }
+
+  res.json(redact(workshop));
 }));
 
 // Logo del taller: un solo archivo por taller (se reemplaza el anterior si

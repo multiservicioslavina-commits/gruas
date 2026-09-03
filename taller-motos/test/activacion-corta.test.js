@@ -15,7 +15,7 @@ const PRIV = privateKey.export({ type: 'pkcs8', format: 'pem' });
 
 const { createApp } = await import('../src/app.js');
 const { pool } = await import('../src/db.js');
-const { firmarSolicitud } = await import('../src/lib/licencia.js');
+const { firmarSolicitud, emitir: emitirCodigoLargo } = await import('../src/lib/licencia.js');
 
 const server = await new Promise((r) => { const s = createApp().listen(0, '127.0.0.1', () => r(s)); });
 const base = `http://127.0.0.1:${server.address().port}`;
@@ -182,4 +182,97 @@ test('facturar electrónicamente es del plan Premium: Completo no basta', async 
     {}, altaCompleta.body.token);
   assert.equal(bloqueado.status, 402);
   assert.match(bloqueado.body.error, /plan Premium/i);
+});
+
+// ── Cambiar de plan con un taller ya existente ────────────────────────────
+
+test('un taller en plan básico cambia a Premium con un código nuevo, sin crear otro taller', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basico.body.code }));
+  assert.equal(alta.body.workshop.license_plan, 'basico');
+
+  const bloqueadoAntes = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, alta.body.token);
+  assert.equal(bloqueadoAntes.status, 402, 'con básico, CRM sigue bloqueado');
+
+  const premium = await emitir({ taller: 'Motos Ascendidas', plan: 'premium', dias: 365 });
+  const cambio = await pedir('POST', '/api/workshop/license',
+    { license_code: premium.body.code }, alta.body.token);
+  assert.equal(cambio.status, 200, JSON.stringify(cambio.body));
+  assert.equal(cambio.body.license_plan, 'premium');
+  assert.equal(cambio.body.license_holder, 'Motos Ascendidas');
+  assert.equal(cambio.body.id, alta.body.workshop.id, 'es el mismo taller, no uno nuevo');
+
+  const permitido = await pedir('POST', '/api/crm/leads', { name: 'Prospecto' }, alta.body.token);
+  assert.equal(permitido.status, 201, 'ya con Premium, CRM funciona');
+});
+
+test('cambiar de plan también funciona con un código largo (TM1....)', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basico.body.code }));
+
+  const codigoLargo = emitirCodigoLargo({ privateKeyPem: PRIV, plan: 'completo', dias: 90 }).codigo;
+  const cambio = await pedir('POST', '/api/workshop/license',
+    { license_code: codigoLargo }, alta.body.token);
+  assert.equal(cambio.status, 200, JSON.stringify(cambio.body));
+  assert.equal(cambio.body.license_plan, 'completo');
+});
+
+test('un código ya usado no sirve para cambiar de plan', async () => {
+  const codigo = await emitir({ plan: 'premium', dias: 30 });
+  const primero = await pedir('POST', '/api/auth/register', datosTaller({ license_code: codigo.body.code }));
+  assert.equal(primero.status, 201);
+
+  const otro = await pedir('POST', '/api/auth/register', datosTaller({ license_code: (
+    await emitir({ plan: 'basico', dias: 30 })).body.code }));
+
+  const res = await pedir('POST', '/api/workshop/license', { license_code: codigo.body.code }, otro.body.token);
+  assert.equal(res.status, 409);
+  assert.match(res.body.error, /una sola vez/i);
+});
+
+test('un código vencido no sirve para cambiar de plan', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basico.body.code }));
+
+  const vencido = await emitir({ plan: 'premium', dias: 1 });
+  await pool.query(`UPDATE license_codes SET expires_at = NOW() - INTERVAL '1 day' WHERE code = $1`,
+    [vencido.body.code]);
+
+  const res = await pedir('POST', '/api/workshop/license', { license_code: vencido.body.code }, alta.body.token);
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /venció/i);
+});
+
+test('sólo el administrador puede cambiar el plan del taller', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basico.body.code }));
+
+  const recepcion = await pedir('POST', '/api/users',
+    { name: 'Recepción', email: `rec-${randomUUID()}@prueba.test`, password: 'clave-segura-123', role: 'reception' },
+    alta.body.token);
+  assert.equal(recepcion.status, 201);
+  const login = await pedir('POST', '/api/auth/login',
+    { email: recepcion.body.email, password: 'clave-segura-123' });
+
+  const premium = await emitir({ plan: 'premium', dias: 30 });
+  const res = await pedir('POST', '/api/workshop/license', { license_code: premium.body.code }, login.body.token);
+  assert.equal(res.status, 403);
+});
+
+test('dos activaciones a la vez con el mismo código corto: sólo una gana, la otra recibe el mensaje de siempre', async () => {
+  const basicoA = await emitir({ plan: 'basico', dias: 30 });
+  const altaA = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basicoA.body.code }));
+  const basicoB = await emitir({ plan: 'basico', dias: 30 });
+  const altaB = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basicoB.body.code }));
+
+  const premium = await emitir({ plan: 'premium', dias: 30 });
+  const [a, b] = await Promise.all([
+    pedir('POST', '/api/workshop/license', { license_code: premium.body.code }, altaA.body.token),
+    pedir('POST', '/api/workshop/license', { license_code: premium.body.code }, altaB.body.token)
+  ]);
+
+  const statuses = [a.status, b.status].sort();
+  assert.deepEqual(statuses, [200, 409], JSON.stringify({ a, b }));
+  const perdedor = a.status === 409 ? a : b;
+  assert.match(perdedor.body.error, /una sola vez/i);
 });
