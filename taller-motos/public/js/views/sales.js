@@ -344,7 +344,7 @@ export async function newSaleView() {
           if (!results.length) {
             dd.innerHTML = `<div class="sale-sr-empty">Sin resultados.
               <button type="button" class="btn-link" id="btn-create-dd">Crear cliente</button></div>`;
-            dd.style.display = '';
+            dd.style.display = 'block';
             document.getElementById('btn-create-dd')?.addEventListener('click', () => {
               dd.style.display = 'none';
               openNewCustomer(q);
@@ -357,7 +357,7 @@ export async function newSaleView() {
                 <div class="sale-sr-meta">${[doc, c.phone, c.email].filter(Boolean).map(esc).join(' · ')}</div>
               </div>`;
             }).join('');
-            dd.style.display = '';
+            dd.style.display = 'block';
             dd.querySelectorAll('.sale-sr-item').forEach((el) => {
               el.addEventListener('mousedown', (e) => {
                 e.preventDefault();
@@ -374,7 +374,7 @@ export async function newSaleView() {
       setTimeout(() => { if (dd) dd.style.display = 'none'; }, 180);
     });
     input?.addEventListener('focus', () => {
-      if (dd?.innerHTML) dd.style.display = '';
+      if (dd?.innerHTML) dd.style.display = 'block';
     });
 
     document.getElementById('btn-new-cust')?.addEventListener('click', () => openNewCustomer());
