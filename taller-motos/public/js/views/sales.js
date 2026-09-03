@@ -427,20 +427,20 @@ export async function newSaleView() {
     if (!lines.length) { addLine(); renderLines(); }
   };
 
-  const partOptions = (selected) => {
-    let html = '<option value="">-- Seleccionar producto --</option>';
-    html += parts.map((p) =>
-      `<option value="${esc(p.id)}"${p.id === selected ? ' selected' : ''}>` +
-      `${esc(p.name)}${p.sku ? ` [${esc(p.sku)}]` : ''} - ${money(p.price)} (${number(p.stock)} disp.)</option>`
-    ).join('');
-    return html;
-  };
+  const partDisplayText = (part) =>
+    part ? `${part.name}${part.sku ? ` [${part.sku}]` : ''}` : '';
 
-  const lineRowHtml = (line) => `
+  const lineRowHtml = (line) => {
+    const selectedPart = line.part_id ? parts.find((p) => p.id === line.part_id) : null;
+    const searchValue = selectedPart ? partDisplayText(selectedPart) : (line.part_query || '');
+    return `
     <tr data-line-seq="${line.seq}">
-      <td style="min-width:200px">
-        <div style="display:flex;gap:4px">
-          <select data-field="part_id" style="flex:1">${partOptions(line.part_id)}</select>
+      <td style="min-width:230px">
+        <div style="display:flex;gap:4px;align-items:flex-start">
+          <div class="field" style="flex:1;margin-bottom:0">
+            <input data-field="part_search" type="text" autocomplete="off"
+                value="${esc(searchValue)}" placeholder="Buscar producto o SKU...">
+          </div>
           <button type="button" class="btn btn-default btn-sm" data-new-part
                   title="Crear producto nuevo" style="flex-shrink:0">+</button>
         </div>
@@ -455,6 +455,7 @@ export async function newSaleView() {
       <td style="width:44px"><button type="button" class="btn btn-quiet btn-sm" data-remove-line
           title="Quitar linea" style="color:var(--red)">&times;</button></td>
     </tr>`;
+  };
 
   const renderLines = () => {
     const tbody = document.getElementById('sale-lines-body');
@@ -473,23 +474,81 @@ export async function newSaleView() {
       if (!line || row.dataset.bound) return;
       row.dataset.bound = '1';
 
-      const partSelect = row.querySelector('[data-field="part_id"]');
+      const partInput = row.querySelector('[data-field="part_search"]');
       const descInput = row.querySelector('[data-field="description"]');
       const qtyInput = row.querySelector('[data-field="quantity"]');
       const priceInput = row.querySelector('[data-field="unit_price"]');
+      let partSearchTimer = null;
+      let partDd = null;
 
-      partSelect.addEventListener('change', () => {
-        line.part_id = partSelect.value;
-        if (partSelect.value) {
-          const part = parts.find((p) => p.id === partSelect.value);
-          if (part) {
-            line.description = part.name;
-            descInput.value = part.name;
-            line.unit_price = Number(part.price) || 0;
-            priceInput.value = line.unit_price;
-          }
+      // La tabla de productos tiene overflow-x:auto, lo que por especificación
+      // vuelve automático también el overflow-y (recorta lo que sobresalga en
+      // vertical). Por eso el desplegable vive en <body> con posición fija,
+      // calculada contra el input, en vez de ir anidado en la celda.
+      const closePartDd = () => { partDd?.remove(); partDd = null; };
+      const positionPartDd = () => {
+        if (!partDd) return;
+        const rect = partInput.getBoundingClientRect();
+        partDd.style.left = `${rect.left}px`;
+        partDd.style.top = `${rect.bottom + 2}px`;
+        partDd.style.width = `${rect.width}px`;
+      };
+      const openPartDd = () => {
+        if (!partDd) {
+          partDd = document.createElement('div');
+          partDd.className = 'sale-search-dd sale-search-dd-floating';
+          document.body.appendChild(partDd);
         }
+        positionPartDd();
+        partDd.style.display = 'block';
+      };
+
+      const pickPart = (part) => {
+        line.part_id = part.id;
+        line.part_query = '';
+        partInput.value = partDisplayText(part);
+        line.description = part.name;
+        descInput.value = part.name;
+        line.unit_price = Number(part.price) || 0;
+        priceInput.value = line.unit_price;
+        closePartDd();
         recalcLine(row, line);
+      };
+
+      const renderPartResults = (query) => {
+        const q = query.trim().toLowerCase();
+        if (!q.length) { closePartDd(); return; }
+        const results = parts
+          .filter((p) => p.name.toLowerCase().includes(q) || (p.sku || '').toLowerCase().includes(q))
+          .slice(0, 8);
+
+        openPartDd();
+        partDd.innerHTML = results.length
+          ? results.map((p) => `<div class="sale-sr-item" data-pid="${esc(p.id)}">
+              <div class="sale-sr-name">${esc(p.name)}${p.sku ? ` <span class="faint">[${esc(p.sku)}]</span>` : ''}</div>
+              <div class="sale-sr-meta">${money(p.price)} &middot; ${number(p.stock)} disponibles</div>
+            </div>`).join('')
+          : `<div class="sale-sr-empty">Sin resultados para "${esc(query)}"</div>`;
+        partDd.querySelectorAll('.sale-sr-item').forEach((el) => {
+          el.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            const part = parts.find((p) => p.id === el.dataset.pid);
+            if (part) pickPart(part);
+          });
+        });
+      };
+
+      partInput.addEventListener('input', () => {
+        line.part_id = '';
+        line.part_query = partInput.value;
+        clearTimeout(partSearchTimer);
+        partSearchTimer = setTimeout(() => renderPartResults(partInput.value), 150);
+      });
+      partInput.addEventListener('focus', () => {
+        if (partInput.value.trim().length && !line.part_id) renderPartResults(partInput.value);
+      });
+      partInput.addEventListener('blur', () => {
+        setTimeout(closePartDd, 180);
       });
 
       descInput.addEventListener('input', () => { line.description = descInput.value; });
@@ -503,20 +562,8 @@ export async function newSaleView() {
         if (!created) return;
         parts.push(created);
         toast(`Producto "${created.name}" creado`);
-        refreshAllPartSelects();
-        partSelect.value = created.id;
-        line.part_id = created.id;
-        line.unit_price = Number(created.price) || 0;
-        priceInput.value = line.unit_price;
-        recalcLine(row, line);
+        pickPart(created);
       });
-    });
-  };
-
-  const refreshAllPartSelects = () => {
-    document.querySelectorAll('#sale-lines-body [data-field="part_id"]').forEach((select) => {
-      const current = select.value;
-      select.innerHTML = partOptions(current);
     });
   };
 
