@@ -8,6 +8,12 @@
 --  Convención: nombres de tabla y columna en inglés (ver docs/DATABASE.md).
 -- ═══════════════════════════════════════════════════════════════════════════
 
+-- unaccent(): para que buscar "bujia" encuentre "Bujía" y "andres" encuentre
+-- "Andrés". Es una extensión de confianza desde PostgreSQL 13 — se puede
+-- crear sin privilegios de superusuario, con el rol dueño de la base (el
+-- caso normal en un Postgres administrado como el de Railway).
+CREATE EXTENSION IF NOT EXISTS unaccent;
+
 -- ── Talleres y sedes ──────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS workshops (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

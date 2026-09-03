@@ -30,7 +30,10 @@ workOrdersRouter.get('/', wrap(async (req, res) => {
   if (req.query.to)    where.push(`wo.received_at <= ${push(req.query.to)}`);
   if (req.query.search) {
     const term = push(`%${String(req.query.search).trim()}%`);
-    where.push(`(m.plate ILIKE ${term} OR c.name ILIKE ${term} OR wo.complaint ILIKE ${term}
+    // unaccent() en nombre y motivo, para que "diagnostico" encuentre
+    // "diagnóstico"; placa/código/número no llevan tildes, se dejan igual.
+    where.push(`(m.plate ILIKE ${term} OR unaccent(c.name) ILIKE unaccent(${term})
+                 OR unaccent(wo.complaint) ILIKE unaccent(${term})
                  OR wo.public_code ILIKE ${term} OR wo.number::text ILIKE ${term})`);
   }
 
