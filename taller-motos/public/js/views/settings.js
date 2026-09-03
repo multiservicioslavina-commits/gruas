@@ -135,9 +135,14 @@ export async function settingsView() {
         onSubmit: (data) => api.post('/workshop/license', data)
       });
       if (result) {
-        session.workshop = result;
+        // Recarga completa, no refresh(): la barra lateral se arma una sola
+        // vez por sesión (ver shell()/paint() en app.js) y sólo vuelve a
+        // decidir qué módulos mostrar -- según el plan -- en una carga
+        // fresca. Con sólo refresh(), el plan nuevo quedaba guardado y esta
+        // tarjeta lo mostraba bien, pero Contabilidad/CRM/Nómina seguían
+        // sin aparecer en el menú hasta recargar la página a mano.
         toast(`Plan actualizado a ${PLAN_LABEL[result.license_plan] || result.license_plan}`);
-        refresh();
+        setTimeout(() => location.reload(), 600);
       }
     });
 
