@@ -224,7 +224,8 @@ workOrdersRouter.patch('/:id', wrap(async (req, res) => {
   if (!keys.length) throw badRequest('No enviaste ningún campo para actualizar');
 
   const order = await transaction(async (client) => {
-    await getWorkOrder(client, req.auth.workshopId, req.params.id);
+    const wo = await getWorkOrder(client, req.auth.workshopId, req.params.id);
+    assertEditable(wo);
     await assertDelTaller('users', data.mechanic_id, req.auth.workshopId, client);
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const values = keys.map((k) => (k === 'accessories' ? JSON.stringify(data[k]) : data[k]));
@@ -421,6 +422,7 @@ workOrdersRouter.post('/:id/diagnostics', wrap(async (req, res) => {
 
   const order = await transaction(async (client) => {
     const wo = await getWorkOrder(client, req.auth.workshopId, req.params.id);
+    assertEditable(wo);
     await assertDelTaller('users', data.mechanic_id, req.auth.workshopId, client);
     await client.query(
       `INSERT INTO diagnostics

@@ -218,6 +218,28 @@ test('una orden cerrada no admite nuevas líneas', async () => {
   assert.equal(res.status, 409);
 });
 
+test('una orden cerrada no admite cambios de descuento/IVA ni diagnósticos nuevos', async () => {
+  // PATCH /:id y POST /:id/diagnostics vivían fuera de assertEditable() --a
+  // diferencia de servicios y repuestos, que ya lo comprobaban-- así que un
+  // descuento o un IVA cambiado después de cerrar la orden recalculaba el
+  // total de un cierre contable que se supone ya no se toca.
+  const { client } = await createWorkshop(server.url);
+  const order = await receive(client);
+  for (const status of ['diagnosing', 'repairing', 'ready', 'delivered', 'closed']) {
+    await client.post(`/api/work-orders/${order.id}/status`, { status });
+  }
+
+  const conDescuento = await client.patch(`/api/work-orders/${order.id}`, { discount: 5000 });
+  assert.equal(conDescuento.status, 409);
+
+  const conDiagnostico = await client.post(`/api/work-orders/${order.id}/diagnostics`,
+    { findings: 'Hallazgo tardío' });
+  assert.equal(conDiagnostico.status, 409);
+
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  assert.equal(Number(releida.body.discount), 0, 'el total del cierre no se movió');
+});
+
 test('el historial de la moto reúne todos sus servicios', async () => {
   const { client } = await createWorkshop(server.url);
   const first = await receive(client, { plate: 'HIS100' });
