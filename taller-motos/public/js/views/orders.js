@@ -3,7 +3,7 @@ import { api, session } from '../api.js';
 import {
   esc, money, number, date, since, statusTag, empty, toast, field, modal,
   confirmDialog, motorcycleName, ORDER_STATUS, PAYMENT_STATUS, PAYMENT_METHODS,
-  FUEL_LEVELS, clean, forInput
+  FUEL_LEVELS, clean, forInput, normalizeSearch
 } from '../ui.js';
 import { onMount, refresh, go } from '../app.js';
 
@@ -167,7 +167,13 @@ export async function receptionView() {
           }
         } catch {
           known.innerHTML = '<div class="faint" style="margin-top:8px">Placa nueva: se creará la ficha de la moto.</div>';
-          form.querySelectorAll('input[readonly]').forEach((input) => { input.readOnly = false; });
+          // Sólo se limpian los campos que quedaron de sólo lectura: eso es
+          // justo lo que marca que su valor vino de una placa conocida
+          // anterior, no de algo que el usuario haya escrito a mano.
+          form.querySelectorAll('input[readonly]').forEach((input) => {
+            input.readOnly = false;
+            input.value = '';
+          });
         }
       }, 350);
     });
@@ -307,6 +313,75 @@ export async function receptionView() {
     </form>`;
 }
 
+// Buscador de catálogo (servicio o repuesto) para reemplazar el <select>
+// con todo el catálogo en texto plano — el mismo patrón que ya usan Ventas
+// e Inventario. Al elegir un resultado completa descripción y precio, y
+// deja el id enlazado en un input oculto (para repuestos, es lo que hace
+// que el backend descuente stock).
+function bindCatalogSearch(inputId, hiddenId, { items, getMeta, onPick }) {
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  if (!input || !hidden) return;
+  let dd = null;
+  let timer = null;
+
+  const close = () => { dd?.remove(); dd = null; };
+  const position = () => {
+    if (!dd) return;
+    const rect = input.getBoundingClientRect();
+    dd.style.left = `${rect.left}px`;
+    dd.style.top = `${rect.bottom + 2}px`;
+    dd.style.width = `${rect.width}px`;
+  };
+  const open = () => {
+    if (!dd) {
+      dd = document.createElement('div');
+      dd.className = 'sale-search-dd sale-search-dd-floating';
+      document.body.appendChild(dd);
+    }
+    position();
+    dd.style.display = 'block';
+  };
+  const pick = (item) => {
+    hidden.value = item.id;
+    input.value = item.name;
+    close();
+    onPick(item);
+  };
+  const render = (query) => {
+    const q = normalizeSearch(query.trim());
+    if (!q.length) { close(); return; }
+    const results = items
+      .filter((it) => normalizeSearch(it.name).includes(q) || normalizeSearch(it.code || it.sku || '').includes(q))
+      .slice(0, 8);
+
+    open();
+    dd.innerHTML = results.length
+      ? results.map((it) => `<div class="sale-sr-item" data-id="${esc(it.id)}">
+          <div class="sale-sr-name">${esc(it.name)}${(it.code || it.sku) ? ` <span class="faint">[${esc(it.code || it.sku)}]</span>` : ''}</div>
+          <div class="sale-sr-meta">${esc(getMeta(it))}</div>
+        </div>`).join('')
+      : `<div class="sale-sr-empty">Sin resultados para "${esc(query)}"</div>`;
+    dd.querySelectorAll('.sale-sr-item').forEach((el) => {
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault();
+        const item = items.find((it) => it.id === el.dataset.id);
+        if (item) pick(item);
+      });
+    });
+  };
+
+  input.addEventListener('input', () => {
+    hidden.value = '';
+    clearTimeout(timer);
+    timer = setTimeout(() => render(input.value), 150);
+  });
+  input.addEventListener('focus', () => {
+    if (input.value.trim().length && !hidden.value) render(input.value);
+  });
+  input.addEventListener('blur', () => setTimeout(close, 180));
+}
+
 // ── Ficha de la orden ─────────────────────────────────────────────────
 export async function orderDetailView(id) {
   const [order, mechanics, catalogServices, parts] = await Promise.all([
@@ -431,15 +506,19 @@ export async function orderDetailView(id) {
       if (result) { toast('Diagnóstico registrado'); refresh(); }
     });
 
-    // Mano de obra.
+    // Mano de obra. El campo de búsqueda reemplaza el <select> con todo el
+    // catálogo en texto plano — mismo patrón que Ventas e Inventario.
     document.getElementById('btn-add-service')?.addEventListener('click', async () => {
-      const result = await modal({
+      const pending = modal({
         title: 'Agregar mano de obra',
         body: (catalogServices.length
-                ? field('service_id', 'Tomar del catálogo', {
-                    options: [['', 'Escribir a mano'],
-                      ...catalogServices.map((s) => [s.id, `${s.name} — ${money(s.price)}`])],
-                    hint: 'Al elegir uno se llenan solos la descripción y el precio.' })
+                ? `<div class="field sale-search-wrap" style="margin-bottom:4px">
+                     <label for="f-catalog-search">Buscar en el catálogo</label>
+                     <input type="text" id="f-catalog-search" autocomplete="off"
+                         placeholder="Buscar servicio o código...">
+                     <input type="hidden" name="service_id" id="f-service_id">
+                   </div>
+                   <div class="faint" style="margin:0 0 14px">Al elegir uno se llenan solos la descripción y el precio.</div>`
                 : `<div class="alert alert-info">Todavía no tienes servicios en el catálogo.
                      Escribe el trabajo aquí abajo. Si lo agregas en
                      <b>Ajustes → Catálogo de servicios</b>, la próxima vez lo eliges de una
@@ -450,7 +529,7 @@ export async function orderDetailView(id) {
               field('approved', '¿Ya está autorizado?',
                 { options: [['true', 'Sí, cóbralo'], ['false', 'No, va a cotización']] }),
         confirmText: 'Agregar',
-        onSubmit: (data, form) => {
+        onSubmit: (data) => {
           const payload = clean(data, ['quantity', 'unit_price']);
           payload.approved = data.approved === 'true';
           if (!payload.service_id && !payload.description) {
@@ -459,36 +538,32 @@ export async function orderDetailView(id) {
           return api.post(`/work-orders/${id}/services`, payload);
         }
       });
+      if (catalogServices.length) {
+        bindCatalogSearch('f-catalog-search', 'f-service_id', {
+          items: catalogServices,
+          getMeta: (s) => money(s.price),
+          onPick: (s) => {
+            document.getElementById('f-description').value = s.name;
+            document.getElementById('f-unit_price').value = s.price;
+          }
+        });
+      }
+      const result = await pending;
       if (result) { toast('Trabajo agregado'); refresh(); }
-    });
-
-    // Al elegir del catálogo se rellena precio y descripción.
-    document.addEventListener('change', (event) => {
-      if (event.target.id === 'f-service_id') {
-        const service = catalogServices.find((s) => s.id === event.target.value);
-        if (!service) return;
-        const form = event.target.closest('form');
-        form.querySelector('#f-description').value = service.name;
-        form.querySelector('#f-unit_price').value = service.price;
-      }
-      if (event.target.id === 'f-part_id') {
-        const part = parts.find((p) => p.id === event.target.value);
-        if (!part) return;
-        const form = event.target.closest('form');
-        form.querySelector('#f-description').value = part.name;
-        form.querySelector('#f-unit_price').value = part.price;
-      }
     });
 
     // Repuestos.
     document.getElementById('btn-add-part')?.addEventListener('click', async () => {
-      const result = await modal({
+      const pending = modal({
         title: 'Cargar repuesto',
         body: (parts.length
-                ? field('part_id', 'Tomar del inventario', {
-                    options: [['', 'Escribir a mano'],
-                      ...parts.map((p) => [p.id, `${p.name} — ${money(p.price)} · ${number(p.stock)} en stock`])],
-                    hint: 'Al elegir uno se llenan la descripción y el precio, y se descuenta el stock.' })
+                ? `<div class="field sale-search-wrap" style="margin-bottom:4px">
+                     <label for="f-catalog-search">Buscar en el inventario</label>
+                     <input type="text" id="f-catalog-search" autocomplete="off"
+                         placeholder="Buscar repuesto o SKU...">
+                     <input type="hidden" name="part_id" id="f-part_id">
+                   </div>
+                   <div class="faint" style="margin:0 0 14px">Al elegir uno se llenan la descripción y el precio, y se descuenta el stock.</div>`
                 : `<div class="alert alert-info">Tu inventario está vacío.
                      Escribe el repuesto aquí abajo. Si lo cargas en <b>Inventario</b>, la próxima
                      vez lo eliges de una lista y el stock se descuenta solo.</div>`) +
@@ -507,6 +582,17 @@ export async function orderDetailView(id) {
           return api.post(`/work-orders/${id}/parts`, payload);
         }
       });
+      if (parts.length) {
+        bindCatalogSearch('f-catalog-search', 'f-part_id', {
+          items: parts,
+          getMeta: (p) => `${money(p.price)} · ${number(p.stock)} en stock`,
+          onPick: (p) => {
+            document.getElementById('f-description').value = p.name;
+            document.getElementById('f-unit_price').value = p.price;
+          }
+        });
+      }
+      const result = await pending;
       if (result) { toast('Repuesto cargado'); refresh(); }
     });
 
