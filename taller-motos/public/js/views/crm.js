@@ -8,10 +8,6 @@ const STAGE_LABEL = {
   new: 'Nuevo', contacted: 'Contactado', interested: 'Interesado',
   quoted: 'Cotizado', won: 'Ganado', lost: 'Perdido'
 };
-const STAGE_TAG = {
-  new: 'tag-grey', contacted: 'tag-grey', interested: 'tag-accent',
-  quoted: 'tag-accent', won: 'tag-green', lost: 'tag-red'
-};
 const STAGE_OPTIONS = Object.entries(STAGE_LABEL);
 const CHANNEL_LABEL = { call: 'Llamada', whatsapp: 'WhatsApp', visit: 'Visita', email: 'Correo', other: 'Otro' };
 
@@ -103,33 +99,86 @@ export async function crmView() {
           <button class="btn btn-default btn-sm" id="btn-new-lead">Nuevo prospecto</button>
         </div>
         <div class="card-body tight">
-          ${leads.length ? `<div class="table-wrap"><table>
-            <thead><tr><th>Nombre</th><th>Contacto</th><th>Interés</th><th>Etapa</th>
-              <th>Asignado</th><th class="small">Desde</th><th></th></tr></thead>
-            <tbody>${leads.map((lead) => `
-              <tr>
-                <td class="strong">${esc(lead.name)}
-                  ${lead.source ? `<div class="faint">${esc(lead.source)}</div>` : ''}</td>
-                <td class="small muted">${esc(lead.phone || '')}${lead.phone && lead.email ? '<br>' : ''}${esc(lead.email || '')}</td>
-                <td class="small muted">${esc(lead.interest || '—')}</td>
-                <td><span class="tag ${STAGE_TAG[lead.stage]}">${esc(STAGE_LABEL[lead.stage])}</span></td>
-                <td class="small muted">${esc(users.find((u) => u.id === lead.assigned_to)?.name || '—')}</td>
-                <td class="small muted">${since(lead.created_at)}</td>
-                <td class="num nowrap">
-                  <button class="btn btn-quiet btn-sm" data-contact="${esc(lead.id)}">Contacto</button>
-                  <button class="btn btn-quiet btn-sm" data-followup="${esc(lead.id)}">Seguimiento</button>
-                  <button class="btn btn-quiet btn-sm" data-edit-lead="${esc(lead.id)}">Editar</button>
-                  <button class="btn btn-quiet btn-sm" data-del-lead="${esc(lead.id)}">Borrar</button>
-                </td>
-              </tr>`).join('')}</tbody>
-          </table></div>` : empty('Aún no tienes prospectos registrados.', '🎯')}
+          ${leads.length ? kanbanHtml() : empty('Aún no tienes prospectos registrados.', '🎯')}
         </div>
       </div>`;
 
     bindEvents();
   };
 
+  // Tablero kanban: un prospecto es una tarjeta que se arrastra entre
+  // columnas de etapa, como en cualquier CRM de verdad (Odoo, Pipedrive,
+  // HubSpot...). Una tabla con la etapa en una celda de texto no comunica
+  // "embudo de ventas" del mismo modo.
+  const cardHtml = (lead) => `
+    <div class="kanban-card" draggable="true" data-lead-card="${esc(lead.id)}">
+      <div class="kc-name">${esc(lead.name)}</div>
+      ${lead.source ? `<div class="kc-source">${esc(lead.source)}</div>` : ''}
+      ${lead.interest ? `<div class="kc-interest">${esc(lead.interest)}</div>` : ''}
+      <div class="kc-meta">
+        <span>${esc(users.find((u) => u.id === lead.assigned_to)?.name || 'Sin asignar')}</span>
+        <span>${since(lead.created_at)}</span>
+      </div>
+      <div class="kc-actions">
+        <button type="button" data-contact="${esc(lead.id)}">Contacto</button>
+        <button type="button" data-followup="${esc(lead.id)}">Seguimiento</button>
+        <button type="button" data-edit-lead="${esc(lead.id)}">Editar</button>
+        <button type="button" data-del-lead="${esc(lead.id)}">Borrar</button>
+      </div>
+    </div>`;
+
+  const kanbanHtml = () => `
+    <div class="kanban-board">
+      ${STAGE_OPTIONS.map(([stage, label]) => {
+        const stageLeads = leads.filter((lead) => lead.stage === stage);
+        return `
+        <div class="kanban-col" data-stage-col="${stage}">
+          <div class="kanban-col-head">
+            <span class="kanban-col-title">${esc(label)}</span>
+            <span class="kanban-col-count">${stageLeads.length}</span>
+          </div>
+          <div class="kanban-cards">
+            ${stageLeads.length ? stageLeads.map(cardHtml).join('')
+              : '<div class="kanban-empty">Sin prospectos</div>'}
+          </div>
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  const bindDragDrop = () => {
+    document.querySelectorAll('.kanban-card').forEach((card) => {
+      card.addEventListener('dragstart', (event) => {
+        card.classList.add('dragging');
+        event.dataTransfer.setData('text/plain', card.dataset.leadCard);
+        event.dataTransfer.effectAllowed = 'move';
+      });
+      card.addEventListener('dragend', () => card.classList.remove('dragging'));
+    });
+
+    document.querySelectorAll('.kanban-col').forEach((col) => {
+      col.addEventListener('dragover', (event) => {
+        event.preventDefault();
+        col.classList.add('drag-over');
+      });
+      col.addEventListener('dragleave', () => col.classList.remove('drag-over'));
+      col.addEventListener('drop', async (event) => {
+        event.preventDefault();
+        col.classList.remove('drag-over');
+        const leadId = event.dataTransfer.getData('text/plain');
+        const newStage = col.dataset.stageCol;
+        const lead = leads.find((l) => l.id === leadId);
+        if (!lead || lead.stage === newStage) return;
+        try {
+          await api.patch(`/crm/leads/${leadId}`, { stage: newStage });
+          toast(`"${lead.name}" movido a ${STAGE_LABEL[newStage]}`);
+          load();
+        } catch (err) { toast(err.message, true); }
+      });
+    });
+  };
+
   const bindEvents = () => {
+    bindDragDrop();
     document.querySelectorAll('[data-edit-lead]').forEach((button) => {
       button.addEventListener('click', async () => {
         const lead = leads.find((l) => l.id === button.dataset.editLead);
