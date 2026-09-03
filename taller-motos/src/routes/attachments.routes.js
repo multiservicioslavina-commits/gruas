@@ -11,9 +11,16 @@ import { query, queryOne } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
+import { assertDelTaller } from '../lib/pertenencia.js';
 import { config } from '../config.js';
 
 const ENTITIES = ['work_order', 'motorcycle', 'customer', 'diagnostic', 'quote'];
+// Tabla real de cada entity_type, para comprobar que sea del mismo taller
+// antes de guardar la referencia (ver lib/pertenencia.js).
+const ENTITY_TABLE = {
+  work_order: 'work_orders', motorcycle: 'motorcycles',
+  customer: 'customers', diagnostic: 'diagnostics', quote: 'quotes'
+};
 const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'application/pdf'];
 
 const storage = multer.diskStorage({
@@ -51,6 +58,12 @@ attachmentsRouter.post('/', upload.array('files', 10), wrap(async (req, res) => 
     caption:     { type: 'string', max: 300 }
   });
   assertUuid(data.entity_id, 'entity_id');
+  // Sin esto, cualquier taller podía adjuntar un archivo a la orden, moto,
+  // cliente, diagnóstico o cotización de OTRO taller con sólo adivinar o
+  // conseguir su id: el archivo quedaba guardado con entity_id ajeno y
+  // loadFullWorkOrder() lo mostraba igual, porque esa consulta filtra sólo
+  // por entity_id (ya validado ahí), no por workshop_id.
+  await assertDelTaller(ENTITY_TABLE[data.entity_type], data.entity_id, req.auth.workshopId);
   if (!req.files?.length) throw badRequest('No enviaste ningún archivo');
 
   const saved = [];

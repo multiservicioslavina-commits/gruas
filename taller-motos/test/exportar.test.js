@@ -105,6 +105,45 @@ test('el CSV empieza con BOM, que es lo que hace que Excel respete los acentos',
   assert.deepEqual([...bytes.slice(0, 3)], [0xef, 0xbb, 0xbf]);
 });
 
+test('un nombre que empieza como fórmula sale escapado en el CSV (CSV injection)', async () => {
+  // Si el nombre queda tal cual, Excel/Sheets lo interpreta como fórmula al
+  // abrir el archivo -- no hace falta que nadie del taller lo escriba mal:
+  // un cliente que se agenda solo, o una integración externa, ya lo mandan así.
+  const { client } = await createWorkshop(server.url);
+  await client.post('/api/customers', { name: '=cmd|"/c calc"!A1' });
+  await client.post('/api/customers', { name: '+1+1' });
+  await client.post('/api/customers', { name: '@SUM(A1:A9)' });
+
+  const csv = (await client.get('/api/export/clientes.csv')).body;
+  // El valor con comillas internas queda además entrecomillado por el CSV
+  // normal (","" -> comilla doblada): lo que importa es que, dentro de esa
+  // celda, el contenido real siga empezando por ' seguida del = original.
+  assert.match(csv, /"'=cmd\|""\/c calc""!A1"/, 'el = queda como texto, con comilla adelante');
+  assert.match(csv, /^'\+1\+1;/m);
+  assert.match(csv, /^'@SUM\(A1:A9\);/m);
+  // Ninguna celda debe empezar directo por =, + o @ (sin la comilla que la neutraliza).
+  assert.ok(!/(^|;)"?[=@]/m.test(csv), 'no debe quedar un = ni @ suelto al arranque de una celda');
+});
+
+test('un saldo negativo legítimo (orden pagada de más) no se convierte en texto', async () => {
+  // El fix de CSV injection no debe tocar los números: llegan como `number`
+  // de Postgres (ver el type parser de db.js), nunca como texto de usuario.
+  // Una orden pagada de más dejaría "Saldo" en negativo, un caso real donde
+  // el valor sí debe empezar por "-" y seguir siendo un número, no texto.
+  const { client } = await createWorkshop(server.url);
+  const orden = (await client.post('/api/work-orders', {
+    plate: 'NEG001', customer_name: 'Cliente Sobrepago', complaint: 'x'
+  })).body;
+  await client.post(`/api/work-orders/${orden.id}/services`,
+    { description: 'Revisión', unit_price: 1000 });
+  await client.post(`/api/work-orders/${orden.id}/payments`, { amount: 1500 });
+
+  const csv = (await client.get('/api/export/ordenes.csv')).body;
+  const fila = csv.split('\r\n').find((l) => l.includes('NEG001'));
+  const saldo = fila.split(';').at(-1);
+  assert.match(saldo, /^-\d+$/, `saldo negativo sin comillas, salió "${saldo}"`);
+});
+
 test('el CSV de inventario trae el repuesto y su proveedor sin pisarse', async () => {
   // Repuesto y proveedor tienen ambos una columna "nombre": si la consulta no
   // las distingue, una borra a la otra y el repuesto sale en blanco.

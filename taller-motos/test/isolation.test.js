@@ -112,6 +112,8 @@ test('un taller no puede apuntar a registros de otro', async () => {
   const motoB = (await b.client.post('/api/motorcycles',
     { plate: 'BBB111', customer_id: cliB.id })).body;
   const mecB  = (await addUser(server.url, b.client, 'mechanic')).user;
+  const ordenA = (await a.client.post('/api/work-orders',
+    { plate: 'AAA666', customer_name: 'D', complaint: 'w' })).body;
 
   const manana = new Date(Date.now() + 86400000).toISOString();
   const intentos = [
@@ -128,7 +130,13 @@ test('un taller no puede apuntar a registros de otro', async () => {
       a.client.post('/api/appointments', { motorcycle_id: motoB.id, scheduled_at: manana })],
     ['orden con mecánico ajeno',
       a.client.post('/api/work-orders', { plate: 'AAA222', customer_name: 'C',
-        complaint: 'x', mechanic_id: mecB.id })]
+        complaint: 'x', mechanic_id: mecB.id })],
+    ['mano de obra con mecánico ajeno',
+      a.client.post(`/api/work-orders/${ordenA.id}/services`,
+        { description: 'Cambio de aceite', unit_price: 1, mechanic_id: mecB.id })],
+    ['diagnóstico con mecánico ajeno',
+      a.client.post(`/api/work-orders/${ordenA.id}/diagnostics`,
+        { findings: 'Frenos gastados', mechanic_id: mecB.id })]
   ];
 
   for (const [etiqueta, promesa] of intentos) {
