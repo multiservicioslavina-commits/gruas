@@ -217,7 +217,15 @@ const TABLAS = {
 function celda(valor) {
   if (valor === null || valor === undefined) return '';
   if (valor instanceof Date) return valor.toISOString().slice(0, 19).replace('T', ' ');
-  const texto = String(valor);
+  // Un nombre de cliente/prospecto puede venir de fuera (integración externa,
+  // alguien que se agenda solo) sin que nadie del taller lo revise antes. Si
+  // empieza por =, +, -, @ o tab, Excel/Sheets lo interpreta como fórmula al
+  // abrir el CSV, no como texto (CSV/formula injection). Se antepone una
+  // comilla para que quede como texto literal, igual que hace Excel mismo al
+  // "reparar" estos archivos. Sólo se aplica a columnas de texto: los montos
+  // llegan como number (ver el type parser en db.js) y un -500 legítimo no
+  // debe convertirse en texto.
+  const texto = typeof valor === 'string' && /^[=+\-@\t]/.test(valor) ? `'${valor}` : String(valor);
   return /[";\n\r]/.test(texto) ? `"${texto.replace(/"/g, '""')}"` : texto;
 }
 
