@@ -190,11 +190,16 @@ export function confirmDialog(message, { confirmText = 'Sí, continuar', title =
   }).then((result) => Boolean(result));
 }
 
-// Campo de formulario.
+// Campo de formulario. idPrefix evita ids duplicados cuando el campo se
+// pinta dentro de un modal que convive con un formulario de página que ya
+// usa el mismo `name` (ej. "name"/"email"/"phone" en Ajustes): sin esto,
+// dos elementos con el mismo id="f-..." hacen que <label for> enfoque el
+// campo equivocado (el que esté primero en el documento).
 export function field(name, label, { type = 'text', value = '', required = false,
                                      placeholder = '', options = null, rows = 0,
-                                     step = null, min = null, hint = '' } = {}) {
-  const common = `name="${name}" id="f-${name}"${required ? ' required' : ''}` +
+                                     step = null, min = null, hint = '', idPrefix = '' } = {}) {
+  const id = `f-${idPrefix}${name}`;
+  const common = `name="${name}" id="${id}"${required ? ' required' : ''}` +
     `${placeholder ? ` placeholder="${esc(placeholder)}"` : ''}`;
   let control;
 
@@ -215,7 +220,7 @@ export function field(name, label, { type = 'text', value = '', required = false
     control = `<input ${common} type="${type}" value="${esc(value)}"` +
       `${step !== null ? ` step="${step}"` : ''}${min !== null ? ` min="${min}"` : ''}>`;
   }
-  return `<div class="field"><label for="f-${name}">${esc(label)}</label>${control}` +
+  return `<div class="field"><label for="${id}">${esc(label)}</label>${control}` +
     `${hint ? `<div class="faint" style="margin-top:4px">${esc(hint)}</div>` : ''}</div>`;
 }
 
