@@ -89,6 +89,27 @@ test('el mismo código no sirve dos veces', async () => {
   assert.match(segundo.body.error, /una sola vez/i);
 });
 
+test('dos registros a la vez con el mismo código largo: uno se activa y el otro recibe el mensaje de siempre', async () => {
+  // A diferencia del código corto (que se marca usado con un UPDATE
+  // condicional dentro de la transacción), el largo se comprueba antes con
+  // un SELECT (yaUsado): dos peticiones a la vez pueden pasar esa
+  // comprobación ambas. El índice único de la base evita que las dos
+  // lleguen a activarse, pero sin el fix la que pierde la carrera recibía
+  // un 500 genérico en vez del mensaje de "ya se usó" de siempre.
+  const codigo = codigoNuevo({ dias: 30 });
+
+  const [a, b] = await Promise.all([
+    pedir('POST', '/api/auth/register', datosTaller({ license_code: codigo })),
+    pedir('POST', '/api/auth/register', datosTaller({ license_code: codigo }))
+  ]);
+
+  const statuses = [a.status, b.status].sort();
+  assert.deepEqual(statuses, [201, 409], JSON.stringify({ a, b }));
+
+  const perdedor = a.status === 409 ? a : b;
+  assert.match(perdedor.body.error, /una sola vez/i);
+});
+
 test('un código vencido no activa nada', async () => {
   const res = await pedir('POST', '/api/auth/register',
     datosTaller({ license_code: codigoNuevo({ dias: -1 }) }));

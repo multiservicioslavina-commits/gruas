@@ -73,36 +73,54 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
   const exists = await queryOne('SELECT id FROM users WHERE lower(email) = lower($1)', [data.email]);
   if (exists) throw conflict('Ese correo ya tiene una cuenta');
 
-  const result = await transaction(async (client) => {
-    const { rows: [workshop] } = await client.query(
-      `INSERT INTO workshops (name, phone, city, email, tax_rate,
-                              license_code, license_id, license_holder, license_plan,
-                              license_expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
-      [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate,
-       licencia ? data.license_code : null, licencia?.id || codigoCorto?.id || null, licencia?.t || null,
-       licencia?.p || null, licencia ? venceEl(licencia) : null]
-    );
-
-    // El código corto se marca usado dentro de la misma transacción, con
-    // una condición en el UPDATE (no un SELECT previo) para que dos
-    // registros a la vez con el mismo código no se lo lleven ambos.
-    if (codigoCorto) {
-      const { rowCount } = await client.query(
-        `UPDATE license_codes SET used_by_workshop_id = $1, used_at = NOW()
-         WHERE id = $2 AND used_by_workshop_id IS NULL`,
-        [workshop.id, codigoCorto.id]
+  let result;
+  try {
+    result = await transaction(async (client) => {
+      const { rows: [workshop] } = await client.query(
+        `INSERT INTO workshops (name, phone, city, email, tax_rate,
+                                license_code, license_id, license_holder, license_plan,
+                                license_expires_at)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+        [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate,
+         licencia ? data.license_code : null, licencia?.id || codigoCorto?.id || null, licencia?.t || null,
+         licencia?.p || null, licencia ? venceEl(licencia) : null]
       );
-      if (rowCount === 0) throw conflict(MOTIVOS.usado);
-    }
 
-    const { rows: [user] } = await client.query(
-      `INSERT INTO users (workshop_id, email, name, password_hash, role, phone)
-       VALUES ($1, $2, $3, $4, 'admin', $5) RETURNING *`,
-      [workshop.id, data.email, data.name, await hashPassword(data.password), data.phone || null]
-    );
-    return { workshop, user };
-  });
+      // El código corto se marca usado dentro de la misma transacción, con
+      // una condición en el UPDATE (no un SELECT previo) para que dos
+      // registros a la vez con el mismo código no se lo lleven ambos.
+      if (codigoCorto) {
+        const { rowCount } = await client.query(
+          `UPDATE license_codes SET used_by_workshop_id = $1, used_at = NOW()
+           WHERE id = $2 AND used_by_workshop_id IS NULL`,
+          [workshop.id, codigoCorto.id]
+        );
+        if (rowCount === 0) throw conflict(MOTIVOS.usado);
+      }
+
+      const { rows: [user] } = await client.query(
+        `INSERT INTO users (workshop_id, email, name, password_hash, role, phone)
+         VALUES ($1, $2, $3, $4, 'admin', $5) RETURNING *`,
+        [workshop.id, data.email, data.name, await hashPassword(data.password), data.phone || null]
+      );
+      return { workshop, user };
+    });
+  } catch (err) {
+    // El código largo (TM1....) no tiene un UPDATE condicional como el
+    // corto: su "no usado" se comprueba con un SELECT antes de la
+    // transacción (yaUsado, arriba), que dos registros a la vez con el
+    // mismo código pueden pasar ambos. El índice único de abajo evita que
+    // los dos lleguen a activarse -- lo que faltaba era traducir ese
+    // choque en el mensaje de siempre, en vez de un error genérico.
+    // El correo tiene el mismo hueco (exists, arriba) y el mismo índice.
+    if (err?.code === '23505' && err?.constraint === 'workshops_license_id_key') {
+      throw conflict(MOTIVOS.usado);
+    }
+    if (err?.code === '23505' && err?.constraint === 'users_email_key') {
+      throw conflict('Ese correo ya tiene una cuenta');
+    }
+    throw err;
+  }
 
   res.status(201).json({
     token: signToken(result.user),
