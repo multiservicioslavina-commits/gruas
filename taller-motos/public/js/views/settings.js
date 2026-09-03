@@ -5,6 +5,8 @@ import {
 } from '../ui.js';
 import { onMount, refresh } from '../app.js';
 
+const PLAN_LABEL = { basico: 'Básico', completo: 'Completo', premium: 'Premium' };
+
 export async function settingsView() {
   const isAdmin = session.role === 'admin';
   const [workshop, users, services, keys] = await Promise.all([
@@ -117,6 +119,26 @@ export async function settingsView() {
         onSubmit: (data) => api.patch('/workshop', { factus_numbering_range_id: Number(data.factus_numbering_range_id) })
       });
       if (result) { toast('Rango de numeración guardado'); refresh(); }
+    });
+
+    // Plan y licencia.
+    document.getElementById('btn-change-plan')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Cambiar de plan',
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Escribe el código de activación que te dieron (corto, tipo
+                 TM-XXXX-XXXX, o el largo). Reemplaza el plan y la vigencia
+                 actuales de tu taller.</p>` +
+              field('license_code', 'Código de activación', { required: true,
+                placeholder: 'TM-XXXX-XXXX' }),
+        confirmText: 'Activar',
+        onSubmit: (data) => api.post('/workshop/license', data)
+      });
+      if (result) {
+        session.workshop = result;
+        toast(`Plan actualizado a ${PLAN_LABEL[result.license_plan] || result.license_plan}`);
+        refresh();
+      }
     });
 
     // Cambio de mi contraseña.
@@ -360,6 +382,20 @@ export async function settingsView() {
         </div>
       </div>
     </div>
+
+    ${isAdmin ? `
+    <div class="card">
+      <div class="card-head"><h2>Plan y licencia</h2></div>
+      <div class="card-body">
+        <div class="kv"><span class="k">Plan actual</span>
+          <span class="v">${esc(PLAN_LABEL[workshop.license_plan] || 'Sin plan asignado')}</span></div>
+        ${workshop.license_holder ? `<div class="kv"><span class="k">Titular</span>
+          <span class="v">${esc(workshop.license_holder)}</span></div>` : ''}
+        ${workshop.license_expires_at ? `<div class="kv"><span class="k">Vence</span>
+          <span class="v">${date(workshop.license_expires_at)}</span></div>` : ''}
+        <button class="btn btn-default btn-sm" id="btn-change-plan" style="margin-top:8px">Cambiar plan</button>
+      </div>
+    </div>` : ''}
 
     <div class="card">
       <div class="card-head">
