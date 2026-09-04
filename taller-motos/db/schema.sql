@@ -72,6 +72,14 @@ CREATE TABLE IF NOT EXISTS license_codes (
   created_at           TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Taller y almacén son dos plataformas aparte (ver business_type arriba):
+-- un código puede quedar amarrado a uno de los dos, para que no sirva por
+-- el dominio equivocado aunque alguien lo tenga. NULL = sirve para
+-- cualquiera de los dos, así los códigos ya emitidos antes de esto (y los
+-- que no importe distinguir) siguen funcionando igual que siempre.
+ALTER TABLE license_codes ADD COLUMN IF NOT EXISTS business_type TEXT
+  CHECK (business_type IN ('taller', 'almacen'));
+
 CREATE UNIQUE INDEX IF NOT EXISTS license_codes_code_key ON license_codes (upper(code));
 
 -- Notificaciones al cliente por WhatsApp (plan pago). 'off': no envía nada.

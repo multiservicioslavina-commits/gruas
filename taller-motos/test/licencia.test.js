@@ -25,6 +25,14 @@ test('un código sin días no vence nunca', () => {
   assert.equal(r.datos.e, null);
 });
 
+test('un código puede quedar amarrado a taller o almacén, o servir para cualquiera', () => {
+  const paraAlmacen = revisar(emitir({ privateKeyPem: PRIV, tipo: 'almacen' }).codigo, PUB);
+  assert.equal(paraAlmacen.datos.bt, 'almacen');
+
+  const sinAmarrar = revisar(emitir({ privateKeyPem: PRIV }).codigo, PUB);
+  assert.equal(sinAmarrar.datos.bt, null);
+});
+
 test('no se puede fabricar un código sin la llave privada', () => {
   const otra = generateKeyPairSync('ed25519');
   const { codigo } = emitir({
@@ -89,6 +97,13 @@ test('una solicitud de emisión firmada se verifica con la llave pública', () =
   assert.equal(r.payload.taller, 'Motos del Sur');
   assert.equal(r.payload.plan, 'basico');
   assert.equal(r.payload.dias, 30);
+});
+
+test('una solicitud de emisión puede pedir un código amarrado a almacén', () => {
+  const solicitud = firmarSolicitud({ privateKeyPem: PRIV, taller: 'Repuestos del Sur', tipo: 'almacen' });
+  const r = verificarSolicitud(solicitud, PUB);
+  assert.equal(r.valido, true);
+  assert.equal(r.payload.tipo, 'almacen');
 });
 
 test('una solicitud firmada con otra llave se rechaza', () => {

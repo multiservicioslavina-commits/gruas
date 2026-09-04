@@ -64,6 +64,11 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
       if (codigoCorto.expires_at && new Date(codigoCorto.expires_at) < new Date()) {
         throw badRequest(MOTIVOS.vencido);
       }
+      // Un código puede quedar amarrado a taller o almacén al emitirlo; si
+      // lo está, tiene que coincidir con el dominio por el que entraron.
+      if (codigoCorto.business_type && codigoCorto.business_type !== data.business_type) {
+        throw badRequest(MOTIVOS[`tipo_${codigoCorto.business_type}`]);
+      }
       licencia = {
         t: codigoCorto.holder,
         p: codigoCorto.plan,
@@ -73,6 +78,10 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
       const revision = revisar(data.license_code, config.license.publicKey);
       if (!revision.valido) throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
       licencia = revision.datos;
+
+      if (licencia.bt && licencia.bt !== data.business_type) {
+        throw badRequest(MOTIVOS[`tipo_${licencia.bt}`]);
+      }
 
       const yaUsado = await queryOne('SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
       if (yaUsado) throw conflict(MOTIVOS.usado);
