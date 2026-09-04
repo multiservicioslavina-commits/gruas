@@ -15,7 +15,8 @@ import { appointmentsRouter } from './routes/appointments.routes.js';
 import { workOrdersRouter } from './routes/workorders.routes.js';
 import { quotesRouter } from './routes/quotes.routes.js';
 import {
-  servicesRouter, partsRouter, suppliersRouter, purchasesRouter, maintenanceRouter
+  servicesRouter, partsRouter, partFitmentsRouter, warehousesRouter, suppliersRouter, purchasesRouter,
+  maintenanceRouter
 } from './routes/catalog.routes.js';
 import { usersRouter } from './routes/users.routes.js';
 import { reportsRouter } from './routes/reports.routes.js';
@@ -105,6 +106,8 @@ export function createApp() {
   // Inventario (repuestos, proveedores, compras) es un módulo del plan
   // Completo en adelante.
   app.use('/api/parts', requirePlan('completo'), partsRouter);
+  app.use('/api/part-fitments', requirePlan('completo'), partFitmentsRouter);
+  app.use('/api/warehouses', requirePlan('completo'), warehousesRouter);
   app.use('/api/suppliers', requirePlan('completo'), suppliersRouter);
   app.use('/api/purchases', requirePlan('completo'), purchasesRouter);
   // Ventas de mostrador vende del mismo inventario, así que va con el mismo

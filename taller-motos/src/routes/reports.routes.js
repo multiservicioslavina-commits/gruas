@@ -11,7 +11,7 @@ export const reportsRouter = Router();
 reportsRouter.get('/dashboard', wrap(async (req, res) => {
   const w = [req.auth.workshopId];
 
-  const [counts, todayAppointments, ready, lowStock, byMechanic, cash, recent] = await Promise.all([
+  const [counts, todayAppointments, ready, lowStock, byMechanic, cash, recent, salesToday] = await Promise.all([
     query(
       `SELECT
          COUNT(*) FILTER (WHERE status = ANY($2))                      AS open_orders,
@@ -68,7 +68,14 @@ reportsRouter.get('/dashboard', wrap(async (req, res) => {
        LEFT JOIN motorcycles m ON m.id = wo.motorcycle_id
        LEFT JOIN customers c   ON c.id = wo.customer_id
        WHERE wo.workshop_id = $1 AND wo.status = ANY($2)
-       ORDER BY wo.received_at DESC LIMIT 20`, [...w, OPEN_STATUSES])
+       ORDER BY wo.received_at DESC LIMIT 20`, [...w, OPEN_STATUSES]),
+
+    // Ventas de mostrador de hoy: aparte de `cash_today` (pagos de órdenes
+    // de trabajo) porque una venta se cobra completa al crearla, sin pasar
+    // por la tabla `payments`. Lo usa el panel del modo almacén.
+    query(
+      `SELECT COUNT(*)::int AS count, COALESCE(SUM(total), 0) AS total
+       FROM sales WHERE workshop_id = $1 AND created_at >= date_trunc('day', NOW())`, w)
   ]);
 
   res.json({
@@ -78,7 +85,8 @@ reportsRouter.get('/dashboard', wrap(async (req, res) => {
     ready_for_pickup: ready.rows,
     low_stock: lowStock.rows,
     mechanics: byMechanic.rows,
-    open_orders: recent.rows
+    open_orders: recent.rows,
+    sales_today: salesToday.rows[0]
   });
 }));
 

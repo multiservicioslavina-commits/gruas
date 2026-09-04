@@ -12,12 +12,16 @@ export async function dashboardView() {
   const greeting = hour < 12 ? 'Buenos días' : (hour < 19 ? 'Buenas tardes' : 'Buenas noches');
   const weekday = new Date().toLocaleDateString('es-CO',
     { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const nombre = esc((session.user?.name || '').split(' ')[0]);
+  const fecha = weekday[0].toUpperCase() + weekday.slice(1);
+
+  if (session.workshop?.business_type === 'almacen') return almacenDashboard(data, greeting, nombre, fecha);
 
   return `
     <div class="page-head">
       <div>
-        <h1>${greeting}, ${esc((session.user?.name || '').split(' ')[0])}</h1>
-        <p>${weekday[0].toUpperCase() + weekday.slice(1)}</p>
+        <h1>${greeting}, ${nombre}</h1>
+        <p>${fecha}</p>
       </div>
       <a class="btn btn-primary" href="#/ordenes/nueva">Recibir una moto</a>
     </div>
@@ -211,6 +215,96 @@ export async function dashboardView() {
               </div>`).join('')}
           </div>
         </div>` : ''}
+      </div>
+    </div>`;
+}
+
+// Panel del modo almacén: sin órdenes de trabajo ni agenda de reparación,
+// por delante lo que un almacén de repuestos revisa cada mañana — cuánto
+// vendió ayer/hoy y qué se está por acabar.
+function almacenDashboard(data, greeting, nombre, fecha) {
+  const s = data.sales_today || { count: 0, total: 0 };
+
+  return `
+    <div class="page-head">
+      <div>
+        <h1>${greeting}, ${nombre}</h1>
+        <p>${fecha}</p>
+      </div>
+      <a class="btn btn-primary" href="#/ventas/nueva">Nueva venta</a>
+    </div>
+
+    <div class="dash-cards">
+      <div class="dash-card">
+        <div class="dc-icon accent">🛒</div>
+        <div class="dc-body">
+          <div class="v">${number(s.count)}</div>
+          <div class="k">Ventas de hoy</div>
+          <div class="link"><a href="#/ventas">Ver detalle &rarr;</a></div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dc-icon green">💰</div>
+        <div class="dc-body">
+          <div class="v">${money(s.total)}</div>
+          <div class="k">Recaudado hoy</div>
+          <div class="link"><a href="#/ventas">Ver detalle &rarr;</a></div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <div class="dc-icon red">📦</div>
+        <div class="dc-body">
+          <div class="v">${number(data.low_stock.length)}</div>
+          <div class="k">Repuestos por pedir</div>
+          <div class="link"><a href="#/inventario">Ver detalle &rarr;</a></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid cols-2">
+      <div>
+        <div class="card">
+          <div class="card-head">
+            <h2>Repuestos con stock bajo</h2>
+            <a class="btn btn-default btn-sm" href="#/inventario">Inventario</a>
+          </div>
+          <div class="card-body tight">
+            ${data.low_stock.length ? data.low_stock.map((part) => `
+              <div class="list-item" style="cursor:default">
+                <div class="grow">
+                  <div class="t">${esc(part.name)}</div>
+                  <div class="s">${esc(part.sku || 'Sin SKU')} · mínimo ${number(part.min_stock)}</div>
+                </div>
+                <span class="tag tag-red">${number(part.stock)} en stock</span>
+              </div>`).join('')
+              : empty('Ningún repuesto está por debajo del mínimo. 👏', '📦')}
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card">
+          <div class="card-head"><h2>Caja de hoy</h2></div>
+          <div class="card-body">
+            <div class="totals">
+              <div class="line total"><span>Recaudado</span>
+                <span>${money(s.total)}</span></div>
+              <div class="line"><span>Ventas registradas</span>
+                <span>${number(s.count)}</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head"><h2>Accesos rápidos</h2></div>
+          <div class="card-body tight">
+            <a class="list-item" href="#/ventas/nueva" style="color:inherit;text-decoration:none">
+              <div class="grow"><div class="t">🛒 Registrar una venta</div></div>
+            </a>
+            <a class="list-item" href="#/inventario" style="color:inherit;text-decoration:none">
+              <div class="grow"><div class="t">📦 Cargar o ajustar inventario</div></div>
+            </a>
+          </div>
+        </div>
       </div>
     </div>`;
 }

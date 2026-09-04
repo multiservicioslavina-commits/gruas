@@ -90,10 +90,34 @@ export async function recalcWorkOrder(client, workshopId, workOrderId) {
   return rows[0];
 }
 
+// La sucursal donde cae un movimiento cuando nadie eligió una: la Principal
+// del taller. Todo taller tiene una (se crea al registrarse); si por alguna
+// razón no la tiene, es un dato roto que hay que ver, no algo que tapar.
+export async function defaultWarehouseId(client, workshopId) {
+  const { rows } = await client.query(
+    `SELECT id FROM warehouses WHERE workshop_id = $1 AND is_default LIMIT 1`, [workshopId]);
+  if (!rows[0]) throw notFound('El taller no tiene una sucursal principal configurada');
+  return rows[0].id;
+}
+
+// Existencia actual de un repuesto en una sucursal puntual (0 si nunca tuvo
+// movimientos ahí). La usan los ajustes y movimientos para calcular el
+// delta de un conteo físico por sucursal, en vez de contra el total.
+export async function warehouseStock(client, partId, warehouseId) {
+  const { rows } = await client.query(
+    `SELECT stock FROM part_stock WHERE part_id = $1 AND warehouse_id = $2`, [partId, warehouseId]);
+  return rows[0] ? Number(rows[0].stock) : 0;
+}
+
 // Mueve stock y deja el movimiento registrado. `delta` negativo = salida.
-export async function moveStock(client, { workshopId, partId, workOrderId, purchaseId,
+// Actualiza a la vez parts.stock (el total, que ya lee todo el sistema) y
+// part_stock (la existencia de esa sucursal puntual) — así ninguna pantalla
+// ni reporte que ya lea parts.stock necesita enterarse de que hay sucursales.
+export async function moveStock(client, { workshopId, partId, warehouseId, workOrderId, purchaseId,
                                           adjustmentId, delta, unitCost, reason, userId }) {
   if (!partId || !delta) return null;
+
+  const whId = warehouseId || await defaultWarehouseId(client, workshopId);
 
   const { rows } = await client.query(
     `UPDATE parts SET stock = stock + $1, updated_at = NOW()
@@ -104,11 +128,19 @@ export async function moveStock(client, { workshopId, partId, workOrderId, purch
   if (!rows[0]) throw notFound('Repuesto no encontrado en el inventario');
 
   await client.query(
+    `INSERT INTO part_stock (workshop_id, part_id, warehouse_id, stock)
+     VALUES ($1, $2, $3, $4)
+     ON CONFLICT (part_id, warehouse_id)
+       DO UPDATE SET stock = part_stock.stock + $4, updated_at = NOW()`,
+    [workshopId, partId, whId, delta]
+  );
+
+  await client.query(
     `INSERT INTO inventory_movements
-       (workshop_id, part_id, work_order_id, purchase_id, adjustment_id, type, quantity,
+       (workshop_id, part_id, warehouse_id, work_order_id, purchase_id, adjustment_id, type, quantity,
         unit_cost, balance_after, reason, created_by)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
-    [workshopId, partId, workOrderId || null, purchaseId || null, adjustmentId || null,
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+    [workshopId, partId, whId, workOrderId || null, purchaseId || null, adjustmentId || null,
      delta > 0 ? 'in' : 'out', Math.abs(delta), unitCost ?? null,
      rows[0].stock, reason || null, userId || null]
   );

@@ -15,6 +15,7 @@ const TABLAS = {
   motorcycles:           'Moto',
   suppliers:             'Proveedor',
   parts:                 'Repuesto',
+  warehouses:            'Sucursal',
   users:                 'Usuario',
   quotes:                'Cotización',
   work_orders:           'Orden',

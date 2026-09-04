@@ -7,7 +7,8 @@ import { query, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
-import { moveStock } from '../services/workorders.js';
+import { moveStock, warehouseStock } from '../services/workorders.js';
+import { assertDelTaller } from '../lib/pertenencia.js';
 
 export const inventoryAdjustmentsRouter = Router();
 
@@ -43,17 +44,19 @@ inventoryAdjustmentsRouter.get('/:id', wrap(async (req, res) => {
 
 inventoryAdjustmentsRouter.post('/', requireRole('warehouse', 'reception'), wrap(async (req, res) => {
   const data = validate(req.body, {
-    reason: { type: 'string', max: 300 },
-    items:  { type: 'array', required: true }
+    reason:       { type: 'string', max: 300 },
+    warehouse_id: { type: 'string', max: 40 },
+    items:        { type: 'array', required: true }
   });
   if (!data.items.length) throw badRequest('El ajuste no tiene ítems');
 
   const adjustment = await transaction(async (client) => {
+    if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
     const num = await nextSequence(client, req.auth.workshopId, 'inventory_adjustments');
     const { rows: [created] } = await client.query(
-      `INSERT INTO inventory_adjustments (workshop_id, number, reason, created_by)
-       VALUES ($1,$2,$3,$4) RETURNING *`,
-      [req.auth.workshopId, num, data.reason || null, req.auth.userId]);
+      `INSERT INTO inventory_adjustments (workshop_id, number, reason, warehouse_id, created_by)
+       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      [req.auth.workshopId, num, data.reason || null, data.warehouse_id || null, req.auth.userId]);
 
     for (const raw of data.items) {
       const item = validate(raw, {
@@ -67,7 +70,11 @@ inventoryAdjustmentsRouter.post('/', requireRole('warehouse', 'reception'), wrap
       const part = rows[0];
       if (!part) throw notFound('Repuesto no encontrado en el inventario');
 
-      const previousStock = Number(part.stock);
+      // Contra el total si el ajuste no dice sucursal (el caso de siempre,
+      // con una sola); contra esa sucursal puntual si sí la dice.
+      const previousStock = data.warehouse_id
+        ? await warehouseStock(client, item.part_id, data.warehouse_id)
+        : Number(part.stock);
       const delta = item.counted_stock - previousStock;
 
       await client.query(
@@ -78,7 +85,7 @@ inventoryAdjustmentsRouter.post('/', requireRole('warehouse', 'reception'), wrap
       if (delta !== 0) {
         await moveStock(client, {
           workshopId: req.auth.workshopId, partId: item.part_id, adjustmentId: created.id,
-          delta, unitCost: part.cost,
+          warehouseId: data.warehouse_id, delta, unitCost: part.cost,
           reason: data.reason ? `Ajuste #${num}: ${data.reason}` : `Ajuste de inventario #${num}`,
           userId: req.auth.userId
         });

@@ -16,6 +16,11 @@ const customerFields = (customer = {}) =>
      ${field('document_number', 'Documento', { value: customer.document_number || '' })}
      ${field('city', 'Ciudad', { value: customer.city || '' })}
    </div>` +
+  field('price_tier', 'Tipo de cliente', {
+    value: customer.price_tier || 'retail',
+    options: [['retail', 'Minorista (precio de mostrador)'], ['wholesale', 'Mayorista']],
+    hint: 'Un cliente mayorista paga el precio mayorista de cada repuesto, cuando el repuesto lo tiene.'
+  }) +
   field('address', 'Dirección', { value: customer.address || '' }) +
   field('notes', 'Notas', { rows: 2, value: customer.notes || '' });
 

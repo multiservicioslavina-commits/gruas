@@ -262,6 +262,9 @@ export async function newSaleView() {
   let lines = [];
   let lineSeq = 0;
   let searchTimer = null;
+  // Sólo se pregunta de qué sucursal sale la venta cuando hay más de una —
+  // con una sola (el caso de siempre), la venta descuenta de ahí y ya.
+  const warehouses = (await api.get('/warehouses?active=true&limit=100').catch(() => ({ data: [] }))).data;
 
   const loadParts = async () => {
     parts = (await api.get('/parts?active=true&limit=500')).data;
@@ -403,7 +406,9 @@ export async function newSaleView() {
         `<div class="row">
            ${field('city', 'Ciudad')}
            ${field('notes', 'Notas', { placeholder: 'Opcional' })}
-         </div>`,
+         </div>` +
+        field('price_tier', 'Tipo de cliente', {
+          value: 'retail', options: [['retail', 'Minorista'], ['wholesale', 'Mayorista']] }),
       confirmText: 'Crear cliente',
       onSubmit: (data) => api.post('/customers', clean(data))
     });
@@ -503,13 +508,18 @@ export async function newSaleView() {
         partDd.style.display = 'block';
       };
 
+      // Cliente mayorista y el repuesto tiene precio mayorista: ese; si no,
+      // el de mostrador de siempre. Sigue siendo editable a mano en la línea.
+      const priceFor = (part) => selectedCustomer?.price_tier === 'wholesale' && part.wholesale_price != null
+        ? Number(part.wholesale_price) : (Number(part.price) || 0);
+
       const pickPart = (part) => {
         line.part_id = part.id;
         line.part_query = '';
         partInput.value = partDisplayText(part);
         line.description = part.name;
         descInput.value = part.name;
-        line.unit_price = Number(part.price) || 0;
+        line.unit_price = priceFor(part);
         priceInput.value = line.unit_price;
         closePartDd();
         recalcLine(row, line);
@@ -519,7 +529,8 @@ export async function newSaleView() {
         const q = normalizeSearch(query.trim());
         if (!q.length) { closePartDd(); return; }
         const results = parts
-          .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q))
+          .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q)
+            || normalizeSearch(p.barcode).includes(q))
           .slice(0, 8);
 
         openPartDd();
@@ -549,6 +560,23 @@ export async function newSaleView() {
       });
       partInput.addEventListener('blur', () => {
         setTimeout(closePartDd, 180);
+      });
+      // Un lector de código de barras "escribe" el código y manda Enter de
+      // inmediato: si hay una coincidencia exacta, se agrega la línea y el
+      // foco pasa a una línea nueva, lista para el siguiente escaneo, sin
+      // soltar el lector ni tocar el mouse.
+      partInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        const raw = partInput.value.trim();
+        if (!raw) return;
+        const match = parts.find((p) => p.barcode && p.barcode === raw);
+        if (!match) return;
+        event.preventDefault();
+        pickPart(match);
+        closePartDd();
+        const newSeq = addLine();
+        renderLines();
+        document.querySelector(`[data-line-seq="${newSeq}"] [data-field="part_search"]`)?.focus();
       });
 
       descInput.addEventListener('input', () => { line.description = descInput.value; });
@@ -599,14 +627,16 @@ export async function newSaleView() {
       field('name', 'Nombre', { required: true }) +
       `<div class="row">
          ${field('sku', 'SKU / Codigo')}
-         ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
+         ${field('barcode', 'Código de barras')}
        </div>
        <div class="row">
+         ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
          ${field('cost', 'Costo', { type: 'number', min: 0, value: '0' })}
-         ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}
-       </div>`,
+       </div>
+       ${field('wholesale_price', 'Precio mayorista (opcional)', { type: 'number', min: 0 })}
+       ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}`,
     confirmText: 'Crear producto',
-    onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'stock']))
+    onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'wholesale_price', 'stock']))
   });
 
   // ── Enviar ───────────────────────────────────────────────────────
@@ -635,6 +665,7 @@ export async function newSaleView() {
       const paymentMethod = document.getElementById('f-payment_method')?.value || 'cash';
       const discount = Number(document.getElementById('f-discount')?.value) || 0;
       const taxRate = Number(document.getElementById('f-tax_rate')?.value) || 0;
+      const warehouseId = document.getElementById('f-warehouse_id')?.value || undefined;
 
       const result = await api.post('/sales', {
         customer_id: customerId,
@@ -642,6 +673,7 @@ export async function newSaleView() {
         payment_method: paymentMethod,
         discount,
         tax_rate: taxRate,
+        warehouse_id: warehouseId,
         items
       });
 
@@ -703,6 +735,10 @@ export async function newSaleView() {
           <div class="card-head"><h2>Condiciones</h2></div>
           <div class="card-body">
             ${field('payment_method', 'Metodo de pago', { value: 'cash', options: Object.entries(PAYMENT_METHODS) })}
+            ${warehouses.length > 1 ? field('warehouse_id', 'Sucursal', {
+                options: warehouses.map((w) => [w.id, w.name]),
+                value: warehouses.find((w) => w.is_default)?.id || warehouses[0].id
+              }) : ''}
             <div class="row">
               ${field('discount', 'Descuento ($)', { type: 'number', min: 0, value: '0' })}
               ${field('tax_rate', 'IVA (%)', { type: 'number', min: 0, max: 100, value: defaultTax })}

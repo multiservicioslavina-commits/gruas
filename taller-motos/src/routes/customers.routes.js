@@ -12,7 +12,8 @@ const schema = {
   email:           { type: 'string', max: 160 },
   address:         { type: 'string', max: 200 },
   city:            { type: 'string', max: 80 },
-  notes:           { type: 'string', max: 2000 }
+  notes:           { type: 'string', max: 2000 },
+  price_tier:      { type: 'string', enum: ['retail', 'wholesale'], default: 'retail' }
 };
 
 export const customersRouter = crudRouter({

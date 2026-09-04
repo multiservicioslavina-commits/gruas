@@ -91,6 +91,14 @@ const NAV = [
     ni('<path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M1 14h6M9 8h6m2 8h6"/>')]
 ];
 
+// En modo almacén (repuestos y accesorios, sin taller de reparación detrás)
+// no hay órdenes de trabajo que recibir ni citas de reparación que agendar:
+// el mismo motor, con el menú recortado a lo que ese negocio usa.
+const TALLER_ONLY_NAV = new Set(['ordenes', 'agenda']);
+function esAlmacen() {
+  return session.workshop?.business_type === 'almacen';
+}
+
 const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.9 4.9l2.9 2.9m8.4 8.4l2.9 2.9M1 12h4m14 0h4M4.9 19.1l2.9-2.9m8.4-8.4l2.9-2.9"/></svg>`;
 
 const LOGOUT_SVG = `<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
@@ -142,7 +150,8 @@ function shell(active, content) {
         <div class="brand-text">TALLER<b>MOTOS</b></div>
       </div>
       <nav class="sidebar-nav">
-        ${NAV.filter(([key]) => entitled(ROUTES.find((r) => r.nav === key)?.plan))
+        ${NAV.filter(([key]) => entitled(ROUTES.find((r) => r.nav === key)?.plan)
+            && !(esAlmacen() && TALLER_ONLY_NAV.has(key)))
           .map(([key, href, label, icon]) =>
           `<a href="#${href}" class="nav-item${active === key ? ' on' : ''}" data-key="${key}">
             ${icon}<span>${label}</span></a>`).join('')}
