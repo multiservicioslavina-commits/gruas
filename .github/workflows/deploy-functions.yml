@@ -36,7 +36,7 @@ env:
   PROJECT_REF: vzzxsdtsaahhzyctvmhx
   # Lista explicita de funciones a desplegar. Solo estas se suben.
   # Agrega una funcion aqui SOLO cuando este validada y en config.toml.
-  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios rita-whatsapp club-auth club-members"
+  FUNCIONES: "rita-v2 wp-content-sync rita-recordatorios rita-whatsapp club-auth club-members hoja-vida"
 
 jobs:
   deploy:

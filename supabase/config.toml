@@ -30,6 +30,9 @@ verify_jwt = false
 [functions.rita-recordatorios]
 verify_jwt = false
 
+[functions.hoja-vida]
+verify_jwt = false
+
 # ─── Respaldo: funciones exportadas del dashboard (no se despliegan via CI) ───
 
 [functions.cartero]
