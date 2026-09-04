@@ -54,7 +54,6 @@ workshopRouter.patch('/', requireRole(), wrap(async (req, res) => {
     currency:   { type: 'string', max: 5 },
     tax_rate:   { type: 'number', min: 0, max: 100 },
     timezone:   { type: 'string', max: 60 },
-    business_type: { type: 'string', enum: ['taller', 'almacen'] },
     settings:   { type: 'object' },
     whatsapp_mode:            { type: 'string', enum: ['off', 'ridera', 'own'] },
     whatsapp_phone_number_id: { type: 'string', max: 60 },
