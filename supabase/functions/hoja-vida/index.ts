@@ -27,6 +27,14 @@ function candidatosTelefono(raw: string): string[] {
   return [...set];
 }
 
+// Para guardar un teléfono nuevo: normaliza al formato de 10 dígitos locales,
+// que es el que ya usa la mayoría de riders existentes.
+function telefonoCanonico(raw: string): string {
+  const digits = (raw || '').replace(/\D/g, '');
+  if (digits.startsWith('57') && digits.length === 12) return digits.slice(2);
+  return digits;
+}
+
 // Misma clave que club-auth/club-members: la sesión se verifica aquí, nunca
 // delegada a RLS/PostgREST (el proyecto migró a llaves asimétricas y ya no
 // conviene depender de que acepten un token firmado con el secreto legado).
@@ -113,6 +121,62 @@ Deno.serve(async (req: Request) => {
   const sb = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
   const body = await req.json().catch(() => ({}));
   const action = body.action;
+
+  // ---------- Público: registrar un rider nuevo con su primera moto ----------
+  // Punto de entrada que hoy no existe en ningún otro lado del sitio: el
+  // login de arriba asume que el rider ya está en la base. Esta acción crea
+  // el rider (si el teléfono no existe) y su motorcycle_identity, y lo deja
+  // ya logueado en su Hoja de Vida.
+  if (action === 'registrar') {
+    const nombre = (body.nombre || '').toString().trim();
+    const candidatos = candidatosTelefono((body.telefono || '').toString());
+    const telefono = telefonoCanonico((body.telefono || '').toString());
+    const marca = (body.marca || '').toString().trim();
+    const modelo = (body.modelo || '').toString().trim();
+
+    if (!nombre) return json({ ok: false, error: 'Escribe tu nombre' }, 400);
+    if (!candidatos[0] || candidatos[0].length < 7) return json({ ok: false, error: 'Teléfono inválido' }, 400);
+    if (!marca || !modelo) return json({ ok: false, error: 'Escribe marca y modelo de tu moto' }, 400);
+
+    const { data: existentes } = await sb.from('riders').select('id').in('telefono', candidatos).limit(1);
+    let riderId = existentes?.[0]?.id;
+
+    if (!riderId) {
+      // riders.id no tiene default: hay que generarlo aquí, igual que lo
+      // hace rita-whatsapp/rita-v2 al registrar riders nuevos.
+      riderId = crypto.randomUUID();
+      const { error: riderError } = await sb.from('riders')
+        .insert({ id: riderId, nombre, apellido: (body.apellido || '').toString().trim() || null, telefono, created_at: new Date().toISOString() });
+      if (riderError) return json({ ok: false, error: riderError.message }, 500);
+    }
+
+    const placa = (body.placa || '').toString().trim().toUpperCase() || null;
+
+    // Si la placa ya existe, esa moto ya tiene una identidad (y probablemente
+    // un dueño). No se reasigna aquí en silencio — eso saltaría por completo
+    // la validación del traspaso. El camino correcto es que el dueño actual
+    // transfiera la moto desde su propia Hoja de Vida.
+    if (placa) {
+      const { data: existenteMoto } = await sb.from('motorcycle_identity').select('id').eq('placa', placa).maybeSingle();
+      if (existenteMoto) {
+        return json({ ok: false, error: 'Esa placa ya está registrada en Ridera. Si es tuya, pídele al dueño actual que la transfiera desde su Hoja de Vida.' }, 409);
+      }
+    }
+
+    const { data: nuevaMoto, error: motoError } = await sb.from('motorcycle_identity')
+      .insert({ marca, modelo, cc: body.cc ? Number(body.cc) : null, placa })
+      .select('id').single();
+    if (motoError) return json({ ok: false, error: motoError.message }, 500);
+
+    const { error: ownError } = await sb.from('rider_motorcycles').insert({
+      rider_id: riderId, motorcycle_id: nuevaMoto.id, marca, modelo,
+      cc: body.cc ? Number(body.cc) : null, placa, esta_activa: true,
+    });
+    if (ownError) return json({ ok: false, error: ownError.message }, 500);
+
+    const token = await firmarSesionRider(riderId);
+    return json({ ok: true, token, rider: { nombre, apellido: body.apellido || null } });
+  }
 
   // ---------- Público: entrar con el teléfono ----------
   // Mismo criterio que el chat del club (PR #61): pedir un código cada vez
