@@ -101,19 +101,20 @@ export const warehousesRouter = crudRouter({
 export const partsRouter = crudRouter({
   table: 'parts',
   schema: {
-    supplier_id: { type: 'string', max: 40 },
-    sku:         { type: 'string', max: 60 },
-    barcode:     { type: 'string', max: 60 },
-    name:        { type: 'string', required: true, max: 160 },
-    description: { type: 'string', max: 1000 },
-    brand:       { type: 'string', max: 60 },
-    category:    { type: 'string', max: 60 },
-    cost:        { type: 'number', min: 0, default: 0 },
-    price:       { type: 'number', min: 0, default: 0 },
-    stock:       { type: 'number', default: 0 },
-    min_stock:   { type: 'number', min: 0, default: 0 },
-    location:    { type: 'string', max: 60 },
-    active:      { type: 'boolean', default: true }
+    supplier_id:     { type: 'string', max: 40 },
+    sku:             { type: 'string', max: 60 },
+    barcode:         { type: 'string', max: 60 },
+    name:            { type: 'string', required: true, max: 160 },
+    description:     { type: 'string', max: 1000 },
+    brand:           { type: 'string', max: 60 },
+    category:        { type: 'string', max: 60 },
+    cost:            { type: 'number', min: 0, default: 0 },
+    price:           { type: 'number', min: 0, default: 0 },
+    wholesale_price: { type: 'number', min: 0 },
+    stock:           { type: 'number', default: 0 },
+    min_stock:       { type: 'number', min: 0, default: 0 },
+    location:        { type: 'string', max: 60 },
+    active:          { type: 'boolean', default: true }
   },
   // warehouse_id: en qué sucursal cae la existencia inicial al crear el
   // repuesto. Se valida pero no es columna de `parts` (el catálogo es de

@@ -75,10 +75,12 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
   if (!data.items.length) throw badRequest('La venta no tiene ítems');
 
   const sale = await transaction(async (client) => {
+    let priceTier = 'retail';
     if (data.customer_id) {
       const { rows } = await client.query(
-        'SELECT id FROM customers WHERE id = $1 AND workshop_id = $2', [data.customer_id, req.auth.workshopId]);
+        'SELECT price_tier FROM customers WHERE id = $1 AND workshop_id = $2', [data.customer_id, req.auth.workshopId]);
       if (!rows[0]) throw notFound('Cliente no encontrado');
+      priceTier = rows[0].price_tier;
     }
     if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
 
@@ -108,7 +110,11 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
           throw conflict(`Sólo quedan ${disponible} unidades de "${part.name}".`);
         }
         description = description || part.name;
-        unitPrice = unitPrice ?? Number(part.price);
+        // Cliente mayorista y el repuesto tiene precio mayorista: ese; si
+        // no, el de siempre. La línea siempre se puede escribir a mano.
+        const tierPrice = priceTier === 'wholesale' && part.wholesale_price !== null
+          ? Number(part.wholesale_price) : Number(part.price);
+        unitPrice = unitPrice ?? tierPrice;
       }
       if (!description) throw badRequest('Cada ítem necesita descripción o repuesto');
       if (unitPrice === undefined || unitPrice === null) throw badRequest('Cada ítem necesita un precio');

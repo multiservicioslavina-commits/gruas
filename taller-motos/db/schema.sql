@@ -162,6 +162,12 @@ CREATE INDEX IF NOT EXISTS customers_workshop_idx ON customers (workshop_id);
 CREATE INDEX IF NOT EXISTS customers_phone_idx    ON customers (workshop_id, phone);
 CREATE INDEX IF NOT EXISTS customers_name_idx     ON customers (workshop_id, lower(name));
 
+-- Precio de mostrador vs. precio mayorista: un cliente frecuente (otro
+-- taller, un mecánico que compra en volumen) paga el precio mayorista del
+-- repuesto si el repuesto tiene uno; si no lo tiene, paga el de siempre.
+ALTER TABLE customers ADD COLUMN IF NOT EXISTS price_tier TEXT NOT NULL DEFAULT 'retail'
+  CHECK (price_tier IN ('retail', 'wholesale'));
+
 CREATE TABLE IF NOT EXISTS motorcycles (
   id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
@@ -267,6 +273,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS parts_sku_key
 ALTER TABLE parts ADD COLUMN IF NOT EXISTS barcode TEXT;
 CREATE UNIQUE INDEX IF NOT EXISTS parts_barcode_key
   ON parts (workshop_id, barcode) WHERE barcode IS NOT NULL AND barcode <> '';
+
+-- Precio mayorista, opcional: si no se llena, un cliente mayorista paga el
+-- precio de siempre (`price`). No es una lista de precios genérica a
+-- propósito -- dos niveles (mostrador / mayorista) es lo que pide el
+-- almacén de repuestos; una lista con más niveles es un cambio más grande.
+ALTER TABLE parts ADD COLUMN IF NOT EXISTS wholesale_price NUMERIC(12,2);
 
 -- Compatibilidad del repuesto con modelos de moto (marca, línea y años).
 -- Un mismo repuesto puede aplicar a varios modelos: una pastilla de freno

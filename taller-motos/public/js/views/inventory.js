@@ -41,8 +41,10 @@ const partFields = (part = {}, suppliers = [], warehouses = []) => {
         options: [['', 'Sin proveedor'], ...suppliers.map((s) => [s.id, s.name])] })}
      ${field('cost', 'Costo', { type: 'number', value: part.cost ?? 0, min: 0 })}
    </div>
-   <div class="row">
+   <div class="row-3">
      ${field('price', 'Precio de venta', { type: 'number', value: part.price ?? 0, min: 0 })}
+     ${field('wholesale_price', 'Precio mayorista', { type: 'number', value: part.wholesale_price ?? '', min: 0,
+        hint: 'Opcional, para clientes mayoristas.' })}
      ${field('location', 'Ubicación', { value: part.location || '' })}
    </div>` +
   stockRow + warehouseRow +
@@ -125,7 +127,7 @@ export async function inventoryView() {
           title: 'Editar repuesto',
           body: partFields(part, suppliers, activeWarehouses()),
           onSubmit: (data) => api.patch(`/parts/${part.id}`,
-            clean(data, ['cost', 'price', 'stock', 'min_stock']))
+            clean(data, ['cost', 'price', 'wholesale_price', 'stock', 'min_stock']))
         });
         if (result) { toast('Repuesto actualizado'); loadParts(); }
       });
@@ -551,7 +553,7 @@ export async function inventoryView() {
         title: 'Nuevo repuesto',
         body: partFields({}, suppliers, activeWarehouses()),
         onSubmit: (data) => api.post('/parts',
-          clean(data, ['cost', 'price', 'stock', 'min_stock']))
+          clean(data, ['cost', 'price', 'wholesale_price', 'stock', 'min_stock']))
       });
       if (result) { toast('Repuesto agregado'); load(); }
     });

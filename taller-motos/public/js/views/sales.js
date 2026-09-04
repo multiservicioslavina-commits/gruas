@@ -406,7 +406,9 @@ export async function newSaleView() {
         `<div class="row">
            ${field('city', 'Ciudad')}
            ${field('notes', 'Notas', { placeholder: 'Opcional' })}
-         </div>`,
+         </div>` +
+        field('price_tier', 'Tipo de cliente', {
+          value: 'retail', options: [['retail', 'Minorista'], ['wholesale', 'Mayorista']] }),
       confirmText: 'Crear cliente',
       onSubmit: (data) => api.post('/customers', clean(data))
     });
@@ -506,13 +508,18 @@ export async function newSaleView() {
         partDd.style.display = 'block';
       };
 
+      // Cliente mayorista y el repuesto tiene precio mayorista: ese; si no,
+      // el de mostrador de siempre. Sigue siendo editable a mano en la línea.
+      const priceFor = (part) => selectedCustomer?.price_tier === 'wholesale' && part.wholesale_price != null
+        ? Number(part.wholesale_price) : (Number(part.price) || 0);
+
       const pickPart = (part) => {
         line.part_id = part.id;
         line.part_query = '';
         partInput.value = partDisplayText(part);
         line.description = part.name;
         descInput.value = part.name;
-        line.unit_price = Number(part.price) || 0;
+        line.unit_price = priceFor(part);
         priceInput.value = line.unit_price;
         closePartDd();
         recalcLine(row, line);
@@ -626,9 +633,10 @@ export async function newSaleView() {
          ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
          ${field('cost', 'Costo', { type: 'number', min: 0, value: '0' })}
        </div>
+       ${field('wholesale_price', 'Precio mayorista (opcional)', { type: 'number', min: 0 })}
        ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}`,
     confirmText: 'Crear producto',
-    onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'stock']))
+    onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'wholesale_price', 'stock']))
   });
 
   // ── Enviar ───────────────────────────────────────────────────────
