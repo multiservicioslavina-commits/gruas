@@ -135,6 +135,22 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="modal-traspaso">
+  <div class="modal">
+    <div class="modal-title">Transferir esta moto</div>
+    <div class="empty-hint" style="margin-bottom:12px;">Se irá de tu Hoja de Vida y pasará a la del nuevo dueño, con todo su historial técnico. Esta acción no se puede deshacer desde aquí.</div>
+    <div class="form-group">
+      <label>Teléfono del nuevo dueño</label>
+      <input id="t-telefono" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+    </div>
+    <div class="error" id="traspaso-error"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cerrarModalTraspaso()">Cancelar</button>
+      <button class="btn btn-primary" id="btn-traspaso" onclick="confirmarTraspaso()">Transferir</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -252,6 +268,7 @@ function renderMoto(m) {
       ${docsHtml}
 
       <button class="btn-add" onclick="abrirModalMantenimiento('${id.id}')">+ Registrar mantenimiento</button>
+      <button class="btn-add" onclick="abrirModalTraspaso('${id.id}')">🔄 Transferir esta moto</button>
     </div>`;
 }
 
@@ -303,6 +320,38 @@ async function guardarMantenimiento() {
   document.getElementById('m-km').value = '';
   document.getElementById('m-proveedor').value = '';
   document.getElementById('m-costo').value = '';
+  await cargarHoja();
+}
+
+function abrirModalTraspaso(motorcycleId) {
+  currentMotoId = motorcycleId;
+  document.getElementById('traspaso-error').textContent = '';
+  document.getElementById('t-telefono').value = '';
+  document.getElementById('modal-traspaso').classList.add('show');
+}
+function cerrarModalTraspaso() {
+  document.getElementById('modal-traspaso').classList.remove('show');
+  currentMotoId = null;
+}
+
+async function confirmarTraspaso() {
+  if (!currentMotoId) return;
+  const telefono = document.getElementById('t-telefono').value.trim();
+  const errorEl = document.getElementById('traspaso-error');
+  const btn = document.getElementById('btn-traspaso');
+  errorEl.textContent = '';
+  if (!telefono) { errorEl.textContent = 'Escribe el teléfono del nuevo dueño'; return; }
+
+  if (!confirm('¿Seguro que quieres transferir esta moto? No podrás deshacerlo desde aquí.')) return;
+
+  btn.disabled = true; btn.textContent = 'Transfiriendo...';
+  const out = await hojaVida('iniciar_traspaso', { motorcycle_id: currentMotoId, telefono_nuevo_dueno: telefono }).catch(() => ({ ok: false }));
+  btn.disabled = false; btn.textContent = 'Transferir';
+
+  if (!out.ok) { errorEl.textContent = out.error || 'No se pudo transferir la moto'; return; }
+
+  showToast(`Moto transferida a ${out.nuevo_dueno || 'el nuevo dueño'}`);
+  cerrarModalTraspaso();
   await cargarHoja();
 }
 

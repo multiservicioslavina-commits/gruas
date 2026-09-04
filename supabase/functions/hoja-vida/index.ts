@@ -175,5 +175,38 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true });
   }
 
+  // ---------- Autenticado: transferir la moto a otro rider ----------
+  if (action === 'iniciar_traspaso') {
+    const riderId = await riderIdDeSesion(req);
+    if (!riderId) return json({ ok: false, error: 'Sesión inválida o vencida' }, 401);
+
+    const motorcycleId = (body.motorcycle_id || '').toString();
+    if (!motorcycleId) return json({ ok: false, error: 'Falta la moto a transferir' }, 400);
+
+    // Solo el dueño actual puede iniciar el traspaso.
+    const { data: own } = await sb.from('rider_motorcycles')
+      .select('id')
+      .eq('rider_id', riderId).eq('motorcycle_id', motorcycleId).is('fecha_fin_propiedad', null)
+      .maybeSingle();
+    if (!own) return json({ ok: false, error: 'Esa moto no está a tu nombre' }, 403);
+
+    const candidatos = candidatosTelefono((body.telefono_nuevo_dueno || '').toString());
+    if (!candidatos[0] || candidatos[0].length < 7) return json({ ok: false, error: 'Teléfono inválido' }, 400);
+
+    const { data: nuevoRiders } = await sb.from('riders').select('id, nombre').in('telefono', candidatos).limit(1);
+    const nuevoRider = nuevoRiders?.[0];
+    if (!nuevoRider) return json({ ok: false, error: 'No encontramos ese número en Ridera. La otra persona debe registrarse primero.' }, 404);
+    if (nuevoRider.id === riderId) return json({ ok: false, error: 'Ese número ya es el tuyo' }, 400);
+
+    const { error } = await sb.rpc('transfer_motorcycle_ownership', {
+      p_motorcycle_id: motorcycleId,
+      p_new_rider_id: nuevoRider.id,
+      p_documento_transferencia: body.documento_transferencia || null,
+    });
+    if (error) return json({ ok: false, error: error.message }, 500);
+
+    return json({ ok: true, nuevo_dueno: nuevoRider.nombre });
+  }
+
   return json({ ok: false, error: 'Acción no reconocida' }, 400);
 });
