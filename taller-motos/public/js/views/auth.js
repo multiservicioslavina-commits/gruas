@@ -5,6 +5,12 @@ import { onMount } from '../app.js';
 
 const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.9 4.9l2.9 2.9m8.4 8.4l2.9 2.9M1 12h4m14 0h4M4.9 19.1l2.9-2.9m8.4-8.4l2.9-2.9"/></svg>`;
 
+// Antes de iniciar sesión no hay business_type que consultar (todavía no
+// hay taller): el dominio por el que entraron es la única pista de qué
+// marca mostrar en la pantalla de acceso/registro.
+const publicBrandHtml = () =>
+  location.hostname.startsWith('almacen.') ? 'MI<b>ALMACÉN</b>' : 'TALLER<b>MOTOS</b>';
+
 function afterLogin(result) {
   session.token = result.token;
   session.user = result.user;
@@ -50,7 +56,7 @@ export async function loginView() {
       <div class="auth-brand">
         <div class="auth-brand-logo">
           <div class="auth-brand-icon">${GEAR_SVG}</div>
-          <div class="auth-brand-title">TALLER<b>MOTOS</b></div>
+          <div class="auth-brand-title">${publicBrandHtml()}</div>
         </div>
         <div class="auth-brand-sub">Gestiona tu taller de motos de forma profesional:<br>
           órdenes de trabajo, clientes, inventario y caja.</div>
@@ -122,7 +128,7 @@ export async function registerView() {
       <div class="auth-brand">
         <div class="auth-brand-logo">
           <div class="auth-brand-icon">${GEAR_SVG}</div>
-          <div class="auth-brand-title">TALLER<b>MOTOS</b></div>
+          <div class="auth-brand-title">${publicBrandHtml()}</div>
         </div>
         <div class="auth-brand-sub">Software profesional para talleres de motos.<br>
           Empieza en minutos.</div>
@@ -144,7 +150,7 @@ export async function registerView() {
                     ['taller', 'Taller de reparación'],
                     ['almacen', 'Almacén de repuestos y accesorios']
                   ],
-                  value: 'taller',
+                  value: location.hostname.startsWith('almacen.') ? 'almacen' : 'taller',
                   hint: 'Ajusta qué módulos ves en el menú. Puedes cambiarlo después en Configuración.' })}
                 ${field('workshop_name', 'Nombre del taller o almacén', { required: true, placeholder: 'Taller Motos del Sur' })}
                 <div class="row">

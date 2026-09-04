@@ -99,6 +99,15 @@ function esAlmacen() {
   return session.workshop?.business_type === 'almacen';
 }
 
+// La marca de la barra lateral cambia según el tipo de negocio: un almacén
+// de repuestos no es "un taller", aunque comparta exactamente el mismo motor.
+function brandHtml() {
+  return esAlmacen() ? 'MI<b>ALMACÉN</b>' : 'TALLER<b>MOTOS</b>';
+}
+function brandTitle() {
+  return esAlmacen() ? 'Mi Almacén' : 'Taller Motos';
+}
+
 const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4m0 14v4M4.9 4.9l2.9 2.9m8.4 8.4l2.9 2.9M1 12h4m14 0h4M4.9 19.1l2.9-2.9m8.4-8.4l2.9-2.9"/></svg>`;
 
 const LOGOUT_SVG = `<svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
@@ -142,12 +151,13 @@ function workshopFooter() {
 function shell(active, content) {
   const firstName = (session.user?.name || '').split(' ')[0];
   const initial = (firstName || '?')[0].toUpperCase();
+  document.title = brandTitle();
 
   return `
     <aside class="sidebar" id="sidebar">
       <div class="sidebar-brand">
         <div class="brand-icon">${GEAR_SVG}</div>
-        <div class="brand-text">TALLER<b>MOTOS</b></div>
+        <div class="brand-text">${brandHtml()}</div>
       </div>
       <nav class="sidebar-nav">
         ${NAV.filter(([key]) => entitled(ROUTES.find((r) => r.nav === key)?.plan)
@@ -169,7 +179,7 @@ function shell(active, content) {
         <button class="hamburger" id="hamburger" type="button" aria-label="Menú">
           <span></span><span></span><span></span>
         </button>
-        <div class="topbar-brand">TALLER<b>MOTOS</b></div>
+        <div class="topbar-brand">${brandHtml()}</div>
         <div class="topbar-spacer"></div>
         <div class="topbar-user">
           <div class="topbar-avatar">${esc(initial)}</div>
