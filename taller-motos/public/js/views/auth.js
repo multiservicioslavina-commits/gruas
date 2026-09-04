@@ -145,13 +145,14 @@ export async function registerView() {
                   required: true,
                   placeholder: 'TM1....',
                   hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
-                ${field('business_type', '¿Qué tipo de negocio tienes?', {
-                  options: [
-                    ['taller', 'Taller de reparación'],
-                    ['almacen', 'Almacén de repuestos y accesorios']
-                  ],
-                  value: location.hostname.startsWith('almacen.') ? 'almacen' : 'taller',
-                  hint: 'Ajusta qué módulos ves en el menú. Puedes cambiarlo después en Configuración.' })}
+                <p class="small muted" style="margin-bottom:14px">
+                  ${location.hostname.startsWith('almacen.')
+                    ? 'Vas a registrar un <b>almacén de repuestos y accesorios</b>.'
+                    : 'Vas a registrar un <b>taller de reparación</b>.'}
+                  ${location.hostname.startsWith('almacen.')
+                    ? ' ¿Tienes un taller de reparación? Entra por el dominio de taller — son dos plataformas aparte.'
+                    : ' ¿Tienes un almacén de repuestos? Regístrate en almacen.ridera.com.co — son dos plataformas aparte.'}
+                </p>
                 ${field('workshop_name', 'Nombre del taller o almacén', { required: true, placeholder: 'Taller Motos del Sur' })}
                 <div class="row">
                   ${field('city', 'Ciudad', { placeholder: 'Medellín' })}

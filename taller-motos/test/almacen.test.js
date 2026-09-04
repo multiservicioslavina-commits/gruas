@@ -3,7 +3,7 @@
 // repuestos y compatibilidad por marca/modelo/año.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { startServer, createWorkshop, closePool } from './helpers.js';
+import { startServer, createWorkshop, makeClient, closePool } from './helpers.js';
 
 const server = await startServer();
 test.after(async () => { await server.close(); await closePool(); });
@@ -22,20 +22,48 @@ test('se puede registrar un taller como "almacen"', async () => {
   assert.equal(res.body.business_type, 'almacen');
 });
 
-test('el administrador puede cambiar el tipo de negocio desde ajustes', async () => {
+// Taller y almacén son, de cara al usuario, dos plataformas aparte que sólo
+// comparten motor por dentro (la decisión de reutilizarlo, no de mezclarlos):
+// el tipo de negocio lo decide el dominio por el que te registras, y ya no
+// se puede tocar después -- ni por error, ni a propósito.
+test('el tipo de negocio no se puede cambiar desde ajustes', async () => {
   const { client } = await createWorkshop(server.url);
+  // business_type ya no es un campo reconocido por PATCH /workshop: mandarlo
+  // solo (sin ningún otro dato real) da el mismo 400 que un PATCH vacío.
   const res = await client.patch('/api/workshop', { business_type: 'almacen' });
-  assert.equal(res.status, 200);
-  assert.equal(res.body.business_type, 'almacen');
+  assert.equal(res.status, 400);
 
   const releido = await client.get('/api/workshop');
-  assert.equal(releido.body.business_type, 'almacen');
+  assert.equal(releido.body.business_type, 'taller');
+
+  // Aunque venga junto con un campo real, se ignora sin dar error.
+  const conOtroCampo = await client.patch('/api/workshop', { business_type: 'almacen', city: 'Cali' });
+  assert.equal(conOtroCampo.status, 200);
+  assert.equal(conOtroCampo.body.business_type, 'taller');
 });
 
-test('un valor de tipo de negocio inválido se rechaza', async () => {
-  const { client } = await createWorkshop(server.url);
-  const res = await client.patch('/api/workshop', { business_type: 'otra-cosa' });
-  assert.equal(res.status, 400);
+test('una cuenta de taller no puede iniciar sesión por el dominio de almacén', async () => {
+  const { email, password } = await createWorkshop(server.url);
+  const res = await makeClient(server.url).post('/api/auth/login',
+    { email, password }, { Host: 'almacen.ridera.com.co' });
+  assert.equal(res.status, 401);
+});
+
+test('una cuenta de almacén no puede iniciar sesión por el dominio de taller', async () => {
+  const { email, password } = await createWorkshop(server.url, { business_type: 'almacen' });
+  const res = await makeClient(server.url).post('/api/auth/login', { email, password });
+  assert.equal(res.status, 401);
+});
+
+test('cada cuenta sí puede iniciar sesión por su propio dominio', async () => {
+  const almacen = await createWorkshop(server.url, { business_type: 'almacen' });
+  const loginAlmacen = await makeClient(server.url).post('/api/auth/login',
+    { email: almacen.email, password: almacen.password }, { Host: 'almacen.ridera.com.co' });
+  assert.equal(loginAlmacen.status, 200);
+
+  const { email, password } = await createWorkshop(server.url);
+  const loginTaller = await makeClient(server.url).post('/api/auth/login', { email, password });
+  assert.equal(loginTaller.status, 200);
 });
 
 test('dos repuestos del mismo taller no pueden repetir código de barras', async () => {

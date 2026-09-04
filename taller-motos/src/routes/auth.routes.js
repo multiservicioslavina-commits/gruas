@@ -15,6 +15,14 @@ const loginLimiter = rateLimit({ windowMs: 15 * 60_000, max: 10,
 const registerLimiter = rateLimit({ windowMs: 60 * 60_000, max: 5,
   message: 'Demasiados registros desde esta dirección. Espera una hora.' });
 
+// Almacén y taller son, de cara al usuario, dos productos aparte que sólo
+// comparten motor por dentro: una cuenta de taller no debe poder entrar ni
+// registrarse en el dominio de almacén, y viceversa. El dominio por el que
+// entra decide el tipo -- no un selector que alguien pueda marcar mal.
+function businessTypeForHost(req) {
+  return req.hostname?.startsWith('almacen.') ? 'almacen' : 'taller';
+}
+
 authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
   if (process.env.ALLOW_SIGNUP === 'false') {
     throw conflict('El registro público está deshabilitado en esta instalación');
@@ -27,9 +35,11 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
     phone:         { type: 'string', max: 40 },
     city:          { type: 'string', max: 80 },
     tax_rate:      { type: 'number', min: 0, max: 100, default: 0 },
-    business_type: { type: 'string', enum: ['taller', 'almacen'], default: 'taller' },
     license_code:  { type: 'string', max: 600 }
   });
+  // El dominio decide, no lo que mande el cliente: así no hay forma de que
+  // un registro por almacen.ridera.com.co cree un taller, ni al revés.
+  data.business_type = businessTypeForHost(req);
 
   // Código de activación: sin él no se abre un taller nuevo en esta
   // instalación. Se comprueba antes de tocar nada.
@@ -144,7 +154,7 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
   });
 
   const user = await queryOne(
-    `SELECT u.*, w.name AS workshop_name FROM users u
+    `SELECT u.*, w.name AS workshop_name, w.business_type FROM users u
      JOIN workshops w ON w.id = u.workshop_id
      WHERE lower(u.email) = lower($1)`,
     [data.email]
@@ -155,6 +165,13 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
     throw unauthorized('Correo o contraseña incorrectos');
   }
   if (!user.active) throw unauthorized('Tu usuario está desactivado. Habla con el administrador del taller.');
+  // Almacén y taller son dominios aparte: una cuenta de taller no entra por
+  // el dominio de almacén, ni al revés, aunque la contraseña sea correcta.
+  if (user.business_type !== businessTypeForHost(req)) {
+    throw unauthorized(user.business_type === 'almacen'
+      ? 'Esta cuenta es de un almacén de repuestos. Entra por almacen.ridera.com.co'
+      : 'Esta cuenta es de un taller. Entra por el dominio de tu taller.');
+  }
 
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
 

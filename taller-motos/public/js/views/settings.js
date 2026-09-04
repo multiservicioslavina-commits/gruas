@@ -58,19 +58,10 @@ export async function settingsView() {
       button.disabled = true;
       try {
         const raw = Object.fromEntries(new FormData(event.target).entries());
-        const modoAnterior = workshop.business_type;
         const updated = await api.patch('/workshop', clean(raw, ['tax_rate']));
         session.workshop = updated;
         toast('Datos del taller actualizados');
-        if (updated.business_type !== modoAnterior) {
-          // El menú lateral sólo se reconstruye en una carga nueva (ver
-          // paint() en app.js): un refresh() a secas dejaría "Órdenes" y
-          // "Agenda" visibles (o al revés) hasta que el usuario recargue
-          // por su cuenta. El toast alcanza a verse antes de recargar.
-          setTimeout(() => location.reload(), 600);
-        } else {
-          refresh();
-        }
+        refresh();
       } catch (err) { toast(err.message, true); button.disabled = false; }
     });
 
@@ -370,13 +361,11 @@ export async function settingsView() {
               ${field('currency', 'Moneda', { value: workshop.currency || 'COP' })}
               ${field('tax_rate', 'IVA (%)', { type: 'number', value: workshop.tax_rate, min: 0, step: '0.01' })}
             </div>
-            ${field('business_type', 'Tipo de negocio', {
-              options: [
-                ['taller', 'Taller de reparación'],
-                ['almacen', 'Almacén de repuestos y accesorios']
-              ],
-              value: workshop.business_type || 'taller',
-              hint: 'Ajusta qué módulos ves en el menú (Órdenes y Agenda se ocultan en modo almacén). Tus datos no se borran al cambiarlo.' })}
+            <div class="kv"><span class="k">Tipo de negocio</span>
+              <span class="v">${workshop.business_type === 'almacen' ? 'Almacén de repuestos y accesorios' : 'Taller de reparación'}</span></div>
+            <p class="faint" style="margin:4px 0 14px">
+              Taller y almacén son dos plataformas aparte, cada una con su propio dominio; el tipo de
+              negocio no se puede cambiar después de registrarte.</p>
             <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
           </form>` : `
             <div class="kv"><span class="k">Taller</span><span class="v">${esc(workshop.name)}</span></div>
