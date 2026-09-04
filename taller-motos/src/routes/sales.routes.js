@@ -7,7 +7,8 @@ import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { computeTotals } from '../lib/money.js';
-import { moveStock } from '../services/workorders.js';
+import { moveStock, warehouseStock } from '../services/workorders.js';
+import { assertDelTaller } from '../lib/pertenencia.js';
 
 export const salesRouter = Router();
 
@@ -68,6 +69,7 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     discount:        { type: 'number', min: 0, default: 0 },
     tax_rate:        { type: 'number', min: 0, max: 100, default: 0 },
     payment_method:  { type: 'string', enum: METHODS, default: 'cash' },
+    warehouse_id:    { type: 'string', max: 40 },
     items:           { type: 'array', required: true }
   });
   if (!data.items.length) throw badRequest('La venta no tiene ítems');
@@ -78,6 +80,7 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
         'SELECT id FROM customers WHERE id = $1 AND workshop_id = $2', [data.customer_id, req.auth.workshopId]);
       if (!rows[0]) throw notFound('Cliente no encontrado');
     }
+    if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
 
     const items = [];
     let partsTotal = 0;
@@ -96,8 +99,13 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
           'SELECT * FROM parts WHERE id = $1 AND workshop_id = $2 FOR UPDATE', [item.part_id, req.auth.workshopId]);
         const part = rows[0];
         if (!part) throw notFound('Repuesto no encontrado en el inventario');
-        if (Number(part.stock) < item.quantity) {
-          throw conflict(`Sólo quedan ${Number(part.stock)} unidades de "${part.name}".`);
+        // Contra esa sucursal si se eligió una; contra el total si no (el
+        // caso de siempre, con una sola sucursal).
+        const disponible = data.warehouse_id
+          ? await warehouseStock(client, part.id, data.warehouse_id)
+          : Number(part.stock);
+        if (disponible < item.quantity) {
+          throw conflict(`Sólo quedan ${disponible} unidades de "${part.name}".`);
         }
         description = description || part.name;
         unitPrice = unitPrice ?? Number(part.price);
@@ -116,11 +124,11 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     const num = await nextSequence(client, req.auth.workshopId, 'sales');
     const { rows: [created] } = await client.query(
       `INSERT INTO sales (workshop_id, number, customer_id, customer_name, subtotal, discount,
-                           tax_rate, tax_total, total, payment_method, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
+                           tax_rate, tax_total, total, payment_method, warehouse_id, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) RETURNING *`,
       [req.auth.workshopId, num, data.customer_id || null, data.customer_name || null,
        totales.subtotal, totales.discount, totales.tax_rate, totales.tax_total, totales.total,
-       data.payment_method, req.auth.userId]);
+       data.payment_method, data.warehouse_id || null, req.auth.userId]);
 
     for (const item of items) {
       await client.query(
@@ -129,8 +137,8 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
         [created.id, item.part_id, item.description, item.quantity, item.unit_price]);
       if (item.part_id) {
         await moveStock(client, {
-          workshopId: req.auth.workshopId, partId: item.part_id, delta: -item.quantity,
-          unitCost: null, reason: `Venta de mostrador #${num}`, userId: req.auth.userId
+          workshopId: req.auth.workshopId, partId: item.part_id, warehouseId: data.warehouse_id,
+          delta: -item.quantity, unitCost: null, reason: `Venta de mostrador #${num}`, userId: req.auth.userId
         });
       }
     }

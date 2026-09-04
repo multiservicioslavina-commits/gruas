@@ -88,6 +88,12 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
          licencia?.p || null, licencia ? venceEl(licencia) : null]
       );
 
+      // Toda cuenta arranca con una sucursal Principal: el resto del sistema
+      // (moveStock) asume que siempre hay una bodega por defecto.
+      await client.query(
+        `INSERT INTO warehouses (workshop_id, name, is_default) VALUES ($1, 'Principal', TRUE)`,
+        [workshop.id]);
+
       // El código corto se marca usado dentro de la misma transacción, con
       // una condición en el UPDATE (no un SELECT previo) para que dos
       // registros a la vez con el mismo código no se lo lleven ambos.

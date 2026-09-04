@@ -262,6 +262,9 @@ export async function newSaleView() {
   let lines = [];
   let lineSeq = 0;
   let searchTimer = null;
+  // Sólo se pregunta de qué sucursal sale la venta cuando hay más de una —
+  // con una sola (el caso de siempre), la venta descuenta de ahí y ya.
+  const warehouses = (await api.get('/warehouses?active=true&limit=100').catch(() => ({ data: [] }))).data;
 
   const loadParts = async () => {
     parts = (await api.get('/parts?active=true&limit=500')).data;
@@ -654,6 +657,7 @@ export async function newSaleView() {
       const paymentMethod = document.getElementById('f-payment_method')?.value || 'cash';
       const discount = Number(document.getElementById('f-discount')?.value) || 0;
       const taxRate = Number(document.getElementById('f-tax_rate')?.value) || 0;
+      const warehouseId = document.getElementById('f-warehouse_id')?.value || undefined;
 
       const result = await api.post('/sales', {
         customer_id: customerId,
@@ -661,6 +665,7 @@ export async function newSaleView() {
         payment_method: paymentMethod,
         discount,
         tax_rate: taxRate,
+        warehouse_id: warehouseId,
         items
       });
 
@@ -722,6 +727,10 @@ export async function newSaleView() {
           <div class="card-head"><h2>Condiciones</h2></div>
           <div class="card-body">
             ${field('payment_method', 'Metodo de pago', { value: 'cash', options: Object.entries(PAYMENT_METHODS) })}
+            ${warehouses.length > 1 ? field('warehouse_id', 'Sucursal', {
+                options: warehouses.map((w) => [w.id, w.name]),
+                value: warehouses.find((w) => w.is_default)?.id || warehouses[0].id
+              }) : ''}
             <div class="row">
               ${field('discount', 'Descuento ($)', { type: 'number', min: 0, value: '0' })}
               ${field('tax_rate', 'IVA (%)', { type: 'number', min: 0, max: 100, value: defaultTax })}

@@ -5,9 +5,9 @@ import multer from 'multer';
 import { query, queryOne, transaction } from '../db.js';
 import { crudRouter } from '../lib/crud.js';
 import { validate, assertUuid } from '../lib/validate.js';
-import { wrap, notFound, badRequest } from '../lib/errors.js';
+import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
-import { moveStock } from '../services/workorders.js';
+import { moveStock, defaultWarehouseId, warehouseStock } from '../services/workorders.js';
 import { assertDelTaller } from '../lib/pertenencia.js';
 
 const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
@@ -67,6 +67,36 @@ export const suppliersRouter = crudRouter({
   orderBy: 'name ASC'
 });
 
+// ── Sucursales / bodegas ──────────────────────────────────────────────────
+export const warehousesRouter = crudRouter({
+  table: 'warehouses',
+  schema: {
+    name:   { type: 'string', required: true, max: 120 },
+    active: { type: 'boolean', default: true }
+  },
+  updateSchema: {
+    name:   { type: 'string', max: 120 },
+    active: { type: 'boolean' }
+  },
+  searchColumns: ['name'],
+  orderBy: 'is_default DESC, name ASC',
+  beforeUpdate: async (data, req) => {
+    if (data.active === false) {
+      const { rows } = await query('SELECT is_default FROM warehouses WHERE id = $1', [req.params.id]);
+      if (rows[0]?.is_default) throw conflict('La sucursal Principal no se puede desactivar');
+    }
+  },
+  beforeDelete: async (req) => {
+    const { rows } = await query(
+      'SELECT is_default FROM warehouses WHERE id = $1 AND workshop_id = $2', [req.params.id, req.auth.workshopId]);
+    if (!rows[0]) return; // no existe: el DELETE genérico responde el 404
+    if (rows[0].is_default) throw conflict('La sucursal Principal no se puede eliminar');
+    const { rows: conStock } = await query(
+      `SELECT 1 FROM part_stock WHERE warehouse_id = $1 AND stock <> 0 LIMIT 1`, [req.params.id]);
+    if (conStock[0]) throw conflict('Esta sucursal todavía tiene existencia; trasládala antes de eliminarla');
+  }
+});
+
 // ── Repuestos e inventario ────────────────────────────────────────────────
 export const partsRouter = crudRouter({
   table: 'parts',
@@ -85,11 +115,58 @@ export const partsRouter = crudRouter({
     location:    { type: 'string', max: 60 },
     active:      { type: 'boolean', default: true }
   },
+  // warehouse_id: en qué sucursal cae la existencia inicial al crear el
+  // repuesto. Se valida pero no es columna de `parts` (el catálogo es de
+  // todo el taller, no de una sucursal) — afterCreate la usa y la descarta.
+  transient: {
+    warehouse_id: { type: 'string', max: 40 }
+  },
   searchColumns: ['name', 'sku', 'barcode', 'brand', 'category', 'location'],
   filters: { category: 'category', supplier_id: 'supplier_id' },
   references: { supplier_id: 'suppliers' },
   orderBy: 'name ASC',
-  duplicateMessage: 'Ya existe un repuesto con ese SKU o código de barras'
+  duplicateMessage: 'Ya existe un repuesto con ese SKU o código de barras',
+
+  afterCreate: async (row, req, data) => {
+    let warehouseId = data.warehouse_id
+      ? (await query('SELECT id FROM warehouses WHERE id = $1 AND workshop_id = $2 AND active',
+          [data.warehouse_id, req.auth.workshopId])).rows[0]?.id
+      : null;
+    if (!warehouseId) {
+      warehouseId = (await query('SELECT id FROM warehouses WHERE workshop_id = $1 AND is_default',
+        [req.auth.workshopId])).rows[0]?.id;
+    }
+    if (!warehouseId) return; // taller sin sucursal principal: dato roto, nada que hacer acá
+    await query(
+      `INSERT INTO part_stock (workshop_id, part_id, warehouse_id, stock, min_stock)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (part_id, warehouse_id) DO UPDATE SET stock = $4, min_stock = $5, updated_at = NOW()`,
+      [req.auth.workshopId, row.id, warehouseId, row.stock, row.min_stock]);
+  },
+
+  // Editar la existencia a mano desde "Editar repuesto" sólo tiene sentido
+  // con una única sucursal (ahí, esa sucursal es todo el inventario). Con
+  // varias, hay que decir de cuál: eso ya lo resuelven Movimiento y Traslado.
+  beforeUpdate: async (data, req) => {
+    if (!('stock' in data) && !('min_stock' in data)) return;
+    const { rows } = await query(
+      'SELECT COUNT(*)::int AS n FROM warehouses WHERE workshop_id = $1 AND active', [req.auth.workshopId]);
+    if (rows[0].n > 1) {
+      throw badRequest('Con varias sucursales activas, cambia la existencia desde "Movimiento" (elige la '
+        + 'sucursal) o "Traslado" — no editando el repuesto directamente.');
+    }
+  },
+  afterUpdate: async (row, req, data) => {
+    if (!('stock' in data) && !('min_stock' in data)) return;
+    const warehouseId = (await query('SELECT id FROM warehouses WHERE workshop_id = $1 AND is_default',
+      [req.auth.workshopId])).rows[0]?.id;
+    if (!warehouseId) return;
+    await query(
+      `INSERT INTO part_stock (workshop_id, part_id, warehouse_id, stock, min_stock)
+       VALUES ($1,$2,$3,$4,$5)
+       ON CONFLICT (part_id, warehouse_id) DO UPDATE SET stock = $4, min_stock = $5, updated_at = NOW()`,
+      [req.auth.workshopId, row.id, warehouseId, row.stock, row.min_stock]);
+  }
 });
 
 // ── Compatibilidad por modelo de moto ──────────────────────────────────────
@@ -228,35 +305,105 @@ partsRouter.get('/alerts/low-stock', wrap(async (req, res) => {
   res.json({ data: rows, total: rows.length });
 }));
 
+// Existencia de un repuesto desglosada por sucursal.
+partsRouter.get('/:id/stock', wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const part = await queryOne('SELECT id FROM parts WHERE id = $1 AND workshop_id = $2',
+    [req.params.id, req.auth.workshopId]);
+  if (!part) throw notFound('Repuesto no encontrado');
+
+  const { rows } = await query(
+    `SELECT w.id AS warehouse_id, w.name AS warehouse_name, w.is_default,
+            COALESCE(ps.stock, 0) AS stock, COALESCE(ps.min_stock, 0) AS min_stock
+     FROM warehouses w
+     LEFT JOIN part_stock ps ON ps.warehouse_id = w.id AND ps.part_id = $1
+     WHERE w.workshop_id = $2 AND w.active
+     ORDER BY w.is_default DESC, w.name ASC`,
+    [req.params.id, req.auth.workshopId]);
+  res.json({ data: rows, total: rows.length });
+}));
+
+// Traslada existencia de una sucursal a otra del mismo taller.
+partsRouter.post('/:id/transfer', requireRole('warehouse'), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, {
+    from_warehouse_id: { type: 'string', required: true, max: 40 },
+    to_warehouse_id:   { type: 'string', required: true, max: 40 },
+    quantity:          { type: 'number', required: true, min: 0.01 },
+    notes:             { type: 'string', max: 300 }
+  });
+  if (data.from_warehouse_id === data.to_warehouse_id) {
+    throw badRequest('Elige dos sucursales distintas');
+  }
+
+  const result = await transaction(async (client) => {
+    await assertDelTaller('warehouses', data.from_warehouse_id, req.auth.workshopId, client);
+    await assertDelTaller('warehouses', data.to_warehouse_id, req.auth.workshopId, client);
+
+    const { rows } = await client.query('SELECT * FROM parts WHERE id = $1 AND workshop_id = $2 FOR UPDATE',
+      [req.params.id, req.auth.workshopId]);
+    const part = rows[0];
+    if (!part) throw notFound('Repuesto no encontrado');
+
+    const disponible = await warehouseStock(client, part.id, data.from_warehouse_id);
+    if (disponible < data.quantity) {
+      throw conflict(`Sólo hay ${disponible} unidades de "${part.name}" en esa sucursal.`);
+    }
+
+    const reason = `Traslado entre sucursales${data.notes ? `: ${data.notes}` : ''}`;
+    await moveStock(client, {
+      workshopId: req.auth.workshopId, partId: part.id, warehouseId: data.from_warehouse_id,
+      delta: -data.quantity, unitCost: part.cost, reason, userId: req.auth.userId
+    });
+    await moveStock(client, {
+      workshopId: req.auth.workshopId, partId: part.id, warehouseId: data.to_warehouse_id,
+      delta: data.quantity, unitCost: part.cost, reason, userId: req.auth.userId
+    });
+    const { rows: [transfer] } = await client.query(
+      `INSERT INTO stock_transfers (workshop_id, part_id, from_warehouse_id, to_warehouse_id, quantity, notes, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [req.auth.workshopId, part.id, data.from_warehouse_id, data.to_warehouse_id,
+       data.quantity, data.notes || null, req.auth.userId]);
+    return transfer;
+  });
+  res.status(201).json(result);
+}));
+
 // Entrada, salida o ajuste manual de inventario.
 partsRouter.post('/:id/movements', requireRole('warehouse', 'reception'), wrap(async (req, res) => {
   assertUuid(req.params.id);
   const data = validate(req.body, {
-    type:      { type: 'string', required: true, enum: ['in', 'out', 'adjust'] },
-    quantity:  { type: 'number', required: true },
-    unit_cost: { type: 'number', min: 0 },
-    reason:    { type: 'string', max: 300 }
+    type:         { type: 'string', required: true, enum: ['in', 'out', 'adjust'] },
+    quantity:     { type: 'number', required: true },
+    unit_cost:    { type: 'number', min: 0 },
+    reason:       { type: 'string', max: 300 },
+    warehouse_id: { type: 'string', max: 40 }
   });
   if (data.type !== 'adjust' && data.quantity <= 0) {
     throw badRequest('La cantidad debe ser mayor que cero');
   }
 
   const result = await transaction(async (client) => {
+    if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
     const { rows } = await client.query(
       'SELECT * FROM parts WHERE id = $1 AND workshop_id = $2 FOR UPDATE',
       [req.params.id, req.auth.workshopId]);
     const part = rows[0];
     if (!part) throw notFound('Repuesto no encontrado');
 
-    // En un ajuste, `quantity` es el conteo físico real: el movimiento es
-    // la diferencia contra lo que dice el sistema.
+    // En un ajuste, `quantity` es el conteo físico real: el movimiento es la
+    // diferencia contra lo que había — en esa sucursal si se eligió una, o
+    // contra el total si no (el caso de siempre, con una sola sucursal).
+    const base = data.type === 'adjust' && data.warehouse_id
+      ? await warehouseStock(client, part.id, data.warehouse_id)
+      : Number(part.stock);
     const delta = data.type === 'in'  ? data.quantity
                 : data.type === 'out' ? -data.quantity
-                : data.quantity - Number(part.stock);
+                : data.quantity - base;
 
     if (delta !== 0) {
       await moveStock(client, {
-        workshopId: req.auth.workshopId, partId: part.id, delta,
+        workshopId: req.auth.workshopId, partId: part.id, warehouseId: data.warehouse_id, delta,
         unitCost: data.unit_cost ?? part.cost,
         reason: data.reason || (data.type === 'adjust' ? 'Ajuste de inventario' : null),
         userId: req.auth.userId
@@ -299,20 +446,22 @@ purchasesRouter.get('/', wrap(async (req, res) => {
 
 purchasesRouter.post('/', requireRole('warehouse'), wrap(async (req, res) => {
   const data = validate(req.body, {
-    supplier_id: { type: 'string', max: 40 },
-    reference:   { type: 'string', max: 120 },
-    notes:       { type: 'string', max: 1000 },
-    items:       { type: 'array', required: true }
+    supplier_id:  { type: 'string', max: 40 },
+    reference:    { type: 'string', max: 120 },
+    notes:        { type: 'string', max: 1000 },
+    warehouse_id: { type: 'string', max: 40 },
+    items:        { type: 'array', required: true }
   });
   if (!data.items.length) throw badRequest('La compra no tiene ítems');
 
   const purchase = await transaction(async (client) => {
     await assertDelTaller('suppliers', data.supplier_id, req.auth.workshopId, client);
+    if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
     const { rows: [created] } = await client.query(
-      `INSERT INTO purchases (workshop_id, supplier_id, reference, notes, created_by)
-       VALUES ($1,$2,$3,$4,$5) RETURNING *`,
+      `INSERT INTO purchases (workshop_id, supplier_id, reference, notes, warehouse_id, created_by)
+       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
       [req.auth.workshopId, data.supplier_id || null, data.reference || null,
-       data.notes || null, req.auth.userId]);
+       data.notes || null, data.warehouse_id || null, req.auth.userId]);
 
     let total = 0;
     for (const raw of data.items) {
@@ -341,7 +490,7 @@ purchasesRouter.post('/', requireRole('warehouse'), wrap(async (req, res) => {
       if (item.part_id) {
         await moveStock(client, {
           workshopId: req.auth.workshopId, partId: item.part_id, purchaseId: created.id,
-          delta: item.quantity, unitCost: item.unit_cost,
+          warehouseId: data.warehouse_id, delta: item.quantity, unitCost: item.unit_cost,
           reason: `Compra ${data.reference || ''}`.trim(), userId: req.auth.userId });
         await client.query('UPDATE parts SET cost = $1, updated_at = NOW() WHERE id = $2',
           [item.unit_cost, item.part_id]);

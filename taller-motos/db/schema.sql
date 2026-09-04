@@ -287,6 +287,74 @@ CREATE INDEX IF NOT EXISTS part_fitments_part_idx ON part_fitments (part_id);
 CREATE INDEX IF NOT EXISTS part_fitments_search_idx
   ON part_fitments (workshop_id, lower(brand), lower(model));
 
+-- ── Sucursales / bodegas (inventario multi-sucursal) ───────────────────────
+-- Todo taller tiene al menos una: la "Principal", creada automáticamente al
+-- registrarse. Mientras sólo exista esa, nada cambia para nadie: parts.stock
+-- sigue siendo la única cifra que se ve y se edita. Sólo al agregar una
+-- segunda sucursal entra en juego part_stock (existencia por sucursal) y los
+-- traslados entre ellas.
+CREATE TABLE IF NOT EXISTS warehouses (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  name        TEXT NOT NULL,
+  is_default  BOOLEAN NOT NULL DEFAULT FALSE,
+  active      BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS warehouses_workshop_idx ON warehouses (workshop_id);
+-- A lo más una sucursal "principal" (la que recibe el stock por defecto) por taller.
+CREATE UNIQUE INDEX IF NOT EXISTS warehouses_default_key ON warehouses (workshop_id) WHERE is_default;
+
+-- Cada taller que ya existía recibe su sucursal Principal.
+INSERT INTO warehouses (workshop_id, name, is_default)
+SELECT w.id, 'Principal', TRUE FROM workshops w
+WHERE NOT EXISTS (SELECT 1 FROM warehouses wh WHERE wh.workshop_id = w.id);
+
+-- Existencia de un repuesto en una sucursal concreta. parts.stock/min_stock
+-- (arriba) se mantienen como el total: moveStock() actualiza ambos a la vez,
+-- así que ningún reporte o pantalla que ya lea parts.stock necesita cambiar.
+CREATE TABLE IF NOT EXISTS part_stock (
+  id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  part_id      UUID NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+  warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+  stock        NUMERIC(12,2) NOT NULL DEFAULT 0,
+  min_stock    NUMERIC(12,2) NOT NULL DEFAULT 0,
+  updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS part_stock_part_warehouse_key ON part_stock (part_id, warehouse_id);
+CREATE INDEX IF NOT EXISTS part_stock_warehouse_idx ON part_stock (warehouse_id);
+
+-- El stock que ya tenía cada repuesto queda asignado a la Principal.
+INSERT INTO part_stock (workshop_id, part_id, warehouse_id, stock, min_stock)
+SELECT p.workshop_id, p.id, wh.id, p.stock, p.min_stock
+FROM parts p
+JOIN warehouses wh ON wh.workshop_id = p.workshop_id AND wh.is_default
+WHERE NOT EXISTS (SELECT 1 FROM part_stock ps WHERE ps.part_id = p.id AND ps.warehouse_id = wh.id);
+
+ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+
+-- Traslado de existencia entre dos sucursales del mismo taller.
+CREATE TABLE IF NOT EXISTS stock_transfers (
+  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id       UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  part_id           UUID NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+  from_warehouse_id UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+  to_warehouse_id   UUID NOT NULL REFERENCES warehouses(id) ON DELETE CASCADE,
+  quantity          NUMERIC(12,2) NOT NULL,
+  notes             TEXT,
+  created_by        UUID REFERENCES users(id) ON DELETE SET NULL,
+  created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS stock_transfers_workshop_idx ON stock_transfers (workshop_id, created_at DESC);
+
 CREATE TABLE IF NOT EXISTS purchases (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workshop_id  UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,

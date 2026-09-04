@@ -20,9 +20,14 @@ export function crudRouter({
   orderBy = 'created_at DESC',
   filters = {},           // { queryParam: 'columna' } para filtros exactos
   duplicateMessage = 'Ya existe un registro con esos datos',
-  afterCreate,            // hook(row, req) opcional
+  afterCreate,            // hook(row, req, data) opcional
+  beforeUpdate,           // hook(data, req) opcional; puede lanzar para rechazar el PATCH
+  afterUpdate,            // hook(row, req, data) opcional
+  beforeDelete,           // hook(req) opcional; puede lanzar para rechazar el DELETE
   references = {},        // { columna: 'tabla' } que deben ser del mismo taller
-  hidden = []             // columnas que nunca se devuelven
+  hidden = [],            // columnas que nunca se devuelven
+  transient = {}          // { columna: regla } que se valida pero no se inserta en la tabla
+                           // (afterCreate la recibe en `data` para hacer algo aparte con ella)
 }) {
   const router = Router();
   const relaxed = updateSchema || Object.fromEntries(
@@ -88,9 +93,9 @@ export function crudRouter({
   }));
 
   router.post('/', wrap(async (req, res) => {
-    const data = validate(req.body, schema);
+    const data = validate(req.body, { ...schema, ...transient });
     await comprobarReferencias(data, req.auth.workshopId);
-    const keys = Object.keys(data);
+    const keys = Object.keys(data).filter((k) => !(k in transient));
     const columns = ['workshop_id', ...keys];
     const values = [req.auth.workshopId, ...keys.map((k) => data[k])];
     const placeholders = values.map((_, i) => `$${i + 1}`);
@@ -105,7 +110,7 @@ export function crudRouter({
       if (isUniqueViolation(err)) throw conflict(duplicateMessage);
       throw err;
     }
-    if (afterCreate) await afterCreate(row, req);
+    if (afterCreate) await afterCreate(row, req, data);
     res.status(201).json(strip(row));
   }));
 
@@ -115,6 +120,7 @@ export function crudRouter({
     await comprobarReferencias(data, req.auth.workshopId);
     const keys = Object.keys(data);
     if (!keys.length) throw conflict('No enviaste ningún campo para actualizar');
+    if (beforeUpdate) await beforeUpdate(data, req);
 
     const sets = keys.map((k, i) => `${k} = $${i + 1}`);
     const values = keys.map((k) => data[k]);
@@ -132,11 +138,13 @@ export function crudRouter({
       throw err;
     }
     if (!row) throw notFound();
+    if (afterUpdate) await afterUpdate(row, req, data);
     res.json(strip(row));
   }));
 
   router.delete('/:id', wrap(async (req, res) => {
     assertUuid(req.params.id);
+    if (beforeDelete) await beforeDelete(req);
     const row = await queryOne(
       `DELETE FROM ${table} WHERE id = $1 AND workshop_id = $2 RETURNING id`,
       [req.params.id, req.auth.workshopId]

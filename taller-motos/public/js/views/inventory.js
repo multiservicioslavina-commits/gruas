@@ -5,8 +5,28 @@ import {
 } from '../ui.js';
 import { onMount, refresh } from '../app.js';
 
-const partFields = (part = {}, suppliers = []) =>
-  field('name', 'Nombre', { required: true, value: part.name || '' }) +
+// Con una sola sucursal, la existencia se edita directo en el repuesto (como
+// siempre). Con varias, hay que decir de cuál — el backend rechaza el PATCH
+// si se manda stock/min_stock ahí, así que el campo se reemplaza por una nota
+// y esos dos valores sólo entran al crear (elige sucursal) o se mueven desde
+// "Movimiento" / "Traslado".
+const partFields = (part = {}, suppliers = [], warehouses = []) => {
+  const isNew = !part.id;
+  const multiSucursal = warehouses.length > 1;
+  const stockRow = (!multiSucursal || isNew)
+    ? `<div class="row">
+         ${field('stock', isNew ? 'Existencia inicial' : 'Existencia', { type: 'number', value: part.stock ?? 0, step: '0.01' })}
+         ${field('min_stock', 'Mínimo', { type: 'number', value: part.min_stock ?? 0, step: '0.01', min: 0 })}
+       </div>`
+    : `<p class="small muted">Existencia: <span class="strong">${number(part.stock)}</span> en total —
+         con varias sucursales activas, cámbiala desde "Movimiento" o "Traslado".</p>`;
+  const warehouseRow = (isNew && multiSucursal)
+    ? field('warehouse_id', 'Sucursal donde entra', {
+        options: warehouses.map((w) => [w.id, w.name]),
+        value: warehouses.find((w) => w.is_default)?.id || warehouses[0].id })
+    : '';
+
+  return field('name', 'Nombre', { required: true, value: part.name || '' }) +
   `<div class="row">
      ${field('sku', 'SKU', { value: part.sku || '' })}
      ${field('barcode', 'Código de barras', { value: part.barcode || '', placeholder: 'Escanea o escribe el código' })}
@@ -24,16 +44,16 @@ const partFields = (part = {}, suppliers = []) =>
    <div class="row">
      ${field('price', 'Precio de venta', { type: 'number', value: part.price ?? 0, min: 0 })}
      ${field('location', 'Ubicación', { value: part.location || '' })}
-   </div>
-   <div class="row">
-     ${field('stock', 'Existencia', { type: 'number', value: part.stock ?? 0, step: '0.01' })}
-     ${field('min_stock', 'Mínimo', { type: 'number', value: part.min_stock ?? 0, step: '0.01', min: 0 })}
    </div>` +
+  stockRow + warehouseRow +
   field('description', 'Descripción', { rows: 2, value: part.description || '' });
+};
 
 export async function inventoryView() {
   const state = { tab: 'parts', filter: 'all', search: '' };
   const suppliers = (await api.get('/suppliers?limit=200').catch(() => ({ data: [] }))).data;
+  let warehouses = (await api.get('/warehouses?limit=100').catch(() => ({ data: [] }))).data;
+  const activeWarehouses = () => warehouses.filter((w) => w.active);
 
   const loadParts = async () => {
     const target = document.getElementById('inv-body');
@@ -82,6 +102,8 @@ export async function inventoryView() {
             </td>
             <td class="num nowrap">
               <button class="btn btn-default btn-sm" data-move="${esc(part.id)}">Movimiento</button>
+              ${activeWarehouses().length > 1
+                ? `<button class="btn btn-default btn-sm" data-transfer="${esc(part.id)}">Traslado</button>` : ''}
               <button class="btn btn-default btn-sm" data-fitments="${esc(part.id)}">Compatibilidad</button>
               <button class="btn btn-quiet btn-sm" data-edit="${esc(part.id)}">Editar</button>
             </td>
@@ -101,7 +123,7 @@ export async function inventoryView() {
         const part = rows.find((p) => p.id === button.dataset.edit);
         const result = await modal({
           title: 'Editar repuesto',
-          body: partFields(part, suppliers),
+          body: partFields(part, suppliers, activeWarehouses()),
           onSubmit: (data) => api.patch(`/parts/${part.id}`,
             clean(data, ['cost', 'price', 'stock', 'min_stock']))
         });
@@ -112,16 +134,21 @@ export async function inventoryView() {
     document.querySelectorAll('[data-move]').forEach((button) => {
       button.addEventListener('click', async () => {
         const part = rows.find((p) => p.id === button.dataset.move);
+        const multi = activeWarehouses().length > 1;
         const result = await modal({
           title: `Movimiento · ${part.name}`,
           body: `<p class="small muted" style="margin-bottom:14px">
-                   Existencia actual: <span class="strong">${number(part.stock)}</span></p>` +
+                   Existencia actual: <span class="strong">${number(part.stock)}</span> en total</p>` +
+                (multi ? field('warehouse_id', 'Sucursal', {
+                  options: activeWarehouses().map((w) => [w.id, w.name]),
+                  value: activeWarehouses().find((w) => w.is_default)?.id }) : '') +
                 field('type', 'Tipo', { options: [
                   ['in', 'Entrada (compra o devolución)'],
                   ['out', 'Salida (consumo o baja)'],
                   ['adjust', 'Ajuste por conteo físico']] }) +
                 field('quantity', 'Cantidad', { type: 'number', value: '1', step: '0.01',
-                  hint: 'En un ajuste, escribe la cantidad real que contaste.' }) +
+                  hint: multi ? 'En un ajuste, escribe la cantidad real que contaste en esa sucursal.'
+                    : 'En un ajuste, escribe la cantidad real que contaste.' }) +
                 field('unit_cost', 'Costo unitario', { type: 'number', value: part.cost, min: 0 }) +
                 field('reason', 'Motivo'),
           confirmText: 'Registrar',
@@ -132,12 +159,71 @@ export async function inventoryView() {
       });
     });
 
+    document.querySelectorAll('[data-transfer]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const part = rows.find((p) => p.id === button.dataset.transfer);
+        openTransferModal(part, () => loadParts());
+      });
+    });
+
     document.querySelectorAll('[data-fitments]').forEach((button) => {
       button.addEventListener('click', () => {
         const part = rows.find((p) => p.id === button.dataset.fitments);
         openFitmentsModal(part);
       });
     });
+  };
+
+  // Existencia por sucursal de un repuesto, con un traslado entre ellas —
+  // el mismo patrón "modal que se actualiza sin cerrarse" que Compatibilidad.
+  const openTransferModal = async (part, onChange) => {
+    let breakdown = (await api.get(`/parts/${part.id}/stock`)).data;
+
+    const renderBreakdown = () => {
+      const list = document.getElementById('transfer-breakdown');
+      if (!list) return;
+      list.innerHTML = breakdown.map((s) => `
+        <div class="list-item" style="cursor:default">
+          <div class="grow"><div class="t">${esc(s.warehouse_name)}${s.is_default ? ' <span class="faint">(Principal)</span>' : ''}</div></div>
+          <div class="strong">${number(s.stock)}</div>
+        </div>`).join('');
+    };
+
+    const pending = modal({
+      title: `Existencia por sucursal · ${part.name}`,
+      body:
+        `<div id="transfer-breakdown" style="margin-bottom:16px"></div>
+         <p class="small muted" style="margin-bottom:10px">Trasladar existencia:</p>
+         <div class="row">
+           ${field('from_warehouse_id', 'De', { options: activeWarehouses().map((w) => [w.id, w.name]) })}
+           ${field('to_warehouse_id', 'A', { options: activeWarehouses().map((w) => [w.id, w.name]) })}
+         </div>
+         ${field('quantity', 'Cantidad', { type: 'number', value: '1', step: '0.01', min: 0.01 })}
+         <button type="button" class="btn btn-default btn-sm" id="btn-do-transfer">Trasladar</button>`,
+      confirmText: 'Cerrar',
+      onSubmit: () => true
+    });
+
+    renderBreakdown();
+    document.getElementById('btn-do-transfer')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      const from = document.getElementById('f-from_warehouse_id').value;
+      const to = document.getElementById('f-to_warehouse_id').value;
+      const quantity = Number(document.getElementById('f-quantity').value);
+      if (!from || !to || from === to) { toast('Elige dos sucursales distintas', true); return; }
+      if (!quantity || quantity <= 0) { toast('Escribe una cantidad válida', true); return; }
+      btn.disabled = true;
+      try {
+        await api.post(`/parts/${part.id}/transfer`, { from_warehouse_id: from, to_warehouse_id: to, quantity });
+        breakdown = (await api.get(`/parts/${part.id}/stock`)).data;
+        renderBreakdown();
+        toast('Existencia trasladada');
+        onChange?.();
+      } catch (err) { toast(err.message, true); }
+      btn.disabled = false;
+    });
+
+    await pending;
   };
 
   // Compatibilidad del repuesto con modelos de moto (marca, línea, años).
@@ -304,9 +390,56 @@ export async function inventoryView() {
       </table></div>` : empty('Aún no has registrado ningún ajuste de inventario en lote.', '📋');
   };
 
+  // Sucursales: sólo hay algo que administrar cuando el taller decide tener
+  // más de una — la Principal siempre está ahí, sin poderse borrar.
+  const loadWarehouses = async () => {
+    const target = document.getElementById('inv-body');
+    warehouses = (await api.get('/warehouses?limit=100')).data;
+    const contador = document.getElementById('inv-count');
+    if (!contador) return;
+    contador.textContent = warehouses.length === 1 ? '1 sucursal' : `${number(warehouses.length)} sucursales`;
+
+    target.innerHTML = warehouses.map((w) => `
+      <div class="list-item" style="cursor:default">
+        <div class="grow">
+          <div class="t">${esc(w.name)} ${w.is_default ? '<span class="faint">(Principal)</span>' : ''}
+            ${!w.active ? '<span class="tag tag-grey">Inactiva</span>' : ''}</div>
+        </div>
+        <button class="btn btn-quiet btn-sm" data-edit-warehouse="${esc(w.id)}">Editar</button>
+        ${!w.is_default ? `<button class="btn btn-quiet btn-sm" data-del-warehouse="${esc(w.id)}"
+            style="color:var(--red)">Eliminar</button>` : ''}
+      </div>`).join('');
+
+    document.querySelectorAll('[data-edit-warehouse]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const w = warehouses.find((x) => x.id === button.dataset.editWarehouse);
+        const result = await modal({
+          title: 'Editar sucursal',
+          body: field('name', 'Nombre', { required: true, value: w.name }) +
+            (w.is_default ? '' : field('active', 'Estado', {
+              options: [['true', 'Activa'], ['false', 'Inactiva']], value: String(w.active) })),
+          onSubmit: (data) => api.patch(`/warehouses/${w.id}`,
+            { name: data.name, ...(data.active !== undefined ? { active: data.active === 'true' } : {}) })
+        });
+        if (result) { toast('Sucursal actualizada'); loadWarehouses(); }
+      });
+    });
+    document.querySelectorAll('[data-del-warehouse]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        if (!await confirmDialog('¿Eliminar esta sucursal? Sólo se puede si no tiene existencia.')) return;
+        try {
+          await api.delete(`/warehouses/${button.dataset.delWarehouse}`);
+          toast('Sucursal eliminada');
+          loadWarehouses();
+        } catch (err) { toast(err.message, true); }
+      });
+    });
+  };
+
   const load = () => (state.tab === 'parts' ? loadParts()
     : state.tab === 'suppliers' ? loadSuppliers()
-    : state.tab === 'purchases' ? loadMovements() : loadAdjustments());
+    : state.tab === 'purchases' ? loadMovements()
+    : state.tab === 'warehouses' ? loadWarehouses() : loadAdjustments());
 
   onMount(() => {
     load();
@@ -328,7 +461,8 @@ export async function inventoryView() {
         document.getElementById('btn-new').textContent =
           state.tab === 'suppliers' ? 'Nuevo proveedor'
             : state.tab === 'purchases' ? 'Registrar compra'
-            : state.tab === 'adjustments' ? 'Registrar ajuste' : 'Nuevo repuesto';
+            : state.tab === 'adjustments' ? 'Registrar ajuste'
+            : state.tab === 'warehouses' ? 'Nueva sucursal' : 'Nuevo repuesto';
         document.getElementById('btn-inv-export').hidden = state.tab !== 'parts';
         document.getElementById('btn-inv-import').hidden = state.tab !== 'parts';
         load();
@@ -392,18 +526,30 @@ export async function inventoryView() {
         return;
       }
       if (state.tab === 'purchases') {
-        await registerPurchase(suppliers);
+        await registerPurchase(suppliers, activeWarehouses());
         load();
         return;
       }
       if (state.tab === 'adjustments') {
-        await registerAdjustment();
+        await registerAdjustment(activeWarehouses());
         load();
+        return;
+      }
+      if (state.tab === 'warehouses') {
+        const result = await modal({
+          title: 'Nueva sucursal',
+          body: field('name', 'Nombre', { required: true, placeholder: 'Sucursal Norte' }),
+          onSubmit: (data) => api.post('/warehouses', clean(data))
+        });
+        if (result) {
+          warehouses = (await api.get('/warehouses?limit=100')).data;
+          toast('Sucursal creada'); load();
+        }
         return;
       }
       const result = await modal({
         title: 'Nuevo repuesto',
-        body: partFields({}, suppliers),
+        body: partFields({}, suppliers, activeWarehouses()),
         onSubmit: (data) => api.post('/parts',
           clean(data, ['cost', 'price', 'stock', 'min_stock']))
       });
@@ -426,6 +572,7 @@ export async function inventoryView() {
       <button class="chip" data-tab="suppliers">Proveedores</button>
       <button class="chip" data-tab="purchases">Compras</button>
       <button class="chip" data-tab="adjustments">Ajustes</button>
+      <button class="chip" data-tab="warehouses">Sucursales</button>
     </div>
     <div class="toolbar">
       <input class="search" id="inv-search" type="search"
@@ -517,12 +664,13 @@ function bindPartSearchLine(row, parts) {
 }
 
 // Compra a proveedor: entra al inventario y actualiza el costo.
-async function registerPurchase(suppliers) {
+async function registerPurchase(suppliers, warehouses = []) {
   const parts = (await api.get('/parts?active=true&limit=500')).data;
   if (!parts.length) {
     toast('Primero crea los repuestos que vas a comprar', true);
     return null;
   }
+  const multi = warehouses.length > 1;
 
   const lineRow = () => `
     <div class="row-3" data-line style="margin-bottom:8px;align-items:flex-start">
@@ -544,8 +692,11 @@ async function registerPurchase(suppliers) {
          ${field('supplier_id', 'Proveedor', {
             options: [['', 'Sin proveedor'], ...suppliers.map((s) => [s.id, s.name])] })}
          ${field('reference', 'Factura / remisión')}
-       </div>
-       <p class="small muted" style="margin:6px 0 10px">Líneas de la compra:</p>
+       </div>` +
+       (multi ? field('warehouse_id', 'Sucursal que recibe', {
+         options: warehouses.map((w) => [w.id, w.name]),
+         value: warehouses.find((w) => w.is_default)?.id }) : '') +
+      `<p class="small muted" style="margin:6px 0 10px">Líneas de la compra:</p>
        <div id="purchase-lines">${lineRow()}</div>
        <button type="button" class="btn btn-default btn-sm" id="btn-add-line">+ Otra línea</button>`,
     confirmText: 'Registrar compra',
@@ -560,6 +711,7 @@ async function registerPurchase(suppliers) {
       return api.post('/purchases', {
         supplier_id: form.querySelector('[name=supplier_id]').value || undefined,
         reference: form.querySelector('[name=reference]').value || undefined,
+        warehouse_id: form.querySelector('[name=warehouse_id]')?.value || undefined,
         items
       });
     }
@@ -578,12 +730,13 @@ async function registerPurchase(suppliers) {
 
 // Ajuste de inventario en lote: un solo documento con el conteo físico de
 // varios repuestos a la vez, como un conteo de bodega.
-async function registerAdjustment() {
+async function registerAdjustment(warehouses = []) {
   const parts = (await api.get('/parts?active=true&limit=500')).data;
   if (!parts.length) {
     toast('Primero crea los repuestos que vas a contar', true);
     return null;
   }
+  const multi = warehouses.length > 1;
 
   const lineRow = () => `
     <div class="row" data-line style="margin-bottom:8px;align-items:flex-start">
@@ -599,9 +752,12 @@ async function registerAdjustment() {
     wide: true,
     body:
       field('reason', 'Motivo', { placeholder: 'Conteo físico de fin de mes' }) +
+      (multi ? field('warehouse_id', 'Sucursal contada', {
+        options: warehouses.map((w) => [w.id, w.name]),
+        value: warehouses.find((w) => w.is_default)?.id }) : '') +
       `<p class="small muted" style="margin:6px 0 10px">
-         Escribe la cantidad <strong>real</strong> que contaste de cada repuesto: el sistema
-         calcula la diferencia contra lo que dice el sistema.</p>
+         Escribe la cantidad <strong>real</strong> que contaste de cada repuesto${multi ? ' en esa sucursal' : ''}:
+         el sistema calcula la diferencia contra lo que dice el sistema.</p>
        <div id="adjustment-lines">${lineRow()}</div>
        <button type="button" class="btn btn-default btn-sm" id="btn-add-adj-line">+ Otro repuesto</button>`,
     confirmText: 'Registrar ajuste',
@@ -613,7 +769,8 @@ async function registerAdjustment() {
       })).filter((item) => item.part_id && item.counted_stock !== null);
 
       if (!items.length) throw new Error('Escribe el conteo real de al menos un repuesto');
-      return api.post('/inventory-adjustments', { reason: data.reason || undefined, items });
+      return api.post('/inventory-adjustments',
+        { reason: data.reason || undefined, warehouse_id: data.warehouse_id || undefined, items });
     }
   });
 
