@@ -27,6 +27,7 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
     phone:         { type: 'string', max: 40 },
     city:          { type: 'string', max: 80 },
     tax_rate:      { type: 'number', min: 0, max: 100, default: 0 },
+    business_type: { type: 'string', enum: ['taller', 'almacen'], default: 'taller' },
     license_code:  { type: 'string', max: 600 }
   });
 
@@ -77,11 +78,12 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
   try {
     result = await transaction(async (client) => {
       const { rows: [workshop] } = await client.query(
-        `INSERT INTO workshops (name, phone, city, email, tax_rate,
+        `INSERT INTO workshops (name, phone, city, email, tax_rate, business_type,
                                 license_code, license_id, license_holder, license_plan,
                                 license_expires_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) RETURNING *`,
         [data.workshop_name, data.phone || null, data.city || null, data.email, data.tax_rate,
+         data.business_type,
          licencia ? data.license_code : null, licencia?.id || codigoCorto?.id || null, licencia?.t || null,
          licencia?.p || null, licencia ? venceEl(licencia) : null]
       );

@@ -73,6 +73,7 @@ export const partsRouter = crudRouter({
   schema: {
     supplier_id: { type: 'string', max: 40 },
     sku:         { type: 'string', max: 60 },
+    barcode:     { type: 'string', max: 60 },
     name:        { type: 'string', required: true, max: 160 },
     description: { type: 'string', max: 1000 },
     brand:       { type: 'string', max: 60 },
@@ -84,11 +85,28 @@ export const partsRouter = crudRouter({
     location:    { type: 'string', max: 60 },
     active:      { type: 'boolean', default: true }
   },
-  searchColumns: ['name', 'sku', 'brand', 'category', 'location'],
+  searchColumns: ['name', 'sku', 'barcode', 'brand', 'category', 'location'],
   filters: { category: 'category', supplier_id: 'supplier_id' },
   references: { supplier_id: 'suppliers' },
   orderBy: 'name ASC',
-  duplicateMessage: 'Ya existe un repuesto con ese SKU'
+  duplicateMessage: 'Ya existe un repuesto con ese SKU o código de barras'
+});
+
+// ── Compatibilidad por modelo de moto ──────────────────────────────────────
+// A qué marca/línea/años aplica cada repuesto — el diferencial que piden los
+// almacenes de repuestos y accesorios frente a un inventario genérico.
+export const partFitmentsRouter = crudRouter({
+  table: 'part_fitments',
+  schema: {
+    part_id:   { type: 'string', required: true, max: 40 },
+    brand:     { type: 'string', required: true, max: 60 },
+    model:     { type: 'string', required: true, max: 80 },
+    year_from: { type: 'number', integer: true, min: 1900, max: 2100 },
+    year_to:   { type: 'number', integer: true, min: 1900, max: 2100 }
+  },
+  filters: { part_id: 'part_id' },
+  references: { part_id: 'parts' },
+  orderBy: 'brand ASC, model ASC, year_from ASC'
 });
 
 // Carga masiva desde un CSV — el mismo formato que descarga

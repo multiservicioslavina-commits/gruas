@@ -9,22 +9,25 @@ const partFields = (part = {}, suppliers = []) =>
   field('name', 'Nombre', { required: true, value: part.name || '' }) +
   `<div class="row">
      ${field('sku', 'SKU', { value: part.sku || '' })}
-     ${field('category', 'Categoría', { value: part.category || '' })}
+     ${field('barcode', 'Código de barras', { value: part.barcode || '', placeholder: 'Escanea o escribe el código' })}
    </div>
    <div class="row">
+     ${field('category', 'Categoría', { value: part.category || '' })}
      ${field('brand', 'Marca', { value: part.brand || '' })}
+   </div>
+   <div class="row">
      ${field('supplier_id', 'Proveedor', {
         value: part.supplier_id || '',
         options: [['', 'Sin proveedor'], ...suppliers.map((s) => [s.id, s.name])] })}
+     ${field('cost', 'Costo', { type: 'number', value: part.cost ?? 0, min: 0 })}
    </div>
    <div class="row">
-     ${field('cost', 'Costo', { type: 'number', value: part.cost ?? 0, min: 0 })}
      ${field('price', 'Precio de venta', { type: 'number', value: part.price ?? 0, min: 0 })}
+     ${field('location', 'Ubicación', { value: part.location || '' })}
    </div>
-   <div class="row-3">
+   <div class="row">
      ${field('stock', 'Existencia', { type: 'number', value: part.stock ?? 0, step: '0.01' })}
      ${field('min_stock', 'Mínimo', { type: 'number', value: part.min_stock ?? 0, step: '0.01', min: 0 })}
-     ${field('location', 'Ubicación', { value: part.location || '' })}
    </div>` +
   field('description', 'Descripción', { rows: 2, value: part.description || '' });
 
@@ -79,6 +82,7 @@ export async function inventoryView() {
             </td>
             <td class="num nowrap">
               <button class="btn btn-default btn-sm" data-move="${esc(part.id)}">Movimiento</button>
+              <button class="btn btn-default btn-sm" data-fitments="${esc(part.id)}">Compatibilidad</button>
               <button class="btn btn-quiet btn-sm" data-edit="${esc(part.id)}">Editar</button>
             </td>
           </tr>`;
@@ -127,6 +131,90 @@ export async function inventoryView() {
         if (result) { toast('Movimiento registrado'); loadParts(); }
       });
     });
+
+    document.querySelectorAll('[data-fitments]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const part = rows.find((p) => p.id === button.dataset.fitments);
+        openFitmentsModal(part);
+      });
+    });
+  };
+
+  // Compatibilidad del repuesto con modelos de moto (marca, línea, años).
+  // Se agregan y quitan al momento, sin cerrar el modal — el mismo patrón
+  // de "+ otra línea" que ya usan Compras y Ajustes de inventario.
+  const openFitmentsModal = async (part) => {
+    let fitments = (await api.get(`/part-fitments?part_id=${part.id}&limit=200`)).data;
+
+    const rangeLabel = (f) => f.year_from && f.year_to ? `${f.year_from}–${f.year_to}`
+      : f.year_from ? `desde ${f.year_from}` : f.year_to ? `hasta ${f.year_to}` : 'todos los años';
+
+    const renderList = () => {
+      const list = document.getElementById('fitments-list');
+      if (!list) return;
+      list.innerHTML = fitments.length ? fitments.map((f) => `
+        <div class="list-item" style="cursor:default">
+          <div class="grow"><div class="t">${esc(f.brand)} ${esc(f.model)}</div>
+            <div class="s">${esc(rangeLabel(f))}</div></div>
+          <button type="button" class="btn btn-quiet btn-sm" data-del-fitment="${esc(f.id)}"
+                  style="color:var(--red)">Quitar</button>
+        </div>`).join('')
+        : empty('Sin modelos de moto asociados todavía.', '🏍️');
+
+      list.querySelectorAll('[data-del-fitment]').forEach((del) => {
+        del.addEventListener('click', async () => {
+          del.disabled = true;
+          try {
+            await api.delete(`/part-fitments/${del.dataset.delFitment}`);
+            fitments = fitments.filter((f) => f.id !== del.dataset.delFitment);
+            renderList();
+          } catch (err) { toast(err.message, true); del.disabled = false; }
+        });
+      });
+    };
+
+    const pending = modal({
+      title: `Compatibilidad · ${part.name}`,
+      body:
+        `<p class="small muted" style="margin-bottom:10px">A qué marca y línea de moto le sirve este repuesto.</p>
+         <div id="fitments-list" style="margin-bottom:14px"></div>
+         <div class="row">
+           ${field('ft_brand', 'Marca', { placeholder: 'Yamaha' })}
+           ${field('ft_model', 'Línea / modelo', { placeholder: 'FZ 2.0' })}
+         </div>
+         <div class="row">
+           ${field('ft_year_from', 'Año desde', { type: 'number', placeholder: '2015' })}
+           ${field('ft_year_to', 'Año hasta', { type: 'number', placeholder: '2023' })}
+         </div>
+         <button type="button" class="btn btn-default btn-sm" id="btn-add-fitment">+ Agregar</button>`,
+      confirmText: 'Cerrar',
+      onSubmit: () => true
+    });
+
+    renderList();
+    document.getElementById('btn-add-fitment')?.addEventListener('click', async (event) => {
+      const btn = event.currentTarget;
+      const brand = document.getElementById('f-ft_brand').value.trim();
+      const model = document.getElementById('f-ft_model').value.trim();
+      if (!brand || !model) { toast('Escribe marca y línea/modelo', true); return; }
+      btn.disabled = true;
+      try {
+        const created = await api.post('/part-fitments', clean({
+          part_id: part.id, brand, model,
+          year_from: document.getElementById('f-ft_year_from').value,
+          year_to: document.getElementById('f-ft_year_to').value
+        }, ['year_from', 'year_to']));
+        fitments = [...fitments, created];
+        renderList();
+        ['f-ft_brand', 'f-ft_model', 'f-ft_year_from', 'f-ft_year_to'].forEach((id) => {
+          document.getElementById(id).value = '';
+        });
+        document.getElementById('f-ft_brand').focus();
+      } catch (err) { toast(err.message, true); }
+      btn.disabled = false;
+    });
+
+    await pending;
   };
 
   const loadSuppliers = async () => {

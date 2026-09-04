@@ -519,7 +519,8 @@ export async function newSaleView() {
         const q = normalizeSearch(query.trim());
         if (!q.length) { closePartDd(); return; }
         const results = parts
-          .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q))
+          .filter((p) => normalizeSearch(p.name).includes(q) || normalizeSearch(p.sku).includes(q)
+            || normalizeSearch(p.barcode).includes(q))
           .slice(0, 8);
 
         openPartDd();
@@ -549,6 +550,23 @@ export async function newSaleView() {
       });
       partInput.addEventListener('blur', () => {
         setTimeout(closePartDd, 180);
+      });
+      // Un lector de código de barras "escribe" el código y manda Enter de
+      // inmediato: si hay una coincidencia exacta, se agrega la línea y el
+      // foco pasa a una línea nueva, lista para el siguiente escaneo, sin
+      // soltar el lector ni tocar el mouse.
+      partInput.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter') return;
+        const raw = partInput.value.trim();
+        if (!raw) return;
+        const match = parts.find((p) => p.barcode && p.barcode === raw);
+        if (!match) return;
+        event.preventDefault();
+        pickPart(match);
+        closePartDd();
+        const newSeq = addLine();
+        renderLines();
+        document.querySelector(`[data-line-seq="${newSeq}"] [data-field="part_search"]`)?.focus();
       });
 
       descInput.addEventListener('input', () => { line.description = descInput.value; });
@@ -599,12 +617,13 @@ export async function newSaleView() {
       field('name', 'Nombre', { required: true }) +
       `<div class="row">
          ${field('sku', 'SKU / Codigo')}
-         ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
+         ${field('barcode', 'Código de barras')}
        </div>
        <div class="row">
+         ${field('price', 'Precio de venta', { type: 'number', min: 0, value: '0' })}
          ${field('cost', 'Costo', { type: 'number', min: 0, value: '0' })}
-         ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}
-       </div>`,
+       </div>
+       ${field('stock', 'Existencia inicial', { type: 'number', step: '0.01', min: 0, value: '0' })}`,
     confirmText: 'Crear producto',
     onSubmit: (data) => api.post('/parts', clean(data, ['cost', 'price', 'stock']))
   });

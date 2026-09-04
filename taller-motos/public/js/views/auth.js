@@ -139,7 +139,14 @@ export async function registerView() {
                   required: true,
                   placeholder: 'TM1....',
                   hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
-                ${field('workshop_name', 'Nombre del taller', { required: true, placeholder: 'Taller Motos del Sur' })}
+                ${field('business_type', '¿Qué tipo de negocio tienes?', {
+                  options: [
+                    ['taller', 'Taller de reparación'],
+                    ['almacen', 'Almacén de repuestos y accesorios']
+                  ],
+                  value: 'taller',
+                  hint: 'Ajusta qué módulos ves en el menú. Puedes cambiarlo después en Configuración.' })}
+                ${field('workshop_name', 'Nombre del taller o almacén', { required: true, placeholder: 'Taller Motos del Sur' })}
                 <div class="row">
                   ${field('city', 'Ciudad', { placeholder: 'Medellín' })}
                   ${field('phone', 'Teléfono', { type: 'tel', placeholder: '+57 300 000 0000' })}

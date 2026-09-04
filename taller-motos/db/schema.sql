@@ -35,6 +35,14 @@ CREATE TABLE IF NOT EXISTS workshops (
   updated_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
+-- Tipo de negocio: mismo motor (login, licencias, inventario, ventas) para
+-- dos públicos distintos. 'taller' ve órdenes de trabajo y agenda de
+-- reparación; 'almacen' (repuestos y accesorios, sin taller de reparación
+-- detrás) las oculta y lleva por delante inventario, compras y ventas de
+-- mostrador. No cambia ni una tabla: sólo qué módulos ve el usuario.
+ALTER TABLE workshops ADD COLUMN IF NOT EXISTS business_type TEXT NOT NULL DEFAULT 'taller'
+  CHECK (business_type IN ('taller', 'almacen'));
+
 -- Licencia del taller: con qué código se activó y hasta cuándo vale.
 ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_code       TEXT;
 ALTER TABLE workshops ADD COLUMN IF NOT EXISTS license_id         TEXT;
@@ -251,6 +259,33 @@ CREATE TABLE IF NOT EXISTS parts (
 CREATE INDEX IF NOT EXISTS parts_workshop_idx ON parts (workshop_id);
 CREATE UNIQUE INDEX IF NOT EXISTS parts_sku_key
   ON parts (workshop_id, sku) WHERE sku IS NOT NULL AND sku <> '';
+
+-- Código de barras (EAN/UPC impreso en el empaque), distinto del SKU
+-- interno. Se busca con el mismo lector de código de barras que ya use el
+-- almacén: el lector "escribe" el código como si fuera un teclado, en el
+-- mismo buscador de producto que ya existe en Ventas e Inventario.
+ALTER TABLE parts ADD COLUMN IF NOT EXISTS barcode TEXT;
+CREATE UNIQUE INDEX IF NOT EXISTS parts_barcode_key
+  ON parts (workshop_id, barcode) WHERE barcode IS NOT NULL AND barcode <> '';
+
+-- Compatibilidad del repuesto con modelos de moto (marca, línea y años).
+-- Un mismo repuesto puede aplicar a varios modelos: una pastilla de freno
+-- le sirve típicamente a varias líneas de una marca en un rango de años.
+CREATE TABLE IF NOT EXISTS part_fitments (
+  id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  part_id     UUID NOT NULL REFERENCES parts(id) ON DELETE CASCADE,
+  brand       TEXT NOT NULL,
+  model       TEXT NOT NULL,
+  year_from   INTEGER,
+  year_to     INTEGER,
+  created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS part_fitments_part_idx ON part_fitments (part_id);
+CREATE INDEX IF NOT EXISTS part_fitments_search_idx
+  ON part_fitments (workshop_id, lower(brand), lower(model));
 
 CREATE TABLE IF NOT EXISTS purchases (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),
