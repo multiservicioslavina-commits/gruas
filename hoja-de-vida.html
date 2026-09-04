@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hoja de Vida | Ridera</title>
+<style>
+  :root {
+    --bg: #0f1117; --surface: #1a1d27; --surface2: #22263433; --border: #2e3345;
+    --text: #e8e9ed; --text2: #8b8fa3; --accent: #f97316; --accent2: #fb923c;
+    --green: #22c55e; --red: #ef4444; --yellow: #eab308;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .container { max-width: 480px; margin: 0 auto; padding: 24px 16px 64px; }
+  .header { text-align: center; margin-bottom: 24px; }
+  .logo { font-size: 40px; margin-bottom: 8px; }
+  .title { font-size: 22px; font-weight: 700; }
+  .title span { color: var(--accent); }
+  .subtitle { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+  /* ---- Login ---- */
+  #login-screen { display: flex; flex-direction: column; justify-content: center; min-height: 70vh; }
+  .form-group { margin-bottom: 16px; }
+  label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text2); }
+  input { width: 100%; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 16px; }
+  input:focus { outline: none; border-color: var(--accent); }
+  .btn { width: 100%; padding: 14px; border-radius: 8px; border: none; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:disabled { opacity: .5; cursor: not-allowed; }
+  .error { color: var(--red); font-size: 13px; margin-top: 8px; }
+
+  /* ---- Dashboard ---- */
+  #dashboard { display: none; }
+  .rider-greeting { font-size: 14px; color: var(--text2); margin-bottom: 20px; }
+  .rider-greeting button { background: none; border: none; color: var(--accent); font-size: 13px; cursor: pointer; margin-left: 8px; }
+
+  .moto-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 16px; }
+  .moto-head { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 4px; }
+  .moto-name { font-size: 17px; font-weight: 700; }
+  .moto-rdr { font-size: 11px; color: var(--text2); font-family: monospace; letter-spacing: .5px; }
+  .moto-meta { font-size: 13px; color: var(--text2); margin-bottom: 12px; }
+
+  .badge { display: inline-block; font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 999px; margin-right: 6px; margin-top: 6px; }
+  .badge-vencido { background: rgba(239,68,68,.15); color: var(--red); }
+  .badge-proximo { background: rgba(234,179,8,.15); color: var(--yellow); }
+  .badge-ok { background: rgba(34,197,94,.15); color: var(--green); }
+
+  .section-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text2); margin: 16px 0 8px; }
+  .timeline-item { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+  .timeline-item:last-child { border-bottom: none; }
+  .ti-label { color: var(--text); }
+  .ti-meta { color: var(--text2); font-size: 12px; }
+  .empty-hint { font-size: 13px; color: var(--text2); padding: 8px 0; }
+
+  .btn-add { width: 100%; padding: 10px; border-radius: 8px; border: 1px dashed var(--border); background: transparent; color: var(--text2); font-size: 13px; cursor: pointer; margin-top: 12px; }
+  .btn-add:hover { border-color: var(--accent); color: var(--accent); }
+
+  .no-motos { text-align: center; color: var(--text2); font-size: 14px; padding: 40px 20px; }
+
+  /* ---- Modal ---- */
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 50; align-items: flex-end; justify-content: center; }
+  .modal-overlay.show { display: flex; }
+  .modal { background: var(--surface); border-radius: 16px 16px 0 0; padding: 20px; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; }
+  .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 16px; }
+  select { width: 100%; padding: 12px 14px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text); font-size: 15px; }
+  .modal-actions { display: flex; gap: 8px; margin-top: 16px; }
+  .btn-secondary { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%);
+    background: var(--green); color: #fff; padding: 12px 24px; border-radius: 8px;
+    font-size: 14px; font-weight: 500; opacity: 0; transition: opacity .3s; z-index: 100; pointer-events: none;
+  }
+  .toast.show { opacity: 1; }
+  .toast.error { background: var(--red); }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <div class="header">
+    <div class="logo">🏍️</div>
+    <div class="title">Hoja de <span>Vida</span></div>
+    <div class="subtitle">El historial de tu moto, para siempre</div>
+  </div>
+
+  <div id="login-screen">
+    <div class="form-group">
+      <label>Tu teléfono</label>
+      <input id="phone" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
+    </div>
+    <button class="btn btn-primary" id="btn-login" onclick="login()">Ver mi hoja de vida</button>
+    <div class="error" id="login-error"></div>
+  </div>
+
+  <div id="dashboard">
+    <div class="rider-greeting" id="rider-greeting"></div>
+    <div id="motos-list"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="modal-mantenimiento">
+  <div class="modal">
+    <div class="modal-title">Registrar mantenimiento</div>
+    <div class="form-group">
+      <label>Tipo</label>
+      <select id="m-tipo">
+        <option value="cambio_aceite">Cambio de aceite</option>
+        <option value="cambio_filtros">Cambio de filtros</option>
+        <option value="revision_frenos">Revisión de frenos</option>
+        <option value="limpieza_cadena">Limpieza de cadena</option>
+        <option value="revision_neumaticos">Revisión de neumáticos</option>
+        <option value="inspeccion_general">Inspección general</option>
+        <option value="otro">Otro</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Kilometraje actual</label>
+      <input id="m-km" type="number" placeholder="45000" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label>Taller / proveedor (opcional)</label>
+      <input id="m-proveedor" type="text" placeholder="Taller Los Motores">
+    </div>
+    <div class="form-group">
+      <label>Costo (opcional)</label>
+      <input id="m-costo" type="number" placeholder="85000" inputmode="numeric">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button class="btn btn-primary" onclick="guardarMantenimiento()">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+
+let sessionToken = localStorage.getItem('hojavida_token') || null;
+let currentMotoId = null;
+
+async function hojaVida(action, extra) {
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken || SB_KEY}` };
+  const res = await fetch(`${SB_URL}/functions/v1/hoja-vida`, {
+    method: 'POST', headers, body: JSON.stringify({ action, ...extra })
+  });
+  return res.json();
+}
+
+function showToast(msg, isError) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (isError ? ' error' : '');
+  setTimeout(() => { t.className = 'toast'; }, 3000);
+}
+
+async function login() {
+  const phone = document.getElementById('phone').value.trim();
+  const btn = document.getElementById('btn-login');
+  document.getElementById('login-error').textContent = '';
+  if (!phone) { document.getElementById('login-error').textContent = 'Escribe tu teléfono'; return; }
+
+  btn.disabled = true; btn.textContent = 'Buscando...';
+  const out = await hojaVida('login', { telefono: phone }).catch(() => ({ ok: false }));
+  btn.disabled = false; btn.textContent = 'Ver mi hoja de vida';
+
+  if (!out.ok) {
+    document.getElementById('login-error').textContent = out.error || 'No se pudo entrar. Intenta de nuevo.';
+    return;
+  }
+  sessionToken = out.token;
+  localStorage.setItem('hojavida_token', sessionToken);
+  localStorage.setItem('hojavida_nombre', out.rider?.nombre || '');
+  await cargarHoja();
+}
+
+function logout() {
+  localStorage.removeItem('hojavida_token');
+  sessionToken = null;
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('login-screen').style.display = 'flex';
+}
+
+function fmtFecha(f) {
+  if (!f) return '';
+  return new Date(f).toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+
+const TIPO_LABEL = {
+  cambio_aceite: 'Cambio de aceite', cambio_filtros: 'Cambio de filtros', revision_frenos: 'Revisión de frenos',
+  limpieza_cadena: 'Limpieza de cadena', revision_neumaticos: 'Revisión de neumáticos',
+  inspeccion_general: 'Inspección general', otro: 'Mantenimiento',
+};
+const DOC_LABEL = { soat: 'SOAT', tecnica_mecanica: 'Técnico-mecánica', impuesto_vehicular: 'Impuesto vehicular', licencia_conduccion: 'Licencia' };
+
+function renderMoto(m) {
+  const id = m.identity;
+  const nombre = `${id.marca} ${id.modelo}`;
+
+  const badges = (m.documentos || [])
+    .filter(d => d.alerta === 'vencido' || d.alerta === 'proximo')
+    .map(d => `<span class="badge badge-${d.alerta}">${DOC_LABEL[d.tipo_documento] || d.tipo_documento} ${d.alerta === 'vencido' ? 'vencido' : 'vence pronto'}</span>`)
+    .join('');
+
+  const mantenimientoHtml = (m.mantenimiento || []).length
+    ? m.mantenimiento.map(x => `
+        <div class="timeline-item">
+          <span class="ti-label">${TIPO_LABEL[x.tipo_mantenimiento] || x.tipo_mantenimiento}</span>
+          <span class="ti-meta">${fmtFecha(x.fecha_servicio)}${x.km_actual ? ' · ' + x.km_actual.toLocaleString('es-CO') + ' km' : ''}</span>
+        </div>`).join('')
+    : `<div class="empty-hint">Sin mantenimiento registrado todavía.</div>`;
+
+  const reparacionesHtml = (m.reparaciones || []).length
+    ? m.reparaciones.map(x => `
+        <div class="timeline-item">
+          <span class="ti-label">${x.descripcion || x.tipo_reparacion}</span>
+          <span class="ti-meta">${fmtFecha(x.fecha_inicio)}</span>
+        </div>`).join('')
+    : `<div class="empty-hint">Sin reparaciones registradas.</div>`;
+
+  const docsHtml = (m.documentos || []).length
+    ? m.documentos.map(d => `
+        <div class="timeline-item">
+          <span class="ti-label">${DOC_LABEL[d.tipo_documento] || d.tipo_documento}</span>
+          <span class="ti-meta">${d.fecha_vencimiento ? 'Vence ' + fmtFecha(d.fecha_vencimiento) : 'Sin fecha'}</span>
+        </div>`).join('')
+    : `<div class="empty-hint">Sin documentos registrados.</div>`;
+
+  return `
+    <div class="moto-card">
+      <div class="moto-head">
+        <div>
+          <div class="moto-name">${nombre}</div>
+          <div class="moto-rdr">${id.rdr_id}</div>
+        </div>
+      </div>
+      <div class="moto-meta">${id.cc ? id.cc + 'cc · ' : ''}${id.placa || 'Sin placa registrada'}</div>
+      ${badges}
+
+      <div class="section-title">Mantenimiento reciente</div>
+      ${mantenimientoHtml}
+
+      <div class="section-title">Reparaciones</div>
+      ${reparacionesHtml}
+
+      <div class="section-title">Documentos</div>
+      ${docsHtml}
+
+      <button class="btn-add" onclick="abrirModalMantenimiento('${id.id}')">+ Registrar mantenimiento</button>
+    </div>`;
+}
+
+async function cargarHoja() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+
+  const nombre = localStorage.getItem('hojavida_nombre');
+  document.getElementById('rider-greeting').innerHTML = `Hola${nombre ? ', ' + nombre : ''} <button onclick="logout()">Cambiar de cuenta</button>`;
+
+  const out = await hojaVida('hoja').catch(() => ({ ok: false }));
+  if (!out.ok) {
+    if (out.error && out.error.includes('Sesión')) { logout(); return; }
+    document.getElementById('motos-list').innerHTML = `<div class="no-motos">No pudimos cargar tu hoja de vida. Intenta de nuevo.</div>`;
+    return;
+  }
+
+  if (!out.motos || !out.motos.length) {
+    document.getElementById('motos-list').innerHTML = `<div class="no-motos">Todavía no tienes una moto registrada en Ridera.</div>`;
+    return;
+  }
+
+  document.getElementById('motos-list').innerHTML = out.motos.map(renderMoto).join('');
+}
+
+function abrirModalMantenimiento(motorcycleId) {
+  currentMotoId = motorcycleId;
+  document.getElementById('modal-mantenimiento').classList.add('show');
+}
+function cerrarModal() {
+  document.getElementById('modal-mantenimiento').classList.remove('show');
+  currentMotoId = null;
+}
+
+async function guardarMantenimiento() {
+  if (!currentMotoId) return;
+  const out = await hojaVida('registrar_mantenimiento', {
+    motorcycle_id: currentMotoId,
+    tipo_mantenimiento: document.getElementById('m-tipo').value,
+    km_actual: document.getElementById('m-km').value || null,
+    proveedor: document.getElementById('m-proveedor').value || null,
+    costo: document.getElementById('m-costo').value || null,
+  }).catch(() => ({ ok: false }));
+
+  if (!out.ok) { showToast(out.error || 'No se pudo guardar', true); return; }
+
+  showToast('Mantenimiento registrado');
+  cerrarModal();
+  document.getElementById('m-km').value = '';
+  document.getElementById('m-proveedor').value = '';
+  document.getElementById('m-costo').value = '';
+  await cargarHoja();
+}
+
+document.getElementById('phone').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+
+if (sessionToken) { cargarHoja(); }
+</script>
+</body>
+</html>
