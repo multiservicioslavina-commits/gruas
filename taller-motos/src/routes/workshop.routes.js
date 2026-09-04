@@ -93,6 +93,11 @@ workshopRouter.post('/license', requireRole(), wrap(async (req, res) => {
   let licencia = null;
   let codigoCorto = null;
 
+  // Un código amarrado a taller o almacén (--tipo al emitirlo) tampoco
+  // sirve aquí si no coincide con lo que ya es este taller: cambiar de
+  // plan no cambia de plataforma.
+  const propio = await queryOne('SELECT business_type FROM workshops WHERE id = $1', [req.auth.workshopId]);
+
   if (tipo === 'corto') {
     codigoCorto = await queryOne(
       'SELECT * FROM license_codes WHERE upper(code) = upper($1)', [data.license_code.trim()]);
@@ -100,6 +105,9 @@ workshopRouter.post('/license', requireRole(), wrap(async (req, res) => {
     if (codigoCorto.used_by_workshop_id) throw conflict(MOTIVOS.usado);
     if (codigoCorto.expires_at && new Date(codigoCorto.expires_at) < new Date()) {
       throw badRequest(MOTIVOS.vencido);
+    }
+    if (codigoCorto.business_type && codigoCorto.business_type !== propio.business_type) {
+      throw badRequest(MOTIVOS[`tipo_${codigoCorto.business_type}`]);
     }
     licencia = {
       t: codigoCorto.holder,
@@ -110,6 +118,10 @@ workshopRouter.post('/license', requireRole(), wrap(async (req, res) => {
     const revision = revisar(data.license_code, config.license.publicKey);
     if (!revision.valido) throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
     licencia = revision.datos;
+
+    if (licencia.bt && licencia.bt !== propio.business_type) {
+      throw badRequest(MOTIVOS[`tipo_${licencia.bt}`]);
+    }
 
     const yaUsado = await queryOne('SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
     if (yaUsado) throw conflict(MOTIVOS.usado);
