@@ -397,7 +397,7 @@ export const TOOL_SCHEMAS = [
   {
     name: "buscar_en_ridera",
     description:
-      "Busca articulos y rutas publicadas en ridera.com.co. Usala como respaldo cuando las otras herramientas no traigan resultados y el tema sea motero.",
+      "Busca articulos y rutas publicadas en ridera.com.co por similitud semantica. Usala como respaldo cuando las otras herramientas no traigan resultados y el tema sea motero. IMPORTANTE: es busqueda aproximada, NO una fuente verificada como buscar_ruta - los resultados son pistas relacionadas, no datos confirmados. Nunca repitas como hecho un km, tiempo o dato numerico que no este escrito tal cual en el resumen devuelto.",
     input_schema: {
       type: "object",
       properties: {
@@ -839,6 +839,16 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
   async buscar_en_ridera(input) {
     const consulta = String(input.consulta ?? "");
 
+    // Umbral minimo para que un resultado se devuelva siquiera (filtra ruido
+    // puro). CONFIANZA_ALTA marca la barra real de "esto sí es sobre lo que
+    // preguntaron" - por debajo de eso es una pista relacionada, no una
+    // respuesta confirmada, y hay que decirselo a Claude explicitamente:
+    // un umbral bajo (0.3) dejaba pasar articulos apenas relacionados como si
+    // fueran la ruta exacta pedida, y el modelo rellenaba los huecos
+    // inventando cifras para sonar completo (caso real: ruta a Guatape).
+    const UMBRAL_MINIMO = 0.45;
+    const CONFIANZA_ALTA = 0.6;
+
     // Búsqueda semántica dual: Voyage AI + OpenAI
     const [voyageEmbedding, openaiEmbedding] = await Promise.all([
       embedQueryVoyage(consulta),
@@ -848,30 +858,35 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const semanticResults: Record<string, unknown>[] = [];
     const seen = new Set<string>();
 
+    const agregarResultados = (matches: { url: string; titulo: string; chunk_text: string; categoria?: string; similarity?: number }[]) => {
+      for (const match of matches) {
+        const key = `${match.url}#${match.titulo}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const score = match.similarity || 0;
+        semanticResults.push({
+          tipo: match.categoria || "contenido",
+          titulo: match.titulo || "Sin título",
+          resumen: match.chunk_text.slice(0, 300),
+          link: match.url || "",
+          score,
+          verificado: score >= CONFIANZA_ALTA,
+          advertencia: score >= CONFIANZA_ALTA
+            ? undefined
+            : "Coincidencia debil (no confirmada). Es solo una pista relacionada: no la presentes como la ruta/dato exacto que pidieron, y no inventes km, tiempos u otras cifras que no esten escritas tal cual en el resumen.",
+        });
+      }
+    };
+
     // Intenta búsqueda con Voyage AI
     if (voyageEmbedding) {
       try {
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
           query_embedding: voyageEmbedding,
           match_count: 5,
-          match_threshold: 0.3,
+          match_threshold: UMBRAL_MINIMO,
         });
-
-        if (!error && matches && matches.length > 0) {
-          for (const match of matches) {
-            const key = `${match.url}#${match.titulo}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              semanticResults.push({
-                tipo: match.categoria || "contenido",
-                titulo: match.titulo || "Sin título",
-                resumen: match.chunk_text.slice(0, 300),
-                link: match.url || "",
-                score: match.similarity || 0,
-              });
-            }
-          }
-        }
+        if (!error && matches?.length) agregarResultados(matches);
       } catch { }
     }
 
@@ -881,28 +896,14 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
           query_embedding: openaiEmbedding,
           match_count: 5,
-          match_threshold: 0.3,
+          match_threshold: UMBRAL_MINIMO,
         });
-
-        if (!error && matches && matches.length > 0) {
-          for (const match of matches) {
-            const key = `${match.url}#${match.titulo}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              semanticResults.push({
-                tipo: match.categoria || "contenido",
-                titulo: match.titulo || "Sin título",
-                resumen: match.chunk_text.slice(0, 300),
-                link: match.url || "",
-                score: match.similarity || 0,
-              });
-            }
-          }
-        }
+        if (!error && matches?.length) agregarResultados(matches);
       } catch { }
     }
 
     if (semanticResults.length > 0) {
+      semanticResults.sort((a, b) => (b.score as number) - (a.score as number));
       return { ok: true, data: semanticResults.slice(0, 5) };
     }
 

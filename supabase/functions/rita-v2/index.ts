@@ -399,6 +399,13 @@ COMO USAS LAS HERRAMIENTAS:
   SIEMPRE llama tambien a buscar_en_ridera con el nombre del destino antes de
   decirle al rider que no la tienes. Solo despues de que las DOS fallen le
   dices que no esta documentada todavia.
+- buscar_en_ridera NO es una fuente verificada como buscar_ruta: es busqueda
+  aproximada. Cada resultado trae "verificado: true/false". Si viene
+  verificado:false, es solo una pista relacionada - dile al rider algo como
+  "no tengo esa ruta exacta confirmada, pero encontre algo relacionado: [titulo]"
+  y NUNCA repitas un km, tiempo u otro dato numerico que no este escrito tal
+  cual en el "resumen". Si el resumen no trae el dato que piden, dilo con
+  naturalidad en vez de inventarlo - un dato falso hace mas dano que un "no se".
 - BUSQUEDA WEB VERIFICADA: si ninguna herramienta especifica encuentra respuesta
   y el rider necesita informacion urgente, puedes llamar a buscar_web_verificado.
   SIEMPRE verifica que la fuente sea confiable (.gov.co/.edu.co para datos
