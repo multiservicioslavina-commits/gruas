@@ -188,13 +188,25 @@ Deno.serve(async (req: Request) => {
 
     const placa = (body.placa || '').toString().trim().toUpperCase() || null;
 
-    // Si la placa ya existe, esa moto ya tiene una identidad (y probablemente
-    // un dueño). No se reasigna aquí en silencio — eso saltaría por completo
-    // la validación del traspaso. El camino correcto es que el dueño actual
-    // transfiera la moto desde su propia Hoja de Vida.
+    // Si la placa ya existe, esa moto ya tiene una identidad. Dos casos:
+    // - Si el rider de este registro YA es su dueño activo (ej. reenvió el
+    //   formulario por un doble clic, o se está registrando de nuevo con la
+    //   misma moto), no hay nada que crear: se le devuelve sesión sobre lo
+    //   que ya existe, sin duplicar ni rechazar en falso.
+    // - Si es de otro rider (o de este mismo pero ya no activo), se rechaza
+    //   sin reasignar en silencio — eso saltaría la validación del traspaso.
+    //   El camino correcto es que el dueño actual la transfiera.
     if (placa) {
       const { data: existenteMoto } = await sb.from('motorcycle_identity').select('id').eq('placa', placa).maybeSingle();
       if (existenteMoto) {
+        const { data: yaEsDueño } = await sb.from('rider_motorcycles')
+          .select('id')
+          .eq('rider_id', riderId).eq('motorcycle_id', existenteMoto.id).is('fecha_fin_propiedad', null)
+          .maybeSingle();
+        if (yaEsDueño) {
+          const token = await firmarSesionRider(riderId);
+          return json({ ok: true, token, rider: { nombre, apellido: body.apellido || null }, ya_registrada: true });
+        }
         return json({ ok: false, error: 'Esa placa ya está registrada en Ridera. Si es tuya, pídele al dueño actual que la transfiera desde su Hoja de Vida.' }, 409);
       }
     }
