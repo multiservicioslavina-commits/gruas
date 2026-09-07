@@ -426,7 +426,10 @@ async function confirmarTraspaso() {
 
   if (!out.ok) { errorEl.textContent = out.error || 'No se pudo transferir la moto'; return; }
 
-  showToast(`Moto transferida a ${out.nuevo_dueno || 'el nuevo dueño'}`);
+  const mensaje = out.notificado
+    ? `Moto transferida a ${out.nuevo_dueno || 'el nuevo dueño'} y le avisamos por WhatsApp`
+    : `Moto transferida a ${out.nuevo_dueno || 'el nuevo dueño'} (no le pudimos avisar por WhatsApp — avísale tú)`;
+  showToast(mensaje);
   cerrarModalTraspaso();
   await cargarHoja();
 }

@@ -11,6 +11,30 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 
 type Sb = SupabaseClient;
 
+const WA_TOKEN = Deno.env.get('WHATSAPP_TOKEN') ?? '';
+const RITA_PHONE = Deno.env.get('RITA_PHONE_ID') ?? '1260857797114684';
+const GRAPH = 'https://graph.facebook.com/v25.0';
+
+// Mejor esfuerzo, igual que notificarLider en club-members: WhatsApp solo
+// entrega texto libre dentro de las 24h siguientes a un mensaje del usuario a
+// Rita. Fuera de esa ventana Meta rechaza el envío — no hay plantilla
+// aprobada para esto todavía. El traspaso ya se hizo antes de llamar esto,
+// así que un fallo de WhatsApp nunca revierte ni bloquea el traspaso.
+async function notificarNuevoDueno(telefono: string, texto: string): Promise<boolean> {
+  if (!WA_TOKEN || !telefono) return false;
+  try {
+    const res = await fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+      method: 'POST',
+      headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: texto } }),
+    });
+    const out = await res.json();
+    return !!out?.messages?.length;
+  } catch {
+    return false;
+  }
+}
+
 // riders.telefono no está normalizado de forma consistente (a diferencia de
 // connect_members): la mayoría son 10 dígitos locales, algunos llevan +57.
 // En vez de adivinar un único formato, se prueban todas las variantes.
@@ -257,7 +281,7 @@ Deno.serve(async (req: Request) => {
     const candidatos = candidatosTelefono((body.telefono_nuevo_dueno || '').toString());
     if (!candidatos[0] || candidatos[0].length < 7) return json({ ok: false, error: 'Teléfono inválido' }, 400);
 
-    const { data: nuevoRiders } = await sb.from('riders').select('id, nombre').in('telefono', candidatos).limit(1);
+    const { data: nuevoRiders } = await sb.from('riders').select('id, nombre, telefono').in('telefono', candidatos).limit(1);
     const nuevoRider = nuevoRiders?.[0];
     if (!nuevoRider) return json({ ok: false, error: 'No encontramos ese número en Ridera. La otra persona debe registrarse primero.' }, 404);
     if (nuevoRider.id === riderId) return json({ ok: false, error: 'Ese número ya es el tuyo' }, 400);
@@ -269,7 +293,20 @@ Deno.serve(async (req: Request) => {
     });
     if (error) return json({ ok: false, error: error.message }, 500);
 
-    return json({ ok: true, nuevo_dueno: nuevoRider.nombre });
+    // Aviso al nuevo dueño — mejor esfuerzo, nunca bloquea el traspaso ya
+    // confirmado arriba. Sin esto, la única forma de enterarse es entrando
+    // a su propia Hoja de Vida por su cuenta.
+    const [{ data: dueñoAnterior }, { data: identity }] = await Promise.all([
+      sb.from('riders').select('nombre').eq('id', riderId).maybeSingle(),
+      sb.from('motorcycle_identity').select('marca, modelo, rdr_id').eq('id', motorcycleId).maybeSingle(),
+    ]);
+    const motoDesc = identity ? `${identity.marca} ${identity.modelo} (${identity.rdr_id})` : 'una moto';
+    const notificado = await notificarNuevoDueno(
+      nuevoRider.telefono,
+      `🏍️ ${dueñoAnterior?.nombre || 'Alguien'} te transfirió su ${motoDesc} en Ridera. Ya está en tu Hoja de Vida: https://gruas.ridera.com.co/hoja-de-vida`
+    );
+
+    return json({ ok: true, nuevo_dueno: nuevoRider.nombre, notificado });
   }
 
   return json({ ok: false, error: 'Acción no reconocida' }, 400);
