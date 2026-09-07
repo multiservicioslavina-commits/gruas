@@ -1009,6 +1009,27 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const consulta = String(input.consulta ?? "");
     const tipoFuente = String(input.tipo_fuente ?? "general");
 
+    // Cache: evita repetir llamadas de red para consultas identicas
+    const cacheKey = await (async () => {
+      const raw = `${tipoFuente}:${consulta.toLowerCase().trim()}`;
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+    })();
+
+    try {
+      const { data: cached } = await supabase
+        .from("rita_consultas_cache")
+        .select("resultado, updated_at")
+        .eq("consulta_hash", cacheKey)
+        .single();
+      if (cached?.resultado) {
+        const age = Date.now() - new Date(cached.updated_at).getTime();
+        if (age < 7 * 24 * 60 * 60 * 1000) {
+          return { ok: true, data: cached.resultado };
+        }
+      }
+    } catch { /* cache miss, continua */ }
+
     // Fuentes permitidas por tipo
     const fuentesPorTipo: Record<string, string[]> = {
       oficial_colombiana: [
@@ -1062,10 +1083,11 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
           }));
 
         if (results.length) {
-          return {
-            ok: true,
-            data: results.map(r => `${r.titulo}\n${r.resumen}\nFuente: ${r.fuente} (${r.url})`).join("\n\n")
-          };
+          const resultData = results.map(r => `${r.titulo}\n${r.resumen}\nFuente: ${r.fuente} (${r.url})`).join("\n\n");
+          supabase.from("rita_consultas_cache").upsert({
+            consulta_hash: cacheKey, tipo: tipoFuente, resultado: resultData, updated_at: new Date().toISOString(),
+          }).then(() => {});
+          return { ok: true, data: resultData };
         }
       }
 
@@ -1087,7 +1109,11 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
             const descMatch = m.match(/<span[^>]*>([^<]+)<\/span>/);
             return `${titleMatch?.[1] || "Resultado"}\n${descMatch?.[1] || ""}\nFuente: búsqueda web verificada`;
           });
-          return { ok: true, data: items.join("\n\n") };
+          const resultData = items.join("\n\n");
+          supabase.from("rita_consultas_cache").upsert({
+            consulta_hash: cacheKey, tipo: tipoFuente, resultado: resultData, updated_at: new Date().toISOString(),
+          }).then(() => {});
+          return { ok: true, data: resultData };
         }
       }
 

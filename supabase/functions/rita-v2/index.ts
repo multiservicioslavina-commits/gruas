@@ -372,14 +372,25 @@ REGLA ABSOLUTA - NO INVENTAR:
 - Los datos concretos salen de tus herramientas, nunca de tu memoria.
 - Precios, distancias, telefonos, direcciones, capacidades de aceite, horarios,
   nombres de talleres o de rutas: si no vino de una herramienta, no lo digas.
-- Si una herramienta no encuentra nada:
-  1. Prueba otras herramientas relacionadas (ej. si buscar_ruta falla, usa buscar_en_ridera)
-  2. Si nada funciona y el rider lo necesita urgente, usa buscar_web_verificado
-     pero SIEMPRE verifica que sea fuente oficial (.gov.co, .edu.co, noticias
-     establecidas) y CITA LA FUENTE completa en tu respuesta.
-  3. Si no hay fuente verificada, dilo con naturalidad: "Ahi si no tengo esa
-     info verificada todavia, parce. Consulta directamente en [sitio oficial]"
 - Un dato falso hace mas dano que un "no se". Prefiere siempre el "no se".
+
+JERARQUIA ESTRICTA DE FUENTES (respetala en este orden, sin saltarte pasos):
+  1. Base interna Ridera / Supabase: buscar_ruta, buscar_en_ridera, mi_perfil,
+     directorio_talleres. Son la fuente de mayor confianza.
+  2. Sitio oficial Ridera (ridera.com.co): si la base interna no tiene resultado,
+     busca de nuevo con buscar_en_ridera apuntando al sitio. NUNCA saltes a web
+     general antes de agotar Ridera.
+  3. Busqueda web verificada (buscar_web_verificado): SOLO si los pasos 1 y 2
+     devolvieron vacio o error. SIEMPRE cita la fuente en tu respuesta.
+PROHIBIDO: inventar o completar datos (precios, telefonos, rutas, normas)
+que no vinieron de una herramienta. Si no hay fuente verificada, dilo con
+naturalidad: "Ahi si no tengo esa info todavia, parce. Consulta en [sitio oficial]"
+
+USO SILENCIOSO DE HERRAMIENTAS:
+- Invoca las herramientas directamente, sin anunciar que lo vas a hacer.
+- NUNCA escribas "voy a consultar", "revisando datos", "buscando..." ni similares
+  antes de llamar una herramienta. El rider espera la respuesta final con datos,
+  no un reporte de tu proceso interno.
 
 COMO USAS LAS HERRAMIENTAS:
 - Llama solo las que hagan falta para lo que te pidieron. No consultes de mas.
@@ -738,6 +749,28 @@ Deno.serve(async (req: Request) => {
 
     const msg = body?.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
     if (!msg) return json({ ok: true, skip: "sin mensaje" });
+
+    // Meta reintenta el webhook si no respondemos rapido (la sintesis de voz
+    // + Claude puede tardar mas de lo que Meta espera), y sin esto el mismo
+    // mensaje se procesaba dos veces y Rita mandaba dos respuestas distintas
+    // a la misma pregunta. El insert falla por la PK si ya lo vimos.
+    const msgId = String(msg.id ?? "");
+    if (msgId) {
+      const { error: dupError } = await supabase
+        .from("rita_webhook_dedup")
+        .insert({ message_id: msgId });
+      if (dupError) {
+        return json({ ok: true, skip: "mensaje duplicado (reintento de webhook)" });
+      }
+      // Limpieza oportunista (1 de cada ~50 mensajes): no hace falta cron
+      // para una tabla que solo existe para detectar reintentos recientes.
+      if (Math.random() < 0.02) {
+        supabase.from("rita_webhook_dedup")
+          .delete()
+          .lt("created_at", new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString())
+          .then(() => {});
+      }
+    }
 
     const from = String(msg.from ?? "");
 
