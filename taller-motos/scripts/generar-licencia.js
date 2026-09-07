@@ -11,6 +11,8 @@
 //   npm run licencia -- --taller "Motos del Sur" --plan basico
 //   npm run licencia -- --taller "Motos del Sur"              (sin vencimiento)
 //   npm run licencia -- --taller "Motos del Sur" --url https://taller.midominio.com
+//   npm run licencia -- --taller "Repuestos del Sur" --tipo almacen
+//                                     (código válido sólo para almacen.ridera.com.co)
 import { readFileSync, existsSync } from 'node:fs';
 import { firmarSolicitud } from '../src/lib/licencia.js';
 
@@ -36,6 +38,7 @@ const taller = argumento('taller');
 const plan = argumento('plan') || 'completo';
 const diasTexto = argumento('dias');
 const dias = diasTexto ? Number(diasTexto) : null;
+const tipo = argumento('tipo');
 const url = (argumento('url') || URL_POR_DEFECTO).replace(/\/$/, '');
 
 if (!['basico', 'completo', 'premium'].includes(plan)) {
@@ -46,10 +49,14 @@ if (diasTexto && (!Number.isFinite(dias) || dias <= 0)) {
   console.error('  --dias debe ser un número de días mayor que cero.');
   process.exit(1);
 }
+if (tipo && !['taller', 'almacen'].includes(tipo)) {
+  console.error('  --tipo debe ser: taller o almacen (o se omite para que sirva en cualquiera).');
+  process.exit(1);
+}
 
 const solicitud = firmarSolicitud({
   privateKeyPem: readFileSync(ARCHIVO, 'utf8'),
-  taller, plan, dias
+  taller, plan, dias, tipo
 });
 
 let respuesta;
@@ -85,6 +92,9 @@ console.log(`
 
   ─────────────────────────────────────────────────────────────────
   Plan:   ${cuerpo.plan}
+  Tipo:   ${cuerpo.business_type
+    ? (cuerpo.business_type === 'almacen' ? 'almacén (sólo almacen.ridera.com.co)' : 'taller (sólo el dominio de taller)')
+    : 'cualquiera (taller o almacén)'}
   Vence:  ${vence ? vence.toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' }) : 'nunca'}
   Sirve:  una sola vez, para registrar un taller
 

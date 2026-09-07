@@ -16,11 +16,16 @@ const aB64 = (buf) => Buffer.from(buf).toString('base64url');
 const deB64 = (txt) => Buffer.from(txt, 'base64url');
 
 // Firma un código. Sólo se usa desde el script de emisión.
-export function emitir({ privateKeyPem, taller = null, dias = null, plan = 'completo' }) {
+//
+// `tipo` ('taller' | 'almacen' | null) amarra el código a una de las dos
+// plataformas -- null significa que sirve para cualquiera, que es lo que
+// necesitan los códigos emitidos antes de que existiera esta distinción.
+export function emitir({ privateKeyPem, taller = null, dias = null, plan = 'completo', tipo = null }) {
   const payload = {
     id: randomUUID().slice(0, 8),
     t: taller,
     p: plan,
+    bt: tipo,
     d: new Date().toISOString().slice(0, 10),
     // Sin días, el código no vence.
     e: dias ? Math.floor(Date.now() / 1000) + Math.round(dias * 86400) : null
@@ -70,7 +75,9 @@ export const MOTIVOS = {
   firma:     'Ese código no es válido. Pídele uno a quien te entregó el software.',
   vencido:   'Ese código ya venció. Pide uno nuevo para seguir usando el software.',
   usado:     'Ese código ya se usó para registrar un taller. Cada código sirve una sola vez.',
-  expirada:  'Esa solicitud de emisión ya expiró (vale 5 minutos). Vuelve a intentarlo.'
+  expirada:  'Esa solicitud de emisión ya expiró (vale 5 minutos). Vuelve a intentarlo.',
+  tipo_taller:  'Ese código es para un taller de reparación. Entra por el dominio de tu taller.',
+  tipo_almacen: 'Ese código es para un almacén de repuestos. Entra por almacen.ridera.com.co'
 };
 
 export const venceEl = (datos) => (datos?.e ? new Date(datos.e * 1000) : null);
@@ -123,8 +130,8 @@ export function tipoCodigo(codigo) {
 
 // Firma una solicitud de emisión. Sólo se usa desde el script de emisión,
 // en la máquina de quien tiene la llave privada.
-export function firmarSolicitud({ privateKeyPem, taller = null, plan = 'completo', dias = null }) {
-  const payload = { taller, plan, dias, ts: Date.now() };
+export function firmarSolicitud({ privateKeyPem, taller = null, plan = 'completo', dias = null, tipo = null }) {
+  const payload = { taller, plan, dias, tipo, ts: Date.now() };
   const cuerpo = aB64(JSON.stringify(payload));
   const firma = aB64(sign(null, Buffer.from(cuerpo), createPrivateKey(privateKeyPem)));
   return { cuerpo, firma };

@@ -4,6 +4,12 @@ Sirven para que el software no se use sin tu permiso: quien lo instale o quiera
 registrar un taller necesita un código que sólo tú puedes emitir. También
 determinan el **plan** del taller: qué módulos ve (ver más abajo).
 
+Taller y almacén son dos plataformas aparte, cada una en su propio dominio
+(`taller.ridera.com.co` y `almacen.ridera.com.co`); eso ya lo decide el
+dominio por el que alguien se registra, código de por medio o no. Un código
+puede además quedar amarrado a uno de los dos con `--tipo` (ver abajo), para
+que ni siquiera sirva si termina en el dominio equivocado.
+
 ---
 
 ## Cómo funciona
@@ -72,10 +78,19 @@ npm run licencia -- --taller "Motos del Sur" --plan basico
 
 # Si el servidor no es el de siempre (local, otro ambiente)
 npm run licencia -- --taller "Motos del Sur" --url https://taller.ridera.com.co
+
+# Amarrado a almacén: no sirve si alguien lo usa en el dominio de taller
+npm run licencia -- --taller "Repuestos del Sur" --tipo almacen
 ```
 
 Por defecto habla con `http://localhost:3000`; en producción usa `--url` o
 la variable `LICENSE_API_URL`.
+
+`--tipo` es opcional: sin él, el código sirve para registrarse en cualquiera
+de los dos dominios (lo que decide el tipo de negocio final es el dominio,
+no el código). Con `--tipo taller` o `--tipo almacen`, el código además
+queda amarrado a esa plataforma — si alguien lo usa en el dominio contrario,
+el registro se rechaza aunque el código en sí sea válido.
 
 Sale un código corto tipo `TM-C4X9-K3M7`. Mándaselo por WhatsApp o díctaselo
 por teléfono a quien va a usar el software. Lo escribe en la pantalla de

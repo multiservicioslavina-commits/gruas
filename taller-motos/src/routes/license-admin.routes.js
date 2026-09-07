@@ -35,13 +35,18 @@ licenseAdminRouter.post('/emit', emitLimiter, wrap(async (req, res) => {
       'Firma inválida. Sólo quien tiene la llave privada puede emitir códigos.');
   }
 
-  const { taller, plan, dias } = revision.payload;
+  const { taller, plan, dias, tipo } = revision.payload;
   const planFinal = plan && PLANES.includes(plan) ? plan : 'completo';
   if (plan && !PLANES.includes(plan)) {
     throw badRequest(`Plan desconocido: "${plan}". Usa uno de: ${PLANES.join(', ')}`);
   }
   if (dias !== null && dias !== undefined && (typeof dias !== 'number' || dias <= 0)) {
     throw badRequest('"dias" debe ser un número mayor que cero, u omitirse para que no venza');
+  }
+  // tipo ausente o null: el código sirve para cualquiera de las dos
+  // plataformas. Si viene, tiene que ser uno de los dos valores válidos.
+  if (tipo !== null && tipo !== undefined && !['taller', 'almacen'].includes(tipo)) {
+    throw badRequest(`Tipo desconocido: "${tipo}". Usa "taller", "almacen" o déjalo vacío.`);
   }
 
   // Colisión de un código al azar: prácticamente imposible (1 en miles de
@@ -55,12 +60,15 @@ licenseAdminRouter.post('/emit', emitLimiter, wrap(async (req, res) => {
   if (!code) throw badRequest('No se pudo generar un código único, intenta de nuevo');
 
   const expiresAt = dias ? new Date(Date.now() + dias * 86400_000) : null;
+  const tipoFinal = tipo || null;
 
   await query(
-    `INSERT INTO license_codes (code, plan, holder, expires_at)
-     VALUES ($1, $2, $3, $4)`,
-    [code, planFinal, taller || null, expiresAt]
+    `INSERT INTO license_codes (code, plan, holder, expires_at, business_type)
+     VALUES ($1, $2, $3, $4, $5)`,
+    [code, planFinal, taller || null, expiresAt, tipoFinal]
   );
 
-  res.status(201).json({ code, plan: planFinal, holder: taller || null, expires_at: expiresAt });
+  res.status(201).json({
+    code, plan: planFinal, holder: taller || null, expires_at: expiresAt, business_type: tipoFinal
+  });
 }));

@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { generateKeyPairSync, randomUUID } from 'node:crypto';
+import { request as httpRequest } from 'node:http';
 
 const { publicKey, privateKey } = generateKeyPairSync('ed25519');
 process.env.NODE_ENV = 'test';
@@ -33,6 +34,25 @@ const pedir = async (metodo, ruta, cuerpo, token) => {
   const texto = await res.text();
   return { status: res.status, body: texto ? JSON.parse(texto) : null };
 };
+
+// El fetch global ignora un Host manual (ver test/helpers.js): hace falta
+// http crudo para simular una petición desde almacen.ridera.com.co, que es
+// lo que decide el tipo de negocio del registro.
+const pedirEnHost = (host, metodo, ruta, cuerpo) => new Promise((resolve, reject) => {
+  const url = new URL(base);
+  const payload = cuerpo ? JSON.stringify(cuerpo) : null;
+  const req = httpRequest({
+    host: url.hostname, port: url.port, path: ruta, method: metodo,
+    headers: { Host: host, ...(payload ? { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(payload) } : {}) }
+  }, (res) => {
+    let texto = '';
+    res.on('data', (chunk) => { texto += chunk; });
+    res.on('end', () => resolve({ status: res.statusCode, body: texto ? JSON.parse(texto) : null }));
+  });
+  req.on('error', reject);
+  if (payload) req.write(payload);
+  req.end();
+});
 
 const datosTaller = (extra = {}) => ({
   workshop_name: 'Taller con Código Corto',
@@ -275,4 +295,68 @@ test('dos activaciones a la vez con el mismo código corto: sólo una gana, la o
   assert.deepEqual(statuses, [200, 409], JSON.stringify({ a, b }));
   const perdedor = a.status === 409 ? a : b;
   assert.match(perdedor.body.error, /una sola vez/i);
+});
+
+// ── Códigos amarrados a taller o almacén (--tipo) ─────────────────────────
+
+test('emitir un código con --tipo lo deja amarrado a esa plataforma', async () => {
+  const res = await emitir({ taller: 'Repuestos del Sur', tipo: 'almacen' });
+  assert.equal(res.status, 201);
+  assert.equal(res.body.business_type, 'almacen');
+});
+
+test('emitir con un tipo desconocido se rechaza', async () => {
+  const res = await emitir({ tipo: 'motorepuestos' });
+  assert.equal(res.status, 400);
+});
+
+test('un código amarrado a almacén no registra un taller', async () => {
+  const codigo = await emitir({ tipo: 'almacen' });
+  const res = await pedir('POST', '/api/auth/register', datosTaller({ license_code: codigo.body.code }));
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /almacén/i);
+});
+
+test('un código amarrado a taller no registra un almacén', async () => {
+  const codigo = await emitir({ tipo: 'taller' });
+  const res = await pedirEnHost('almacen.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: codigo.body.code }));
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /taller/i);
+});
+
+test('un código amarrado a almacén sí registra un almacén, por su propio dominio', async () => {
+  const codigo = await emitir({ tipo: 'almacen' });
+  const res = await pedirEnHost('almacen.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: codigo.body.code }));
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(res.body.workshop.business_type, 'almacen');
+});
+
+test('un código sin tipo (--tipo omitido) sirve para cualquiera de las dos plataformas', async () => {
+  const paraTaller = await emitir({ dias: 30 });
+  const altaTaller = await pedir('POST', '/api/auth/register', datosTaller({ license_code: paraTaller.body.code }));
+  assert.equal(altaTaller.status, 201);
+
+  const paraAlmacen = await emitir({ dias: 30 });
+  const altaAlmacen = await pedirEnHost('almacen.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: paraAlmacen.body.code }));
+  assert.equal(altaAlmacen.status, 201);
+});
+
+test('un código largo (TM1....) amarrado a almacén tampoco activa un taller', async () => {
+  const codigoLargo = emitirCodigoLargo({ privateKeyPem: PRIV, tipo: 'almacen' }).codigo;
+  const res = await pedir('POST', '/api/auth/register', datosTaller({ license_code: codigoLargo }));
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /almacén/i);
+});
+
+test('un código amarrado a almacén tampoco sirve para cambiar de plan en un taller', async () => {
+  const basico = await emitir({ plan: 'basico', dias: 30 });
+  const alta = await pedir('POST', '/api/auth/register', datosTaller({ license_code: basico.body.code }));
+
+  const paraAlmacen = await emitir({ plan: 'premium', tipo: 'almacen', dias: 30 });
+  const res = await pedir('POST', '/api/workshop/license', { license_code: paraAlmacen.body.code }, alta.body.token);
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /almacén/i);
 });
