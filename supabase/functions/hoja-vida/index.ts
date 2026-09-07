@@ -100,6 +100,14 @@ function estadoVencimiento(fecha: string | null): 'vencido' | 'proximo' | 'vigen
   return 'vigente';
 }
 
+// Alerta genérica de mantenimiento, sin depender de garage_motos (que solo
+// cubre motos 650cc+ y no sirve todavía para la mayoría de riders
+// registrados): si no hay un mantenimiento logueado en los últimos 6 meses,
+// vale la pena avisar, sea cual sea la moto.
+function mesesDesde(fecha: string): number {
+  return (Date.now() - new Date(fecha).getTime()) / (30.44 * 86400000);
+}
+
 async function obtenerHojaDeVida(sb: Sb, riderId: string) {
   const { data: ownerships } = await sb.from('rider_motorcycles')
     .select('id, motorcycle_id, motorcycle_identity(id, rdr_id, placa, marca, modelo, cc, anio, color, estado)')
@@ -123,6 +131,9 @@ async function obtenerHojaDeVida(sb: Sb, riderId: string) {
 
     const documentosConAlerta = (documentos ?? []).map((d: any) => ({ ...d, alerta: estadoVencimiento(d.fecha_vencimiento) }));
 
+    const ultimoMantenimiento = (mantenimiento ?? [])[0]?.fecha_servicio ?? null;
+    const mantenimientoAtrasado = !ultimoMantenimiento || mesesDesde(ultimoMantenimiento) >= 6;
+
     motos.push({
       ownership_id: own.id,
       identity,
@@ -131,7 +142,8 @@ async function obtenerHojaDeVida(sb: Sb, riderId: string) {
       llantas: llantas ?? [],
       bateria: (bateria ?? [])[0] ?? null,
       documentos: documentosConAlerta,
-      alertas: documentosConAlerta.filter((d: any) => d.alerta === 'vencido' || d.alerta === 'proximo').length,
+      mantenimiento_atrasado: mantenimientoAtrasado,
+      alertas: documentosConAlerta.filter((d: any) => d.alerta === 'vencido' || d.alerta === 'proximo').length + (mantenimientoAtrasado ? 1 : 0),
     });
   }
 

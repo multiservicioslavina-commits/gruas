@@ -297,7 +297,8 @@ function renderMoto(m) {
   const badges = (m.documentos || [])
     .filter(d => d.alerta === 'vencido' || d.alerta === 'proximo')
     .map(d => `<span class="badge badge-${d.alerta}">${DOC_LABEL[d.tipo_documento] || d.tipo_documento} ${d.alerta === 'vencido' ? 'vencido' : 'vence pronto'}</span>`)
-    .join('');
+    .join('')
+    + (m.mantenimiento_atrasado ? `<span class="badge badge-proximo">Sin mantenimiento reciente</span>` : '');
 
   const mantenimientoHtml = (m.mantenimiento || []).length
     ? m.mantenimiento.map(x => `
