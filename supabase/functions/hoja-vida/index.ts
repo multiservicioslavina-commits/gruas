@@ -77,10 +77,25 @@ async function firmarSesionRider(riderId: string): Promise<string> {
     .sign(key);
 }
 
-async function riderIdDeSesion(req: Request): Promise<string | null> {
+// Dos formas válidas de sesión, según cómo se registró el rider:
+// - Cuenta con correo (Supabase Auth real, igual que grueros/almacenes):
+//   el bearer es un access_token real; se verifica con auth.getUser y se
+//   resuelve el rider por auth_id.
+// - Solo teléfono (riders viejos, creados por Rita/WhatsApp o el registro
+//   sin correo): el bearer es el token propio firmado con CLUB_JWT_SECRET.
+async function riderIdDeSesion(sb: Sb, req: Request): Promise<string | null> {
   const raw = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+  if (!raw) return null;
+
+  const { data: authData } = await sb.auth.getUser(raw);
+  if (authData?.user) {
+    const { data: rider } = await sb.from('riders').select('id').eq('auth_id', authData.user.id).maybeSingle();
+    if (rider) return rider.id;
+    return null;
+  }
+
   const key = claveSesion();
-  if (!raw || !key) return null;
+  if (!key) return null;
   try {
     const { payload } = await jwtVerify(raw, key);
     if (payload.tipo !== 'hoja-vida' || !payload.rider_id) return null;
@@ -158,12 +173,17 @@ Deno.serve(async (req: Request) => {
   const body = await req.json().catch(() => ({}));
   const action = body.action;
 
-  // ---------- Público: registrar un rider nuevo con su primera moto ----------
-  // Punto de entrada que hoy no existe en ningún otro lado del sitio: el
-  // login de arriba asume que el rider ya está en la base. Esta acción crea
-  // el rider (si el teléfono no existe) y su motorcycle_identity, y lo deja
-  // ya logueado en su Hoja de Vida.
+  // ---------- Registrar un rider nuevo (con correo) y su primera moto ----------
+  // Requiere que el navegador ya haya hecho sb.auth.signUp({email, password})
+  // y mande ese access_token como Authorization — igual que registro-almacen.
+  // Así "olvidé mi contraseña" funciona gratis con el mecanismo nativo de
+  // Supabase (resetPasswordForEmail), sin nada custom que mantener.
   if (action === 'registrar') {
+    const raw = (req.headers.get('Authorization') || '').replace(/^Bearer\s+/i, '').trim();
+    const { data: authData, error: authErr } = raw ? await sb.auth.getUser(raw) : { data: null, error: 'sin token' } as any;
+    if (authErr || !authData?.user) return json({ ok: false, error: 'Primero crea tu cuenta con correo y contraseña.' }, 401);
+    const authUser = authData.user;
+
     const nombre = (body.nombre || '').toString().trim();
     const candidatos = candidatosTelefono((body.telefono || '').toString());
     const telefono = telefonoCanonico((body.telefono || '').toString());
@@ -174,16 +194,29 @@ Deno.serve(async (req: Request) => {
     if (!candidatos[0] || candidatos[0].length < 7) return json({ ok: false, error: 'Teléfono inválido' }, 400);
     if (!marca || !modelo) return json({ ok: false, error: 'Escribe marca y modelo de tu moto' }, 400);
 
-    const { data: existentes } = await sb.from('riders').select('id').in('telefono', candidatos).limit(1);
-    let riderId = existentes?.[0]?.id;
+    // Busca primero por auth_id (ya completó este registro antes) y si no,
+    // por teléfono (por si Rita ya lo había creado desde WhatsApp) — en ese
+    // caso se vincula la cuenta de correo a ese rider en vez de duplicarlo.
+    let { data: existente } = await sb.from('riders').select('id, auth_id').eq('auth_id', authUser.id).maybeSingle();
+    if (!existente) {
+      const { data: porTelefono } = await sb.from('riders').select('id, auth_id').in('telefono', candidatos).limit(1);
+      existente = porTelefono?.[0] ?? null;
+    }
+
+    let riderId = existente?.id;
 
     if (!riderId) {
       // riders.id no tiene default: hay que generarlo aquí, igual que lo
       // hace rita-whatsapp/rita-v2 al registrar riders nuevos.
       riderId = crypto.randomUUID();
-      const { error: riderError } = await sb.from('riders')
-        .insert({ id: riderId, nombre, apellido: (body.apellido || '').toString().trim() || null, telefono, created_at: new Date().toISOString() });
+      const { error: riderError } = await sb.from('riders').insert({
+        id: riderId, nombre, apellido: (body.apellido || '').toString().trim() || null,
+        telefono, correo: authUser.email, auth_id: authUser.id, created_at: new Date().toISOString(),
+      });
       if (riderError) return json({ ok: false, error: riderError.message }, 500);
+    } else if (!existente.auth_id) {
+      const { error: linkError } = await sb.from('riders').update({ auth_id: authUser.id, correo: authUser.email }).eq('id', riderId);
+      if (linkError) return json({ ok: false, error: linkError.message }, 500);
     }
 
     const placa = (body.placa || '').toString().trim().toUpperCase() || null;
@@ -204,8 +237,7 @@ Deno.serve(async (req: Request) => {
           .eq('rider_id', riderId).eq('motorcycle_id', existenteMoto.id).is('fecha_fin_propiedad', null)
           .maybeSingle();
         if (yaEsDueño) {
-          const token = await firmarSesionRider(riderId);
-          return json({ ok: true, token, rider: { nombre, apellido: body.apellido || null }, ya_registrada: true });
+          return json({ ok: true, rider: { nombre, apellido: body.apellido || null }, ya_registrada: true });
         }
         return json({ ok: false, error: 'Esa placa ya está registrada en Ridera. Si es tuya, pídele al dueño actual que la transfiera desde su Hoja de Vida.' }, 409);
       }
@@ -222,11 +254,10 @@ Deno.serve(async (req: Request) => {
     });
     if (ownError) return json({ ok: false, error: ownError.message }, 500);
 
-    const token = await firmarSesionRider(riderId);
-    return json({ ok: true, token, rider: { nombre, apellido: body.apellido || null } });
+    return json({ ok: true, rider: { nombre, apellido: body.apellido || null } });
   }
 
-  // ---------- Público: entrar con el teléfono ----------
+  // ---------- Público: entrar con el teléfono (riders viejos, sin correo) ----------
   // Mismo criterio que el chat del club (PR #61): pedir un código cada vez
   // es fricción para lo que protege — ver tu propio historial de moto. Si
   // esto se abre a un flujo con más en juego (ej. traspasos), conviene el
@@ -236,12 +267,17 @@ Deno.serve(async (req: Request) => {
     if (!candidatos[0] || candidatos[0].length < 7) return json({ ok: false, error: 'Teléfono inválido' }, 400);
 
     const { data: riders } = await sb.from('riders')
-      .select('id, nombre, apellido, telefono')
+      .select('id, nombre, apellido, telefono, auth_id')
       .in('telefono', candidatos)
       .limit(1);
     const rider = riders?.[0];
 
     if (!rider) return json({ ok: false, error: 'No encontramos ese número registrado en Ridera.' }, 404);
+
+    // Si ya tiene cuenta con correo, el login por teléfono se cierra para
+    // este rider — si no, cualquiera que supiera su número entraría sin
+    // necesitar su contraseña.
+    if (rider.auth_id) return json({ ok: false, error: 'Esta cuenta ya tiene correo y contraseña. Entra con tu correo.' }, 403);
 
     const token = await firmarSesionRider(rider.id);
     return json({ ok: true, token, rider: { nombre: rider.nombre, apellido: rider.apellido } });
@@ -249,7 +285,7 @@ Deno.serve(async (req: Request) => {
 
   // ---------- Autenticado: ver la hoja de vida ----------
   if (action === 'hoja') {
-    const riderId = await riderIdDeSesion(req);
+    const riderId = await riderIdDeSesion(sb, req);
     if (!riderId) return json({ ok: false, error: 'Sesión inválida o vencida' }, 401);
     const motos = await obtenerHojaDeVida(sb, riderId);
     return json({ ok: true, motos });
@@ -257,7 +293,7 @@ Deno.serve(async (req: Request) => {
 
   // ---------- Autenticado: registrar un mantenimiento ----------
   if (action === 'registrar_mantenimiento') {
-    const riderId = await riderIdDeSesion(req);
+    const riderId = await riderIdDeSesion(sb, req);
     if (!riderId) return json({ ok: false, error: 'Sesión inválida o vencida' }, 401);
 
     const motorcycleId = (body.motorcycle_id || '').toString();
@@ -289,7 +325,7 @@ Deno.serve(async (req: Request) => {
 
   // ---------- Autenticado: transferir la moto a otro rider ----------
   if (action === 'iniciar_traspaso') {
-    const riderId = await riderIdDeSesion(req);
+    const riderId = await riderIdDeSesion(sb, req);
     if (!riderId) return json({ ok: false, error: 'Sesión inválida o vencida' }, 401);
 
     const motorcycleId = (body.motorcycle_id || '').toString();

@@ -88,13 +88,36 @@
 
   <div id="login-screen">
     <div class="form-group">
+      <label>Correo</label>
+      <input id="email" type="email" placeholder="tu@correo.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input id="password" type="password" placeholder="Tu contraseña" autocomplete="current-password">
+    </div>
+    <button class="btn btn-primary" id="btn-login" onclick="login()">Iniciar sesión</button>
+    <div class="error" id="login-error"></div>
+    <div class="empty-hint" style="text-align:center; margin-top:12px;">
+      <button onclick="olvideContrasena()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;">¿Olvidaste tu contraseña?</button>
+    </div>
+    <div class="empty-hint" style="text-align:center; margin-top:16px;">
+      ¿Primera vez aquí? <button onclick="mostrarRegistro()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">Registra tu moto</button>
+    </div>
+    <div class="empty-hint" style="text-align:center; margin-top:8px;">
+      <button onclick="mostrarLoginTelefono()" style="background:none;border:none;color:var(--text2);cursor:pointer;font-size:12px;">Tengo una cuenta antigua (solo teléfono)</button>
+    </div>
+  </div>
+
+  <div id="login-telefono-screen" style="display:none; flex-direction:column; justify-content:center; min-height:70vh;">
+    <div class="empty-hint" style="margin-bottom:12px;">Para cuentas creadas antes de que existiera el correo. Si ya tienes correo y contraseña, usa esa opción.</div>
+    <div class="form-group">
       <label>Tu teléfono</label>
       <input id="phone" type="tel" placeholder="310 1234567" inputmode="numeric" maxlength="15">
     </div>
-    <button class="btn btn-primary" id="btn-login" onclick="login()">Ver mi hoja de vida</button>
-    <div class="error" id="login-error"></div>
+    <button class="btn btn-primary" id="btn-login-telefono" onclick="loginTelefono()">Ver mi hoja de vida</button>
+    <div class="error" id="login-telefono-error"></div>
     <div class="empty-hint" style="text-align:center; margin-top:16px;">
-      ¿Primera vez aquí? <button onclick="mostrarRegistro()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">Registra tu moto</button>
+      <button onclick="mostrarLoginCorreo()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">← Entrar con correo</button>
     </div>
   </div>
 
@@ -102,6 +125,14 @@
     <div class="form-group">
       <label>Tu nombre</label>
       <input id="r-nombre" type="text" placeholder="Juan Pérez" maxlength="80">
+    </div>
+    <div class="form-group">
+      <label>Tu correo</label>
+      <input id="r-correo" type="email" placeholder="tu@correo.com" autocomplete="email">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input id="r-password" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
     </div>
     <div class="form-group">
       <label>Tu teléfono</label>
@@ -127,7 +158,7 @@
     <button class="btn btn-primary" id="btn-registro" onclick="registrar()">Crear mi Hoja de Vida</button>
     <div class="error" id="registro-error"></div>
     <div class="empty-hint" style="text-align:center; margin-top:16px;">
-      <button onclick="mostrarLogin()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">← Ya tengo cuenta</button>
+      <button onclick="mostrarLoginCorreo()" style="background:none;border:none;color:var(--accent);cursor:pointer;font-size:13px;font-weight:600;">← Ya tengo cuenta</button>
     </div>
   </div>
 
@@ -193,11 +224,30 @@
 const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
 const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
 
-let sessionToken = localStorage.getItem('hojavida_token') || null;
+// Sesión con correo (Supabase Auth real, igual que almacenes/grueros) o con
+// solo teléfono (cuentas antiguas, token propio guardado en localStorage).
+let sbClient = null;
+let legacyToken = localStorage.getItem('hojavida_token') || null;
 let currentMotoId = null;
 
-async function hojaVida(action, extra) {
-  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${sessionToken || SB_KEY}` };
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, SB_KEY);
+  }
+  return sbClient;
+}
+
+async function tokenActual() {
+  const sb = await initSupabase();
+  const { data } = await sb.auth.getSession();
+  if (data?.session?.access_token) return data.session.access_token;
+  return legacyToken;
+}
+
+async function hojaVida(action, extra, tokenOverride) {
+  const token = tokenOverride ?? await tokenActual();
+  const headers = { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token || SB_KEY}` };
   const res = await fetch(`${SB_URL}/functions/v1/hoja-vida`, {
     method: 'POST', headers, body: JSON.stringify({ action, ...extra })
   });
@@ -212,43 +262,91 @@ function showToast(msg, isError) {
 }
 
 async function login() {
-  const phone = document.getElementById('phone').value.trim();
+  const email = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
   const btn = document.getElementById('btn-login');
-  document.getElementById('login-error').textContent = '';
-  if (!phone) { document.getElementById('login-error').textContent = 'Escribe tu teléfono'; return; }
+  const errorEl = document.getElementById('login-error');
+  errorEl.textContent = '';
+  if (!email || !password) { errorEl.textContent = 'Escribe tu correo y contraseña'; return; }
+
+  btn.disabled = true; btn.textContent = 'Entrando...';
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    localStorage.setItem('hojavida_nombre', '');
+    await cargarHoja();
+  } catch (err) {
+    errorEl.textContent = err.message === 'Invalid login credentials' ? 'Correo o contraseña incorrectos.' : (err.message || 'No se pudo entrar. Intenta de nuevo.');
+  }
+  btn.disabled = false; btn.textContent = 'Iniciar sesión';
+}
+
+async function olvideContrasena() {
+  const email = document.getElementById('email').value.trim();
+  const errorEl = document.getElementById('login-error');
+  errorEl.textContent = '';
+  if (!email) { errorEl.textContent = 'Escribe tu correo arriba primero'; return; }
+
+  try {
+    const sb = await initSupabase();
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/reset-rider.html' });
+    if (error) throw error;
+    showToast('Revisa tu correo (y spam) para el enlace de recuperación');
+  } catch (err) {
+    errorEl.textContent = err.message || 'No se pudo enviar el enlace';
+  }
+}
+
+async function loginTelefono() {
+  const phone = document.getElementById('phone').value.trim();
+  const btn = document.getElementById('btn-login-telefono');
+  const errorEl = document.getElementById('login-telefono-error');
+  errorEl.textContent = '';
+  if (!phone) { errorEl.textContent = 'Escribe tu teléfono'; return; }
 
   btn.disabled = true; btn.textContent = 'Buscando...';
-  const out = await hojaVida('login', { telefono: phone }).catch(() => ({ ok: false }));
+  const out = await hojaVida('login', { telefono: phone }, SB_KEY).catch(() => ({ ok: false }));
   btn.disabled = false; btn.textContent = 'Ver mi hoja de vida';
 
   if (!out.ok) {
-    document.getElementById('login-error').textContent = out.error || 'No se pudo entrar. Intenta de nuevo.';
+    errorEl.textContent = out.error || 'No se pudo entrar. Intenta de nuevo.';
     return;
   }
-  sessionToken = out.token;
-  localStorage.setItem('hojavida_token', sessionToken);
+  legacyToken = out.token;
+  localStorage.setItem('hojavida_token', legacyToken);
   localStorage.setItem('hojavida_nombre', out.rider?.nombre || '');
   await cargarHoja();
 }
 
-function logout() {
+async function logout() {
   localStorage.removeItem('hojavida_token');
-  sessionToken = null;
+  legacyToken = null;
+  const sb = await initSupabase();
+  await sb.auth.signOut();
   document.getElementById('dashboard').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
 }
 
 function mostrarRegistro() {
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-telefono-screen').style.display = 'none';
   document.getElementById('registro-screen').style.display = 'block';
 }
-function mostrarLogin() {
+function mostrarLoginCorreo() {
   document.getElementById('registro-screen').style.display = 'none';
+  document.getElementById('login-telefono-screen').style.display = 'none';
   document.getElementById('login-screen').style.display = 'flex';
+}
+function mostrarLoginTelefono() {
+  document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-telefono-screen').style.display = 'flex';
 }
 
 async function registrar() {
   const nombre = document.getElementById('r-nombre').value.trim();
+  const correo = document.getElementById('r-correo').value.trim();
+  const password = document.getElementById('r-password').value;
   const telefono = document.getElementById('r-telefono').value.trim();
   const marca = document.getElementById('r-marca').value.trim();
   const modelo = document.getElementById('r-modelo').value.trim();
@@ -258,25 +356,41 @@ async function registrar() {
   const errorEl = document.getElementById('registro-error');
   errorEl.textContent = '';
 
-  if (!nombre || !telefono || !marca || !modelo) {
-    errorEl.textContent = 'Completa nombre, teléfono, marca y modelo';
+  if (!nombre || !correo || !password || !telefono || !marca || !modelo) {
+    errorEl.textContent = 'Completa nombre, correo, contraseña, teléfono, marca y modelo';
+    return;
+  }
+  if (password.length < 8) {
+    errorEl.textContent = 'La contraseña debe tener mínimo 8 caracteres';
     return;
   }
 
   btn.disabled = true; btn.textContent = 'Creando...';
-  const out = await hojaVida('registrar', { nombre, telefono, marca, modelo, cc, placa }).catch(() => ({ ok: false }));
-  btn.disabled = false; btn.textContent = 'Crear mi Hoja de Vida';
+  try {
+    const sb = await initSupabase();
+    const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email: correo, password });
+    if (signUpError) {
+      if (/already registered|already exists/i.test(signUpError.message || '')) {
+        errorEl.textContent = 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión en vez de registrarte.';
+        btn.disabled = false; btn.textContent = 'Crear mi Hoja de Vida';
+        return;
+      }
+      throw signUpError;
+    }
+    const accessToken = signUpData.session?.access_token;
+    if (!accessToken) throw new Error('No se pudo crear la sesión. Intenta de nuevo.');
 
-  if (!out.ok) {
-    errorEl.textContent = out.error || 'No se pudo crear tu Hoja de Vida. Intenta de nuevo.';
-    return;
+    const out = await hojaVida('registrar', { nombre, telefono, marca, modelo, cc, placa }, accessToken);
+    if (!out.ok) throw new Error(out.error || 'No se pudo crear tu Hoja de Vida.');
+
+    localStorage.setItem('hojavida_nombre', out.rider?.nombre || '');
+    document.getElementById('registro-screen').style.display = 'none';
+    await cargarHoja();
+    if (out.ya_registrada) showToast('Esa moto ya estaba en tu Hoja de Vida — te dejamos entrar');
+  } catch (err) {
+    errorEl.textContent = err.message || 'No se pudo crear tu Hoja de Vida. Intenta de nuevo.';
   }
-  sessionToken = out.token;
-  localStorage.setItem('hojavida_token', sessionToken);
-  localStorage.setItem('hojavida_nombre', out.rider?.nombre || '');
-  document.getElementById('registro-screen').style.display = 'none';
-  await cargarHoja();
-  if (out.ya_registrada) showToast('Esa moto ya estaba en tu Hoja de Vida — te dejamos entrar');
+  btn.disabled = false; btn.textContent = 'Crear mi Hoja de Vida';
 }
 
 function fmtFecha(f) {
@@ -352,6 +466,8 @@ function renderMoto(m) {
 
 async function cargarHoja() {
   document.getElementById('login-screen').style.display = 'none';
+  document.getElementById('login-telefono-screen').style.display = 'none';
+  document.getElementById('registro-screen').style.display = 'none';
   document.getElementById('dashboard').style.display = 'block';
 
   const nombre = localStorage.getItem('hojavida_nombre');
@@ -436,9 +552,13 @@ async function confirmarTraspaso() {
   await cargarHoja();
 }
 
-document.getElementById('phone').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('password').addEventListener('keydown', e => { if (e.key === 'Enter') login(); });
+document.getElementById('phone').addEventListener('keydown', e => { if (e.key === 'Enter') loginTelefono(); });
 
-if (sessionToken) { cargarHoja(); }
+(async () => {
+  const token = await tokenActual();
+  if (token) cargarHoja();
+})();
 </script>
 </body>
 </html>
