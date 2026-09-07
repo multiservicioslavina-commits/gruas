@@ -276,6 +276,7 @@ async function registrar() {
   localStorage.setItem('hojavida_nombre', out.rider?.nombre || '');
   document.getElementById('registro-screen').style.display = 'none';
   await cargarHoja();
+  if (out.ya_registrada) showToast('Esa moto ya estaba en tu Hoja de Vida — te dejamos entrar');
 }
 
 function fmtFecha(f) {
