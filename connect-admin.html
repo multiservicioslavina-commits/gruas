@@ -296,6 +296,22 @@ Pedro Gómez - 3176543210"></textarea>
       </div>
     </div>
 
+    <div class="card">
+      <h2>Próxima rodada</h2>
+      <p>Se muestra en la tarjeta del club dentro del directorio público (ridera.com.co/clubes/). Deja "Destino" vacío y guarda para quitarla.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="rodada-destino" type="text" placeholder="Destino (ej: Jericó por Fredonia)" maxlength="120"
+               style="flex:2; min-width:200px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="rodada-fecha" type="date"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="rodada-hora" type="time"
+               style="flex:1; min-width:110px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <input id="rodada-punto" type="text" placeholder="Punto de encuentro (ej: Estación Aguacatala, 6:00 AM)" maxlength="160"
+             style="width:100%; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px; margin-bottom:12px;">
+      <button class="btn btn-primary" id="btn-rodada" onclick="guardarRodada()">Guardar rodada</button>
+    </div>
+
   </div>
 </div>
 
@@ -351,7 +367,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada()]);
 }
 
 // Las escrituras sobre miembros van por Edge Function (service_role), no por
@@ -692,6 +708,34 @@ async function loadLogo() {
   if (club.length && club[0].logo_url) {
     document.getElementById('logo-preview').innerHTML = `<img src="${club[0].logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
   }
+}
+
+async function loadRodada() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=proxima_rodada&limit=1`);
+  const r = club.length ? club[0].proxima_rodada : null;
+  if (!r) return;
+  document.getElementById('rodada-destino').value = r.destino || '';
+  document.getElementById('rodada-fecha').value = r.fecha || '';
+  document.getElementById('rodada-hora').value = r.hora || '';
+  document.getElementById('rodada-punto').value = r.punto_encuentro || '';
+}
+
+async function guardarRodada() {
+  const btn = document.getElementById('btn-rodada');
+  btn.disabled = true;
+  try {
+    const out = await clubApi('rodada', {
+      destino: document.getElementById('rodada-destino').value,
+      fecha: document.getElementById('rodada-fecha').value,
+      hora: document.getElementById('rodada-hora').value,
+      puntoEncuentro: document.getElementById('rodada-punto').value,
+    });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
+    toast(out.rodada ? 'Rodada guardada' : 'Rodada quitada');
+  } catch (e) {
+    toast('Error al guardar la rodada: ' + e.message, true);
+  }
+  btn.disabled = false;
 }
 
 

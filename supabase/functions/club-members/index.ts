@@ -211,6 +211,44 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, estado: 'solicitado', avisado });
   }
 
+  // ---------- Publico: postularse a un club desde la tarjeta del directorio ----------
+  // Distinto de 'solicitar': aqui no hay codigo de invitacion, es alguien que
+  // vio el club en ridera.com.co/clubes/ y quiere que el lider lo contacte.
+  // Se guarda en club_postulaciones (no en connect_members, que es acceso al
+  // chat) y se avisa al lider por WhatsApp de la misma forma "mejor esfuerzo".
+  if (action === 'postular') {
+    const clubId = (body.clubId || '').toString();
+    const nombre = (body.nombre || '').toString().trim();
+    const telefono = normalizePhone((body.telefono || '').toString());
+    const motoMarca = (body.motoMarca || '').toString().trim().slice(0, 60);
+    const motoModelo = (body.motoModelo || '').toString().trim().slice(0, 60);
+    const motoCc = (body.motoCc || '').toString().trim().slice(0, 20);
+
+    if (!clubId) return json({ error: 'Falta el club' }, 400);
+    if (nombre.length < 2) return json({ error: 'Escribe tu nombre completo' }, 400);
+    if (telefono.length < 10) return json({ error: 'El teléfono no es válido' }, 400);
+
+    const { data: club } = await sb.from('clubs').select('id,nombre,datos').eq('id', clubId).maybeSingle();
+    if (!club) return json({ error: 'Club no encontrado' }, 404);
+
+    const { data: fila, error } = await sb.from('club_postulaciones').insert({
+      club_id: clubId, nombre, telefono,
+      moto_marca: motoMarca || null, moto_modelo: motoModelo || null, moto_cc: motoCc || null,
+    }).select('id').single();
+    if (error) return json({ error: error.message }, 500);
+
+    const datos = club.datos || {};
+    const lider = normalizePhone(datos.whatsapp || datos.lider_tel || '');
+    const moto = [motoMarca, motoModelo, motoCc].filter(Boolean).join(' ');
+    const avisado = await notificarLider(
+      lider,
+      `🏍️ ${nombre} quiere unirse a ${club.nombre} (desde el directorio de Ridera)\n\nTeléfono: ${telefono}${moto ? `\nMoto: ${moto}` : ''}`,
+    );
+    if (avisado) await sb.from('club_postulaciones').update({ avisado: true }).eq('id', fila.id);
+
+    return json({ ok: true, avisado });
+  }
+
   // ---------- Publico: entrar al chat con el telefono ----------
   // El control de quien entra es la aprobacion del lider, no un codigo: un
   // club es gente que se conoce, y pedir codigo cada vez espantaba a la
@@ -533,6 +571,22 @@ Deno.serve(async (req: Request) => {
     const { error } = await sb.from('clubs').update({ logo_url: logoUrl }).eq('id', clubId);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true, logoUrl });
+  }
+
+  // Igual que 'logo': el dueño del club no tiene lider_id de Supabase Auth,
+  // asi que la unica forma de guardar la rodada es pasando por aqui con el
+  // token firmado del panel.
+  if (action === 'rodada') {
+    const destino = (body.destino || '').toString().trim().slice(0, 120);
+    const fecha = (body.fecha || '').toString().trim().slice(0, 20);
+    const hora = (body.hora || '').toString().trim().slice(0, 10);
+    const puntoEncuentro = (body.puntoEncuentro || '').toString().trim().slice(0, 160);
+
+    // Mandar destino vacio borra la rodada (vuelve a "por confirmar").
+    const rodada = destino ? { destino, fecha, hora, punto_encuentro: puntoEncuentro } : null;
+    const { error } = await sb.from('clubs').update({ proxima_rodada: rodada }).eq('id', clubId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, rodada });
   }
 
   if (action === 'rita-preguntas') {
