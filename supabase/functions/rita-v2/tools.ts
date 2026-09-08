@@ -637,6 +637,32 @@ export const TOOL_SCHEMAS = [
       required: ["asunto", "fecha_hora"],
     },
   },
+  {
+    name: "consultar_manual_taller",
+    description:
+      "Busca en manuales de taller indexados (PDFs oficiales) de motos: torques de apriete, referencias de piezas OEM, procedimientos de mantenimiento, especificaciones de ajuste, bujias, filtros, holguras de valvulas. Devuelve fragmentos exactos del manual sin inventar datos. Usala SIEMPRE cuando pregunten por torques, numeros de parte, bujias, filtros, holguras o cualquier especificacion tecnica oficial de una moto.",
+    input_schema: {
+      type: "object",
+      properties: {
+        modelo_moto: { type: "string", description: "Marca y modelo de la moto. Ej: 'Bajaj Pulsar NS 200', 'Yamaha MT-03', 'Honda CB 190'" },
+        consulta: { type: "string", description: "Que especificacion busca. Ej: 'torque de culata', 'referencia filtro aceite', 'bujia recomendada', 'holgura de valvulas'" },
+      },
+      required: ["modelo_moto", "consulta"],
+    },
+  },
+  {
+    name: "buscar_aliados_directorio",
+    description:
+      "Busca hoteles, restaurantes, paraderos y establecimientos aliados de Ridera en municipios de Antioquia. Usala SIEMPRE cuando pregunten donde hospedarse, comer, dormir, parar o que establecimientos hay en un municipio antioqueño.",
+    input_schema: {
+      type: "object",
+      properties: {
+        municipio: { type: "string", description: "Municipio donde buscar. Ej: 'Jardin', 'Guatape', 'Santa Fe de Antioquia', 'Jerico'" },
+        tipo: { type: "string", description: "Tipo de establecimiento. Ej: 'Hotel', 'Restaurante', 'Hospedaje', 'Paradero'. Opcional." },
+      },
+      required: ["municipio"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -1656,6 +1682,64 @@ CONTACTO: Abogado especializado en responsabilidad civil`
 
     const fechaFormato = fecha.toLocaleDateString("es-CO") + " a las " + fecha.toLocaleTimeString("es-CO");
     return { ok: true, data: `✓ Recordatorio programado para ${fechaFormato}: "${asunto}"` };
+  },
+
+  async consultar_manual_taller(input) {
+    const VECTOR_STORE_ID = (Deno.env.get("OPENAI_VECTOR_STORE_ID") ?? "").trim();
+    if (!VECTOR_STORE_ID || !OPENAI_KEY) {
+      return { ok: false, data: "Manual de taller no disponible (configuracion pendiente). Consulta el manual oficial de la marca." };
+    }
+    const modelo = String(input.modelo_moto ?? "");
+    const consulta = String(input.consulta ?? "");
+    if (!modelo || !consulta) return { ok: false, data: "Indica la marca/modelo de la moto y que especificacion buscas." };
+
+    const prompt = `En el manual de taller de ${modelo}, busca: ${consulta}. Cita el fragmento exacto del manual con el valor o referencia, incluyendo la pagina si esta disponible. Si no encuentras el dato exacto en los documentos, dilo claramente sin inventar valores.`;
+
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        input: prompt,
+        tools: [{ type: "file_search", vector_store_ids: [VECTOR_STORE_ID] }],
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.status.toString());
+      return { ok: false, data: `Error consultando manual: ${err}` };
+    }
+
+    const data = await res.json() as Record<string, unknown>;
+    const outputItems = (data.output ?? []) as Record<string, unknown>[];
+    const msgItem = outputItems.find((o) => o.type === "message");
+    const contentArr = (msgItem?.content ?? []) as Record<string, unknown>[];
+    const texto = contentArr.find((c) => c.type === "output_text")?.text as string ?? "";
+
+    if (!texto.trim()) {
+      return { ok: false, data: `No encontre esa especificacion para ${modelo} en los manuales indexados. Consulta el manual oficial de la marca.` };
+    }
+    return { ok: true, data: { fragmento: texto, modelo, consulta, fuente: "Manual oficial (Vector Store)" } };
+  },
+
+  async buscar_aliados_directorio(input) {
+    const municipio = String(input.municipio ?? "");
+    const tipo = input.tipo ? String(input.tipo) : null;
+    if (!municipio) return { ok: false, data: "Indica el municipio donde buscar." };
+
+    let query = supabase
+      .from("aliados_directorio")
+      .select("municipio, tipo, establecimiento, telefono")
+      .ilike("municipio", `%${municipio}%`);
+    if (tipo) query = query.ilike("tipo", `%${tipo}%`);
+    const { data, error } = await query.limit(4);
+
+    if (error) return { ok: false, data: `Error consultando directorio: ${error.message}` };
+    if (!data?.length) {
+      return { ok: false, data: `No encontre aliados registrados en ${municipio}${tipo ? ` (${tipo})` : ""}. Puede que ese municipio no tenga aliados en el directorio todavia.` };
+    }
+    return { ok: true, data };
   },
 };
 
