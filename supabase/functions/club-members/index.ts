@@ -12,6 +12,8 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const WA_TOKEN = Deno.env.get('WHATSAPP_TOKEN') ?? '';
 const RITA_PHONE = Deno.env.get('RITA_PHONE_ID') ?? '1260857797114684';
 const GRAPH = 'https://graph.facebook.com/v25.0';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? 'Ridera <onboarding@resend.dev>';
 
 function normalizePhone(raw: string): string {
   let digits = (raw || '').replace(/\D/g, '');
@@ -168,6 +170,34 @@ async function notificarLider(telefono: string, texto: string): Promise<boolean>
   }
 }
 
+// Aviso por correo al lider (ademas del WhatsApp, que puede fallar fuera de
+// la ventana de 24h de Meta): "mejor esfuerzo" igual, no bloquea la
+// postulacion si el correo no esta configurado o falla el envio.
+async function enviarCorreoPostulacion(
+  to: string,
+  clubNombre: string,
+  postulante: { nombre: string; telefono: string; moto: string },
+): Promise<boolean> {
+  if (!RESEND_API_KEY || !to) return false;
+  try {
+    const html = `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+      <h2>Nueva postulación a ${clubNombre}</h2>
+      <p><b>${postulante.nombre}</b> se postuló desde el directorio de Ridera.</p>
+      <p>WhatsApp: <a href="https://wa.me/${postulante.telefono}">${postulante.telefono}</a></p>
+      ${postulante.moto ? `<p>Moto: ${postulante.moto}</p>` : ''}
+      <p style="color:#888;font-size:13px">— Ridera</p></div>`;
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: RESEND_FROM, to: [to], subject: `Nueva postulación a ${clubNombre}`, html }),
+    });
+    return resp.ok;
+  } catch (e) {
+    console.error('enviarCorreoPostulacion: error', e);
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'Método no soportado' }, 405);
@@ -244,9 +274,10 @@ Deno.serve(async (req: Request) => {
       lider,
       `🏍️ ${nombre} quiere unirse a ${club.nombre} (desde el directorio de Ridera)\n\nTeléfono: ${telefono}${moto ? `\nMoto: ${moto}` : ''}`,
     );
-    if (avisado) await sb.from('club_postulaciones').update({ avisado: true }).eq('id', fila.id);
+    const avisadoPorCorreo = await enviarCorreoPostulacion(datos.email || '', club.nombre, { nombre, telefono, moto });
+    if (avisado || avisadoPorCorreo) await sb.from('club_postulaciones').update({ avisado: true }).eq('id', fila.id);
 
-    return json({ ok: true, avisado });
+    return json({ ok: true, avisado: avisado || avisadoPorCorreo });
   }
 
   // ---------- Publico: entrar al chat con el telefono ----------
@@ -502,6 +533,17 @@ Deno.serve(async (req: Request) => {
   // ---------- De aqui en adelante hay que ser el admin del club ----------
   const clubId = await clubIdFromToken(req);
   if (!clubId) return json({ error: 'Sesión no válida. Vuelve a entrar al panel.' }, 401);
+
+  // Postulaciones que llegaron desde la tarjeta del directorio publico. El
+  // aviso por WhatsApp al lider es "mejor esfuerzo" (ventana de 24h de Meta),
+  // asi que el panel tiene que poder mostrarlas igual aunque ese aviso falle.
+  if (action === 'postulaciones') {
+    const { data, error } = await sb.from('club_postulaciones')
+      .select('id, nombre, telefono, moto_marca, moto_modelo, moto_cc, avisado, created_at')
+      .eq('club_id', clubId).order('created_at', { ascending: false }).limit(50);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, postulaciones: data || [] });
+  }
 
   if (action === 'listar') {
     const { data, error } = await sb.from('connect_members')

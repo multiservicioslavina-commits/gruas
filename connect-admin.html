@@ -141,9 +141,8 @@
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
   #preview-section { display: none; }
-  #tab-members { display: block; }
-  #tab-add, #tab-ajustes { display: none; }
-  #tab-add.visible, #tab-ajustes.visible { display: block !important; }
+  #tab-members, #tab-add, #tab-ajustes { display: none; }
+  #tab-members.visible, #tab-add.visible, #tab-ajustes.visible { display: block !important; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -261,7 +260,7 @@ Pedro Gómez - 3176543210"></textarea>
   </div>
 
   <!-- TAB: Lista de miembros -->
-  <div id="tab-members">
+  <div id="tab-members" class="visible">
     <div class="card" id="requests-card">
       <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
       <p class="hint">Quien entra por el link de invitación aparece aquí. No puede entrar al chat hasta que lo apruebes.</p>
@@ -269,6 +268,14 @@ Pedro Gómez - 3176543210"></textarea>
         <p>Ninguna solicitud pendiente.</p>
       </div>
       <ul class="member-list" id="requests-list"></ul>
+    </div>
+    <div class="card" id="postulaciones-card">
+      <h2>Postulaciones del directorio <span class="badge badge-pending" id="postulaciones-count">0</span></h2>
+      <p class="hint">Gente que se postuló desde la tarjeta pública del club en ridera.com.co/clubes/. Esto es aparte del chat: contáctalos tú directamente.</p>
+      <div class="empty" id="postulaciones-empty" style="padding:20px 0">
+        <p>Todavía no hay postulaciones.</p>
+      </div>
+      <ul class="member-list" id="postulaciones-list"></ul>
     </div>
     <div style="display:flex; gap:8px; margin-bottom:16px">
       <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)" style="margin-bottom:0">
@@ -405,7 +412,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada(), loadPerfil()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada(), loadPerfil(), loadPostulaciones()]);
 }
 
 // Las escrituras sobre miembros van por Edge Function (service_role), no por
@@ -432,6 +439,11 @@ async function loadStats() {
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-linked').textContent = linked;
   document.getElementById('stat-pending').textContent = total - linked;
+}
+
+async function loadPostulaciones() {
+  const out = await clubApi('postulaciones');
+  if (out.ok) renderPostulaciones(out.postulaciones || []);
 }
 
 async function loadMembers() {
@@ -472,6 +484,29 @@ function memberRow(m, actions, badge = '') {
     <div class="member-date">${date}</div>
     ${actions}
   </li>`;
+}
+
+function renderPostulaciones(postulaciones) {
+  const list = document.getElementById('postulaciones-list');
+  const vacio = document.getElementById('postulaciones-empty');
+  document.getElementById('postulaciones-count').textContent = postulaciones.length;
+  if (!postulaciones.length) { vacio.style.display = ''; list.innerHTML = ''; return; }
+  vacio.style.display = 'none';
+  list.innerHTML = postulaciones.map(p => {
+    const initials = p.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const date = new Date(p.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    const moto = [p.moto_marca, p.moto_modelo, p.moto_cc].filter(Boolean).join(' ');
+    return `<li class="member-item">
+      <div class="member-avatar">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${p.nombre}${p.avisado ? '' : ' <span class="badge badge-pending">Sin avisar</span>'}</div>
+        <div class="member-phone">${p.telefono}</div>
+        ${moto ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${moto}</div>` : ''}
+      </div>
+      <div class="member-date">${date}</div>
+      <a class="btn btn-sm btn-primary" href="https://wa.me/${p.telefono}" target="_blank">WhatsApp</a>
+    </li>`;
+  }).join('');
 }
 
 function renderRequests(requests) {
@@ -941,7 +976,7 @@ function logoutAdmin() {
 }
 
 async function refreshPanel() {
-  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadPostulaciones()]);
   toast('Actualizado');
 }
 
