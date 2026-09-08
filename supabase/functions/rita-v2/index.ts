@@ -315,6 +315,40 @@ registrados en el RUNT.
 Fuente: Area Metropolitana del Valle de Aburra / medellin.gov.co`;
 }
 
+// ─── Enlaces oficiales de registro/afiliacion: dato estatico ───
+function bloqueEnlacesOficiales(): string {
+  return `ENLACES OFICIALES DE REGISTRO Y AFILIACION A RIDERA
+Cuando el rider muestre interes en vincular su negocio, club o crear una cuenta en
+Ridera, respondele con entusiasmo y dale el enlace EXACTO que corresponda:
+
+- Talleres (mecanica, mantenimiento, pintura): https://ridera.com.co/registrar-talleres/
+  Ej: "Que nota sumar mas mecanicos y talleres a la red! Puedes registrar tu taller aqui
+  para que la comunidad te encuentre: https://ridera.com.co/registrar-talleres/"
+- Gruas y asistencia: https://gruas.ridera.com.co/registro
+  Ej: "Si tienes grua o servicio de auxilio para motos, registrate aqui para conectarte
+  con moteros que necesiten rescate en ruta: https://gruas.ridera.com.co/registro"
+- Almacenes de repuestos y accesorios: https://ridera.com.co/registro-almacen/
+  Ej: "Registra tu almacen en minutos para que podamos recomendar tus repuestos a los
+  moteros de la region: https://ridera.com.co/registro-almacen/"
+- Clubes moteros y grupos de rodada: https://ridera.com.co/registro-clubes/
+  Ej: "Excelente! Puedes inscribir a tu club motero en el directorio oficial aqui:
+  https://ridera.com.co/registro-clubes/"
+- Cuenta de usuario / motero: https://ridera.com.co/crear-cuenta/
+  Ej: "Crea tu cuenta oficial en Ridera aqui para acceder a todo el ecosistema:
+  https://ridera.com.co/crear-cuenta/"
+- Hoteles aliados (ruta motera): https://ridera.com.co/hoteles-form/
+  Ej: "Que bacano tener tu hotel en la ruta de los moteros! Registralo aqui:
+  https://ridera.com.co/hoteles-form/"
+- Restaurantes aliados (ruta motera): https://ridera.com.co/restaurantes/
+  Ej: "Dale, registra tu restaurante para que los moteros paren a comer en tu negocio:
+  https://ridera.com.co/restaurantes/"
+
+REGLA DURA: no inventes URLs bajo ninguna circunstancia. Para estos siete temas usa
+exclusivamente estos enlaces oficiales, tal cual estan escritos arriba. Si preguntan
+por otro tipo de registro que no esta en esta lista, dilo con naturalidad en vez de
+inventar una URL parecida.`;
+}
+
 // ─── System prompt ──────────────────────────────────────────────
 function buildSystemPrompt(
   consentimiento: { registrado: boolean; acepta: boolean },
@@ -487,7 +521,10 @@ ALIADOS Y DIRECTORIO DE MUNICIPIOS:
 
 OTROS TEMAS:
 - Grua o moto varada: gruas.ridera.com.co o el boton SOS de la app Ridera.
-- Rider no registrado: sugierele registrarse cada 3 o 4 intercambios, sin insistir.
+- Rider no registrado: sugierele registrarse cada 3 o 4 intercambios, sin insistir,
+  usando el enlace de cuenta de usuario del bloque de abajo.
+
+${bloqueEnlacesOficiales()}
 
 RESUMEN - RITA ES EXPERTA EN:
 ✅ Motos: técnica, mantenimiento, datos, compra-venta
