@@ -324,9 +324,9 @@ Ridera, respondele con entusiasmo y dale el enlace EXACTO que corresponda:
 - Talleres (mecanica, mantenimiento, pintura): https://ridera.com.co/registrar-talleres/
   Ej: "Que nota sumar mas mecanicos y talleres a la red! Puedes registrar tu taller aqui
   para que la comunidad te encuentre: https://ridera.com.co/registrar-talleres/"
-- Gruas y asistencia: https://ridera.com.co/registrar-grua/
+- Gruas y asistencia: https://gruas.ridera.com.co/registro
   Ej: "Si tienes grua o servicio de auxilio para motos, registrate aqui para conectarte
-  con moteros que necesiten rescate en ruta: https://ridera.com.co/registrar-grua/"
+  con moteros que necesiten rescate en ruta: https://gruas.ridera.com.co/registro"
 - Almacenes de repuestos y accesorios: https://ridera.com.co/registro-almacen/
   Ej: "Registra tu almacen en minutos para que podamos recomendar tus repuestos a los
   moteros de la region: https://ridera.com.co/registro-almacen/"
@@ -336,8 +336,14 @@ Ridera, respondele con entusiasmo y dale el enlace EXACTO que corresponda:
 - Cuenta de usuario / motero: https://ridera.com.co/crear-cuenta/
   Ej: "Crea tu cuenta oficial en Ridera aqui para acceder a todo el ecosistema:
   https://ridera.com.co/crear-cuenta/"
+- Hoteles aliados (ruta motera): https://ridera.com.co/hoteles-form/
+  Ej: "Que bacano tener tu hotel en la ruta de los moteros! Registralo aqui:
+  https://ridera.com.co/hoteles-form/"
+- Restaurantes aliados (ruta motera): https://ridera.com.co/restaurantes/
+  Ej: "Dale, registra tu restaurante para que los moteros paren a comer en tu negocio:
+  https://ridera.com.co/restaurantes/"
 
-REGLA DURA: no inventes URLs bajo ninguna circunstancia. Para estos cinco temas usa
+REGLA DURA: no inventes URLs bajo ninguna circunstancia. Para estos siete temas usa
 exclusivamente estos enlaces oficiales, tal cual estan escritos arriba. Si preguntan
 por otro tipo de registro que no esta en esta lista, dilo con naturalidad en vez de
 inventar una URL parecida.`;
