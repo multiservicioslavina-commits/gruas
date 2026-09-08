@@ -397,7 +397,7 @@ export const TOOL_SCHEMAS = [
   {
     name: "buscar_en_ridera",
     description:
-      "Busca articulos y rutas publicadas en ridera.com.co. Usala como respaldo cuando las otras herramientas no traigan resultados y el tema sea motero.",
+      "Busca articulos y rutas publicadas en ridera.com.co por similitud semantica. Usala como respaldo cuando las otras herramientas no traigan resultados y el tema sea motero. IMPORTANTE: es busqueda aproximada, NO una fuente verificada como buscar_ruta - los resultados son pistas relacionadas, no datos confirmados. Nunca repitas como hecho un km, tiempo o dato numerico que no este escrito tal cual en el resumen devuelto.",
     input_schema: {
       type: "object",
       properties: {
@@ -637,6 +637,32 @@ export const TOOL_SCHEMAS = [
       required: ["asunto", "fecha_hora"],
     },
   },
+  {
+    name: "consultar_manual_taller",
+    description:
+      "Busca en manuales de taller indexados (PDFs oficiales) de motos: torques de apriete, referencias de piezas OEM, procedimientos de mantenimiento, especificaciones de ajuste, bujias, filtros, holguras de valvulas. Devuelve fragmentos exactos del manual sin inventar datos. Usala SIEMPRE cuando pregunten por torques, numeros de parte, bujias, filtros, holguras o cualquier especificacion tecnica oficial de una moto.",
+    input_schema: {
+      type: "object",
+      properties: {
+        modelo_moto: { type: "string", description: "Marca y modelo de la moto. Ej: 'Bajaj Pulsar NS 200', 'Yamaha MT-03', 'Honda CB 190'" },
+        consulta: { type: "string", description: "Que especificacion busca. Ej: 'torque de culata', 'referencia filtro aceite', 'bujia recomendada', 'holgura de valvulas'" },
+      },
+      required: ["modelo_moto", "consulta"],
+    },
+  },
+  {
+    name: "buscar_aliados_directorio",
+    description:
+      "Busca hoteles, restaurantes, paraderos y establecimientos aliados de Ridera en municipios de Antioquia. Usala SIEMPRE cuando pregunten donde hospedarse, comer, dormir, parar o que establecimientos hay en un municipio antioqueño.",
+    input_schema: {
+      type: "object",
+      properties: {
+        municipio: { type: "string", description: "Municipio donde buscar. Ej: 'Jardin', 'Guatape', 'Santa Fe de Antioquia', 'Jerico'" },
+        tipo: { type: "string", description: "Tipo de establecimiento. Ej: 'Hotel', 'Restaurante', 'Hospedaje', 'Paradero'. Opcional." },
+      },
+      required: ["municipio"],
+    },
+  },
 ] as const;
 
 // ─── Ejecutores ─────────────────────────────────────────────────
@@ -839,6 +865,16 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
   async buscar_en_ridera(input) {
     const consulta = String(input.consulta ?? "");
 
+    // Umbral minimo para que un resultado se devuelva siquiera (filtra ruido
+    // puro). CONFIANZA_ALTA marca la barra real de "esto sí es sobre lo que
+    // preguntaron" - por debajo de eso es una pista relacionada, no una
+    // respuesta confirmada, y hay que decirselo a Claude explicitamente:
+    // un umbral bajo (0.3) dejaba pasar articulos apenas relacionados como si
+    // fueran la ruta exacta pedida, y el modelo rellenaba los huecos
+    // inventando cifras para sonar completo (caso real: ruta a Guatape).
+    const UMBRAL_MINIMO = 0.45;
+    const CONFIANZA_ALTA = 0.6;
+
     // Búsqueda semántica dual: Voyage AI + OpenAI
     const [voyageEmbedding, openaiEmbedding] = await Promise.all([
       embedQueryVoyage(consulta),
@@ -848,30 +884,35 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const semanticResults: Record<string, unknown>[] = [];
     const seen = new Set<string>();
 
+    const agregarResultados = (matches: { url: string; titulo: string; chunk_text: string; categoria?: string; similarity?: number }[]) => {
+      for (const match of matches) {
+        const key = `${match.url}#${match.titulo}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        const score = match.similarity || 0;
+        semanticResults.push({
+          tipo: match.categoria || "contenido",
+          titulo: match.titulo || "Sin título",
+          resumen: match.chunk_text.slice(0, 300),
+          link: match.url || "",
+          score,
+          verificado: score >= CONFIANZA_ALTA,
+          advertencia: score >= CONFIANZA_ALTA
+            ? undefined
+            : "Coincidencia debil (no confirmada). Es solo una pista relacionada: no la presentes como la ruta/dato exacto que pidieron, y no inventes km, tiempos u otras cifras que no esten escritas tal cual en el resumen.",
+        });
+      }
+    };
+
     // Intenta búsqueda con Voyage AI
     if (voyageEmbedding) {
       try {
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
           query_embedding: voyageEmbedding,
           match_count: 5,
-          match_threshold: 0.3,
+          match_threshold: UMBRAL_MINIMO,
         });
-
-        if (!error && matches && matches.length > 0) {
-          for (const match of matches) {
-            const key = `${match.url}#${match.titulo}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              semanticResults.push({
-                tipo: match.categoria || "contenido",
-                titulo: match.titulo || "Sin título",
-                resumen: match.chunk_text.slice(0, 300),
-                link: match.url || "",
-                score: match.similarity || 0,
-              });
-            }
-          }
-        }
+        if (!error && matches?.length) agregarResultados(matches);
       } catch { }
     }
 
@@ -881,28 +922,14 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
           query_embedding: openaiEmbedding,
           match_count: 5,
-          match_threshold: 0.3,
+          match_threshold: UMBRAL_MINIMO,
         });
-
-        if (!error && matches && matches.length > 0) {
-          for (const match of matches) {
-            const key = `${match.url}#${match.titulo}`;
-            if (!seen.has(key)) {
-              seen.add(key);
-              semanticResults.push({
-                tipo: match.categoria || "contenido",
-                titulo: match.titulo || "Sin título",
-                resumen: match.chunk_text.slice(0, 300),
-                link: match.url || "",
-                score: match.similarity || 0,
-              });
-            }
-          }
-        }
+        if (!error && matches?.length) agregarResultados(matches);
       } catch { }
     }
 
     if (semanticResults.length > 0) {
+      semanticResults.sort((a, b) => (b.score as number) - (a.score as number));
       return { ok: true, data: semanticResults.slice(0, 5) };
     }
 
@@ -1008,6 +1035,27 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const consulta = String(input.consulta ?? "");
     const tipoFuente = String(input.tipo_fuente ?? "general");
 
+    // Cache: evita repetir llamadas de red para consultas identicas
+    const cacheKey = await (async () => {
+      const raw = `${tipoFuente}:${consulta.toLowerCase().trim()}`;
+      const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(raw));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, "0")).join("").slice(0, 32);
+    })();
+
+    try {
+      const { data: cached } = await supabase
+        .from("rita_consultas_cache")
+        .select("resultado, updated_at")
+        .eq("consulta_hash", cacheKey)
+        .single();
+      if (cached?.resultado) {
+        const age = Date.now() - new Date(cached.updated_at).getTime();
+        if (age < 7 * 24 * 60 * 60 * 1000) {
+          return { ok: true, data: cached.resultado };
+        }
+      }
+    } catch { /* cache miss, continua */ }
+
     // Fuentes permitidas por tipo
     const fuentesPorTipo: Record<string, string[]> = {
       oficial_colombiana: [
@@ -1061,10 +1109,11 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
           }));
 
         if (results.length) {
-          return {
-            ok: true,
-            data: results.map(r => `${r.titulo}\n${r.resumen}\nFuente: ${r.fuente} (${r.url})`).join("\n\n")
-          };
+          const resultData = results.map(r => `${r.titulo}\n${r.resumen}\nFuente: ${r.fuente} (${r.url})`).join("\n\n");
+          supabase.from("rita_consultas_cache").upsert({
+            consulta_hash: cacheKey, tipo: tipoFuente, resultado: resultData, updated_at: new Date().toISOString(),
+          }).then(() => {});
+          return { ok: true, data: resultData };
         }
       }
 
@@ -1086,7 +1135,11 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
             const descMatch = m.match(/<span[^>]*>([^<]+)<\/span>/);
             return `${titleMatch?.[1] || "Resultado"}\n${descMatch?.[1] || ""}\nFuente: búsqueda web verificada`;
           });
-          return { ok: true, data: items.join("\n\n") };
+          const resultData = items.join("\n\n");
+          supabase.from("rita_consultas_cache").upsert({
+            consulta_hash: cacheKey, tipo: tipoFuente, resultado: resultData, updated_at: new Date().toISOString(),
+          }).then(() => {});
+          return { ok: true, data: resultData };
         }
       }
 
@@ -1629,6 +1682,64 @@ CONTACTO: Abogado especializado en responsabilidad civil`
 
     const fechaFormato = fecha.toLocaleDateString("es-CO") + " a las " + fecha.toLocaleTimeString("es-CO");
     return { ok: true, data: `✓ Recordatorio programado para ${fechaFormato}: "${asunto}"` };
+  },
+
+  async consultar_manual_taller(input) {
+    const VECTOR_STORE_ID = (Deno.env.get("OPENAI_VECTOR_STORE_ID") ?? "").trim();
+    if (!VECTOR_STORE_ID || !OPENAI_KEY) {
+      return { ok: false, data: "Manual de taller no disponible (configuracion pendiente). Consulta el manual oficial de la marca." };
+    }
+    const modelo = String(input.modelo_moto ?? "");
+    const consulta = String(input.consulta ?? "");
+    if (!modelo || !consulta) return { ok: false, data: "Indica la marca/modelo de la moto y que especificacion buscas." };
+
+    const prompt = `En el manual de taller de ${modelo}, busca: ${consulta}. Cita el fragmento exacto del manual con el valor o referencia, incluyendo la pagina si esta disponible. Si no encuentras el dato exacto en los documentos, dilo claramente sin inventar valores.`;
+
+    const res = await fetch("https://api.openai.com/v1/responses", {
+      method: "POST",
+      headers: { "Authorization": `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        input: prompt,
+        tools: [{ type: "file_search", vector_store_ids: [VECTOR_STORE_ID] }],
+      }),
+      signal: AbortSignal.timeout(20000),
+    });
+
+    if (!res.ok) {
+      const err = await res.text().catch(() => res.status.toString());
+      return { ok: false, data: `Error consultando manual: ${err}` };
+    }
+
+    const data = await res.json() as Record<string, unknown>;
+    const outputItems = (data.output ?? []) as Record<string, unknown>[];
+    const msgItem = outputItems.find((o) => o.type === "message");
+    const contentArr = (msgItem?.content ?? []) as Record<string, unknown>[];
+    const texto = contentArr.find((c) => c.type === "output_text")?.text as string ?? "";
+
+    if (!texto.trim()) {
+      return { ok: false, data: `No encontre esa especificacion para ${modelo} en los manuales indexados. Consulta el manual oficial de la marca.` };
+    }
+    return { ok: true, data: { fragmento: texto, modelo, consulta, fuente: "Manual oficial (Vector Store)" } };
+  },
+
+  async buscar_aliados_directorio(input) {
+    const municipio = String(input.municipio ?? "");
+    const tipo = input.tipo ? String(input.tipo) : null;
+    if (!municipio) return { ok: false, data: "Indica el municipio donde buscar." };
+
+    let query = supabase
+      .from("aliados_directorio")
+      .select("municipio, tipo, establecimiento, telefono")
+      .ilike("municipio", `%${municipio}%`);
+    if (tipo) query = query.ilike("tipo", `%${tipo}%`);
+    const { data, error } = await query.limit(4);
+
+    if (error) return { ok: false, data: `Error consultando directorio: ${error.message}` };
+    if (!data?.length) {
+      return { ok: false, data: `No encontre aliados registrados en ${municipio}${tipo ? ` (${tipo})` : ""}. Puede que ese municipio no tenga aliados en el directorio todavia.` };
+    }
+    return { ok: true, data };
   },
 };
 

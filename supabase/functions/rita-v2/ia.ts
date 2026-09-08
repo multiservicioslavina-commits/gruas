@@ -4,14 +4,20 @@
 // Un solo cerebro que decide que motor usar (OpenAI o Claude) y le da
 // a Rita una API unica: ella nunca sabe cual modelo respondio. Reglas:
 //
-//   1. PRIMARIO: OpenAI (gpt-4o-mini) es el motor principal. Claude
-//      queda como fallback secundario si OpenAI falla.
-//   2. COMPARACION: cuando la respuesta primaria uso una herramienta
+//   1. PRIMARIO: OpenAI gpt-4o-mini con Function Calling.
+//      Lee OPENAI_API_KEY desde los secretos de Supabase.
+//   2. FALLBACK: Claude solo entra si OpenAI falla (error de red,
+//      timeout, respuesta no-ok).
+//   3. COMPARACION: cuando la respuesta primaria uso una herramienta
 //      critica (emergencia, legal, pico y placa), se genera una
-//      segunda respuesta de contraste si Claude esta disponible.
-//   3. Cada llamada queda auditada en rita_ai_logs: proveedor, modelo,
+//      segunda respuesta con Claude y un revisor elige o funde la
+//      mejor antes de contestar.
+//   4. Cada llamada queda auditada en rita_ai_logs: proveedor, modelo,
 //      tokens, costo estimado, tipo de consulta y quien gano la
 //      comparacion (cuando aplica).
+//
+// Ambas claves (ANTHROPIC_API_KEY, OPENAI_API_KEY) viven solo en los
+// secretos de Supabase; nunca llegan al cliente/APK.
 // ─────────────────────────────────────────────────────────────────
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
@@ -189,8 +195,10 @@ function normalizarOpenAI(data: Record<string, unknown>) {
   const choice = ((data.choices as Record<string, unknown>[]) ?? [])[0];
   const msg = (choice?.message ?? {}) as Record<string, unknown>;
   const bloques: Bloque[] = [];
-  if (msg.content) bloques.push({ type: "text", text: String(msg.content) });
   const toolCalls = (msg.tool_calls ?? []) as Record<string, unknown>[];
+  // Solo incluir texto cuando no hay tool_calls; los mensajes intermedios
+  // ("voy a consultar", "revisando datos") no deben llegar al rider.
+  if (msg.content && toolCalls.length === 0) bloques.push({ type: "text", text: String(msg.content) });
   for (const tc of toolCalls) {
     const fn = (tc.function ?? {}) as Record<string, unknown>;
     let input: Record<string, unknown> = {};
@@ -303,14 +311,13 @@ export async function responderConOrquestador(
   let resultado: { texto: string; herramientasUsadas: string[] };
   let proveedorPrimario: "claude" | "openai" = "openai";
 
-  // 1) Intento primario: OpenAI (gpt-4o-mini)
+  // 1) Intento primario: OpenAI (gpt-4o-mini con Function Calling).
   try {
-    if (!OPENAI_KEY) throw new Error("No hay OPENAI_API_KEY configurada");
+    if (!OPENAI_KEY) throw new Error("OPENAI_API_KEY no configurada");
     resultado = await ejecutarConversacion("openai", system, messages, phone, "normal");
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
     console.error("OpenAI fallo en el orquestador, cae a Claude:", mensaje);
-
     try {
       await supabase.from("rita_acciones_log").insert({
         telefono: phone,
@@ -319,8 +326,7 @@ export async function responderConOrquestador(
         ok: false,
         error: mensaje.slice(0, 500),
       });
-    } catch { /* auditoria */ }
-
+    } catch { /* no interrumpe el flujo por un fallo de auditoria */ }
     if (!ANTHROPIC_KEY) {
       throw new Error("OpenAI fallo y no hay ANTHROPIC_API_KEY configurada para el fallback");
     }
@@ -332,16 +338,23 @@ export async function responderConOrquestador(
 
   const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
     || esTemaCriticoPorTexto(messages);
-
-  // Si no es tema crítico o Claude no tiene clave disponible, devolvemos directo lo de OpenAI
+  // Para comparacion critica se necesita Claude como segundo revisor
   if (!esCritico || !ANTHROPIC_KEY) return resultado.texto;
 
-  // 2) Comparación en temas críticos (opcional)
+  // 2) Comparacion: solo para temas criticos. Generamos una segunda
+  // respuesta con Claude y dejamos que un revisor elija o funda la
+  // mejor antes de contestar.
   try {
-    const segundo = await ejecutarConversacion("claude", system, messages, phone, "comparacion");
+    const proveedorSecundario: "claude" | "openai" = proveedorPrimario === "openai" ? "claude" : "openai";
+    const segundo = await ejecutarConversacion(proveedorSecundario, system, messages, phone, "comparacion");
     if (!segundo.texto) return resultado.texto;
 
-    const revision = await revisarYFundir(resultado.texto, segundo.texto, phone);
+    // borrador A = Claude (para que el revisor (Claude) no se favorezca a si mismo)
+    const [borradorA, borradorB] = proveedorSecundario === "claude"
+      ? [segundo.texto, resultado.texto]
+      : [resultado.texto, segundo.texto];
+
+    const revision = await revisarYFundir(borradorA, borradorB, phone);
     return revision.texto || resultado.texto;
   } catch (e) {
     console.error("Comparacion omitida por fallo en Claude:", e);
