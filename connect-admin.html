@@ -865,6 +865,7 @@ const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-au
 // ya no depende de que un humano de soporte lo haga a mano.
 const RITA_WA = '573117896717';
 let loginClubTienePass = false;
+let loginClubTieneWhatsapp = false;
 
 async function callAuth(payload) {
   const r = await fetch(CLUB_AUTH, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -897,15 +898,29 @@ async function onClubSelect() {
   if (!id) { passWrap.style.display = 'none'; btn.style.display = 'none'; forgot.style.display = 'none'; return; }
   const est = await callAuth({ action: 'estado', clubId: id });
   loginClubTienePass = !!est.tienePass;
-  passWrap.style.display = 'block';
-  btn.style.display = 'block';
+  loginClubTieneWhatsapp = !!est.tieneWhatsapp;
   if (loginClubTienePass) {
+    passWrap.style.display = 'block';
+    btn.style.display = 'block';
     sub.textContent = 'Ingresa la clave de tu club';
     label.textContent = 'Clave';
     document.getElementById('login-pass').placeholder = 'Tu clave';
     btn.textContent = 'Entrar';
+    forgot.textContent = '¿Olvidaste tu clave?';
+    forgot.style.display = 'block';
+  } else if (loginClubTieneWhatsapp) {
+    // No dejamos crear la clave aqui mismo sin verificar: cualquiera que
+    // supiera el codigo del club podria adelantarsele al lider real. Este
+    // club ya tiene WhatsApp registrado, asi que la unica entrada es que
+    // Rita confirme por ahi (mismo boton/flujo que "olvidé mi clave").
+    passWrap.style.display = 'none';
+    btn.style.display = 'none';
+    sub.textContent = 'Tu club aún no tiene clave. Por seguridad, créala verificándote por el WhatsApp registrado del club.';
+    forgot.textContent = 'Crear clave por WhatsApp →';
     forgot.style.display = 'block';
   } else {
+    passWrap.style.display = 'block';
+    btn.style.display = 'block';
     sub.textContent = 'Tu club aún no tiene clave — créala ahora';
     label.textContent = 'Crea una clave (mínimo 4 caracteres)';
     document.getElementById('login-pass').placeholder = 'Nueva clave';
