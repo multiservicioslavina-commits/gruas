@@ -70,7 +70,7 @@ COMMENT ON TABLE pico_placa_notif_log IS
 -- excluido aquí mismo; festivos se filtran adentro de la función via
 -- festivos_colombia, porque pg_cron no sabe de festivos.
 select cron.schedule(
-  'alerta-pico-placa-diaria',
+  'alerta-diaria-pico-placa',
   '15 11 * * 1-5',
   $$
   select net.http_post(

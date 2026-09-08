@@ -139,9 +139,12 @@ async function obtenerCandidatos(digitosHoy: number[]): Promise<Candidato[]> {
     .not("telefono", "is", null);
   if (errRiders) throw new Error(`riders: ${errRiders.message}`);
 
-  return (riders ?? [])
-    .filter(r => r.telefono)
-    .map(r => {
+  type RiderRow = { id: string; nombre: string | null; telefono: string | null };
+  type RiderConTelefono = RiderRow & { telefono: string };
+
+  return ((riders ?? []) as RiderRow[])
+    .filter((r: RiderRow): r is RiderConTelefono => !!r.telefono)
+    .map((r: RiderConTelefono) => {
       const info = porRider.get(r.id)!;
       return {
         riderId: r.id,
