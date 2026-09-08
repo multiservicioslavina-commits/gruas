@@ -34,9 +34,6 @@ const MAX_TOOL_ROUNDS = 4;
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
 
-// Precios aproximados por 1M tokens (USD). Son una referencia para
-// comparar costo relativo entre proveedores, AJUSTAR a las tarifas
-// publicadas vigentes antes de usarlos para facturacion real.
 const PRECIOS: Record<string, { entrada: number; salida: number }> = {
   claude: { entrada: 1.0, salida: 5.0 },
   openai: { entrada: 0.15, salida: 0.6 },
@@ -47,7 +44,7 @@ function estimarCosto(proveedor: "claude" | "openai", tokensEntrada: number, tok
   return (tokensEntrada / 1_000_000) * p.entrada + (tokensSalida / 1_000_000) * p.salida;
 }
 
-// ─── Tope de gasto diario (Paso 3) ─────────────────────────────
+// ─── Tope de gasto diario ───────────────────────────────────────
 const DAILY_CAP_USD = parseFloat(Deno.env.get("RITA_DAILY_CAP_USD") ?? "5");
 
 function inicioDelDiaColombia(): string {
@@ -74,8 +71,6 @@ export async function verificarPresupuesto(): Promise<{ ok: boolean; gastoHoy: n
   }
 }
 
-// Herramientas donde un error le cuesta caro al rider (multa, salud,
-// plata): si la respuesta primaria las uso, se dispara la comparacion.
 const HERRAMIENTAS_CRITICAS = new Set([
   "primeros_auxilios",
   "emergencia_telefonos",
@@ -87,10 +82,6 @@ const HERRAMIENTAS_CRITICAS = new Set([
 export type Bloque = { type: string; [k: string]: unknown };
 export type Mensaje = { role: string; content: string | Bloque[] };
 
-// Respaldo de HERRAMIENTAS_CRITICAS: si el motor que respondio no llamo
-// ninguna herramienta (p.ej. OpenAI en un fallback contesta de memoria
-// sin consultar nada), esto igual detecta el tema por palabras clave en
-// el mensaje del rider para no perder la comparacion en casos criticos.
 const PALABRAS_CRITICAS =
   /accidente|herid[oa]|sangr|primeros auxilios|choqu|me ca[ií]|atropell|ambulanc|emergencia|bomberos|polic[ií]a|codigo de transito|comparendo|multa|infracci[oó]n|abogado|demanda|denuncia|responsabilidad civil|pico y placa|restricci[oó]n vehicular/i;
 
@@ -149,7 +140,7 @@ function normalizarClaude(data: Record<string, unknown>) {
   };
 }
 
-// ─── Motor OpenAI (adaptado al mismo formato de bloques que Claude) ─
+// ─── Motor OpenAI ────────────────────────────────────────────────
 function schemasOpenAI() {
   return TOOL_SCHEMAS.map(t => ({
     type: "function",
@@ -176,8 +167,6 @@ function mensajesAOpenAI(system: string, messages: Mensaje[]): Record<string, un
       out.push(msg);
       continue;
     }
-    // Mensajes "user" con tool_result: en OpenAI cada resultado es su
-    // propio mensaje de rol "tool".
     for (const b of m.content) {
       if (b.type === "tool_result") {
         out.push({ role: "tool", tool_call_id: String(b.tool_use_id), content: String(b.content ?? "") });
@@ -213,7 +202,7 @@ function normalizarOpenAI(data: Record<string, unknown>) {
   for (const tc of toolCalls) {
     const fn = (tc.function ?? {}) as Record<string, unknown>;
     let input: Record<string, unknown> = {};
-    try { input = JSON.parse(String(fn.arguments ?? "{}")); } catch { /* deja vacio */ }
+    try { input = JSON.parse(String(fn.arguments ?? "{}")); } catch { /* vacio */ }
     bloques.push({ type: "tool_use", id: String(tc.id), name: String(fn.name), input });
   }
   const usage = (data.usage ?? {}) as Record<string, unknown>;
@@ -228,7 +217,7 @@ function textoDe(bloques: Bloque[]): string {
   return bloques.filter(b => b.type === "text").map(b => String(b.text ?? "")).join("\n").trim();
 }
 
-// ─── Loop de tool-use generico: funciona con cualquier proveedor ───
+// ─── Loop de tool-use generico ───────────────────────────────────
 async function ejecutarConversacion(
   proveedor: "claude" | "openai",
   system: string,
@@ -277,12 +266,14 @@ async function ejecutarConversacion(
   return { texto: "", herramientasUsadas };
 }
 
-// ─── Revisor: elige o funde las dos respuestas en temas criticos ───
+// ─── Revisor ────────────────────────────────────────────────────
 async function revisarYFundir(
   borradorA: string,
   borradorB: string,
   phone: string,
 ): Promise<{ texto: string; ganador: string | null }> {
+  if (!ANTHROPIC_KEY) return { texto: borradorA, ganador: "A" };
+
   const system = `Sos un revisor tecnico de Rita, asistente motera de Ridera. Te paso dos borradores de
 respuesta para el mismo mensaje de un rider sobre un tema critico (seguridad, salud, legal
 o multas). Elegi el mas correcto y completo, o fundi lo mejor de ambos en una sola respuesta.
@@ -296,20 +287,22 @@ corresponde. No menciones que hubo dos borradores ni que sos un revisor.`;
     { role: "user", content: `Borrador A:\n${borradorA}\n\nBorrador B:\n${borradorB}` },
   ];
 
-  const dataCruda = await llamarClaudeRaw(system, messages);
-  const { bloques, usage } = normalizarClaude(dataCruda);
-  await auditarIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "comparacion", null);
+  try {
+    const dataCruda = await llamarClaudeRaw(system, messages);
+    const { bloques, usage } = normalizarClaude(dataCruda);
+    await auditarIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "comparacion", null);
 
-  const texto = textoDe(bloques);
-  const match = texto.match(/^GANADOR:\s*(A|B|FUSION)\s*\n+([\s\S]*)$/i);
-  if (!match) return { texto: texto || borradorA, ganador: null };
-  return { texto: match[2].trim(), ganador: match[1].toUpperCase() };
+    const texto = textoDe(bloques);
+    const match = texto.match(/^GANADOR:\s*(A|B|FUSION)\s*\n+([\s\S]*)$/i);
+    if (!match) return { texto: texto || borradorA, ganador: null };
+    return { texto: match[2].trim(), ganador: match[1].toUpperCase() };
+  } catch (e) {
+    console.error("Revisor fallo:", e);
+    return { texto: borradorA, ganador: null };
+  }
 }
 
 // ─── Punto de entrada del orquestador ───────────────────────────
-// Recibe el system prompt ya armado y el historial + mensaje actual.
-// Devuelve el texto final sin que el llamador sepa que proveedor
-// respondio ni si hubo comparacion.
 export async function responderConOrquestador(
   system: string,
   messages: Mensaje[],
@@ -341,6 +334,8 @@ export async function responderConOrquestador(
     resultado = await ejecutarConversacion("claude", system, messages, phone, "fallback");
   }
 
+  if (!resultado.texto) return "";
+
   const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
     || esTemaCriticoPorTexto(messages);
   // Para comparacion critica se necesita Claude como segundo revisor
@@ -362,7 +357,7 @@ export async function responderConOrquestador(
     const revision = await revisarYFundir(borradorA, borradorB, phone);
     return revision.texto || resultado.texto;
   } catch (e) {
-    console.error("Comparacion fallo, uso la respuesta primaria:", e);
+    console.error("Comparacion omitida por fallo en Claude:", e);
     return resultado.texto;
   }
 }

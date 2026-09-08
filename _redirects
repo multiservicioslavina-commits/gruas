@@ -3,6 +3,10 @@ https://club.ridera.com.co/admin        /connect-admin.html   200!
 https://club.ridera.com.co/admin/*      /connect-admin.html   200!
 https://club.ridera.com.co/reset-club   /reset-club.html      200!
 
+# taller-motos/ es un producto aparte (Node + PostgreSQL): no corre en Netlify
+# y su codigo no debe servirse desde el sitio de Ridera.
+/taller-motos/*             /index.html                        404
+
 /aliados                    /aliados.html                      200
 /aliado                     /aliados.html                      200
 /red                        /red.html                          200
@@ -38,6 +42,7 @@ https://club.ridera.com.co/reset-club   /reset-club.html      200!
 /connect-register/*         /connect-register.html             200
 /connect                    /connect.html                      200
 /connect/*                  /connect.html                      200
+/hoja-de-vida                /hoja-de-vida.html                 200
 
 # Subdomain admin.ridera.com.co
 https://admin.ridera.com.co/*  /admin.html  200!
