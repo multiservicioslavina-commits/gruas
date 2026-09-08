@@ -297,6 +297,44 @@ Pedro Gómez - 3176543210"></textarea>
     </div>
 
     <div class="card">
+      <h2>Información del club</h2>
+      <p>Esto es lo que ven los riders en la tarjeta y el detalle del directorio público (ridera.com.co/clubes/).</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-ciudad" type="text" placeholder="Ciudad (ej: Medellín)" maxlength="60"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-fundacion" type="text" placeholder="Año de fundación" maxlength="4" inputmode="numeric"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-miembros" type="text" placeholder="Miembros (ej: 31 – 60)" maxlength="30"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-marcas" type="text" placeholder="Marcas (separadas por coma: BMW Motorrad, KTM, Honda)" maxlength="200"
+               style="flex:1; min-width:220px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-rutas" type="text" placeholder="Estilos (separados por coma: Carretera, Adventure, Turismo)" maxlength="150"
+               style="flex:1; min-width:220px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <textarea id="perfil-descripcion" placeholder="Descripción corta del club" maxlength="600"
+                style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px; font-family:inherit; margin-bottom:10px; resize:vertical;"></textarea>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-instagram" type="text" placeholder="Instagram (@usuario o link)" maxlength="100"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-facebook" type="text" placeholder="Facebook (link)" maxlength="150"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-web" type="text" placeholder="Sitio web (opcional)" maxlength="150"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px">
+        <input id="perfil-whatsapp" type="tel" placeholder="WhatsApp de contacto del club" maxlength="20" inputmode="numeric"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-lider" type="text" placeholder="Nombre del líder" maxlength="60"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-email" type="email" placeholder="Correo de contacto (opcional)" maxlength="100"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <button class="btn btn-primary" id="btn-perfil" onclick="guardarPerfil()">Guardar información</button>
+    </div>
+
+    <div class="card">
       <h2>Próxima rodada</h2>
       <p>Se muestra en la tarjeta del club dentro del directorio público (ridera.com.co/clubes/). Deja "Destino" vacío y guarda para quitarla.</p>
       <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
@@ -367,7 +405,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada(), loadPerfil()]);
 }
 
 // Las escrituras sobre miembros van por Edge Function (service_role), no por
@@ -708,6 +746,50 @@ async function loadLogo() {
   if (club.length && club[0].logo_url) {
     document.getElementById('logo-preview').innerHTML = `<img src="${club[0].logo_url}" style="width: 100%; height: 100%; object-fit: cover;">`;
   }
+}
+
+async function loadPerfil() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=ciudad,datos&limit=1`);
+  if (!club.length) return;
+  const c = club[0], d = c.datos || {};
+  document.getElementById('perfil-ciudad').value = c.ciudad || '';
+  document.getElementById('perfil-fundacion').value = d.fundacion || '';
+  document.getElementById('perfil-miembros').value = d.miembros || '';
+  document.getElementById('perfil-marcas').value = d.marcas || '';
+  document.getElementById('perfil-rutas').value = d.rutas || '';
+  document.getElementById('perfil-descripcion').value = d.descripcion || '';
+  document.getElementById('perfil-instagram').value = d.instagram || '';
+  document.getElementById('perfil-facebook').value = d.facebook || '';
+  document.getElementById('perfil-web').value = d.web || '';
+  document.getElementById('perfil-whatsapp').value = d.whatsapp || '';
+  document.getElementById('perfil-lider').value = d.lider || '';
+  document.getElementById('perfil-email').value = d.email || '';
+}
+
+async function guardarPerfil() {
+  const btn = document.getElementById('btn-perfil');
+  btn.disabled = true;
+  try {
+    const out = await clubApi('perfil', {
+      ciudad: document.getElementById('perfil-ciudad').value,
+      fundacion: document.getElementById('perfil-fundacion').value,
+      miembros: document.getElementById('perfil-miembros').value,
+      marcas: document.getElementById('perfil-marcas').value,
+      rutas: document.getElementById('perfil-rutas').value,
+      descripcion: document.getElementById('perfil-descripcion').value,
+      instagram: document.getElementById('perfil-instagram').value,
+      facebook: document.getElementById('perfil-facebook').value,
+      web: document.getElementById('perfil-web').value,
+      whatsapp: document.getElementById('perfil-whatsapp').value,
+      lider: document.getElementById('perfil-lider').value,
+      email: document.getElementById('perfil-email').value,
+    });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
+    toast('Información del club guardada');
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, true);
+  }
+  btn.disabled = false;
 }
 
 async function loadRodada() {

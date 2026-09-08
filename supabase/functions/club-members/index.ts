@@ -589,6 +589,32 @@ Deno.serve(async (req: Request) => {
     return json({ ok: true, rodada });
   }
 
+  // Datos de la ficha publica del club en el directorio (ridera.com.co/clubes/):
+  // ciudad va en su propia columna, el resto vive en el jsonb 'datos' para no
+  // seguir agregando columnas por cada campo nuevo que pida el directorio.
+  if (action === 'perfil') {
+    const ciudad = (body.ciudad || '').toString().trim().slice(0, 60);
+    const camposDatos: Record<string, string> = {};
+    const textoCorto: Record<string, number> = {
+      marcas: 200, rutas: 150, miembros: 30, fundacion: 4,
+      instagram: 100, facebook: 150, web: 150,
+      whatsapp: 20, lider: 60, email: 100,
+    };
+    for (const campo of Object.keys(textoCorto)) {
+      if (typeof body[campo] === 'string') camposDatos[campo] = body[campo].toString().trim().slice(0, textoCorto[campo]);
+    }
+    if (typeof body.descripcion === 'string') camposDatos.descripcion = body.descripcion.toString().trim().slice(0, 600);
+
+    const { data: existing } = await sb.from('clubs').select('datos').eq('id', clubId).maybeSingle();
+    const datos = { ...(existing?.datos || {}), ...camposDatos };
+
+    const update: Record<string, unknown> = { datos };
+    if (ciudad) update.ciudad = ciudad;
+    const { error } = await sb.from('clubs').update(update).eq('id', clubId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
+  }
+
   if (action === 'rita-preguntas') {
     const { data, error } = await sb.from('connect_rita_dms')
       .select('*, connect_members(nombre,telefono)')
