@@ -22,9 +22,11 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 const HUBSPOT_TOKEN = Deno.env.get("HUBSPOT_ACCESS_TOKEN") ?? "";
 const HUBSPOT_HEADERS = { Authorization: `Bearer ${HUBSPOT_TOKEN}`, "Content-Type": "application/json" };
 const CONTACTS_UPSERT_URL = "https://api.hubapi.com/crm/v3/objects/contacts/batch/upsert";
+const CONTACTS_SEARCH_URL = "https://api.hubapi.com/crm/v3/objects/contacts/search";
 const CONTACT_PROPERTIES_URL = "https://api.hubapi.com/crm/v3/properties/contacts";
 const DEALS_URL = "https://api.hubapi.com/crm/v3/objects/deals";
 const DEAL_PIPELINES_URL = "https://api.hubapi.com/crm/v3/pipelines/deals";
+const NOTES_URL = "https://api.hubapi.com/crm/v3/objects/notes";
 
 // Nombre de negocio del pipeline/etapa donde cae un registro nuevo de
 // Taller/Grua/Almacen. Si no existen en el portal, se crean solos la primera
@@ -284,11 +286,76 @@ async function crearDeal(contactId: string, tipo: Tipo, nombre: string): Promise
   return { ok: true, id: (out as any)?.id };
 }
 
+// Busca un contacto por telefono (best-effort: los riders no siempre tienen
+// email, asi que no se puede usar el mismo upsert por email que el resto de
+// este archivo). Si no hay coincidencia, o si hay mas de un formato del
+// mismo numero en HubSpot, simplemente no se encuentra nada -- no es un
+// error, es una limitacion conocida de la calidad del dato del telefono.
+async function buscarContactoPorTelefono(telefono: string): Promise<string | null> {
+  const res = await fetch(CONTACTS_SEARCH_URL, {
+    method: "POST",
+    headers: HUBSPOT_HEADERS,
+    body: JSON.stringify({
+      filterGroups: [{ filters: [{ propertyName: "phone", operator: "CONTAINS_TOKEN", value: telefono }] }],
+      limit: 1,
+    }),
+  });
+  if (!res.ok) return null;
+  const out = await res.json().catch(() => ({}));
+  return (out as any)?.results?.[0]?.id ?? null;
+}
+
+// Nota operativa sobre un incidente de auxilio en ruta (SOS), asociada al
+// contacto del rider si se encuentra por telefono. Best-effort: si no hay
+// contacto en HubSpot, o si falla la llamada, no bloquea nada -- el log real
+// del incidente ya quedo en asistencias_sos_log de Supabase.
+async function notificarSOSHubspot(telefono: string, lat: number | null, lon: number | null, aliados: { nombre: string; tipo_servicio: string; distancia_km: number }[]): Promise<{ ok: boolean; contactId?: string; noteId?: string; error?: unknown }> {
+  const contactId = await buscarContactoPorTelefono(telefono);
+  if (!contactId) return { ok: false, error: "Sin contacto en HubSpot para ese telefono" };
+
+  const ubicacion = lat != null && lon != null ? `${lat}, ${lon} (https://maps.google.com/?q=${lat},${lon})` : "sin ubicacion compartida todavia";
+  const listaAliados = aliados.length
+    ? aliados.map(a => `- ${a.nombre} (${a.tipo_servicio}) a ${a.distancia_km} km`).join("\n")
+    : "Ninguno dentro del radio de busqueda";
+  const cuerpo = `🚨 SOS Ridera reportado por ${telefono}\nUbicacion: ${ubicacion}\nAliados sugeridos:\n${listaAliados}`;
+
+  const res = await fetch(NOTES_URL, {
+    method: "POST",
+    headers: HUBSPOT_HEADERS,
+    body: JSON.stringify({
+      properties: { hs_note_body: cuerpo, hs_timestamp: Date.now() },
+      associations: [{ to: { id: contactId }, types: [{ associationCategory: "HUBSPOT_DEFINED", associationTypeId: 202 }] }],
+    }),
+  });
+  const out = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    console.error("hubspot-sync: no se pudo crear la nota de SOS", { status: res.status, out });
+    return { ok: false, contactId, error: out };
+  }
+  return { ok: true, contactId, noteId: (out as any)?.id };
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return json({ ok: false, error: "Método no soportado" }, 405);
 
   const body = await req.json().catch(() => ({}));
+
+  // Nota de seguimiento operativo para un incidente de auxilio en ruta.
+  // La dispara rita-v2 (fire-and-forget) cuando detecta un SOS.
+  if (body.tipo === "sos") {
+    if (!HUBSPOT_TOKEN) return json({ ok: false, error: "HUBSPOT_ACCESS_TOKEN no configurado" });
+    const { telefono, lat, lon, aliados } = body;
+    if (!telefono) return json({ ok: false, error: "Falta telefono" }, 400);
+    try {
+      const resultado = await notificarSOSHubspot(String(telefono), lat ?? null, lon ?? null, Array.isArray(aliados) ? aliados : []);
+      return json(resultado);
+    } catch (e) {
+      console.error("hubspot-sync: error de red creando nota SOS", e);
+      return json({ ok: false, error: String(e) });
+    }
+  }
+
   const tipo = (body.tipo || "").toString() as Tipo;
   const record = body.record || {};
 
