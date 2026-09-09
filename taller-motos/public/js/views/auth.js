@@ -7,9 +7,9 @@ const GEAR_SVG = `<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-widt
 
 // Antes de iniciar sesión no hay business_type que consultar (todavía no
 // hay taller): el dominio por el que entraron es la única pista de qué
-// marca mostrar en la pantalla de acceso/registro.
-const publicBrandHtml = () =>
-  location.hostname.startsWith('almacen.') ? 'MI<b>ALMACÉN</b>' : 'TALLER<b>MOTOS</b>';
+// marca y qué texto mostrar en la pantalla de acceso/registro.
+const esAlmacen = () => location.hostname.startsWith('almacen.');
+const publicBrandHtml = () => esAlmacen() ? 'MI<b>ALMACÉN</b>' : 'TALLER<b>MOTOS</b>';
 
 function afterLogin(result) {
   session.token = result.token;
@@ -21,13 +21,15 @@ function afterLogin(result) {
 }
 
 export async function loginView() {
+  const almacen = esAlmacen();
+
   onMount(() => {
     document.getElementById('forgot-link').addEventListener('click', (event) => {
       event.preventDefault();
       const slot = document.getElementById('login-error');
       slot.innerHTML = `<div class="alert alert-info">
         <b>¿Olvidaste tu contraseña?</b><br>
-        Pídele al administrador de tu taller que la restablezca desde
+        Pídele al administrador de ${almacen ? 'tu almacén' : 'tu taller'} que la restablezca desde
         <b>Configuración → Equipo</b>. Si tú eres el administrador,
         contacta a quien te entregó el software.</div>`;
     });
@@ -58,25 +60,28 @@ export async function loginView() {
           <div class="auth-brand-icon">${GEAR_SVG}</div>
           <div class="auth-brand-title">${publicBrandHtml()}</div>
         </div>
-        <div class="auth-brand-sub">Gestiona tu taller de motos de forma profesional:<br>
-          órdenes de trabajo, clientes, inventario y caja.</div>
+        <div class="auth-brand-sub">${almacen
+          ? 'Gestiona tu almacén de repuestos y accesorios de forma profesional:<br>inventario, compras y ventas de mostrador.'
+          : 'Gestiona tu taller de motos de forma profesional:<br>órdenes de trabajo, clientes, inventario y caja.'}</div>
       </div>
       <div class="auth-form">
         <div class="auth-inner">
-          <h1>Entra a tu taller</h1>
-          <p class="subtitle">Gestión de órdenes, clientes, inventario y caja.</p>
+          <h1>Entra a ${almacen ? 'tu almacén' : 'tu taller'}</h1>
+          <p class="subtitle">${almacen
+            ? 'Inventario, compras y ventas de mostrador.'
+            : 'Gestión de órdenes, clientes, inventario y caja.'}</p>
           <div class="card">
             <div class="card-body">
               <div id="login-error"></div>
               <form id="login-form">
-                ${field('email', 'Correo', { type: 'email', required: true, placeholder: 'tu@taller.com' })}
+                ${field('email', 'Correo', { type: 'email', required: true, placeholder: almacen ? 'tu@almacen.com' : 'tu@taller.com' })}
                 ${field('password', 'Contraseña', { type: 'password', required: true })}
                 <button type="submit" class="btn btn-primary btn-block" style="margin-top:6px">Entrar</button>
               </form>
             </div>
           </div>
           <div class="auth-links"><a href="#" id="forgot-link">¿Olvidaste tu contraseña?</a></div>
-          <div class="auth-links">¿Aún no tienes taller registrado?
+          <div class="auth-links">¿Aún no tienes ${almacen ? 'almacén registrado' : 'taller registrado'}?
             <a href="#/registrar">Crea uno</a></div>
           <div class="auth-links">¿Eres cliente y quieres ver tu moto?
             <a href="#/orden/">Consulta con tu código</a></div>
@@ -86,6 +91,9 @@ export async function loginView() {
 }
 
 export async function registerView() {
+  const almacen = esAlmacen();
+  const crearTexto = almacen ? 'Crear mi almacén' : 'Crear mi taller';
+
   // Una instalación puede no exigir código (por ejemplo, la del propio taller
   // que la aloja). Preguntar por él en ese caso sólo estorbaría.
   const exigeCodigo = await api.get('/health', { anonymous: true })
@@ -106,7 +114,7 @@ export async function registerView() {
       if (data.password !== data.password2) {
         slot.innerHTML = errorBox('Las contraseñas no coinciden');
         button.disabled = false;
-        button.textContent = 'Crear mi taller';
+        button.textContent = crearTexto;
         return;
       }
       delete data.password2;
@@ -114,11 +122,11 @@ export async function registerView() {
 
       try {
         afterLogin(await api.post('/auth/register', data, { anonymous: true }));
-        toast('Taller creado. ¡Bienvenido!');
+        toast(almacen ? 'Almacén creado. ¡Bienvenido!' : 'Taller creado. ¡Bienvenido!');
       } catch (err) {
         slot.innerHTML = errorBox(err.message);
         button.disabled = false;
-        button.textContent = 'Crear mi taller';
+        button.textContent = crearTexto;
       }
     });
   });
@@ -130,13 +138,16 @@ export async function registerView() {
           <div class="auth-brand-icon">${GEAR_SVG}</div>
           <div class="auth-brand-title">${publicBrandHtml()}</div>
         </div>
-        <div class="auth-brand-sub">Software profesional para talleres de motos.<br>
-          Empieza en minutos.</div>
+        <div class="auth-brand-sub">${almacen
+          ? 'Software profesional para almacenes de repuestos y accesorios.<br>Empieza en minutos.'
+          : 'Software profesional para talleres de motos.<br>Empieza en minutos.'}</div>
       </div>
       <div class="auth-form">
         <div class="auth-inner">
-          <h1>Registra tu taller</h1>
-          <p class="subtitle">Creas el taller y tu usuario administrador. Después podrás sumar a tu equipo.</p>
+          <h1>Registra ${almacen ? 'tu almacén' : 'tu taller'}</h1>
+          <p class="subtitle">${almacen
+            ? 'Creas el almacén y tu usuario administrador. Después podrás sumar a tu equipo.'
+            : 'Creas el taller y tu usuario administrador. Después podrás sumar a tu equipo.'}</p>
           <div class="card">
             <div class="card-body">
               <div id="register-error"></div>
@@ -146,14 +157,15 @@ export async function registerView() {
                   placeholder: 'TM1....',
                   hint: 'Te lo entregó quien te dio el software. Cópialo completo.' }) : ''}
                 <p class="small muted" style="margin-bottom:14px">
-                  ${location.hostname.startsWith('almacen.')
+                  ${almacen
                     ? 'Vas a registrar un <b>almacén de repuestos y accesorios</b>.'
                     : 'Vas a registrar un <b>taller de reparación</b>.'}
-                  ${location.hostname.startsWith('almacen.')
+                  ${almacen
                     ? ' ¿Tienes un taller de reparación? Entra por el dominio de taller — son dos plataformas aparte.'
                     : ' ¿Tienes un almacén de repuestos? Regístrate en almacen.ridera.com.co — son dos plataformas aparte.'}
                 </p>
-                ${field('workshop_name', 'Nombre del taller o almacén', { required: true, placeholder: 'Taller Motos del Sur' })}
+                ${field('workshop_name', almacen ? 'Nombre del almacén' : 'Nombre del taller',
+                  { required: true, placeholder: almacen ? 'Repuestos del Sur' : 'Taller Motos del Sur' })}
                 <div class="row">
                   ${field('city', 'Ciudad', { placeholder: 'Medellín' })}
                   ${field('phone', 'Teléfono', { type: 'tel', placeholder: '+57 300 000 0000' })}
@@ -169,7 +181,7 @@ export async function registerView() {
                     ${field('password2', 'Repite la contraseña', { type: 'password', required: true })}
                   </div>
                 </fieldset>
-                <button type="submit" class="btn btn-primary btn-block">Crear mi taller</button>
+                <button type="submit" class="btn btn-primary btn-block">${crearTexto}</button>
               </form>
             </div>
           </div>
