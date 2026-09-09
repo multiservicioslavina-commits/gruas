@@ -7,6 +7,7 @@ const puesta = (nombre: string) => (Deno.env.get(nombre) ?? "").trim().length > 
 const ESPERADAS = [
   "ANTHROPIC_API_KEY",
   "OPENAI_API_KEY",
+  "VOYAGE_API_KEY",
   "ELEVENLABS_API_KEY",
   "ELEVENLABS_VOICE_ID",
   "WHATSAPP_TOKEN",
