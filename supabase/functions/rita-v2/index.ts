@@ -773,7 +773,7 @@ Deno.serve(async (req: Request) => {
     const signature = req.headers.get("x-hub-signature-256") || "";
 
     // Validar que el webhook viene realmente de Meta (no en modo prueba)
-    if (!rawBody.includes('"test":true')) {
+    if (!/"test"\s*:\s*true/.test(rawBody)) {
       if (!await validarSignatura(rawBody, signature)) {
         console.warn("Firma HMAC invalida:", signature.slice(0, 20) + "...");
         return json({ ok: false, error: "invalid_signature" }, 401);

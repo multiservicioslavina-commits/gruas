@@ -11,34 +11,35 @@ import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const WP_API = "https://ridera.com.co/wp-json/wp/v2";
-const VOYAGE_API_KEY = (Deno.env.get("VOYAGE_API_KEY") ?? "").trim();
 const OPENAI_KEY = (Deno.env.get("OPENAI_API_KEY") ?? "").trim();
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
 
-async function embedQueryVoyage(query: string): Promise<number[] | null> {
-  if (!VOYAGE_API_KEY) return null;
+// Misma clave de Voyage AI que usan wp-content-sync y rita-whatsapp (Supabase
+// Vault, secreto 'voyage_api_key') -- no una variable de entorno separada.
+// Esto es deliberado: ridera_content solo tiene embeddings de Voyage
+// (columna vector(1024)), asi que un unico secreto compartido evita que las
+// dos rutas queden desincronizadas.
+let cachedVoyageKey: string | null = null;
+async function getVoyageKey(): Promise<string | null> {
+  if (cachedVoyageKey) return cachedVoyageKey;
   try {
-    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
-      method: "POST",
-      headers: { Authorization: `Bearer ${VOYAGE_API_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ input: [query], model: "voyage-3", input_type: "query" }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.data?.[0]?.embedding ?? null;
+    const { data } = await supabase.rpc("get_vault_secret", { secret_name: "voyage_api_key" });
+    cachedVoyageKey = (data as string) || null;
+    return cachedVoyageKey;
   } catch {
     return null;
   }
 }
 
-async function embedQueryOpenAI(query: string): Promise<number[] | null> {
-  if (!OPENAI_KEY) return null;
+async function embedQueryVoyage(query: string): Promise<number[] | null> {
+  const apiKey = await getVoyageKey();
+  if (!apiKey) return null;
   try {
-    const res = await fetch("https://api.openai.com/v1/embeddings", {
+    const res = await fetch("https://api.voyageai.com/v1/embeddings", {
       method: "POST",
-      headers: { Authorization: `Bearer ${OPENAI_KEY}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ input: query, model: "text-embedding-3-small" }),
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ input: [query], model: "voyage-3", input_type: "query" }),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -872,14 +873,24 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     // un umbral bajo (0.3) dejaba pasar articulos apenas relacionados como si
     // fueran la ruta exacta pedida, y el modelo rellenaba los huecos
     // inventando cifras para sonar completo (caso real: ruta a Guatape).
-    const UMBRAL_MINIMO = 0.45;
+    //
+    // UMBRAL_MINIMO se recalibro a 0.35 tras medir en vivo contra datos
+    // reales: para "fondas en Abejorral", el articulo correcto de la ruta a
+    // Abejorral da similarity 0.4483 -- CON el 0.45 anterior ese resultado
+    // valido quedaba completamente excluido, no solo marcado como debil.
+    // CONFIANZA_ALTA se deja igual: sigue siendo la barra de "esto es lo que
+    // pidieron" y no hay evidencia de que este mal calibrada.
+    const UMBRAL_MINIMO = 0.35;
     const CONFIANZA_ALTA = 0.6;
 
-    // Búsqueda semántica dual: Voyage AI + OpenAI
-    const [voyageEmbedding, openaiEmbedding] = await Promise.all([
-      embedQueryVoyage(consulta),
-      embedQueryOpenAI(consulta),
-    ]);
+    // Busqueda semantica sobre ridera_content, que solo tiene embeddings de
+    // Voyage (columna vector(1024)) -- antes se intentaba tambien con un
+    // embedding de OpenAI (1536 dim) como "respaldo", pero esa llamada
+    // siempre fallaba con "different vector dimensions 1024 and 1536"
+    // (confirmado en vivo) y el catch{} silencioso lo ocultaba. Se quito en
+    // vez de reindexar todo el contenido con dos modelos para un beneficio
+    // que no existe hoy.
+    const voyageEmbedding = await embedQueryVoyage(consulta);
 
     const semanticResults: Record<string, unknown>[] = [];
     const seen = new Set<string>();
@@ -904,23 +915,10 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       }
     };
 
-    // Intenta búsqueda con Voyage AI
     if (voyageEmbedding) {
       try {
         const { data: matches, error } = await supabase.rpc("match_ridera_content", {
           query_embedding: voyageEmbedding,
-          match_count: 5,
-          match_threshold: UMBRAL_MINIMO,
-        });
-        if (!error && matches?.length) agregarResultados(matches);
-      } catch { }
-    }
-
-    // Intenta búsqueda con OpenAI (complementario)
-    if (openaiEmbedding && semanticResults.length < 3) {
-      try {
-        const { data: matches, error } = await supabase.rpc("match_ridera_content", {
-          query_embedding: openaiEmbedding,
           match_count: 5,
           match_threshold: UMBRAL_MINIMO,
         });
