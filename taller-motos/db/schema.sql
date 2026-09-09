@@ -131,8 +131,26 @@ CREATE TABLE IF NOT EXISTS users (
   updated_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS users_email_key ON users (lower(email));
 CREATE INDEX IF NOT EXISTS users_workshop_idx ON users (workshop_id);
+
+-- Taller y almacén son dos plataformas aparte: la misma persona puede tener
+-- una cuenta en su taller y otra en su almacén con el mismo correo, porque
+-- de cara al usuario no son "la misma cuenta" en dos sitios sino dos
+-- productos distintos. Lo que no puede repetirse es el correo DENTRO de la
+-- misma plataforma. business_type se copia del taller/almacén al crear el
+-- usuario (es inmutable, así que nunca se desactualiza) sólo para poder
+-- amarrar el índice único a "por plataforma" en vez de global.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS business_type TEXT;
+UPDATE users u SET business_type = w.business_type
+  FROM workshops w WHERE w.id = u.workshop_id AND u.business_type IS NULL;
+ALTER TABLE users ALTER COLUMN business_type SET NOT NULL;
+ALTER TABLE users DROP CONSTRAINT IF EXISTS users_business_type_check;
+ALTER TABLE users ADD CONSTRAINT users_business_type_check
+  CHECK (business_type IN ('taller', 'almacen'));
+
+DROP INDEX IF EXISTS users_email_key;
+CREATE UNIQUE INDEX IF NOT EXISTS users_email_business_type_key
+  ON users (lower(email), business_type);
 
 -- Llaves de API para integraciones con plataformas externas.
 CREATE TABLE IF NOT EXISTS api_keys (

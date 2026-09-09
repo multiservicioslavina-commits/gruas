@@ -37,14 +37,20 @@ usersRouter.post('/', requireRole(), wrap(async (req, res) => {
     hourly_rate: { type: 'number', min: 0 }
   });
 
-  const exists = await queryOne('SELECT id FROM users WHERE lower(email) = lower($1)', [data.email]);
+  // Igual que en el registro (auth.routes.js): el correo sólo puede
+  // repetirse entre plataformas distintas, no dentro de la misma.
+  const { business_type } = await queryOne(
+    'SELECT business_type FROM workshops WHERE id = $1', [req.auth.workshopId]);
+  const exists = await queryOne(
+    'SELECT id FROM users WHERE lower(email) = lower($1) AND business_type = $2',
+    [data.email, business_type]);
   if (exists) throw conflict('Ese correo ya está registrado');
 
   const row = await queryOne(
-    `INSERT INTO users (workshop_id, name, email, password_hash, role, phone, specialty, hourly_rate)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+    `INSERT INTO users (workshop_id, name, email, password_hash, role, phone, specialty, hourly_rate, business_type)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *`,
     [req.auth.workshopId, data.name, data.email, await hashPassword(data.password),
-     data.role, data.phone || null, data.specialty || null, data.hourly_rate ?? null]);
+     data.role, data.phone || null, data.specialty || null, data.hourly_rate ?? null, business_type]);
   res.status(201).json(publicUser(row));
 }));
 

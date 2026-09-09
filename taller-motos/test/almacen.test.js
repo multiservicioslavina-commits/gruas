@@ -3,6 +3,7 @@
 // repuestos y compatibilidad por marca/modelo/año.
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { randomUUID } from 'node:crypto';
 import { startServer, createWorkshop, makeClient, closePool } from './helpers.js';
 
 const server = await startServer();
@@ -64,6 +65,33 @@ test('cada cuenta sí puede iniciar sesión por su propio dominio', async () => 
   const { email, password } = await createWorkshop(server.url);
   const loginTaller = await makeClient(server.url).post('/api/auth/login', { email, password });
   assert.equal(loginTaller.status, 200);
+});
+
+// Taller y almacén son dos plataformas aparte: no es "la misma cuenta"
+// repetida en dos sitios, así que el mismo correo puede abrir una en cada
+// una. Lo que no puede repetirse es el correo dos veces en la misma.
+test('el mismo correo puede tener una cuenta de taller y otra de almacén', async () => {
+  const email = `dueno-${randomUUID()}@prueba.test`;
+
+  const taller = await createWorkshop(server.url, { email });
+  const almacen = await createWorkshop(server.url, { email, business_type: 'almacen' });
+
+  const workshopTaller = await taller.client.get('/api/workshop');
+  assert.equal(workshopTaller.body.business_type, 'taller');
+  const workshopAlmacen = await almacen.client.get('/api/workshop');
+  assert.equal(workshopAlmacen.body.business_type, 'almacen');
+});
+
+test('el mismo correo no puede repetirse dos veces dentro de la misma plataforma', async () => {
+  const email = `dueno-${randomUUID()}@prueba.test`;
+  await createWorkshop(server.url, { email });
+
+  const anon = makeClient(server.url);
+  const res = await anon.post('/api/auth/register', {
+    workshop_name: 'Otro taller', name: 'Otro dueño', email, password: 'clave-segura-123'
+  });
+  assert.equal(res.status, 409);
+  assert.match(res.body.error, /ya tiene una cuenta/i);
 });
 
 test('dos repuestos del mismo taller no pueden repetir código de barras', async () => {

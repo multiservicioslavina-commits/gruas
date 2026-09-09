@@ -90,7 +90,13 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
     }
   }
 
-  const exists = await queryOne('SELECT id FROM users WHERE lower(email) = lower($1)', [data.email]);
+  // Taller y almacén son dos plataformas aparte: el mismo correo puede
+  // tener una cuenta en cada una (no es "la misma cuenta" repetida), así
+  // que el choque sólo importa dentro de la plataforma que se está
+  // registrando.
+  const exists = await queryOne(
+    'SELECT id FROM users WHERE lower(email) = lower($1) AND business_type = $2',
+    [data.email, data.business_type]);
   if (exists) throw conflict('Ese correo ya tiene una cuenta');
 
   let result;
@@ -126,9 +132,10 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
       }
 
       const { rows: [user] } = await client.query(
-        `INSERT INTO users (workshop_id, email, name, password_hash, role, phone)
-         VALUES ($1, $2, $3, $4, 'admin', $5) RETURNING *`,
-        [workshop.id, data.email, data.name, await hashPassword(data.password), data.phone || null]
+        `INSERT INTO users (workshop_id, email, name, password_hash, role, phone, business_type)
+         VALUES ($1, $2, $3, $4, 'admin', $5, $6) RETURNING *`,
+        [workshop.id, data.email, data.name, await hashPassword(data.password), data.phone || null,
+         data.business_type]
       );
       return { workshop, user };
     });
@@ -143,7 +150,7 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
     if (err?.code === '23505' && err?.constraint === 'workshops_license_id_key') {
       throw conflict(MOTIVOS.usado);
     }
-    if (err?.code === '23505' && err?.constraint === 'users_email_key') {
+    if (err?.code === '23505' && err?.constraint === 'users_email_business_type_key') {
       throw conflict('Ese correo ya tiene una cuenta');
     }
     throw err;
