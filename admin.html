@@ -499,9 +499,59 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             </div>
           </div>
 
+          <!-- CHARTS ROW -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">📈 Riders por semana</div>
+              <canvas id="dashChartRidersWeek" height="180"></canvas>
+            </div>
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">🚗 Grúas por semana</div>
+              <canvas id="dashChartGruasWeek" height="180"></canvas>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">🏆 Funnel de conversión</div>
+              <canvas id="dashChartFunnel" height="180"></canvas>
+            </div>
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">🗺️ Top municipios con sellos</div>
+              <canvas id="dashChartMunicipios" height="180"></canvas>
+            </div>
+          </div>
+
+          <!-- RETENTION ALERTS -->
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1rem;margin-bottom:2rem;">
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">😴 Riders inactivos (+30 días)</div>
+              <div id="dashInactivos" style="font-size:2rem;font-weight:700;color:#f59e0b;">—</div>
+              <div id="dashInactivosDetail" style="font-size:0.8rem;color:var(--mu);margin-top:0.25rem;"></div>
+              <button class="btn-sm" style="margin-top:0.75rem;" onclick="enviarRecordatorioInactivos()" id="btnRecInactivos">📲 Enviar recordatorio WhatsApp</button>
+            </div>
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">📋 SOAT por vencer (30 días)</div>
+              <div id="dashSoat" style="font-size:2rem;font-weight:700;color:#f87171;">—</div>
+              <div id="dashSoatDetail" style="font-size:0.8rem;color:var(--mu);margin-top:0.25rem;"></div>
+              <button class="btn-sm" style="margin-top:0.75rem;" onclick="enviarRecordatorioSoat()" id="btnRecSoat">📲 Recordar vencimiento SOAT</button>
+            </div>
+            <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1.25rem;">
+              <div style="font-size:0.85rem;font-weight:600;margin-bottom:0.75rem;">📋 Tecnomecánica por vencer</div>
+              <div id="dashTecno" style="font-size:2rem;font-weight:700;color:#f87171;">—</div>
+              <div id="dashTecnoDetail" style="font-size:0.8rem;color:var(--mu);margin-top:0.25rem;"></div>
+              <button class="btn-sm" style="margin-top:0.75rem;" onclick="enviarRecordatorioTecno()" id="btnRecTecno">📲 Recordar vencimiento Tecno</button>
+            </div>
+          </div>
+
+          <!-- EXPORT -->
+          <div style="display:flex;gap:0.75rem;margin-bottom:2rem;">
+            <button class="btn-sm" onclick="exportDashboardPDF()" style="border-color:var(--or);color:var(--or);">📄 Exportar Dashboard PDF</button>
+            <button class="btn-sm" onclick="exportDashboardCSV()" style="border-color:var(--or);color:var(--or);">📊 Exportar métricas CSV</button>
+          </div>
+
           <div class="section-header"><h3>⚠️ Alertas</h3></div>
-          <div id="dashboardAlerts" style="background:#f5f5f5;padding:1rem;border-radius:6px;min-height:100px;">
-            <p style="color:#666;font-size:0.9rem;">Cargando alertas...</p>
+          <div id="dashboardAlerts" style="background:var(--s);border:1px solid var(--line);padding:1rem;border-radius:10px;min-height:80px;">
+            <p style="color:var(--mu);font-size:0.9rem;">Cargando alertas...</p>
           </div>
         </div>
 
@@ -3441,6 +3491,174 @@ async function loadDashboard() {
        </div>`;
     }).join('');
   }
+
+  // Load dashboard charts and retention data
+  loadDashboardCharts();
+  loadRetentionData();
+}
+
+const CHART_COLORS = { or: '#E85D20', orLight: 'rgba(232,93,32,0.2)', green: '#4ade80', greenLight: 'rgba(74,222,128,0.2)', blue: '#60a5fa', yellow: '#f59e0b', red: '#f87171', purple: '#a78bfa' };
+const CHART_DEFAULTS = { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#888', font: { size: 11 } } } } };
+
+async function loadDashboardCharts() {
+  const data = await callAdmin({ action: 'dashboard_charts' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+
+  // Riders per week
+  if (data.riders_week) {
+    new Chart(document.getElementById('dashChartRidersWeek'), {
+      type: 'line', data: {
+        labels: data.riders_week.map(r => r.semana),
+        datasets: [{ data: data.riders_week.map(r => r.count), borderColor: CHART_COLORS.or, backgroundColor: CHART_COLORS.orLight, fill: true, tension: 0.3, pointRadius: 3 }]
+      }, options: { ...CHART_DEFAULTS, plugins: { ...CHART_DEFAULTS.plugins, tooltip: { callbacks: { label: c => c.raw + ' riders' } } } }
+    });
+  }
+
+  // Gruas per week
+  if (data.gruas_week) {
+    new Chart(document.getElementById('dashChartGruasWeek'), {
+      type: 'bar', data: {
+        labels: data.gruas_week.map(r => r.semana),
+        datasets: [{ data: data.gruas_week.map(r => r.count), backgroundColor: CHART_COLORS.blue, borderRadius: 4 }]
+      }, options: CHART_DEFAULTS
+    });
+  }
+
+  // Funnel
+  if (data.funnel) {
+    const f = data.funnel;
+    new Chart(document.getElementById('dashChartFunnel'), {
+      type: 'bar', data: {
+        labels: ['Registrados', 'Con sello', 'Activos 30d', 'Referidos'],
+        datasets: [{ data: [f.registrados, f.con_sello, f.activos_30d, f.con_referido], backgroundColor: [CHART_COLORS.or, CHART_COLORS.yellow, CHART_COLORS.green, CHART_COLORS.purple], borderRadius: 4 }]
+      }, options: { ...CHART_DEFAULTS, indexAxis: 'y' }
+    });
+  }
+
+  // Top municipios
+  if (data.top_municipios) {
+    new Chart(document.getElementById('dashChartMunicipios'), {
+      type: 'doughnut', data: {
+        labels: data.top_municipios.map(m => m.nombre),
+        datasets: [{ data: data.top_municipios.map(m => m.count), backgroundColor: [CHART_COLORS.or, CHART_COLORS.blue, CHART_COLORS.green, CHART_COLORS.yellow, CHART_COLORS.purple, CHART_COLORS.red, '#f0abfc', '#67e8f9'] }]
+      }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'right', labels: { color: '#ccc', font: { size: 11 }, padding: 8 } } } }
+    });
+  }
+}
+
+async function loadRetentionData() {
+  const data = await callAdmin({ action: 'retention_alerts' }).catch(() => ({ ok: false }));
+  if (!data.ok) return;
+
+  document.getElementById('dashInactivos').textContent = data.inactivos_count ?? '—';
+  document.getElementById('dashInactivosDetail').textContent = data.inactivos_count > 0 ? `Sin actividad en 30+ días` : 'Todos activos';
+
+  document.getElementById('dashSoat').textContent = data.soat_vencer ?? '—';
+  document.getElementById('dashSoatDetail').textContent = data.soat_vencer > 0 ? `Vencen en los próximos 30 días` : 'Todos al día';
+
+  document.getElementById('dashTecno').textContent = data.tecno_vencer ?? '—';
+  document.getElementById('dashTecnoDetail').textContent = data.tecno_vencer > 0 ? `Vencen en los próximos 30 días` : 'Todos al día';
+}
+
+async function enviarRecordatorioInactivos() {
+  if (!confirm('¿Enviar recordatorio WhatsApp a riders inactivos (+30 días)?')) return;
+  const btn = document.getElementById('btnRecInactivos');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const data = await callAdmin({ action: 'retention_remind', tipo: 'inactivos' }).catch(() => ({ ok: false }));
+  btn.disabled = false; btn.textContent = '📲 Enviar recordatorio WhatsApp';
+  alert(data.ok ? `✓ Recordatorio enviado a ${data.enviados} riders` : 'Error al enviar: ' + (data.error || 'intenta de nuevo'));
+}
+
+async function enviarRecordatorioSoat() {
+  if (!confirm('¿Enviar recordatorio SOAT por vencer a riders?')) return;
+  const btn = document.getElementById('btnRecSoat');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const data = await callAdmin({ action: 'retention_remind', tipo: 'soat' }).catch(() => ({ ok: false }));
+  btn.disabled = false; btn.textContent = '📲 Recordar vencimiento SOAT';
+  alert(data.ok ? `✓ Recordatorio enviado a ${data.enviados} riders` : 'Error al enviar: ' + (data.error || 'intenta de nuevo'));
+}
+
+async function enviarRecordatorioTecno() {
+  if (!confirm('¿Enviar recordatorio tecnomecánica por vencer?')) return;
+  const btn = document.getElementById('btnRecTecno');
+  btn.disabled = true; btn.textContent = 'Enviando...';
+  const data = await callAdmin({ action: 'retention_remind', tipo: 'tecno' }).catch(() => ({ ok: false }));
+  btn.disabled = false; btn.textContent = '📲 Recordar vencimiento Tecno';
+  alert(data.ok ? `✓ Recordatorio enviado a ${data.enviados} riders` : 'Error al enviar: ' + (data.error || 'intenta de nuevo'));
+}
+
+function exportDashboardPDF() {
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF('l', 'mm', 'a4');
+  doc.setFontSize(20);
+  doc.setTextColor(232, 93, 32);
+  doc.text('Ridera CRM — Reporte Dashboard', 15, 20);
+  doc.setFontSize(10);
+  doc.setTextColor(100);
+  doc.text('Generado: ' + new Date().toLocaleString('es-CO'), 15, 28);
+
+  let y = 38;
+  doc.setFontSize(12);
+  doc.setTextColor(40);
+
+  const metrics = [
+    ['Riders', document.getElementById('metricRiders')?.textContent, document.getElementById('metricRidersDetail')?.textContent],
+    ['Sellos', document.getElementById('metricSellos')?.textContent, document.getElementById('metricSellosDetail')?.textContent],
+    ['Grúas', document.getElementById('metricGruas')?.textContent, document.getElementById('metricGruasDetail')?.textContent],
+    ['Chats Rita', document.getElementById('metricRita')?.textContent, document.getElementById('metricRitaDetail')?.textContent],
+    ['Talleres', document.getElementById('metricTalleres')?.textContent, document.getElementById('metricTalleresDetail')?.textContent],
+    ['Almacenes', document.getElementById('metricAlmacenes')?.textContent, document.getElementById('metricAlmacenesDetail')?.textContent],
+    ['Hoteles', document.getElementById('metricHoteles')?.textContent, document.getElementById('metricHotelesDetail')?.textContent],
+    ['Restaurantes', document.getElementById('metricRestaurantes')?.textContent, document.getElementById('metricRestaurantesDetail')?.textContent],
+  ];
+
+  metrics.forEach(([label, val, detail]) => {
+    doc.setFontSize(11);
+    doc.setTextColor(80);
+    doc.text(`${label}: `, 15, y);
+    doc.setTextColor(232, 93, 32);
+    doc.setFontSize(14);
+    doc.text(val || '—', 55, y);
+    if (detail) { doc.setFontSize(9); doc.setTextColor(120); doc.text(detail, 80, y); }
+    y += 8;
+  });
+
+  y += 5;
+  doc.setFontSize(11);
+  doc.setTextColor(40);
+  doc.text('Retención:', 15, y); y += 6;
+  doc.setFontSize(10);
+  doc.setTextColor(80);
+  doc.text(`Riders inactivos (+30d): ${document.getElementById('dashInactivos')?.textContent || '—'}`, 20, y); y += 6;
+  doc.text(`SOAT por vencer: ${document.getElementById('dashSoat')?.textContent || '—'}`, 20, y); y += 6;
+  doc.text(`Tecnomecánica por vencer: ${document.getElementById('dashTecno')?.textContent || '—'}`, 20, y);
+
+  doc.save('Ridera_CRM_Dashboard_' + new Date().toISOString().slice(0, 10) + '.pdf');
+}
+
+function exportDashboardCSV() {
+  const rows = [['Métrica', 'Valor', 'Detalle']];
+  const ids = [
+    ['Riders', 'metricRiders', 'metricRidersDetail'],
+    ['Sellos', 'metricSellos', 'metricSellosDetail'],
+    ['Grúas', 'metricGruas', 'metricGruasDetail'],
+    ['Chats Rita', 'metricRita', 'metricRitaDetail'],
+    ['Talleres', 'metricTalleres', 'metricTalleresDetail'],
+    ['Almacenes', 'metricAlmacenes', 'metricAlmacenesDetail'],
+    ['Hoteles', 'metricHoteles', 'metricHotelesDetail'],
+    ['Restaurantes', 'metricRestaurantes', 'metricRestaurantesDetail'],
+    ['Inactivos 30d', 'dashInactivos', 'dashInactivosDetail'],
+    ['SOAT por vencer', 'dashSoat', 'dashSoatDetail'],
+    ['Tecno por vencer', 'dashTecno', 'dashTecnoDetail'],
+  ];
+  ids.forEach(([label, valId, detId]) => {
+    rows.push([label, document.getElementById(valId)?.textContent || '', document.getElementById(detId)?.textContent || '']);
+  });
+  const csv = rows.map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'Ridera_CRM_Metricas_' + new Date().toISOString().slice(0, 10) + '.csv';
+  a.click();
 }
 
 // ── CONVERSACIONES RITA ────────────────────────────────────────────────

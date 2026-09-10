@@ -218,7 +218,7 @@ Deno.serve(async (req) => {
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
       'survey_create', 'survey_list', 'survey_results', 'set_tags',
-      'reserva_update_estado',
+      'reserva_update_estado', 'retention_remind',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1034,6 +1034,142 @@ Deno.serve(async (req) => {
       }
       logAudit(auth.username!, 'reserva_update_estado', { id, estado })
       return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ── DASHBOARD CHARTS ──────────────────────────────────────────────
+    if (action === 'dashboard_charts') {
+      const now = new Date()
+      const weeks8ago = new Date(now.getTime() - 8 * 7 * 86400000).toISOString()
+
+      // Riders per week (last 8 weeks)
+      const { data: ridersAll } = await sbClient.from('riders').select('created_at').gte('created_at', weeks8ago).order('created_at')
+      const ridersWeekMap: Record<string, number> = {}
+      for (const r of ridersAll || []) {
+        const d = new Date(r.created_at)
+        const monday = new Date(d); monday.setDate(d.getDate() - d.getDay() + 1)
+        const key = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}`
+        ridersWeekMap[key] = (ridersWeekMap[key] || 0) + 1
+      }
+      const riders_week = Object.entries(ridersWeekMap).map(([semana, count]) => ({ semana, count }))
+
+      // Gruas per week
+      const { data: gruasAll } = await sbClient.from('solicitudes').select('created_at').gte('created_at', weeks8ago).order('created_at')
+      const gruasWeekMap: Record<string, number> = {}
+      for (const g of gruasAll || []) {
+        const d = new Date(g.created_at)
+        const monday = new Date(d); monday.setDate(d.getDate() - d.getDay() + 1)
+        const key = `${String(monday.getDate()).padStart(2, '0')}/${String(monday.getMonth() + 1).padStart(2, '0')}`
+        gruasWeekMap[key] = (gruasWeekMap[key] || 0) + 1
+      }
+      const gruas_week = Object.entries(gruasWeekMap).map(([semana, count]) => ({ semana, count }))
+
+      // Funnel
+      const { count: totalRiders } = await sbClient.from('riders').select('id', { count: 'exact', head: true })
+      const { count: conSello } = await sbClient.from('sellos').select('rider_id', { count: 'exact', head: true })
+      const thirtyAgo = new Date(now.getTime() - 30 * 86400000).toISOString()
+      const { data: activosData } = await sbClient.from('sellos').select('rider_id').gte('created_at', thirtyAgo)
+      const activos30 = new Set((activosData || []).map((s: { rider_id: string }) => s.rider_id)).size
+      const { count: conReferido } = await sbClient.from('referidos').select('id', { count: 'exact', head: true }).eq('estado', 'completado')
+
+      // Top municipios by sellos
+      const { data: sellosWithMuni } = await sbClient.from('sellos').select('municipio_id, municipios(nombre)')
+      const muniCount: Record<string, { nombre: string; count: number }> = {}
+      for (const s of sellosWithMuni || []) {
+        const nombre = (s as any).municipios?.nombre || 'Desconocido'
+        const mid = s.municipio_id
+        if (!muniCount[mid]) muniCount[mid] = { nombre, count: 0 }
+        muniCount[mid].count++
+      }
+      const top_municipios = Object.values(muniCount).sort((a, b) => b.count - a.count).slice(0, 8)
+
+      return new Response(JSON.stringify({
+        ok: true,
+        riders_week,
+        gruas_week,
+        funnel: { registrados: totalRiders || 0, con_sello: conSello || 0, activos_30d: activos30, con_referido: conReferido || 0 },
+        top_municipios,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ── RETENTION ALERTS ──────────────────────────────────────────────
+    if (action === 'retention_alerts') {
+      const now = new Date()
+      const thirtyAgo = new Date(now.getTime() - 30 * 86400000).toISOString()
+      const thirtyFromNow = new Date(now.getTime() + 30 * 86400000).toISOString().slice(0, 10)
+      const today = now.toISOString().slice(0, 10)
+
+      // Riders inactivos: registered but no sello in 30 days and no WhatsApp in 30 days
+      const { data: allRiderIds } = await sbClient.from('riders').select('id')
+      const { data: activeSellos } = await sbClient.from('sellos').select('rider_id').gte('created_at', thirtyAgo)
+      const activeSet = new Set((activeSellos || []).map(s => s.rider_id))
+      const inactivosCount = (allRiderIds || []).filter(r => !activeSet.has(r.id)).length
+
+      // SOAT por vencer
+      const { count: soatVencer } = await sbClient.from('riders').select('id', { count: 'exact', head: true })
+        .gte('soat_vencimiento', today).lte('soat_vencimiento', thirtyFromNow)
+
+      // Tecnomecánica por vencer
+      const { count: tecnoVencer } = await sbClient.from('riders').select('id', { count: 'exact', head: true })
+        .gte('tecno_vencimiento', today).lte('tecno_vencimiento', thirtyFromNow)
+
+      return new Response(JSON.stringify({
+        ok: true,
+        inactivos_count: inactivosCount,
+        soat_vencer: soatVencer || 0,
+        tecno_vencer: tecnoVencer || 0,
+      }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
+    }
+
+    // ── RETENTION REMIND (WhatsApp) ───────────────────────────────────
+    if (action === 'retention_remind') {
+      const tipo = body.tipo
+      let riders: { telefono: string; nombre?: string; soat_vencimiento?: string; tecno_vencimiento?: string }[] = []
+
+      if (tipo === 'inactivos') {
+        const thirtyAgo = new Date(Date.now() - 30 * 86400000).toISOString()
+        const { data: allR } = await sbClient.from('riders').select('id, telefono, nombre')
+        const { data: activeS } = await sbClient.from('sellos').select('rider_id').gte('created_at', thirtyAgo)
+        const activeSet = new Set((activeS || []).map(s => s.rider_id))
+        riders = (allR || []).filter(r => !activeSet.has(r.id) && r.telefono)
+      } else if (tipo === 'soat') {
+        const today = new Date().toISOString().slice(0, 10)
+        const thirtyFromNow = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
+        const { data } = await sbClient.from('riders').select('telefono, nombre, soat_vencimiento')
+          .gte('soat_vencimiento', today).lte('soat_vencimiento', thirtyFromNow).not('telefono', 'is', null)
+        riders = data || []
+      } else if (tipo === 'tecno') {
+        const today = new Date().toISOString().slice(0, 10)
+        const thirtyFromNow = new Date(Date.now() + 30 * 86400000).toISOString().slice(0, 10)
+        const { data } = await sbClient.from('riders').select('telefono, nombre, tecno_vencimiento')
+          .gte('tecno_vencimiento', today).lte('tecno_vencimiento', thirtyFromNow).not('telefono', 'is', null)
+        riders = data || []
+      }
+
+      let enviados = 0
+      for (const r of riders.slice(0, 50)) {
+        const phone = r.telefono.replace(/\D/g, '')
+        if (phone.length < 10) continue
+        const nombre = r.nombre || 'Rider'
+        let msg = ''
+        if (tipo === 'inactivos') {
+          msg = `Hola ${nombre}! 🏍️ Te extrañamos en Ridera. ¿Ya conoces las nuevas rutas? Escríbele a Rita y descubre qué hay de nuevo. ¡Nos vemos en la carretera!`
+        } else if (tipo === 'soat') {
+          msg = `Hola ${nombre}! 📋 Tu SOAT vence el ${r.soat_vencimiento}. No olvides renovarlo a tiempo para rodar tranquilo. Rita te puede ayudar con info de trámites.`
+        } else if (tipo === 'tecno') {
+          msg = `Hola ${nombre}! 🔧 Tu tecnomecánica vence el ${r.tecno_vencimiento}. Renuévala a tiempo para evitar multas. Escríbele a Rita si necesitas ayuda.`
+        }
+        const res = await fetch(`${GRAPH}/${waPhoneId}/messages`, {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${waToken}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ messaging_product: 'whatsapp', to: phone, type: 'text', text: { body: msg } }),
+        }).catch(() => null)
+        if (res?.ok) enviados++
+      }
+
+      logAudit(auth.username!, 'retention_remind', { tipo, enviados, total: riders.length })
+      return new Response(JSON.stringify({ ok: true, enviados, total: riders.length }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
