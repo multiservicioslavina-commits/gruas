@@ -34,9 +34,10 @@ try {
   ]) {
     const email = role === 'admin' ? EMAIL : `${role}@tallerdemo.test`;
     const { rows } = await client.query(
-      `INSERT INTO users (workshop_id, email, name, password_hash, role, specialty)
-       VALUES ($1,$2,$3,$4,$5,$6) RETURNING *`,
-      [workshop.id, email, name, hash, role, role === 'mechanic' ? 'Motor y transmisión' : null]);
+      `INSERT INTO users (workshop_id, email, name, password_hash, role, specialty, business_type)
+       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+      [workshop.id, email, name, hash, role, role === 'mechanic' ? 'Motor y transmisión' : null,
+       workshop.business_type]);
     users[role] = rows[0];
   }
 
