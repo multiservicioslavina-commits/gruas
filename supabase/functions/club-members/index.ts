@@ -12,6 +12,8 @@ const json = (b: unknown, s = 200) => new Response(JSON.stringify(b), { status: 
 const WA_TOKEN = Deno.env.get('WHATSAPP_TOKEN') ?? '';
 const RITA_PHONE = Deno.env.get('RITA_PHONE_ID') ?? '1260857797114684';
 const GRAPH = 'https://graph.facebook.com/v25.0';
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') ?? '';
+const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? 'Ridera <onboarding@resend.dev>';
 
 function normalizePhone(raw: string): string {
   let digits = (raw || '').replace(/\D/g, '');
@@ -168,6 +170,34 @@ async function notificarLider(telefono: string, texto: string): Promise<boolean>
   }
 }
 
+// Aviso por correo al lider (ademas del WhatsApp, que puede fallar fuera de
+// la ventana de 24h de Meta): "mejor esfuerzo" igual, no bloquea la
+// postulacion si el correo no esta configurado o falla el envio.
+async function enviarCorreoPostulacion(
+  to: string,
+  clubNombre: string,
+  postulante: { nombre: string; telefono: string; moto: string },
+): Promise<boolean> {
+  if (!RESEND_API_KEY || !to) return false;
+  try {
+    const html = `<div style="font-family:sans-serif;max-width:480px;margin:auto">
+      <h2>Nueva postulación a ${clubNombre}</h2>
+      <p><b>${postulante.nombre}</b> se postuló desde el directorio de Ridera.</p>
+      <p>WhatsApp: <a href="https://wa.me/${postulante.telefono}">${postulante.telefono}</a></p>
+      ${postulante.moto ? `<p>Moto: ${postulante.moto}</p>` : ''}
+      <p style="color:#888;font-size:13px">— Ridera</p></div>`;
+    const resp = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: RESEND_FROM, to: [to], subject: `Nueva postulación a ${clubNombre}`, html }),
+    });
+    return resp.ok;
+  } catch (e) {
+    console.error('enviarCorreoPostulacion: error', e);
+    return false;
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'Método no soportado' }, 405);
@@ -209,6 +239,45 @@ Deno.serve(async (req: Request) => {
     );
 
     return json({ ok: true, estado: 'solicitado', avisado });
+  }
+
+  // ---------- Publico: postularse a un club desde la tarjeta del directorio ----------
+  // Distinto de 'solicitar': aqui no hay codigo de invitacion, es alguien que
+  // vio el club en ridera.com.co/clubes/ y quiere que el lider lo contacte.
+  // Se guarda en club_postulaciones (no en connect_members, que es acceso al
+  // chat) y se avisa al lider por WhatsApp de la misma forma "mejor esfuerzo".
+  if (action === 'postular') {
+    const clubId = (body.clubId || '').toString();
+    const nombre = (body.nombre || '').toString().trim();
+    const telefono = normalizePhone((body.telefono || '').toString());
+    const motoMarca = (body.motoMarca || '').toString().trim().slice(0, 60);
+    const motoModelo = (body.motoModelo || '').toString().trim().slice(0, 60);
+    const motoCc = (body.motoCc || '').toString().trim().slice(0, 20);
+
+    if (!clubId) return json({ error: 'Falta el club' }, 400);
+    if (nombre.length < 2) return json({ error: 'Escribe tu nombre completo' }, 400);
+    if (telefono.length < 10) return json({ error: 'El teléfono no es válido' }, 400);
+
+    const { data: club } = await sb.from('clubs').select('id,nombre,datos').eq('id', clubId).maybeSingle();
+    if (!club) return json({ error: 'Club no encontrado' }, 404);
+
+    const { data: fila, error } = await sb.from('club_postulaciones').insert({
+      club_id: clubId, nombre, telefono,
+      moto_marca: motoMarca || null, moto_modelo: motoModelo || null, moto_cc: motoCc || null,
+    }).select('id').single();
+    if (error) return json({ error: error.message }, 500);
+
+    const datos = club.datos || {};
+    const lider = normalizePhone(datos.whatsapp || datos.lider_tel || '');
+    const moto = [motoMarca, motoModelo, motoCc].filter(Boolean).join(' ');
+    const avisado = await notificarLider(
+      lider,
+      `🏍️ ${nombre} quiere unirse a ${club.nombre} (desde el directorio de Ridera)\n\nTeléfono: ${telefono}${moto ? `\nMoto: ${moto}` : ''}`,
+    );
+    const avisadoPorCorreo = await enviarCorreoPostulacion(datos.email || '', club.nombre, { nombre, telefono, moto });
+    if (avisado || avisadoPorCorreo) await sb.from('club_postulaciones').update({ avisado: true }).eq('id', fila.id);
+
+    return json({ ok: true, avisado: avisado || avisadoPorCorreo });
   }
 
   // ---------- Publico: entrar al chat con el telefono ----------
@@ -465,6 +534,17 @@ Deno.serve(async (req: Request) => {
   const clubId = await clubIdFromToken(req);
   if (!clubId) return json({ error: 'Sesión no válida. Vuelve a entrar al panel.' }, 401);
 
+  // Postulaciones que llegaron desde la tarjeta del directorio publico. El
+  // aviso por WhatsApp al lider es "mejor esfuerzo" (ventana de 24h de Meta),
+  // asi que el panel tiene que poder mostrarlas igual aunque ese aviso falle.
+  if (action === 'postulaciones') {
+    const { data, error } = await sb.from('club_postulaciones')
+      .select('id, nombre, telefono, moto_marca, moto_modelo, moto_cc, avisado, created_at')
+      .eq('club_id', clubId).order('created_at', { ascending: false }).limit(50);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, postulaciones: data || [] });
+  }
+
   if (action === 'listar') {
     const { data, error } = await sb.from('connect_members')
       .select('*').eq('club_id', clubId).order('created_at', { ascending: false });
@@ -533,6 +613,48 @@ Deno.serve(async (req: Request) => {
     const { error } = await sb.from('clubs').update({ logo_url: logoUrl }).eq('id', clubId);
     if (error) return json({ error: error.message }, 500);
     return json({ ok: true, logoUrl });
+  }
+
+  // Igual que 'logo': el dueño del club no tiene lider_id de Supabase Auth,
+  // asi que la unica forma de guardar la rodada es pasando por aqui con el
+  // token firmado del panel.
+  if (action === 'rodada') {
+    const destino = (body.destino || '').toString().trim().slice(0, 120);
+    const fecha = (body.fecha || '').toString().trim().slice(0, 20);
+    const hora = (body.hora || '').toString().trim().slice(0, 10);
+    const puntoEncuentro = (body.puntoEncuentro || '').toString().trim().slice(0, 160);
+
+    // Mandar destino vacio borra la rodada (vuelve a "por confirmar").
+    const rodada = destino ? { destino, fecha, hora, punto_encuentro: puntoEncuentro } : null;
+    const { error } = await sb.from('clubs').update({ proxima_rodada: rodada }).eq('id', clubId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true, rodada });
+  }
+
+  // Datos de la ficha publica del club en el directorio (ridera.com.co/clubes/):
+  // ciudad va en su propia columna, el resto vive en el jsonb 'datos' para no
+  // seguir agregando columnas por cada campo nuevo que pida el directorio.
+  if (action === 'perfil') {
+    const ciudad = (body.ciudad || '').toString().trim().slice(0, 60);
+    const camposDatos: Record<string, string> = {};
+    const textoCorto: Record<string, number> = {
+      marcas: 200, rutas: 150, miembros: 30, fundacion: 4,
+      instagram: 100, facebook: 150, web: 150,
+      whatsapp: 20, lider: 60, email: 100,
+    };
+    for (const campo of Object.keys(textoCorto)) {
+      if (typeof body[campo] === 'string') camposDatos[campo] = body[campo].toString().trim().slice(0, textoCorto[campo]);
+    }
+    if (typeof body.descripcion === 'string') camposDatos.descripcion = body.descripcion.toString().trim().slice(0, 600);
+
+    const { data: existing } = await sb.from('clubs').select('datos').eq('id', clubId).maybeSingle();
+    const datos = { ...(existing?.datos || {}), ...camposDatos };
+
+    const update: Record<string, unknown> = { datos };
+    if (ciudad) update.ciudad = ciudad;
+    const { error } = await sb.from('clubs').update(update).eq('id', clubId);
+    if (error) return json({ error: error.message }, 500);
+    return json({ ok: true });
   }
 
   if (action === 'rita-preguntas') {

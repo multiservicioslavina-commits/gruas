@@ -54,12 +54,24 @@ Deno.serve(async (req: Request) => {
   const datos = club.datos || {};
   const hasPass = !!datos.admin_pass_hash;
 
+  const tieneWhatsapp = !!(datos.whatsapp || datos.lider_tel);
+
   if (action === 'estado') {
-    return json({ ok: true, clubId: club.id, nombre: club.nombre, codigo: club.codigo, tienePass: hasPass });
+    return json({ ok: true, clubId: club.id, nombre: club.nombre, codigo: club.codigo, tienePass: hasPass, tieneWhatsapp });
   }
 
+  // Antes cualquiera que supiera o adivinara el codigo del club podia "crear"
+  // su clave y quedarse con el panel antes que el lider real. Si el club ya
+  // tiene un WhatsApp registrado, esa verificacion (no esto) es la unica
+  // entrada: que Rita confirme por WhatsApp con handleClubPasswordReset y el
+  // lider complete el link en reset-club -> action 'reset-confirm' abajo.
+  // Solo se permite crear la clave sin ese paso si el club no tiene ningun
+  // telefono registrado (no hay con que verificar).
   if (action === 'set') {
     if (hasPass) return json({ error: 'Este club ya tiene clave. Usa "Cambiar clave".' }, 400);
+    if (tieneWhatsapp) {
+      return json({ error: 'Este club tiene un WhatsApp registrado. Por seguridad, crea tu clave verificándote por ahí (botón "¿Olvidaste tu clave?").' }, 400);
+    }
     if (password.length < 4) return json({ error: 'La clave debe tener al menos 4 caracteres' }, 400);
     const nuevo = { ...datos, admin_pass_hash: await hash(password) };
     const { error } = await sb.from('clubs').update({ datos: nuevo }).eq('id', club.id);
