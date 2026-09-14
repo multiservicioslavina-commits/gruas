@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
-import { TOOL_SCHEMAS, ejecutarHerramienta } from "./tools.ts";
+import { TOOL_SCHEMAS, ejecutarHerramienta, extraerUrls, sanitizarUrls } from "./tools.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -125,7 +125,7 @@ async function llamarClaudeRaw(system: string, messages: Mensaje[]): Promise<Rec
       "anthropic-version": "2023-06-01",
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1024, system, tools: TOOL_SCHEMAS, messages }),
+    body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1024, temperature: 0.1, system, tools: TOOL_SCHEMAS, messages }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return await res.json();
@@ -185,6 +185,7 @@ async function llamarOpenAIRaw(system: string, messages: Mensaje[]): Promise<Rec
       messages: mensajesAOpenAI(system, messages),
       tools: schemasOpenAI(),
       tool_choice: "auto",
+      temperature: 0.1,
     }),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -224,9 +225,10 @@ async function ejecutarConversacion(
   messagesIniciales: Mensaje[],
   phone: string,
   tipoAuditoria: "normal" | "fallback" | "comparacion",
-): Promise<{ texto: string; herramientasUsadas: string[] }> {
+): Promise<{ texto: string; herramientasUsadas: string[]; urlsHerramientas: string[] }> {
   const messages: Mensaje[] = [...messagesIniciales];
   const herramientasUsadas: string[] = [];
+  const urlsHerramientas = new Set<string>();
   let huboHerramientas = false;
   let tokensEntrada = 0;
   let tokensSalida = 0;
@@ -244,7 +246,7 @@ async function ejecutarConversacion(
 
     if (stop_reason !== "tool_use") {
       await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
-      return { texto: textoDe(bloques), herramientasUsadas };
+      return { texto: textoDe(bloques), herramientasUsadas, urlsHerramientas: [...urlsHerramientas] };
     }
 
     huboHerramientas = true;
@@ -259,11 +261,14 @@ async function ejecutarConversacion(
         content: await ejecutarHerramienta(String(llamada.name), (llamada.input ?? {}) as Record<string, never>, phone),
       })),
     );
+    for (const r of resultados) {
+      for (const url of extraerUrls(r.content)) urlsHerramientas.add(url);
+    }
     messages.push({ role: "user", content: resultados as Bloque[] });
   }
 
   await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
-  return { texto: "", herramientasUsadas };
+  return { texto: "", herramientasUsadas, urlsHerramientas: [...urlsHerramientas] };
 }
 
 // ─── Revisor ────────────────────────────────────────────────────
@@ -308,7 +313,7 @@ export async function responderConOrquestador(
   messages: Mensaje[],
   phone: string,
 ): Promise<string> {
-  let resultado: { texto: string; herramientasUsadas: string[] };
+  let resultado: { texto: string; herramientasUsadas: string[]; urlsHerramientas: string[] };
   let proveedorPrimario: "claude" | "openai" = "openai";
 
   // 1) Intento primario: OpenAI (gpt-4o-mini con Function Calling).
@@ -336,10 +341,15 @@ export async function responderConOrquestador(
 
   if (!resultado.texto) return "";
 
+  // Las URLs que de verdad devolvieron las herramientas esta ronda son las
+  // unicas que la respuesta final puede citar tal cual; cualquier otra URL
+  // se reemplaza por el dominio raiz antes de que salga por WhatsApp.
+  const urlsConfirmadas = new Set(resultado.urlsHerramientas);
+
   const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
     || esTemaCriticoPorTexto(messages);
   // Para comparacion critica se necesita Claude como segundo revisor
-  if (!esCritico || !ANTHROPIC_KEY) return resultado.texto;
+  if (!esCritico || !ANTHROPIC_KEY) return sanitizarUrls(resultado.texto, urlsConfirmadas);
 
   // 2) Comparacion: solo para temas criticos. Generamos una segunda
   // respuesta con Claude y dejamos que un revisor elija o funda la
@@ -347,7 +357,8 @@ export async function responderConOrquestador(
   try {
     const proveedorSecundario: "claude" | "openai" = proveedorPrimario === "openai" ? "claude" : "openai";
     const segundo = await ejecutarConversacion(proveedorSecundario, system, messages, phone, "comparacion");
-    if (!segundo.texto) return resultado.texto;
+    if (!segundo.texto) return sanitizarUrls(resultado.texto, urlsConfirmadas);
+    for (const url of segundo.urlsHerramientas) urlsConfirmadas.add(url);
 
     // borrador A = Claude (para que el revisor (Claude) no se favorezca a si mismo)
     const [borradorA, borradorB] = proveedorSecundario === "claude"
@@ -355,9 +366,9 @@ export async function responderConOrquestador(
       : [resultado.texto, segundo.texto];
 
     const revision = await revisarYFundir(borradorA, borradorB, phone);
-    return revision.texto || resultado.texto;
+    return sanitizarUrls(revision.texto || resultado.texto, urlsConfirmadas);
   } catch (e) {
     console.error("Comparacion omitida por fallo en Claude:", e);
-    return resultado.texto;
+    return sanitizarUrls(resultado.texto, urlsConfirmadas);
   }
 }

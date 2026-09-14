@@ -1795,3 +1795,48 @@ export async function estadoConsentimiento(phone: string): Promise<{ registrado:
   if (!data) return { registrado: false, acepta: false };
   return { registrado: true, acepta: data.acepta };
 }
+
+// ─── Sanitizador de URLs: evita que Rita invente slugs de rutas ─
+// El modelo a veces redacta un link "parecido" a uno real (ej. inventa
+// /rutas/loop-suroeste-clasico/) aunque el prompt le diga que no invente.
+// Defensa en profundidad: cualquier URL en la respuesta final que NO haya
+// salido literal de una herramienta (buscar_ruta, buscar_en_ridera, etc.)
+// se reemplaza por el dominio raiz. Los dominios pelados (sin path) siempre
+// se dejan pasar porque son válidos por definición.
+const DOMINIOS_RIDERA_PERMITIDOS = new Set([
+  "ridera.com.co",
+  "gruas.ridera.com.co",
+  "club.ridera.com.co",
+  "admin.ridera.com.co",
+]);
+
+const REGEX_URL = /https?:\/\/[^\s)\]<>"']+/g;
+
+// Recolecta las URLs que aparecen tal cual en un texto (usado sobre el
+// resultado crudo de cada herramienta, para saber cuales son "confirmadas").
+export function extraerUrls(texto: string): string[] {
+  const matches = texto.match(REGEX_URL) ?? [];
+  return matches.map(m => m.replace(/[.,;:!?)\]]+$/, ""));
+}
+
+// Reemplaza cualquier URL de la respuesta final que no este en
+// `urlsConfirmadas` (las que de verdad devolvio una herramienta esta
+// ronda) y que tampoco sea un dominio raiz conocido de Ridera.
+export function sanitizarUrls(texto: string, urlsConfirmadas: Iterable<string>): string {
+  const confirmadas = new Set(urlsConfirmadas);
+  return texto.replace(REGEX_URL, (bruta) => {
+    const trailing = bruta.match(/[.,;:!?)\]]+$/)?.[0] ?? "";
+    const limpia = trailing ? bruta.slice(0, -trailing.length) : bruta;
+    if (confirmadas.has(limpia)) return bruta;
+
+    try {
+      const u = new URL(limpia);
+      const host = u.hostname.replace(/^www\./, "");
+      const esDominioRidera = DOMINIOS_RIDERA_PERMITIDOS.has(host);
+      const esRaiz = u.pathname === "" || u.pathname === "/";
+      if (esDominioRidera && esRaiz) return bruta;
+    } catch { /* URL malformada: cae al reemplazo generico de abajo */ }
+
+    return "https://ridera.com.co" + trailing;
+  });
+}

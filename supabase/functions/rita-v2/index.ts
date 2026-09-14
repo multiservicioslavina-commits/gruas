@@ -9,7 +9,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
+import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 
@@ -408,6 +408,21 @@ REGLA ABSOLUTA - NO INVENTAR:
   nombres de talleres o de rutas: si no vino de una herramienta, no lo digas.
 - Un dato falso hace mas dano que un "no se". Prefiere siempre el "no se".
 
+REGLA DURA DE URLs - CERO EXCEPCIONES:
+- NUNCA armes ni adivines una URL concatenando palabras (ej. "ridera.com.co/rutas/
+  loop-suroeste-clasico/"). Eso no existe hasta que una herramienta te lo devuelva
+  literal.
+- Solo puedes escribir una URL si aparecio TAL CUAL, caracter por caracter, en el
+  resultado de una herramienta (buscar_ruta, buscar_en_ridera, info_tramites) o en
+  los enlaces oficiales fijos de mas abajo.
+- Si quieres mencionar un link y no tienes uno confirmado a la mano, usa
+  "https://ridera.com.co" a secas. Nunca completes el dominio con un path que no
+  copiaste de una herramienta.
+- Esta regla tiene ademas un filtro automatico despues de que escribes: cualquier
+  URL que no haya salido de una herramienta se reemplaza sola por el dominio raiz
+  antes de llegar al rider. Aun asi, no confies en ese filtro para "adivinar bien":
+  simplemente no inventes ninguna.
+
 JERARQUIA ESTRICTA DE FUENTES (respetala en este orden, sin saltarte pasos):
   1. Base interna Ridera / Supabase: buscar_ruta, buscar_en_ridera, mi_perfil,
      directorio_talleres. Son la fuente de mayor confianza.
@@ -563,6 +578,7 @@ async function llamarClaude(system: string, messages: Mensaje[]): Promise<Record
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 1024,
+      temperature: 0.1,
       system,
       tools: TOOL_SCHEMAS,
       messages,
@@ -597,6 +613,7 @@ async function responder(
   ];
 
   let huboHerramientas = false;
+  const urlsHerramientas = new Set<string>();
 
   for (let ronda = 0; ronda < MAX_TOOL_ROUNDS; ronda++) {
     const respuesta = await llamarClaude(system, messages);
@@ -604,7 +621,7 @@ async function responder(
 
     if (respuesta.stop_reason !== "tool_use") {
       const texto = textoDe(bloques);
-      if (texto) return texto;
+      if (texto) return sanitizarUrls(texto, urlsHerramientas);
       if (!huboHerramientas) return "";
       // Cerro sin escribir nada, cosa que suele pasar despues de ejecutar
       // una accion. El rider quedaria sin respuesta, asi que se le pide el
@@ -613,7 +630,7 @@ async function responder(
         `${system}\n\nYa ejecutaste lo que hacia falta. Escribe ahora la respuesta para el rider y confirmale en una linea lo que hiciste.`,
         messages,
       );
-      return textoDe((cierre.content ?? []) as Bloque[]);
+      return sanitizarUrls(textoDe((cierre.content ?? []) as Bloque[]), urlsHerramientas);
     }
 
     huboHerramientas = true;
@@ -631,6 +648,9 @@ async function responder(
         ),
       })),
     );
+    for (const r of resultados) {
+      for (const url of extraerUrls(r.content)) urlsHerramientas.add(url);
+    }
 
     messages.push({ role: "user", content: resultados as Bloque[] });
   }
@@ -640,7 +660,7 @@ async function responder(
     system + "\n\nYa consultaste suficientes herramientas. Responde ahora con lo que tienes, sin llamar mas.",
     messages,
   );
-  return textoDe((cierre.content ?? []) as Bloque[]);
+  return sanitizarUrls(textoDe((cierre.content ?? []) as Bloque[]), urlsHerramientas);
 }
 
 // ─── Orquestador de IA (Claude + OpenAI): activo por defecto ────
