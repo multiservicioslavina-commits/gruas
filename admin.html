@@ -14,6 +14,8 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
   <meta name="robots" content="noindex">
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+  <!-- LIBRERIA XLSX PARA PROCESAR EXCEL / CSV -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
@@ -87,12 +89,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     }
 
     .content-area { flex: 1; min-width: 0; overflow-x: hidden; }
-
     .container { max-width: 1040px; margin: 0 auto; padding: 1.5rem 1rem 3rem; }
     .page-title { font-size: 1.3rem; font-weight: 700; margin-bottom: 0.25rem; }
     .page-sub { color: var(--mu); font-size: 0.875rem; margin-bottom: 1.5rem; }
 
-    /* Mobile sidebar: horizontal scrollable strip */
     @media (max-width: 768px) {
       .admin-layout { flex-direction: column; }
       .sidebar {
@@ -126,17 +126,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .metric-value { font-size: 2.2rem; font-weight: 700; color: var(--or); margin-bottom: 0.35rem; }
     .metric-sub { font-size: 0.75rem; color: var(--mu); }
 
-    /* PIPELINE BUTTONS */
     .pipeline-btn { padding: 0.35rem 0.65rem; font-size: 0.7rem; border: 1px solid var(--line); background: transparent; color: var(--mu); border-radius: 4px; cursor: pointer; border-left: 3px solid #888; transition: all 0.15s; }
     .pipeline-btn:hover { border-color: var(--or); color: var(--text); }
     .pipeline-btn.active { background: rgba(232,93,32,0.1); border-color: var(--or); color: var(--or); font-weight: 600; }
 
-    /* TABS (kept for any inner use, but main tabs replaced by sidebar) */
     .tabs { display: flex; gap: 0; border-bottom: 1px solid var(--line); margin-bottom: 1.5rem; }
     .tab-btn { padding: 0.65rem 1.2rem; font-size: 0.875rem; font-weight: 600; background: none; border: none; color: var(--mu); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s, border-color 0.15s; }
     .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
 
-    /* SOLICITUDES */
     .sol-stats { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; }
     .sol-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
     .sol-card { background: var(--s); border: 1px solid var(--line); border-radius: 10px; padding: 1rem 1.25rem; }
@@ -157,7 +154,6 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .rec-cal { color: #facc15; font-weight: 600; white-space: nowrap; }
     .rec-time { color: var(--mu); white-space: nowrap; }
 
-    /* DISPATCH */
     .dispatch-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
     .dispatch-title { font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mu); }
     .dispatch-refresh { font-size: 0.75rem; color: var(--mu); cursor: pointer; background: none; border: 1px solid var(--line); border-radius: 6px; padding: 0.25rem 0.6rem; }
@@ -311,12 +307,9 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .bc-result.ok { background: #0e2a1a; color: #4ade80; border: 1px solid #1a5c36; }
     .bc-result.err { background: #2a1212; color: #f87171; border: 1px solid #6b1e1e; }
 
-    /* NEW SECTION: section header */
+    /* SECTION HEADER */
     .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem; }
     .section-header h2 { font-size: 1.1rem; font-weight: 700; }
-    .section-loading { color: var(--mu); font-size: 0.85rem; text-align: center; padding: 3rem; }
-
-    /* Thumbnail in tables */
     .tbl-thumb { width: 40px; height: 40px; border-radius: 6px; object-fit: cover; background: var(--s2); }
 
     /* ROLE-BASED UI */
@@ -505,10 +498,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           </div>
         </div>
 
-        <!-- DESPACHO (was Solicitudes) -->
+        <!-- DESPACHO -->
         <div id="tabDespacho" style="display:none">
-
-          <!-- DESPACHO EN VIVO -->
           <div class="dispatch-bar">
             <span class="dispatch-title">📡 Despacho en vivo</span>
             <div style="display:flex;gap:0.5rem;align-items:center">
@@ -557,8 +548,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="stats" id="ghStats" style="margin-bottom:1rem"></div>
             <div class="table-wrap" id="ghTableWrap"></div>
           </div>
-
-        </div><!-- /tabDespacho -->
+        </div>
 
         <!-- SELLOS -->
         <div id="tabSellos" style="display:none">
@@ -579,39 +569,37 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="sellosBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabSellos -->
+        </div>
 
         <!-- GRUEROS TAB -->
         <div id="tabGrueros" style="display:none">
-        <div class="stats" id="statsRow"></div>
-
-        <div class="filters">
-          <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
-          <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
-          <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
-          <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
-          <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
-          <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad..." oninput="renderTable()">
-          <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
+          <div class="stats" id="statsRow"></div>
+          <div class="filters">
+            <button class="filter-btn active" data-f="all" onclick="setFilter('all',this)">Todos</button>
+            <button class="filter-btn warn-active" data-f="pend" onclick="setFilter('pend',this)" id="filterPend">Pendientes</button>
+            <button class="filter-btn" data-f="apro" onclick="setFilter('apro',this)">Aprobados</button>
+            <button class="filter-btn" data-f="on" onclick="setFilter('on',this)">Disponibles</button>
+            <button class="filter-btn" data-f="off" onclick="setFilter('off',this)">No disponibles</button>
+            <input class="search-input" id="searchInput" type="text" placeholder="Buscar nombre, ciudad..." oninput="renderTable()">
+            <button class="btn-export" onclick="exportGruerosCSV()">↓ Exportar CSV</button>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Nombre / Email</th>
+                  <th>Ciudad</th>
+                  <th>Teléfono</th>
+                  <th>Aprobado</th>
+                  <th>Disponible</th>
+                  <th>Registrado</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody"></tbody>
+            </table>
+          </div>
         </div>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>Nombre / Email</th>
-                <th>Ciudad</th>
-                <th>Teléfono</th>
-                <th>Aprobado</th>
-                <th>Disponible</th>
-                <th>Registrado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody id="tbody"></tbody>
-          </table>
-        </div>
-        </div><!-- /tabGrueros -->
 
         <!-- RIDERS -->
         <div id="tabRiders" style="display:none">
@@ -635,7 +623,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="ridersBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabRiders -->
+        </div>
 
         <!-- CLUBS -->
         <div id="tabClubs" style="display:none">
@@ -650,7 +638,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="clubsBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabClubs -->
+        </div>
 
         <!-- MOTOS -->
         <div id="tabMotos" style="display:none">
@@ -671,7 +659,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="motosBody"><tr class="empty-row"><td colspan="7">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabMotos -->
+        </div>
 
         <!-- TALLERES -->
         <div id="tabTalleres" style="display:none">
@@ -694,7 +682,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="talleresBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabTalleres -->
+        </div>
 
         <!-- ALMACENES -->
         <div id="tabAlmacenes" style="display:none">
@@ -717,7 +705,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="almacenesBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabAlmacenes -->
+        </div>
 
         <!-- HOTELES -->
         <div id="tabHoteles" style="display:none">
@@ -740,7 +728,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="hotelesBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabHoteles -->
+        </div>
 
         <!-- RESTAURANTES -->
         <div id="tabRestaurantes" style="display:none">
@@ -763,7 +751,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="restaurantesBody"><tr class="empty-row"><td colspan="6">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabRestaurantes -->
+        </div>
 
         <!-- RITA TAB -->
         <div id="tabRita" style="display:none">
@@ -777,6 +765,33 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <div class="stat"><div class="num" id="rMsgsToday">—</div><div class="lbl">Msgs hoy</div></div>
             <div class="stat"><div class="num blue" id="rMsgsWeek">—</div><div class="lbl">Msgs semana</div></div>
             <div class="stat"><div class="num" id="rMsgsMonth">—</div><div class="lbl">Msgs mes</div></div>
+          </div>
+
+          <!-- IMPORTADOR DE EXCEL / CSV -->
+          <div class="rita-sub" style="color:var(--or)">📥 Cargar Contactos Touring Bikers (CSV / Excel)</div>
+          <div class="bc-form" style="border:1px dashed var(--or);margin-bottom:1.5rem">
+            <div style="font-size:0.8rem;color:var(--mu);margin-bottom:0.75rem">
+              Sube el archivo CSV o Excel exportado. Se limpiarán los teléfonos al formato +57 y se removerá la etiqueta "TBC" del nombre.
+            </div>
+            <div style="display:flex;gap:0.75rem;align-items:center;flex-wrap:wrap">
+              <input type="file" id="rExcelInput" accept=".xlsx,.xls,.csv" style="flex:1;min-width:240px;background:#111;padding:0.5rem;border-radius:6px;border:1px solid var(--line);color:#fff">
+              <button class="bc-send" id="rExcelBtn" type="button" onclick="importarExcelRita()" style="padding:0.55rem 1.25rem">
+                Procesar y Guardar Contactos
+              </button>
+            </div>
+            <div id="rExcelResult" style="display:none;margin-top:0.75rem;padding:0.6rem 0.8rem;border-radius:6px;font-size:0.82rem"></div>
+          </div>
+
+          <!-- DISPARADOR PLANTILLA META DE BIENVENIDA -->
+          <div class="rita-sub" style="color:#4ade80">🚀 Enviar Bienvenida Asistente Rita (Meta Cloud API)</div>
+          <div class="bc-form" style="border:1px solid rgba(74,222,128,0.3);margin-bottom:1.5rem">
+            <div style="font-size:0.8rem;color:var(--mu);margin-bottom:0.75rem">
+              Dispara la plantilla oficial <code>bienvenida_asistente_rita</code> de Meta con el nombre del integrante.
+            </div>
+            <button class="bc-send admin-only" id="btnDispararRitaBienvenida" type="button" onclick="enviarTemplateBienvenidaRita()" style="background:#22c55e">
+              Disparar Template a Contactos Cargados
+            </button>
+            <div id="ritaBienvenidaResult" style="display:none;margin-top:0.75rem;padding:0.6rem 0.8rem;border-radius:6px;font-size:0.82rem"></div>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem">
@@ -866,7 +881,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="bc-form">
             <div class="bc-field">
               <label>Nombre del template (aprobado en Meta)</label>
-              <input type="text" id="bcTemplate" placeholder="ej: promo_talleres">
+              <input type="text" id="bcTemplate" placeholder="ej: bienvenida_asistente_rita">
             </div>
             <div class="bc-field">
               <label>Idioma</label>
@@ -1031,7 +1046,6 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <!-- REPORTES -->
         <div id="tabReportes" style="display:none">
           <div class="section-header"><h2>📈 Reportes y Análisis</h2></div>
-
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-bottom:2rem">
             <div>
               <div style="font-size:0.85rem;font-weight:600;margin-bottom:1rem;color:var(--text)">Riders por mes</div>
@@ -1064,7 +1078,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <button class="btn btn-sm" onclick="exportReportCSV('negocios')">📥 Negocios (CSV)</button>
             <button class="btn btn-sm" onclick="exportReportCSV('sellos')">📥 Sellos (CSV)</button>
           </div>
-        </div><!-- /tabReportes -->
+        </div>
 
         <!-- CRECIMIENTO -->
         <div id="tabCrecimiento" style="display:none">
@@ -1088,7 +1102,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
               <tbody id="cohortesBody"><tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Cargando...</td></tr></tbody>
             </table>
           </div>
-        </div><!-- /tabCrecimiento -->
+        </div>
 
         <!-- RESERVAS -->
         <div id="tabReservas" style="display:none">
@@ -1103,7 +1117,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div id="reservasBody" style="display:flex;flex-direction:column;gap:0.75rem;margin-top:1rem">
             <div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>
           </div>
-        </div><!-- /tabReservas -->
+        </div>
 
         <!-- TIMELINE -->
         <div id="tabTimeline" style="display:none">
@@ -1114,7 +1128,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div id="timelineBody" style="display:flex;flex-direction:column;gap:1rem">
             <div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>
           </div>
-        </div><!-- /tabTimeline -->
+        </div>
 
         <!-- CONVERSACIONES RITA -->
         <div id="tabConversaciones" style="display:none">
@@ -1129,7 +1143,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <thead><tr><th>Teléfono</th><th>Última actividad</th><th>Mensajes</th><th>Tipo</th><th>Acciones</th></tr></thead>
             <tbody id="conversacionesBody"><tr class="empty-row"><td colspan="5">Cargando...</td></tr></tbody>
           </table></div>
-        </div><!-- /tabConversaciones -->
+        </div>
 
       </div>
     </main>
@@ -1230,11 +1244,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </div>
 
 <script>
-const FN_ADMIN  = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
+const FN_ADMIN = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/admin-grueros';
 
 let adminKey = '';
 let allGrueros = [];
 let currentFilter = 'all';
+
+// Contactos en memoria
+window.contactosCargadosRita = [];
 
 function esc(x) {
   return (x == null ? '' : String(x)).replace(/[&<>"]/g,
@@ -1248,7 +1265,6 @@ let solStatsLoaded = false;
 let ritaLoaded = false;
 
 // ── Sidebar navigation ───────────────────────────────────────────────
-
 const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','crecimiento','reservas','timeline','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
@@ -1270,22 +1286,18 @@ const TAB_ID_MAP = {
   rita: 'tabRita',
 };
 
-// Track which sections have been loaded at least once
 const sectionLoaded = {};
 
 function showTab(tab) {
-  // Hide all tab panels
   ALL_TABS.forEach(t => {
     const el = document.getElementById(TAB_ID_MAP[t]);
     if (el) el.style.display = t === tab ? 'block' : 'none';
   });
 
-  // Update sidebar active state
   document.querySelectorAll('.sidebar-item').forEach(item => {
     item.classList.toggle('active', item.dataset.tab === tab);
   });
 
-  // Lazy-load section data
   if (tab === 'dashboard' && !sectionLoaded.dashboard) loadDashboard();
   if (tab === 'conversaciones' && !sectionLoaded.conversaciones) loadConversaciones();
   if (tab === 'reportes' && !sectionLoaded.reportes) loadReportes();
@@ -1319,8 +1331,122 @@ function showTab(tab) {
   }
 }
 
-// ── Solicitudes stats (Despacho) ─────────────────────────────────────
+// ── IMPORTACIÓN EXCEL/CSV TOURING BIKERS ───────────────────────────────
+function importarExcelRita() {
+  const inp = document.getElementById('rExcelInput');
+  const btn = document.getElementById('rExcelBtn');
+  const res = document.getElementById('rExcelResult');
+  res.style.display = 'none';
 
+  if (!inp.files || !inp.files.length) {
+    res.style.display = 'block';
+    res.style.background = '#2a1212';
+    res.style.color = '#f87171';
+    res.textContent = 'Selecciona el archivo Excel o CSV descargado.';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'Leyendo archivo…';
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+      if (!rows.length) throw new Error('El archivo no contiene filas.');
+
+      const contactos = rows.map(r => {
+        const rawName = r['First Name'] || r['Nombre'] || r['Name'] || r['nombre'] || 'Motero';
+        const rawPhone = String(r['Phone 1 - Value'] || r['Telefono'] || r['Phone'] || r['telefono'] || r['Celular'] || '');
+
+        let tel = rawPhone.replace(/\D/g, '');
+        if (tel.length === 10 && tel.startsWith('3')) {
+          tel = '57' + tel;
+        }
+
+        const nombre = rawName.replace(/[-_ ]*tbc[-_ ]*/gi, '').trim() || 'Motero';
+        return { nombre, telefono: tel };
+      }).filter(c => c.telefono.length >= 10);
+
+      window.contactosCargadosRita = contactos;
+      btn.disabled = false;
+      btn.textContent = 'Procesar y Guardar Contactos';
+
+      res.style.display = 'block';
+      res.style.background = '#0e2a1a';
+      res.style.color = '#4ade80';
+      res.innerHTML = `✔ <strong>${contactos.length} contactos</strong> listos en memoria para el envío.`;
+
+      await callAdmin({ action: 'import_contacts', contacts: contactos }).catch(() => {});
+      loadRitaContacts();
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Procesar y Guardar Contactos';
+      res.style.display = 'block';
+      res.style.background = '#2a1212';
+      res.style.color = '#f87171';
+      res.textContent = 'Error al leer el archivo: ' + err.message;
+    }
+  };
+  reader.readAsArrayBuffer(inp.files[0]);
+}
+
+// ── DISPARO TEMPLATE META: bienvenida_asistente_rita ─────────────────
+async function enviarTemplateBienvenidaRita() {
+  const contactos = window.contactosCargadosRita || [];
+  const res = document.getElementById('ritaBienvenidaResult');
+  const btn = document.getElementById('btnDispararRitaBienvenida');
+  res.style.display = 'none';
+
+  if (!contactos.length) {
+    alert('Primero debes seleccionar y procesar el archivo arriba.');
+    return;
+  }
+
+  if (!confirm(`¿Enviar la plantilla oficial "bienvenida_asistente_rita" a ${contactos.length} contactos de Touring Bikers?`)) {
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = `Enviando a ${contactos.length} contactos...`;
+
+  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
+  let exitosos = 0;
+  let errores = 0;
+
+  for (let i = 0; i < contactos.length; i++) {
+    const c = contactos[i];
+    try {
+      const resp = await callAdmin({
+        action: 'broadcast_single',
+        phone: c.telefono,
+        template: 'bienvenida_asistente_rita',
+        language: 'es_CO',
+        params: [c.nombre]
+      }).catch(() => ({ ok: false }));
+
+      if (resp && (resp.ok || !resp.error)) exitosos++;
+      else errores++;
+    } catch (e) {
+      errores++;
+    }
+    await delay(2500);
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Disparar Template a Contactos Cargados';
+  res.style.display = 'block';
+  res.style.background = '#0e2a1a';
+  res.style.color = '#4ade80';
+  res.innerHTML = `✅ Envíos terminados. Exitosos: <strong>${exitosos}</strong>. Errores: <strong>${errores}</strong>.`;
+  loadRitaAnalytics();
+}
+
+// ── Solicitudes stats (Despacho) ─────────────────────────────────────
 async function loadSolicitudesStats() {
   const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
   if (!data.ok) return;
@@ -1333,7 +1459,6 @@ async function loadSolicitudesStats() {
   document.getElementById('sCal').textContent     = data.avgCal != null ? `⭐ ${data.avgCal}` : '—';
   document.getElementById('sResp').textContent    = data.avgRespuestaMin != null ? `${data.avgRespuestaMin} min` : '—';
 
-  // By estado
   const estadoLabels = { pendiente:'Pendiente', asignada:'En camino', llego:'Llegó', finalizada:'Finalizada' };
   const estadoColors = { pendiente:'#f59e0b', asignada:'#4ade80', llego:'#60a5fa', finalizada:'#9ca3af' };
   const be = data.byEstado || {};
@@ -1344,12 +1469,10 @@ async function loadSolicitudesStats() {
      </div>`
   ).join('');
 
-  // Top municipios
   document.getElementById('muniList').innerHTML = (data.topMunicipios || []).map(m =>
     `<li><span>${esc(m.municipio)}</span><span class="muni-cnt">${m.total}</span></li>`
   ).join('') || '<li style="color:#888">Sin datos</li>';
 
-  // Recientes
   const timelbl = d => {
     const diff = Math.round((Date.now() - new Date(d).getTime()) / 60000);
     if (diff < 60) return `${diff}m`;
@@ -1367,9 +1490,7 @@ async function loadSolicitudesStats() {
   ).join('') || '<p style="color:#888;font-size:0.85rem">Sin solicitudes recientes.</p>';
 }
 
-// ── Live dispatch ────────────────────────────────────────────────────
 let dispatchTimer = null;
-
 function relTime(iso) {
   const diff = Math.round((Date.now() - new Date(iso).getTime()) / 1000);
   if (diff < 60) return `hace ${diff}s`;
@@ -1522,9 +1643,7 @@ async function doLogin() {
     renderStats();
     renderTable();
     document.getElementById('lastUpdated').textContent = 'Actualizado: ' + new Date().toLocaleString('es-CO');
-    // Default to grueros tab on login
     showTab('grueros');
-    // Load dashboard alerts in background so the badge shows regardless of active tab
     loadDashboard();
   } else {
     errEl.style.display = 'block';
@@ -1544,7 +1663,6 @@ function applyRoleUI() {
   if (auditBtn) auditBtn.style.display = adminRole === 'admin' ? '' : 'none';
 }
 
-// ── GESTIÓN DE USUARIOS ──────────────────────────────────────────────────
 async function showUsersModal() {
   document.getElementById('usersModal').classList.remove('hide');
   document.getElementById('usersModalErr').style.display = 'none';
@@ -1603,7 +1721,6 @@ async function deleteAdminUser(username) {
   loadAdminUsers();
 }
 
-// ── AUDITORÍA ────────────────────────────────────────────────────────────
 async function showAuditLogModal() {
   document.getElementById('auditLogModal').classList.remove('hide');
   const box = document.getElementById('auditLogList');
@@ -1652,7 +1769,6 @@ function logout() {
   adminRole = 'admin';
   document.body.classList.remove('role-viewer');
   allGrueros = [];
-  // Reset lazy-load flags
   solStatsLoaded = false;
   ritaLoaded = false;
   Object.keys(sectionLoaded).forEach(k => delete sectionLoaded[k]);
@@ -1704,11 +1820,8 @@ function renderStats() {
     <div class="stat"><div class="num">${ciudades}</div><div class="lbl">Ciudades</div></div>
   `;
 
-  // Highlight pending filter button if there are pending grueros
   const pBtn = document.getElementById('filterPend');
   pBtn.textContent = `Pendientes${pendientes ? ' (' + pendientes + ')' : ''}`;
-
-  // Update sidebar badge
   updateBadge('badgeGrueros', total);
 }
 
@@ -1827,7 +1940,6 @@ async function doDelete(id, nombre, btn) {
   }
 }
 
-// ── Export CSV ───────────────────────────────────────────────────────
 function exportGruerosCSV() {
   const headers = ['Nombre','Ciudad','Teléfono','Email','Aprobado','Disponible','Registrado','Slug'];
   const csv = [headers, ...allGrueros.map(g => [
@@ -1867,7 +1979,6 @@ function downloadCSV(content, filename) {
   URL.revokeObjectURL(a.href);
 }
 
-// ── Historial por gruero ─────────────────────────────────────────────
 function populateGrueroSelect() {
   const sel = document.getElementById('grueroSelect');
   if (!sel || sel.dataset.loaded === 'true') return;
@@ -1946,10 +2057,6 @@ async function doChangePwd() {
   else { errEl.textContent = data.error || 'Error al cambiar la clave.'; errEl.style.display = 'block'; }
 }
 
-// ═══════════════════════════════════════════════════════════════════════
-// RITA — Analytics, Contacts & Broadcasts
-// ═══════════════════════════════════════════════════════════════════════
-
 const FN_RITA = '/.netlify/functions/rita-admin';
 let ritaContactsPage = 0;
 const RITA_PAGE_SIZE = 20;
@@ -1962,8 +2069,6 @@ async function callRita(body) {
   });
   return res.json();
 }
-
-// ── Analytics ──────────────────────────────────────────────────────────
 
 async function loadRitaAnalytics() {
   const data = await callAdmin({ action: 'analytics' }).catch(() => ({ ok: false }));
@@ -2001,25 +2106,8 @@ async function loadBroadcastAudience() {
   }
 }
 
-const INTENT_COLORS = {
-  general: '#E85D20',
-  emergency: '#f87171',
-  taller_search: '#60a5fa',
-  almacen_search: '#a78bfa',
-  pasaporte: '#4ade80',
-  error_report: '#f59e0b',
-  cita: '#f472b6',
-};
-
-const INTENT_LABELS = {
-  general: 'General',
-  emergency: 'Emergencia',
-  taller_search: 'Talleres',
-  almacen_search: 'Almacenes',
-  pasaporte: 'Pasaporte',
-  error_report: 'Error reportado',
-  cita: 'Citas',
-};
+const INTENT_COLORS = { general: '#E85D20', emergency: '#f87171', taller_search: '#60a5fa', almacen_search: '#a78bfa', pasaporte: '#4ade80', error_report: '#f59e0b', cita: '#f472b6' };
+const INTENT_LABELS = { general: 'General', emergency: 'Emergencia', taller_search: 'Talleres', almacen_search: 'Almacenes', pasaporte: 'Pasaporte', error_report: 'Error reportado', cita: 'Citas' };
 
 function renderIntentBars(counts) {
   const el = document.getElementById('ritaIntents');
@@ -2058,10 +2146,7 @@ function renderDayChart(perDay) {
   }).join('');
 }
 
-// ── Contacts ───────────────────────────────────────────────────────────
-
 let ritaSearchTimeout = null;
-
 function searchRitaContacts() {
   clearTimeout(ritaSearchTimeout);
   ritaSearchTimeout = setTimeout(() => { ritaContactsPage = 0; loadRitaContacts(); }, 300);
@@ -2116,8 +2201,6 @@ async function loadRitaContacts() {
   pag.innerHTML = html;
 }
 
-// ── Conversation viewer ────────────────────────────────────────────────
-
 async function openConversation(phone, name) {
   const overlay = document.createElement('div');
   overlay.className = 'conv-overlay';
@@ -2150,8 +2233,6 @@ async function openConversation(phone, name) {
   }).join('');
   body.scrollTop = body.scrollHeight;
 }
-
-// ── Error reports ──────────────────────────────────────────────────────
 
 async function loadErrorReports() {
   const estado = document.getElementById('errorFilter').value;
@@ -2199,8 +2280,6 @@ async function markError(id, estado, btn) {
   loadErrorReports();
 }
 
-// ── Export contacts ────────────────────────────────────────────────────
-
 async function exportRitaContacts() {
   const data = await callAdmin({ action: 'export_contacts' }).catch(() => ({ ok: false }));
   if (!data.ok || !data.contacts) { alert('Error al exportar'); return; }
@@ -2213,10 +2292,8 @@ async function exportRitaContacts() {
     c.opted_in ? 'Sí' : 'No',
     c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '',
   ])].map(r => r.map(v => `"${String(v||'').replace(/"/g,'""')}"`).join(',')).join('\n');
-  downloadCSV('' + csv, `rita-contactos-${new Date().toISOString().slice(0,10)}.csv`);
+  downloadCSV(''+csv, `rita-contactos-${new Date().toISOString().slice(0,10)}.csv`);
 }
-
-// ── Broadcast ──────────────────────────────────────────────────────────
 
 function addBcParam() {
   const container = document.getElementById('bcParams');
@@ -2227,8 +2304,6 @@ function addBcParam() {
     <button onclick="this.parentElement.remove()">✕</button>`;
   container.appendChild(row);
 }
-
-// ── Campañas rápidas ───────────────────────────────────────────────────
 
 async function loadCampanaStats() {
   const data = await callAdmin({ action: 'campana_preview' }).catch(() => ({ ok: false }));
@@ -2252,17 +2327,12 @@ async function enviarCampanaNombre() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'campana_enviar_nombre' }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar plantilla + pedir nombre';
 
   if (data.ok) {
     resultEl.className = 'bc-result ok';
     resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
-    if (data.errorDetails && data.errorDetails.length) {
-      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
-        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
-    }
     loadCampanaStats();
     loadRitaAnalytics();
   } else {
@@ -2271,8 +2341,6 @@ async function enviarCampanaNombre() {
   }
   resultEl.style.display = 'block';
 }
-
-// ── Campaña pedir email ─────────────────────────────────────────────────
 
 async function loadCampanaEmailStats() {
   const data = await callAdmin({ action: 'campana_preview_email' }).catch(() => ({ ok: false }));
@@ -2296,17 +2364,12 @@ async function enviarCampanaEmail() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'campana_enviar_email' }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar plantilla + pedir email';
 
   if (data.ok) {
     resultEl.className = 'bc-result ok';
     resultEl.innerHTML = `Enviados: <strong>${data.sent}</strong> · Errores: <strong>${data.errors}</strong> · Total: ${data.total}`;
-    if (data.errorDetails && data.errorDetails.length) {
-      resultEl.innerHTML += '<br><span style="font-size:0.78rem;opacity:0.7">' +
-        data.errorDetails.map(e => `${esc(e.phone)}: ${esc(e.error)}`).join('<br>') + '</span>';
-    }
     loadCampanaEmailStats();
   } else {
     resultEl.className = 'bc-result err';
@@ -2314,8 +2377,6 @@ async function enviarCampanaEmail() {
   }
   resultEl.style.display = 'block';
 }
-
-// ── Broadcast ──────────────────────────────────────────────────────────
 
 async function sendBroadcast() {
   const template = document.getElementById('bcTemplate').value.trim();
@@ -2354,7 +2415,6 @@ async function sendBroadcast() {
     resultEl.style.display = 'none';
 
     const data = await callAdmin({ action: 'campaign_create', template, language: lang, params, ciudad, mediaUrl, mediaType, scheduledAt }).catch(() => ({ ok: false }));
-
     btn.disabled = false;
     btn.innerHTML = 'Enviar broadcast';
 
@@ -2379,7 +2439,6 @@ async function sendBroadcast() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'broadcast', template, language: lang, params, ciudad, mediaUrl, mediaType }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast';
 
@@ -2423,8 +2482,6 @@ async function cancelCampaign(id) {
   else alert(data.error || 'Error al cancelar.');
 }
 
-// ── Broadcast Telegram ────────────────────────────────────────────────
-
 async function loadTelegramAudience() {
   const data = await callAdmin({ action: 'telegram_audience' }).catch(() => ({ ok: false }));
   document.getElementById('tgAudience').textContent = data.ok ? data.total : '—';
@@ -2448,7 +2505,6 @@ async function sendTelegramBroadcast() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'telegram_broadcast', message }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast Telegram';
 
@@ -2461,8 +2517,6 @@ async function sendTelegramBroadcast() {
   }
   resultEl.style.display = 'block';
 }
-
-// ── Broadcast Facebook / Instagram ─────────────────────────────────────
 
 async function loadMetaAudience() {
   const channel = document.getElementById('metaChannel').value;
@@ -2490,7 +2544,6 @@ async function sendMetaBroadcast() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'meta_broadcast', channel, message }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar broadcast';
 
@@ -2503,8 +2556,6 @@ async function sendMetaBroadcast() {
   }
   resultEl.style.display = 'block';
 }
-
-// ── Encuestas WhatsApp ──────────────────────────────────────────────────
 
 async function sendSurvey() {
   const pregunta = document.getElementById('svQuestion').value.trim();
@@ -2526,7 +2577,6 @@ async function sendSurvey() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'survey_create', pregunta, opciones }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar encuesta';
 
@@ -2569,8 +2619,6 @@ async function loadSurveyResults(id) {
   if (!entries.length) { box.textContent = 'Sin respuestas todavía.'; return; }
   box.innerHTML = entries.map(([label, n]) => `${esc(label)}: <strong>${n}</strong>`).join(' · ') + ` (total: ${data.total})`;
 }
-
-// ── Email Marketing ───────────────────────────────────────────────────
 
 function mdToHtml(text) {
   return text
@@ -2639,7 +2687,6 @@ async function sendEmailCampaign() {
   resultEl.style.display = 'none';
 
   const data = await callAdmin({ action: 'email_send', subject, body_md: body }).catch(() => ({ ok: false }));
-
   btn.disabled = false;
   btn.innerHTML = 'Enviar newsletter';
 
@@ -2667,1363 +2714,6 @@ async function sendEmailTest() {
   const data = await callAdmin({ action: 'email_test', subject, body_md: body, test_email: email }).catch(() => ({ ok: false }));
   if (data.ok) alert('Email de prueba enviado a ' + email);
   else alert(data.error || 'Error al enviar prueba.');
-}
-
-// ═══════════════════════════════════════════════════════════════════════
-// NEW SECTIONS — Sellos, Riders, Clubs, Motos, Talleres, Almacenes
-// ═══════════════════════════════════════════════════════════════════════
-
-// Helper: update sidebar badge
-function updateBadge(id, count) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (count > 0) {
-    el.textContent = count;
-    el.style.display = '';
-  } else {
-    el.style.display = 'none';
-  }
-}
-
-// ── SELLOS ─────────────────────────────────────────────────────────────
-
-let allSellos = [];
-let selloFilter = 'all';
-
-async function loadSellos() {
-  const data = await callAdmin({ action: 'list_sellos' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('sellosBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar sellos.</td></tr>';
-    return;
-  }
-  sectionLoaded.sellos = true;
-  allSellos = data.sellos || [];
-  const pendCount = allSellos.filter(s => !['aprobado','rechazado'].includes((s.estado||'').toLowerCase())).length;
-  updateBadge('badgeSellos', pendCount);
-  renderSellosTable();
-}
-
-function setSelloFilter(f, btn) {
-  selloFilter = f;
-  document.querySelectorAll('#sellosFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderSellosTable();
-}
-
-function renderSellosTable() {
-  let rows = allSellos;
-  if (selloFilter !== 'all') rows = rows.filter(s => (s.estado||'').toLowerCase() === selloFilter);
-
-  const tbody = document.getElementById('sellosBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin sellos que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(s => {
-    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : (s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—');
-    const estadoNorm = (s.estado||'').toLowerCase();
-    const estadoCls = estadoNorm === 'aprobado' ? 'badge-on' : estadoNorm === 'rechazado' ? 'badge-off' : 'badge-pend';
-    const estadoLbl = estadoNorm === 'aprobado' ? '✓ Aprobado' : estadoNorm === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
-    const riderName = s.riders?.nombre || s.rider_id || '—';
-    return `<tr>
-      <td>${esc(riderName)}</td>
-      <td>${esc(s.municipio_id || '—')}</td>
-      <td class="tel">${fecha}</td>
-      <td>${s.en_manada ? '<span class="badge badge-apro">Si</span>' : '<span class="badge badge-off">No</span>'}</td>
-      <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
-      <td>
-        <div class="actions-cell">
-          ${estadoNorm !== 'aprobado' && estadoNorm !== 'rechazado' ? `
-            <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
-            <button class="act-btn del admin-only" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
-          ` : ''}
-          <button class="act-btn del admin-only" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
-          ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-async function updateSello(id, estado, btn) {
-  if (btn) btn.disabled = true;
-  const data = await callAdmin({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
-  if (data.ok) {
-    const s = allSellos.find(x => x.id === id);
-    if (s) s.estado = estado;
-    const pendCount = allSellos.filter(x => !['aprobado','rechazado'].includes((x.estado||'').toLowerCase())).length;
-    updateBadge('badgeSellos', pendCount);
-    renderSellosTable();
-  } else {
-    if (btn) btn.disabled = false;
-    alert('Error: ' + (data.error || 'No se pudo actualizar'));
-  }
-}
-
-// ── RIDERS ─────────────────────────────────────────────────────────────
-
-let allRiders = [];
-
-async function loadRiders() {
-  const data = await callAdmin({ action: 'list_riders' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar riders.</td></tr>';
-    return;
-  }
-  sectionLoaded.riders = true;
-  allRiders = data.riders || [];
-  updateBadge('badgeRiders', allRiders.length);
-  populateRidersCiudadFilter();
-  renderRidersTable();
-}
-
-function populateRidersCiudadFilter() {
-  populateCiudadFilter('ridersCiudadFilter', allRiders);
-}
-
-function populateCiudadFilter(selectId, rows) {
-  const sel = document.getElementById(selectId);
-  if (!sel) return;
-  const current = sel.value;
-  const ciudades = [...new Set(rows.map(r => r.ciudad).filter(Boolean))].sort();
-  sel.innerHTML = '<option value="">Todas las ciudades</option>' +
-    ciudades.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
-  if (ciudades.includes(current)) sel.value = current;
-}
-
-function filterRidersTable() {
-  renderRidersTable();
-}
-
-function renderRidersTable() {
-  const q = (document.getElementById('ridersSearch')?.value || '').toLowerCase();
-  const ciudadFilter = document.getElementById('ridersCiudadFilter')?.value || '';
-  const soatFilter = document.getElementById('ridersSoatFilter')?.checked || false;
-  let rows = allRiders;
-  if (q) rows = rows.filter(r =>
-    (r.nombre||'').toLowerCase().includes(q) ||
-    (r.apellido||'').toLowerCase().includes(q) ||
-    (r.ciudad||'').toLowerCase().includes(q) ||
-    (r.telefono||'').includes(q)
-  );
-  if (ciudadFilter) rows = rows.filter(r => r.ciudad === ciudadFilter);
-  if (soatFilter) rows = rows.filter(r => r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000);
-
-  const tbody = document.getElementById('ridersBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin riders que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(r => {
-    const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
-    const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
-    const soat = r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—';
-    const fecha = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—';
-    // Warn if SOAT expires within 30 days
-    const soatWarn = r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000;
-    return `<tr>
-      <td><strong>${esc(nombre)}</strong>${r.slug ? `<br><span class="tel">${esc(r.slug)}</span>` : ''}</td>
-      <td>${esc(r.ciudad || '—')}</td>
-      <td class="tel">${esc(moto)}</td>
-      <td class="tel">${esc(r.telefono || '—')}</td>
-      <td><span style="${soatWarn ? 'color:#f59e0b;font-weight:600' : ''}">${soat}</span></td>
-      <td class="tel">${fecha}</td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openRiderProfile('${jsq(r.id)}')">👁️ Perfil</button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── CLUBS ──────────────────────────────────────────────────────────────
-
-let allClubs = [];
-
-async function loadClubs() {
-  const data = await callAdmin({ action: 'list_clubs' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('clubsBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar clubs.</td></tr>';
-    return;
-  }
-  sectionLoaded.clubs = true;
-  allClubs = data.clubs || [];
-  updateBadge('badgeClubs', allClubs.length);
-  renderClubsTable();
-}
-
-function renderClubsTable() {
-  const tbody = document.getElementById('clubsBody');
-  if (!allClubs.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin clubs registrados.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = allClubs.map(c => {
-    const apro = !!c.aprobado;
-    return `<tr>
-      <td><strong>${esc(c.nombre || '—')}</strong>${c.logo_url ? ` <img class="tbl-thumb" src="${esc(c.logo_url)}" alt="" style="vertical-align:middle;margin-left:0.5rem">` : ''}</td>
-      <td>${esc(c.ciudad || '—')}</td>
-      <td class="tel">${esc(c.codigo || '—')}</td>
-      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn admin-only ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
-            ${apro ? 'Desaprobar' : '✓ Aprobar'}
-          </button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── MOTOS ──────────────────────────────────────────────────────────────
-
-let allMotos = [];
-let motosFilter = 'all';
-
-async function loadMotos() {
-  const data = await callAdmin({ action: 'list_motos' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('motosBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar motos.</td></tr>';
-    return;
-  }
-  sectionLoaded.motos = true;
-  allMotos = data.motos || [];
-  const pendCount = allMotos.filter(m => !m.aprobado && !m.vendido).length;
-  updateBadge('badgeMotos', pendCount || allMotos.length);
-  renderMotosTable();
-}
-
-function setMotosFilter(f, btn) {
-  motosFilter = f;
-  document.querySelectorAll('#motosFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderMotosTable();
-}
-
-function renderMotosTable() {
-  let rows = allMotos;
-  if (motosFilter === 'pendientes') rows = rows.filter(m => !m.aprobado && !m.vendido);
-  else if (motosFilter === 'aprobadas') rows = rows.filter(m => m.aprobado && !m.vendido);
-  else if (motosFilter === 'vendidas') rows = rows.filter(m => m.vendido);
-
-  const tbody = document.getElementById('motosBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin motos que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(m => {
-    const precio = m.precio ? '$' + Number(m.precio).toLocaleString('es-CO') : '—';
-    const marcaModelo = [m.marca, m.modelo].filter(Boolean).join(' ') || '—';
-    let estadoBadge;
-    if (m.vendido) estadoBadge = '<span class="badge badge-off">Vendida</span>';
-    else if (m.aprobado) estadoBadge = '<span class="badge badge-on">Aprobada</span>';
-    else estadoBadge = '<span class="badge badge-pend">Pendiente</span>';
-
-    return `<tr>
-      <td>${m.foto1_url ? `<img class="tbl-thumb" src="${esc(m.foto1_url)}" alt="">` : '—'}</td>
-      <td><strong>${esc(m.titulo || '—')}</strong>${m.anio ? `<br><span class="tel">${m.anio}</span>` : ''}${m.kilometraje ? ` <span class="tel">${Number(m.kilometraje).toLocaleString('es-CO')} km</span>` : ''}</td>
-      <td>${esc(marcaModelo)}${m.cilindraje ? `<br><span class="tel">${m.cilindraje}cc</span>` : ''}</td>
-      <td style="font-weight:600">${precio}</td>
-      <td>${esc(m.ciudad || '—')}</td>
-      <td>${estadoBadge}</td>
-      <td>
-        <div class="actions-cell">
-          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
-          ${m.aprobado && !m.vendido ? `<button class="act-btn del admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
-          <button class="act-btn admin-only" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── TALLERES ───────────────────────────────────────────────────────────
-
-let allTalleres = [];
-let talleresFilter = 'all';
-
-async function loadTalleres() {
-  const data = await callAdmin({ action: 'list_talleres' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('talleresBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar talleres.</td></tr>';
-    return;
-  }
-  sectionLoaded.talleres = true;
-  allTalleres = data.talleres || [];
-  const pendCount = allTalleres.filter(t => !t.aprobado).length;
-  updateBadge('badgeTalleres', pendCount || allTalleres.length);
-  populateCiudadFilter('talleresCiudadFilter', allTalleres);
-  renderTalleresTable();
-}
-
-function setTalleresFilter(f, btn) {
-  talleresFilter = f;
-  document.querySelectorAll('#talleresFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderTalleresTable();
-}
-
-function renderTalleresTable() {
-  let rows = allTalleres;
-  if (talleresFilter === 'pendientes') rows = rows.filter(t => !t.aprobado);
-  else if (talleresFilter === 'aprobados') rows = rows.filter(t => !!t.aprobado);
-  const ciudadFilter = document.getElementById('talleresCiudadFilter')?.value || '';
-  if (ciudadFilter) rows = rows.filter(t => t.ciudad === ciudadFilter);
-
-  const tbody = document.getElementById('talleresBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin talleres que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(t => {
-    const apro = !!t.aprobado;
-    const estado = t.estado || 'interesado';
-    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
-    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
-
-    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('talleres','${jsq(t.id)}','${e}')">${estadoLabels[e]}</button>`
-    ).join('');
-
-    return `<tr>
-      <td><strong>${esc(t.nombre || '—')}</strong>${t.direccion ? `<br><span class="tel">${esc(t.direccion)}${t.barrio ? ', ' + esc(t.barrio) : ''}</span>` : ''}</td>
-      <td>${esc(t.ciudad || '—')}</td>
-      <td class="tel">${esc(t.telefono || '—')}${t.email ? `<br><span class="tel">${esc(t.email)}</span>` : ''}</td>
-      <td>
-        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
-          ${pipelineOptions}
-        </div>
-      </td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openNotesModal('taller','${jsq(t.id)}','${jsq(t.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── ALMACENES ──────────────────────────────────────────────────────────
-
-let allAlmacenes = [];
-let almacenesFilter = 'all';
-
-async function loadAlmacenes() {
-  const data = await callAdmin({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('almacenesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar almacenes.</td></tr>';
-    return;
-  }
-  sectionLoaded.almacenes = true;
-  allAlmacenes = data.almacenes || [];
-  const pendCount = allAlmacenes.filter(a => !a.aprobado).length;
-  updateBadge('badgeAlmacenes', pendCount || allAlmacenes.length);
-  populateCiudadFilter('almacenesCiudadFilter', allAlmacenes);
-  renderAlmacenesTable();
-}
-
-function setAlmacenesFilter(f, btn) {
-  almacenesFilter = f;
-  document.querySelectorAll('#almacenesFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderAlmacenesTable();
-}
-
-function renderAlmacenesTable() {
-  let rows = allAlmacenes;
-  if (almacenesFilter === 'pendientes') rows = rows.filter(a => !a.aprobado);
-  else if (almacenesFilter === 'aprobados') rows = rows.filter(a => !!a.aprobado);
-  const ciudadFilter = document.getElementById('almacenesCiudadFilter')?.value || '';
-  if (ciudadFilter) rows = rows.filter(a => a.ciudad === ciudadFilter);
-
-  const tbody = document.getElementById('almacenesBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin almacenes que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(a => {
-    const estado = a.estado || 'interesado';
-    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
-    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
-
-    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('almacenes','${jsq(a.id)}','${e}')">${estadoLabels[e]}</button>`
-    ).join('');
-
-    return `<tr>
-      <td><strong>${esc(a.nombre || '—')}</strong>${a.direccion ? `<br><span class="tel">${esc(a.direccion)}${a.barrio ? ', ' + esc(a.barrio) : ''}</span>` : ''}</td>
-      <td>${esc(a.ciudad || '—')}</td>
-      <td class="tel">${esc(a.telefono || '—')}${a.email ? `<br><span class="tel">${esc(a.email)}</span>` : ''}</td>
-      <td>
-        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
-          ${pipelineOptions}
-        </div>
-      </td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openNotesModal('almacen','${jsq(a.id)}','${jsq(a.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── HOTELES ───────────────────────────────────────────────────────────────────
-let allHoteles = [], hotelesFilter = 'all';
-
-async function loadHoteles() {
-  const data = await callRita({ action: 'list_hoteles' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('hotelesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar hoteles.</td></tr>';
-    return;
-  }
-  sectionLoaded.hoteles = true;
-  allHoteles = data.hoteles || [];
-  const pendCount = allHoteles.filter(h => !h.aprobado).length;
-  updateBadge('badgeHoteles', pendCount || allHoteles.length);
-  populateCiudadFilter('hotelesCiudadFilter', allHoteles.map(h => ({ ciudad: h.municipio })));
-  renderHotelesTable();
-}
-
-function setHotelesFilter(f, btn) {
-  hotelesFilter = f;
-  document.querySelectorAll('#hotelesFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderHotelesTable();
-}
-
-function renderHotelesTable() {
-  let rows = allHoteles;
-  if (hotelesFilter === 'pendientes') rows = rows.filter(h => !h.aprobado);
-  else if (hotelesFilter === 'aprobados') rows = rows.filter(h => !!h.aprobado);
-  const ciudadFilter = document.getElementById('hotelesCiudadFilter')?.value || '';
-  if (ciudadFilter) rows = rows.filter(h => h.municipio === ciudadFilter);
-
-  const tbody = document.getElementById('hotelesBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin hoteles que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(h => {
-    const estado = h.estado || 'interesado';
-    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
-    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
-
-    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('hoteles','${jsq(h.id)}','${e}')">${estadoLabels[e]}</button>`
-    ).join('');
-
-    return `<tr>
-      <td><strong>${esc(h.nombre || '—')}</strong></td>
-      <td>${esc(h.municipio || '—')}${h.subregion ? `<br><span class="tel">${esc(h.subregion)}</span>` : ''}</td>
-      <td class="tel">${esc(h.telefono || '—')}${h.email ? `<br><span class="tel">${esc(h.email)}</span>` : ''}</td>
-      <td>${h.parqueadero_motos ? '✓ Sí' : '—'}</td>
-      <td>
-        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
-          ${pipelineOptions}
-        </div>
-      </td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openNotesModal('hotel','${jsq(h.id)}','${jsq(h.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── RESTAURANTES ──────────────────────────────────────────────────────────────
-let allRestaurantes = [], restaurantesFilter = 'all';
-
-async function loadRestaurantes() {
-  const data = await callRita({ action: 'list_restaurantes' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('restaurantesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar restaurantes.</td></tr>';
-    return;
-  }
-  sectionLoaded.restaurantes = true;
-  allRestaurantes = data.restaurantes || [];
-  const pendCount = allRestaurantes.filter(r => !r.aprobado).length;
-  updateBadge('badgeRestaurantes', pendCount || allRestaurantes.length);
-  populateCiudadFilter('restaurantesCiudadFilter', allRestaurantes.map(r => ({ ciudad: r.municipio })));
-  renderRestaurantesTable();
-}
-
-function setRestaurantesFilter(f, btn) {
-  restaurantesFilter = f;
-  document.querySelectorAll('#restaurantesFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderRestaurantesTable();
-}
-
-function renderRestaurantesTable() {
-  let rows = allRestaurantes;
-  if (restaurantesFilter === 'pendientes') rows = rows.filter(r => !r.aprobado);
-  else if (restaurantesFilter === 'aprobados') rows = rows.filter(r => !!r.aprobado);
-  const ciudadFilter = document.getElementById('restaurantesCiudadFilter')?.value || '';
-  if (ciudadFilter) rows = rows.filter(r => r.municipio === ciudadFilter);
-
-  const tbody = document.getElementById('restaurantesBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin restaurantes que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(r => {
-    const estado = r.estado || 'interesado';
-    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
-    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
-
-    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
-      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('restaurantes','${jsq(r.id)}','${e}')">${estadoLabels[e]}</button>`
-    ).join('');
-
-    return `<tr>
-      <td><strong>${esc(r.nombre || '—')}</strong></td>
-      <td>${esc(r.municipio || '—')}${r.subregion ? `<br><span class="tel">${esc(r.subregion)}</span>` : ''}</td>
-      <td class="tel">${esc(r.telefono || '—')}${r.email ? `<br><span class="tel">${esc(r.email)}</span>` : ''}</td>
-      <td>${esc(r.tipo_cocina || '—')}</td>
-      <td>
-        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
-          ${pipelineOptions}
-        </div>
-      </td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openNotesModal('restaurante','${jsq(r.id)}','${jsq(r.nombre || '')}')">📝 Notas</button>
-          <button class="act-btn admin-only" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
-          <button class="act-btn del admin-only" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── SHARED: Toggle approval / reject / edit for talleres, almacenes, clubs, motos ────
-
-function reloadSectionTable(table) {
-  if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
-  else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
-  else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
-  else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
-  else if (table === 'riders') { sectionLoaded.riders = false; loadRiders(); }
-  else if (table === 'sellos') { sectionLoaded.sellos = false; loadSellos(); }
-  else if (table === 'grueros') { reloadList(); }
-  else if (table === 'hoteles') { sectionLoaded.hoteles = false; loadHoteles(); }
-  else if (table === 'restaurantes') { sectionLoaded.restaurantes = false; loadRestaurantes(); }
-}
-
-async function toggleApproval(table, id, aprobado, btn) {
-  if (btn) btn.disabled = true;
-  const data = await callAdmin({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
-  if (data.ok) {
-    reloadSectionTable(table);
-  } else {
-    if (btn) btn.disabled = false;
-    alert('Error: ' + (data.error || 'No se pudo actualizar'));
-  }
-}
-
-async function deleteRecord(table, id, btn) {
-  if (!confirm('¿Borrar este registro permanentemente? Esta acción no se puede deshacer.')) return;
-  if (btn) btn.disabled = true;
-  const data = await callAdmin({ action: 'reject_record', table, id }).catch(() => ({ ok: false }));
-  if (data.ok) {
-    reloadSectionTable(table);
-  } else {
-    if (btn) btn.disabled = false;
-    alert('Error: ' + (data.error || 'No se pudo borrar'));
-  }
-}
-
-const EDIT_FIELDS = {
-  grueros: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'zona', label: 'Zona', type: 'text' },
-  ],
-  riders: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'apellido', label: 'Apellido', type: 'text' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'correo', label: 'Correo', type: 'text' },
-    { key: 'moto_marca', label: 'Marca de moto', type: 'text' },
-    { key: 'moto_modelo', label: 'Modelo de moto', type: 'text' },
-    { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
-  ],
-  clubs: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'codigo', label: 'Código', type: 'text' },
-  ],
-  talleres: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'instagram', label: 'Instagram', type: 'text' },
-    { key: 'direccion', label: 'Dirección', type: 'text' },
-    { key: 'barrio', label: 'Barrio', type: 'text' },
-  ],
-  almacenes: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'direccion', label: 'Dirección', type: 'text' },
-    { key: 'barrio', label: 'Barrio', type: 'text' },
-    { key: 'categorias', label: 'Categorías', type: 'text' },
-  ],
-  motos_venta: [
-    { key: 'titulo', label: 'Título', type: 'text' },
-    { key: 'precio', label: 'Precio', type: 'number' },
-    { key: 'ciudad', label: 'Ciudad', type: 'text' },
-    { key: 'barrio', label: 'Barrio', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'marca', label: 'Marca', type: 'text' },
-    { key: 'modelo', label: 'Modelo', type: 'text' },
-    { key: 'anio', label: 'Año', type: 'number' },
-    { key: 'kilometraje', label: 'Kilometraje', type: 'number' },
-    { key: 'cilindraje', label: 'Cilindraje', type: 'text' },
-    { key: 'color', label: 'Color', type: 'text' },
-    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
-  ],
-  hoteles: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'municipio', label: 'Municipio', type: 'text' },
-    { key: 'subregion', label: 'Subregión', type: 'text' },
-    { key: 'direccion', label: 'Dirección', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
-    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
-  ],
-  restaurantes: [
-    { key: 'nombre', label: 'Nombre', type: 'text' },
-    { key: 'municipio', label: 'Municipio', type: 'text' },
-    { key: 'subregion', label: 'Subregión', type: 'text' },
-    { key: 'direccion', label: 'Dirección', type: 'text' },
-    { key: 'telefono', label: 'Teléfono', type: 'text' },
-    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
-    { key: 'email', label: 'Email', type: 'text' },
-    { key: 'tipo_cocina', label: 'Tipo de cocina', type: 'text' },
-    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
-    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
-  ],
-};
-
-let editModalState = { table: null, id: null };
-
-function openEditModalFor(table, id) {
-  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos, hoteles: allHoteles, restaurantes: allRestaurantes };
-  const list = map[table] || [];
-  const record = list.find(r => String(r.id) === String(id));
-  if (record) openEditModal(table, record);
-}
-
-function openEditModal(table, record) {
-  editModalState = { table, id: record.id };
-  const fields = EDIT_FIELDS[table] || [];
-  document.getElementById('editModalTitle').textContent = 'Modificar ' + (record.nombre || record.titulo || '');
-  const container = document.getElementById('editModalFields');
-  container.innerHTML = fields.map(f => {
-    const val = record[f.key] ?? '';
-    if (f.type === 'textarea') {
-      return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><textarea data-field="${f.key}" rows="3" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem">${esc(val)}</textarea></div>`;
-    }
-    return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><input type="${f.type}" data-field="${f.key}" value="${esc(val)}" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem"></div>`;
-  }).join('');
-  document.getElementById('editModalErr').style.display = 'none';
-  document.getElementById('editModal').classList.remove('hide');
-}
-
-function hideEditModal() {
-  document.getElementById('editModal').classList.add('hide');
-}
-
-async function saveEditModal() {
-  const { table, id } = editModalState;
-  const container = document.getElementById('editModalFields');
-  const fields = {};
-  container.querySelectorAll('[data-field]').forEach(el => {
-    fields[el.dataset.field] = el.type === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value;
-  });
-  const errEl = document.getElementById('editModalErr');
-  errEl.style.display = 'none';
-  const data = await callAdmin({ action: 'update_record', table, id, fields }).catch(() => ({ ok: false }));
-  if (data.ok) {
-    hideEditModal();
-    reloadSectionTable(table);
-  } else {
-    errEl.textContent = data.error || 'No se pudo guardar.';
-    errEl.style.display = 'block';
-  }
-}
-
-// ── DASHBOARD CRM ──────────────────────────────────────────────────────
-async function loadDashboard() {
-  const data = await callRita({ action: 'crm_metrics' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#f87171">Error al cargar métricas.</p>';
-    return;
-  }
-  sectionLoaded.dashboard = true;
-
-  // Llenar métricas
-  document.getElementById('metricRiders').textContent = data.riders_total ?? '—';
-  document.getElementById('metricRidersDetail').textContent = data.riders_nuevos ? `${data.riders_nuevos} nuevos este mes` : '';
-
-  document.getElementById('metricSellos').textContent = data.sellos_total ?? '—';
-  document.getElementById('metricSellosDetail').textContent = data.municipios_cubiertos ? `${data.municipios_cubiertos} municipios` : '';
-
-  document.getElementById('metricGruas').textContent = data.gruas_total ?? '—';
-  document.getElementById('metricGruasDetail').textContent = data.gruas_pendientes ? `${data.gruas_pendientes} pendientes` : '';
-
-  document.getElementById('metricRita').textContent = data.rita_logs_total ?? '—';
-  document.getElementById('metricRitaDetail').textContent = data.rita_chats ? `${data.rita_chats} conversaciones` : '';
-
-  document.getElementById('metricTalleres').textContent = data.talleres_total ?? '—';
-  document.getElementById('metricTalleresDetail').textContent = data.talleres_aprobados ? `${data.talleres_aprobados} aprobados` : '';
-
-  document.getElementById('metricAlmacenes').textContent = data.almacenes_total ?? '—';
-  document.getElementById('metricAlmacenesDetail').textContent = data.almacenes_aprobados ? `${data.almacenes_aprobados} aprobados` : '';
-
-  document.getElementById('metricHoteles').textContent = data.hoteles_total ?? '—';
-  document.getElementById('metricHotelesDetail').textContent = data.hoteles_aprobados ? `${data.hoteles_aprobados} aprobados` : '';
-
-  document.getElementById('metricRestaurantes').textContent = data.restaurantes_total ?? '—';
-  document.getElementById('metricRestaurantesDetail').textContent = data.restaurantes_aprobados ? `${data.restaurantes_aprobados} aprobados` : '';
-
-  // Alertas
-  const alerts = data.alerts || [];
-  const badge = document.getElementById('badgeAlerts');
-  if (alerts.length > 0) {
-    badge.textContent = alerts.length;
-    badge.style.display = 'inline-block';
-  } else {
-    badge.style.display = 'none';
-  }
-  if (alerts.length === 0) {
-    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#4ade80">✓ Todo en orden</p>';
-  } else {
-    document.getElementById('dashboardAlerts').innerHTML = alerts.map(a => {
-      const isStale = a.tipo.includes('estancados');
-      const color = isStale ? '#f87171' : '#f59e0b';
-      const bg = isStale ? '#2a1212' : '#2a1a00';
-      const icon = isStale ? '🔴' : '⚠️';
-      return `<div style="padding:0.5rem;border-left:3px solid ${color};background:${bg};margin-bottom:0.5rem;font-size:0.85rem">
-        ${icon} <strong>${a.tipo}</strong>: ${a.mensaje}
-       </div>`;
-    }).join('');
-  }
-}
-
-// ── CONVERSACIONES RITA ────────────────────────────────────────────────
-let allConversaciones = [], conversacionesFilter = 'todas';
-
-async function loadConversaciones() {
-  const data = await callRita({ action: 'list_conversaciones' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('conversacionesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar conversaciones.</td></tr>';
-    return;
-  }
-  sectionLoaded.conversaciones = true;
-  allConversaciones = data.conversaciones || [];
-  renderConversacionesTable();
-}
-
-function setConversacionesFilter(f, btn) {
-  conversacionesFilter = f;
-  document.querySelectorAll('#conversacionesFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  if (btn) btn.classList.add('active');
-  renderConversacionesTable();
-}
-
-function renderConversacionesTable() {
-  let rows = allConversaciones;
-  if (conversacionesFilter === 'sin_respuesta') rows = rows.filter(c => c.sin_respuesta);
-  else if (conversacionesFilter === 'con_error') rows = rows.filter(c => c.con_error);
-  else if (conversacionesFilter === 'grua') rows = rows.filter(c => c.pidio_grua);
-
-  const tbody = document.getElementById('conversacionesBody');
-  if (!rows.length) {
-    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin conversaciones que mostrar.</td></tr>';
-    return;
-  }
-
-  tbody.innerHTML = rows.map(c => {
-    const tipoLabel = c.pidio_grua ? '🚗 Grúa' : c.con_error ? '⚠️ Error' : c.sin_respuesta ? '❓ Pendiente' : '✓ Resuelto';
-    return `<tr>
-      <td><strong>${esc(c.telefono || '—')}</strong></td>
-      <td><span class="tel">${c.updated_at ? new Date(c.updated_at).toLocaleDateString('es-CO') : '—'}</span></td>
-      <td>${c.mensaje_count || 0} msgs</td>
-      <td>${tipoLabel}</td>
-      <td>
-        <div class="actions-cell">
-          <button class="act-btn" onclick="openConversation('${jsq(c.telefono)}', '${jsq(c.telefono)}')">Ver</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-// ── RIDER PROFILE ──────────────────────────────────────────────────────
-let currentRiderProfile = null;
-
-async function openRiderProfile(riderId) {
-  const modal = document.getElementById('riderProfileModal');
-  modal.classList.remove('hide');
-  currentRiderProfile = null;
-
-  const data = await callRita({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('riderProfileContent').innerHTML = '<p style="color:#f87171">Error al cargar perfil.</p>';
-    return;
-  }
-
-  const r = data.rider;
-  const sellos = data.sellos || [];
-  const gruas = data.gruas || [];
-  const conversaciones = data.conversaciones || [];
-  currentRiderProfile = { rider: r, sellos, gruas, conversaciones };
-
-  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
-  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
-
-  document.getElementById('riderProfileTitle').textContent = `🏍️ ${nombre}`;
-
-  let html = `
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
-      <div>
-        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Datos personales</div>
-        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
-          <div style="margin-bottom:0.6rem"><strong>Teléfono:</strong> ${esc(r.telefono || '—')}</div>
-          <div style="margin-bottom:0.6rem"><strong>Ciudad:</strong> ${esc(r.ciudad || '—')}</div>
-          <div style="margin-bottom:0.6rem"><strong>Correo:</strong> ${esc(r.correo || '—')}</div>
-          <div style="margin-bottom:0.6rem"><strong>Unido:</strong> ${r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—'}</div>
-        </div>
-      </div>
-      <div>
-        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Moto</div>
-        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
-          <div style="margin-bottom:0.6rem"><strong>Modelo:</strong> ${esc(moto)}</div>
-          <div style="margin-bottom:0.6rem"><strong>Placa:</strong> ${esc(r.placa || '—')}</div>
-          <div style="margin-bottom:0.6rem"><strong>SOAT:</strong> ${r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—'}</div>
-          <div style="margin-bottom:0.6rem"><strong>Tecno:</strong> ${r.tecno_vence ? new Date(r.tecno_vence).toLocaleDateString('es-CO') : '—'}</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🏷️ Sellos (${sellos.length})</div>
-      ${sellos.length === 0 ?
-        '<p style="color:var(--mu);font-size:0.85rem">Sin municipios sellados aún.</p>' :
-        `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.75rem">
-          ${sellos.map(s => `
-            <div style="background:var(--s2);padding:0.6rem;border-radius:6px;font-size:0.8rem;border-left:3px solid var(--or)">
-              <strong>${esc(s.municipio_nombre || '—')}</strong><br>
-              <span style="color:var(--mu)">${s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : '—'}</span>
-            </div>
-          `).join('')}
-        </div>`
-      }
-    </div>
-
-    <div style="margin-bottom:2rem">
-      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🚗 Grúas (${gruas.length})</div>
-      ${gruas.length === 0 ?
-        '<p style="color:var(--mu);font-size:0.85rem">Sin solicitudes de grúa.</p>' :
-        `<div style="display:flex;flex-direction:column;gap:0.5rem">
-          ${gruas.map(g => {
-            const estColor = { pendiente: '#f59e0b', asignada: '#4ade80', llego: '#60a5fa', finalizada: '#9ca3af' };
-            return `
-              <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid ${estColor[g.estado] || '#888'}">
-                <div style="font-size:0.85rem"><strong>${esc(g.municipio || '—')}</strong></div>
-                <div style="font-size:0.75rem;color:var(--mu);margin-top:0.3rem">${g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '—'}</div>
-                <div style="font-size:0.7rem;color:${estColor[g.estado] || '#888'};margin-top:0.2rem;font-weight:600">${g.estado}</div>
-              </div>
-            `;
-          }).join('')}
-        </div>`
-      }
-    </div>
-
-    <div>
-      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">💬 Conversaciones con Rita (${conversaciones.length})</div>
-      ${conversaciones.length === 0 ?
-        '<p style="color:var(--mu);font-size:0.85rem">Sin chats registrados.</p>' :
-        `<div style="display:flex;flex-direction:column;gap:0.5rem;max-height:300px;overflow-y:auto">
-          ${conversaciones.map(c => `
-            <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid var(--or)">
-              <div style="font-size:0.75rem;color:var(--mu)">${c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '—'}</div>
-              <div style="font-size:0.8rem;margin-top:0.3rem;line-height:1.4">${esc(c.content || '').substring(0, 100)}${(c.content || '').length > 100 ? '...' : ''}</div>
-            </div>
-          `).join('')}
-        </div>`
-      }
-    </div>
-
-    <div style="margin-top:2rem">
-      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">📝 Notas internas</div>
-      <div class="admin-only" style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
-        <input type="text" id="noteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
-        <button class="btn-sm" onclick="submitNote('rider','${jsq(riderId)}')">Agregar</button>
-      </div>
-      <div id="notesList" style="display:flex;flex-direction:column;gap:0.5rem">Cargando notas...</div>
-    </div>
-  `;
-
-  document.getElementById('riderProfileContent').innerHTML = html;
-  loadNotes('rider', riderId);
-}
-
-function closeRiderProfile() {
-  document.getElementById('riderProfileModal').classList.add('hide');
-}
-
-function exportRiderProfilePDF() {
-  if (!currentRiderProfile || !window.jspdf) {
-    alert('El perfil aún no ha cargado.');
-    return;
-  }
-  const { rider: r, sellos, gruas, conversaciones } = currentRiderProfile;
-  const { jsPDF } = window.jspdf;
-  const doc = new jsPDF();
-  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
-  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
-  const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CO') : '—';
-
-  let y = 20;
-  doc.setFontSize(18);
-  doc.setTextColor(232, 93, 32);
-  doc.text(`Perfil del Rider: ${nombre}`, 14, y);
-  y += 10;
-
-  doc.setFontSize(10);
-  doc.setTextColor(120, 120, 120);
-  doc.text(`Generado: ${new Date().toLocaleString('es-CO')}`, 14, y);
-  y += 10;
-
-  doc.setDrawColor(220, 220, 220);
-  doc.line(14, y, 196, y);
-  y += 8;
-
-  doc.setFontSize(13);
-  doc.setTextColor(30, 30, 30);
-  doc.text('Datos personales', 14, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  [
-    ['Teléfono', r.telefono], ['Ciudad', r.ciudad], ['Correo', r.correo],
-    ['Fecha de registro', fmtDate(r.created_at)],
-  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
-  y += 4;
-
-  doc.setFontSize(13);
-  doc.setTextColor(30, 30, 30);
-  doc.text('Moto', 14, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  [
-    ['Modelo', moto], ['Placa', r.placa],
-    ['SOAT vence', fmtDate(r.soat_vence)], ['Tecno vence', fmtDate(r.tecno_vence)],
-  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
-  y += 4;
-
-  doc.setFontSize(13);
-  doc.setTextColor(30, 30, 30);
-  doc.text(`Sellos (${sellos.length})`, 14, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  if (!sellos.length) { doc.text('Sin municipios sellados.', 14, y); y += 6; }
-  else sellos.forEach(s => {
-    if (y > 275) { doc.addPage(); y = 20; }
-    doc.text(`• ${s.municipio_nombre || '—'} — ${fmtDate(s.fecha)}`, 14, y);
-    y += 6;
-  });
-  y += 4;
-
-  if (y > 250) { doc.addPage(); y = 20; }
-  doc.setFontSize(13);
-  doc.setTextColor(30, 30, 30);
-  doc.text(`Grúas (${gruas.length})`, 14, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  if (!gruas.length) { doc.text('Sin solicitudes de grúa.', 14, y); y += 6; }
-  else gruas.forEach(g => {
-    if (y > 275) { doc.addPage(); y = 20; }
-    doc.text(`• ${g.municipio || '—'} — ${g.estado} — ${fmtDate(g.created_at)}`, 14, y);
-    y += 6;
-  });
-  y += 4;
-
-  if (y > 250) { doc.addPage(); y = 20; }
-  doc.setFontSize(13);
-  doc.setTextColor(30, 30, 30);
-  doc.text(`Conversaciones con Rita (${conversaciones.length})`, 14, y);
-  y += 7;
-  doc.setFontSize(10);
-  doc.setTextColor(60, 60, 60);
-  if (!conversaciones.length) { doc.text('Sin chats registrados.', 14, y); y += 6; }
-  else conversaciones.slice(0, 20).forEach(c => {
-    if (y > 270) { doc.addPage(); y = 20; }
-    const content = (c.content || '').substring(0, 90);
-    const lines = doc.splitTextToSize(`• [${fmtDate(c.created_at)}] ${content}`, 180);
-    doc.text(lines, 14, y);
-    y += 6 * lines.length;
-  });
-
-  const filename = `perfil_${(nombre || 'rider').toLowerCase().replace(/\s+/g, '_')}.pdf`;
-  doc.save(filename);
-}
-
-// ── NOTAS INTERNAS ────────────────────────────────────────────────────
-async function loadNotes(entityType, entityId) {
-  const box = document.getElementById('notesList');
-  const data = await callRita({ action: 'list_notes', entity_type: entityType, entity_id: entityId }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
-    return;
-  }
-  const notes = data.notes || [];
-  if (!notes.length) {
-    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
-    return;
-  }
-  box.innerHTML = notes.map(n => `
-    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
-      <div>
-        <div>${esc(n.note)}</div>
-        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
-      </div>
-      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeNote('${jsq(n.id)}','${entityType}','${jsq(entityId)}')">✕</button>
-    </div>
-  `).join('');
-}
-
-async function submitNote(entityType, entityId) {
-  const input = document.getElementById('noteInput');
-  const note = input.value.trim();
-  if (!note) return;
-  const data = await callRita({ action: 'add_note', entity_type: entityType, entity_id: entityId, note }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
-    return;
-  }
-  input.value = '';
-  loadNotes(entityType, entityId);
-}
-
-async function removeNote(id, entityType, entityId) {
-  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
-    return;
-  }
-  loadNotes(entityType, entityId);
-}
-
-// ── NOTAS GENÉRICAS (negocios) ─────────────────────────────────────────
-let genericNotesEntity = { type: null, id: null };
-
-function openNotesModal(entityType, entityId, label) {
-  genericNotesEntity = { type: entityType, id: entityId };
-  document.getElementById('notesModalTitle').textContent = `📝 Notas — ${label}`;
-  document.getElementById('notesModal').classList.remove('hide');
-  loadGenericNotes();
-}
-
-async function loadGenericNotes() {
-  const box = document.getElementById('genericNotesList');
-  box.innerHTML = 'Cargando notas...';
-  const { type, id } = genericNotesEntity;
-  const data = await callRita({ action: 'list_notes', entity_type: type, entity_id: id }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
-    return;
-  }
-  const notes = data.notes || [];
-  if (!notes.length) {
-    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
-    return;
-  }
-  box.innerHTML = notes.map(n => `
-    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
-      <div>
-        <div>${esc(n.note)}</div>
-        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
-      </div>
-      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeGenericNote('${jsq(n.id)}')">✕</button>
-    </div>
-  `).join('');
-}
-
-async function submitGenericNote() {
-  const input = document.getElementById('genericNoteInput');
-  const note = input.value.trim();
-  if (!note) return;
-  const { type, id } = genericNotesEntity;
-  const data = await callRita({ action: 'add_note', entity_type: type, entity_id: id, note }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
-    return;
-  }
-  input.value = '';
-  loadGenericNotes();
-}
-
-async function removeGenericNote(id) {
-  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
-    return;
-  }
-  loadGenericNotes();
-}
-
-// ── PIPELINE DE NEGOCIOS ───────────────────────────────────────────────
-async function changeNegocioEstado(table, id, estado) {
-  const data = await callRita({ action: 'change_negocio_estado', table, id, estado }).catch(() => ({ ok: false }));
-  if (data.ok) {
-    reloadSectionTable(table);
-  } else {
-    alert('Error: ' + (data.error || 'No se pudo cambiar estado'));
-  }
-}
-
-// ── REPORTES ───────────────────────────────────────────────────────────
-let chartInstances = {};
-
-async function loadReportes() {
-  const data = await callRita({ action: 'get_reportes' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    console.error('Error cargando reportes:', data.error);
-    return;
-  }
-  sectionLoaded.reportes = true;
-
-  // Riders por mes
-  if (data.ridersPerMonth) renderChartRidersPerMonth(data.ridersPerMonth);
-  if (data.gruasByMunicipio) renderChartGruasByMunicipio(data.gruasByMunicipio);
-  if (data.negociosEstado) renderChartNegociosEstado(data.negociosEstado);
-  if (data.conversionRate !== undefined) {
-    const rate = Math.round(data.conversionRate * 100);
-    document.querySelector('#chartConversionRate').innerHTML = `
-      <div style="font-size:2.5rem;font-weight:700;color:${rate > 50 ? '#4ade80' : '#f59e0b'}">${rate}%</div>
-      <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">${data.negociosActivos} / ${data.negociosInteresados} convertidos</div>
-    `;
-  }
-}
-
-async function loadCrecimiento() {
-  const data = await callAdmin({ action: 'growth_analytics' }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    document.getElementById('cohortesBody').innerHTML = '<tr><td colspan="4" style="padding:1rem;text-align:center;color:#f87171">Error al cargar.</td></tr>';
-    return;
-  }
-  sectionLoaded.crecimiento = true;
-
-  document.getElementById('gRegistrados').textContent = data.funnel.registrados;
-  document.getElementById('gActivados').textContent = data.funnel.activados_primer_sello;
-  document.getElementById('gTasaActivacion').textContent = data.funnel.tasa_activacion + '%';
-  document.getElementById('gActivos30').textContent = data.funnel.activos_ultimos_30d;
-  document.getElementById('gTasaRetencion').textContent = data.funnel.tasa_retencion_30d + '%';
-  document.getElementById('gReferidos').textContent = data.referidos.total_invitaciones;
-  document.getElementById('gReferidosOk').textContent = data.referidos.registrados;
-  document.getElementById('gTasaReferidos').textContent = data.referidos.tasa_conversion + '%';
-
-  const body = document.getElementById('cohortesBody');
-  body.innerHTML = (data.cohortes_semanales || []).slice().reverse().map(c => `
-    <tr style="border-bottom:1px solid var(--line)">
-      <td style="padding:0.5rem">${esc(c.semana)}</td>
-      <td style="padding:0.5rem">${c.registrados}</td>
-      <td style="padding:0.5rem">${c.activados_semana1}</td>
-      <td style="padding:0.5rem;color:${c.tasa_activacion_semana1 >= 50 ? '#4ade80' : c.tasa_activacion_semana1 >= 20 ? '#f59e0b' : '#f87171'}">${c.tasa_activacion_semana1}%</td>
-    </tr>
-  `).join('') || '<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Sin datos aún.</td></tr>';
-}
-
-let reservasFilterEstado = '';
-async function setReservasFilter(estado, btn) {
-  reservasFilterEstado = estado;
-  document.querySelectorAll('#reservasFilters .filter-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  await loadReservas();
-}
-
-const ESTADO_COLOR = { pendiente: '#f59e0b', confirmada: '#60a5fa', completada: '#4ade80', cancelada: '#f87171' };
-const ESTADO_LABEL = { pendiente: 'Pendiente', confirmada: 'Confirmada', completada: 'Completada', cancelada: 'Cancelada' };
-
-async function loadReservas() {
-  const box = document.getElementById('reservasBody');
-  box.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>';
-  const data = await callAdmin({ action: 'reserva_list', estado: reservasFilterEstado || undefined }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem;padding:1rem">Error al cargar reservas.</p>';
-    return;
-  }
-  const reservas = data.reservas || [];
-  const badge = document.getElementById('badgeReservas');
-  const pendientes = reservas.filter(r => r.estado === 'pendiente').length;
-  if (badge) { badge.style.display = pendientes > 0 ? 'inline-block' : 'none'; badge.textContent = pendientes; }
-
-  box.innerHTML = reservas.length ? reservas.map(r => `
-    <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
-      <div>
-        <div style="font-weight:600">${esc(r.nombre_contacto)} <span style="color:var(--mu);font-weight:400">· ${esc(r.telefono_contacto)}</span></div>
-        <div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">${esc(r.entidad_tipo)} — ${esc(r.entidad_nombre || r.entidad_id)}</div>
-        ${r.fecha_solicitada ? `<div style="font-size:0.8rem;color:var(--mu)">📅 ${esc(r.fecha_solicitada)} ${esc(r.hora_solicitada || '')}</div>` : ''}
-        ${r.nota ? `<div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">"${esc(r.nota)}"</div>` : ''}
-      </div>
-      <div style="display:flex;align-items:center;gap:0.5rem">
-        <span style="font-size:0.75rem;font-weight:700;color:${ESTADO_COLOR[r.estado] || '#888'}">${ESTADO_LABEL[r.estado] || r.estado}</span>
-        <select onchange="updateReservaEstado('${r.id}', this.value)" style="background:#111;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem">
-          <option value="">Cambiar...</option>
-          <option value="pendiente">Pendiente</option>
-          <option value="confirmada">Confirmada</option>
-          <option value="completada">Completada</option>
-          <option value="cancelada">Cancelada</option>
-        </select>
-      </div>
-    </div>
-  `).join('') : '<p style="color:var(--mu);font-size:0.85rem;padding:1rem">Sin reservas.</p>';
-}
-
-async function updateReservaEstado(id, estado) {
-  if (!estado) return;
-  const data = await callAdmin({ action: 'reserva_update_estado', id, estado }).catch(() => ({ ok: false }));
-  if (!data.ok) { alert(data.error || 'Error al actualizar'); return; }
-  loadReservas();
-}
-
-function renderChartRidersPerMonth(data) {
-  const ctx = document.getElementById('chartRidersPerMonth');
-  if (chartInstances['ridersPerMonth']) chartInstances['ridersPerMonth'].destroy();
-
-  chartInstances['ridersPerMonth'] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.labels,
-      datasets: [{
-        label: 'Riders nuevos',
-        data: data.values,
-        borderColor: '#E85D20',
-        backgroundColor: 'rgba(232,93,32,0.1)',
-        borderWidth: 2,
-        tension: 0.4,
-        fill: true,
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
-        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
-      }
-    }
-  });
-}
-
-function renderChartGruasByMunicipio(data) {
-  const ctx = document.getElementById('chartGruasByMunicipio');
-  if (chartInstances['gruasByMunicipio']) chartInstances['gruasByMunicipio'].destroy();
-
-  chartInstances['gruasByMunicipio'] = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: data.labels,
-      datasets: [{
-        label: 'Grúas',
-        data: data.values,
-        backgroundColor: '#E85D20',
-      }]
-    },
-    options: {
-      indexAxis: 'y',
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } },
-      scales: {
-        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
-        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
-      }
-    }
-  });
-}
-
-function renderChartNegociosEstado(data) {
-  const ctx = document.getElementById('chartNegociosEstado');
-  if (chartInstances['negociosEstado']) chartInstances['negociosEstado'].destroy();
-
-  const colors = {
-    interesado: '#f59e0b',
-    documentos: '#3b82f6',
-    aprobado: '#8b5cf6',
-    activo: '#4ade80',
-    inactivo: '#9ca3af'
-  };
-
-  chartInstances['negociosEstado'] = new Chart(ctx, {
-    type: 'doughnut',
-    data: {
-      labels: data.labels,
-      datasets: [{
-        data: data.values,
-        backgroundColor: data.labels.map(l => colors[l] || '#888'),
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { labels: { color: '#888' } } }
-    }
-  });
-}
-
-async function exportReportCSV(type) {
-  const data = await callRita({ action: 'export_report', type }).catch(() => ({ ok: false }));
-  if (!data.ok) {
-    alert('Error al exportar: ' + (data.error || 'Desconocido'));
-    return;
-  }
-
-  const csv = data.csv;
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
-  link.click();
 }
 
 // ── GLOBAL SEARCH ────────────────────────────────────────────────────────
