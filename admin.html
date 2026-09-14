@@ -1423,7 +1423,7 @@ async function enviarTemplateBienvenidaRita() {
     action: 'broadcast',
     template: 'bienvenida_asistente_rita',
     language: 'es_CO',
-    params: []
+    params: ['{{nombre}}']
   }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
