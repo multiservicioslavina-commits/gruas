@@ -8,7 +8,8 @@
 <style>
   * { margin: 0; padding: 0; box-sizing: border-box; }
   html, body { width: 1080px; height: 1080px; background: #000; font-family: 'Arial Black', Arial, sans-serif; overflow: hidden; }
-  #map { position: absolute; inset: 0; width: 1080px; height: 1080px; }
+  /* Empuje de color: el satélite se ve plano/opaco sin esto */
+  #map { position: absolute; inset: 0; width: 1080px; height: 1080px; filter: saturate(1.18) contrast(1.07); }
 
   #vignette {
     position: absolute; inset: 0; pointer-events: none;
@@ -395,14 +396,21 @@
 
   // ── Iluminación según hora real de la rodada ──────────────────────────
   function getLightPreset(isoStr) {
-    if (!isoStr) return 'dawn';
+    if (!isoStr) return 'day';
     try {
-      const h = new Date(isoStr).getHours();
+      // getHours() lee la hora LOCAL DEL PROCESO (UTC en el contenedor de
+      // Railway), no la de Colombia. Con eso, una rodada de las 2pm en
+      // Bogotá (19:00 UTC) caía en el rango "dusk" y una de las 4pm caía en
+      // "night" -- el video de una tarde soleada se renderizaba oscuro.
+      // Colombia no tiene horario de verano: el offset es fijo en -5.
+      const h = Number(new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Bogota', hour: 'numeric', hour12: false,
+      }).format(new Date(isoStr)));
       if (h >= 5  && h < 8)  return 'dawn';
       if (h >= 8  && h < 17) return 'day';
       if (h >= 17 && h < 20) return 'dusk';
       return 'night';
-    } catch { return 'dawn'; }
+    } catch { return 'day'; }
   }
   const lightPreset = getLightPreset(DATA.rideStartedAt);
 
@@ -598,13 +606,16 @@
     map.setTerrain({ source: 'mapbox-dem', exaggeration: 1.6 });
 
     // El estilo Standard trae su propia atmósfera/cielo según lightPreset;
-    // si por algo no la aplica, este fog es el respaldo (no debe romper).
+    // este fog es solo el respaldo por si no la aplica. Antes empezaba en
+    // range 0.5 con 0.75 de opacidad: eso ponía una neblina beige sobre TODO
+    // el frame en cada video, lavando el contraste y la saturación del
+    // satélite ("se ve opaco"). Ahora solo entra en el horizonte lejano.
     try {
       map.setFog({
-        range: [0.5, 10],
-        color: 'rgba(230, 200, 170, 0.75)',
+        range: [4, 14],
+        color: 'rgba(230, 200, 170, 0.30)',
         'high-color': '#3a5bbf',
-        'horizon-blend': 0.08,
+        'horizon-blend': 0.06,
         'space-color': '#0b1026',
         'star-intensity': 0.2,
       });
