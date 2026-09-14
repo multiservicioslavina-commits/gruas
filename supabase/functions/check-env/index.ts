@@ -7,6 +7,9 @@ const puesta = (nombre: string) => (Deno.env.get(nombre) ?? "").trim().length > 
 const ESPERADAS = [
   "ANTHROPIC_API_KEY",
   "OPENAI_API_KEY",
+  // VOYAGE_API_KEY no es una variable de entorno: rita-v2 lee la clave de
+  // Voyage desde el secreto 'voyage_api_key' en Supabase Vault (compartido
+  // con wp-content-sync y rita-whatsapp), asi que no aparece aqui nunca.
   "ELEVENLABS_API_KEY",
   "ELEVENLABS_VOICE_ID",
   "WHATSAPP_TOKEN",

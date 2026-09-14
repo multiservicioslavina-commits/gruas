@@ -141,9 +141,8 @@
   .search-bar:focus { outline: none; border-color: var(--accent); }
 
   #preview-section { display: none; }
-  #tab-members { display: block; }
-  #tab-add, #tab-ajustes { display: none; }
-  #tab-add.visible, #tab-ajustes.visible { display: block !important; }
+  #tab-members, #tab-add, #tab-ajustes { display: none; }
+  #tab-members.visible, #tab-add.visible, #tab-ajustes.visible { display: block !important; }
 
   @media (max-width: 600px) {
     .stats { grid-template-columns: repeat(2, 1fr); }
@@ -261,7 +260,7 @@ Pedro Gómez - 3176543210"></textarea>
   </div>
 
   <!-- TAB: Lista de miembros -->
-  <div id="tab-members">
+  <div id="tab-members" class="visible">
     <div class="card" id="requests-card">
       <h2>Solicitudes por aprobar <span class="badge badge-pending" id="requests-count">0</span></h2>
       <p class="hint">Quien entra por el link de invitación aparece aquí. No puede entrar al chat hasta que lo apruebes.</p>
@@ -269,6 +268,14 @@ Pedro Gómez - 3176543210"></textarea>
         <p>Ninguna solicitud pendiente.</p>
       </div>
       <ul class="member-list" id="requests-list"></ul>
+    </div>
+    <div class="card" id="postulaciones-card">
+      <h2>Postulaciones del directorio <span class="badge badge-pending" id="postulaciones-count">0</span></h2>
+      <p class="hint">Gente que se postuló desde la tarjeta pública del club en ridera.com.co/clubes/. Esto es aparte del chat: contáctalos tú directamente.</p>
+      <div class="empty" id="postulaciones-empty" style="padding:20px 0">
+        <p>Todavía no hay postulaciones.</p>
+      </div>
+      <ul class="member-list" id="postulaciones-list"></ul>
     </div>
     <div style="display:flex; gap:8px; margin-bottom:16px">
       <input class="search-bar" type="text" placeholder="Buscar por nombre o teléfono..." oninput="filterMembers(this.value)" style="margin-bottom:0">
@@ -294,6 +301,60 @@ Pedro Gómez - 3176543210"></textarea>
         </div>
         <div id="logo-preview" style="width: 80px; height: 80px; border-radius: 8px; background: var(--surface2); border: 1px solid var(--border); overflow: hidden; display: flex; align-items: center; justify-content: center; color: var(--text2); font-size: 12px;">Sin logo</div>
       </div>
+    </div>
+
+    <div class="card">
+      <h2>Información del club</h2>
+      <p>Esto es lo que ven los riders en la tarjeta y el detalle del directorio público (ridera.com.co/clubes/).</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-ciudad" type="text" placeholder="Ciudad (ej: Medellín)" maxlength="60"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-fundacion" type="text" placeholder="Año de fundación" maxlength="4" inputmode="numeric"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-miembros" type="text" placeholder="Miembros (ej: 31 – 60)" maxlength="30"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-marcas" type="text" placeholder="Marcas (separadas por coma: BMW Motorrad, KTM, Honda)" maxlength="200"
+               style="flex:1; min-width:220px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-rutas" type="text" placeholder="Estilos (separados por coma: Carretera, Adventure, Turismo)" maxlength="150"
+               style="flex:1; min-width:220px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <textarea id="perfil-descripcion" placeholder="Descripción corta del club" maxlength="600"
+                style="width:100%; min-height:80px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px; font-family:inherit; margin-bottom:10px; resize:vertical;"></textarea>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="perfil-instagram" type="text" placeholder="Instagram (@usuario o link)" maxlength="100"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-facebook" type="text" placeholder="Facebook (link)" maxlength="150"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-web" type="text" placeholder="Sitio web (opcional)" maxlength="150"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:12px">
+        <input id="perfil-whatsapp" type="tel" placeholder="WhatsApp de contacto del club" maxlength="20" inputmode="numeric"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-lider" type="text" placeholder="Nombre del líder" maxlength="60"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="perfil-email" type="email" placeholder="Correo de contacto (opcional)" maxlength="100"
+               style="flex:1; min-width:160px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <button class="btn btn-primary" id="btn-perfil" onclick="guardarPerfil()">Guardar información</button>
+    </div>
+
+    <div class="card">
+      <h2>Próxima rodada</h2>
+      <p>Se muestra en la tarjeta del club dentro del directorio público (ridera.com.co/clubes/). Deja "Destino" vacío y guarda para quitarla.</p>
+      <div style="display:flex; gap:8px; flex-wrap:wrap; margin-bottom:10px">
+        <input id="rodada-destino" type="text" placeholder="Destino (ej: Jericó por Fredonia)" maxlength="120"
+               style="flex:2; min-width:200px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="rodada-fecha" type="date"
+               style="flex:1; min-width:140px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+        <input id="rodada-hora" type="time"
+               style="flex:1; min-width:110px; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px;">
+      </div>
+      <input id="rodada-punto" type="text" placeholder="Punto de encuentro (ej: Estación Aguacatala, 6:00 AM)" maxlength="160"
+             style="width:100%; padding:10px 12px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); color:var(--text); font-size:14px; margin-bottom:12px;">
+      <button class="btn btn-primary" id="btn-rodada" onclick="guardarRodada()">Guardar rodada</button>
     </div>
 
   </div>
@@ -351,7 +412,7 @@ async function init() {
   clubCode = clubs[0].codigo || clubs[0].id;
   document.getElementById('club-name').textContent = clubs[0].nombre;
   document.getElementById('invite-link').value = `${window.location.origin}/connect-register/${clubCode}`;
-  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadRodada(), loadPerfil(), loadPostulaciones()]);
 }
 
 // Las escrituras sobre miembros van por Edge Function (service_role), no por
@@ -378,6 +439,11 @@ async function loadStats() {
   document.getElementById('stat-total').textContent = total;
   document.getElementById('stat-linked').textContent = linked;
   document.getElementById('stat-pending').textContent = total - linked;
+}
+
+async function loadPostulaciones() {
+  const out = await clubApi('postulaciones');
+  if (out.ok) renderPostulaciones(out.postulaciones || []);
 }
 
 async function loadMembers() {
@@ -418,6 +484,29 @@ function memberRow(m, actions, badge = '') {
     <div class="member-date">${date}</div>
     ${actions}
   </li>`;
+}
+
+function renderPostulaciones(postulaciones) {
+  const list = document.getElementById('postulaciones-list');
+  const vacio = document.getElementById('postulaciones-empty');
+  document.getElementById('postulaciones-count').textContent = postulaciones.length;
+  if (!postulaciones.length) { vacio.style.display = ''; list.innerHTML = ''; return; }
+  vacio.style.display = 'none';
+  list.innerHTML = postulaciones.map(p => {
+    const initials = p.nombre.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+    const date = new Date(p.created_at).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+    const moto = [p.moto_marca, p.moto_modelo, p.moto_cc].filter(Boolean).join(' ');
+    return `<li class="member-item">
+      <div class="member-avatar">${initials}</div>
+      <div class="member-info">
+        <div class="member-name">${p.nombre}${p.avisado ? '' : ' <span class="badge badge-pending">Sin avisar</span>'}</div>
+        <div class="member-phone">${p.telefono}</div>
+        ${moto ? `<div style="font-size:11px;color:var(--text2);margin-top:2px">${moto}</div>` : ''}
+      </div>
+      <div class="member-date">${date}</div>
+      <a class="btn btn-sm btn-primary" href="https://wa.me/${p.telefono}" target="_blank">WhatsApp</a>
+    </li>`;
+  }).join('');
 }
 
 function renderRequests(requests) {
@@ -694,6 +783,78 @@ async function loadLogo() {
   }
 }
 
+async function loadPerfil() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=ciudad,datos&limit=1`);
+  if (!club.length) return;
+  const c = club[0], d = c.datos || {};
+  document.getElementById('perfil-ciudad').value = c.ciudad || '';
+  document.getElementById('perfil-fundacion').value = d.fundacion || '';
+  document.getElementById('perfil-miembros').value = d.miembros || '';
+  document.getElementById('perfil-marcas').value = d.marcas || '';
+  document.getElementById('perfil-rutas').value = d.rutas || '';
+  document.getElementById('perfil-descripcion').value = d.descripcion || '';
+  document.getElementById('perfil-instagram').value = d.instagram || '';
+  document.getElementById('perfil-facebook').value = d.facebook || '';
+  document.getElementById('perfil-web').value = d.web || '';
+  document.getElementById('perfil-whatsapp').value = d.whatsapp || '';
+  document.getElementById('perfil-lider').value = d.lider || '';
+  document.getElementById('perfil-email').value = d.email || '';
+}
+
+async function guardarPerfil() {
+  const btn = document.getElementById('btn-perfil');
+  btn.disabled = true;
+  try {
+    const out = await clubApi('perfil', {
+      ciudad: document.getElementById('perfil-ciudad').value,
+      fundacion: document.getElementById('perfil-fundacion').value,
+      miembros: document.getElementById('perfil-miembros').value,
+      marcas: document.getElementById('perfil-marcas').value,
+      rutas: document.getElementById('perfil-rutas').value,
+      descripcion: document.getElementById('perfil-descripcion').value,
+      instagram: document.getElementById('perfil-instagram').value,
+      facebook: document.getElementById('perfil-facebook').value,
+      web: document.getElementById('perfil-web').value,
+      whatsapp: document.getElementById('perfil-whatsapp').value,
+      lider: document.getElementById('perfil-lider').value,
+      email: document.getElementById('perfil-email').value,
+    });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
+    toast('Información del club guardada');
+  } catch (e) {
+    toast('Error al guardar: ' + e.message, true);
+  }
+  btn.disabled = false;
+}
+
+async function loadRodada() {
+  const club = await sb(`clubs?id=eq.${clubId}&select=proxima_rodada&limit=1`);
+  const r = club.length ? club[0].proxima_rodada : null;
+  if (!r) return;
+  document.getElementById('rodada-destino').value = r.destino || '';
+  document.getElementById('rodada-fecha').value = r.fecha || '';
+  document.getElementById('rodada-hora').value = r.hora || '';
+  document.getElementById('rodada-punto').value = r.punto_encuentro || '';
+}
+
+async function guardarRodada() {
+  const btn = document.getElementById('btn-rodada');
+  btn.disabled = true;
+  try {
+    const out = await clubApi('rodada', {
+      destino: document.getElementById('rodada-destino').value,
+      fecha: document.getElementById('rodada-fecha').value,
+      hora: document.getElementById('rodada-hora').value,
+      puntoEncuentro: document.getElementById('rodada-punto').value,
+    });
+    if (!out.ok) throw new Error(out.error || 'no se pudo guardar');
+    toast(out.rodada ? 'Rodada guardada' : 'Rodada quitada');
+  } catch (e) {
+    toast('Error al guardar la rodada: ' + e.message, true);
+  }
+  btn.disabled = false;
+}
+
 
 
 
@@ -704,6 +865,7 @@ const CLUB_AUTH = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/club-au
 // ya no depende de que un humano de soporte lo haga a mano.
 const RITA_WA = '573117896717';
 let loginClubTienePass = false;
+let loginClubTieneWhatsapp = false;
 
 async function callAuth(payload) {
   const r = await fetch(CLUB_AUTH, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
@@ -736,15 +898,29 @@ async function onClubSelect() {
   if (!id) { passWrap.style.display = 'none'; btn.style.display = 'none'; forgot.style.display = 'none'; return; }
   const est = await callAuth({ action: 'estado', clubId: id });
   loginClubTienePass = !!est.tienePass;
-  passWrap.style.display = 'block';
-  btn.style.display = 'block';
+  loginClubTieneWhatsapp = !!est.tieneWhatsapp;
   if (loginClubTienePass) {
+    passWrap.style.display = 'block';
+    btn.style.display = 'block';
     sub.textContent = 'Ingresa la clave de tu club';
     label.textContent = 'Clave';
     document.getElementById('login-pass').placeholder = 'Tu clave';
     btn.textContent = 'Entrar';
+    forgot.textContent = '¿Olvidaste tu clave?';
+    forgot.style.display = 'block';
+  } else if (loginClubTieneWhatsapp) {
+    // No dejamos crear la clave aqui mismo sin verificar: cualquiera que
+    // supiera el codigo del club podria adelantarsele al lider real. Este
+    // club ya tiene WhatsApp registrado, asi que la unica entrada es que
+    // Rita confirme por ahi (mismo boton/flujo que "olvidé mi clave").
+    passWrap.style.display = 'none';
+    btn.style.display = 'none';
+    sub.textContent = 'Tu club aún no tiene clave. Por seguridad, créala verificándote por el WhatsApp registrado del club.';
+    forgot.textContent = 'Crear clave por WhatsApp →';
     forgot.style.display = 'block';
   } else {
+    passWrap.style.display = 'block';
+    btn.style.display = 'block';
     sub.textContent = 'Tu club aún no tiene clave — créala ahora';
     label.textContent = 'Crea una clave (mínimo 4 caracteres)';
     document.getElementById('login-pass').placeholder = 'Nueva clave';
@@ -815,7 +991,7 @@ function logoutAdmin() {
 }
 
 async function refreshPanel() {
-  await Promise.all([loadStats(), loadMembers(), loadLogo()]);
+  await Promise.all([loadStats(), loadMembers(), loadLogo(), loadPostulaciones()]);
   toast('Actualizado');
 }
 

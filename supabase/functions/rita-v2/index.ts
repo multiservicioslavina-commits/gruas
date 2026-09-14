@@ -9,7 +9,7 @@
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
-import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm } from "./tools.ts";
+import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 
@@ -408,6 +408,21 @@ REGLA ABSOLUTA - NO INVENTAR:
   nombres de talleres o de rutas: si no vino de una herramienta, no lo digas.
 - Un dato falso hace mas dano que un "no se". Prefiere siempre el "no se".
 
+REGLA DURA DE URLs - CERO EXCEPCIONES:
+- NUNCA armes ni adivines una URL concatenando palabras (ej. "ridera.com.co/rutas/
+  loop-suroeste-clasico/"). Eso no existe hasta que una herramienta te lo devuelva
+  literal.
+- Solo puedes escribir una URL si aparecio TAL CUAL, caracter por caracter, en el
+  resultado de una herramienta (buscar_ruta, buscar_en_ridera, info_tramites) o en
+  los enlaces oficiales fijos de mas abajo.
+- Si quieres mencionar un link y no tienes uno confirmado a la mano, usa
+  "https://ridera.com.co" a secas. Nunca completes el dominio con un path que no
+  copiaste de una herramienta.
+- Esta regla tiene ademas un filtro automatico despues de que escribes: cualquier
+  URL que no haya salido de una herramienta se reemplaza sola por el dominio raiz
+  antes de llegar al rider. Aun asi, no confies en ese filtro para "adivinar bien":
+  simplemente no inventes ninguna.
+
 JERARQUIA ESTRICTA DE FUENTES (respetala en este orden, sin saltarte pasos):
   1. Base interna Ridera / Supabase: buscar_ruta, buscar_en_ridera, mi_perfil,
      directorio_talleres. Son la fuente de mayor confianza.
@@ -563,6 +578,7 @@ async function llamarClaude(system: string, messages: Mensaje[]): Promise<Record
     body: JSON.stringify({
       model: MODEL,
       max_tokens: 1024,
+      temperature: 0.1,
       system,
       tools: TOOL_SCHEMAS,
       messages,
@@ -597,6 +613,7 @@ async function responder(
   ];
 
   let huboHerramientas = false;
+  const urlsHerramientas = new Set<string>();
 
   for (let ronda = 0; ronda < MAX_TOOL_ROUNDS; ronda++) {
     const respuesta = await llamarClaude(system, messages);
@@ -604,7 +621,7 @@ async function responder(
 
     if (respuesta.stop_reason !== "tool_use") {
       const texto = textoDe(bloques);
-      if (texto) return texto;
+      if (texto) return sanitizarUrls(texto, urlsHerramientas);
       if (!huboHerramientas) return "";
       // Cerro sin escribir nada, cosa que suele pasar despues de ejecutar
       // una accion. El rider quedaria sin respuesta, asi que se le pide el
@@ -613,7 +630,7 @@ async function responder(
         `${system}\n\nYa ejecutaste lo que hacia falta. Escribe ahora la respuesta para el rider y confirmale en una linea lo que hiciste.`,
         messages,
       );
-      return textoDe((cierre.content ?? []) as Bloque[]);
+      return sanitizarUrls(textoDe((cierre.content ?? []) as Bloque[]), urlsHerramientas);
     }
 
     huboHerramientas = true;
@@ -631,6 +648,9 @@ async function responder(
         ),
       })),
     );
+    for (const r of resultados) {
+      for (const url of extraerUrls(r.content)) urlsHerramientas.add(url);
+    }
 
     messages.push({ role: "user", content: resultados as Bloque[] });
   }
@@ -640,7 +660,7 @@ async function responder(
     system + "\n\nYa consultaste suficientes herramientas. Responde ahora con lo que tienes, sin llamar mas.",
     messages,
   );
-  return textoDe((cierre.content ?? []) as Bloque[]);
+  return sanitizarUrls(textoDe((cierre.content ?? []) as Bloque[]), urlsHerramientas);
 }
 
 // ─── Orquestador de IA (Claude + OpenAI): activo por defecto ────
@@ -744,6 +764,87 @@ async function entregar(to: string, texto: string, conVoz: boolean): Promise<voi
   await enviarTexto(to, texto);
 }
 
+// ─── SOS: auxilio en ruta (ubicacion + PostGIS) ──────────────────
+// Palabras clave que disparan el flujo de auxilio cuando el rider no
+// mando ubicacion todavia. Deliberadamente amplio: mejor pedir ubicacion
+// de mas que dejar pasar un caso real.
+const EMERGENCIA_REGEX = /\bsos\b|estoy varad|me accident|em accident|choqu[ée]|se me da[ñn]|se vari[oó]|necesito (una )?gr[uú]a|mandenme? (una )?gr[uú]a|env[ií]enme? (una )?gr[uú]a/i;
+function esEmergenciaTexto(msg: string): boolean {
+  return EMERGENCIA_REGEX.test(norm(msg));
+}
+
+async function registrarSOSLog(
+  phone: string,
+  lat: number | null,
+  lon: number | null,
+  aliados: { nombre: string; telefono: string; distancia_km: number; tipo_servicio: string }[] | null,
+  detalle: string,
+) {
+  try {
+    await supabase.from("asistencias_sos_log").insert({
+      telefono: phone,
+      lat,
+      lon,
+      aliados_sugeridos: aliados,
+      detalle,
+    });
+  } catch (e) {
+    console.error("No se pudo registrar el log de SOS:", e);
+  }
+}
+
+// Nota en HubSpot: mejor esfuerzo, sin bloquear ni retrasar la respuesta
+// al rider (no se espera el resultado). Si el contacto no existe en
+// HubSpot por telefono (frecuente: no todos los riders tienen email, y
+// hubspot-sync solo puede hacer upsert por email), simplemente no pasa
+// nada -- el log real del incidente ya quedo en asistencias_sos_log.
+function notificarSOSHubspotAsync(
+  phone: string,
+  lat: number | null,
+  lon: number | null,
+  aliados: { nombre: string; telefono: string; distancia_km: number; tipo_servicio: string }[],
+) {
+  fetch(`${SB_URL}/functions/v1/hubspot-sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${SB_KEY}` },
+    body: JSON.stringify({ tipo: "sos", telefono: phone, lat, lon, aliados }),
+  }).catch((e) => console.error("No se pudo notificar el SOS a HubSpot:", e));
+}
+
+async function manejarUbicacionSOS(phone: string, lat: number, lon: number): Promise<void> {
+  const { data: aliados, error } = await supabase.rpc("buscar_auxilio_cercano", {
+    lat, lon, radio_km: 15, limite: 3,
+  });
+  if (error) console.error("buscar_auxilio_cercano fallo:", error);
+
+  const lista = (aliados ?? []) as { nombre: string; telefono: string; distancia_km: number; tipo_servicio: string }[];
+
+  let texto: string;
+  if (!lista.length) {
+    texto = `🚨 *AUXILIO RIDERA DETECTADO* 🚨
+Recibimos tu ubicación, pero todavía no tenemos aliados registrados a menos de 15 km de ahí.
+
+Mientras consigues ayuda:
+📞 Grúa Ridera (SOS): gruas.ridera.com.co
+📞 Policía de tránsito: 127
+📞 Ambulancia: 123`;
+  } else {
+    const renglones = lista
+      .map((a, i) => `${i + 1}. ${a.nombre} - ${a.tipo_servicio} a ${a.distancia_km} km | 📞 ${a.telefono || "sin teléfono"}`)
+      .join("\n");
+    texto = `🚨 *AUXILIO RIDERA DETECTADO* 🚨
+Hemos localizado los siguientes aliados más cercanos a tu posición:
+${renglones}
+
+¿Deseas que notifiquemos a alguno de ellos directamente?`;
+  }
+
+  await saveMessage(phone, "assistant", texto);
+  await entregar(phone, texto, false);
+  await registrarSOSLog(phone, lat, lon, lista, "ubicacion_recibida");
+  notificarSOSHubspotAsync(phone, lat, lon, lista);
+}
+
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
@@ -773,7 +874,7 @@ Deno.serve(async (req: Request) => {
     const signature = req.headers.get("x-hub-signature-256") || "";
 
     // Validar que el webhook viene realmente de Meta (no en modo prueba)
-    if (!rawBody.includes('"test":true')) {
+    if (!/"test"\s*:\s*true/.test(rawBody)) {
       if (!await validarSignatura(rawBody, signature)) {
         console.warn("Firma HMAC invalida:", signature.slice(0, 20) + "...");
         return json({ ok: false, error: "invalid_signature" }, 401);
@@ -829,6 +930,19 @@ Deno.serve(async (req: Request) => {
     if (!verificarRateLimit(from)) {
       return json({ ok: false, error: "rate_limit_exceeded" }, 429);
     }
+    // SOS - ubicacion compartida: se maneja aparte del bucle de IA, antes
+    // de todo lo demas. Es un flujo de seguridad, asi que va determinista
+    // (consulta directa a PostGIS) en vez de depender de que el modelo
+    // decida llamar una herramienta -- mas rapido y mas confiable.
+    if (msg.type === "location" && msg.location) {
+      const lat = Number(msg.location.latitude);
+      const lon = Number(msg.location.longitude);
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        await manejarUbicacionSOS(from, lat, lon);
+        return json({ ok: true, flujo: "sos_ubicacion" });
+      }
+    }
+
     let message = "";
     let conVoz = false;
 
@@ -866,6 +980,17 @@ Deno.serve(async (req: Request) => {
     }
 
     await saveMessage(from, "user", message);
+
+    // SOS - palabra clave sin ubicacion todavia: maxima prioridad, antes
+    // incluso del registro guiado. Funciona igual si vino por audio (ya
+    // transcrito arriba) que por texto.
+    if (esEmergenciaTexto(message)) {
+      const respuesta = "🆘 Te tengo, parcero. Para mandarte auxilio cercano YA necesito tu ubicación exacta: toca el clip 📎 en WhatsApp > Ubicación > Enviar tu ubicación actual. En cuanto la compartas te mando los aliados más cercanos.\n\nSi es una emergencia médica o de seguridad, llama primero al 123 o al 122 (ambulancia).";
+      await saveMessage(from, "assistant", respuesta);
+      await entregar(from, respuesta, conVoz);
+      await registrarSOSLog(from, null, null, null, "palabra_clave_sin_ubicacion");
+      return json({ ok: true, flujo: "sos_pide_ubicacion" });
+    }
 
     // El registro guiado tiene prioridad sobre el bucle de herramientas.
     const conv = await getConvState(from);

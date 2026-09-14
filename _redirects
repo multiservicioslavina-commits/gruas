@@ -12,8 +12,6 @@ https://club.ridera.com.co/reset-club   /reset-club.html      200!
 /red                        /red.html                          200
 /registro-hotel              https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-hotel        200
 /registro-restaurante        https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/form-restaurante  200
-/music                      /app/player.html                   200
-/lyrapp                     /app/lyrapp.apk                    200
 /grueros                    /grueros.html                      200
 /almacenes                  /almacenes.html                    200
 /seguimiento                /seguimiento.html                  200
