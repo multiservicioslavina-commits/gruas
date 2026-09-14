@@ -74,6 +74,7 @@ async function sendWATemplate(to: string, name: string, language: string, bodyPa
     try {
       const d = await res.json()
       msg = d?.error?.message || msg
+      if (d?.error?.error_data?.details) msg += ' | ' + d.error.error_data.details
     } catch { /* ignore */ }
     return { ok: false, error: msg }
   } catch (error) {
