@@ -1193,7 +1193,9 @@ Deno.serve(async (req) => {
         })
       }
       const media = mediaUrl && ['image', 'video', 'document'].includes(mediaType) ? { type: mediaType, url: mediaUrl } : undefined
-      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, preferred_name').eq('opted_in', true)
+      const isBienvenida = template === 'bienvenida_asistente_rita'
+      let contactsQuery = sbClient.from('rita_contacts').select('phone_number, preferred_name, whatsapp_number').eq('opted_in', true)
+      if (isBienvenida) contactsQuery = contactsQuery.eq('bienvenida_enviada', false)
       if (tag) contactsQuery = contactsQuery.contains('tags', [String(tag).trim()])
       let { data: contacts } = await contactsQuery
       contacts = contacts || []
@@ -1217,8 +1219,12 @@ Deno.serve(async (req) => {
       for (const c of contacts) {
         const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
         const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams, media)
-        if (result.ok) sent++
-        else {
+        if (result.ok) {
+          sent++
+          if (isBienvenida) {
+            await sbClient.from('rita_contacts').update({ bienvenida_enviada: true }).eq('whatsapp_number', c.whatsapp_number || c.phone_number)
+          }
+        } else {
           errors++
           if (errorDetails.length < 10) errorDetails.push({ phone: '...' + (c.phone_number || '').slice(-4), error: result.error })
         }
