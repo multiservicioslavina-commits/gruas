@@ -1396,20 +1396,6 @@ function importarExcelRita() {
   reader.readAsArrayBuffer(inp.files[0]);
 }
 
-      await callAdmin({ action: 'import_contacts', contacts: contactos }).catch(() => {});
-      loadRitaContacts();
-    } catch (err) {
-      btn.disabled = false;
-      btn.textContent = 'Procesar y Guardar Contactos';
-      res.style.display = 'block';
-      res.style.background = '#2a1212';
-      res.style.color = '#f87171';
-      res.textContent = 'Error al leer el archivo: ' + err.message;
-    }
-  };
-  reader.readAsArrayBuffer(inp.files[0]);
-}
-
 async function enviarTemplateBienvenidaRita() {
   const contactos = window.contactosCargadosRita || [];
   const res = document.getElementById('ritaBienvenidaResult');
