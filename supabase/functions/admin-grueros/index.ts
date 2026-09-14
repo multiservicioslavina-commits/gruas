@@ -606,17 +606,22 @@ Deno.serve(async (req) => {
           status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         })
       }
-      const rows = contacts.map((c: { nombre: string; telefono: string }) => ({
-        phone_number: String(c.telefono).replace(/\D/g, ''),
-        preferred_name: c.nombre || null,
-        opted_in: true,
-      })).filter((r: { phone_number: string }) => r.phone_number.length >= 10)
+      const rows = contacts.map((c: { nombre: string; telefono: string }) => {
+        const phone = String(c.telefono).replace(/\D/g, '')
+        return {
+          whatsapp_number: phone,
+          phone_number: phone,
+          preferred_name: c.nombre || null,
+          opted_in: true,
+          tags: [],
+        }
+      }).filter((r: { whatsapp_number: string }) => r.whatsapp_number.length >= 10)
 
       let imported = 0, errors = 0
       for (let i = 0; i < rows.length; i += 50) {
         const batch = rows.slice(i, i + 50)
-        const { error } = await sbClient.from('rita_contacts').upsert(batch, { onConflict: 'phone_number', ignoreDuplicates: false })
-        if (error) errors += batch.length
+        const { error } = await sbClient.from('rita_contacts').upsert(batch, { onConflict: 'whatsapp_number', ignoreDuplicates: false })
+        if (error) { errors += batch.length; console.error('import batch error:', error.message) }
         else imported += batch.length
       }
 
