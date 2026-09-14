@@ -1250,7 +1250,6 @@ let adminKey = '';
 let allGrueros = [];
 let currentFilter = 'all';
 
-// Contactos en memoria
 window.contactosCargadosRita = [];
 
 function esc(x) {
@@ -1264,7 +1263,6 @@ function jsq(x) {
 let solStatsLoaded = false;
 let ritaLoaded = false;
 
-// ── Sidebar navigation ───────────────────────────────────────────────
 const ALL_TABS = ['dashboard','despacho','sellos','grueros','riders','clubs','motos','talleres','almacenes','hoteles','restaurantes','conversaciones','reportes','crecimiento','reservas','timeline','rita'];
 const TAB_ID_MAP = {
   dashboard: 'tabDashboard',
@@ -1331,7 +1329,6 @@ function showTab(tab) {
   }
 }
 
-// ── IMPORTACIÓN EXCEL/CSV TOURING BIKERS ───────────────────────────────
 function importarExcelRita() {
   const inp = document.getElementById('rExcelInput');
   const btn = document.getElementById('rExcelBtn');
@@ -1395,7 +1392,6 @@ function importarExcelRita() {
   reader.readAsArrayBuffer(inp.files[0]);
 }
 
-// ── DISPARO TEMPLATE META: bienvenida_asistente_rita ─────────────────
 async function enviarTemplateBienvenidaRita() {
   const contactos = window.contactosCargadosRita || [];
   const res = document.getElementById('ritaBienvenidaResult');
@@ -1412,41 +1408,31 @@ async function enviarTemplateBienvenidaRita() {
   }
 
   btn.disabled = true;
-  btn.textContent = `Enviando a ${contactos.length} contactos...`;
+  btn.textContent = `Enviando masivo a ${contactos.length} contactos...`;
 
-  const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-  let exitosos = 0;
-  let errores = 0;
-
-  for (let i = 0; i < contactos.length; i++) {
-    const c = contactos[i];
-    try {
-      const resp = await callAdmin({
-        action: 'broadcast_single',
-        phone: c.telefono,
-        template: 'bienvenida_asistente_rita',
-        language: 'es_CO',
-        params: [c.nombre]
-      }).catch(() => ({ ok: false }));
-
-      if (resp && (resp.ok || !resp.error)) exitosos++;
-      else errores++;
-    } catch (e) {
-      errores++;
-    }
-    await delay(2500);
-  }
+  const data = await callAdmin({
+    action: 'broadcast',
+    template: 'bienvenida_asistente_rita',
+    language: 'es_CO',
+    params: []
+  }).catch(() => ({ ok: false }));
 
   btn.disabled = false;
   btn.textContent = 'Disparar Template a Contactos Cargados';
   res.style.display = 'block';
-  res.style.background = '#0e2a1a';
-  res.style.color = '#4ade80';
-  res.innerHTML = `✅ Envíos terminados. Exitosos: <strong>${exitosos}</strong>. Errores: <strong>${errores}</strong>.`;
+
+  if (data.ok) {
+    res.style.background = '#0e2a1a';
+    res.style.color = '#4ade80';
+    res.innerHTML = `✅ Broadcast completado. Enviados: <strong>${data.sent}</strong>. Errores: <strong>${data.errors}</strong>.`;
+  } else {
+    res.style.background = '#2a1212';
+    res.style.color = '#f87171';
+    res.textContent = data.error || 'Error al disparar el broadcast masivo.';
+  }
   loadRitaAnalytics();
 }
 
-// ── Solicitudes stats (Despacho) ─────────────────────────────────────
 async function loadSolicitudesStats() {
   const data = await callAdmin({ action: 'stats' }).catch(() => ({ ok: false }));
   if (!data.ok) return;
