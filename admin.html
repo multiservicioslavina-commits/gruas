@@ -1371,16 +1371,21 @@ function importarExcelRita() {
 
       window.contactosCargadosRita = contactos;
 
-      // Guardar en la base de datos de Supabase mediante el backend
       const dbResp = await callAdmin({ action: 'import_contacts', contacts: contactos }).catch(() => ({ ok: false }));
 
       btn.disabled = false;
       btn.textContent = 'Procesar y Guardar Contactos';
-
       res.style.display = 'block';
-      res.style.background = '#0e2a1a';
-      res.style.color = '#4ade80';
-      res.innerHTML = `✔ <strong>${contactos.length} contactos</strong> procesados y guardados en la base de datos correctamente.`;
+
+      if (dbResp.ok) {
+        res.style.background = '#0e2a1a';
+        res.style.color = '#4ade80';
+        res.innerHTML = `✔ <strong>${dbResp.imported || contactos.length} contactos</strong> importados a la base de datos correctamente.`;
+      } else {
+        res.style.background = '#2a1212';
+        res.style.color = '#f87171';
+        res.textContent = 'Error al guardar en la BD: ' + (dbResp.error || 'Intenta de nuevo.');
+      }
 
       loadRitaContacts();
       loadRitaAnalytics();

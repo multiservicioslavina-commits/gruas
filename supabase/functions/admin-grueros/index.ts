@@ -212,7 +212,7 @@ Deno.serve(async (req) => {
     const role = auth.role || 'admin'
     const ADMIN_ONLY_ACTIONS = new Set([
       'toggle_approval', 'reject_record', 'update_record', 'approve', 'set', 'delete',
-      'update_error', 'export_contacts', 'broadcast',
+      'update_error', 'export_contacts', 'broadcast', 'import_contacts',
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
@@ -594,6 +594,34 @@ Deno.serve(async (req) => {
       })
       const data = await res.json()
       return new Response(JSON.stringify(data), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // IMPORT CONTACTS (bulk upsert into rita_contacts from CSV/Excel upload)
+    if (action === 'import_contacts') {
+      const { contacts } = body
+      if (!Array.isArray(contacts) || !contacts.length) {
+        return new Response(JSON.stringify({ ok: false, error: 'No contacts provided' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const rows = contacts.map((c: { nombre: string; telefono: string }) => ({
+        phone_number: String(c.telefono).replace(/\D/g, ''),
+        preferred_name: c.nombre || null,
+        opted_in: true,
+      })).filter((r: { phone_number: string }) => r.phone_number.length >= 10)
+
+      let imported = 0, errors = 0
+      for (let i = 0; i < rows.length; i += 50) {
+        const batch = rows.slice(i, i + 50)
+        const { error } = await sbClient.from('rita_contacts').upsert(batch, { onConflict: 'phone_number', ignoreDuplicates: false })
+        if (error) errors += batch.length
+        else imported += batch.length
+      }
+
+      logAudit(auth.username!, 'import_contacts', { imported, errors, total: rows.length })
+      return new Response(JSON.stringify({ ok: true, imported, errors }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
