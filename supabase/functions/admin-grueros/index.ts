@@ -1217,7 +1217,7 @@ Deno.serve(async (req) => {
       const errorDetails: { phone: string; error?: string }[] = []
 
       for (const c of contacts) {
-        const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || '') : p))
+        const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || 'Motero') : p))
         const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams, media)
         if (result.ok) {
           sent++
