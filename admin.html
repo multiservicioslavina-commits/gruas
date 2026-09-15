@@ -1402,22 +1402,16 @@ function importarExcelRita() {
 }
 
 async function enviarTemplateBienvenidaRita() {
-  const contactos = window.contactosCargadosRita || [];
   const res = document.getElementById('ritaBienvenidaResult');
   const btn = document.getElementById('btnDispararRitaBienvenida');
   res.style.display = 'none';
 
-  if (!contactos.length) {
-    alert('Primero debes seleccionar y procesar el archivo arriba.');
-    return;
-  }
-
-  if (!confirm(`¿Enviar la plantilla oficial "bienvenida_asistente_rita" a ${contactos.length} contactos de Touring Bikers?`)) {
+  if (!confirm('¿Enviar la plantilla oficial "bienvenida_asistente_rita" a todos los contactos que aún no la han recibido?')) {
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = `Enviando masivo a ${contactos.length} contactos...`;
+  btn.textContent = 'Enviando masivo...';
 
   const data = await callAdmin({
     action: 'broadcast',
