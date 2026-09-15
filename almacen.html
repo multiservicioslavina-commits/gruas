@@ -212,10 +212,10 @@ async function init() {
   document.getElementById('almacenNombre').textContent = almacen.nombre;
   document.getElementById('almacenCiudad').textContent = almacen.ciudad;
   if (almacen.telefono) {
-    document.getElementById('almacenTel').innerHTML = `📞 <a href="https://wa.me/${almacen.telefono.replace(/\D/g, '')}">${almacen.telefono}</a>`;
+    document.getElementById('almacenTel').innerHTML = `📞 <a href="https://wa.me/${almacen.telefono.replace(/\D/g, '')}">${escapeHtmlLocal(almacen.telefono)}</a>`;
   }
   if (almacen.email) {
-    document.getElementById('almacenEmail').innerHTML = `📧 <a href="mailto:${almacen.email}">${almacen.email}</a>`;
+    document.getElementById('almacenEmail').innerHTML = `📧 <a href="mailto:${encodeURIComponent(almacen.email)}">${escapeHtmlLocal(almacen.email)}</a>`;
   }
 
   const { data: productos, error: prodError } = await sb
