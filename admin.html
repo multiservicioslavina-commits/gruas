@@ -2820,6 +2820,1325 @@ async function loadTimeline() {
     `;
   }).join('');
 }
+
+// ==== Restored modules (dashboard, riders, sellos, clubs, motos, talleres, almacenes, hoteles, restaurantes, conversaciones, reportes, crecimiento, reservas) ====
+// These were accidentally deleted in a manual edit on 2026-09-14 and are restored here from git history (commit 32d015a).
+
+let allSellos = [];
+let selloFilter = 'all';
+let allRiders = [];
+let allClubs = [];
+let allMotos = [];
+let motosFilter = 'all';
+let allTalleres = [];
+let talleresFilter = 'all';
+let allAlmacenes = [];
+let almacenesFilter = 'all';
+let allHoteles = [], hotelesFilter = 'all';
+let allRestaurantes = [], restaurantesFilter = 'all';
+let allConversaciones = [], conversacionesFilter = 'todas';
+let currentRiderProfile = null;
+let genericNotesEntity = { type: null, id: null };
+let chartInstances = {};
+let reservasFilterEstado = '';
+const ESTADO_COLOR = { pendiente: '#f59e0b', confirmada: '#60a5fa', completada: '#4ade80', cancelada: '#f87171' };
+const ESTADO_LABEL = { pendiente: 'Pendiente', confirmada: 'Confirmada', completada: 'Completada', cancelada: 'Cancelada' };
+
+const EDIT_FIELDS = {
+  grueros: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'zona', label: 'Zona', type: 'text' },
+  ],
+  riders: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'apellido', label: 'Apellido', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'correo', label: 'Correo', type: 'text' },
+    { key: 'moto_marca', label: 'Marca de moto', type: 'text' },
+    { key: 'moto_modelo', label: 'Modelo de moto', type: 'text' },
+    { key: 'fecha_nacimiento', label: 'Fecha de nacimiento', type: 'date' },
+  ],
+  clubs: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'codigo', label: 'Código', type: 'text' },
+  ],
+  talleres: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'instagram', label: 'Instagram', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+  ],
+  almacenes: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'categorias', label: 'Categorías', type: 'text' },
+  ],
+  motos_venta: [
+    { key: 'titulo', label: 'Título', type: 'text' },
+    { key: 'precio', label: 'Precio', type: 'number' },
+    { key: 'ciudad', label: 'Ciudad', type: 'text' },
+    { key: 'barrio', label: 'Barrio', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'marca', label: 'Marca', type: 'text' },
+    { key: 'modelo', label: 'Modelo', type: 'text' },
+    { key: 'anio', label: 'Año', type: 'number' },
+    { key: 'kilometraje', label: 'Kilometraje', type: 'number' },
+    { key: 'cilindraje', label: 'Cilindraje', type: 'text' },
+    { key: 'color', label: 'Color', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+  hoteles: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'municipio', label: 'Municipio', type: 'text' },
+    { key: 'subregion', label: 'Subregión', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+  restaurantes: [
+    { key: 'nombre', label: 'Nombre', type: 'text' },
+    { key: 'municipio', label: 'Municipio', type: 'text' },
+    { key: 'subregion', label: 'Subregión', type: 'text' },
+    { key: 'direccion', label: 'Dirección', type: 'text' },
+    { key: 'telefono', label: 'Teléfono', type: 'text' },
+    { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+    { key: 'email', label: 'Email', type: 'text' },
+    { key: 'tipo_cocina', label: 'Tipo de cocina', type: 'text' },
+    { key: 'contacto_nombre', label: 'Contacto', type: 'text' },
+    { key: 'descripcion', label: 'Descripción', type: 'textarea' },
+  ],
+};
+
+let editModalState = { table: null, id: null };
+async function changeNegocioEstado(table, id, estado) {
+  const data = await callRita({ action: 'change_negocio_estado', table, id, estado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    alert('Error: ' + (data.error || 'No se pudo cambiar estado'));
+  }
+}
+
+function closeRiderProfile() {
+  document.getElementById('riderProfileModal').classList.add('hide');
+}
+
+async function deleteRecord(table, id, btn) {
+  if (!confirm('¿Borrar este registro permanentemente? Esta acción no se puede deshacer.')) return;
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'reject_record', table, id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo borrar'));
+  }
+}
+
+async function exportReportCSV(type) {
+  const data = await callRita({ action: 'export_report', type }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al exportar: ' + (data.error || 'Desconocido'));
+    return;
+  }
+
+  const csv = data.csv;
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `${type}_${new Date().toISOString().split('T')[0]}.csv`;
+  link.click();
+}
+
+function exportRiderProfilePDF() {
+  if (!currentRiderProfile || !window.jspdf) {
+    alert('El perfil aún no ha cargado.');
+    return;
+  }
+  const { rider: r, sellos, gruas, conversaciones } = currentRiderProfile;
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+  const fmtDate = d => d ? new Date(d).toLocaleDateString('es-CO') : '—';
+
+  let y = 20;
+  doc.setFontSize(18);
+  doc.setTextColor(232, 93, 32);
+  doc.text(`Perfil del Rider: ${nombre}`, 14, y);
+  y += 10;
+
+  doc.setFontSize(10);
+  doc.setTextColor(120, 120, 120);
+  doc.text(`Generado: ${new Date().toLocaleString('es-CO')}`, 14, y);
+  y += 10;
+
+  doc.setDrawColor(220, 220, 220);
+  doc.line(14, y, 196, y);
+  y += 8;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text('Datos personales', 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  [
+    ['Teléfono', r.telefono], ['Ciudad', r.ciudad], ['Correo', r.correo],
+    ['Fecha de registro', fmtDate(r.created_at)],
+  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
+  y += 4;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text('Moto', 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  [
+    ['Modelo', moto], ['Placa', r.placa],
+    ['SOAT vence', fmtDate(r.soat_vence)], ['Tecno vence', fmtDate(r.tecno_vence)],
+  ].forEach(([label, val]) => { doc.text(`${label}: ${val || '—'}`, 14, y); y += 6; });
+  y += 4;
+
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Sellos (${sellos.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!sellos.length) { doc.text('Sin municipios sellados.', 14, y); y += 6; }
+  else sellos.forEach(s => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.text(`• ${s.municipio_nombre || '—'} — ${fmtDate(s.fecha)}`, 14, y);
+    y += 6;
+  });
+  y += 4;
+
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Grúas (${gruas.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!gruas.length) { doc.text('Sin solicitudes de grúa.', 14, y); y += 6; }
+  else gruas.forEach(g => {
+    if (y > 275) { doc.addPage(); y = 20; }
+    doc.text(`• ${g.municipio || '—'} — ${g.estado} — ${fmtDate(g.created_at)}`, 14, y);
+    y += 6;
+  });
+  y += 4;
+
+  if (y > 250) { doc.addPage(); y = 20; }
+  doc.setFontSize(13);
+  doc.setTextColor(30, 30, 30);
+  doc.text(`Conversaciones con Rita (${conversaciones.length})`, 14, y);
+  y += 7;
+  doc.setFontSize(10);
+  doc.setTextColor(60, 60, 60);
+  if (!conversaciones.length) { doc.text('Sin chats registrados.', 14, y); y += 6; }
+  else conversaciones.slice(0, 20).forEach(c => {
+    if (y > 270) { doc.addPage(); y = 20; }
+    const content = (c.content || '').substring(0, 90);
+    const lines = doc.splitTextToSize(`• [${fmtDate(c.created_at)}] ${content}`, 180);
+    doc.text(lines, 14, y);
+    y += 6 * lines.length;
+  });
+
+  const filename = `perfil_${(nombre || 'rider').toLowerCase().replace(/\s+/g, '_')}.pdf`;
+  doc.save(filename);
+}
+
+function filterRidersTable() {
+  renderRidersTable();
+}
+
+function hideEditModal() {
+  document.getElementById('editModal').classList.add('hide');
+}
+
+async function loadAlmacenes() {
+  const data = await callAdmin({ action: 'list_almacenes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('almacenesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar almacenes.</td></tr>';
+    return;
+  }
+  sectionLoaded.almacenes = true;
+  allAlmacenes = data.almacenes || [];
+  const pendCount = allAlmacenes.filter(a => !a.aprobado).length;
+  updateBadge('badgeAlmacenes', pendCount || allAlmacenes.length);
+  populateCiudadFilter('almacenesCiudadFilter', allAlmacenes);
+  renderAlmacenesTable();
+}
+
+async function loadClubs() {
+  const data = await callAdmin({ action: 'list_clubs' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('clubsBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar clubs.</td></tr>';
+    return;
+  }
+  sectionLoaded.clubs = true;
+  allClubs = data.clubs || [];
+  updateBadge('badgeClubs', allClubs.length);
+  renderClubsTable();
+}
+
+async function loadConversaciones() {
+  const data = await callRita({ action: 'list_conversaciones' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('conversacionesBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar conversaciones.</td></tr>';
+    return;
+  }
+  sectionLoaded.conversaciones = true;
+  allConversaciones = data.conversaciones || [];
+  renderConversacionesTable();
+}
+
+async function loadCrecimiento() {
+  const data = await callAdmin({ action: 'growth_analytics' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('cohortesBody').innerHTML = '<tr><td colspan="4" style="padding:1rem;text-align:center;color:#f87171">Error al cargar.</td></tr>';
+    return;
+  }
+  sectionLoaded.crecimiento = true;
+
+  document.getElementById('gRegistrados').textContent = data.funnel.registrados;
+  document.getElementById('gActivados').textContent = data.funnel.activados_primer_sello;
+  document.getElementById('gTasaActivacion').textContent = data.funnel.tasa_activacion + '%';
+  document.getElementById('gActivos30').textContent = data.funnel.activos_ultimos_30d;
+  document.getElementById('gTasaRetencion').textContent = data.funnel.tasa_retencion_30d + '%';
+  document.getElementById('gReferidos').textContent = data.referidos.total_invitaciones;
+  document.getElementById('gReferidosOk').textContent = data.referidos.registrados;
+  document.getElementById('gTasaReferidos').textContent = data.referidos.tasa_conversion + '%';
+
+  const body = document.getElementById('cohortesBody');
+  body.innerHTML = (data.cohortes_semanales || []).slice().reverse().map(c => `
+    <tr style="border-bottom:1px solid var(--line)">
+      <td style="padding:0.5rem">${esc(c.semana)}</td>
+      <td style="padding:0.5rem">${c.registrados}</td>
+      <td style="padding:0.5rem">${c.activados_semana1}</td>
+      <td style="padding:0.5rem;color:${c.tasa_activacion_semana1 >= 50 ? '#4ade80' : c.tasa_activacion_semana1 >= 20 ? '#f59e0b' : '#f87171'}">${c.tasa_activacion_semana1}%</td>
+    </tr>
+  `).join('') || '<tr><td colspan="4" style="padding:1rem;text-align:center;color:var(--mu)">Sin datos aún.</td></tr>';
+}
+
+async function loadDashboard() {
+  const data = await callRita({ action: 'crm_metrics' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#f87171">Error al cargar métricas.</p>';
+    return;
+  }
+  sectionLoaded.dashboard = true;
+
+  // Llenar métricas
+  document.getElementById('metricRiders').textContent = data.riders_total ?? '—';
+  document.getElementById('metricRidersDetail').textContent = data.riders_nuevos ? `${data.riders_nuevos} nuevos este mes` : '';
+
+  document.getElementById('metricSellos').textContent = data.sellos_total ?? '—';
+  document.getElementById('metricSellosDetail').textContent = data.municipios_cubiertos ? `${data.municipios_cubiertos} municipios` : '';
+
+  document.getElementById('metricGruas').textContent = data.gruas_total ?? '—';
+  document.getElementById('metricGruasDetail').textContent = data.gruas_pendientes ? `${data.gruas_pendientes} pendientes` : '';
+
+  document.getElementById('metricRita').textContent = data.rita_logs_total ?? '—';
+  document.getElementById('metricRitaDetail').textContent = data.rita_chats ? `${data.rita_chats} conversaciones` : '';
+
+  document.getElementById('metricTalleres').textContent = data.talleres_total ?? '—';
+  document.getElementById('metricTalleresDetail').textContent = data.talleres_aprobados ? `${data.talleres_aprobados} aprobados` : '';
+
+  document.getElementById('metricAlmacenes').textContent = data.almacenes_total ?? '—';
+  document.getElementById('metricAlmacenesDetail').textContent = data.almacenes_aprobados ? `${data.almacenes_aprobados} aprobados` : '';
+
+  document.getElementById('metricHoteles').textContent = data.hoteles_total ?? '—';
+  document.getElementById('metricHotelesDetail').textContent = data.hoteles_aprobados ? `${data.hoteles_aprobados} aprobados` : '';
+
+  document.getElementById('metricRestaurantes').textContent = data.restaurantes_total ?? '—';
+  document.getElementById('metricRestaurantesDetail').textContent = data.restaurantes_aprobados ? `${data.restaurantes_aprobados} aprobados` : '';
+
+  // Alertas
+  const alerts = data.alerts || [];
+  const badge = document.getElementById('badgeAlerts');
+  if (alerts.length > 0) {
+    badge.textContent = alerts.length;
+    badge.style.display = 'inline-block';
+  } else {
+    badge.style.display = 'none';
+  }
+  if (alerts.length === 0) {
+    document.getElementById('dashboardAlerts').innerHTML = '<p style="color:#4ade80">✓ Todo en orden</p>';
+  } else {
+    document.getElementById('dashboardAlerts').innerHTML = alerts.map(a => {
+      const isStale = a.tipo.includes('estancados');
+      const color = isStale ? '#f87171' : '#f59e0b';
+      const bg = isStale ? '#2a1212' : '#2a1a00';
+      const icon = isStale ? '🔴' : '⚠️';
+      return `<div style="padding:0.5rem;border-left:3px solid ${color};background:${bg};margin-bottom:0.5rem;font-size:0.85rem">
+        ${icon} <strong>${a.tipo}</strong>: ${a.mensaje}
+       </div>`;
+    }).join('');
+  }
+}
+
+async function loadGenericNotes() {
+  const box = document.getElementById('genericNotesList');
+  box.innerHTML = 'Cargando notas...';
+  const { type, id } = genericNotesEntity;
+  const data = await callRita({ action: 'list_notes', entity_type: type, entity_id: id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
+    return;
+  }
+  const notes = data.notes || [];
+  if (!notes.length) {
+    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
+    return;
+  }
+  box.innerHTML = notes.map(n => `
+    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+      <div>
+        <div>${esc(n.note)}</div>
+        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
+      </div>
+      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeGenericNote('${jsq(n.id)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function loadHoteles() {
+  const data = await callRita({ action: 'list_hoteles' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('hotelesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar hoteles.</td></tr>';
+    return;
+  }
+  sectionLoaded.hoteles = true;
+  allHoteles = data.hoteles || [];
+  const pendCount = allHoteles.filter(h => !h.aprobado).length;
+  updateBadge('badgeHoteles', pendCount || allHoteles.length);
+  populateCiudadFilter('hotelesCiudadFilter', allHoteles.map(h => ({ ciudad: h.municipio })));
+  renderHotelesTable();
+}
+
+async function loadMotos() {
+  const data = await callAdmin({ action: 'list_motos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('motosBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar motos.</td></tr>';
+    return;
+  }
+  sectionLoaded.motos = true;
+  allMotos = data.motos || [];
+  const pendCount = allMotos.filter(m => !m.aprobado && !m.vendido).length;
+  updateBadge('badgeMotos', pendCount || allMotos.length);
+  renderMotosTable();
+}
+
+async function loadNotes(entityType, entityId) {
+  const box = document.getElementById('notesList');
+  const data = await callRita({ action: 'list_notes', entity_type: entityType, entity_id: entityId }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem">Error al cargar notas.</p>';
+    return;
+  }
+  const notes = data.notes || [];
+  if (!notes.length) {
+    box.innerHTML = '<p style="color:var(--mu);font-size:0.85rem">Sin notas aún.</p>';
+    return;
+  }
+  box.innerHTML = notes.map(n => `
+    <div style="background:var(--s2);padding:0.6rem 0.75rem;border-radius:6px;font-size:0.82rem;display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem">
+      <div>
+        <div>${esc(n.note)}</div>
+        <div style="font-size:0.7rem;color:var(--mu);margin-top:0.25rem">${new Date(n.created_at).toLocaleString('es-CO')}</div>
+      </div>
+      <button class="btn-sm danger admin-only" style="padding:0.15rem 0.4rem" onclick="removeNote('${jsq(n.id)}','${entityType}','${jsq(entityId)}')">✕</button>
+    </div>
+  `).join('');
+}
+
+async function loadReportes() {
+  const data = await callRita({ action: 'get_reportes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    console.error('Error cargando reportes:', data.error);
+    return;
+  }
+  sectionLoaded.reportes = true;
+
+  // Riders por mes
+  if (data.ridersPerMonth) renderChartRidersPerMonth(data.ridersPerMonth);
+  if (data.gruasByMunicipio) renderChartGruasByMunicipio(data.gruasByMunicipio);
+  if (data.negociosEstado) renderChartNegociosEstado(data.negociosEstado);
+  if (data.conversionRate !== undefined) {
+    const rate = Math.round(data.conversionRate * 100);
+    document.querySelector('#chartConversionRate').innerHTML = `
+      <div style="font-size:2.5rem;font-weight:700;color:${rate > 50 ? '#4ade80' : '#f59e0b'}">${rate}%</div>
+      <div style="font-size:0.8rem;color:var(--mu);margin-top:0.5rem">${data.negociosActivos} / ${data.negociosInteresados} convertidos</div>
+    `;
+  }
+}
+
+async function loadReservas() {
+  const box = document.getElementById('reservasBody');
+  box.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--mu)">Cargando...</div>';
+  const data = await callAdmin({ action: 'reserva_list', estado: reservasFilterEstado || undefined }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    box.innerHTML = '<p style="color:#f87171;font-size:0.85rem;padding:1rem">Error al cargar reservas.</p>';
+    return;
+  }
+  const reservas = data.reservas || [];
+  const badge = document.getElementById('badgeReservas');
+  const pendientes = reservas.filter(r => r.estado === 'pendiente').length;
+  if (badge) { badge.style.display = pendientes > 0 ? 'inline-block' : 'none'; badge.textContent = pendientes; }
+
+  box.innerHTML = reservas.length ? reservas.map(r => `
+    <div style="background:var(--s);border:1px solid var(--line);border-radius:10px;padding:1rem 1.25rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.75rem">
+      <div>
+        <div style="font-weight:600">${esc(r.nombre_contacto)} <span style="color:var(--mu);font-weight:400">· ${esc(r.telefono_contacto)}</span></div>
+        <div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">${esc(r.entidad_tipo)} — ${esc(r.entidad_nombre || r.entidad_id)}</div>
+        ${r.fecha_solicitada ? `<div style="font-size:0.8rem;color:var(--mu)">📅 ${esc(r.fecha_solicitada)} ${esc(r.hora_solicitada || '')}</div>` : ''}
+        ${r.nota ? `<div style="font-size:0.8rem;color:var(--mu);margin-top:0.2rem">"${esc(r.nota)}"</div>` : ''}
+      </div>
+      <div style="display:flex;align-items:center;gap:0.5rem">
+        <span style="font-size:0.75rem;font-weight:700;color:${ESTADO_COLOR[r.estado] || '#888'}">${ESTADO_LABEL[r.estado] || r.estado}</span>
+        <select onchange="updateReservaEstado('${r.id}', this.value)" style="background:#111;border:1px solid var(--line);color:var(--text);border-radius:6px;padding:0.3rem 0.5rem;font-size:0.8rem">
+          <option value="">Cambiar...</option>
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmada">Confirmada</option>
+          <option value="completada">Completada</option>
+          <option value="cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+  `).join('') : '<p style="color:var(--mu);font-size:0.85rem;padding:1rem">Sin reservas.</p>';
+}
+
+async function loadRestaurantes() {
+  const data = await callRita({ action: 'list_restaurantes' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('restaurantesBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar restaurantes.</td></tr>';
+    return;
+  }
+  sectionLoaded.restaurantes = true;
+  allRestaurantes = data.restaurantes || [];
+  const pendCount = allRestaurantes.filter(r => !r.aprobado).length;
+  updateBadge('badgeRestaurantes', pendCount || allRestaurantes.length);
+  populateCiudadFilter('restaurantesCiudadFilter', allRestaurantes.map(r => ({ ciudad: r.municipio })));
+  renderRestaurantesTable();
+}
+
+async function loadRiders() {
+  const data = await callAdmin({ action: 'list_riders' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('ridersBody').innerHTML = '<tr class="empty-row"><td colspan="7">Error al cargar riders.</td></tr>';
+    return;
+  }
+  sectionLoaded.riders = true;
+  allRiders = data.riders || [];
+  updateBadge('badgeRiders', allRiders.length);
+  populateRidersCiudadFilter();
+  renderRidersTable();
+}
+
+async function loadSellos() {
+  const data = await callAdmin({ action: 'list_sellos' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('sellosBody').innerHTML = '<tr class="empty-row"><td colspan="6">Error al cargar sellos.</td></tr>';
+    return;
+  }
+  sectionLoaded.sellos = true;
+  allSellos = data.sellos || [];
+  const pendCount = allSellos.filter(s => !['aprobado','rechazado'].includes((s.estado||'').toLowerCase())).length;
+  updateBadge('badgeSellos', pendCount);
+  renderSellosTable();
+}
+
+async function loadTalleres() {
+  const data = await callAdmin({ action: 'list_talleres' }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('talleresBody').innerHTML = '<tr class="empty-row"><td colspan="5">Error al cargar talleres.</td></tr>';
+    return;
+  }
+  sectionLoaded.talleres = true;
+  allTalleres = data.talleres || [];
+  const pendCount = allTalleres.filter(t => !t.aprobado).length;
+  updateBadge('badgeTalleres', pendCount || allTalleres.length);
+  populateCiudadFilter('talleresCiudadFilter', allTalleres);
+  renderTalleresTable();
+}
+
+function openEditModal(table, record) {
+  editModalState = { table, id: record.id };
+  const fields = EDIT_FIELDS[table] || [];
+  document.getElementById('editModalTitle').textContent = 'Modificar ' + (record.nombre || record.titulo || '');
+  const container = document.getElementById('editModalFields');
+  container.innerHTML = fields.map(f => {
+    const val = record[f.key] ?? '';
+    if (f.type === 'textarea') {
+      return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><textarea data-field="${f.key}" rows="3" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem">${esc(val)}</textarea></div>`;
+    }
+    return `<div><label style="display:block;font-size:0.8rem;color:var(--mu);margin-bottom:0.3rem">${esc(f.label)}</label><input type="${f.type}" data-field="${f.key}" value="${esc(val)}" style="width:100%;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);padding:0.6rem;font-size:0.9rem"></div>`;
+  }).join('');
+  document.getElementById('editModalErr').style.display = 'none';
+  document.getElementById('editModal').classList.remove('hide');
+}
+
+function openEditModalFor(table, id) {
+  const map = { grueros: allGrueros, riders: allRiders, clubs: allClubs, talleres: allTalleres, almacenes: allAlmacenes, motos_venta: allMotos, hoteles: allHoteles, restaurantes: allRestaurantes };
+  const list = map[table] || [];
+  const record = list.find(r => String(r.id) === String(id));
+  if (record) openEditModal(table, record);
+}
+
+function openNotesModal(entityType, entityId, label) {
+  genericNotesEntity = { type: entityType, id: entityId };
+  document.getElementById('notesModalTitle').textContent = `📝 Notas — ${label}`;
+  document.getElementById('notesModal').classList.remove('hide');
+  loadGenericNotes();
+}
+
+async function openRiderProfile(riderId) {
+  const modal = document.getElementById('riderProfileModal');
+  modal.classList.remove('hide');
+  currentRiderProfile = null;
+
+  const data = await callRita({ action: 'get_rider_profile', rider_id: riderId }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    document.getElementById('riderProfileContent').innerHTML = '<p style="color:#f87171">Error al cargar perfil.</p>';
+    return;
+  }
+
+  const r = data.rider;
+  const sellos = data.sellos || [];
+  const gruas = data.gruas || [];
+  const conversaciones = data.conversaciones || [];
+  currentRiderProfile = { rider: r, sellos, gruas, conversaciones };
+
+  const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+  const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+
+  document.getElementById('riderProfileTitle').textContent = `🏍️ ${nombre}`;
+
+  let html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:2rem">
+      <div>
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Datos personales</div>
+        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
+          <div style="margin-bottom:0.6rem"><strong>Teléfono:</strong> ${esc(r.telefono || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Ciudad:</strong> ${esc(r.ciudad || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Correo:</strong> ${esc(r.correo || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>Unido:</strong> ${r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—'}</div>
+        </div>
+      </div>
+      <div>
+        <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.5rem;font-weight:600">Moto</div>
+        <div style="background:var(--s2);padding:1rem;border-radius:8px;font-size:0.85rem">
+          <div style="margin-bottom:0.6rem"><strong>Modelo:</strong> ${esc(moto)}</div>
+          <div style="margin-bottom:0.6rem"><strong>Placa:</strong> ${esc(r.placa || '—')}</div>
+          <div style="margin-bottom:0.6rem"><strong>SOAT:</strong> ${r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—'}</div>
+          <div style="margin-bottom:0.6rem"><strong>Tecno:</strong> ${r.tecno_vence ? new Date(r.tecno_vence).toLocaleDateString('es-CO') : '—'}</div>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🏷️ Sellos (${sellos.length})</div>
+      ${sellos.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin municipios sellados aún.</p>' :
+        `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.75rem">
+          ${sellos.map(s => `
+            <div style="background:var(--s2);padding:0.6rem;border-radius:6px;font-size:0.8rem;border-left:3px solid var(--or)">
+              <strong>${esc(s.municipio_nombre || '—')}</strong><br>
+              <span style="color:var(--mu)">${s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : '—'}</span>
+            </div>
+          `).join('')}
+        </div>`
+      }
+    </div>
+
+    <div style="margin-bottom:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">🚗 Grúas (${gruas.length})</div>
+      ${gruas.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin solicitudes de grúa.</p>' :
+        `<div style="display:flex;flex-direction:column;gap:0.5rem">
+          ${gruas.map(g => {
+            const estColor = { pendiente: '#f59e0b', asignada: '#4ade80', llego: '#60a5fa', finalizada: '#9ca3af' };
+            return `
+              <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid ${estColor[g.estado] || '#888'}">
+                <div style="font-size:0.85rem"><strong>${esc(g.municipio || '—')}</strong></div>
+                <div style="font-size:0.75rem;color:var(--mu);margin-top:0.3rem">${g.created_at ? new Date(g.created_at).toLocaleDateString('es-CO') : '—'}</div>
+                <div style="font-size:0.7rem;color:${estColor[g.estado] || '#888'};margin-top:0.2rem;font-weight:600">${g.estado}</div>
+              </div>
+            `;
+          }).join('')}
+        </div>`
+      }
+    </div>
+
+    <div>
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">💬 Conversaciones con Rita (${conversaciones.length})</div>
+      ${conversaciones.length === 0 ?
+        '<p style="color:var(--mu);font-size:0.85rem">Sin chats registrados.</p>' :
+        `<div style="display:flex;flex-direction:column;gap:0.5rem;max-height:300px;overflow-y:auto">
+          ${conversaciones.map(c => `
+            <div style="background:var(--s2);padding:0.75rem;border-radius:6px;border-left:3px solid var(--or)">
+              <div style="font-size:0.75rem;color:var(--mu)">${c.created_at ? new Date(c.created_at).toLocaleDateString('es-CO') : '—'}</div>
+              <div style="font-size:0.8rem;margin-top:0.3rem;line-height:1.4">${esc(c.content || '').substring(0, 100)}${(c.content || '').length > 100 ? '...' : ''}</div>
+            </div>
+          `).join('')}
+        </div>`
+      }
+    </div>
+
+    <div style="margin-top:2rem">
+      <div style="font-size:0.75rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--mu);margin-bottom:0.75rem;font-weight:600">📝 Notas internas</div>
+      <div class="admin-only" style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+        <input type="text" id="noteInput" placeholder="Agregar nota..." style="flex:1;background:#111;border:1px solid var(--line);border-radius:8px;color:var(--text);font-size:0.85rem;padding:0.5rem 0.75rem;outline:none">
+        <button class="btn-sm" onclick="submitNote('rider','${jsq(riderId)}')">Agregar</button>
+      </div>
+      <div id="notesList" style="display:flex;flex-direction:column;gap:0.5rem">Cargando notas...</div>
+    </div>
+  `;
+
+  document.getElementById('riderProfileContent').innerHTML = html;
+  loadNotes('rider', riderId);
+}
+
+function populateCiudadFilter(selectId, rows) {
+  const sel = document.getElementById(selectId);
+  if (!sel) return;
+  const current = sel.value;
+  const ciudades = [...new Set(rows.map(r => r.ciudad).filter(Boolean))].sort();
+  sel.innerHTML = '<option value="">Todas las ciudades</option>' +
+    ciudades.map(c => `<option value="${esc(c)}">${esc(c)}</option>`).join('');
+  if (ciudades.includes(current)) sel.value = current;
+}
+
+function populateRidersCiudadFilter() {
+  populateCiudadFilter('ridersCiudadFilter', allRiders);
+}
+
+function reloadSectionTable(table) {
+  if (table === 'talleres') { sectionLoaded.talleres = false; loadTalleres(); }
+  else if (table === 'almacenes') { sectionLoaded.almacenes = false; loadAlmacenes(); }
+  else if (table === 'clubs') { sectionLoaded.clubs = false; loadClubs(); }
+  else if (table === 'motos_venta') { sectionLoaded.motos = false; loadMotos(); }
+  else if (table === 'riders') { sectionLoaded.riders = false; loadRiders(); }
+  else if (table === 'sellos') { sectionLoaded.sellos = false; loadSellos(); }
+  else if (table === 'grueros') { reloadList(); }
+  else if (table === 'hoteles') { sectionLoaded.hoteles = false; loadHoteles(); }
+  else if (table === 'restaurantes') { sectionLoaded.restaurantes = false; loadRestaurantes(); }
+}
+
+async function removeGenericNote(id) {
+  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  loadGenericNotes();
+}
+
+async function removeNote(id, entityType, entityId) {
+  const data = await callRita({ action: 'delete_note', id }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al borrar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  loadNotes(entityType, entityId);
+}
+
+function renderAlmacenesTable() {
+  let rows = allAlmacenes;
+  if (almacenesFilter === 'pendientes') rows = rows.filter(a => !a.aprobado);
+  else if (almacenesFilter === 'aprobados') rows = rows.filter(a => !!a.aprobado);
+  const ciudadFilter = document.getElementById('almacenesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(a => a.ciudad === ciudadFilter);
+
+  const tbody = document.getElementById('almacenesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin almacenes que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(a => {
+    const estado = a.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('almacenes','${jsq(a.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
+    return `<tr>
+      <td><strong>${esc(a.nombre || '—')}</strong>${a.direccion ? `<br><span class="tel">${esc(a.direccion)}${a.barrio ? ', ' + esc(a.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(a.ciudad || '—')}</td>
+      <td class="tel">${esc(a.telefono || '—')}${a.email ? `<br><span class="tel">${esc(a.email)}</span>` : ''}</td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
+          ${pipelineOptions}
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('almacen','${jsq(a.id)}','${jsq(a.nombre || '')}')">📝 Notas</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderChartGruasByMunicipio(data) {
+  const ctx = document.getElementById('chartGruasByMunicipio');
+  if (chartInstances['gruasByMunicipio']) chartInstances['gruasByMunicipio'].destroy();
+
+  chartInstances['gruasByMunicipio'] = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Grúas',
+        data: data.values,
+        backgroundColor: '#E85D20',
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
+        y: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+function renderChartNegociosEstado(data) {
+  const ctx = document.getElementById('chartNegociosEstado');
+  if (chartInstances['negociosEstado']) chartInstances['negociosEstado'].destroy();
+
+  const colors = {
+    interesado: '#f59e0b',
+    documentos: '#3b82f6',
+    aprobado: '#8b5cf6',
+    activo: '#4ade80',
+    inactivo: '#9ca3af'
+  };
+
+  chartInstances['negociosEstado'] = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        data: data.values,
+        backgroundColor: data.labels.map(l => colors[l] || '#888'),
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { labels: { color: '#888' } } }
+    }
+  });
+}
+
+function renderChartRidersPerMonth(data) {
+  const ctx = document.getElementById('chartRidersPerMonth');
+  if (chartInstances['ridersPerMonth']) chartInstances['ridersPerMonth'].destroy();
+
+  chartInstances['ridersPerMonth'] = new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: data.labels,
+      datasets: [{
+        label: 'Riders nuevos',
+        data: data.values,
+        borderColor: '#E85D20',
+        backgroundColor: 'rgba(232,93,32,0.1)',
+        borderWidth: 2,
+        tension: 0.4,
+        fill: true,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#2a2a2a' }, ticks: { color: '#888' } },
+        x: { grid: { color: '#2a2a2a' }, ticks: { color: '#888' } }
+      }
+    }
+  });
+}
+
+function renderClubsTable() {
+  const tbody = document.getElementById('clubsBody');
+  if (!allClubs.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin clubs registrados.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = allClubs.map(c => {
+    const apro = !!c.aprobado;
+    return `<tr>
+      <td><strong>${esc(c.nombre || '—')}</strong>${c.logo_url ? ` <img class="tbl-thumb" src="${esc(c.logo_url)}" alt="" style="vertical-align:middle;margin-left:0.5rem">` : ''}</td>
+      <td>${esc(c.ciudad || '—')}</td>
+      <td class="tel">${esc(c.codigo || '—')}</td>
+      <td><span class="badge ${apro ? 'badge-on' : 'badge-pend'}">${apro ? '✓ Aprobado' : 'Pendiente'}</span></td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn admin-only ${apro ? 'del' : 'aprobar'}" onclick="toggleApproval('clubs','${jsq(c.id)}',${!apro},this)">
+            ${apro ? 'Desaprobar' : '✓ Aprobar'}
+          </button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('clubs','${jsq(c.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('clubs','${jsq(c.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderConversacionesTable() {
+  let rows = allConversaciones;
+  if (conversacionesFilter === 'sin_respuesta') rows = rows.filter(c => c.sin_respuesta);
+  else if (conversacionesFilter === 'con_error') rows = rows.filter(c => c.con_error);
+  else if (conversacionesFilter === 'grua') rows = rows.filter(c => c.pidio_grua);
+
+  const tbody = document.getElementById('conversacionesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin conversaciones que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(c => {
+    const tipoLabel = c.pidio_grua ? '🚗 Grúa' : c.con_error ? '⚠️ Error' : c.sin_respuesta ? '❓ Pendiente' : '✓ Resuelto';
+    return `<tr>
+      <td><strong>${esc(c.telefono || '—')}</strong></td>
+      <td><span class="tel">${c.updated_at ? new Date(c.updated_at).toLocaleDateString('es-CO') : '—'}</span></td>
+      <td>${c.mensaje_count || 0} msgs</td>
+      <td>${tipoLabel}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openConversation('${jsq(c.telefono)}', '${jsq(c.telefono)}')">Ver</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderHotelesTable() {
+  let rows = allHoteles;
+  if (hotelesFilter === 'pendientes') rows = rows.filter(h => !h.aprobado);
+  else if (hotelesFilter === 'aprobados') rows = rows.filter(h => !!h.aprobado);
+  const ciudadFilter = document.getElementById('hotelesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(h => h.municipio === ciudadFilter);
+
+  const tbody = document.getElementById('hotelesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin hoteles que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(h => {
+    const estado = h.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('hoteles','${jsq(h.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
+    return `<tr>
+      <td><strong>${esc(h.nombre || '—')}</strong></td>
+      <td>${esc(h.municipio || '—')}${h.subregion ? `<br><span class="tel">${esc(h.subregion)}</span>` : ''}</td>
+      <td class="tel">${esc(h.telefono || '—')}${h.email ? `<br><span class="tel">${esc(h.email)}</span>` : ''}</td>
+      <td>${h.parqueadero_motos ? '✓ Sí' : '—'}</td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
+          ${pipelineOptions}
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('hotel','${jsq(h.id)}','${jsq(h.nombre || '')}')">📝 Notas</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('hoteles','${jsq(h.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('hoteles','${jsq(h.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderMotosTable() {
+  let rows = allMotos;
+  if (motosFilter === 'pendientes') rows = rows.filter(m => !m.aprobado && !m.vendido);
+  else if (motosFilter === 'aprobadas') rows = rows.filter(m => m.aprobado && !m.vendido);
+  else if (motosFilter === 'vendidas') rows = rows.filter(m => m.vendido);
+
+  const tbody = document.getElementById('motosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin motos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(m => {
+    const precio = m.precio ? '$' + Number(m.precio).toLocaleString('es-CO') : '—';
+    const marcaModelo = [m.marca, m.modelo].filter(Boolean).join(' ') || '—';
+    let estadoBadge;
+    if (m.vendido) estadoBadge = '<span class="badge badge-off">Vendida</span>';
+    else if (m.aprobado) estadoBadge = '<span class="badge badge-on">Aprobada</span>';
+    else estadoBadge = '<span class="badge badge-pend">Pendiente</span>';
+
+    return `<tr>
+      <td>${m.foto1_url ? `<img class="tbl-thumb" src="${esc(m.foto1_url)}" alt="">` : '—'}</td>
+      <td><strong>${esc(m.titulo || '—')}</strong>${m.anio ? `<br><span class="tel">${m.anio}</span>` : ''}${m.kilometraje ? ` <span class="tel">${Number(m.kilometraje).toLocaleString('es-CO')} km</span>` : ''}</td>
+      <td>${esc(marcaModelo)}${m.cilindraje ? `<br><span class="tel">${m.cilindraje}cc</span>` : ''}</td>
+      <td style="font-weight:600">${precio}</td>
+      <td>${esc(m.ciudad || '—')}</td>
+      <td>${estadoBadge}</td>
+      <td>
+        <div class="actions-cell">
+          ${!m.aprobado && !m.vendido ? `<button class="act-btn aprobar admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',true,this)">✓ Aprobar</button>` : ''}
+          ${m.aprobado && !m.vendido ? `<button class="act-btn del admin-only" onclick="toggleApproval('motos_venta','${jsq(m.id)}',false,this)">Desaprobar</button>` : ''}
+          <button class="act-btn admin-only" onclick="openEditModalFor('motos_venta','${jsq(m.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('motos_venta','${jsq(m.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRestaurantesTable() {
+  let rows = allRestaurantes;
+  if (restaurantesFilter === 'pendientes') rows = rows.filter(r => !r.aprobado);
+  else if (restaurantesFilter === 'aprobados') rows = rows.filter(r => !!r.aprobado);
+  const ciudadFilter = document.getElementById('restaurantesCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(r => r.municipio === ciudadFilter);
+
+  const tbody = document.getElementById('restaurantesBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin restaurantes que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const estado = r.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]};font-size:0.65rem;padding:0.3rem 0.5rem" onclick="changeNegocioEstado('restaurantes','${jsq(r.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
+    return `<tr>
+      <td><strong>${esc(r.nombre || '—')}</strong></td>
+      <td>${esc(r.municipio || '—')}${r.subregion ? `<br><span class="tel">${esc(r.subregion)}</span>` : ''}</td>
+      <td class="tel">${esc(r.telefono || '—')}${r.email ? `<br><span class="tel">${esc(r.email)}</span>` : ''}</td>
+      <td>${esc(r.tipo_cocina || '—')}</td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.3rem">
+          ${pipelineOptions}
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('restaurante','${jsq(r.id)}','${jsq(r.nombre || '')}')">📝 Notas</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('restaurantes','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('restaurantes','${jsq(r.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderRidersTable() {
+  const q = (document.getElementById('ridersSearch')?.value || '').toLowerCase();
+  const ciudadFilter = document.getElementById('ridersCiudadFilter')?.value || '';
+  const soatFilter = document.getElementById('ridersSoatFilter')?.checked || false;
+  let rows = allRiders;
+  if (q) rows = rows.filter(r =>
+    (r.nombre||'').toLowerCase().includes(q) ||
+    (r.apellido||'').toLowerCase().includes(q) ||
+    (r.ciudad||'').toLowerCase().includes(q) ||
+    (r.telefono||'').includes(q)
+  );
+  if (ciudadFilter) rows = rows.filter(r => r.ciudad === ciudadFilter);
+  if (soatFilter) rows = rows.filter(r => r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000);
+
+  const tbody = document.getElementById('ridersBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="7">Sin riders que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(r => {
+    const nombre = [r.nombre, r.apellido].filter(Boolean).join(' ') || '—';
+    const moto = [r.moto_marca, r.moto_modelo, r.moto_cc ? r.moto_cc + 'cc' : ''].filter(Boolean).join(' ') || '—';
+    const soat = r.soat_vence ? new Date(r.soat_vence).toLocaleDateString('es-CO') : '—';
+    const fecha = r.created_at ? new Date(r.created_at).toLocaleDateString('es-CO') : '—';
+    // Warn if SOAT expires within 30 days
+    const soatWarn = r.soat_vence && (new Date(r.soat_vence) - Date.now()) < 30 * 86400000;
+    return `<tr>
+      <td><strong>${esc(nombre)}</strong>${r.slug ? `<br><span class="tel">${esc(r.slug)}</span>` : ''}</td>
+      <td>${esc(r.ciudad || '—')}</td>
+      <td class="tel">${esc(moto)}</td>
+      <td class="tel">${esc(r.telefono || '—')}</td>
+      <td><span style="${soatWarn ? 'color:#f59e0b;font-weight:600' : ''}">${soat}</span></td>
+      <td class="tel">${fecha}</td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openRiderProfile('${jsq(r.id)}')">👁️ Perfil</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('riders','${jsq(r.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('riders','${jsq(r.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderSellosTable() {
+  let rows = allSellos;
+  if (selloFilter !== 'all') rows = rows.filter(s => (s.estado||'').toLowerCase() === selloFilter);
+
+  const tbody = document.getElementById('sellosBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="6">Sin sellos que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(s => {
+    const fecha = s.fecha ? new Date(s.fecha).toLocaleDateString('es-CO') : (s.created_at ? new Date(s.created_at).toLocaleDateString('es-CO') : '—');
+    const estadoNorm = (s.estado||'').toLowerCase();
+    const estadoCls = estadoNorm === 'aprobado' ? 'badge-on' : estadoNorm === 'rechazado' ? 'badge-off' : 'badge-pend';
+    const estadoLbl = estadoNorm === 'aprobado' ? '✓ Aprobado' : estadoNorm === 'rechazado' ? '✗ Rechazado' : 'Pendiente';
+    const riderName = s.riders?.nombre || s.rider_id || '—';
+    return `<tr>
+      <td>${esc(riderName)}</td>
+      <td>${esc(s.municipio_id || '—')}</td>
+      <td class="tel">${fecha}</td>
+      <td>${s.en_manada ? '<span class="badge badge-apro">Si</span>' : '<span class="badge badge-off">No</span>'}</td>
+      <td><span class="badge ${estadoCls}">${estadoLbl}</span></td>
+      <td>
+        <div class="actions-cell">
+          ${estadoNorm !== 'aprobado' && estadoNorm !== 'rechazado' ? `
+            <button class="act-btn aprobar" onclick="updateSello('${jsq(s.id)}','aprobado',this)">✓ Aprobar</button>
+            <button class="act-btn del admin-only" onclick="updateSello('${jsq(s.id)}','rechazado',this)">✗ Rechazar</button>
+          ` : ''}
+          <button class="act-btn del admin-only" onclick="deleteRecord('sellos','${jsq(s.id)}',this)">🗑 Borrar</button>
+          ${s.foto_url ? `<a class="act-btn" href="${esc(s.foto_url)}" target="_blank" style="text-decoration:none">📷 Ver</a>` : ''}
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function renderTalleresTable() {
+  let rows = allTalleres;
+  if (talleresFilter === 'pendientes') rows = rows.filter(t => !t.aprobado);
+  else if (talleresFilter === 'aprobados') rows = rows.filter(t => !!t.aprobado);
+  const ciudadFilter = document.getElementById('talleresCiudadFilter')?.value || '';
+  if (ciudadFilter) rows = rows.filter(t => t.ciudad === ciudadFilter);
+
+  const tbody = document.getElementById('talleresBody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr class="empty-row"><td colspan="5">Sin talleres que mostrar.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(t => {
+    const apro = !!t.aprobado;
+    const estado = t.estado || 'interesado';
+    const estadoLabels = { interesado: '🎯 Interesado', documentos: '📋 Documentos', aprobado: '✓ Aprobado', activo: '✅ Activo', inactivo: '❌ Inactivo' };
+    const estadoColors = { interesado: '#f59e0b', documentos: '#3b82f6', aprobado: '#8b5cf6', activo: '#4ade80', inactivo: '#9ca3af' };
+
+    const pipelineOptions = ['interesado', 'documentos', 'aprobado', 'activo', 'inactivo'].map(e =>
+      `<button class="pipeline-btn admin-only ${estado === e ? 'active' : ''}" style="border-left-color:${estadoColors[e]}" onclick="changeNegocioEstado('talleres','${jsq(t.id)}','${e}')">${estadoLabels[e]}</button>`
+    ).join('');
+
+    return `<tr>
+      <td><strong>${esc(t.nombre || '—')}</strong>${t.direccion ? `<br><span class="tel">${esc(t.direccion)}${t.barrio ? ', ' + esc(t.barrio) : ''}</span>` : ''}</td>
+      <td>${esc(t.ciudad || '—')}</td>
+      <td class="tel">${esc(t.telefono || '—')}${t.email ? `<br><span class="tel">${esc(t.email)}</span>` : ''}</td>
+      <td>
+        <div class="pipeline-selector" style="display:flex;flex-direction:column;gap:0.4rem">
+          ${pipelineOptions}
+        </div>
+      </td>
+      <td>
+        <div class="actions-cell">
+          <button class="act-btn" onclick="openNotesModal('taller','${jsq(t.id)}','${jsq(t.nombre || '')}')">📝 Notas</button>
+          <button class="act-btn admin-only" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
+          <button class="act-btn del admin-only" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+async function saveEditModal() {
+  const { table, id } = editModalState;
+  const container = document.getElementById('editModalFields');
+  const fields = {};
+  container.querySelectorAll('[data-field]').forEach(el => {
+    fields[el.dataset.field] = el.type === 'number' ? (el.value === '' ? null : Number(el.value)) : el.value;
+  });
+  const errEl = document.getElementById('editModalErr');
+  errEl.style.display = 'none';
+  const data = await callAdmin({ action: 'update_record', table, id, fields }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    hideEditModal();
+    reloadSectionTable(table);
+  } else {
+    errEl.textContent = data.error || 'No se pudo guardar.';
+    errEl.style.display = 'block';
+  }
+}
+
+function setAlmacenesFilter(f, btn) {
+  almacenesFilter = f;
+  document.querySelectorAll('#almacenesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderAlmacenesTable();
+}
+
+function setConversacionesFilter(f, btn) {
+  conversacionesFilter = f;
+  document.querySelectorAll('#conversacionesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderConversacionesTable();
+}
+
+function setHotelesFilter(f, btn) {
+  hotelesFilter = f;
+  document.querySelectorAll('#hotelesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderHotelesTable();
+}
+
+function setMotosFilter(f, btn) {
+  motosFilter = f;
+  document.querySelectorAll('#motosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderMotosTable();
+}
+
+async function setReservasFilter(estado, btn) {
+  reservasFilterEstado = estado;
+  document.querySelectorAll('#reservasFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  await loadReservas();
+}
+
+function setRestaurantesFilter(f, btn) {
+  restaurantesFilter = f;
+  document.querySelectorAll('#restaurantesFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderRestaurantesTable();
+}
+
+function setSelloFilter(f, btn) {
+  selloFilter = f;
+  document.querySelectorAll('#sellosFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderSellosTable();
+}
+
+function setTalleresFilter(f, btn) {
+  talleresFilter = f;
+  document.querySelectorAll('#talleresFilters .filter-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  renderTalleresTable();
+}
+
+async function submitGenericNote() {
+  const input = document.getElementById('genericNoteInput');
+  const note = input.value.trim();
+  if (!note) return;
+  const { type, id } = genericNotesEntity;
+  const data = await callRita({ action: 'add_note', entity_type: type, entity_id: id, note }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  input.value = '';
+  loadGenericNotes();
+}
+
+async function submitNote(entityType, entityId) {
+  const input = document.getElementById('noteInput');
+  const note = input.value.trim();
+  if (!note) return;
+  const data = await callRita({ action: 'add_note', entity_type: entityType, entity_id: entityId, note }).catch(() => ({ ok: false }));
+  if (!data.ok) {
+    alert('Error al guardar nota: ' + (data.error || 'Desconocido'));
+    return;
+  }
+  input.value = '';
+  loadNotes(entityType, entityId);
+}
+
+async function toggleApproval(table, id, aprobado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'toggle_approval', table, id, aprobado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    reloadSectionTable(table);
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
+
+function updateBadge(id, count) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (count > 0) {
+    el.textContent = count;
+    el.style.display = '';
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+async function updateReservaEstado(id, estado) {
+  if (!estado) return;
+  const data = await callAdmin({ action: 'reserva_update_estado', id, estado }).catch(() => ({ ok: false }));
+  if (!data.ok) { alert(data.error || 'Error al actualizar'); return; }
+  loadReservas();
+}
+
+async function updateSello(id, estado, btn) {
+  if (btn) btn.disabled = true;
+  const data = await callAdmin({ action: 'update_sello', id, estado }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    const s = allSellos.find(x => x.id === id);
+    if (s) s.estado = estado;
+    const pendCount = allSellos.filter(x => !['aprobado','rechazado'].includes((x.estado||'').toLowerCase())).length;
+    updateBadge('badgeSellos', pendCount);
+    renderSellosTable();
+  } else {
+    if (btn) btn.disabled = false;
+    alert('Error: ' + (data.error || 'No se pudo actualizar'));
+  }
+}
 </script>
 </body>
 </html>
