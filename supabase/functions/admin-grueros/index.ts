@@ -53,7 +53,10 @@ async function sendWATemplate(to: string, name: string, language: string, bodyPa
   if (!waToken || !waPhoneId) return { ok: false, error: 'Faltan credenciales WhatsApp' }
   try {
     const components: Record<string, unknown>[] = bodyParams.length
-      ? [{ type: 'body', parameters: bodyParams.map((t) => ({ type: 'text', text: t })) }]
+      ? [{ type: 'body', parameters: bodyParams.map((t) => {
+          if (typeof t === 'object' && t !== null) return t
+          return { type: 'text', text: t }
+        }) }]
       : []
     // Only works if the approved template has a matching HEADER component (IMAGE/VIDEO/DOCUMENT).
     if (media?.url) {
@@ -1218,7 +1221,10 @@ Deno.serve(async (req) => {
       const errorDetails: { phone: string; error?: string }[] = []
 
       for (const c of contacts) {
-        const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => (p === '{{nombre}}' ? (c.preferred_name || 'Motero') : p))
+        const bodyParams = (Array.isArray(params) ? params : []).map((p: string) => {
+          if (p === '{{nombre}}') return { type: 'text', text: c.preferred_name || 'Motero', parameter_name: 'nombre' }
+          return p
+        })
         const result = await sendWATemplate(c.phone_number, template, language || 'es_CO', bodyParams, media)
         if (result.ok) {
           sent++
