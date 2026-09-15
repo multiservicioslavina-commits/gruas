@@ -49,10 +49,8 @@ Deno.serve(async (req: Request) => {
 
   let { data: gruero, error: gErr } = await supabase.from("grueros").select("*").eq("auth_id", user.id).single();
   if (gErr || !gruero) {
-    console.log("auth_id lookup failed for", user.id, "email:", user.email, "err:", gErr?.message);
     if (user.email) {
-      const { data: byEmail, error: emailErr } = await supabase.from("grueros").select("*").eq("email", user.email).single();
-      console.log("email fallback result:", byEmail?.id ?? "null", "err:", emailErr?.message);
+      const { data: byEmail } = await supabase.from("grueros").select("*").eq("email", user.email).single();
       if (byEmail) {
         gruero = byEmail;
         await supabase.from("grueros").update({ auth_id: user.id }).eq("id", gruero.id);
