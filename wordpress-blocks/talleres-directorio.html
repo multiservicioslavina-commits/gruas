@@ -86,6 +86,16 @@
 .rtm-resena-status.ok{color:#4ade80}
 .rtm-resena-status.err{color:#f87171}
 
+.rt-modal-edit{display:block;width:100%;text-align:center;padding:10px;border-radius:8px;border:1px solid #3a3c44;background:transparent;color:#c2beb4;text-decoration:none;font-size:13px;font-weight:600;margin-bottom:14px;transition:border-color .2s,color .2s}
+.rt-modal-edit:hover{border-color:#E85D20;color:#E85D20}
+.rt-modal-actions{margin-bottom:14px;padding:14px 0;border-top:1px solid #222;border-bottom:1px solid #222;display:flex;flex-direction:column;gap:8px}
+.rt-modal-actions-title{font-size:12px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.rt-modal-action{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:11px;border-radius:8px;border:1px solid #2a2a2a;background:#171717;color:#e6e3de;text-decoration:none;font-size:13px;font-weight:600;transition:all .2s;cursor:pointer}
+.rt-modal-action:hover{border-color:#E85D20;color:#E85D20}
+.rt-modal-action i{font-size:16px}
+.rt-modal-action.primary{background:#E85D20;border-color:#E85D20;color:#fff}
+.rt-modal-action.primary:hover{background:#cf4f18}
+
 @media(max-width:600px){
   .rt-filters{padding:1rem 1.1rem;gap:7px}
   .rt-search{padding:1rem 1.1rem}
@@ -128,6 +138,13 @@
     <div id="rtm-logo-wrap"></div>
     <h3 id="m-nombre"></h3>
     <div class="rt-modal-zona" id="m-zona"></div>
+    <a class="rt-modal-edit" href="https://taller.ridera.com.co" target="_blank">&#9998; ¿Es tu taller? Administra tu perfil</a>
+    <div class="rt-modal-actions">
+      <div class="rt-modal-actions-title">Software de Gestion para Talleres</div>
+      <a class="rt-modal-action primary" href="https://ridera.com.co/software-taller/" target="_blank"><i class="ti ti-download"></i> Descargar Software Taller</a>
+      <a class="rt-modal-action" href="https://ridera.com.co/activar-software/" target="_blank"><i class="ti ti-key"></i> Pedir codigo de activacion</a>
+      <a class="rt-modal-action" href="https://taller.ridera.com.co" target="_blank"><i class="ti ti-layout-dashboard"></i> Ingresar al Panel de Taller</a>
+    </div>
     <div class="rt-modal-row"><i class="ti ti-map-pin"></i><span id="m-direccion"></span></div>
     <div class="rt-modal-row"><i class="ti ti-phone"></i><span id="m-tel"></span></div>
     <div class="rt-modal-row" id="m-email-row"><i class="ti ti-mail"></i><span id="m-email"></span></div>
