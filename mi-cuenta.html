@@ -734,16 +734,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     document.getElementById('toggleDisp').addEventListener('click', async function() {
       if (!perfil) return;
       this.disabled = true;
-      const nuevoVal = !perfil.disponible;
-      const res = await apiFetch('/mi-perfil', {
-        method: 'PATCH',
-        body: JSON.stringify({ disponible: nuevoVal }),
-      });
-      if (!res.error) {
-        perfil.disponible = nuevoVal;
-        updateDispBadge(nuevoVal);
+      try {
+        const nuevoVal = !perfil.disponible;
+        const res = await apiFetch('/mi-perfil', {
+          method: 'PATCH',
+          body: JSON.stringify({ disponible: nuevoVal }),
+        });
+        if (!res.error) {
+          perfil.disponible = nuevoVal;
+          updateDispBadge(nuevoVal);
+        }
+      } catch (e) {
+        alert('Error de conexión al cambiar disponibilidad.');
+      } finally {
+        this.disabled = false;
       }
-      this.disabled = false;
     });
 
     document.getElementById('fFotoFile').addEventListener('change', async function() {
@@ -778,48 +783,53 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       this.disabled = true;
       this.textContent = 'Guardando…';
 
-      const municipiosRaw = document.getElementById('fMunicipios').value;
-      const municipios = municipiosRaw.split(',').map(s => toSlugMuni(s)).filter(Boolean);
+      try {
+        const municipiosRaw = document.getElementById('fMunicipios').value;
+        const municipios = municipiosRaw.split(',').map(s => toSlugMuni(s)).filter(Boolean);
 
-      const fotoVal = document.getElementById('fFoto').value.trim();
-      const res = await apiFetch('/mi-perfil', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          nombre:    document.getElementById('fNombre').value.trim(),
-          ciudad:    document.getElementById('fCiudad').value.trim(),
-          telefono:  document.getElementById('fTelefono').value.trim(),
-          email:     document.getElementById('fEmail').value.trim(),
-          municipios,
-          datos: {
-            ...(perfil.datos || {}),
-            descripcion: document.getElementById('fDescripcion').value.trim(),
-            ...(fotoVal ? { foto_url: fotoVal } : {}),
-          },
-        }),
-      });
+        const fotoVal = document.getElementById('fFoto').value.trim();
+        const res = await apiFetch('/mi-perfil', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            nombre:    document.getElementById('fNombre').value.trim(),
+            ciudad:    document.getElementById('fCiudad').value.trim(),
+            telefono:  document.getElementById('fTelefono').value.trim(),
+            email:     document.getElementById('fEmail').value.trim(),
+            municipios,
+            datos: {
+              ...(perfil.datos || {}),
+              descripcion: document.getElementById('fDescripcion').value.trim(),
+              ...(fotoVal ? { foto_url: fotoVal } : {}),
+            },
+          }),
+        });
 
-      if (res.error) {
-        msg.className = 'save-msg err';
-        msg.textContent = 'Error: ' + res.error;
-      } else {
-        msg.className = 'save-msg ok';
-        msg.textContent = '✓ Cambios guardados correctamente.';
-        if (res.gruero) {
-          perfil = { ...perfil, ...res.gruero };
-          document.getElementById('hdrNombre').textContent = perfil.nombre || '';
-          document.getElementById('hdrCiudad').textContent = perfil.ciudad || '';
-          document.getElementById('navName').textContent   = perfil.nombre || '';
-          if (perfil.slug) {
-            const link = document.getElementById('publicLink');
-            link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
-            link.style.display = 'inline';
+        if (res.error) {
+          msg.className = 'save-msg err';
+          msg.textContent = 'Error: ' + res.error;
+        } else {
+          msg.className = 'save-msg ok';
+          msg.textContent = '✓ Cambios guardados correctamente.';
+          if (res.gruero) {
+            perfil = { ...perfil, ...res.gruero };
+            document.getElementById('hdrNombre').textContent = perfil.nombre || '';
+            document.getElementById('hdrCiudad').textContent = perfil.ciudad || '';
+            document.getElementById('navName').textContent   = perfil.nombre || '';
+            if (perfil.slug) {
+              const link = document.getElementById('publicLink');
+              link.href = `https://ridera.com.co/gruas/${perfil.slug}/`;
+              link.style.display = 'inline';
+            }
+            renderCompleteness(perfil);
           }
-          renderCompleteness(perfil);
         }
+      } catch (e) {
+        msg.className = 'save-msg err';
+        msg.textContent = 'Error de conexión. Intenta de nuevo.';
+      } finally {
+        this.disabled = false;
+        this.textContent = 'Guardar cambios';
       }
-
-      this.disabled = false;
-      this.textContent = 'Guardar cambios';
     });
 
     // Chip toggle (handles both checkboxes and radios)
@@ -843,33 +853,39 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       this.disabled = true;
       this.textContent = 'Guardando…';
 
-      const res = await apiFetch('/mi-perfil', {
-        method: 'PATCH',
-        body: JSON.stringify({
-          datos: {
-            ...(perfil.datos || {}),
-            disponibilidad: document.querySelector('#chipHorario input:checked')?.value || null,
-            servicios:    getChips('chipServicios'),
-            acepta:       getChips('chipAcepta'),
-            precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
-            precio_hasta: Number(document.getElementById('fPrecioHasta').value) || null,
-            flota:          document.getElementById('fFlota').value.trim() || null,
-            experiencia:    document.getElementById('fExperiencia').value.trim() || null,
-            tiempo_llegada: document.getElementById('fTiempoLlegada').value.trim() || null,
-          },
-        }),
-      });
+      try {
+        const res = await apiFetch('/mi-perfil', {
+          method: 'PATCH',
+          body: JSON.stringify({
+            datos: {
+              ...(perfil.datos || {}),
+              disponibilidad: document.querySelector('#chipHorario input:checked')?.value || null,
+              servicios:    getChips('chipServicios'),
+              acepta:       getChips('chipAcepta'),
+              precio_desde: Number(document.getElementById('fPrecioDesde').value) || null,
+              precio_hasta: Number(document.getElementById('fPrecioHasta').value) || null,
+              flota:          document.getElementById('fFlota').value.trim() || null,
+              experiencia:    document.getElementById('fExperiencia').value.trim() || null,
+              tiempo_llegada: document.getElementById('fTiempoLlegada').value.trim() || null,
+            },
+          }),
+        });
 
-      if (res.error) {
+        if (res.error) {
+          msg.className = 'save-msg err';
+          msg.textContent = 'Error: ' + res.error;
+        } else {
+          msg.className = 'save-msg ok';
+          msg.textContent = '✓ Servicios actualizados.';
+          if (res.gruero) { perfil = { ...perfil, ...res.gruero }; renderCompleteness(perfil); }
+        }
+      } catch (e) {
         msg.className = 'save-msg err';
-        msg.textContent = 'Error: ' + res.error;
-      } else {
-        msg.className = 'save-msg ok';
-        msg.textContent = '✓ Servicios actualizados.';
-        if (res.gruero) { perfil = { ...perfil, ...res.gruero }; renderCompleteness(perfil); }
+        msg.textContent = 'Error de conexión. Intenta de nuevo.';
+      } finally {
+        this.disabled = false;
+        this.textContent = 'Guardar servicios';
       }
-      this.disabled = false;
-      this.textContent = 'Guardar servicios';
     });
 
     document.getElementById('pwdBtn').addEventListener('click', async function() {
