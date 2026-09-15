@@ -430,7 +430,7 @@
 
   document.getElementById('logoutBtn').addEventListener('click', async () => {
     await sb.auth.signOut();
-    location.replace('/login-taller.html');
+    location.replace('login-taller.html');
   });
 
   sb.auth.onAuthStateChange((event) => {
@@ -456,7 +456,7 @@
     try {
       const { data: { session } } = await sb.auth.getSession();
       if (!session) {
-        location.replace('/login-taller.html');
+        location.replace('login-taller.html');
         return;
       }
 

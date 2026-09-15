@@ -107,7 +107,7 @@
     const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     sb.auth.getSession().then(({ data: { session } }) => {
-      if (session) location.replace('/mi-cuenta-taller.html');
+      if (session) location.replace('mi-cuenta-taller.html');
     });
 
     let mode = 'login';
@@ -161,7 +161,7 @@
           btn.disabled = false;
           btn.textContent = 'Iniciar sesion';
         } else {
-          location.replace('/mi-cuenta-taller.html');
+          location.replace('mi-cuenta-taller.html');
         }
       } else {
         const { data, error } = await sb.auth.signUp({ email, password: pass });
@@ -174,7 +174,7 @@
           btn.disabled = false;
           setMode('login');
         } else if (data.session) {
-          location.replace('/mi-cuenta-taller.html');
+          location.replace('mi-cuenta-taller.html');
         } else {
           showMsg('Cuenta creada. Inicia sesion con tus credenciales.', 'ok');
           btn.disabled = false;
@@ -189,7 +189,7 @@
       if (!email) { showMsg('Escribe tu correo primero.', 'err'); return; }
       btn.disabled = true;
       await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + '/mi-cuenta-taller.html',
+        redirectTo: window.location.origin + 'mi-cuenta-taller.html',
       });
       showMsg('Revisa tu correo — te enviamos un enlace para restablecer tu contrasena.', 'ok');
       btn.disabled = false;
