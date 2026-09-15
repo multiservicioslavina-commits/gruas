@@ -76,7 +76,29 @@
   .rg-name{font-size:17px}
   .rg-modal{padding:1.5rem}
 }
+.ridera-mini-banner{
+  --bg:#0e0e0e;--orange:#E85D20;--ink:#f5f3ee;--line:rgba(245,243,238,0.14);
+  display:flex;align-items:center;gap:14px;
+  background:var(--bg);border:1px solid var(--line);border-radius:40px;
+  padding:20px 32px;margin:0 0 28px;
+  font-family:'DM Sans',sans-serif;font-size:18px;color:var(--ink);
+  text-decoration:none;width:fit-content;max-width:100%;
+  text-transform:uppercase;letter-spacing:0.03em;
+  transition:border-color 0.15s ease;
+}
+.ridera-mini-banner:hover{border-color:var(--orange);color:var(--ink)}
+.ridera-mini-banner strong{color:var(--orange);font-weight:700;white-space:nowrap}
+.ridera-mini-banner__dot{width:11px;height:11px;border-radius:50%;background:var(--orange);flex-shrink:0}
+@media (max-width:640px){
+  .ridera-mini-banner{font-size:14px;padding:16px 20px;white-space:normal;gap:10px}
+  .ridera-mini-banner__dot{width:8px;height:8px}
+}
 </style>
+
+<a href="https://gruas.ridera.com.co/info/" class="ridera-mini-banner">
+  <span class="ridera-mini-banner__dot"></span>
+  ¿Sabes cómo funciona nuestra app de grúas? <strong>Descúbrelo aquí →</strong>
+</a>
 
 <div id="rg-wrap">
   <div class="rg-search">
