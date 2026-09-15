@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mi Taller — Ridera</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0e0e0e; color: #f0f0f0; min-height: 100vh; }
+    a { color: #E85D20; text-decoration: none; }
+
+    .nav { background: #141414; border-bottom: 1px solid #2a2a2a; padding: 0 1rem; height: 54px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; }
+    .nav-brand { font-weight: 700; font-size: 1.1rem; color: #E85D20; }
+    .nav-right { display: flex; gap: 12px; align-items: center; }
+    .nav-user { font-size: 0.8rem; color: #888; }
+    .nav-btn { background: none; border: 1px solid #333; border-radius: 6px; color: #ccc; padding: 6px 14px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+    .nav-btn:hover { border-color: #E85D20; color: #E85D20; }
+
+    .container { max-width: 640px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
+
+    .header-card { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 1rem; }
+    .header-logo { width: 60px; height: 60px; border-radius: 50%; background: #222; border: 2px solid #333; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
+    .header-logo img { width: 100%; height: 100%; object-fit: cover; }
+    .header-logo .icon { font-size: 1.5rem; }
+    .header-info h2 { font-size: 1.15rem; font-weight: 700; margin-bottom: 4px; }
+    .header-info .email { font-size: 0.82rem; color: #888; }
+    .badge { display: inline-block; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 10px; border-radius: 4px; margin-top: 4px; }
+    .badge.ok { background: #0d2318; color: #4ade80; border: 1px solid #1a5c36; }
+    .badge.pending { background: #2a1a0a; color: #f59e0b; border: 1px solid #6b4c1e; }
+
+    .section { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
+    .section-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
+    .section-title .ico { font-size: 1.1rem; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } }
+    .form-group { display: flex; flex-direction: column; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: 0.78rem; color: #888; margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .form-group input, .form-group textarea, .form-group select {
+      background: #111; border: 1px solid #333; border-radius: 8px; color: #f0f0f0;
+      font-size: 0.9rem; padding: 0.65rem 0.75rem; outline: none; font-family: inherit; transition: border-color 0.2s;
+    }
+    .form-group input:focus, .form-group textarea:focus { border-color: #E85D20; }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+
+    .save-btn {
+      display: block; width: 100%; margin-top: 1.25rem; padding: 0.8rem;
+      background: #E85D20; color: #fff; font-size: 0.95rem; font-weight: 600;
+      border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s;
+    }
+    .save-btn:hover { background: #cf4f18; }
+    .save-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .save-msg { font-size: 0.82rem; margin-top: 0.6rem; text-align: center; min-height: 1.2em; }
+    .save-msg.ok { color: #4ade80; }
+    .save-msg.err { color: #f87171; }
+
+    .photos-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px; margin-top: 0.5rem; }
+    .photo-slot { aspect-ratio: 1; border-radius: 10px; background: #111; border: 1px solid #333; overflow: hidden; display: flex; align-items: center; justify-content: center; position: relative; }
+    .photo-slot img { width: 100%; height: 100%; object-fit: cover; }
+    .photo-slot .empty { color: #555; font-size: 0.75rem; text-align: center; padding: 0.5rem; }
+    .photo-label { font-size: 0.7rem; color: #888; text-align: center; margin-top: 4px; }
+
+    .completeness { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 1.25rem; }
+    .completeness-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .completeness-header span { font-size: 0.82rem; color: #888; }
+    .completeness-header b { font-size: 0.9rem; color: #E85D20; }
+    .completeness-bar { height: 6px; background: #222; border-radius: 3px; overflow: hidden; }
+    .completeness-fill { height: 100%; background: #E85D20; border-radius: 3px; transition: width 0.4s; }
+
+    .not-found { text-align: center; padding: 3rem 1rem; }
+    .not-found h2 { font-size: 1.2rem; margin-bottom: 0.75rem; }
+    .not-found p { color: #888; font-size: 0.9rem; line-height: 1.6; margin-bottom: 1.5rem; }
+    .not-found a.cta { display: inline-block; background: #E85D20; color: #fff; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; }
+
+    #loading { display: flex; align-items: center; justify-content: center; min-height: 60vh; flex-direction: column; gap: 12px; }
+    .spinner { width: 32px; height: 32px; border: 3px solid #222; border-top-color: #E85D20; border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <span style="color:#888;font-size:0.85rem">Cargando tu taller...</span>
+</div>
+
+<div id="app" style="display:none">
+  <nav class="nav">
+    <span class="nav-brand">Mi Taller — Ridera</span>
+    <div class="nav-right">
+      <span class="nav-user" id="navEmail"></span>
+      <button class="nav-btn" id="logoutBtn">Salir</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <!-- NOT FOUND STATE -->
+    <div id="notFound" style="display:none" class="not-found">
+      <h2>No encontramos un taller con este correo</h2>
+      <p>El correo con el que iniciaste sesion no esta asociado a ningun taller registrado en Ridera. Asegurate de usar el mismo correo que usaste al registrar tu taller.</p>
+      <a class="cta" href="https://ridera.com.co/registrar-talleres/">Registrar mi taller</a>
+    </div>
+
+    <!-- FOUND STATE -->
+    <div id="tallerView" style="display:none">
+
+      <div class="header-card">
+        <div class="header-logo" id="headerLogo"><span class="icon">🔧</span></div>
+        <div class="header-info">
+          <h2 id="headerNombre">—</h2>
+          <div class="email" id="headerEmail">—</div>
+          <div id="headerBadge"></div>
+        </div>
+      </div>
+
+      <div class="completeness" id="completenessWrap">
+        <div class="completeness-header">
+          <span>Perfil completado</span>
+          <b id="completenessVal">0%</b>
+        </div>
+        <div class="completeness-bar"><div class="completeness-fill" id="completenessFill" style="width:0%"></div></div>
+      </div>
+
+      <!-- INFORMACION BASICA -->
+      <div class="section">
+        <div class="section-title"><span class="ico">📋</span> Informacion del taller</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Nombre del taller</label>
+            <input type="text" id="fNombre">
+          </div>
+          <div class="form-group">
+            <label>Telefono</label>
+            <input type="tel" id="fTelefono">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input type="email" id="fEmail">
+          </div>
+          <div class="form-group full">
+            <label>Direccion</label>
+            <input type="text" id="fDireccion">
+          </div>
+          <div class="form-group">
+            <label>Ciudad</label>
+            <input type="text" id="fCiudad">
+          </div>
+          <div class="form-group">
+            <label>Barrio</label>
+            <input type="text" id="fBarrio">
+          </div>
+          <div class="form-group">
+            <label>Anos de experiencia</label>
+            <input type="text" id="fExperiencia">
+          </div>
+          <div class="form-group">
+            <label>Numero de tecnicos</label>
+            <input type="text" id="fTecnicos">
+          </div>
+        </div>
+        <button class="save-btn" id="saveInfoBtn">Guardar informacion</button>
+        <div class="save-msg" id="saveInfoMsg"></div>
+      </div>
+
+      <!-- SERVICIOS Y MARCAS -->
+      <div class="section">
+        <div class="section-title"><span class="ico">🔧</span> Servicios y marcas</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Servicios que ofreces</label>
+            <textarea id="fServicios" placeholder="Ej: Mantenimiento general, frenos, suspension, electrico..."></textarea>
+          </div>
+          <div class="form-group full">
+            <label>Marcas que atiendes</label>
+            <textarea id="fMarcas" placeholder="Ej: Honda, Yamaha, Suzuki, Bajaj, KTM..."></textarea>
+          </div>
+        </div>
+        <button class="save-btn" id="saveSrvBtn">Guardar servicios</button>
+        <div class="save-msg" id="saveSrvMsg"></div>
+      </div>
+
+      <!-- REDES SOCIALES -->
+      <div class="section">
+        <div class="section-title"><span class="ico">🌐</span> Redes sociales</div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Sitio web</label>
+            <input type="url" id="fWeb" placeholder="https://www.mitaller.com">
+          </div>
+          <div class="form-group">
+            <label>Instagram</label>
+            <input type="text" id="fInstagram" placeholder="@mitaller">
+          </div>
+          <div class="form-group">
+            <label>Facebook</label>
+            <input type="text" id="fFacebook" placeholder="facebook.com/mitaller">
+          </div>
+          <div class="form-group full">
+            <label>WhatsApp (numero)</label>
+            <input type="tel" id="fWhatsapp" placeholder="3001234567">
+          </div>
+        </div>
+        <button class="save-btn" id="saveSocialBtn">Guardar redes</button>
+        <div class="save-msg" id="saveSocialMsg"></div>
+      </div>
+
+      <!-- FOTOS -->
+      <div class="section">
+        <div class="section-title"><span class="ico">📸</span> Fotos del taller</div>
+        <div class="photos-grid">
+          <div>
+            <div class="photo-slot" id="slotLogo"><span class="empty">Sin logo</span></div>
+            <div class="photo-label">Logo</div>
+          </div>
+          <div>
+            <div class="photo-slot" id="slotFoto1"><span class="empty">Sin foto</span></div>
+            <div class="photo-label">Foto 1</div>
+          </div>
+          <div>
+            <div class="photo-slot" id="slotFoto2"><span class="empty">Sin foto</span></div>
+            <div class="photo-label">Foto 2</div>
+          </div>
+          <div>
+            <div class="photo-slot" id="slotFoto3"><span class="empty">Sin foto</span></div>
+            <div class="photo-label">Foto 3</div>
+          </div>
+        </div>
+        <p style="font-size:0.78rem;color:#666;margin-top:0.75rem;text-align:center">
+          Para actualizar tus fotos, <a href="https://ridera.com.co/registrar-talleres/" target="_blank">edita tu registro</a> o contacta a
+          <a href="https://wa.me/573226857835?text=Hola%2C%20quiero%20actualizar%20las%20fotos%20de%20mi%20taller%20en%20Ridera" target="_blank">soporte</a>.
+        </p>
+      </div>
+
+      <!-- SEGURIDAD -->
+      <div class="section" id="secSeguridad">
+        <div class="section-title"><span class="ico">🔒</span> Seguridad</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Nueva contrasena</label>
+            <input type="password" id="fPwd1" placeholder="Minimo 8 caracteres">
+          </div>
+          <div class="form-group">
+            <label>Confirmar contrasena</label>
+            <input type="password" id="fPwd2" placeholder="Repetir">
+          </div>
+        </div>
+        <button class="save-btn" id="pwdBtn" style="background:#333">Cambiar contrasena</button>
+        <div class="save-msg" id="pwdMsg"></div>
+      </div>
+
+      <!-- SOFTWARE -->
+      <div class="section" style="text-align:center">
+        <div class="section-title" style="justify-content:center"><span class="ico">🚀</span> Software de gestion</div>
+        <p style="font-size:0.85rem;color:#888;margin-bottom:1rem">Administra ordenes de trabajo, inventario y clientes con TallerMotos.</p>
+        <a href="https://taller.ridera.com.co" target="_blank" class="save-btn" style="display:inline-block;text-decoration:none;max-width:300px;margin:0 auto 8px">Ingresar al software</a>
+        <br>
+        <a href="https://wa.me/573226857835?text=Hola%2C%20necesito%20un%20c%C3%B3digo%20de%20activaci%C3%B3n%20para%20el%20software%20de%20taller" target="_blank" style="font-size:0.82rem;color:#888">Pedir codigo de activacion</a>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+  const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let taller = null;
+  let tallerId = null;
+
+  function flat(row) {
+    const d = row.datos || {};
+    return Object.assign({}, d, row);
+  }
+
+  function renderCompleteness(t) {
+    const fields = [t.nombre, t.telefono, t.email, t.direccion, t.ciudad, t.servicios, t.marcas, t.logo_url, t.foto1_url];
+    const filled = fields.filter(Boolean).length;
+    const pct = Math.round((filled / fields.length) * 100);
+    document.getElementById('completenessVal').textContent = pct + '%';
+    document.getElementById('completenessFill').style.width = pct + '%';
+  }
+
+  function renderPhoto(slotId, url) {
+    const el = document.getElementById(slotId);
+    if (url) {
+      el.innerHTML = '<img src="' + url + '" alt="">';
+    }
+  }
+
+  function fillForm(t) {
+    document.getElementById('headerNombre').textContent = t.nombre || 'Mi Taller';
+    document.getElementById('headerEmail').textContent = t.email || '';
+    document.getElementById('headerBadge').innerHTML = t.aprobado
+      ? '<span class="badge ok">Aprobado</span>'
+      : '<span class="badge pending">Pendiente</span>';
+
+    const logoEl = document.getElementById('headerLogo');
+    if (t.logo_url) {
+      logoEl.innerHTML = '<img src="' + t.logo_url + '" alt="logo">';
+    }
+
+    document.getElementById('fNombre').value = t.nombre || '';
+    document.getElementById('fTelefono').value = t.telefono || '';
+    document.getElementById('fEmail').value = t.email || '';
+    document.getElementById('fDireccion').value = t.direccion || '';
+    document.getElementById('fCiudad').value = t.ciudad || '';
+    document.getElementById('fBarrio').value = t.barrio || '';
+    document.getElementById('fExperiencia').value = t.experiencia || '';
+    document.getElementById('fTecnicos').value = t.tecnicos || '';
+    document.getElementById('fServicios').value = t.servicios || '';
+    document.getElementById('fMarcas').value = t.marcas || '';
+    document.getElementById('fWeb').value = t.web || t.pagina_web || '';
+    document.getElementById('fInstagram').value = t.instagram || '';
+    document.getElementById('fFacebook').value = t.facebook || '';
+    document.getElementById('fWhatsapp').value = t.whatsapp || '';
+
+    renderPhoto('slotLogo', t.logo_url);
+    renderPhoto('slotFoto1', t.foto1_url);
+    renderPhoto('slotFoto2', t.foto2_url);
+    renderPhoto('slotFoto3', t.foto3_url);
+
+    renderCompleteness(t);
+  }
+
+  async function saveTaller(fields, msgElId, btnEl) {
+    const msg = document.getElementById(msgElId);
+    const origText = btnEl.textContent;
+    msg.textContent = '';
+    btnEl.disabled = true;
+    btnEl.textContent = 'Guardando...';
+
+    try {
+      const { data: sess } = await sb.auth.getSession();
+      const token = sess?.session?.access_token || SUPABASE_KEY;
+
+      const res = await fetch(SUPABASE_URL + '/rest/v1/talleres?id=eq.' + encodeURIComponent(tallerId), {
+        method: 'PATCH',
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': 'Bearer ' + token,
+          'Content-Type': 'application/json',
+          'Prefer': 'return=representation'
+        },
+        body: JSON.stringify(fields)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text();
+        throw new Error('HTTP ' + res.status + ': ' + errText);
+      }
+
+      const updated = await res.json();
+      if (updated && updated.length > 0) {
+        taller = flat(updated[0]);
+        fillForm(taller);
+        msg.className = 'save-msg ok';
+        msg.textContent = 'Cambios guardados.';
+      } else {
+        msg.className = 'save-msg err';
+        msg.textContent = 'No se pudo guardar. Contacta a soporte.';
+      }
+    } catch (e) {
+      msg.className = 'save-msg err';
+      msg.textContent = 'Error: ' + e.message;
+    } finally {
+      btnEl.disabled = false;
+      btnEl.textContent = origText;
+    }
+  }
+
+  document.getElementById('saveInfoBtn').addEventListener('click', function () {
+    saveTaller({
+      nombre:      document.getElementById('fNombre').value.trim(),
+      telefono:    document.getElementById('fTelefono').value.trim(),
+      email:       document.getElementById('fEmail').value.trim(),
+      direccion:   document.getElementById('fDireccion').value.trim(),
+      ciudad:      document.getElementById('fCiudad').value.trim(),
+      barrio:      document.getElementById('fBarrio').value.trim(),
+      experiencia: document.getElementById('fExperiencia').value.trim(),
+      tecnicos:    document.getElementById('fTecnicos').value.trim(),
+    }, 'saveInfoMsg', this);
+  });
+
+  document.getElementById('saveSrvBtn').addEventListener('click', function () {
+    saveTaller({
+      servicios: document.getElementById('fServicios').value.trim(),
+      marcas:    document.getElementById('fMarcas').value.trim(),
+    }, 'saveSrvMsg', this);
+  });
+
+  document.getElementById('saveSocialBtn').addEventListener('click', function () {
+    const currentDatos = taller?.datos || {};
+    saveTaller({
+      datos: Object.assign({}, currentDatos, {
+        web:       document.getElementById('fWeb').value.trim() || null,
+        instagram: document.getElementById('fInstagram').value.trim() || null,
+        facebook:  document.getElementById('fFacebook').value.trim() || null,
+        whatsapp:  document.getElementById('fWhatsapp').value.trim() || null,
+      })
+    }, 'saveSocialMsg', this);
+  });
+
+  document.getElementById('pwdBtn').addEventListener('click', async function () {
+    const msg  = document.getElementById('pwdMsg');
+    const pwd1 = document.getElementById('fPwd1').value;
+    const pwd2 = document.getElementById('fPwd2').value;
+    msg.textContent = '';
+    if (pwd1.length < 8) { msg.className = 'save-msg err'; msg.textContent = 'La contrasena debe tener al menos 8 caracteres.'; return; }
+    if (pwd1 !== pwd2)   { msg.className = 'save-msg err'; msg.textContent = 'Las contrasenas no coinciden.'; return; }
+    this.disabled = true;
+    this.textContent = 'Guardando...';
+    const { error } = await sb.auth.updateUser({ password: pwd1 });
+    if (error) {
+      msg.className = 'save-msg err';
+      msg.textContent = 'Error: ' + error.message;
+    } else {
+      msg.className = 'save-msg ok';
+      msg.textContent = 'Contrasena actualizada correctamente.';
+      document.getElementById('fPwd1').value = '';
+      document.getElementById('fPwd2').value = '';
+    }
+    this.disabled = false;
+    this.textContent = 'Cambiar contrasena';
+  });
+
+  document.getElementById('logoutBtn').addEventListener('click', async () => {
+    await sb.auth.signOut();
+    location.replace('/login-taller.html');
+  });
+
+  sb.auth.onAuthStateChange((event) => {
+    if (event === 'PASSWORD_RECOVERY') {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      if (taller) {
+        document.getElementById('tallerView').style.display = 'block';
+        const sec = document.getElementById('secSeguridad');
+        if (sec) {
+          sec.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          sec.style.outline = '2px solid #E85D20';
+          setTimeout(() => { sec.style.outline = ''; }, 3000);
+        }
+        const msg = document.getElementById('pwdMsg');
+        msg.className = 'save-msg ok';
+        msg.textContent = 'Ingresa tu nueva contrasena y guarda los cambios.';
+      }
+    }
+  });
+
+  async function init() {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) {
+        location.replace('/login-taller.html');
+        return;
+      }
+
+      const userEmail = session.user.email;
+      document.getElementById('navEmail').textContent = userEmail;
+
+      const res = await fetch(
+        SUPABASE_URL + '/rest/v1/talleres?email=ilike.' + encodeURIComponent(userEmail) + '&select=*&limit=1',
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+      );
+
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      const rows = await res.json();
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+
+      if (!rows.length) {
+        document.getElementById('notFound').style.display = 'block';
+        return;
+      }
+
+      taller = flat(rows[0]);
+      tallerId = taller.id;
+      document.getElementById('tallerView').style.display = 'block';
+      fillForm(taller);
+    } catch (e) {
+      console.error('init error:', e);
+      document.getElementById('loading').innerHTML =
+        '<p style="color:#f87171;text-align:center;padding:2rem">Error al cargar tu cuenta. Intenta recargar la pagina o <a href="/login-taller.html" style="color:#E85D20">vuelve a iniciar sesion</a>.</p>';
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>
