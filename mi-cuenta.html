@@ -551,20 +551,40 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     async function apiFetch(path, opts = {}) {
       const { data: { session } } = await sb.auth.getSession();
       const token = session?.access_token;
+      if (!token) {
+        console.warn('apiFetch: no hay token de sesión');
+        return { error: 'Sesión expirada. Vuelve a iniciar sesión.' };
+      }
       const res = await fetch(FN_BASE + path, {
         ...opts,
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+          'Authorization': `Bearer ${token}`,
           ...(opts.headers || {}),
         },
       });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        console.error(`apiFetch ${path}: HTTP ${res.status}`, txt);
+        try { return JSON.parse(txt); } catch { return { error: `HTTP ${res.status}` }; }
+      }
       return res.json();
     }
 
     async function loadPerfil() {
-      const data = await apiFetch('/mi-perfil');
-      if (!data || data.error) return;
+      let data;
+      try {
+        data = await apiFetch('/mi-perfil');
+      } catch (e) {
+        console.error('loadPerfil fetch error:', e);
+        document.getElementById('lblDisp').textContent = 'Error al cargar';
+        return;
+      }
+      if (!data || data.error) {
+        console.error('loadPerfil API error:', data?.error || 'respuesta vacía');
+        document.getElementById('lblDisp').textContent = 'Error al cargar';
+        return;
+      }
       perfil = data.gruero;
       const stats = data.stats || {};
 
@@ -1050,17 +1070,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     }
 
     async function init() {
-      const { data: { session } } = await sb.auth.getSession();
-      if (!session) {
-        location.replace('/login-gruero.html');
-        return;
+      try {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          location.replace('/login-gruero.html');
+          return;
+        }
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        await Promise.all([loadPerfil(), loadServicios()]);
+        startRealtime();
+        checkPendingSolicitudes();
+        subscribePush();
+      } catch (e) {
+        console.error('init error:', e);
+        document.getElementById('loading').innerHTML =
+          '<p style="color:#f87171;text-align:center;padding:2rem">Error al cargar tu cuenta. Intenta recargar la página o <a href="/login-gruero.html" style="color:#E85D20">vuelve a iniciar sesión</a>.</p>';
       }
-      document.getElementById('loading').style.display = 'none';
-      document.getElementById('app').style.display = 'block';
-      await Promise.all([loadPerfil(), loadServicios()]);
-      startRealtime();
-      checkPendingSolicitudes();
-      subscribePush();
     }
 
     init();
