@@ -481,7 +481,10 @@ async function loadPublicProfile(slug) {
   show('view-public');
   updateNav(false);
 
-  const { data: rider } = await sb.from('riders')
+  // Vista segura riders_public: solo las columnas pensadas para el perfil
+  // compartido. La tabla riders tiene telefono/correo/ubicacion/contacto de
+  // emergencia, que no deben quedar expuestos a un slug publico.
+  const { data: rider } = await sb.from('riders_public')
     .select('id, nombre, apellido, ciudad, moto_marca, moto_modelo, moto_cc, foto_url, tipo_moto')
     .eq('slug', slug).single();
 
