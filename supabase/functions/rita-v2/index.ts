@@ -513,8 +513,10 @@ MOTOS Y TENDENCIAS:
 
 CLUBES Y COMUNIDAD:
 - consultar_clubes_moteros: cuando pregunten sobre clubs de motos, grupos, comunidades,
-  rodadas organizadas, eventos moteros, dónde conocer otros riders de Antioquia.
-  Busca en base local de clubes verificados.
+  rodadas organizadas, eventos moteros, dónde conocer otros riders.
+  Los resultados ya vienen ordenados: primero los clubes registrados oficialmente en
+  Ridera (fuente "ridera"), después otros grupos conocidos de la zona (fuente "externo").
+  Respeta ese orden al presentarlos, no los reordenes ni los mezcles.
 
 RECORDATORIOS Y ALARMAS:
 - programar_recordatorio_avanzado: cuando pidan "recordame", "ponme una alarma",
