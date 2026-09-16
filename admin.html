@@ -814,6 +814,18 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
           <div class="contact-list" id="ritaContactList"></div>
           <div style="display:flex;justify-content:center;gap:0.75rem;margin-top:1rem" id="ritaPagination"></div>
 
+          <!-- Escalamientos a Admin -->
+          <div class="rita-sub">
+            🆘 Escalamientos a admin
+            <select class="search-input" id="escalationFilter" onchange="loadEscalations()" style="margin-left:auto;width:160px;font-size:0.78rem">
+              <option value="">Todos</option>
+              <option value="pendiente" selected>Pendientes</option>
+              <option value="atendido">Atendidos</option>
+              <option value="cerrado">Cerrados</option>
+            </select>
+          </div>
+          <div id="escalationList" class="contact-list" style="margin-bottom:1.5rem"></div>
+
           <!-- Error Reports -->
           <div class="rita-sub">
             Errores reportados
@@ -1322,6 +1334,7 @@ function showTab(tab) {
   if (tab === 'rita') {
     if (!ritaLoaded) loadRitaAnalytics();
     loadRitaContacts();
+    loadEscalations();
     loadErrorReports();
     loadCampanaStats();
     loadCampanaEmailStats();
@@ -2271,6 +2284,51 @@ async function markError(id, estado, btn) {
   if (btn) btn.disabled = true;
   await callAdmin({ action: 'update_error', id, estado }).catch(() => {});
   loadErrorReports();
+}
+
+async function loadEscalations() {
+  const status = document.getElementById('escalationFilter').value;
+  const data = await callAdmin({ action: 'escalations', status }).catch(() => ({ ok: false }));
+  const el = document.getElementById('escalationList');
+
+  if (!data.ok || !data.escalations || !data.escalations.length) {
+    el.innerHTML = '<div style="color:var(--mu);font-size:0.85rem;text-align:center;padding:1.5rem">Sin escalamientos.</div>';
+    return;
+  }
+
+  const statusStyles = {
+    pendiente: { bg: '#2a2000', color: '#f59e0b', label: 'Pendiente' },
+    atendido: { bg: '#0a1e2e', color: '#60a5fa', label: 'Atendido' },
+    cerrado: { bg: '#0e2a1a', color: '#4ade80', label: 'Cerrado' },
+  };
+
+  el.innerHTML = data.escalations.map(e => {
+    const s = statusStyles[e.status] || statusStyles.pendiente;
+    const phone = e.user_phone || '';
+    const masked = phone.length > 6 ? '...' + phone.slice(-4) : phone;
+    const nombre = e.user_name || masked;
+    const time = e.created_at ? relTime(e.created_at) : '';
+    return `<div class="ct-row" style="cursor:default;flex-wrap:wrap">
+      <div class="ct-avatar" style="background:${s.bg};color:${s.color};font-size:0.7rem">🆘</div>
+      <div class="ct-info" style="min-width:0">
+        <div class="ct-name">${esc(nombre)} <span class="ct-phone">(${esc(phone)})</span></div>
+        <div class="ct-phone" style="white-space:normal;max-width:400px"><strong>${esc(e.reason)}</strong>${e.context_summary ? ' — ' + esc(e.context_summary) : ''}</div>
+      </div>
+      <div class="ct-meta" style="display:flex;align-items:center;gap:0.5rem">
+        <span class="ct-time">${time}</span>
+        <span class="ct-opt" style="background:${s.bg};color:${s.color}">${s.label}</span>
+        <a class="act-btn" style="font-size:0.72rem;text-decoration:none" href="https://wa.me/${esc(phone)}" target="_blank">WhatsApp</a>
+        ${e.status === 'pendiente' ? `<button class="act-btn" onclick="markEscalation('${jsq(e.id)}','atendido',this)" style="font-size:0.72rem">Atendido</button>` : ''}
+        ${e.status === 'atendido' ? `<button class="act-btn" onclick="markEscalation('${jsq(e.id)}','cerrado',this)" style="font-size:0.72rem">Cerrar</button>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function markEscalation(id, status, btn) {
+  if (btn) btn.disabled = true;
+  await callAdmin({ action: 'update_escalation', id, status }).catch(() => {});
+  loadEscalations();
 }
 
 async function exportRitaContacts() {

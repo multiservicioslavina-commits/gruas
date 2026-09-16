@@ -14,8 +14,9 @@ const { getTierConfig } = require("./tiers");
 const {
   searchDirectory,
   searchProductos,
-  logErrorAlert,
+  createEscalation,
 } = require("./supabase");
+const { logErrorAlert } = require("./error-detection");
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
 const SUPABASE_URL =
@@ -42,7 +43,9 @@ No inventes direcciones, teléfonos ni precios — solo usa lo que te devuelvan 
 Si no hay resultados, dilo honestamente y sugiere ridera.com.co.
 ${nombre}
 
-IMPORTANTE: Tienes herramientas disponibles. Úsalas siempre que el usuario pregunte por talleres, almacenes, motos en venta, grúas o el Pasaporte. No respondas de memoria cuando puedes buscar datos reales.`;
+IMPORTANTE: Tienes herramientas disponibles. Úsalas siempre que el usuario pregunte por talleres, almacenes, motos en venta, grúas o el Pasaporte. No respondas de memoria cuando puedes buscar datos reales.
+
+Si el usuario pide explícitamente hablar con una persona, el admin, el dueño o la gerencia; si hay una queja seria o un tema legal; o si no tienes confianza en poder resolver la solicitud tú misma — usa la herramienta escalar_a_admin en vez de intentar resolverlo sola.`;
 }
 
 // ── Definición de herramientas (formato Anthropic nativo) ─────────────────
@@ -135,6 +138,25 @@ const TOOLS = [
     },
   },
   {
+    name: "escalar_a_admin",
+    description:
+      "Deriva la conversación a una persona real del equipo de Ridera (el admin). Úsala cuando el usuario pida explícitamente hablar con un humano/administrador/dueño, cuando haya una queja seria, un tema legal, o cuando no tengas confianza en poder resolver la solicitud tú misma.",
+    input_schema: {
+      type: "object",
+      properties: {
+        motivo: {
+          type: "string",
+          description: "Por qué se escala (ej: queja, tema legal, pidió hablar con alguien, baja confianza)",
+        },
+        resumen: {
+          type: "string",
+          description: "Resumen breve de qué necesita el usuario, para que el admin tenga contexto",
+        },
+      },
+      required: ["motivo", "resumen"],
+    },
+  },
+  {
     name: "reportar_error",
     description:
       "Registra cuando el usuario dice que hay información incorrecta, un teléfono mal, una dirección equivocada o cualquier dato desactualizado.",
@@ -157,7 +179,30 @@ const TOOLS = [
 ];
 
 // ── Ejecutores de herramientas ─────────────────────────────────────────────
-async function executeTool(name, input, from) {
+async function executeTool(name, input, from, userName) {
+  if (name === "escalar_a_admin") {
+    const { sendWhatsAppMessage } = require("./whatsapp");
+    const adminPhone = process.env.ADMIN_WHATSAPP_PHONE || "573226857835";
+
+    await createEscalation(from, userName, input.motivo, input.resumen);
+
+    try {
+      await sendWhatsAppMessage(
+        adminPhone,
+        `⚠️ *Escalamiento Rita*\nNúmero: ${from}\nNombre: ${userName || "—"}\nMotivo: ${input.motivo}\nResumen: ${input.resumen}`
+      );
+    } catch (err) {
+      console.error("No se pudo alertar al admin:", err.message);
+    }
+
+    return {
+      escalado: true,
+      admin_whatsapp_link: `https://wa.me/${adminPhone}?text=${encodeURIComponent("Hola, vengo del bot de Ridera y necesito hablar con alguien.")}`,
+      mensaje_para_usuario:
+        "Ya avisé al equipo de Ridera, en un momento te contactan. También puedes escribirles directo por este link si prefieres.",
+    };
+  }
+
   if (name === "buscar_taller") {
     const resultados = await searchDirectory("taller", input.termino);
     if (!resultados.length) return { encontrado: false, resultados: [] };
@@ -316,7 +361,7 @@ async function askClaude(_ignoredSystemPrompt, conversationHistory, options = {}
         toolUses.map(async (tu) => ({
           type: "tool_result",
           tool_use_id: tu.id,
-          content: JSON.stringify(await executeTool(tu.name, tu.input, from)),
+          content: JSON.stringify(await executeTool(tu.name, tu.input, from, options.userName)),
         }))
       );
 

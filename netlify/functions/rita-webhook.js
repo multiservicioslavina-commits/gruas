@@ -25,10 +25,15 @@ const {
   setPreferredName,
   checkConsent,
   saveConsent,
+  createEscalation,
+  isBotPaused,
 } = require("./lib/supabase");
 const { askClaude } = require("./lib/claude");
 const { getTierConfig } = require("./lib/tiers");
 const { getErrorAcknowledgmentResponse } = require("./lib/error-detection");
+
+const ADMIN_WHATSAPP_PHONE = process.env.ADMIN_WHATSAPP_PHONE || "573226857835";
+const ADMIN_KEYWORDS = /\b(admin|administrador|due[ñn]o|gerencia|asesor|humano|persona real|hablar con (alguien|una persona))\b/i;
 
 exports.handler = async (event) => {
   if (event.httpMethod === "GET")  return handleVerification(event);
@@ -69,6 +74,12 @@ async function handleIncomingMessage(event) {
     if (!contact) {
       await sendWhatsAppMessage(from, "¡Hola! Soy Rita, la asistente de Ridera 🏍️ ¿Cómo te llamas?");
       return { statusCode: 200, body: "asked name" };
+    }
+
+    // ── Bot pausado (usuario ya derivado al admin) → no responder ─────────
+    if (isBotPaused(contact)) {
+      await logMessage(from, "user", text, "bot_paused");
+      return { statusCode: 200, body: "bot paused, admin handling" };
     }
 
     // ── Esperando el nombre → guardarlo ──────────────────────────────────
@@ -116,6 +127,28 @@ async function handleIncomingMessage(event) {
       await logMessage(from, "user", text, "limit_reached");
       await logMessage(from, "assistant", limitMsg, "limit_reached");
       return { statusCode: 200, body: "limit" };
+    }
+
+    // ── Palabra clave de escalamiento a admin ──────────────────────────────
+    if (ADMIN_KEYWORDS.test(text)) {
+      await logMessage(from, "user", text, "escalado_keyword");
+      await createEscalation(from, nombre, "Pidió hablar con el admin (palabra clave)", text);
+
+      const linkAdmin = `https://wa.me/${ADMIN_WHATSAPP_PHONE}?text=${encodeURIComponent("Hola, vengo del bot de Ridera y necesito hablar con alguien.")}`;
+      const replyUsuario = `Ya avisé al equipo de Ridera, ${nombre !== "amigo" ? nombre : ""} en un momento te contactan 🙌\n\nSi prefieres escribirles directo: ${linkAdmin}`;
+      await sendWhatsAppMessage(from, replyUsuario);
+      await logMessage(from, "assistant", replyUsuario, "escalado_keyword");
+
+      try {
+        await sendWhatsAppMessage(
+          ADMIN_WHATSAPP_PHONE,
+          `⚠️ *Escalamiento Rita*\nNúmero: ${from}\nNombre: ${nombre}\nMotivo: pidió hablar con el admin\nMensaje: ${text}`
+        );
+      } catch (err) {
+        console.error("No se pudo alertar al admin:", err.message);
+      }
+
+      return { statusCode: 200, body: "escalated to admin" };
     }
 
     // ── Rita responde con tool calling (Vercel AI) ────────────────────────

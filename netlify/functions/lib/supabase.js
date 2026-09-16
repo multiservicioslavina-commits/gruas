@@ -110,6 +110,8 @@ module.exports = {
   setPreferredName,
   checkConsent,
   saveConsent,
+  createEscalation,
+  isBotPaused,
 };
 
 // Trae el contacto tal como esta ANTES de tocarlo (util para saber si es
@@ -118,12 +120,50 @@ async function getContact(phoneNumber) {
   const url =
     `${SUPABASE_URL}/rest/v1/rita_contacts` +
     `?phone_number=eq.${encodeURIComponent(phoneNumber)}` +
-    `&select=phone_number,preferred_name,awaiting_name,opted_in`;
+    `&select=phone_number,preferred_name,awaiting_name,opted_in,is_bot_paused,bot_paused_until`;
 
   const res = await fetch(url, { headers });
   if (!res.ok) return null;
   const rows = await res.json();
   return rows[0] || null;
+}
+
+// Registra un escalamiento a soporte humano y pausa a Rita para ese numero
+// durante `hours` horas (default 24). Devuelve el registro creado.
+async function createEscalation(phoneNumber, userName, reason, contextSummary, hours = 24) {
+  const pausedUntil = new Date(Date.now() + hours * 3600 * 1000).toISOString();
+
+  await fetch(
+    `${SUPABASE_URL}/rest/v1/rita_contacts?phone_number=eq.${encodeURIComponent(phoneNumber)}`,
+    {
+      method: "PATCH",
+      headers,
+      body: JSON.stringify({ is_bot_paused: true, bot_paused_until: pausedUntil }),
+    }
+  );
+
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/support_escalations`, {
+    method: "POST",
+    headers: { ...headers, Prefer: "return=representation" },
+    body: JSON.stringify({
+      user_phone: phoneNumber,
+      user_name: userName || null,
+      reason,
+      context_summary: contextSummary || null,
+    }),
+  });
+  if (!res.ok) {
+    console.error("No se pudo registrar escalamiento:", await res.text());
+    return null;
+  }
+  const rows = await res.json();
+  return rows[0] || null;
+}
+
+// True si el bot sigue pausado para este contacto (pausa vigente).
+function isBotPaused(contact) {
+  if (!contact || !contact.is_bot_paused || !contact.bot_paused_until) return false;
+  return new Date(contact.bot_paused_until).getTime() > Date.now();
 }
 
 // Guarda el nombre que la persona quiere que usemos y marca que ya no

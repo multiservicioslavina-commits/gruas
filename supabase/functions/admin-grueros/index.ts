@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
       'survey_create', 'survey_list', 'survey_results', 'set_tags',
-      'reserva_update_estado',
+      'reserva_update_estado', 'update_escalation',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -1134,6 +1134,41 @@ Deno.serve(async (req) => {
     if (action === 'update_error') {
       const { id, estado } = body
       const { error } = await sbClient.from('rita_errores_reportados').update({ estado }).eq('id', id)
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // ESCALATIONS (derivaciones a admin)
+    if (action === 'escalations') {
+      let query = sbClient.from('support_escalations').select('*').order('created_at', { ascending: false }).limit(200)
+      if (body.status) query = query.eq('status', body.status)
+      const { data, error } = await query
+      if (error) {
+        return new Response(JSON.stringify({ ok: false, error: error.message }), {
+          status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      return new Response(JSON.stringify({ ok: true, escalations: data || [] }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // UPDATE ESCALATION STATE
+    if (action === 'update_escalation') {
+      const { id, status } = body
+      const validStatus = ['pendiente', 'atendido', 'cerrado']
+      if (!validStatus.includes(status)) {
+        return new Response(JSON.stringify({ ok: false, error: 'Estado no válido' }), {
+          status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+      const { error } = await sbClient.from('support_escalations').update({ status }).eq('id', id)
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
           status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
