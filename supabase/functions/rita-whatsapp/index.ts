@@ -12,6 +12,49 @@ const GRAPH        = "https://graph.facebook.com/v25.0";
 
 const supabase = createClient(SB_URL, SB_KEY);
 
+const ADMIN_WHATSAPP_PHONE = Deno.env.get("ADMIN_WHATSAPP_PHONE") ?? "573226857835";
+const ADMIN_KEYWORDS = /\b(admin|administrador|due[ñn]o|gerencia|asesor|humano|persona real|hablar con (alguien|una persona))\b/i;
+
+async function isBotPausedFor(phone: string): Promise<boolean> {
+  const { data } = await supabase.from("rita_contacts").select("is_bot_paused, bot_paused_until").eq("phone_number", phone).maybeSingle();
+  if (!data?.is_bot_paused || !data?.bot_paused_until) return false;
+  return new Date(data.bot_paused_until).getTime() > Date.now();
+}
+
+// Registra el escalamiento, pausa a Rita para este numero 24h, avisa al
+// usuario con el link de WhatsApp del admin y le manda la alerta al admin.
+async function escalateToAdmin(phone: string, nombre: string | null, motivo: string, resumen: string): Promise<void> {
+  const pausedUntil = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
+  await supabase.from("rita_contacts").upsert({
+    whatsapp_number: phone,
+    phone_number: phone,
+    is_bot_paused: true,
+    bot_paused_until: pausedUntil,
+  }, { onConflict: "whatsapp_number" });
+
+  await supabase.from("support_escalations").insert({
+    user_phone: phone,
+    user_name: nombre,
+    reason: motivo,
+    context_summary: resumen,
+  });
+
+  const linkAdmin = `https://wa.me/${ADMIN_WHATSAPP_PHONE}?text=${encodeURIComponent("Hola, vengo del bot de Ridera y necesito hablar con alguien.")}`;
+  const replyUsuario = `Ya avisé al equipo de Ridera${nombre ? `, ${nombre}` : ""}, en un momento te contactan 🙌\n\nSi prefieres escribirles directo: ${linkAdmin}`;
+  await saveMessage(phone, "assistant", replyUsuario);
+  await sendWhatsApp(phone, replyUsuario);
+
+  try {
+    await sendWhatsApp(
+      ADMIN_WHATSAPP_PHONE,
+      `⚠️ *Escalamiento Rita*\nNúmero: ${phone}\nNombre: ${nombre || "—"}\nMotivo: ${motivo}\nResumen: ${resumen}`
+    );
+  } catch (err) {
+    console.error("No se pudo alertar al admin:", err);
+  }
+}
+
 const TRAMITES: Record<string, { titulo: string; emoji: string; links: { nombre: string; url: string }[] }> = {
   soat: { titulo: "Comprar SOAT", emoji: "shield", links: [
     { nombre: "Sura", url: "https://www.segurossura.com.co/paginas/soat.aspx" },
@@ -996,6 +1039,20 @@ Deno.serve(async (req: Request) => {
       }
 
       await saveMessage(from, "user", message);
+
+      // Bot pausado (usuario ya derivado al admin) → no responder, deja que
+      // el admin siga la conversacion directo desde su WhatsApp.
+      if (await isBotPausedFor(from)) {
+        return new Response(JSON.stringify({ ok: true, flow: "bot_paused" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
+
+      // Palabra clave de escalamiento a admin: determinista, no depende de
+      // que Claude decida usarla.
+      if (ADMIN_KEYWORDS.test(message)) {
+        const { data: riderRow } = await supabase.from("riders").select("nombre").or(`telefono.eq.${from},telefono.eq.${from.replace(/^57/, "")}`).maybeSingle();
+        await escalateToAdmin(from, riderRow?.nombre || null, "Pidió hablar con el admin (palabra clave)", message);
+        return new Response(JSON.stringify({ ok: true, flow: "escalated_keyword" }), { status: 200, headers: { "Content-Type": "application/json" } });
+      }
 
       // Entrar al chat del club: determinista, nunca via IA. El numero desde
       // el que escribe ES la prueba de identidad.
