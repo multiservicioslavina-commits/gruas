@@ -31,6 +31,49 @@ const MAX_TOOL_ROUNDS = 4;
 
 const supabase = createClient(SB_URL, SB_KEY);
 
+const ADMIN_WHATSAPP_PHONE = Deno.env.get("ADMIN_WHATSAPP_PHONE") ?? "573226857835";
+const ADMIN_KEYWORDS = /\b(admin|administrador|due[ñn]o|gerencia|asesor|humano|persona real|hablar con (alguien|una persona))\b/i;
+
+async function estaBotPausado(phone: string): Promise<boolean> {
+  const { data } = await supabase.from("rita_contacts").select("is_bot_paused, bot_paused_until").eq("phone_number", phone).maybeSingle();
+  if (!data?.is_bot_paused || !data?.bot_paused_until) return false;
+  return new Date(data.bot_paused_until).getTime() > Date.now();
+}
+
+// Registra el escalamiento, pausa a Rita 24h para este numero, avisa al
+// usuario con el link de WhatsApp del admin y le manda la alerta al admin.
+async function escalarAAdmin(phone: string, nombre: string | null, motivo: string, resumen: string): Promise<void> {
+  const pausedUntil = new Date(Date.now() + 24 * 3600 * 1000).toISOString();
+
+  await supabase.from("rita_contacts").upsert({
+    whatsapp_number: phone,
+    phone_number: phone,
+    is_bot_paused: true,
+    bot_paused_until: pausedUntil,
+  }, { onConflict: "whatsapp_number" });
+
+  await supabase.from("support_escalations").insert({
+    user_phone: phone,
+    user_name: nombre,
+    reason: motivo,
+    context_summary: resumen,
+  });
+
+  const linkAdmin = `https://wa.me/${ADMIN_WHATSAPP_PHONE}?text=${encodeURIComponent("Hola, vengo del bot de Ridera y necesito hablar con alguien.")}`;
+  const replyUsuario = `Ya avisé al equipo de Ridera${nombre ? `, ${nombre}` : ""}, en un momento te contactan 🙌\n\nSi prefieres escribirles directo: ${linkAdmin}`;
+  await saveMessage(phone, "assistant", replyUsuario);
+  await enviarTexto(phone, replyUsuario);
+
+  try {
+    await enviarTexto(
+      ADMIN_WHATSAPP_PHONE,
+      `⚠️ *Escalamiento Rita*\nNúmero: ${phone}\nNombre: ${nombre || "—"}\nMotivo: ${motivo}\nResumen: ${resumen}`
+    );
+  } catch (err) {
+    console.error("No se pudo alertar al admin:", err);
+  }
+}
+
 // ─── Validacion de integridad: HMAC-SHA256 ──────────────────────
 // Meta firma el body crudo del webhook con el App Secret. Si WHATSAPP_APP_SECRET
 // no esta configurado todavia, no bloqueamos el trafico real (fail-open) para
@@ -982,6 +1025,21 @@ Deno.serve(async (req: Request) => {
     }
 
     await saveMessage(from, "user", message);
+
+    // Bot pausado (usuario ya derivado al admin) → no responder, deja que
+    // el admin siga la conversacion directo desde su WhatsApp.
+    if (await estaBotPausado(from)) {
+      return json({ ok: true, flujo: "bot_pausado" });
+    }
+
+    // Palabra clave de escalamiento a admin: determinista, no depende de
+    // que Claude decida usarla. Antes del SOS: si alguien pide un humano
+    // no queremos que quede atrapado en el flujo de emergencia.
+    if (ADMIN_KEYWORDS.test(message)) {
+      const nombreRow = await getRiderNombre(from).catch(() => null);
+      await escalarAAdmin(from, nombreRow, "Pidió hablar con el admin (palabra clave)", message);
+      return json({ ok: true, flujo: "escalado_keyword" });
+    }
 
     // SOS - palabra clave sin ubicacion todavia: maxima prioridad, antes
     // incluso del registro guiado. Funciona igual si vino por audio (ya
