@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Mi cuenta | Ridera Grúas</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0d0d0d;--panel:#16171b;--line:#2a2c33;--orange:#E85D20;--ink:#f3f3f3;--ink-dim:#c2beb4;--ink-faint:#9a9ca3;--ok:#16a34a;--err:#ef4444}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{min-height:100vh;display:flex;flex-direction:column}
+  .top{padding:20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px}
+  .back{font-family:"Bebas Neue",sans-serif;font-size:30px;color:var(--ink-dim);text-decoration:none;line-height:1}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:32px;line-height:.95;margin:2px 0 0}
+  .wrap{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;max-width:420px;margin:0 auto;width:100%}
+  p.sub{color:var(--ink-dim);font-size:15px;line-height:1.6;margin:0 0 24px}
+  label{display:block;font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.15em;color:var(--ink-faint);text-transform:uppercase;margin:0 0 8px}
+  input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:18px;padding:14px 16px;font-family:"DM Sans",sans-serif;margin-bottom:18px}
+  input:focus{outline:none;border-color:var(--orange)}
+  input.code{letter-spacing:.5em;text-align:center;font-family:"JetBrains Mono",monospace;font-size:24px}
+  button{width:100%;background:var(--orange);color:#fff;border:none;border-radius:14px;padding:16px;font-size:16px;font-weight:700;letter-spacing:.05em;cursor:pointer;font-family:"DM Sans",sans-serif}
+  button:disabled{opacity:.5;cursor:default}
+  button.ghost{background:transparent;color:var(--ink-dim);border:1px solid var(--line);margin-top:10px}
+  .msg{font-size:14px;line-height:1.5;padding:12px 14px;border-radius:10px;margin-bottom:18px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+  .msg.ok{background:rgba(22,163,74,.12);color:#86efac;border:1px solid rgba(22,163,74,.35)}
+  .view{display:none}
+  .view.show{display:block}
+  .field{margin-bottom:16px}
+  .field .l{font-size:12px;color:var(--ink-faint);text-transform:uppercase;letter-spacing:.1em;font-family:"JetBrains Mono",monospace}
+  .field .v{font-size:18px;margin-top:2px}
+  .logout{margin-top:28px}
+</style>
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="/">‹</a>
+    <div>
+      <div class="eyebrow">Ridera Grúas</div>
+      <h1>Mi cuenta</h1>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- PASO 1: pedir telefono -->
+    <div id="viewPhone" class="view show">
+      <p class="sub">Entra con tu WhatsApp. Te mandamos un código de 6 dígitos para verificarte, sin contraseña que recordar.</p>
+      <div id="msgPhone" class="msg"></div>
+      <label for="inpPhone">Tu WhatsApp</label>
+      <input id="inpPhone" type="tel" inputmode="tel" placeholder="311 789 6717" autocomplete="tel">
+      <button id="btnSend">Enviar código</button>
+    </div>
+
+    <!-- PASO 2: verificar codigo -->
+    <div id="viewCode" class="view">
+      <p class="sub">Te escribimos por WhatsApp a <strong id="phoneShown"></strong> con un código de 6 dígitos. Puede tardar un momento.</p>
+      <div id="msgCode" class="msg"></div>
+      <label for="inpCode">Código</label>
+      <input id="inpCode" class="code" type="text" inputmode="numeric" maxlength="6" placeholder="000000" autocomplete="one-time-code">
+      <button id="btnVerify">Entrar</button>
+      <button id="btnBack" class="ghost">Usar otro número</button>
+    </div>
+
+    <!-- PASO 3: ya logueado -->
+    <div id="viewAccount" class="view">
+      <div class="field">
+        <div class="l">WhatsApp</div>
+        <div class="v" id="accPhone">—</div>
+      </div>
+      <div class="field">
+        <div class="l">Nombre</div>
+        <div class="v" id="accName">—</div>
+      </div>
+      <button id="btnLogout" class="ghost logout">Cerrar sesión</button>
+    </div>
+
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+  const FN_BASE = `${SUPABASE_URL}/functions/v1/cliente-auth`;
+  const REST_BASE = `${SUPABASE_URL}/rest/v1`;
+
+  const $ = id => document.getElementById(id);
+  const show = id => { document.querySelectorAll('.view').forEach(v => v.classList.remove('show')); $(id).classList.add('show'); };
+  const setMsg = (id, text, kind) => { const el = $(id); el.textContent = text; el.className = `msg show ${kind}`; };
+  const clearMsg = id => { $(id).className = 'msg'; };
+
+  let pendingPhone = '';
+
+  function normalizePhone(raw) {
+    const digits = (raw || '').replace(/\D/g, '');
+    if (digits.startsWith('57') && digits.length === 12) return digits;
+    if (digits.length === 10 && digits.startsWith('3')) return '57' + digits;
+    return digits;
+  }
+
+  async function callAuth(action, extra) {
+    const res = await fetch(FN_BASE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY },
+      body: JSON.stringify({ action, ...extra }),
+    });
+    const data = await res.json().catch(() => ({}));
+    return { ok: res.ok && data.ok !== false, status: res.status, data };
+  }
+
+  $('btnSend').addEventListener('click', async () => {
+    clearMsg('msgPhone');
+    const raw = $('inpPhone').value.trim();
+    const tel = normalizePhone(raw);
+    if (tel.length < 11) { setMsg('msgPhone', 'Escribe un número de WhatsApp válido.', 'err'); return; }
+
+    $('btnSend').disabled = true; $('btnSend').textContent = 'Enviando…';
+    const { ok, data } = await callAuth('enviar-codigo', { telefono: tel });
+    $('btnSend').disabled = false; $('btnSend').textContent = 'Enviar código';
+
+    if (!ok) { setMsg('msgPhone', data.error || 'No se pudo enviar el código. Intenta de nuevo.', 'err'); return; }
+
+    pendingPhone = tel;
+    $('phoneShown').textContent = '+' + tel;
+    $('inpCode').value = '';
+    clearMsg('msgCode');
+    show('viewCode');
+  });
+
+  $('btnVerify').addEventListener('click', async () => {
+    clearMsg('msgCode');
+    const codigo = $('inpCode').value.trim();
+    if (codigo.length !== 6) { setMsg('msgCode', 'El código tiene 6 dígitos.', 'err'); return; }
+
+    $('btnVerify').disabled = true; $('btnVerify').textContent = 'Verificando…';
+    const { ok, data } = await callAuth('verificar-codigo', { telefono: pendingPhone, codigo });
+    $('btnVerify').disabled = false; $('btnVerify').textContent = 'Entrar';
+
+    if (!ok) { setMsg('msgCode', data.error || 'Código incorrecto.', 'err'); return; }
+
+    localStorage.setItem('cliente_token', data.token);
+    localStorage.setItem('cliente_data', JSON.stringify(data.cliente));
+    renderAccount(data.cliente);
+  });
+
+  $('btnBack').addEventListener('click', () => { show('viewPhone'); });
+
+  $('btnLogout').addEventListener('click', () => {
+    localStorage.removeItem('cliente_token');
+    localStorage.removeItem('cliente_data');
+    show('viewPhone');
+  });
+
+  function renderAccount(cliente) {
+    $('accPhone').textContent = '+' + cliente.telefono;
+    $('accName').textContent = cliente.nombre || '(sin nombre aún)';
+    show('viewAccount');
+  }
+
+  (function init() {
+    const saved = localStorage.getItem('cliente_data');
+    if (saved) {
+      try { renderAccount(JSON.parse(saved)); return; } catch (e) {}
+    }
+    show('viewPhone');
+  })();
+</script>
+</body>
+</html>

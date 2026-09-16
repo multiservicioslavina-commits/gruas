@@ -406,6 +406,12 @@ function applyEstado(estado){
   }
 }
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 async function loadGruero(gid){
   if(!gid) return;
   const [{data}, {data:calData}] = await Promise.all([
@@ -436,19 +442,25 @@ async function loadGruero(gid){
 
   // Extra detail row
   const parts = [];
-  if(d.tiempo_llegada) parts.push(`🕐 ${d.tiempo_llegada}`);
-  if(d.experiencia)    parts.push(`🏍 ${d.experiencia}`);
-  if(d.flota)          parts.push(`🚛 ${d.flota}`);
+  if(d.tiempo_llegada) parts.push(`🕐 ${escapeHtml(d.tiempo_llegada)}`);
+  if(d.experiencia)    parts.push(`🏍 ${escapeHtml(d.experiencia)}`);
+  if(d.flota)          parts.push(`🚛 ${escapeHtml(d.flota)}`);
   const detailEl = document.getElementById('gDetail');
   if(parts.length){
     detailEl.innerHTML = parts.map(p=>`<span>${p}</span>`).join('');
     detailEl.classList.remove('hide');
   }
 
-  // Avatar
+  // Avatar — construido via DOM, no como string, para que un nombre/foto
+  // con comillas no pueda escaparse del atributo onerror ni de src.
   const av = document.getElementById('gAv');
+  av.innerHTML = '';
   if(foto){
-    av.innerHTML = `<img src="${foto}" alt="${nombre}" onerror="this.parentElement.textContent='${nombre[0]?.toUpperCase()||'?'}'">`;
+    const img = document.createElement('img');
+    img.src = foto;
+    img.alt = nombre;
+    img.onerror = () => { av.textContent = nombre[0]?.toUpperCase()||'?'; };
+    av.appendChild(img);
   } else {
     av.textContent = nombre[0]?.toUpperCase()||'?';
   }

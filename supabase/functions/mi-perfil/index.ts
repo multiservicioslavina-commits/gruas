@@ -47,8 +47,17 @@ Deno.serve(async (req: Request) => {
   const { data: { user }, error: authErr } = await supabase.auth.getUser(token);
   if (authErr || !user) return json({ ok: false, error: "Token inválido" }, 401);
 
-  const { data: gruero, error: gErr } = await supabase.from("grueros").select("*").eq("auth_id", user.id).single();
-  if (gErr || !gruero) return json({ ok: false, error: "Gruero no encontrado" }, 404);
+  let { data: gruero, error: gErr } = await supabase.from("grueros").select("*").eq("auth_id", user.id).single();
+  if (gErr || !gruero) {
+    if (user.email) {
+      const { data: byEmail } = await supabase.from("grueros").select("*").eq("email", user.email).single();
+      if (byEmail) {
+        gruero = byEmail;
+        await supabase.from("grueros").update({ auth_id: user.id }).eq("id", gruero.id);
+      }
+    }
+    if (!gruero) return json({ ok: false, error: "Gruero no encontrado" }, 404);
+  }
 
   if (req.method === "GET") {
     const { data: sols } = await supabase.from("solicitudes")

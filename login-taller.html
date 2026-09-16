@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Iniciar sesion — Mi Taller | Ridera</title>
+  <meta name="robots" content="noindex">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #0e0e0e;
+      color: #f0f0f0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+    }
+    .card {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 2.5rem 2rem;
+      width: 100%;
+      max-width: 400px;
+    }
+    .logo { text-align: center; margin-bottom: 1.5rem; }
+    .logo svg { width: 48px; height: 48px; }
+    .logo h1 { font-size: 1.5rem; font-weight: 700; color: #E85D20; margin-top: 0.5rem; }
+    .logo p { color: #888; font-size: 0.9rem; margin-top: 0.25rem; }
+    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden; border: 1px solid #333; }
+    .tab { flex: 1; padding: 0.6rem; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; background: #111; color: #888; transition: all 0.2s; }
+    .tab.active { background: #E85D20; color: #fff; }
+    label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 0.4rem; margin-top: 1.2rem; }
+    input[type="email"], input[type="password"] {
+      width: 100%; background: #111; border: 1px solid #333; border-radius: 8px;
+      color: #f0f0f0; font-size: 1rem; padding: 0.75rem 1rem; transition: border-color 0.2s; outline: none;
+    }
+    input:focus { border-color: #E85D20; }
+    .btn {
+      display: block; width: 100%; margin-top: 1.75rem; padding: 0.85rem;
+      background: #E85D20; color: #fff; font-size: 1rem; font-weight: 600;
+      border: none; border-radius: 8px; cursor: pointer; transition: background 0.2s, opacity 0.2s;
+    }
+    .btn:hover { background: #cf4f18; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .msg {
+      display: none; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.875rem; margin-top: 1rem; line-height: 1.5;
+    }
+    .msg.err { background: #3a1212; border: 1px solid #6b1e1e; color: #f87171; }
+    .msg.ok { background: #0e2a1a; border: 1px solid #1a5c36; color: #4ade80; }
+    .forgot { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; }
+    .forgot a { color: #E85D20; text-decoration: none; }
+    .forgot a:hover { text-decoration: underline; }
+    .spinner {
+      display: inline-block; width: 16px; height: 16px;
+      border: 2px solid rgba(255,255,255,0.3); border-top-color: #fff;
+      border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="logo">
+      <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect width="48" height="48" rx="10" fill="#E85D20"/>
+        <path d="M14 34V22h6v12M24 34V18h6v16M20 18l4-4 4 4" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="36" cy="14" r="3" fill="#fff"/>
+      </svg>
+      <h1>Mi Taller</h1>
+      <p>Administra tu taller en Ridera</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" id="tabLogin">Iniciar sesion</button>
+      <button class="tab" id="tabSignup">Crear cuenta</button>
+    </div>
+
+    <form id="theForm" novalidate>
+      <label for="email">Correo electronico</label>
+      <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" required>
+
+      <label for="password">Contrasena</label>
+      <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
+
+      <div id="confirmWrap" style="display:none">
+        <label for="password2">Confirmar contrasena</label>
+        <input type="password" id="password2" placeholder="••••••••">
+      </div>
+
+      <div class="msg" id="msgEl"></div>
+
+      <button type="submit" class="btn" id="submitBtn">Iniciar sesion</button>
+    </form>
+
+    <div class="forgot">
+      <a href="#" id="forgotLink">Olvide mi contrasena</a>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <script>
+    const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+    const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) location.replace('mi-cuenta-taller.html');
+    });
+
+    let mode = 'login';
+    const form   = document.getElementById('theForm');
+    const emailI = document.getElementById('email');
+    const passI  = document.getElementById('password');
+    const pass2I = document.getElementById('password2');
+    const btn    = document.getElementById('submitBtn');
+    const msgEl  = document.getElementById('msgEl');
+    const confirmW = document.getElementById('confirmWrap');
+
+    document.getElementById('tabLogin').addEventListener('click', () => setMode('login'));
+    document.getElementById('tabSignup').addEventListener('click', () => setMode('signup'));
+
+    function setMode(m) {
+      mode = m;
+      msgEl.style.display = 'none';
+      document.getElementById('tabLogin').classList.toggle('active', m === 'login');
+      document.getElementById('tabSignup').classList.toggle('active', m === 'signup');
+      confirmW.style.display = m === 'signup' ? 'block' : 'none';
+      btn.textContent = m === 'login' ? 'Iniciar sesion' : 'Crear cuenta';
+      passI.autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    }
+
+    function showMsg(text, type) {
+      msgEl.textContent = text;
+      msgEl.className = 'msg ' + type;
+      msgEl.style.display = 'block';
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      msgEl.style.display = 'none';
+      const email = emailI.value.trim();
+      const pass  = passI.value;
+
+      if (!email || !pass) { showMsg('Completa todos los campos.', 'err'); return; }
+
+      if (mode === 'signup') {
+        if (pass.length < 8) { showMsg('La contrasena debe tener al menos 8 caracteres.', 'err'); return; }
+        if (pass !== pass2I.value) { showMsg('Las contrasenas no coinciden.', 'err'); return; }
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span>' + (mode === 'login' ? 'Entrando...' : 'Creando...');
+
+      if (mode === 'login') {
+        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+        if (error) {
+          showMsg(error.status === 400 ? 'Correo o contrasena incorrectos.' : 'Error al iniciar sesion. Intenta de nuevo.', 'err');
+          btn.disabled = false;
+          btn.textContent = 'Iniciar sesion';
+        } else {
+          location.replace('mi-cuenta-taller.html');
+        }
+      } else {
+        const { data, error } = await sb.auth.signUp({ email, password: pass });
+        if (error) {
+          showMsg('Error: ' + error.message, 'err');
+          btn.disabled = false;
+          btn.textContent = 'Crear cuenta';
+        } else if (data.user && !data.user.email_confirmed_at && data.user.identities?.length) {
+          showMsg('Cuenta creada. Revisa tu correo para confirmar y luego inicia sesion.', 'ok');
+          btn.disabled = false;
+          setMode('login');
+        } else if (data.session) {
+          location.replace('mi-cuenta-taller.html');
+        } else {
+          showMsg('Cuenta creada. Inicia sesion con tus credenciales.', 'ok');
+          btn.disabled = false;
+          setMode('login');
+        }
+      }
+    });
+
+    document.getElementById('forgotLink').addEventListener('click', async (e) => {
+      e.preventDefault();
+      const email = emailI.value.trim();
+      if (!email) { showMsg('Escribe tu correo primero.', 'err'); return; }
+      btn.disabled = true;
+      await sb.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + 'mi-cuenta-taller.html',
+      });
+      showMsg('Revisa tu correo — te enviamos un enlace para restablecer tu contrasena.', 'ok');
+      btn.disabled = false;
+    });
+  </script>
+</body>
+</html>

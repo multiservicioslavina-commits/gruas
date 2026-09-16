@@ -613,7 +613,7 @@ export const TOOL_SCHEMAS = [
   {
     name: "consultar_clubes_moteros",
     description:
-      "Busca clubes y grupos moteros de Antioquia por ciudad, nombre o tipo. Devuelve contacto, redes sociales, descripción. Usala cuando el usuario pregunte por clubs, rodadas, grupos, comunidades moteras.",
+      "Busca clubes y grupos moteros por ciudad, nombre o tipo. Devuelve contacto, redes sociales, descripción. Cada resultado trae 'fuente': \"ridera\" (club registrado oficialmente en Ridera, con su página en club.ridera.com.co) o \"externo\" (otro grupo conocido de la zona, no registrado en Ridera). La lista ya viene ordenada con los de fuente \"ridera\" primero — preséntalos en ese mismo orden, sin reordenar ni mezclar. Usala cuando el usuario pregunte por clubs, rodadas, grupos, comunidades moteras.",
     input_schema: {
       type: "object",
       properties: {
@@ -1624,8 +1624,41 @@ CONTACTO: Abogado especializado en responsabilidad civil`
   },
 
   async consultar_clubes_moteros(input) {
-    let query = supabase.from("clubes_moteros_antioquia").select("nombre, ciudad, tipo, telefono, whatsapp, facebook, instagram, sitio_web, descripcion, ubicacion").eq("activo", true);
+    const ciudadFiltro = input.ciudad ? norm(String(input.ciudad)) : null;
+    const nombreFiltro = input.nombre ? norm(String(input.nombre)) : null;
 
+    // Clubes registrados oficialmente en Ridera (tabla "clubs"): van primero.
+    // Se trae "datos" completo pero solo se reexponen campos publicos abajo --
+    // ese jsonb tambien guarda admin_pass_hash del panel del lider.
+    const { data: registrados } = await supabase
+      .from("clubs")
+      .select("nombre, ciudad, codigo, verificado, datos, created_at")
+      .eq("aprobado", true)
+      .order("verificado", { ascending: false })
+      .order("created_at", { ascending: true });
+
+    const clubesRidera = (registrados ?? [])
+      .filter((c) => !ciudadFiltro || norm(String(c.ciudad ?? "")).includes(ciudadFiltro))
+      .filter((c) => !nombreFiltro || norm(String(c.nombre ?? "")).includes(nombreFiltro))
+      .map((c) => {
+        const d = (c.datos ?? {}) as Record<string, string>;
+        return {
+          nombre: c.nombre,
+          ciudad: c.ciudad,
+          tipo: d.rutas || "Club registrado en Ridera",
+          whatsapp: d.whatsapp || null,
+          facebook: d.facebook || null,
+          instagram: d.instagram || null,
+          sitio_web: d.web || `https://club.ridera.com.co/${c.codigo}`,
+          descripcion: d.descripcion || null,
+          verificado: c.verificado,
+          fuente: "ridera",
+        };
+      });
+
+    // Directorio externo (tabla "clubes_moteros_antioquia"): grupos conocidos
+    // de la zona que no estan registrados en Ridera. Van despues.
+    let query = supabase.from("clubes_moteros_antioquia").select("nombre, ciudad, tipo, telefono, whatsapp, facebook, instagram, sitio_web, descripcion, ubicacion").eq("activo", true);
     if (input.ciudad) {
       query = query.like("ciudad_norm", `%${norm(String(input.ciudad))}%`);
     }
@@ -1635,9 +1668,11 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     if (input.tipo) {
       query = query.eq("tipo", String(input.tipo));
     }
+    const { data: externos } = await query.limit(10);
+    const clubesExternos = (externos ?? []).map((c) => ({ ...c, fuente: "externo" }));
 
-    const { data } = await query.limit(10);
-    if (!data?.length) {
+    const todos = [...clubesRidera, ...clubesExternos];
+    if (!todos.length) {
       return {
         ok: false,
         data: input.ciudad
@@ -1645,7 +1680,7 @@ CONTACTO: Abogado especializado en responsabilidad civil`
           : "No hay clubes moteros registrados aun."
       };
     }
-    return { ok: true, data };
+    return { ok: true, data: todos };
   },
 
   async programar_recordatorio_avanzado(input, phone) {

@@ -323,6 +323,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     function fmt(val) { return val && String(val).trim() ? String(val).trim() : null; }
 
+    function escapeHtml(str) {
+      const div = document.createElement('div');
+      div.textContent = str == null ? '' : String(str);
+      return div.innerHTML;
+    }
+
     async function load() {
       const slug = getSlug();
       if (!slug) { show('notFound'); return; }
@@ -389,9 +395,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       // Avatar
       const avatarEl = document.getElementById('avatarEl');
       if (foto) {
-        avatarEl.innerHTML = `<img class="hero-avatar" src="${foto}" alt="${nombre}">`;
+        avatarEl.innerHTML = `<img class="hero-avatar" src="${escapeHtml(foto)}" alt="${escapeHtml(nombre)}">`;
       } else {
-        avatarEl.innerHTML = `<div class="hero-avatar-placeholder">${nombre[0].toUpperCase()}</div>`;
+        avatarEl.innerHTML = `<div class="hero-avatar-placeholder">${escapeHtml(nombre[0].toUpperCase())}</div>`;
       }
 
       // Info
@@ -430,11 +436,11 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       const aceptaRaw = d.acepta ?? g.acepta;
       const aceptaArr = Array.isArray(aceptaRaw) ? aceptaRaw : (aceptaRaw ? String(aceptaRaw).split(',').map(s => s.trim()).filter(Boolean) : []);
       if (srvArr.length) {
-        document.getElementById('srvChips').innerHTML = srvArr.map(s => `<span class="chip chip-srv">${s}</span>`).join('');
+        document.getElementById('srvChips').innerHTML = srvArr.map(s => `<span class="chip chip-srv">${escapeHtml(s)}</span>`).join('');
         document.getElementById('srvSection').style.display = 'block';
       }
       if (aceptaArr.length) {
-        document.getElementById('aceptaChips').innerHTML = aceptaArr.map(a => `<span class="chip chip-acepta">${a}</span>`).join('');
+        document.getElementById('aceptaChips').innerHTML = aceptaArr.map(a => `<span class="chip chip-acepta">${escapeHtml(a)}</span>`).join('');
         document.getElementById('aceptaWrap').style.display = 'block';
       }
 
@@ -453,7 +459,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       ].filter(([, v]) => v);
 
       document.getElementById('infoGrid').innerHTML = fields.map(([l, v]) =>
-        `<div class="info-item"><div class="lbl">${l}</div><div class="val">${v}</div></div>`
+        `<div class="info-item"><div class="lbl">${escapeHtml(l)}</div><div class="val">${escapeHtml(v)}</div></div>`
       ).join('');
 
       // Descripción

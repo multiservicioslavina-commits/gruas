@@ -17,7 +17,14 @@ Deno.serve(async (req: Request) => {
   const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
   const { data:{ user }, error:authErr } = await supabase.auth.getUser(token);
   if (authErr || !user) return json({ ok:false, error:"Token inválido" }, 401);
-  const { data:gruero } = await supabase.from("grueros").select("id").eq("auth_id",user.id).single();
+  let { data:gruero } = await supabase.from("grueros").select("id").eq("auth_id",user.id).single();
+  if (!gruero && user.email) {
+    const { data:byEmail } = await supabase.from("grueros").select("id").eq("email",user.email).single();
+    if (byEmail) {
+      gruero = byEmail;
+      await supabase.from("grueros").update({ auth_id: user.id }).eq("id", gruero.id);
+    }
+  }
   if (!gruero) return json({ ok:false, error:"Gruero no encontrado" }, 404);
 
   const url = new URL(req.url);
