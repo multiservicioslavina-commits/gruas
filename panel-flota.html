@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Panel de flota | Ridera Grúas</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0d0d0d">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
+  :root{--bg:#0d0d0d;--panel:#16171b;--line:#2a2c33;--orange:#E85D20;--ink:#f3f3f3;--ink-dim:#c2beb4;--ink-faint:#9a9ca3;--ok:#16a34a;--warn:#f59e0b;--err:#ef4444}
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"DM Sans",system-ui,sans-serif}
+  body{min-height:100vh}
+  .top{padding:20px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:14px;position:sticky;top:0;background:var(--bg);z-index:5}
+  .back{font-family:"Bebas Neue",sans-serif;font-size:30px;color:var(--ink-dim);text-decoration:none;line-height:1}
+  .eyebrow{font-family:"JetBrains Mono",monospace;font-weight:700;font-size:12px;letter-spacing:.3em;color:var(--orange);text-transform:uppercase}
+  .top h1{font-family:"Bebas Neue",sans-serif;font-size:32px;line-height:.95;margin:2px 0 0}
+  .wrap{max-width:640px;margin:0 auto;padding:22px 20px 60px}
+  label{display:block;font-family:"JetBrains Mono",monospace;font-size:12px;letter-spacing:.15em;color:var(--ink-faint);text-transform:uppercase;margin:0 0 8px}
+  input{width:100%;background:var(--panel);border:1px solid var(--line);border-radius:12px;color:var(--ink);font-size:16px;padding:14px 16px;font-family:"DM Sans",sans-serif;margin-bottom:16px}
+  input:focus{outline:none;border-color:var(--orange)}
+  button{background:var(--orange);color:#fff;border:none;border-radius:14px;padding:15px;font-size:15px;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:"DM Sans",sans-serif;width:100%}
+  button:disabled{opacity:.5;cursor:default}
+  .msg{font-size:14px;line-height:1.5;padding:12px 14px;border-radius:10px;margin-bottom:16px;display:none}
+  .msg.show{display:block}
+  .msg.err{background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.35)}
+  .view{display:none}
+  .view.show{display:block}
+  .sub{color:var(--ink-dim);font-size:14px;line-height:1.6;margin:0 0 20px}
+  .flota-header{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:16px}
+  .flota-header .n{font-family:"Bebas Neue",sans-serif;font-size:22px}
+  .flota-header .refresh{width:auto;background:transparent;border:1px solid var(--line);color:var(--ink-dim);padding:8px 14px;border-radius:10px;font-size:13px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
+  .card-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+  .card-nombre{font-size:17px;font-weight:700}
+  .card-placa{font-family:"JetBrains Mono",monospace;font-size:12px;color:var(--ink-faint);margin-top:2px}
+  .status{font-size:12px;font-weight:700;letter-spacing:.05em;padding:5px 11px;border-radius:20px;white-space:nowrap;text-transform:uppercase}
+  .status.ok{background:rgba(22,163,74,.15);color:#4ade80}
+  .status.busy{background:rgba(245,158,11,.15);color:#fbbf24}
+  .status.off{background:rgba(154,156,163,.15);color:var(--ink-faint)}
+  .servicio{margin-top:14px;padding-top:14px;border-top:1px solid var(--line);font-size:14px;color:var(--ink-dim)}
+  .servicio .cliente{color:var(--ink);font-weight:600}
+  .servicio .estado-tag{font-family:"JetBrains Mono",monospace;font-size:11px;color:var(--orange);letter-spacing:.1em;text-transform:uppercase;margin-top:4px}
+  .empty{color:var(--ink-faint);font-size:14px;text-align:center;padding:40px 20px}
+  .resumen{display:flex;gap:10px;margin-bottom:20px}
+  .resumen .box{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;text-align:center}
+  .resumen .box .num{font-family:"Bebas Neue",sans-serif;font-size:28px;color:var(--orange)}
+  .resumen .box .lbl{font-size:10px;letter-spacing:.1em;color:var(--ink-faint);text-transform:uppercase;margin-top:2px}
+</style>
+</head>
+<body>
+  <header class="top">
+    <a class="back" href="/mi-cuenta.html">‹</a>
+    <div>
+      <div class="eyebrow">Ridera Grúas</div>
+      <h1>Mi flota</h1>
+    </div>
+  </header>
+
+  <div class="wrap">
+
+    <!-- LOGIN -->
+    <div id="viewLogin" class="view show">
+      <p class="sub">Entra con la cuenta de cualquiera de tus grúas para ver el estado de toda tu flota (las que comparten el mismo WhatsApp registrado).</p>
+      <div id="msgLogin" class="msg"></div>
+      <label for="inpEmail">Correo</label>
+      <input id="inpEmail" type="email" autocomplete="email">
+      <label for="inpPass">Contraseña</label>
+      <input id="inpPass" type="password" autocomplete="current-password">
+      <button id="btnLogin">Entrar</button>
+    </div>
+
+    <!-- FLOTA -->
+    <div id="viewFlota" class="view">
+      <div class="resumen">
+        <div class="box"><div class="num" id="numTotal">—</div><div class="lbl">Grúas</div></div>
+        <div class="box"><div class="num" id="numLibres">—</div><div class="lbl">Libres</div></div>
+        <div class="box"><div class="num" id="numOcupadas">—</div><div class="lbl">En servicio</div></div>
+      </div>
+      <div class="flota-header">
+        <div class="n">Tus grúas</div>
+        <button id="btnRefresh" class="refresh">↻ Actualizar</button>
+      </div>
+      <div id="flotaList"></div>
+    </div>
+
+  </div>
+
+<script>
+  const SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const $ = id => document.getElementById(id);
+  const show = id => { document.querySelectorAll('.view').forEach(v => v.classList.remove('show')); $(id).classList.add('show'); };
+  const setMsg = (id, text) => { const el = $(id); el.textContent = text; el.className = 'msg show err'; };
+
+  const ESTADO_LABEL = { pendiente: 'Pendiente', asignada: 'Asignada', llego: 'En camino / llegó', finalizada: 'Finalizada', cancelada: 'Cancelada' };
+
+  $('btnLogin').addEventListener('click', async () => {
+    $('msgLogin').className = 'msg';
+    const email = $('inpEmail').value.trim();
+    const password = $('inpPass').value;
+    if (!email || !password) { setMsg('msgLogin', 'Escribe correo y contraseña.'); return; }
+
+    $('btnLogin').disabled = true; $('btnLogin').textContent = 'Entrando…';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    $('btnLogin').disabled = false; $('btnLogin').textContent = 'Entrar';
+
+    if (error) { setMsg('msgLogin', 'Correo o contraseña incorrectos.'); return; }
+    await loadFlota();
+  });
+
+  $('btnRefresh').addEventListener('click', loadFlota);
+
+  async function loadFlota() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { show('viewLogin'); return; }
+
+    const { data: miGruero } = await sb.from('grueros').select('id, telefono').eq('auth_id', user.id).maybeSingle();
+    if (!miGruero) { setMsg('msgLogin', 'Esta cuenta no tiene un perfil de gruero asociado.'); show('viewLogin'); return; }
+
+    const { data: flota } = await sb.from('grueros')
+      .select('id, nombre, placa, disponible, telefono')
+      .eq('telefono', miGruero.telefono)
+      .eq('aprobado', 'SI')
+      .order('nombre');
+
+    const lista = flota || [];
+    const ids = lista.map(g => g.id);
+    let activas = [];
+    if (ids.length) {
+      const { data } = await sb.from('solicitudes')
+        .select('id, gruero_asignado, cliente_nombre, ubicacion, estado')
+        .in('gruero_asignado', ids)
+        .in('estado', ['asignada', 'llego']);
+      activas = data || [];
+    }
+    const activaPorGruero = Object.fromEntries(activas.map(s => [s.gruero_asignado, s]));
+
+    renderFlota(lista, activaPorGruero);
+    show('viewFlota');
+  }
+
+  function renderFlota(lista, activaPorGruero) {
+    const cont = $('flotaList');
+    if (!lista.length) {
+      cont.innerHTML = '<div class="empty">No encontramos otras grúas con este mismo WhatsApp registrado.</div>';
+      $('numTotal').textContent = '0'; $('numLibres').textContent = '0'; $('numOcupadas').textContent = '0';
+      return;
+    }
+
+    let libres = 0, ocupadas = 0;
+    cont.innerHTML = lista.map(g => {
+      const activa = activaPorGruero[g.id];
+      let statusClass = 'off', statusLabel = 'No disponible';
+      if (activa) { statusClass = 'busy'; statusLabel = 'En servicio'; ocupadas++; }
+      else if (g.disponible) { statusClass = 'ok'; statusLabel = 'Disponible'; libres++; }
+
+      const servicioHtml = activa ? `
+        <div class="servicio">
+          <div class="cliente">${escapeHtml(activa.cliente_nombre || 'Cliente')}</div>
+          <div>${escapeHtml(activa.ubicacion || '')}</div>
+          <div class="estado-tag">${escapeHtml(ESTADO_LABEL[activa.estado] || activa.estado)}</div>
+        </div>` : '';
+
+      return `
+        <div class="card">
+          <div class="card-top">
+            <div>
+              <div class="card-nombre">${escapeHtml(g.nombre || 'Grúa')}</div>
+              ${g.placa ? `<div class="card-placa">${escapeHtml(g.placa)}</div>` : ''}
+            </div>
+            <span class="status ${statusClass}">${statusLabel}</span>
+          </div>
+          ${servicioHtml}
+        </div>`;
+    }).join('');
+
+    $('numTotal').textContent = lista.length;
+    $('numLibres').textContent = libres;
+    $('numOcupadas').textContent = ocupadas;
+  }
+
+  function escapeHtml(str) {
+    const div = document.createElement('div');
+    div.textContent = str == null ? '' : String(str);
+    return div.innerHTML;
+  }
+
+  (async function init() {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) await loadFlota();
+  })();
+</script>
+</body>
+</html>
