@@ -342,6 +342,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 
     <div class="container">
+      <!-- APROBACIÓN PENDIENTE -->
+      <div id="pendingBanner" style="display:none;background:#2a2000;border:1px solid rgba(245,158,11,0.35);border-radius:10px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;font-size:0.88rem;color:#fcd34d;align-items:center;gap:0.6rem">
+        <span style="font-size:1.1rem">⏳</span>
+        <span>Tu perfil está en revisión. Puedes completar tus datos ya mismo, pero no aparecerás en el directorio público ni recibirás solicitudes hasta que el equipo de Ridera lo apruebe (normalmente en menos de 48 horas). Te avisamos por correo apenas quede activo.</span>
+      </div>
+
       <!-- HEADER -->
       <div class="header-card">
         <div id="avatarEl"></div>
@@ -603,6 +609,9 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       perfil = data.gruero;
       const stats = data.stats || {};
 
+      // Aprobación pendiente
+      document.getElementById('pendingBanner').style.display = perfil.aprobado === 'SI' ? 'none' : 'flex';
+
       // Header
       document.getElementById('hdrNombre').textContent  = perfil.nombre || '—';
       document.getElementById('hdrCiudad').textContent  = perfil.ciudad || '—';
@@ -768,6 +777,10 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     document.getElementById('toggleDisp').addEventListener('click', async function() {
       if (!perfil) return;
+      if (perfil.aprobado !== 'SI') {
+        alert('Tu perfil todavía está en revisión. Podrás activarte para recibir solicitudes apenas el equipo de Ridera lo apruebe.');
+        return;
+      }
       this.disabled = true;
       try {
         const nuevoVal = !perfil.disponible;
