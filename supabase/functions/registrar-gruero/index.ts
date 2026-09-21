@@ -129,6 +129,37 @@ Deno.serve(async (req: Request) => {
       return json({ ok: res.ok, status: res.status, result });
     }
 
+    // ── SETUP: crear la plantilla de aprobación en Meta (uso único) ─────────
+    if (data.action === "crear_plantilla_aprobado" && data.setup_key === "ridera_setup_2026") {
+      const res = await fetch(`${GRAPH}/${wabaId}/message_templates`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${waToken}`, "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: "gruero_aprobado",
+          category: "UTILITY",
+          language: "es_CO",
+          components: [
+            {
+              type: "BODY",
+              text: "Hola {{1}}, tu perfil de grúa en Ridera ya fue aprobado. Ya puedes entrar a tu portal, activar tu disponibilidad y empezar a recibir solicitudes: https://gruas.ridera.com.co/mi-cuenta.html",
+              example: { body_text: [["Carlos"]] },
+            },
+          ],
+        }),
+      });
+      const result = await res.json();
+      return json({ ok: res.ok, status: res.status, result });
+    }
+
+    // ── SETUP: consultar estado de la plantilla de aprobación (uso único) ───
+    if (data.action === "estado_plantilla_aprobado" && data.setup_key === "ridera_setup_2026") {
+      const res = await fetch(`${GRAPH}/${wabaId}/message_templates?fields=name,status,category,language,rejected_reason&name=gruero_aprobado`, {
+        headers: { Authorization: `Bearer ${waToken}` },
+      });
+      const result = await res.json();
+      return json({ ok: res.ok, status: res.status, result });
+    }
+
     // ── RECUPERAR CLAVE POR WHATSAPP, paso 1: enviar código (cuentas registradas solo con celular) ──
     if (data.action === "recuperar_clave_telefono") {
       const telefono = normalizePhone(String(data.telefono ?? ""));

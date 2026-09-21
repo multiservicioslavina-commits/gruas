@@ -809,7 +809,7 @@ Deno.serve(async (req) => {
     // APPROVE GRUERO
     if (action === 'approve') {
       const { id } = body
-      const { data: gruero } = await sbClient.from('grueros').select('id, nombre, email, slug, auth_id').eq('id', id).maybeSingle()
+      const { data: gruero } = await sbClient.from('grueros').select('id, nombre, email, telefono, slug, auth_id').eq('id', id).maybeSingle()
       if (!gruero) {
         return new Response(JSON.stringify({ ok: false, error: 'Gruero no encontrado' }), {
           status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -878,6 +878,11 @@ Deno.serve(async (req) => {
         const sendResult = await sendEmailViaResend(gruero.email, 'Tu perfil de Ridera Grúas ya está aprobado 🚛', emailHtml, 'Ridera Grúas')
         email_sent = sendResult.ok
         if (!sendResult.ok) email_error = sendResult.error || 'Error desconocido al enviar el correo'
+      } else if (gruero.telefono && auth_id) {
+        // Cuenta creada con celular (sin correo real) — avisamos por WhatsApp.
+        const waResult = await sendWATemplate(gruero.telefono, 'gruero_aprobado', 'es_CO', [gruero.nombre])
+        email_sent = waResult.ok
+        if (!waResult.ok) email_error = waResult.error || 'Error desconocido al enviar el WhatsApp'
       }
 
       await sbClient.from('grueros').update({ aprobado: 'SI', disponible: true, slug, auth_id: auth_id ?? null }).eq('id', gruero.id)
