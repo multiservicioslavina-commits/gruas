@@ -385,14 +385,21 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <label>WhatsApp <span class="req">*</span></label>
             <input type="tel" id="g-tel" name="telefono" placeholder="+57 300 000 0000">
           </div>
-          <div class="form-group">
-            <label>Correo electrónico <span class="req">*</span> <span class="hint">— con esto inicias sesión</span></label>
+          <div class="form-group" id="g-email-group">
+            <label>Correo electrónico <span class="req" id="g-email-req">*</span> <span class="hint">— opcional si te registras con celular</span></label>
             <input type="email" id="g-email" name="email" placeholder="grua@correo.com">
           </div>
         </div>
         <div id="sessionNotice" style="display:none;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--text-muted)">
           Sesión iniciada como <strong id="sessionEmail"></strong>. Esta grúa quedará asociada a esa cuenta.
           <a onclick="cerrarSesionRegistro()" style="color:var(--orange);cursor:pointer">¿No eres tú? Cierra sesión</a>
+        </div>
+        <div class="form-group" id="authModeGroup">
+          <label>¿Cómo quieres iniciar sesión? <span class="req">*</span></label>
+          <div class="check-group">
+            <label class="check-chip checked"><input type="radio" name="authMode" value="email" checked> 📧 Con correo</label>
+            <label class="check-chip"><input type="radio" name="authMode" value="phone"> 📱 Con este WhatsApp</label>
+          </div>
         </div>
         <div class="form-row" id="authFields">
           <div class="form-group">
@@ -546,8 +553,12 @@ async function checkSession() {
   if (existingGruero) { window.location.href = 'https://gruas.ridera.com.co/mi-cuenta.html'; return; }
   sessionUser = user;
   document.getElementById('authFields').style.display = 'none';
+  document.getElementById('authModeGroup').style.display = 'none';
   document.getElementById('sessionNotice').style.display = 'block';
-  document.getElementById('sessionEmail').textContent = user.email;
+  const isPhoneAccount = (user.email || '').endsWith('@telefono.gruas.ridera.com.co');
+  document.getElementById('sessionEmail').textContent = isPhoneAccount
+    ? 'tu número de WhatsApp'
+    : user.email;
 }
 checkSession();
 
@@ -556,6 +567,7 @@ window.cerrarSesionRegistro = async function () {
   await sb.auth.signOut();
   sessionUser = null;
   document.getElementById('authFields').style.display = '';
+  document.getElementById('authModeGroup').style.display = '';
   document.getElementById('sessionNotice').style.display = 'none';
 };
 
@@ -579,6 +591,17 @@ async function ensureUniqueSlug(sb, base) {
     slug = base + '-' + Math.random().toString(36).slice(-4);
   }
   return slug;
+}
+function normalizePhone(raw) {
+  let d = (raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  d = d.replace(/^0+/, '');
+  if (d.startsWith('57') && d.length >= 12) return d;
+  if (d.length === 10) return '57' + d;
+  return d;
+}
+function phoneToSyntheticEmail(phone) {
+  return `tel${phone}@telefono.gruas.ridera.com.co`;
 }
 async function uploadDataUrl(sb, dataUrl, path) {
   const res = await fetch(dataUrl);
@@ -610,12 +633,13 @@ function clearStatus() { document.getElementById('status-grua').className = 'sta
 function setProgress(pct) { const w = document.getElementById('progress-wrap'), b = document.getElementById('progress-bar'); if (pct > 0) { w.classList.add('visible'); b.style.width = pct + '%'; } else { w.classList.remove('visible'); b.style.width = '0%'; } }
 
 function validate() {
+  const authMode = sessionUser ? null : getRadio('authMode');
   const req = [
     { id:'g-nombre', label:'Nombre' },
     { id:'g-tel',    label:'WhatsApp' },
-    { id:'g-email',  label:'Correo' },
     { id:'g-ciudad', label:'Ciudad' }
   ];
+  if (authMode === 'email') req.push({ id:'g-email', label:'Correo' });
   let err = false;
   req.forEach(f => {
     const el = document.getElementById(f.id);
@@ -623,6 +647,11 @@ function validate() {
     el.classList.remove('field-error');
     if (!el.value.trim()) { el.classList.add('field-error'); err = true; }
   });
+  if (authMode === 'phone') {
+    const tel = document.getElementById('g-tel');
+    tel.classList.remove('field-error');
+    if (normalizePhone(tel.value).length < 12) { tel.classList.add('field-error'); err = true; }
+  }
   const muniCount = document.querySelectorAll('#g-municipios input:checked').length;
   const muniBox = document.getElementById('g-municipios');
   muniBox.classList.toggle('field-error', muniCount === 0);
@@ -729,14 +758,19 @@ async function submitGrua() {
     if (sessionUser) {
       userId = sessionUser.id;
     } else {
+      const authMode = getRadio('authMode');
+      const telNormalizado = normalizePhone(data.telefono);
+      const authEmail = authMode === 'phone' ? phoneToSyntheticEmail(telNormalizado) : data.email;
       const { data: signUpData, error: signUpError } = await sb.auth.signUp({
-        email: data.email,
+        email: authEmail,
         password: document.getElementById('g-password').value,
       });
       if (signUpError) {
         const yaExiste = /already registered|already exists/i.test(signUpError.message || '');
         setStatus('error', yaExiste
-          ? 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión primero y vuelve a esta página para registrar tu grúa.'
+          ? (authMode === 'phone'
+              ? 'Ese número de WhatsApp ya tiene una cuenta en Ridera. Inicia sesión primero y vuelve a esta página para registrar tu grúa.'
+              : 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión primero y vuelve a esta página para registrar tu grúa.')
           : (signUpError.message || 'No se pudo crear la cuenta.'));
         btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera'; setProgress(0);
         return;
@@ -770,7 +804,7 @@ async function submitGrua() {
       nombre: data.nombre,
       telefono: data.telefono,
       ciudad: data.ciudad,
-      email: sessionUser ? sessionUser.email : data.email,
+      email: sessionUser ? (sessionUser.email.endsWith('@telefono.gruas.ridera.com.co') ? null : sessionUser.email) : (data.email || null),
       municipios: municipios.length ? municipios : null,
       slug,
       disponible: false,

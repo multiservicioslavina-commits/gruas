@@ -150,8 +150,8 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     </div>
 
     <form id="loginForm" novalidate>
-      <label for="email">Correo electrónico</label>
-      <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" required>
+      <label for="email">Correo o número de WhatsApp</label>
+      <input type="text" id="email" placeholder="tu@correo.com o +57 300 000 0000" autocomplete="username" required>
 
       <label for="password">Contraseña</label>
       <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
@@ -189,20 +189,36 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     const btn     = document.getElementById('submitBtn');
     const errEl   = document.getElementById('errorMsg');
 
+    function normalizePhone(raw) {
+      let d = (raw || '').replace(/\D/g, '');
+      if (!d) return '';
+      d = d.replace(/^0+/, '');
+      if (d.startsWith('57') && d.length >= 12) return d;
+      if (d.length === 10) return '57' + d;
+      return d;
+    }
+    function resolveIdentifier(raw) {
+      const val = (raw || '').trim();
+      if (val.includes('@')) return { email: val, isPhone: false };
+      const tel = normalizePhone(val);
+      return { email: `tel${tel}@telefono.gruas.ridera.com.co`, isPhone: true };
+    }
+
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       errEl.style.display = 'none';
       btn.disabled = true;
       btn.innerHTML = '<span class="spinner"></span>Entrando…';
 
+      const { email } = resolveIdentifier(emailEl.value);
       const { error } = await sb.auth.signInWithPassword({
-        email: emailEl.value.trim(),
+        email,
         password: passEl.value,
       });
 
       if (error) {
         errEl.textContent = error.status === 400
-          ? 'Correo o contraseña incorrectos.'
+          ? 'Correo/celular o contraseña incorrectos.'
           : 'Error al iniciar sesión. Intenta de nuevo.';
         errEl.style.display = 'block';
         btn.disabled = false;
@@ -214,10 +230,16 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     document.getElementById('forgotLink').addEventListener('click', async (e) => {
       e.preventDefault();
-      const email = emailEl.value.trim();
-      if (!email) {
-        errEl.textContent = 'Escribe tu correo primero.';
+      const raw = emailEl.value.trim();
+      if (!raw) {
+        errEl.textContent = 'Escribe tu correo o celular primero.';
         errEl.style.display = 'block';
+        return;
+      }
+      const { email, isPhone } = resolveIdentifier(raw);
+      if (isPhone) {
+        errEl.style.cssText = 'display:block;background:#3a1212;border-color:#6b1e1e;color:#f87171;';
+        errEl.textContent = 'Si te registraste con celular, no podemos enviarte un correo de recuperación. Escríbele al equipo de Ridera por WhatsApp para restablecer tu clave.';
         return;
       }
       btn.disabled = true;
