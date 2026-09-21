@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Iniciar sesion — Mi Taller | Ridera</title>
+  <title>Iniciar sesión — Mi Taller | Ridera</title>
   <meta name="robots" content="noindex">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -29,11 +29,8 @@
     .logo svg { width: 48px; height: 48px; }
     .logo h1 { font-size: 1.5rem; font-weight: 700; color: #E85D20; margin-top: 0.5rem; }
     .logo p { color: #888; font-size: 0.9rem; margin-top: 0.25rem; }
-    .tabs { display: flex; gap: 0; margin-bottom: 1.5rem; border-radius: 8px; overflow: hidden; border: 1px solid #333; }
-    .tab { flex: 1; padding: 0.6rem; font-size: 0.9rem; font-weight: 600; border: none; cursor: pointer; background: #111; color: #888; transition: all 0.2s; }
-    .tab.active { background: #E85D20; color: #fff; }
     label { display: block; font-size: 0.85rem; color: #aaa; margin-bottom: 0.4rem; margin-top: 1.2rem; }
-    input[type="email"], input[type="password"] {
+    input[type="text"], input[type="password"] {
       width: 100%; background: #111; border: 1px solid #333; border-radius: 8px;
       color: #f0f0f0; font-size: 1rem; padding: 0.75rem 1rem; transition: border-color 0.2s; outline: none;
     }
@@ -45,11 +42,10 @@
     }
     .btn:hover { background: #cf4f18; }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .msg {
-      display: none; border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.875rem; margin-top: 1rem; line-height: 1.5;
+    .error {
+      display: none; background: #3a1212; border: 1px solid #6b1e1e; color: #f87171;
+      border-radius: 8px; padding: 0.75rem 1rem; font-size: 0.875rem; margin-top: 1rem;
     }
-    .msg.err { background: #3a1212; border: 1px solid #6b1e1e; color: #f87171; }
-    .msg.ok { background: #0e2a1a; border: 1px solid #1a5c36; color: #4ade80; }
     .forgot { text-align: center; margin-top: 1.25rem; font-size: 0.85rem; }
     .forgot a { color: #E85D20; text-decoration: none; }
     .forgot a:hover { text-decoration: underline; }
@@ -59,6 +55,25 @@
       border-radius: 50%; animation: spin 0.7s linear infinite; vertical-align: middle; margin-right: 6px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
+    .modal-overlay {
+      display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+      align-items: center; justify-content: center; padding: 1rem; z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px;
+      padding: 1.75rem; width: 100%; max-width: 360px;
+    }
+    .modal-box h2 { font-size: 1.1rem; color: #f0f0f0; margin-bottom: 0.5rem; }
+    .modal-box p.hint { color: #999; font-size: 0.82rem; line-height: 1.4; margin-bottom: 1rem; }
+    .modal-close { float: right; background: none; border: none; color: #888; font-size: 1.2rem; cursor: pointer; }
+    .modal-msg { display: none; border-radius: 8px; padding: 0.65rem 0.85rem; font-size: 0.82rem; margin-top: 0.9rem; }
+    .modal-msg.ok { display: block; background: #0e2a1a; border: 1px solid #1a5c36; color: #4ade80; }
+    .modal-msg.err { display: block; background: #3a1212; border: 1px solid #6b1e1e; color: #f87171; }
+    .link-btn {
+      background: none; border: none; color: #E85D20; font-size: 0.82rem; cursor: pointer;
+      margin-top: 0.75rem; display: block; text-align: center; width: 100%;
+    }
   </style>
 </head>
 <body>
@@ -73,30 +88,45 @@
       <p>Administra tu taller en Ridera</p>
     </div>
 
-    <div class="tabs">
-      <button class="tab active" id="tabLogin">Iniciar sesion</button>
-      <button class="tab" id="tabSignup">Crear cuenta</button>
-    </div>
+    <form id="loginForm" novalidate>
+      <label for="identifier">Correo o número de WhatsApp</label>
+      <input type="text" id="identifier" placeholder="tu@correo.com o +57 300 000 0000" autocomplete="username" required>
 
-    <form id="theForm" novalidate>
-      <label for="email">Correo electronico</label>
-      <input type="email" id="email" placeholder="tu@correo.com" autocomplete="email" required>
-
-      <label for="password">Contrasena</label>
+      <label for="password">Contraseña</label>
       <input type="password" id="password" placeholder="••••••••" autocomplete="current-password" required>
 
-      <div id="confirmWrap" style="display:none">
-        <label for="password2">Confirmar contrasena</label>
-        <input type="password" id="password2" placeholder="••••••••">
-      </div>
+      <div class="error" id="errorMsg"></div>
 
-      <div class="msg" id="msgEl"></div>
-
-      <button type="submit" class="btn" id="submitBtn">Iniciar sesion</button>
+      <button type="submit" class="btn" id="submitBtn">Iniciar sesión</button>
     </form>
 
     <div class="forgot">
-      <a href="#" id="forgotLink">Olvide mi contrasena</a>
+      <a href="#" id="forgotLink">¿Olvidé mi contraseña?</a>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="phoneResetModal">
+    <div class="modal-box">
+      <button class="modal-close" id="phoneResetClose">✕</button>
+      <div id="phoneResetStep1">
+        <h2>Recuperar contraseña</h2>
+        <p class="hint">Te enviaremos un código de 6 dígitos por WhatsApp al número con el que te registraste.</p>
+        <label for="resetPhone">Número de WhatsApp</label>
+        <input type="text" id="resetPhone" placeholder="+57 300 000 0000">
+        <button class="btn" id="resetSendBtn" type="button">Enviar código</button>
+        <div class="modal-msg" id="resetMsg1"></div>
+      </div>
+      <div id="phoneResetStep2" style="display:none">
+        <h2>Escribe el código</h2>
+        <p class="hint">Te llegó un mensaje de WhatsApp con un código de 6 dígitos.</p>
+        <label for="resetCode">Código</label>
+        <input type="text" id="resetCode" placeholder="123456" maxlength="6" inputmode="numeric">
+        <label for="resetNewPass">Nueva contraseña</label>
+        <input type="password" id="resetNewPass" placeholder="Mínimo 8 caracteres">
+        <button class="btn" id="resetConfirmBtn" type="button">Cambiar contraseña</button>
+        <button class="link-btn" id="resetAgainBtn" type="button">No recibí el código, enviar de nuevo</button>
+        <div class="modal-msg" id="resetMsg2"></div>
+      </div>
     </div>
   </div>
 
@@ -110,88 +140,172 @@
       if (session) location.replace('mi-cuenta-taller.html');
     });
 
-    let mode = 'login';
-    const form   = document.getElementById('theForm');
-    const emailI = document.getElementById('email');
-    const passI  = document.getElementById('password');
-    const pass2I = document.getElementById('password2');
-    const btn    = document.getElementById('submitBtn');
-    const msgEl  = document.getElementById('msgEl');
-    const confirmW = document.getElementById('confirmWrap');
+    const form    = document.getElementById('loginForm');
+    const identEl = document.getElementById('identifier');
+    const passEl  = document.getElementById('password');
+    const btn     = document.getElementById('submitBtn');
+    const errEl   = document.getElementById('errorMsg');
 
-    document.getElementById('tabLogin').addEventListener('click', () => setMode('login'));
-    document.getElementById('tabSignup').addEventListener('click', () => setMode('signup'));
-
-    function setMode(m) {
-      mode = m;
-      msgEl.style.display = 'none';
-      document.getElementById('tabLogin').classList.toggle('active', m === 'login');
-      document.getElementById('tabSignup').classList.toggle('active', m === 'signup');
-      confirmW.style.display = m === 'signup' ? 'block' : 'none';
-      btn.textContent = m === 'login' ? 'Iniciar sesion' : 'Crear cuenta';
-      passI.autocomplete = m === 'login' ? 'current-password' : 'new-password';
+    function normalizePhone(raw) {
+      let d = (raw || '').replace(/\D/g, '');
+      if (!d) return '';
+      d = d.replace(/^0+/, '');
+      if (d.startsWith('57') && d.length >= 12) return d;
+      if (d.length === 10) return '57' + d;
+      return d;
     }
-
-    function showMsg(text, type) {
-      msgEl.textContent = text;
-      msgEl.className = 'msg ' + type;
-      msgEl.style.display = 'block';
+    function resolveIdentifier(raw) {
+      const val = (raw || '').trim();
+      if (val.includes('@')) return { email: val, isPhone: false };
+      const tel = normalizePhone(val);
+      return { email: `tel${tel}@telefono.gruas.ridera.com.co`, isPhone: true };
     }
 
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
-      msgEl.style.display = 'none';
-      const email = emailI.value.trim();
-      const pass  = passI.value;
-
-      if (!email || !pass) { showMsg('Completa todos los campos.', 'err'); return; }
-
-      if (mode === 'signup') {
-        if (pass.length < 8) { showMsg('La contrasena debe tener al menos 8 caracteres.', 'err'); return; }
-        if (pass !== pass2I.value) { showMsg('Las contrasenas no coinciden.', 'err'); return; }
-      }
-
+      errEl.style.display = 'none';
       btn.disabled = true;
-      btn.innerHTML = '<span class="spinner"></span>' + (mode === 'login' ? 'Entrando...' : 'Creando...');
+      btn.innerHTML = '<span class="spinner"></span>Entrando…';
 
-      if (mode === 'login') {
-        const { error } = await sb.auth.signInWithPassword({ email, password: pass });
-        if (error) {
-          showMsg(error.status === 400 ? 'Correo o contrasena incorrectos.' : 'Error al iniciar sesion. Intenta de nuevo.', 'err');
-          btn.disabled = false;
-          btn.textContent = 'Iniciar sesion';
-        } else {
-          location.replace('mi-cuenta-taller.html');
-        }
+      const { email } = resolveIdentifier(identEl.value);
+      const { error } = await sb.auth.signInWithPassword({ email, password: passEl.value });
+
+      if (error) {
+        errEl.textContent = error.status === 400
+          ? 'Correo/celular o contraseña incorrectos.'
+          : 'Error al iniciar sesión. Intenta de nuevo.';
+        errEl.style.display = 'block';
+        btn.disabled = false;
+        btn.textContent = 'Iniciar sesión';
       } else {
-        const { data, error } = await sb.auth.signUp({ email, password: pass });
-        if (error) {
-          showMsg('Error: ' + error.message, 'err');
-          btn.disabled = false;
-          btn.textContent = 'Crear cuenta';
-        } else if (data.user && !data.user.email_confirmed_at && data.user.identities?.length) {
-          showMsg('Cuenta creada. Revisa tu correo para confirmar y luego inicia sesion.', 'ok');
-          btn.disabled = false;
-          setMode('login');
-        } else if (data.session) {
-          location.replace('mi-cuenta-taller.html');
-        } else {
-          showMsg('Cuenta creada. Inicia sesion con tus credenciales.', 'ok');
-          btn.disabled = false;
-          setMode('login');
-        }
+        location.replace('mi-cuenta-taller.html');
       }
+    });
+
+    const REGISTRAR_TALLER_URL = `${SUPABASE_URL}/functions/v1/registrar-taller`;
+
+    const phoneModal   = document.getElementById('phoneResetModal');
+    const step1        = document.getElementById('phoneResetStep1');
+    const step2        = document.getElementById('phoneResetStep2');
+    const resetPhoneEl = document.getElementById('resetPhone');
+    const resetCodeEl  = document.getElementById('resetCode');
+    const resetPassEl  = document.getElementById('resetNewPass');
+    const resetMsg1    = document.getElementById('resetMsg1');
+    const resetMsg2    = document.getElementById('resetMsg2');
+    let resetPhoneNormalized = '';
+
+    function showMsg(el, text, ok) {
+      el.textContent = text;
+      el.className = 'modal-msg ' + (ok ? 'ok' : 'err');
+    }
+    function openPhoneModal(prefill) {
+      step1.style.display = '';
+      step2.style.display = 'none';
+      resetMsg1.className = 'modal-msg';
+      resetMsg2.className = 'modal-msg';
+      resetCodeEl.value = '';
+      resetPassEl.value = '';
+      resetPhoneEl.value = prefill || '';
+      phoneModal.classList.add('open');
+    }
+    function closePhoneModal() { phoneModal.classList.remove('open'); }
+
+    document.getElementById('phoneResetClose').addEventListener('click', closePhoneModal);
+    phoneModal.addEventListener('click', (e) => { if (e.target === phoneModal) closePhoneModal(); });
+
+    async function sendResetCode() {
+      const tel = normalizePhone(resetPhoneEl.value);
+      if (tel.length < 12) {
+        showMsg(resetMsg1, 'Escribe un número de WhatsApp válido.', false);
+        return;
+      }
+      resetPhoneNormalized = tel;
+      const sendBtn = document.getElementById('resetSendBtn');
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando…';
+      try {
+        await fetch(REGISTRAR_TALLER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'recuperar_clave_telefono', telefono: tel }),
+        });
+      } catch (_) { /* seguimos igual, no revelamos errores de red */ }
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Enviar código';
+      step1.style.display = 'none';
+      step2.style.display = '';
+    }
+
+    document.getElementById('resetSendBtn').addEventListener('click', sendResetCode);
+    document.getElementById('resetAgainBtn').addEventListener('click', async () => {
+      resetMsg2.className = 'modal-msg';
+      await sendResetCode();
+      showMsg(resetMsg2, 'Te enviamos un nuevo código por WhatsApp.', true);
+    });
+
+    document.getElementById('resetConfirmBtn').addEventListener('click', async () => {
+      const code = resetCodeEl.value.trim();
+      const newPassword = resetPassEl.value;
+      if (!/^\d{6}$/.test(code)) {
+        showMsg(resetMsg2, 'El código debe tener 6 dígitos.', false);
+        return;
+      }
+      if (newPassword.length < 8) {
+        showMsg(resetMsg2, 'La contraseña debe tener al menos 8 caracteres.', false);
+        return;
+      }
+      const confirmBtn = document.getElementById('resetConfirmBtn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Guardando…';
+      try {
+        const res = await fetch(REGISTRAR_TALLER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'confirmar_reset_telefono',
+            telefono: resetPhoneNormalized,
+            code,
+            new_password: newPassword,
+          }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (out.ok) {
+          showMsg(resetMsg2, '¡Listo! Ya puedes iniciar sesión con tu nueva contraseña.', true);
+          setTimeout(() => {
+            closePhoneModal();
+            identEl.value = resetPhoneEl.value;
+            passEl.value = '';
+            passEl.focus();
+          }, 1800);
+        } else {
+          showMsg(resetMsg2, out.error || 'No pudimos confirmar el código.', false);
+        }
+      } catch (_) {
+        showMsg(resetMsg2, 'Error de conexión. Intenta de nuevo.', false);
+      }
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Cambiar contraseña';
     });
 
     document.getElementById('forgotLink').addEventListener('click', async (e) => {
       e.preventDefault();
-      const email = emailI.value.trim();
-      if (!email) { showMsg('Escribe tu correo primero.', 'err'); return; }
+      const raw = identEl.value.trim();
+      if (!raw) {
+        errEl.textContent = 'Escribe tu correo o celular primero.';
+        errEl.style.display = 'block';
+        return;
+      }
+      const { email, isPhone } = resolveIdentifier(raw);
+      if (isPhone) {
+        openPhoneModal(raw);
+        return;
+      }
       btn.disabled = true;
       await sb.auth.resetPasswordForEmail(email, {
-        redirectTo: window.location.origin + 'mi-cuenta-taller.html',
+        redirectTo: window.location.origin + '/mi-cuenta-taller.html',
       });
-      showMsg('Revisa tu correo — te enviamos un enlace para restablecer tu contrasena.', 'ok');
+      errEl.style.cssText = 'display:block;background:#0e2a1a;border-color:#1a5c36;color:#4ade80;';
+      errEl.textContent = 'Revisa tu correo — te enviamos un enlace para restablecer tu contraseña.';
       btn.disabled = false;
     });
   </script>

@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="robots" content="noindex, nofollow">
+<title>Registrar taller — Ridera</title>
+</head>
+<!-- RIDERA — Formulario Registro Taller (Elementor HTML Widget)
+     - Cuenta (correo o WhatsApp + clave) se crea primero, igual que grueros
+     - Imágenes → Supabase Storage bucket "talleres"
+     - Geocoding automático (Google) para lat/lng
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+
+<style>
+:root{--orange:#E85D20;--orange-hot:#FF6B2B;--carbon:#111316;--carbon2:#1a1e23;--carbon3:#222830;--carbon4:#2c3340;--text-muted:rgba(255,255,255,0.68);--text-dim:rgba(255,255,255,0.45);--border:rgba(255,255,255,0.12);--border-hi:rgba(255,255,255,0.22);--green:#4ade80;--radius-sm:8px;--radius-md:12px;--radius-lg:16px}
+#rt-form-wrap *,#rt-form-wrap *::before,#rt-form-wrap *::after{box-sizing:border-box;margin:0;padding:0}
+#rt-form-wrap{font-family:'DM Sans',sans-serif;background:var(--carbon);color:#fff;border-radius:16px;overflow:hidden}
+#rt-form-wrap .page-wrap{max-width:680px;margin:0 auto;padding:32px 20px 60px}
+#rt-form-wrap .form-header{margin-bottom:32px}
+#rt-form-wrap .form-eyebrow{font-size:10px;font-weight:600;letter-spacing:.15em;text-transform:uppercase;color:var(--orange);display:flex;align-items:center;gap:8px;margin-bottom:12px}
+#rt-form-wrap .form-eyebrow::before{content:'';width:18px;height:1px;background:var(--orange)}
+#rt-form-wrap .form-heading{font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,7vw,52px);font-weight:900;text-transform:uppercase;line-height:.95;letter-spacing:-.5px}
+#rt-form-wrap .form-heading em{color:var(--orange);font-style:normal}
+#rt-form-wrap .form-subhead{font-size:14px;color:var(--text-muted);line-height:1.65;margin-top:14px}
+#rt-form-wrap .form-section{margin-bottom:28px}
+#rt-form-wrap .form-section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,255,255,.85);margin-bottom:14px;padding-bottom:8px;border-bottom:.5px solid var(--border)}
+#rt-form-wrap .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+#rt-form-wrap .form-group{display:flex;flex-direction:column;gap:6px;margin-bottom:14px}
+#rt-form-wrap .form-group label{font-size:13px;font-weight:600;color:rgba(255,255,255,.92);letter-spacing:.02em}
+#rt-form-wrap .req{color:var(--orange);margin-left:2px}
+#rt-form-wrap .hint{font-weight:400;font-size:11px;color:rgba(255,255,255,.45)}
+#rt-form-wrap input[type=text],#rt-form-wrap input[type=tel],#rt-form-wrap input[type=email],#rt-form-wrap input[type=password],#rt-form-wrap input[type=time],#rt-form-wrap select,#rt-form-wrap textarea{width:100%;background:var(--carbon3);border:.5px solid var(--border-hi);border-radius:var(--radius-sm);color:#fff;font-family:'DM Sans',sans-serif;font-size:15px;padding:12px 14px;transition:border-color .2s,background .2s;appearance:none;-webkit-appearance:none}
+#rt-form-wrap input:focus,#rt-form-wrap select:focus,#rt-form-wrap textarea:focus{outline:none;border-color:rgba(232,93,32,.5);background:var(--carbon4)}
+#rt-form-wrap input::placeholder,#rt-form-wrap textarea::placeholder{color:var(--text-dim)}
+#rt-form-wrap select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' fill='none'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.3)' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 14px center;padding-right:36px;cursor:pointer}
+#rt-form-wrap select option{background:var(--carbon3)}
+#rt-form-wrap textarea{resize:vertical;min-height:90px;line-height:1.55}
+#rt-form-wrap .pwd-wrap{position:relative}
+#rt-form-wrap .pwd-wrap input{padding-right:44px}
+#rt-form-wrap .pwd-toggle{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:16px;padding:6px}
+#rt-form-wrap .check-group{display:flex;flex-wrap:wrap;gap:8px;margin-top:2px}
+#rt-form-wrap .check-chip{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.75);background:var(--carbon3);border:.5px solid var(--border-hi);border-radius:99px;padding:8px 14px;cursor:pointer;transition:all .18s;user-select:none}
+#rt-form-wrap .check-chip input{display:none}
+#rt-form-wrap .check-chip.checked{background:rgba(232,93,32,.12);border-color:rgba(232,93,32,.4);color:#fff}
+#rt-form-wrap .session-notice{background:var(--carbon3);border:.5px solid var(--border-hi);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--text-muted)}
+#rt-form-wrap .session-notice a{color:var(--orange);cursor:pointer}
+#rt-form-wrap .submit-area{margin-top:32px;padding-top:24px;border-top:.5px solid var(--border)}
+#rt-form-wrap .btn-submit{width:100%;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:20px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;padding:18px 28px;border:none;border-radius:var(--radius-md);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+#rt-form-wrap .btn-submit:hover{background:var(--orange-hot);transform:translateY(-1px)}
+#rt-form-wrap .btn-submit:disabled{background:var(--carbon3);color:var(--text-dim);cursor:default;transform:none}
+#rt-form-wrap .form-note{font-size:12px;color:rgba(255,255,255,.5);text-align:center;margin-top:12px;line-height:1.6}
+#rt-form-wrap .status-bar{display:none;align-items:center;gap:10px;background:var(--carbon3);border-radius:var(--radius-md);padding:14px 16px;margin-bottom:16px;font-size:13px}
+#rt-form-wrap .status-bar.visible{display:flex}
+#rt-form-wrap .status-bar.loading{border-left:3px solid var(--orange)}
+#rt-form-wrap .status-bar.success{border-left:3px solid var(--green)}
+#rt-form-wrap .status-bar.error{border-left:3px solid #f87171}
+#rt-form-wrap .success-card{display:none;background:linear-gradient(135deg,rgba(74,222,128,.07),rgba(74,222,128,.02));border:.5px solid rgba(74,222,128,.2);border-radius:var(--radius-lg);padding:36px 28px;text-align:center;margin-top:24px}
+#rt-form-wrap .success-card.visible{display:block}
+#rt-form-wrap .success-card .check{font-size:48px;margin-bottom:16px}
+#rt-form-wrap .success-card h3{font-family:'Barlow Condensed',sans-serif;font-size:28px;font-weight:800;text-transform:uppercase;margin-bottom:8px}
+#rt-form-wrap .success-card p{font-size:14px;color:var(--text-muted);line-height:1.65}
+#rt-form-wrap .btn-nuevo{display:inline-flex;align-items:center;gap:8px;background:var(--carbon3);color:#fff;border:.5px solid var(--border-hi);padding:12px 22px;border-radius:var(--radius-sm);font-size:13px;font-weight:500;cursor:pointer;margin-top:20px;transition:all .2s}
+#rt-form-wrap .upload-block{background:var(--carbon2);border:.5px solid var(--border);border-radius:var(--radius-md);padding:16px;margin-bottom:16px}
+#rt-form-wrap .upload-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:4px}
+#rt-form-wrap .upload-slot{position:relative;aspect-ratio:1/1;border-radius:var(--radius-md);border:1.5px dashed rgba(255,255,255,.28);background:var(--carbon3);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;overflow:hidden;transition:all .18s}
+#rt-form-wrap .upload-slot:hover{border-color:var(--orange);background:var(--carbon4)}
+#rt-form-wrap .upload-slot input[type=file]{display:none}
+#rt-form-wrap .upload-slot .upload-icon{font-size:22px;opacity:.8}
+#rt-form-wrap .upload-slot .upload-label{font-size:11px;font-weight:600;color:rgba(255,255,255,.7);text-align:center;padding:0 4px}
+#rt-form-wrap .upload-slot img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+#rt-form-wrap .upload-slot .remove-btn{position:absolute;top:6px;right:6px;width:24px;height:24px;border-radius:50%;background:rgba(17,19,22,.92);color:#fff;display:none;align-items:center;justify-content:center;font-size:13px;cursor:pointer;z-index:2;border:1px solid rgba(255,255,255,.3)}
+#rt-form-wrap .upload-slot.has-image{border-style:solid;border-color:rgba(74,222,128,.4)}
+#rt-form-wrap .upload-slot.has-image .upload-icon,#rt-form-wrap .upload-slot.has-image .upload-label{display:none}
+#rt-form-wrap .upload-slot.has-image .remove-btn{display:flex}
+#rt-form-wrap .upload-hint{font-size:12px;color:rgba(255,255,255,.5);margin-top:8px;line-height:1.5}
+#rt-form-wrap .logo-row{display:flex;align-items:center;gap:16px}
+#rt-form-wrap .logo-row .upload-grid{grid-template-columns:90px;margin-top:0;flex-shrink:0}
+#rt-form-wrap .logo-row .upload-hint{margin-top:0}
+#rt-form-wrap .opt-tag{color:rgba(255,255,255,.45);font-weight:400;font-size:12px}
+@media(max-width:480px){
+  #rt-form-wrap .form-row{grid-template-columns:1fr}
+  #rt-form-wrap .page-wrap{padding:24px 16px 60px}
+  #rt-form-wrap .upload-grid{gap:8px}
+  #rt-form-wrap .logo-row{flex-direction:column;align-items:flex-start;gap:10px}
+  #rt-form-wrap .logo-row .upload-grid{grid-template-columns:96px}
+}
+</style>
+
+<div id="rt-form-wrap">
+  <div class="page-wrap">
+    <div class="form-header">
+      <div class="form-eyebrow">Directorio Ridera · Talleres</div>
+      <h1 class="form-heading">Registrar<br><em>taller.</em></h1>
+      <p class="form-subhead">Talleres especializados en motos de alto cilindraje. Llena los datos y quedas en el directorio.</p>
+    </div>
+    <div id="status-taller" class="status-bar"><span class="status-icon"></span><span class="status-msg"></span></div>
+    <div id="success-taller" class="success-card">
+      <div class="check">✅</div>
+      <h3>¡Taller registrado!</h3>
+      <p>Tu cuenta y los datos quedaron guardados en Ridera.<br>Verificación en 48 horas. Te avisaremos cuando quedes aprobado.</p>
+      <button class="btn-nuevo" onclick="window.location.href='https://gruas.ridera.com.co/mi-cuenta-taller.html'">Ir a mi portal →</button>
+    </div>
+    <div id="form-taller-body">
+
+      <div class="form-section">
+        <div class="form-section-label">01 · Cuenta e información básica</div>
+        <div class="form-group">
+          <label>Nombre del taller <span class="req">*</span></label>
+          <input type="text" id="t-nombre" placeholder="Ej: Moto Service BMW Laureles">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Teléfono / WhatsApp <span class="req">*</span></label>
+            <input type="tel" id="t-tel" placeholder="+57 300 000 0000">
+          </div>
+          <div class="form-group" id="t-email-group">
+            <label>Correo electrónico <span class="req" id="t-email-req">*</span> <span class="hint">— opcional si te registras con celular</span></label>
+            <input type="email" id="t-email" placeholder="taller@correo.com">
+          </div>
+        </div>
+        <div id="sessionNotice" class="session-notice" style="display:none">
+          Sesión iniciada como <strong id="sessionEmail"></strong>. Este taller quedará asociado a esa cuenta.
+          <a onclick="rtCerrarSesion()">¿No eres tú? Cierra sesión</a>
+        </div>
+        <div class="form-group" id="authModeGroup">
+          <label>¿Cómo quieres iniciar sesión? <span class="req">*</span></label>
+          <div class="check-group">
+            <label class="check-chip checked"><input type="radio" name="authMode" value="email" checked> 📧 Con correo</label>
+            <label class="check-chip"><input type="radio" name="authMode" value="phone"> 📱 Con este WhatsApp</label>
+          </div>
+        </div>
+        <div class="form-row" id="authFields">
+          <div class="form-group">
+            <label>Contraseña <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input type="password" id="t-password" placeholder="Mínimo 8 caracteres" minlength="8">
+              <button type="button" class="pwd-toggle" onclick="rtTogglePwd('t-password',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input type="password" id="t-password-confirm" placeholder="Repite la contraseña" minlength="8">
+              <button type="button" class="pwd-toggle" onclick="rtTogglePwd('t-password-confirm',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Instagram / Redes sociales</label>
+          <input type="text" id="t-insta" placeholder="@nombre_taller">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">02 · Logo y fotos <span class="opt-tag">(opcional)</span></div>
+        <div class="upload-block">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Logo del taller</label>
+            <div class="logo-row">
+              <div class="upload-grid">
+                <label class="upload-slot" id="slot-logo">
+                  <input type="file" accept="image/*" data-target="logo">
+                  <span class="upload-icon">🏷️</span>
+                  <span class="upload-label">Subir logo</span>
+                  <span class="remove-btn" onclick="rtRemoveImg(event,'logo')">✕</span>
+                </label>
+              </div>
+              <div class="upload-hint">Ideal: imagen cuadrada, fondo sólido.</div>
+            </div>
+          </div>
+        </div>
+        <div class="upload-block">
+          <div class="form-group" style="margin-bottom:0">
+            <label>Fotos del local <span class="opt-tag">(hasta 3)</span></label>
+            <div class="upload-grid">
+              <label class="upload-slot" id="slot-foto1"><input type="file" accept="image/*" data-target="foto1"><span class="upload-icon">📷</span><span class="upload-label">Foto 1</span><span class="remove-btn" onclick="rtRemoveImg(event,'foto1')">✕</span></label>
+              <label class="upload-slot" id="slot-foto2"><input type="file" accept="image/*" data-target="foto2"><span class="upload-icon">📷</span><span class="upload-label">Foto 2</span><span class="remove-btn" onclick="rtRemoveImg(event,'foto2')">✕</span></label>
+              <label class="upload-slot" id="slot-foto3"><input type="file" accept="image/*" data-target="foto3"><span class="upload-icon">📷</span><span class="upload-label">Foto 3</span><span class="remove-btn" onclick="rtRemoveImg(event,'foto3')">✕</span></label>
+            </div>
+            <div class="upload-hint">Fachada, taller o equipos. Máx 5 MB c/u.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">03 · Ubicación</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Ciudad <span class="req">*</span></label>
+            <select id="t-ciudad">
+              <option value="">Seleccionar...</option>
+              <option>Medellín</option><option>Envigado</option><option>Bello</option>
+              <option>Itagüí</option><option>Sabaneta</option><option>Rionegro</option>
+              <option>Bogotá</option><option>Cali</option><option>Barranquilla</option>
+              <option>Manizales</option><option>Pereira</option><option>Bucaramanga</option>
+              <option>Otra ciudad</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Barrio / Sector</label>
+            <input type="text" id="t-barrio" placeholder="Ej: Laureles, El Poblado">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Dirección completa</label>
+          <input type="text" id="t-direccion" placeholder="Cra 80 # 34-12, local 5">
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">04 · Especialidad y marcas</div>
+        <div class="form-group">
+          <label>Marcas que trabaja <span class="req">*</span></label>
+          <div class="check-group" id="t-marcas">
+            <label class="check-chip"><input type="checkbox" value="BMW Motorrad"> BMW Motorrad</label>
+            <label class="check-chip"><input type="checkbox" value="KTM"> KTM</label>
+            <label class="check-chip"><input type="checkbox" value="Ducati"> Ducati</label>
+            <label class="check-chip"><input type="checkbox" value="Triumph"> Triumph</label>
+            <label class="check-chip"><input type="checkbox" value="Honda"> Honda 500cc+</label>
+            <label class="check-chip"><input type="checkbox" value="Kawasaki"> Kawasaki</label>
+            <label class="check-chip"><input type="checkbox" value="Yamaha"> Yamaha MT/XSR</label>
+            <label class="check-chip"><input type="checkbox" value="Royal Enfield"> Royal Enfield</label>
+            <label class="check-chip"><input type="checkbox" value="Husqvarna"> Husqvarna</label>
+            <label class="check-chip"><input type="checkbox" value="Harley-Davidson"> Harley-Davidson</label>
+            <label class="check-chip"><input type="checkbox" value="Multimarca"> Multimarca</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Servicios que ofrece</label>
+          <div class="check-group" id="t-servicios">
+            <label class="check-chip"><input type="checkbox" value="Mantenimiento preventivo"> Mantenimiento preventivo</label>
+            <label class="check-chip"><input type="checkbox" value="Motor"> Motor</label>
+            <label class="check-chip"><input type="checkbox" value="Frenos"> Frenos</label>
+            <label class="check-chip"><input type="checkbox" value="Suspensión"> Suspensión</label>
+            <label class="check-chip"><input type="checkbox" value="Eléctrico"> Eléctrico</label>
+            <label class="check-chip"><input type="checkbox" value="Diagnóstico electrónico"> Diagnóstico electrónico</label>
+            <label class="check-chip"><input type="checkbox" value="Preparación track"> Preparación track</label>
+            <label class="check-chip"><input type="checkbox" value="Latonería y pintura"> Latonería y pintura</label>
+            <label class="check-chip"><input type="checkbox" value="Llantas"> Llantas</label>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Años de experiencia</label>
+            <select id="t-experiencia">
+              <option value="">Seleccionar...</option>
+              <option>Menos de 2 años</option><option>2 – 5 años</option>
+              <option>5 – 10 años</option><option>Más de 10 años</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Técnicos certificados</label>
+            <select id="t-tecnicos">
+              <option value="">Seleccionar...</option>
+              <option>1 técnico</option><option>2 – 3 técnicos</option>
+              <option>4 – 6 técnicos</option><option>Más de 6</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">05 · Horario</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Apertura</label>
+            <input type="time" id="t-hora-abre" value="08:00">
+          </div>
+          <div class="form-group">
+            <label>Cierre</label>
+            <input type="time" id="t-hora-cierra" value="18:00">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Días de atención</label>
+          <div class="check-group" id="t-dias">
+            <label class="check-chip"><input type="checkbox" value="Lun"> Lun</label>
+            <label class="check-chip"><input type="checkbox" value="Mar"> Mar</label>
+            <label class="check-chip"><input type="checkbox" value="Mié"> Mié</label>
+            <label class="check-chip"><input type="checkbox" value="Jue"> Jue</label>
+            <label class="check-chip"><input type="checkbox" value="Vie"> Vie</label>
+            <label class="check-chip"><input type="checkbox" value="Sáb"> Sáb</label>
+            <label class="check-chip"><input type="checkbox" value="Dom"> Dom</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">06 · Notas</div>
+        <div class="form-group">
+          <label>Descripción del taller</label>
+          <textarea id="t-descripcion" placeholder="Especialidad, herramientas, años de experiencia…"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Notas internas (no se publican)</label>
+          <textarea id="t-notas" placeholder="Contexto del contacto, observaciones…" style="min-height:70px"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Contacto / Dueño</label>
+          <input type="text" id="t-contacto" placeholder="Nombre de quien atendió">
+        </div>
+      </div>
+
+      <div class="submit-area">
+        <button class="btn-submit" id="btn-taller" onclick="rtSubmitForm()">
+          💾 Guardar taller en Ridera
+        </button>
+        <div class="form-note">🔒 Datos internos · Verificación manual en 48h</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+(function(){
+  var SUPABASE_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+  var SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+  var GOOGLE_API_KEY = 'AIzaSyCCpbTE-XMhlw3nhVwY5pXC9Kvd3sP8uWA';
+  var BUCKET = 'talleres';
+  var MAX_MB = 5;
+  var imgs = {logo:null,foto1:null,foto2:null,foto3:null};
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  var sessionUser = null;
+
+  function normalizePhone(raw) {
+    var d = (raw || '').replace(/\D/g, '');
+    if (!d) return '';
+    d = d.replace(/^0+/, '');
+    if (d.startsWith('57') && d.length >= 12) return d;
+    if (d.length === 10) return '57' + d;
+    return d;
+  }
+  function phoneToSyntheticEmail(phone) {
+    return 'tel' + phone + '@telefono.gruas.ridera.com.co';
+  }
+
+  function getRadio(name) {
+    var el = document.querySelector('input[name="'+name+'"]:checked');
+    return el ? el.value : null;
+  }
+
+  window.rtTogglePwd = function(id, btn) {
+    var input = document.getElementById(id);
+    var show = input.type === 'password';
+    input.type = show ? 'text' : 'password';
+    btn.textContent = show ? '🙈' : '👁️';
+  };
+
+  window.rtCerrarSesion = async function() {
+    await sb.auth.signOut();
+    sessionUser = null;
+    document.getElementById('sessionNotice').style.display = 'none';
+    document.getElementById('authModeGroup').style.display = '';
+    document.getElementById('authFields').style.display = '';
+    document.getElementById('t-email-group').style.display = '';
+  };
+
+  async function checkSession() {
+    var { data } = await sb.auth.getSession();
+    if (data && data.session) {
+      sessionUser = data.session.user;
+      document.getElementById('sessionNotice').style.display = 'block';
+      var label = sessionUser.email && sessionUser.email.endsWith('@telefono.gruas.ridera.com.co')
+        ? 'tu número de WhatsApp' : sessionUser.email;
+      document.getElementById('sessionEmail').textContent = label;
+      document.getElementById('authModeGroup').style.display = 'none';
+      document.getElementById('authFields').style.display = 'none';
+    }
+  }
+
+  async function geocodificar(direccion, barrio, ciudad) {
+    if (!direccion) return { lat: null, lng: null };
+    var partes = [direccion, barrio, ciudad, 'Colombia'].filter(Boolean).join(', ');
+    try {
+      var url = 'https://maps.googleapis.com/maps/api/geocode/json?address=' +
+        encodeURIComponent(partes) + '&key=' + GOOGLE_API_KEY;
+      var resp = await fetch(url);
+      var json = await resp.json();
+      if (json.status === 'OK' && json.results[0]) {
+        return {
+          lat: json.results[0].geometry.location.lat,
+          lng: json.results[0].geometry.location.lng
+        };
+      }
+      console.warn('Geocoding status:', json.status);
+    } catch (e) {
+      console.warn('Geocoding falló:', e);
+    }
+    return { lat: null, lng: null };
+  }
+
+  document.querySelectorAll('#rt-form-wrap .check-chip').forEach(function(chip){
+    var input=chip.querySelector('input');if(!input)return;
+    chip.addEventListener('click',function(){
+      setTimeout(function(){
+        if(input.type==='radio'){document.querySelectorAll('input[name="'+input.name+'"]').forEach(function(r){r.closest('.check-chip').classList.remove('checked');});}
+        chip.classList.toggle('checked',input.checked);
+        if(input.name==='authMode') rtUpdateAuthMode();
+      },0);
+    });
+  });
+
+  function rtUpdateAuthMode(){
+    var mode = getRadio('authMode');
+    var emailGroup = document.getElementById('t-email-group');
+    var emailReq = document.getElementById('t-email-req');
+    if (mode === 'phone') {
+      emailGroup.querySelector('.hint').style.display='';
+      emailReq.style.display = 'none';
+    } else {
+      emailReq.style.display = '';
+    }
+  }
+
+  document.querySelectorAll('#rt-form-wrap .upload-slot input[type=file]').forEach(function(input){
+    input.addEventListener('change',function(e){
+      var file=e.target.files[0],key=input.dataset.target;
+      if(!file)return;
+      if(!file.type.startsWith('image/')){alert('Selecciona una imagen.');input.value='';return;}
+      if(file.size>MAX_MB*1024*1024){alert('Imagen mayor a '+MAX_MB+'MB.');input.value='';return;}
+      imgs[key]=file;
+      var r=new FileReader();
+      r.onload=function(ev){rtRenderSlot(key,ev.target.result);};
+      r.readAsDataURL(file);
+    });
+  });
+
+  function rtRenderSlot(key,src){
+    var slot=document.getElementById('slot-'+key);
+    var img=slot.querySelector('img');
+    if(!img){img=document.createElement('img');slot.insertBefore(img,slot.querySelector('.remove-btn'));}
+    img.src=src;slot.classList.add('has-image');
+  }
+  window.rtRemoveImg=function(evt,key){
+    evt.preventDefault();evt.stopPropagation();
+    imgs[key]=null;
+    var slot=document.getElementById('slot-'+key);
+    var img=slot.querySelector('img');if(img)img.remove();
+    slot.classList.remove('has-image');
+    var input=slot.querySelector('input[type=file]');if(input)input.value='';
+  };
+
+  function getChecked(id){var v=[];document.querySelectorAll('#'+id+' input:checked').forEach(function(cb){v.push(cb.value);});return v.join(', ');}
+
+  function setStatus(state,msg){
+    var bar=document.getElementById('status-taller');
+    bar.className='status-bar visible '+state;
+    var icons={loading:'⏳',success:'✅',error:'❌'};
+    bar.querySelector('.status-icon').textContent=icons[state]||'';
+    bar.querySelector('.status-msg').textContent=msg;
+  }
+
+  async function uploadImg(file,key,id){
+    var ext=file.name.split('.').pop();
+    var path=id+'/'+key+'.'+ext;
+    var resp=await fetch(SUPABASE_URL+'/storage/v1/object/'+BUCKET+'/'+path,{
+      method:'POST',
+      headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':file.type,'x-upsert':'true'},
+      body:file
+    });
+    if(!resp.ok)throw new Error('Storage '+resp.status);
+    return SUPABASE_URL+'/storage/v1/object/public/'+BUCKET+'/'+path;
+  }
+
+  window.rtSubmitForm=async function(){
+    var nombre=document.getElementById('t-nombre').value.trim();
+    var telRaw=document.getElementById('t-tel').value.trim();
+    var telNormalizado=normalizePhone(telRaw);
+    var ciudad=document.getElementById('t-ciudad').value.trim();
+    var marcas=getChecked('t-marcas');
+    var email=document.getElementById('t-email').value.trim();
+    var authMode = sessionUser ? null : getRadio('authMode');
+
+    if(!nombre||telNormalizado.length<12||!ciudad){
+      setStatus('error','Completa los campos obligatorios: Nombre, WhatsApp y Ciudad.');
+      if(!nombre)document.getElementById('t-nombre').focus();
+      else if(telNormalizado.length<12)document.getElementById('t-tel').focus();
+      else document.getElementById('t-ciudad').focus();
+      return;
+    }
+    if(!marcas){setStatus('error','Selecciona al menos una marca.');return;}
+    if(!sessionUser){
+      if(authMode==='email' && !email){setStatus('error','Escribe tu correo o elige registrarte con WhatsApp.');return;}
+      var pwd=document.getElementById('t-password').value;
+      var pwd2=document.getElementById('t-password-confirm').value;
+      if(pwd.length<8){setStatus('error','La contraseña debe tener al menos 8 caracteres.');return;}
+      if(pwd!==pwd2){setStatus('error','Las contraseñas no coinciden.');return;}
+    }
+
+    var btn=document.getElementById('btn-taller');
+    btn.disabled=true;btn.textContent='⏳ Guardando…';
+    setStatus('loading', sessionUser ? 'Guardando datos…' : 'Creando tu cuenta…');
+
+    var userId;
+    if(sessionUser){
+      userId=sessionUser.id;
+    }else{
+      var authEmail = authMode==='phone' ? phoneToSyntheticEmail(telNormalizado) : email;
+      var pwdVal = document.getElementById('t-password').value;
+      var { data: signUpData, error: signUpError } = await sb.auth.signUp({ email: authEmail, password: pwdVal });
+      if(signUpError){
+        var yaExiste = /already registered|already exists/i.test(signUpError.message||'');
+        setStatus('error', yaExiste
+          ? (authMode==='phone'
+              ? 'Ese número de WhatsApp ya tiene una cuenta en Ridera. Inicia sesión primero.'
+              : 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión primero.')
+          : (signUpError.message || 'No se pudo crear la cuenta.'));
+        btn.disabled=false;btn.textContent='💾 Guardar taller en Ridera';
+        return;
+      }
+      userId = signUpData.user ? signUpData.user.id : null;
+      if(!userId){
+        setStatus('error','No se pudo crear la cuenta. Intenta con otro correo.');
+        btn.disabled=false;btn.textContent='💾 Guardar taller en Ridera';
+        return;
+      }
+    }
+
+    // 1) Subir imágenes
+    var urls={logo_url:'',foto1_url:'',foto2_url:'',foto3_url:''};
+    if(Object.values(imgs).some(Boolean)){
+      setStatus('loading','Subiendo imágenes…');
+      var tid=Date.now().toString();
+      for(var k of['logo','foto1','foto2','foto3']){
+        if(imgs[k]){try{urls[k+'_url']=await uploadImg(imgs[k],k,tid);}catch(e){console.warn('img '+k+':',e);}}
+      }
+    }
+
+    // 2) Geocodificar dirección
+    setStatus('loading','Ubicando en el mapa…');
+    var direccionVal = document.getElementById('t-direccion').value.trim();
+    var barrioVal = document.getElementById('t-barrio').value.trim();
+    var coords = await geocodificar(direccionVal, barrioVal, ciudad);
+
+    // 3) Insertar en Supabase (con sesión, para que aplique la RLS de auth_id)
+    setStatus('loading','Guardando en Ridera…');
+    var payload={
+      auth_id: userId,
+      nombre:nombre,ciudad:ciudad,telefono:telNormalizado,
+      email: sessionUser
+        ? (sessionUser.email && sessionUser.email.endsWith('@telefono.gruas.ridera.com.co') ? null : sessionUser.email)
+        : (authMode==='phone' ? null : (email || null)),
+      instagram:document.getElementById('t-insta').value.trim(),
+      direccion:direccionVal,
+      barrio:barrioVal,
+      lat: coords.lat,
+      lng: coords.lng,
+      logo_url:urls.logo_url,foto1_url:urls.foto1_url,foto2_url:urls.foto2_url,foto3_url:urls.foto3_url,
+      datos:{
+        marcas:marcas,
+        servicios:getChecked('t-servicios'),
+        experiencia:document.getElementById('t-experiencia').value,
+        tecnicos:document.getElementById('t-tecnicos').value,
+        hora_abre:document.getElementById('t-hora-abre').value,
+        hora_cierra:document.getElementById('t-hora-cierra').value,
+        dias:getChecked('t-dias'),
+        descripcion:document.getElementById('t-descripcion').value.trim(),
+        notas:document.getElementById('t-notas').value.trim(),
+        contacto:document.getElementById('t-contacto').value.trim(),
+        timestamp:new Date().toLocaleString('es-CO')
+      }
+    };
+
+    var { error: insertError } = await sb.from('talleres').insert([payload]);
+    if(insertError){
+      setStatus('error','Error: '+insertError.message);
+      btn.disabled=false;btn.textContent='💾 Guardar taller en Ridera';
+      return;
+    }
+
+    // Mostrar éxito
+    document.getElementById('status-taller').className='status-bar';
+    document.getElementById('form-taller-body').style.display='none';
+    document.getElementById('success-taller').classList.add('visible');
+  };
+
+  checkSession();
+})();
+</script>

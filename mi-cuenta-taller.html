@@ -29,6 +29,11 @@
     .badge.ok { background: #0d2318; color: #4ade80; border: 1px solid #1a5c36; }
     .badge.pending { background: #2a1a0a; color: #f59e0b; border: 1px solid #6b4c1e; }
 
+    .pending-banner {
+      display: none; background: #2a1a0a; border: 1px solid #6b4c1e; color: #f5b942;
+      border-radius: 10px; padding: 0.9rem 1.1rem; margin-bottom: 1.25rem; font-size: 0.85rem; line-height: 1.55;
+    }
+
     .section { background: #1a1a1a; border: 1px solid #2a2a2a; border-radius: 12px; padding: 1.5rem; margin-bottom: 1.25rem; }
     .section-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: 8px; }
     .section-title .ico { font-size: 1.1rem; }
@@ -105,6 +110,10 @@
 
     <!-- FOUND STATE -->
     <div id="tallerView" style="display:none">
+
+      <div class="pending-banner" id="pendingBanner">
+        ⏳ Tu perfil está en revisión. Puedes completar tus datos ya mismo, pero no aparecerás en el directorio público hasta que el equipo de Ridera lo apruebe (normalmente en menos de 48 horas). Te avisamos apenas quede activo.
+      </div>
 
       <div class="header-card">
         <div class="header-logo" id="headerLogo"><span class="icon">🔧</span></div>
@@ -298,6 +307,7 @@
     document.getElementById('headerBadge').innerHTML = t.aprobado
       ? '<span class="badge ok">Aprobado</span>'
       : '<span class="badge pending">Pendiente</span>';
+    document.getElementById('pendingBanner').style.display = t.aprobado ? 'none' : 'block';
 
     const logoEl = document.getElementById('headerLogo');
     if (t.logo_url) {
@@ -461,15 +471,25 @@
       }
 
       const userEmail = session.user.email;
-      document.getElementById('navEmail').textContent = userEmail;
+      const isPhoneAccount = userEmail.endsWith('@telefono.gruas.ridera.com.co');
+      document.getElementById('navEmail').textContent = isPhoneAccount ? 'Tu WhatsApp' : userEmail;
 
-      const res = await fetch(
-        SUPABASE_URL + '/rest/v1/talleres?email=ilike.' + encodeURIComponent(userEmail) + '&select=*&limit=1',
-        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + SUPABASE_KEY } }
+      let res = await fetch(
+        SUPABASE_URL + '/rest/v1/talleres?auth_id=eq.' + encodeURIComponent(session.user.id) + '&select=*&limit=1',
+        { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + session.access_token } }
       );
-
       if (!res.ok) throw new Error('HTTP ' + res.status);
-      const rows = await res.json();
+      let rows = await res.json();
+
+      // Compatibilidad con talleres registrados antes de asociar auth_id (match por correo).
+      if (!rows.length && !isPhoneAccount) {
+        res = await fetch(
+          SUPABASE_URL + '/rest/v1/talleres?email=ilike.' + encodeURIComponent(userEmail) + '&select=*&limit=1',
+          { headers: { 'apikey': SUPABASE_KEY, 'Authorization': 'Bearer ' + session.access_token } }
+        );
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        rows = await res.json();
+      }
 
       document.getElementById('loading').style.display = 'none';
       document.getElementById('app').style.display = 'block';

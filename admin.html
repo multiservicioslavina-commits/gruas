@@ -4067,6 +4067,8 @@ function renderTalleresTable() {
       </td>
       <td>
         <div class="actions-cell">
+          ${!apro ? `<button class="act-btn aprobar admin-only" onclick="doAprobarTaller('${jsq(t.id)}','${jsq(t.nombre || '')}',this)">✓ Aprobar</button>` : ''}
+          ${apro && t.email && t.email.includes('@') ? `<button class="act-btn admin-only" onclick="doReenviarAccesoTaller('${jsq(t.id)}','${jsq(t.nombre || '')}','${jsq(t.email || '')}',this)">✉ Reenviar acceso</button>` : ''}
           <button class="act-btn" onclick="openNotesModal('taller','${jsq(t.id)}','${jsq(t.nombre || '')}')">📝 Notas</button>
           <button class="act-btn admin-only" onclick="openEditModalFor('talleres','${jsq(t.id)}')">Modificar</button>
           <button class="act-btn del admin-only" onclick="deleteRecord('talleres','${jsq(t.id)}',this)">🗑 Borrar</button>
@@ -4074,6 +4076,36 @@ function renderTalleresTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+async function doAprobarTaller(id, nombre, btn) {
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'approve_taller', id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    let msg = `"${nombre}" fue aprobado.`;
+    if (data.email_sent) msg += ' Se le notificó por correo/WhatsApp que ya puede entrar a su portal.';
+    else if (data.email_error) msg += ` (No se pudo enviar la notificación: ${data.email_error})`;
+    alert(msg);
+    sectionLoaded.talleres = false;
+    loadTalleres();
+  } else {
+    btn.disabled = false;
+    alert('Error al aprobar: ' + (data.error || 'Desconocido'));
+  }
+}
+
+async function doReenviarAccesoTaller(id, nombre, email, btn) {
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = 'Enviando…';
+  const data = await callAdmin({ action: 'resend_invite_taller', id }).catch(() => ({ ok: false }));
+  btn.disabled = false;
+  btn.textContent = orig;
+  if (data.ok && data.email_sent) {
+    alert(`Se reenvió el acceso a ${email}.`);
+  } else {
+    alert('No se pudo reenviar: ' + (data.email_error || data.error || 'Desconocido'));
+  }
 }
 
 async function saveEditModal() {
