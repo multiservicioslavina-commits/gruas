@@ -866,6 +866,18 @@ Deno.serve(async (req) => {
             if (!sendResult.ok) email_error = sendResult.error || 'Error desconocido al enviar el correo'
           }
         }
+      } else if (gruero.email && gruero.email.includes('@') && auth_id) {
+        // Ya tiene cuenta (se creó al registrarse) — solo avisamos que quedó aprobado.
+        const emailHtml = html_email_template(`
+          <h2 style="margin-bottom:1rem">¡${gruero.nombre}, tu perfil ya está aprobado! 🚛</h2>
+          <p>Ya puedes entrar a tu portal de gruero, activar tu disponibilidad y empezar a recibir solicitudes.</p>
+          <p style="text-align:center;margin:2rem 0">
+            <a href="https://gruas.ridera.com.co/mi-cuenta.html" style="background:#E85D20;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">Ir a mi portal</a>
+          </p>
+        `)
+        const sendResult = await sendEmailViaResend(gruero.email, 'Tu perfil de Ridera Grúas ya está aprobado 🚛', emailHtml, 'Ridera Grúas')
+        email_sent = sendResult.ok
+        if (!sendResult.ok) email_error = sendResult.error || 'Error desconocido al enviar el correo'
       }
 
       await sbClient.from('grueros').update({ aprobado: 'SI', disponible: true, slug, auth_id: auth_id ?? null }).eq('id', gruero.id)

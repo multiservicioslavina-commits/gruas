@@ -117,6 +117,11 @@ textarea{resize:vertical;min-height:90px;line-height:1.55}
 .check-chip input{display:none}
 .check-chip.checked{background:rgba(232,93,32,0.12);border-color:rgba(232,93,32,0.4);color:#fff}
 .check-group.field-error{outline:1px solid rgba(248,113,113,0.6);outline-offset:6px;border-radius:12px}
+.hint{font-size:12px;font-weight:400;color:var(--text-dim);text-transform:none;letter-spacing:0}
+.pwd-wrap{position:relative}
+.pwd-wrap input[type=password],.pwd-wrap input[type=text]{padding-right:44px}
+.pwd-toggle{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;padding:5px;color:var(--text-dim);font-size:17px;line-height:1;display:flex}
+.pwd-toggle:hover{color:#fff}
 input[type=file]{width:100%;background:var(--carbon4);border:1px dashed var(--border-hi);border-radius:var(--radius-sm);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;cursor:pointer}
 input[type=file]::file-selector-button{background:var(--orange);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-right:10px}
 .img-preview-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
@@ -355,12 +360,12 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
     <div id="success-grua" class="success-card">
       <div class="check">✅</div>
       <h3>¡Registro enviado!</h3>
-      <p>Tu información quedó guardada en Ridera.<br>
+      <p>Tu cuenta y tu perfil ya quedaron creados en Ridera.<br>
          <strong style="color:#fff">Revisamos tu perfil en menos de 48 horas.</strong><br><br>
-         Cuando te aprobemos, <strong style="color:#fff">recibirás un correo</strong> con el enlace para crear tu contraseña y entrar a tu portal de gruero.</p>
+         Ya puedes entrar a tu portal ahora mismo — <strong style="color:#fff">te avisaremos por correo</strong> cuando tu perfil esté aprobado y visible al público.</p>
       <div class="countdown" id="countdown-txt"></div>
-      <a class="btn-portal" href="https://gruas.ridera.com.co/login-gruero.html?nuevo=1" id="btn-portal">
-        🔐 Ir al portal de grueros
+      <a class="btn-portal" href="https://gruas.ridera.com.co/mi-cuenta.html" id="btn-portal">
+        🔐 Ir a mi portal
       </a>
       <button class="btn-nuevo" onclick="resetForm()">+ Registrar otra grúa</button>
     </div>
@@ -381,8 +386,28 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
             <input type="tel" id="g-tel" name="telefono" placeholder="+57 300 000 0000">
           </div>
           <div class="form-group">
-            <label>Correo electrónico <span class="req">*</span></label>
+            <label>Correo electrónico <span class="req">*</span> <span class="hint">— con esto inicias sesión</span></label>
             <input type="email" id="g-email" name="email" placeholder="grua@correo.com">
+          </div>
+        </div>
+        <div id="sessionNotice" style="display:none;background:var(--carbon4);border:0.5px solid var(--border-hi);border-radius:8px;padding:12px 14px;margin-bottom:14px;font-size:13px;color:var(--text-muted)">
+          Sesión iniciada como <strong id="sessionEmail"></strong>. Esta grúa quedará asociada a esa cuenta.
+          <a onclick="cerrarSesionRegistro()" style="color:var(--orange);cursor:pointer">¿No eres tú? Cierra sesión</a>
+        </div>
+        <div class="form-row" id="authFields">
+          <div class="form-group">
+            <label>Contraseña <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input type="password" id="g-password" placeholder="Mínimo 8 caracteres" minlength="8">
+              <button type="button" class="pwd-toggle" onclick="togglePwd('g-password',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Confirmar contraseña <span class="req">*</span></label>
+            <div class="pwd-wrap">
+              <input type="password" id="g-password-confirm" placeholder="Repite la contraseña" minlength="8">
+              <button type="button" class="pwd-toggle" onclick="togglePwd('g-password-confirm',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
           </div>
         </div>
         <div class="form-row">
@@ -486,7 +511,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <button class="btn-submit" id="btn-grua" onclick="submitGrua()">
           🚛 Quiero trabajar con Ridera
         </button>
-        <div class="form-note">🔒 Verificación en 48 h · Recibirás un correo cuando tu perfil esté activo · Completamente gratis</div>
+        <div class="form-note">🔒 Tu cuenta queda lista al instante · Verificación de perfil en 48 h · Completamente gratis</div>
       </div>
     </form>
 
@@ -498,8 +523,71 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 </footer>
 
 <script>
-const SUPABASE_FN_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co/functions/v1/registrar-gruero';
+const SB_URL = 'https://vzzxsdtsaahhzyctvmhx.supabase.co';
+const ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6enhzZHRzYWFoaHp5Y3R2bWh4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNzU3NzIsImV4cCI6MjA5Njk1MTc3Mn0.5GZRCUuMx7fwmvoo48nXVCq9QJs0ysCzz0TPr9mmcNI';
+const STORAGE_BUCKET = 'grueros';
 const SHEETS_URL = 'https://script.google.com/macros/s/AKfycbxwFz8YUBWv4fdTJFR5Y8B62y0j2A1zhmPyeqBH1x9cH8VKvD514kJ8u1YFld7a4L97QA/exec';
+
+let sbClient = null;
+async function initSupabase() {
+  if (!sbClient) {
+    const module = await import('https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.38.4/+esm');
+    sbClient = module.createClient(SB_URL, ANON_KEY);
+  }
+  return sbClient;
+}
+
+let sessionUser = null;
+async function checkSession() {
+  const sb = await initSupabase();
+  const { data: { user } } = await sb.auth.getUser();
+  if (!user) return;
+  const { data: existingGruero } = await sb.from('grueros').select('id, slug').eq('auth_id', user.id).maybeSingle();
+  if (existingGruero) { window.location.href = 'https://gruas.ridera.com.co/mi-cuenta.html'; return; }
+  sessionUser = user;
+  document.getElementById('authFields').style.display = 'none';
+  document.getElementById('sessionNotice').style.display = 'block';
+  document.getElementById('sessionEmail').textContent = user.email;
+}
+checkSession();
+
+window.cerrarSesionRegistro = async function () {
+  const sb = await initSupabase();
+  await sb.auth.signOut();
+  sessionUser = null;
+  document.getElementById('authFields').style.display = '';
+  document.getElementById('sessionNotice').style.display = 'none';
+};
+
+function togglePwd(id, btn) {
+  const input = document.getElementById(id);
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? '👁️' : '🙈';
+}
+
+function generateSlug(nombre) {
+  return (nombre || '').toLowerCase().trim().normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || 'gruero';
+}
+async function ensureUniqueSlug(sb, base) {
+  let slug = base, attempt = 0;
+  while (attempt < 5) {
+    const { data } = await sb.from('grueros').select('id').eq('slug', slug).maybeSingle();
+    if (!data) return slug;
+    attempt++;
+    slug = base + '-' + Math.random().toString(36).slice(-4);
+  }
+  return slug;
+}
+async function uploadDataUrl(sb, dataUrl, path) {
+  const res = await fetch(dataUrl);
+  const blob = await res.blob();
+  const { error } = await sb.storage.from(STORAGE_BUCKET).upload(path, blob, { upsert: true, contentType: blob.type || 'image/jpeg' });
+  if (error) throw error;
+  const { data } = sb.storage.from(STORAGE_BUCKET).getPublicUrl(path);
+  return data.publicUrl;
+}
 
 document.querySelectorAll('.check-chip').forEach(chip => {
   const input = chip.querySelector('input');
@@ -539,8 +627,19 @@ function validate() {
   const muniBox = document.getElementById('g-municipios');
   muniBox.classList.toggle('field-error', muniCount === 0);
   if (muniCount === 0) err = true;
+
+  if (!sessionUser) {
+    const pwd1 = document.getElementById('g-password');
+    const pwd2 = document.getElementById('g-password-confirm');
+    pwd1.classList.remove('field-error'); pwd2.classList.remove('field-error');
+    if (pwd1.value.length < 8) { pwd1.classList.add('field-error'); err = true; }
+    if (pwd1.value !== pwd2.value) { pwd2.classList.add('field-error'); err = true; }
+  }
+
   if (err) {
-    setStatus('error', 'Completa los campos obligatorios *');
+    setStatus('error', !document.querySelector('#g-password.field-error, #g-password-confirm.field-error')
+      ? 'Completa los campos obligatorios *'
+      : (document.getElementById('g-password').value.length < 8 ? 'La contraseña debe tener al menos 8 caracteres.' : 'Las contraseñas no coinciden.'));
     document.querySelector('.field-error')?.scrollIntoView({ behavior:'smooth', block:'center' });
     return false;
   }
@@ -614,8 +713,6 @@ function collectData() {
     disponibilidad:getRadio('disponibilidad'),
     servicios:     getChecked('g-servicios'),
     notas:         document.getElementById('g-notas').value.trim(),
-    logo_base64:   logoBase64 || undefined,
-    fotos_base64:  fotosBase64.length ? fotosBase64 : undefined,
   };
 }
 
@@ -623,27 +720,83 @@ async function submitGrua() {
   if (!validate()) return;
   const btn = document.getElementById('btn-grua');
   btn.disabled = true; btn.textContent = '⏳ Enviando…';
-  setStatus('loading', 'Guardando datos…'); setProgress(25);
+  setStatus('loading', sessionUser ? 'Guardando datos…' : 'Creando tu cuenta…'); setProgress(20);
   try {
     const data = collectData();
-    setProgress(50); setStatus('loading', 'Creando perfil en Ridera…');
-    try {
-      await fetch(SUPABASE_FN_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
-    } catch(e) { console.warn('Supabase:', e); }
-    setProgress(80);
+    const sb = await initSupabase();
+
+    let userId;
+    if (sessionUser) {
+      userId = sessionUser.id;
+    } else {
+      const { data: signUpData, error: signUpError } = await sb.auth.signUp({
+        email: data.email,
+        password: document.getElementById('g-password').value,
+      });
+      if (signUpError) {
+        const yaExiste = /already registered|already exists/i.test(signUpError.message || '');
+        setStatus('error', yaExiste
+          ? 'Ese correo ya tiene una cuenta en Ridera. Inicia sesión primero y vuelve a esta página para registrar tu grúa.'
+          : (signUpError.message || 'No se pudo crear la cuenta.'));
+        btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera'; setProgress(0);
+        return;
+      }
+      userId = signUpData.user ? signUpData.user.id : null;
+      if (!userId) throw new Error('No se pudo crear la cuenta. Intenta con otro correo.');
+    }
+
+    setProgress(45);
+    const baseSlug = generateSlug(data.nombre);
+    const slug = await ensureUniqueSlug(sb, baseSlug);
+
+    let logo_url = null, fotos_urls = [];
+    if (logoBase64 || fotosBase64.length) {
+      setStatus('loading', 'Subiendo imágenes…');
+      const stamp = Date.now();
+      if (logoBase64) {
+        try { logo_url = await uploadDataUrl(sb, logoBase64, `${slug}/${stamp}-logo.jpg`); }
+        catch (e) { console.warn('logo upload:', e); }
+      }
+      for (let i = 0; i < fotosBase64.length; i++) {
+        try { fotos_urls.push(await uploadDataUrl(sb, fotosBase64[i], `${slug}/${stamp}-foto${i + 1}.jpg`)); }
+        catch (e) { console.warn('foto upload:', e); }
+      }
+    }
+
+    setProgress(75); setStatus('loading', 'Guardando tu perfil…');
+    const municipios = getChecked('g-municipios').split(', ').filter(Boolean);
+    const { error: insertError } = await sb.from('grueros').insert([{
+      auth_id: userId,
+      nombre: data.nombre,
+      telefono: data.telefono,
+      ciudad: data.ciudad,
+      email: sessionUser ? sessionUser.email : data.email,
+      municipios: municipios.length ? municipios : null,
+      slug,
+      disponible: false,
+      aprobado: 'NO',
+      datos: {
+        instagram: data.instagram,
+        tipo_vehiculo: data.tipo_vehiculo,
+        placa: data.placa,
+        disponibilidad: data.disponibilidad,
+        servicios: data.servicios,
+        notas: data.notas,
+        logo_url,
+        fotos_urls,
+      },
+    }]);
+    if (insertError) throw insertError;
+
     if (SHEETS_URL) {
       fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data), mode:'no-cors' }).catch(() => {});
     }
-    // Also submit to Netlify (sin los base64 de imágenes: son demasiado grandes para este formulario)
-    try {
-      const fd = new FormData(document.getElementById('form-grua-body'));
-      Object.entries(data).forEach(([k,v]) => { if (k === 'logo_base64' || k === 'fotos_base64') return; if (!fd.has(k)) fd.set(k, v); });
-      await fetch('/', { method:'POST', body:fd });
-    } catch(e) { console.warn('Netlify:', e); }
+
     setProgress(100);
     setTimeout(() => { setProgress(0); showSuccess(); }, 400);
   } catch(err) {
-    setStatus('error', '⚠️ Error al enviar. Intenta de nuevo.');
+    console.error(err);
+    setStatus('error', '⚠️ ' + (err.message || 'Error al enviar. Intenta de nuevo.'));
     btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera';
     setProgress(0);
   }
@@ -660,7 +813,7 @@ function showSuccess() {
   txt.textContent = `Redirigiendo al portal en ${s} segundos…`;
   countdown = setInterval(() => {
     s--;
-    if (s <= 0) { clearInterval(countdown); window.location.href = 'https://gruas.ridera.com.co/login-gruero.html?nuevo=1'; }
+    if (s <= 0) { clearInterval(countdown); window.location.href = 'https://gruas.ridera.com.co/mi-cuenta.html'; }
     else { txt.textContent = `Redirigiendo al portal en ${s} segundos…`; }
   }, 1000);
 }
@@ -668,7 +821,7 @@ function showSuccess() {
 function resetForm() {
   if (countdown) clearInterval(countdown);
   document.getElementById('form-grua-body').style.display = '';
-  document.querySelectorAll('input[type=text],input[type=tel],input[type=email],textarea').forEach(el => { el.value = ''; el.classList.remove('field-error'); });
+  document.querySelectorAll('input[type=text],input[type=tel],input[type=email],input[type=password],textarea').forEach(el => { el.value = ''; el.classList.remove('field-error'); });
   document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(cb => cb.checked = false);
   document.querySelectorAll('.check-chip').forEach(c => c.classList.remove('checked'));
