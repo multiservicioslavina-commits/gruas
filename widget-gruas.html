@@ -311,7 +311,7 @@
           precio_hasta: d.precio_hasta || '',
           direccion: g.ciudad || '',
           timestamp: g.created_at || '',
-          foto_url: d.foto_url || '',
+          foto_url: d.foto_url || (Array.isArray(d.fotos_urls) && d.fotos_urls[0]) || d.logo_url || '',
           logo_url: d.logo_url || '',
           slug: g.slug || '',
         };
