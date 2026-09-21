@@ -1910,11 +1910,11 @@ async function doAprobar(id, nombre, email, btn) {
     renderTable();
     let nota;
     if (res.auth_created && res.email_sent) {
-      nota = `✅ Aprobado. Cuenta creada, correo de invitación enviado a ${email}.`;
-    } else if (res.auth_created && !res.email_sent) {
-      nota = `⚠️ Aprobado y cuenta creada, pero el correo NO se pudo enviar.\nError: ${res.email_error || 'desconocido'}\n\nPuedes reenviarlo manualmente con el botón "Reenviar acceso" en la tabla.`;
+      nota = `✅ Aprobado. Como no tenía cuenta, se creó una y se envió el correo de invitación a ${email}.`;
+    } else if (res.email_sent) {
+      nota = `✅ Aprobado. Correo de confirmación enviado a ${email}.`;
     } else if (tieneEmail) {
-      nota = `✅ Aprobado (la cuenta ya existía o no se pudo crear).\n${res.email_error ? 'Detalle: ' + res.email_error : ''}`;
+      nota = `⚠️ Aprobado, pero el correo NO se pudo enviar.\nError: ${res.email_error || 'desconocido'}\n\nPuedes reenviarlo manualmente con el botón "Reenviar acceso" en la tabla.`;
     } else {
       nota = `✅ Aprobado (sin correo, sin cuenta). Slug: ${res.slug || '—'}`;
     }
