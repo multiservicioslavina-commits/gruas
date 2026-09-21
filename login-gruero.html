@@ -58,7 +58,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       margin-bottom: 0.4rem;
       margin-top: 1.2rem;
     }
-    input[type="email"], input[type="password"] {
+    input[type="email"], input[type="password"], input[type="text"] {
       width: 100%;
       background: #111;
       border: 1px solid #333;
@@ -115,6 +115,64 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       margin-bottom: 1.5rem;
       text-align: center;
     }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 100;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 12px;
+      padding: 1.75rem;
+      width: 100%;
+      max-width: 360px;
+    }
+    .modal-box h2 {
+      font-size: 1.1rem;
+      color: #f0f0f0;
+      margin-bottom: 0.5rem;
+    }
+    .modal-box p.hint {
+      color: #999;
+      font-size: 0.82rem;
+      line-height: 1.4;
+      margin-bottom: 1rem;
+    }
+    .modal-close {
+      float: right;
+      background: none;
+      border: none;
+      color: #888;
+      font-size: 1.2rem;
+      cursor: pointer;
+    }
+    .modal-msg {
+      display: none;
+      border-radius: 8px;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.82rem;
+      margin-top: 0.9rem;
+    }
+    .modal-msg.ok { display: block; background: #0e2a1a; border: 1px solid #1a5c36; color: #4ade80; }
+    .modal-msg.err { display: block; background: #3a1212; border: 1px solid #6b1e1e; color: #f87171; }
+    .link-btn {
+      background: none;
+      border: none;
+      color: #E85D20;
+      font-size: 0.82rem;
+      cursor: pointer;
+      margin-top: 0.75rem;
+      display: block;
+      text-align: center;
+      width: 100%;
+    }
     .spinner {
       display: inline-block;
       width: 16px; height: 16px;
@@ -163,6 +221,31 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
 
     <div class="forgot">
       <a href="#" id="forgotLink">¿Olvidé mi contraseña?</a>
+    </div>
+  </div>
+
+  <div class="modal-overlay" id="phoneResetModal">
+    <div class="modal-box">
+      <button class="modal-close" id="phoneResetClose">✕</button>
+      <div id="phoneResetStep1">
+        <h2>Recuperar contraseña</h2>
+        <p class="hint">Te enviaremos un código de 6 dígitos por WhatsApp al número con el que te registraste.</p>
+        <label for="resetPhone">Número de WhatsApp</label>
+        <input type="text" id="resetPhone" placeholder="+57 300 000 0000">
+        <button class="btn" id="resetSendBtn" type="button">Enviar código</button>
+        <div class="modal-msg" id="resetMsg1"></div>
+      </div>
+      <div id="phoneResetStep2" style="display:none">
+        <h2>Escribe el código</h2>
+        <p class="hint">Te llegó un mensaje de WhatsApp con un código de 6 dígitos.</p>
+        <label for="resetCode">Código</label>
+        <input type="text" id="resetCode" placeholder="123456" maxlength="6" inputmode="numeric">
+        <label for="resetNewPass">Nueva contraseña</label>
+        <input type="password" id="resetNewPass" placeholder="Mínimo 8 caracteres">
+        <button class="btn" id="resetConfirmBtn" type="button">Cambiar contraseña</button>
+        <button class="link-btn" id="resetAgainBtn" type="button">No recibí el código, enviar de nuevo</button>
+        <div class="modal-msg" id="resetMsg2"></div>
+      </div>
     </div>
   </div>
 
@@ -228,6 +311,111 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
     });
 
+    const REGISTRAR_GRUERO_URL = `${SUPABASE_URL}/functions/v1/registrar-gruero`;
+
+    const phoneModal   = document.getElementById('phoneResetModal');
+    const step1        = document.getElementById('phoneResetStep1');
+    const step2        = document.getElementById('phoneResetStep2');
+    const resetPhoneEl = document.getElementById('resetPhone');
+    const resetCodeEl  = document.getElementById('resetCode');
+    const resetPassEl  = document.getElementById('resetNewPass');
+    const resetMsg1    = document.getElementById('resetMsg1');
+    const resetMsg2    = document.getElementById('resetMsg2');
+    let resetPhoneNormalized = '';
+
+    function showMsg(el, text, ok) {
+      el.textContent = text;
+      el.className = 'modal-msg ' + (ok ? 'ok' : 'err');
+    }
+    function openPhoneModal(prefill) {
+      step1.style.display = '';
+      step2.style.display = 'none';
+      resetMsg1.className = 'modal-msg';
+      resetMsg2.className = 'modal-msg';
+      resetCodeEl.value = '';
+      resetPassEl.value = '';
+      resetPhoneEl.value = prefill || '';
+      phoneModal.classList.add('open');
+    }
+    function closePhoneModal() { phoneModal.classList.remove('open'); }
+
+    document.getElementById('phoneResetClose').addEventListener('click', closePhoneModal);
+    phoneModal.addEventListener('click', (e) => { if (e.target === phoneModal) closePhoneModal(); });
+
+    async function sendResetCode() {
+      const tel = normalizePhone(resetPhoneEl.value);
+      if (tel.length < 12) {
+        showMsg(resetMsg1, 'Escribe un número de WhatsApp válido.', false);
+        return;
+      }
+      resetPhoneNormalized = tel;
+      const sendBtn = document.getElementById('resetSendBtn');
+      sendBtn.disabled = true;
+      sendBtn.textContent = 'Enviando…';
+      try {
+        await fetch(REGISTRAR_GRUERO_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: 'recuperar_clave_telefono', telefono: tel }),
+        });
+      } catch (_) { /* seguimos igual, no revelamos errores de red */ }
+      sendBtn.disabled = false;
+      sendBtn.textContent = 'Enviar código';
+      step1.style.display = 'none';
+      step2.style.display = '';
+    }
+
+    document.getElementById('resetSendBtn').addEventListener('click', sendResetCode);
+    document.getElementById('resetAgainBtn').addEventListener('click', async () => {
+      resetMsg2.className = 'modal-msg';
+      await sendResetCode();
+      showMsg(resetMsg2, 'Te enviamos un nuevo código por WhatsApp.', true);
+    });
+
+    document.getElementById('resetConfirmBtn').addEventListener('click', async () => {
+      const code = resetCodeEl.value.trim();
+      const newPassword = resetPassEl.value;
+      if (!/^\d{6}$/.test(code)) {
+        showMsg(resetMsg2, 'El código debe tener 6 dígitos.', false);
+        return;
+      }
+      if (newPassword.length < 8) {
+        showMsg(resetMsg2, 'La contraseña debe tener al menos 8 caracteres.', false);
+        return;
+      }
+      const confirmBtn = document.getElementById('resetConfirmBtn');
+      confirmBtn.disabled = true;
+      confirmBtn.textContent = 'Guardando…';
+      try {
+        const res = await fetch(REGISTRAR_GRUERO_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'confirmar_reset_telefono',
+            telefono: resetPhoneNormalized,
+            code,
+            new_password: newPassword,
+          }),
+        });
+        const out = await res.json().catch(() => ({}));
+        if (out.ok) {
+          showMsg(resetMsg2, '¡Listo! Ya puedes iniciar sesión con tu nueva contraseña.', true);
+          setTimeout(() => {
+            closePhoneModal();
+            emailEl.value = resetPhoneEl.value;
+            passEl.value = '';
+            passEl.focus();
+          }, 1800);
+        } else {
+          showMsg(resetMsg2, out.error || 'No pudimos confirmar el código.', false);
+        }
+      } catch (_) {
+        showMsg(resetMsg2, 'Error de conexión. Intenta de nuevo.', false);
+      }
+      confirmBtn.disabled = false;
+      confirmBtn.textContent = 'Cambiar contraseña';
+    });
+
     document.getElementById('forgotLink').addEventListener('click', async (e) => {
       e.preventDefault();
       const raw = emailEl.value.trim();
@@ -238,8 +426,7 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       }
       const { email, isPhone } = resolveIdentifier(raw);
       if (isPhone) {
-        errEl.style.cssText = 'display:block;background:#3a1212;border-color:#6b1e1e;color:#f87171;';
-        errEl.textContent = 'Si te registraste con celular, no podemos enviarte un correo de recuperación. Escríbele al equipo de Ridera por WhatsApp para restablecer tu clave.';
+        openPhoneModal(raw);
         return;
       }
       btn.disabled = true;
