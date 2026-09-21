@@ -1884,6 +1884,7 @@ function renderTable() {
         <div class="actions-cell">
           ${!apro ? `<button class="act-btn aprobar" onclick="doAprobar('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✓ Aprobar</button>` : ''}
           ${apro  ? `<button class="act-btn" onclick="toggleDisp('${jsq(g.id)}',${!disp},this)">${disp?'Desactivar':'Activar'}</button>` : ''}
+          ${apro && g.email && g.email.includes('@') ? `<button class="act-btn admin-only" onclick="doReenviarAcceso('${jsq(g.id)}','${jsq(g.nombre||'')}','${jsq(g.email||'')}',this)">✉ Reenviar acceso</button>` : ''}
           <button class="act-btn admin-only" onclick="openEditModalFor('grueros','${jsq(g.id)}')">Modificar</button>
           <button class="act-btn del admin-only" onclick="doDelete('${jsq(g.id)}','${jsq(g.nombre||'')}',this)">🗑 Borrar</button>
         </div>
@@ -1907,14 +1908,37 @@ async function doAprobar(id, nombre, email, btn) {
     if (g) { g.aprobado = 'SI'; g.auth_id = res.auth_created ? '(nuevo)' : g.auth_id; g.slug = res.slug || g.slug; }
     renderStats();
     renderTable();
-    const nota = res.auth_created
-      ? `✅ Aprobado. Cuenta creada, email de invitación enviado a ${email}.`
-      : `✅ Aprobado${tieneEmail ? ' (cuenta ya existía o hubo error de email)' : ' (sin correo, sin cuenta)'}. Slug: ${res.slug || '—'}`;
+    let nota;
+    if (res.auth_created && res.email_sent) {
+      nota = `✅ Aprobado. Cuenta creada, correo de invitación enviado a ${email}.`;
+    } else if (res.auth_created && !res.email_sent) {
+      nota = `⚠️ Aprobado y cuenta creada, pero el correo NO se pudo enviar.\nError: ${res.email_error || 'desconocido'}\n\nPuedes reenviarlo manualmente con el botón "Reenviar acceso" en la tabla.`;
+    } else if (tieneEmail) {
+      nota = `✅ Aprobado (la cuenta ya existía o no se pudo crear).\n${res.email_error ? 'Detalle: ' + res.email_error : ''}`;
+    } else {
+      nota = `✅ Aprobado (sin correo, sin cuenta). Slug: ${res.slug || '—'}`;
+    }
     alert(nota);
   } else {
     btn.disabled = false;
     btn.textContent = '✓ Aprobar';
     alert('Error: ' + (res.error || 'No se pudo aprobar'));
+  }
+}
+
+async function doReenviarAcceso(id, nombre, email, btn) {
+  if (!confirm(`¿Reenviar el correo de acceso a "${nombre}" (${email})?`)) return;
+  btn.disabled = true;
+  btn.textContent = '...';
+  const res = await callAdmin({ action: 'resend_invite', id }).catch(() => ({ ok: false }));
+  btn.disabled = false;
+  btn.textContent = '✉ Reenviar acceso';
+  if (res.ok && res.email_sent) {
+    alert(`✅ Correo reenviado a ${email}.`);
+  } else if (res.ok) {
+    alert(`⚠️ No se pudo enviar el correo.\nError: ${res.email_error || 'desconocido'}`);
+  } else {
+    alert('❌ ' + (res.error || 'Error al reenviar el acceso.'));
   }
 }
 

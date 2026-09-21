@@ -222,7 +222,7 @@ Deno.serve(async (req) => {
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
       'survey_create', 'survey_list', 'survey_results', 'set_tags',
-      'reserva_update_estado', 'update_escalation',
+      'reserva_update_estado', 'update_escalation', 'resend_invite',
     ])
     if (ADMIN_ONLY_ACTIONS.has(action) && role !== 'admin') {
       return new Response(JSON.stringify({ ok: false, error: 'No tienes permisos para esta acción (solo admin)' }), {
@@ -824,20 +824,100 @@ Deno.serve(async (req) => {
 
       let auth_id = gruero.auth_id
       let auth_created = false
+      let email_sent = false
+      let email_error: string | null = null
       if (gruero.email && gruero.email.includes('@') && !auth_id) {
-        const { data: inv, error: invErr } = await sbClient.auth.admin.inviteUserByEmail(gruero.email, {
-          data: { nombre: gruero.nombre, gruero_id: gruero.id },
-          redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html',
+        let { data: gen, error: genErr } = await sbClient.auth.admin.generateLink({
+          type: 'invite',
+          email: gruero.email,
+          options: { redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html', data: { nombre: gruero.nombre, gruero_id: gruero.id } },
         })
-        if (!invErr && inv?.user) {
-          auth_id = inv.user.id
-          auth_created = true
+        // Si el email ya tiene cuenta Auth (de otro flujo), generamos un link de recuperación en vez de invite.
+        if (genErr && (genErr.message || '').toLowerCase().includes('already')) {
+          const { data: list } = await sbClient.auth.admin.listUsers({ perPage: 1000 })
+          const found = list?.users?.find((u) => u.email === gruero.email)
+          if (found) {
+            auth_id = found.id
+            const retry = await sbClient.auth.admin.generateLink({
+              type: 'recovery', email: gruero.email,
+              options: { redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html' },
+            })
+            gen = retry.data
+            genErr = retry.error
+          }
+        }
+        if (genErr) {
+          email_error = genErr.message
+          console.error('generateLink failed:', genErr.message)
+        } else {
+          if (gen?.user) { auth_id = gen.user.id; auth_created = true }
+          const actionLink = (gen as unknown as { properties?: { action_link?: string } })?.properties?.action_link
+          if (actionLink) {
+            const emailHtml = html_email_template(`
+              <h2 style="margin-bottom:1rem">¡${gruero.nombre}, tu perfil de grúa ya está aprobado! 🚛</h2>
+              <p>Crea tu contraseña para entrar a tu portal de gruero, activar tu disponibilidad y empezar a recibir solicitudes.</p>
+              <p style="text-align:center;margin:2rem 0">
+                <a href="${actionLink}" style="background:#E85D20;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">Crear mi contraseña</a>
+              </p>
+              <p style="font-size:0.82rem;color:#888">Si el botón no funciona, copia y pega este enlace en tu navegador:<br>${actionLink}</p>
+            `)
+            const sendResult = await sendEmailViaResend(gruero.email, 'Tu cuenta de Ridera Grúas ya está lista 🚛', emailHtml, 'Ridera Grúas')
+            email_sent = sendResult.ok
+            if (!sendResult.ok) email_error = sendResult.error || 'Error desconocido al enviar el correo'
+          }
         }
       }
 
       await sbClient.from('grueros').update({ aprobado: 'SI', disponible: true, slug, auth_id: auth_id ?? null }).eq('id', gruero.id)
 
-      return new Response(JSON.stringify({ ok: true, auth_created, slug }), {
+      return new Response(JSON.stringify({ ok: true, auth_created, email_sent, email_error, slug }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      })
+    }
+
+    // RESEND INVITE (reenviar correo de acceso a un gruero ya aprobado)
+    if (action === 'resend_invite') {
+      const { id } = body
+      const { data: gruero } = await sbClient.from('grueros').select('id, nombre, email, auth_id').eq('id', id).maybeSingle()
+      if (!gruero || !gruero.email) {
+        return new Response(JSON.stringify({ ok: false, error: 'Gruero no encontrado o sin correo' }), {
+          status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        })
+      }
+
+      const linkType = gruero.auth_id ? 'recovery' : 'invite'
+      const { data: gen, error: genErr } = await sbClient.auth.admin.generateLink({
+        type: linkType,
+        email: gruero.email,
+        options: { redirectTo: 'https://gruas.ridera.com.co/mi-cuenta.html', data: { nombre: gruero.nombre, gruero_id: gruero.id } },
+      })
+
+      let email_sent = false
+      let email_error: string | null = genErr?.message ?? null
+      if (!genErr) {
+        if (!gruero.auth_id && gen?.user) {
+          await sbClient.from('grueros').update({ auth_id: gen.user.id }).eq('id', gruero.id)
+        }
+        const actionLink = (gen as unknown as { properties?: { action_link?: string } })?.properties?.action_link
+        if (actionLink) {
+          const emailHtml = html_email_template(`
+            <h2 style="margin-bottom:1rem">¡${gruero.nombre}, aquí está tu acceso a Ridera Grúas! 🚛</h2>
+            <p>Crea tu contraseña para entrar a tu portal de gruero, activar tu disponibilidad y empezar a recibir solicitudes.</p>
+            <p style="text-align:center;margin:2rem 0">
+              <a href="${actionLink}" style="background:#E85D20;color:#fff;padding:14px 28px;border-radius:8px;text-decoration:none;font-weight:700;display:inline-block">Crear mi contraseña</a>
+            </p>
+            <p style="font-size:0.82rem;color:#888">Si el botón no funciona, copia y pega este enlace en tu navegador:<br>${actionLink}</p>
+          `)
+          const sendResult = await sendEmailViaResend(gruero.email, 'Tu acceso a Ridera Grúas 🚛', emailHtml, 'Ridera Grúas')
+          email_sent = sendResult.ok
+          if (!sendResult.ok) email_error = sendResult.error || 'Error desconocido al enviar el correo'
+        } else {
+          email_error = 'No se generó el enlace de acceso'
+        }
+      }
+
+      logAudit(auth.username!, 'resend_invite', { gruero_id: gruero.id, email_sent })
+      return new Response(JSON.stringify({ ok: true, email_sent, email_error }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       })
     }
