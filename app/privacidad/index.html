@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Política de Privacidad — Ridera Aventura</title>
+<meta name="description" content="Política de privacidad de Ridera Aventura (Ridera Ride Live): qué datos recopilamos, cómo los usamos y cómo ejercer tus derechos.">
+<meta name="robots" content="index, follow">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&display=swap');
+
+  :root {
+    --bg: #0e0e0e;
+    --surface: #161616;
+    --ink: #e6e3de;
+    --muted: #a3a3a0;
+    --orange: #E85D20;
+    --line: #2a2a2a;
+    --font-display: 'Bebas Neue', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+  @media (prefers-color-scheme: light) {
+    :root {
+      --bg: #faf9f7;
+      --surface: #ffffff;
+      --ink: #1c1a17;
+      --muted: #6b6862;
+      --line: #e4e1db;
+    }
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-body);
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  main {
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 48px 24px 96px;
+  }
+  a { color: var(--orange); }
+  .eyebrow {
+    font-family: var(--font-body);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    font-size: 12px;
+    color: var(--orange);
+    margin-bottom: 12px;
+  }
+  h1 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: clamp(36px, 7vw, 56px);
+    letter-spacing: 0.01em;
+    line-height: 1.02;
+    margin: 0 0 8px;
+    text-wrap: balance;
+  }
+  .updated {
+    color: var(--muted);
+    font-size: 14px;
+    margin-bottom: 40px;
+  }
+  h2 {
+    font-family: var(--font-display);
+    font-weight: 400;
+    font-size: 26px;
+    letter-spacing: 0.01em;
+    margin: 40px 0 12px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+  }
+  p, li { color: var(--ink); font-size: 16px; }
+  ul { padding-left: 20px; margin: 8px 0; }
+  li { margin-bottom: 8px; }
+  strong { color: var(--ink); }
+  .contact {
+    margin-top: 48px;
+    padding: 20px 24px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+  .back {
+    display: inline-block;
+    margin-top: 48px;
+    font-size: 14px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">Ridera Aventura</div>
+  <h1>Política de Privacidad</h1>
+  <p class="updated">Última actualización: julio 2026</p>
+
+  <h2>Datos que recopilamos</h2>
+  <p>Ridera Aventura (Ridera Ride Live) recopila los siguientes datos durante el uso activo de la app:</p>
+  <ul>
+    <li><strong>Ubicación GPS</strong> — se comparte con el grupo solo durante una rodada activa. No se rastrea en segundo plano.</li>
+    <li><strong>Datos de Bluetooth</strong> — se usa para la comunicación mesh entre dispositivos cercanos durante una rodada. No se almacenan identificadores permanentes.</li>
+    <li><strong>Fotos</strong> — las fotos tomadas durante la rodada se suben a la nube del grupo. El usuario puede eliminarlas en cualquier momento.</li>
+    <li><strong>Datos del recorrido</strong> — ruta, velocidad y duración se almacenan para generar estadísticas y el video resumen.</li>
+  </ul>
+
+  <h2>Cómo usamos los datos</h2>
+  <p>Los datos se usan exclusivamente para las funciones de la app: mostrar posiciones en el mapa durante una rodada en grupo, generar alertas de seguridad (detección de caídas), crear estadísticas y videos de resumen de la rodada. No vendemos ni compartimos datos con terceros con fines publicitarios.</p>
+
+  <h2>Almacenamiento y seguridad</h2>
+  <p>Los datos se almacenan en servidores seguros (Supabase), con cifrado en tránsito y en reposo. Los datos de ubicación de rodadas finalizadas se retienen por 90 días y luego se eliminan automáticamente.</p>
+
+  <h2>Tus derechos</h2>
+  <p>Puedes solicitar la eliminación de tu cuenta y todos tus datos en cualquier momento escribiendo al correo de contacto abajo. Los datos se eliminan dentro de 30 días.</p>
+
+  <h2>Permisos de la app</h2>
+  <ul>
+    <li><strong>Ubicación</strong> — necesaria para el GPS grupal en tiempo real durante una rodada y la generación de rutas.</li>
+    <li><strong>Bluetooth (dispositivos cercanos)</strong> — necesario para la comunicación mesh entre los riders del grupo cuando no hay señal celular. Solo se activa mientras hay una rodada en curso.</li>
+    <li><strong>Notificaciones</strong> — para avisos de seguridad y actividad del grupo durante la rodada.</li>
+    <li><strong>Sensores de movimiento</strong> — para la detección automática de caídas.</li>
+  </ul>
+
+  <div class="contact">
+    <h2 style="margin-top:0;border:none;padding-bottom:0;">Contacto</h2>
+    <p>Ridera Aventura — Medellín, Colombia<br>
+    Correo: <a href="mailto:multiservicioslavina@gmail.com">multiservicioslavina@gmail.com</a></p>
+  </div>
+
+  <a class="back" href="/">← Volver a Ridera Aventura</a>
+</main>
+</body>
+</html>
