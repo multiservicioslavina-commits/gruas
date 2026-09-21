@@ -1843,6 +1843,8 @@ const DOMINIOS_RIDERA_PERMITIDOS = new Set([
   "gruas.ridera.com.co",
   "club.ridera.com.co",
   "admin.ridera.com.co",
+  "pasaporte.ridera.com.co",
+  "aventura.ridera.com.co",
 ]);
 
 const REGEX_URL = /https?:\/\/[^\s)\]<>"']+/g;
