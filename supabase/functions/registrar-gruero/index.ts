@@ -156,8 +156,13 @@ Deno.serve(async (req: Request) => {
     if (data.foto_base64) foto_url = await uploadImg(supabase, data.foto_base64, `${safe}/${stamp}-foto.jpg`);
     if (data.logo_base64) logo_url = await uploadImg(supabase, data.logo_base64, `${safe}/${stamp}-logo.jpg`);
 
-    const { foto_base64, logo_base64, ...limpio } = data;
-    const datos = { ...limpio, foto_url, logo_url };
+    const fotosBase64: string[] = Array.isArray(data.fotos_base64) ? data.fotos_base64.slice(0, 3) : [];
+    const fotos_urls = (await Promise.all(
+      fotosBase64.map((b64: string, i: number) => uploadImg(supabase, b64, `${safe}/${stamp}-foto${i + 1}.jpg`))
+    )).filter((u): u is string => !!u);
+
+    const { foto_base64, logo_base64, fotos_base64, ...limpio } = data;
+    const datos = { ...limpio, foto_url, logo_url, fotos_urls };
 
     const { data: inserted, error } = await supabase
       .from("grueros")

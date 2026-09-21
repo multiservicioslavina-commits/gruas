@@ -117,6 +117,13 @@ textarea{resize:vertical;min-height:90px;line-height:1.55}
 .check-chip input{display:none}
 .check-chip.checked{background:rgba(232,93,32,0.12);border-color:rgba(232,93,32,0.4);color:#fff}
 .check-group.field-error{outline:1px solid rgba(248,113,113,0.6);outline-offset:6px;border-radius:12px}
+input[type=file]{width:100%;background:var(--carbon4);border:1px dashed var(--border-hi);border-radius:var(--radius-sm);color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:14px;padding:12px 14px;cursor:pointer}
+input[type=file]::file-selector-button{background:var(--orange);color:#fff;border:none;border-radius:6px;padding:7px 14px;font-size:13px;font-weight:600;cursor:pointer;margin-right:10px}
+.img-preview-wrap{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.img-preview-wrap:empty{display:none}
+.img-thumb{position:relative;width:72px;height:72px;border-radius:8px;overflow:hidden;border:1px solid var(--border-hi)}
+.img-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+.img-thumb .rm{position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,0.7);color:#fff;border:none;font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .submit-area{margin-top:32px;padding-top:24px;border-top:0.5px solid var(--border)}
 .btn-submit{width:100%;background:var(--orange);color:#fff;font-family:'Barlow Condensed',sans-serif;font-size:22px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;padding:20px 28px;border:none;border-radius:var(--radius-md);cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:10px}
 .btn-submit:hover{background:var(--orange-hot);transform:translateY(-1px);box-shadow:0 8px 28px rgba(232,93,32,0.3)}
@@ -433,7 +440,23 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
       </div>
 
       <div class="form-section">
-        <div class="form-section-label">03 · Disponibilidad y servicios</div>
+        <div class="form-section-label">03 · Logo y fotos (opcional)</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Logo de tu servicio</label>
+            <input type="file" id="g-logo-file" accept="image/*">
+            <div id="g-logo-preview" class="img-preview-wrap"></div>
+          </div>
+          <div class="form-group">
+            <label>Fotos de tu grúa (hasta 3)</label>
+            <input type="file" id="g-fotos-file" accept="image/*" multiple>
+            <div id="g-fotos-preview" class="img-preview-wrap"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-section">
+        <div class="form-section-label">04 · Disponibilidad y servicios</div>
         <div class="form-group">
           <label>Disponibilidad</label>
           <div class="check-group">
@@ -524,6 +547,58 @@ function validate() {
   return true;
 }
 
+let logoBase64 = null;
+let fotosBase64 = [];
+
+function readAsBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+function thumbHtml(idx, src, onRemove) {
+  return `<div class="img-thumb"><img src="${src}" alt=""><button type="button" class="rm" onclick="${onRemove}(${idx})">✕</button></div>`;
+}
+
+function renderLogoPreview() {
+  const box = document.getElementById('g-logo-preview');
+  box.innerHTML = logoBase64 ? thumbHtml(0, logoBase64, 'removeLogo') : '';
+}
+function removeLogo() {
+  logoBase64 = null;
+  document.getElementById('g-logo-file').value = '';
+  renderLogoPreview();
+}
+
+function renderFotosPreview() {
+  const box = document.getElementById('g-fotos-preview');
+  box.innerHTML = fotosBase64.map((src, i) => thumbHtml(i, src, 'removeFoto')).join('');
+}
+function removeFoto(i) {
+  fotosBase64.splice(i, 1);
+  renderFotosPreview();
+}
+
+document.getElementById('g-logo-file').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  logoBase64 = await readAsBase64(file);
+  renderLogoPreview();
+});
+
+document.getElementById('g-fotos-file').addEventListener('change', async (e) => {
+  const files = Array.from(e.target.files).slice(0, 3 - fotosBase64.length);
+  for (const file of files) {
+    fotosBase64.push(await readAsBase64(file));
+  }
+  e.target.value = '';
+  if (fotosBase64.length >= 3) setStatus('loading', 'Máximo 3 fotos.'), setTimeout(clearStatus, 1500);
+  renderFotosPreview();
+});
+
 function collectData() {
   return {
     tipo: 'Grúa', timestamp: new Date().toLocaleString('es-CO'),
@@ -539,6 +614,8 @@ function collectData() {
     disponibilidad:getRadio('disponibilidad'),
     servicios:     getChecked('g-servicios'),
     notas:         document.getElementById('g-notas').value.trim(),
+    logo_base64:   logoBase64 || undefined,
+    fotos_base64:  fotosBase64.length ? fotosBase64 : undefined,
   };
 }
 
@@ -557,10 +634,10 @@ async function submitGrua() {
     if (SHEETS_URL) {
       fetch(SHEETS_URL, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data), mode:'no-cors' }).catch(() => {});
     }
-    // Also submit to Netlify
+    // Also submit to Netlify (sin los base64 de imágenes: son demasiado grandes para este formulario)
     try {
       const fd = new FormData(document.getElementById('form-grua-body'));
-      Object.entries(data).forEach(([k,v]) => { if (!fd.has(k)) fd.set(k, v); });
+      Object.entries(data).forEach(([k,v]) => { if (k === 'logo_base64' || k === 'fotos_base64') return; if (!fd.has(k)) fd.set(k, v); });
       await fetch('/', { method:'POST', body:fd });
     } catch(e) { console.warn('Netlify:', e); }
     setProgress(100);
@@ -595,6 +672,9 @@ function resetForm() {
   document.querySelectorAll('select').forEach(el => el.selectedIndex = 0);
   document.querySelectorAll('input[type=checkbox],input[type=radio]').forEach(cb => cb.checked = false);
   document.querySelectorAll('.check-chip').forEach(c => c.classList.remove('checked'));
+  logoBase64 = null; fotosBase64 = [];
+  document.getElementById('g-logo-file').value = ''; renderLogoPreview();
+  document.getElementById('g-fotos-file').value = ''; renderFotosPreview();
   document.getElementById('success-grua').classList.remove('visible');
   document.getElementById('countdown-txt').textContent = '';
   const btn = document.getElementById('btn-grua'); btn.disabled = false; btn.textContent = '🚛 Quiero trabajar con Ridera';

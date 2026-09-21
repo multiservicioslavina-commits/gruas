@@ -216,7 +216,7 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
     .form-group { display: flex; flex-direction: column; gap: 0.4rem; }
     .form-group.full { grid-column: 1 / -1; }
     label { font-size: 0.8rem; color: var(--muted); }
-    input[type="text"], input[type="email"], input[type="tel"], textarea, select {
+    input[type="text"], input[type="email"], input[type="tel"], input[type="password"], textarea, select {
       background: #111;
       border: 1px solid var(--border);
       border-radius: 8px;
@@ -228,6 +228,14 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
       outline: none;
       width: 100%;
     }
+    .pwd-wrap { position: relative; }
+    .pwd-wrap input[type="password"], .pwd-wrap input[type="text"] { padding-right: 2.6rem; }
+    .pwd-toggle {
+      position: absolute; right: 0.6rem; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; padding: 0.3rem;
+      color: var(--muted); font-size: 1.1rem; line-height: 1; display: flex;
+    }
+    .pwd-toggle:hover { color: var(--text); }
     input:focus, textarea:focus, select:focus { border-color: var(--accent); }
     textarea { resize: vertical; min-height: 80px; }
     .btn-save {
@@ -484,11 +492,17 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         <div class="form-grid">
           <div class="form-group">
             <label>Nueva contraseña</label>
-            <input type="password" id="fPwd1" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+            <div class="pwd-wrap">
+              <input type="password" id="fPwd1" placeholder="Mínimo 8 caracteres" autocomplete="new-password">
+              <button type="button" class="pwd-toggle" onclick="togglePwd('fPwd1',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
           </div>
           <div class="form-group">
             <label>Confirmar contraseña</label>
-            <input type="password" id="fPwd2" placeholder="Repite la contraseña" autocomplete="new-password">
+            <div class="pwd-wrap">
+              <input type="password" id="fPwd2" placeholder="Repite la contraseña" autocomplete="new-password">
+              <button type="button" class="pwd-toggle" onclick="togglePwd('fPwd2',this)" aria-label="Mostrar contraseña">👁️</button>
+            </div>
           </div>
         </div>
         <button class="btn-save" id="pwdBtn">Cambiar contraseña</button>
@@ -908,6 +922,14 @@ height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
         this.textContent = 'Guardar servicios';
       }
     });
+
+    function togglePwd(id, btn) {
+      const input = document.getElementById(id);
+      const showing = input.type === 'text';
+      input.type = showing ? 'password' : 'text';
+      btn.textContent = showing ? '👁️' : '🙈';
+      btn.setAttribute('aria-label', showing ? 'Mostrar contraseña' : 'Ocultar contraseña');
+    }
 
     document.getElementById('pwdBtn').addEventListener('click', async function() {
       const msg  = document.getElementById('pwdMsg');
