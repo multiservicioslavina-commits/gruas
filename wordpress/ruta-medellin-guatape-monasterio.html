@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ruta Medellín–Guatapé–Monasterio | RIDERA Guía de Rutas</title>
+<meta name="description" content="Ruta de motociclismo Medellín–Guatapé–Monasterio: 88 km de curvas técnicas, Piedra del Peñol, embalse y paz monástica. Guía completa con mapa interactivo.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600;700&family=Work+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+:root{
+  --bg:#0d0d0d;
+  --surface:#16171b;
+  --surface-2:#1e2026;
+  --line:#2a2c33;
+  --orange:#E85D20;
+  --orange-2:#ff7a3c;
+  --orange-soft:rgba(232,93,32,.12);
+  --text:#f3f3f3;
+  --muted:#9a9ca3;
+  --muted-2:#767880;
+  --green:#25D366;
+  --danger:#e23b3b;
+  --font-display:'Space Grotesk', sans-serif;
+  --font-mono:'IBM Plex Mono', monospace;
+  --font-body:'Work Sans', sans-serif;
+  --fs-body: clamp(16px, 0.5vw + 14.5px, 17.5px);
+  --fs-small: clamp(14px, 0.3vw + 13px, 15.5px);
+}
+
+*{ box-sizing:border-box; margin:0; padding:0; }
+html{ scroll-behavior:smooth; }
+body{
+  background:var(--bg); color:var(--text); font-family:var(--font-body);
+  font-size:var(--fs-body); line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+img,svg{ max-width:100%; display:block; }
+.wrap{ max-width:1000px; margin:0 auto; padding:0 24px; }
+a{ color:var(--orange-2); text-decoration:none; }
+a:hover{ text-decoration:underline; }
+
+h1,h2,h3,h4{ font-family:var(--font-display); color:var(--text); margin-bottom:16px; margin-top:28px; }
+h1{ font-size:clamp(32px,5vw,48px); line-height:1.1; letter-spacing:-.01em; }
+h2{ font-size:clamp(26px,3.5vw,36px); color:var(--orange-2); border-left:4px solid var(--orange); padding-left:16px; }
+h3{ font-size:clamp(20px,2.2vw,26px); color:var(--orange); }
+h4{ font-size:clamp(17px,1.8vw,20px); }
+p{ margin-bottom:16px; color:var(--muted); }
+ul,ol{ padding-left:28px; margin-bottom:16px; }
+li{ margin-bottom:10px; color:var(--muted); }
+
+.hero{ background:linear-gradient(135deg,rgba(232,93,32,.08) 0%,transparent 100%),
+  linear-gradient(180deg,transparent 0%,var(--bg) 100%);
+  border-bottom:1px solid var(--line);
+  padding:64px 0 48px;
+  position:relative;
+  overflow:hidden;
+}
+
+.hero-content{ position:relative; z-index:2; }
+.hero-tag{ display:inline-flex; align-items:center; gap:8px; font-family:var(--font-mono);
+  font-size:11px; letter-spacing:.08em; text-transform:uppercase; color:var(--orange);
+  border:1px solid rgba(232,93,32,.3); padding:5px 11px; margin-bottom:16px; }
+
+.hero h1{ color:var(--text); margin-top:0; }
+.hero .lede{ font-size:clamp(15px,1.2vw,17px); color:var(--muted); margin-top:16px; max-width:720px; }
+
+.stats-grid{
+  display:grid; grid-template-columns:repeat(4,1fr); gap:1px;
+  background:var(--line); border:1px solid var(--line);
+  margin-top:40px;
+}
+.stat-item{ background:var(--surface); padding:20px 16px; }
+.stat-n{ font-family:var(--font-mono); font-weight:600; font-size:clamp(20px,2.4vw,28px);
+  color:var(--orange-2); line-height:1; }
+.stat-l{ font-family:var(--font-mono); font-size:10px; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--muted-2); margin-top:10px; }
+@media (max-width:768px){ .stats-grid{ grid-template-columns:repeat(2,1fr); } }
+
+section{ padding:48px 0; border-bottom:1px solid var(--line); }
+
+.card{ background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:24px; margin-bottom:20px; }
+.card h3{ margin-top:0; }
+
+.table-wrap{ overflow-x:auto; margin-bottom:24px; }
+table{ width:100%; border-collapse:collapse; background:var(--surface);
+  border:1px solid var(--line); border-radius:6px; overflow:hidden; }
+th,td{ padding:14px 16px; text-align:left; border-bottom:1px solid var(--line);
+  color:var(--muted); font-size:14px; }
+th{ background:var(--orange); color:#000; font-weight:600; text-transform:uppercase; }
+tr:nth-child(even){ background:rgba(232,93,32,.04); }
+tr:hover{ background:rgba(232,93,32,.08); }
+
+.tag{ display:inline-block; background:var(--orange); color:#000; padding:6px 12px;
+  border-radius:4px; font-weight:600; font-size:11px; margin-bottom:12px; text-transform:uppercase; }
+
+.gps-list{ list-style:none; padding-left:0; }
+.gps-list li{ background:var(--surface); border:1px solid var(--line); border-radius:6px;
+  padding:12px 16px; margin-bottom:10px; font-family:var(--font-mono); font-size:13px;
+  color:var(--muted); }
+.gps-list strong{ color:var(--text); }
+
+.map-container{
+  width:100%; height:500px; border:1px solid var(--line); border-radius:8px;
+  margin:24px 0; background:var(--surface); overflow:hidden;
+}
+.map-toggle{
+  display:inline-block; margin-bottom:16px; padding:12px 20px; background:var(--orange);
+  color:#000; border:none; border-radius:6px; font-weight:600; cursor:pointer;
+  font-family:var(--font-mono); font-size:12px; letter-spacing:.05em; transition:all .3s;
+}
+.map-toggle:hover{ background:var(--orange-2); }
+#map{ width:100%; height:100%; }
+
+.verified{ color:var(--green); font-weight:600; font-size:13px; }
+
+.toc{ background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  padding:24px; margin-bottom:32px; }
+.toc h3{ margin-top:0; }
+.toc ul{ margin:0; padding-left:20px; }
+.toc a{ color:var(--muted); }
+.toc a:hover{ color:var(--orange-2); }
+
+.highlight{ background:rgba(232,93,32,.1); border-left:3px solid var(--orange);
+  padding:16px; margin:20px 0; border-radius:4px; }
+
+@media (max-width:640px){
+  .wrap{ padding:0 16px; }
+  h1{ font-size:28px; }
+  h2{ font-size:22px; }
+  .map-container{ height:400px; }
+  .stats-grid{ grid-template-columns:1fr; }
+  table{ font-size:13px; }
+  th,td{ padding:10px 12px; }
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+
+<section class="hero">
+  <div class="hero-content">
+    <span class="hero-tag">⛰️ Ruta Premium</span>
+    <h1>Medellín → Guatapé → Monasterio</h1>
+    <p class="lede">Conquista el Oriente Antioqueño: del asfalto sinuoso a la serenidad de los Monjes. Sentir la aceleración por las curvas perfectas de Marinilla–El Peñol, coronar la Piedra del Peñol y culminar en el silencio místico del Monasterio Santa María. Adrenalina, paisajes de embalse y desconexión total.</p>
+
+    <div class="stats-grid">
+      <div class="stat-item">
+        <div class="stat-n">88</div>
+        <div class="stat-l">KM Distancia</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">2–2.5</div>
+        <div class="stat-l">Horas Rodada</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">2.150m</div>
+        <div class="stat-l">Alt. Máxima</div>
+      </div>
+      <div class="stat-item">
+        <div class="stat-n">19°C</div>
+        <div class="stat-l">Clima Promedio</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="tecnica">
+  <h2>Ficha Técnica de la Ruta</h2>
+  <div class="card">
+    <h3>Detalles Principales</h3>
+    <ul>
+      <li><strong>Punto de Salida:</strong> Medellín (Estación Terpel Zamora / Autopista Medellín-Bogotá)</li>
+      <li><strong>Destino:</strong> Monasterio Santa María de la Epifanía, Vereda Quebrada Arriba, Guatapé</li>
+      <li><strong>Distancia Total (Ida):</strong> ~88 km</li>
+      <li><strong>Tiempo Estimado:</strong> 2 a 2.5 horas (dependiendo del tráfico)</li>
+      <li><strong>Altitud Mínima:</strong> 1.495 m.s.n.m. (Medellín) / 1.890 m.s.n.m. (Embalse)</li>
+      <li><strong>Altitud Máxima:</strong> ~2.150 m.s.n.m. (Alto de la Virgen / Marinilla)</li>
+      <li><strong>Estado de la Vía:</strong> 100% pavimentada Medellín–Guatapé. Tramo final: placa huella y destapado técnico (~4 km)</li>
+      <li><strong>Nivel de Dificultad:</strong> Intermedio (curvas de alta montaña, tráfico en fines de semana)</li>
+      <li><strong>Mejor Época:</strong> Temporada seca (Enero–Marzo / Julio–Agosto). Días de semana recomendados</li>
+      <li><strong>Tipo de Moto:</strong> Dual-Sport, Trail, Touring (ideal). Naked y Custom con precaución</li>
+    </ul>
+  </div>
+</section>
+
+<section id="mapa">
+  <h2>Mapa Interactivo y Coordenadas GPS</h2>
+
+  <button class="map-toggle" onclick="toggleMap()">📍 Ver Mapa Interactivo</button>
+  <div id="mapWrapper" class="map-container" style="display:none;">
+    <div id="map"></div>
+  </div>
+
+  <div class="card">
+    <h3>Coordenadas GPS de Puntos Clave</h3>
+    <ul class="gps-list">
+      <li><strong>Inicio (Medellín–Zamora):</strong> 6.3015° N, -75.5482° W</li>
+      <li><strong>Parada Técnica (Marinilla):</strong> 6.1738° N, -75.3377° W</li>
+      <li><strong>Hito Turístico (Piedra del Peñol):</strong> 6.2208° N, -75.1792° W</li>
+      <li><strong>Guatapé (Plazoleta Zócalos):</strong> 6.2331° N, -75.1583° W</li>
+      <li><strong>Destino Final (Monasterio):</strong> 6.2512° N, -75.1481° W</li>
+    </ul>
+  </div>
+</section>
+
+<section id="tramos">
+  <h2>Descripción por Tramos</h2>
+
+  <div class="card">
+    <span class="tag">Tramo 1</span>
+    <h3>Medellín → Marinilla (Autopista Medellín–Bogotá)</h3>
+    <ul>
+      <li><strong>Distancia:</strong> 45 km | <strong>Tiempo:</strong> 50 minutos</li>
+      <li><strong>Estado:</strong> Doble calzada totalmente pavimentada. Precaución en ascensos con carga pesada</li>
+      <li><strong>Gasolineras:</strong> Terpel, Texaco, Primax a lo largo de la autopista (Copacabana, Guarne)</li>
+      <li><strong>Lugares Interés:</strong> Alto de la Virgen (Guarne), miradores de la autopista</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="tag">Tramo 2</span>
+    <h3>Marinilla → El Peñol</h3>
+    <ul>
+      <li><strong>Distancia:</strong> 28 km | <strong>Tiempo:</strong> 35 minutos</li>
+      <li><strong>Estado:</strong> Calzada sencilla, curvas cerradas de alta adherencia. Asfalto excelente</li>
+      <li><strong>Gasolineras:</strong> Estaciones a la salida de Marinilla y entrada de El Peñol</li>
+      <li><strong>Lugares Interés:</strong> Réplica del Viejo Peñol, Mirador del Embalse</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="tag">Tramo 3</span>
+    <h3>El Peñol → Guatapé Pueblo</h3>
+    <ul>
+      <li><strong>Distancia:</strong> 15 km | <strong>Tiempo:</strong> 20 minutos</li>
+      <li><strong>Estado:</strong> Vía panorámica bordeando el embalse. Tráfico lento fines de semana</li>
+      <li><strong>Gasolineras:</strong> Estación entrada del casco urbano de Guatapé</li>
+      <li><strong>Lugares Interés:</strong> Piedra del Peñol, Malecón, Plazoleta de los Zócalos</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <span class="tag">Tramo Final</span>
+    <h3>Guatapé Pueblo → Monasterio (Vereda Quebrada Arriba)</h3>
+    <ul>
+      <li><strong>Distancia:</strong> 6 km | <strong>Tiempo:</strong> 20 minutos</li>
+      <li><strong>Estado:</strong> Mixto: asfalto → placa huella → afirmado. Conducción pausada requerida</li>
+      <li><strong>Gasolineras:</strong> No hay en vereda. Tanquear en Guatapé</li>
+      <li><strong>Lugares Interés:</strong> Reserva forestal, cuencas de agua cristalina, paz monástica</li>
+    </ul>
+  </div>
+</section>
+
+<section id="combustible">
+  <h2>Consumo de Combustible Estimado</h2>
+  <p>Cálculo para <strong>Ida y Vuelta (~176 km)</strong> con precios promedio Colombia ($15.800 COP corriente, $20.500 COP extra):</p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Cilindraje</th>
+          <th>Rendimiento</th>
+          <th>Galones</th>
+          <th>Costo (Corriente)</th>
+          <th>Costo (Extra)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>150 cc</td><td>130 km/gal</td><td>1.35 gal</td><td>$21.300</td><td>$27.600</td></tr>
+        <tr><td>200 cc</td><td>110 km/gal</td><td>1.60 gal</td><td>$25.200</td><td>$32.800</td></tr>
+        <tr><td>300 cc</td><td>90 km/gal</td><td>1.95 gal</td><td>$30.800</td><td>$39.900</td></tr>
+        <tr><td>500 cc</td><td>75 km/gal</td><td>2.35 gal</td><td>$37.100</td><td>$48.100</td></tr>
+        <tr><td>650 cc</td><td>65 km/gal</td><td>2.70 gal</td><td>$42.600</td><td>$55.300</td></tr>
+        <tr><td>900 cc</td><td>55 km/gal</td><td>3.20 gal</td><td>$50.500</td><td>$65.600</td></tr>
+        <tr><td>1200 cc</td><td>45 km/gal</td><td>3.90 gal</td><td>$61.600</td><td>$79.900</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<section id="paradas">
+  <h2>Paradas Recomendadas</h2>
+
+  <div class="card">
+    <h3>☕ Parada 1: Alto de la Virgen / Guarne</h3>
+    <p><strong>Ubicación:</strong> Autopista Medellín-Bogotá km 22</p>
+    <p><strong>Qué encontrar:</strong> Calentao antioqueño, pan de queso fresco, café caliente. Punto de encuentro tradicional de moteros.</p>
+    <p><strong>Tiempo:</strong> 25 minutos</p>
+  </div>
+
+  <div class="card">
+    <h3>📸 Parada 2: Réplica del Viejo Peñol</h3>
+    <p><strong>Ubicación:</strong> Entrada a El Peñol</p>
+    <p><strong>Qué encontrar:</strong> Vista al embalse, réplica arquitectónica del pueblo sumergido (años 70). Zona fotográfica ideal.</p>
+    <p><strong>Tiempo:</strong> 30 minutos</p>
+  </div>
+
+  <div class="card">
+    <h3>🏔️ Parada 3: Piedra del Peñol</h3>
+    <p><strong>Ubicación:</strong> Vía El Peñol–Guatapé</p>
+    <p><strong>Qué encontrar:</strong> Monolito de 220 metros. Parqueadero custodiado, restaurantes, ascenso a 740 escalones.</p>
+    <p><strong>Tiempo:</strong> 1.5–2 horas (si asciende)</p>
+  </div>
+
+  <div class="card">
+    <h3>🧘 Parada 4: Monasterio Santa María de la Epifanía</h3>
+    <p><strong>Ubicación:</strong> Vereda Quebrada Arriba, Guatapé</p>
+    <p><strong>Qué encontrar:</strong> Templo benedictino, venta de productos artesanales (miel, dulces, artesanías), senderos de meditación, silencio absoluto.</p>
+    <p><strong>Tiempo:</strong> 1 hora</p>
+  </div>
+</section>
+
+<section id="comida">
+  <h2>Dónde Comer (Restaurantes Verificados)</h2>
+
+  <div class="card">
+    <h3>1. Zona G Resto Bar</h3>
+    <p><strong>Dirección:</strong> Vía El Peñol–Guatapé Km 10</p>
+    <p><strong>Especialidad:</strong> Parrilla premium, platos típicos antioqueños, trucha al ajillo</p>
+    <p><strong>Horarios:</strong> Lunes–Domingo 11:30 a.m.–9:00 p.m.</p>
+    <p><strong>Teléfono:</strong> +57 312 843 2011 <span class="verified">✓ Verificado</span></p>
+  </div>
+
+  <div class="card">
+    <h3>2. Restaurante Don de Gente</h3>
+    <p><strong>Dirección:</strong> Malecón de Guatapé, Cra. 30 #30-12</p>
+    <p><strong>Especialidad:</strong> Comida de autor local, cazuela de mariscos, trucha en salsa de maracuyá</p>
+    <p><strong>Horarios:</strong> Todos los días 12:00 m.–10:00 p.m.</p>
+    <p><strong>Teléfono:</strong> +57 314 772 4589 <span class="verified">✓ Verificado</span></p>
+  </div>
+</section>
+
+<section id="hospedaje">
+  <h2>Hospedaje Recomendado</h2>
+
+  <div class="card">
+    <h3>1. Hotel Guatatur</h3>
+    <p><strong>Dirección:</strong> Calle 31 #31-04, Guatapé</p>
+    <p><strong>Teléfono:</strong> +57 604 861 4104 <span class="verified">✓ Verificado</span></p>
+    <p><strong>Tipo:</strong> Hotel Urbano / Malecón</p>
+    <p><strong>Rango:</strong> $180.000–$350.000 COP/noche</p>
+    <p><strong>Ventaja Motera:</strong> Parqueadero privado cubierto, vigilancia 24/7</p>
+  </div>
+
+  <div class="card">
+    <h3>2. Ecolodge Bahía del Peñol</h3>
+    <p><strong>Dirección:</strong> Vereda La Piedra Km 1, Guatapé</p>
+    <p><strong>Teléfono:</strong> +57 311 310 3210 <span class="verified">✓ Verificado</span></p>
+    <p><strong>Tipo:</strong> Cabañas campestres con vista al embalse</p>
+    <p><strong>Rango:</strong> $280.000–$550.000 COP/noche</p>
+  </div>
+
+  <div class="card">
+    <h3>3. Hospedería Monasterio Benedictino (Para Retiros)</h3>
+    <p><strong>Dirección:</strong> Vereda Quebrada Arriba, Guatapé</p>
+    <p><strong>WhatsApp:</strong> +57 314 681 6608 <span class="verified">✓ Verificado</span></p>
+    <p><strong>Correo:</strong> hospederiamseg@gmail.com</p>
+    <p><strong>Tipo:</strong> Alojamiento de silencio y contemplación individual</p>
+  </div>
+</section>
+
+<section id="actividades">
+  <h2>Qué Hacer en el Destino</h2>
+  <ul>
+    <li><strong>Vivencia Monástica:</strong> Asistir a horas litúrgicas en canto gregoriano. Adquirir apicultura directa y dulcería artesanal del Monasterio</li>
+    <li><strong>Ruta del Zócalo:</strong> Recorrer calles admirando relieves que cuentan historia de familias y oficios locales</li>
+    <li><strong>Deportes Náuticos:</strong> Alquiler de jetski, recorridos en barco o kayak por los islotes del embalse</li>
+    <li><strong>Ascenso Piedra del Peñol:</strong> Subida opcional de 740 escalones para panorámica de lagos colombianos</li>
+  </ul>
+</section>
+
+<section id="imperdibles">
+  <h2>Los Imperdibles Ridera</h2>
+  <ul>
+    <li>🏔️ <strong>Piedra del Peñol:</strong> Subida obligatoria para mejor panorámica de lagos en Colombia</li>
+    <li>🎨 <strong>Plazoleta de los Zócalos:</strong> Lugar más colorido de Antioquia para fotos de recuerdo</li>
+    <li>📍 <strong>Calle del Recuerdo:</strong> Réplica del patrimonio urbanístico del antiguo pueblo</li>
+    <li>⛪ <strong>Capilla y Tienda del Monasterio:</strong> Arquitectura sobria integrada con naturaleza de reserva forestal</li>
+  </ul>
+</section>
+
+<section id="consejos">
+  <h2>Consejos Ridera para Motociclistas</h2>
+  <div class="card">
+    <ul>
+      <li><strong>Clima y Asfalto:</strong> Lluvia común por las tardes. Lleva impermeables de alta visibilidad</li>
+      <li><strong>Presión de Neumáticos:</strong> Para motos de pistera en tramo del Monasterio, baja 2 psi para mejor tracción en afirmado</li>
+      <li><strong>Comportamiento en Monasterio:</strong> Silencio estricto requerido. Apaga escapes ruidosos. Vestimenta adecuada en instalaciones</li>
+      <li><strong>Tráfico de Retorno:</strong> Domingos/festivos se congestiona 4:00–8:00 p.m. Retorna temprano (2:00 p.m.) o sale noche (después 8:30 p.m.)</li>
+      <li><strong>Mejor Horario:</strong> Martes–Jueves para carretera limpia. Fines de semana: antes de 6:30 a.m.</li>
+    </ul>
+  </div>
+</section>
+
+<section id="itinerarios">
+  <h2>Itinerarios Recomendados</h2>
+
+  <div class="card">
+    <h3>Opción 1: Full Day (1 Día)</h3>
+    <ul>
+      <li><strong>06:30 AM:</strong> Encuentro en Medellín (Zamora), salida</li>
+      <li><strong>07:30 AM:</strong> Desayuno Alto de la Virgen o Marinilla</li>
+      <li><strong>09:00 AM:</strong> Piedra del Peñol y fotografía</li>
+      <li><strong>11:00 AM:</strong> Visita Monasterio Santa María de la Epifanía</li>
+      <li><strong>01:30 PM:</strong> Almuerzo Trucha fresca, Malecón de Guatapé</li>
+      <li><strong>03:30 PM:</strong> Café en Plazoleta de los Zócalos</li>
+      <li><strong>04:30 PM:</strong> Retorno a Medellín antes de pico de tráfico</li>
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Opción 2: Fin de Semana Ridera (2 Días)</h3>
+    <ul>
+      <li><strong>Día 1:</strong> Rodada tranquila, ascenso Piedra, check-in en hotel campestre frente a embalse, cena en Zona G</li>
+      <li><strong>Día 2:</strong> Mañana en Monasterio Benedictino, almuerzo en Guatapé, retorno suave por San Vicente Ferrer o Autopista</li>
+    </ul>
+  </div>
+</section>
+
+<section id="datos">
+  <h2>Datos Curiosos Verificados</h2>
+  <div class="highlight">
+    <p>El antiguo pueblo de El Peñol fue inundado intencionalmente en los años 70 para construir el embalse hidroeléctrico que genera porción sustancial de energía del país.</p>
+    <p>Los monjes benedictinos del Monasterio Santa María de la Epifanía llegaron a Guatapé buscando lugar de soledad y oración que mantuviera vida contemplativa lejos de ruido urbano.</p>
+  </div>
+</section>
+
+<section style="border-bottom:none;">
+  <h2 style="border:none; padding:0; color:var(--text); font-size:clamp(28px,4vw,38px);">Prepárate para la Aventura</h2>
+  <div class="highlight" style="background:rgba(232,93,32,.15); border-left:3px solid var(--orange); margin:32px 0;">
+    <p style="font-size:clamp(16px,1.1vw,18px); color:var(--text); line-height:1.7; margin-bottom:0;">Rodar no es solo tragar kilómetros; es transformar el camino en una historia que valga la pena contar. La ruta entre Medellín, las curvas de Guatapé y la paz sobrecogedora del Monasterio Benedictino tiene todo lo que busca un verdadero motociclista: asfalto exigente, paisajes de postal y la oportunidad de apagar el motor para escuchar el silencio.</p>
+    <p style="font-size:clamp(16px,1.1vw,18px); color:var(--text); line-height:1.7; margin-top:16px; margin-bottom:0;"><strong>Prepárate, revisa tu máquina y nos vemos en la carretera. ¡Vive la aventura con RIDERA.com.co!</strong></p>
+  </div>
+</section>
+
+</div>
+
+<script>
+let mapInitialized = false;
+
+function toggleMap() {
+  const wrapper = document.getElementById('mapWrapper');
+  const isVisible = wrapper.style.display !== 'none';
+
+  if (!isVisible) {
+    wrapper.style.display = 'block';
+    if (!mapInitialized) {
+      initMap();
+      mapInitialized = true;
+    }
+  } else {
+    wrapper.style.display = 'none';
+  }
+}
+
+function initMap() {
+  const map = L.map('map').setView([6.2331, -75.1583], 11);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '© OpenStreetMap | © CartoDB',
+    maxZoom: 19
+  }).addTo(map);
+
+  const stops = [
+    { lat: 6.3015, lng: -75.5482, name: 'Inicio: Medellín–Zamora', color: '#E85D20' },
+    { lat: 6.1738, lng: -75.3377, name: 'Marinilla (Curvas técnicas)', color: '#767880' },
+    { lat: 6.2208, lng: -75.1792, name: 'Piedra del Peñol', color: '#767880' },
+    { lat: 6.2331, lng: -75.1583, name: 'Guatapé Pueblo', color: '#767880' },
+    { lat: 6.2512, lng: -75.1481, name: 'Monasterio (Destino)', color: '#E85D20' }
+  ];
+
+  const routeCoords = stops.map(s => [s.lat, s.lng]);
+  L.polyline(routeCoords, { color: '#E85D20', weight: 4, opacity: 0.85 }).addTo(map);
+
+  stops.forEach((stop, idx) => {
+    const isEndpoint = idx === 0 || idx === stops.length - 1;
+    const html = `<div style="text-align:center;">
+      <svg width="32" height="32" viewBox="0 0 32 32" style="filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));">
+        <circle cx="16" cy="16" r="${isEndpoint ? '10' : '6'}" fill="${stop.color}" opacity="${isEndpoint ? '1' : '0.8'}"/>
+        ${isEndpoint ? `<circle cx="16" cy="16" r="14" fill="none" stroke="${stop.color}" stroke-width="1" opacity="0.4"/>` : ''}
+      </svg>
+    </div>`;
+
+    L.marker([stop.lat, stop.lng], {
+      icon: L.divIcon({ html, iconSize: [32, 32], className: 'custom-icon' })
+    }).bindPopup(`<strong>${stop.name}</strong>`).addTo(map);
+  });
+}
+</script>
+
+</body>
+</html>
