@@ -1966,7 +1966,7 @@ async function doDelete(id, nombre, btn) {
     renderTable();
   } else {
     btn.disabled = false;
-    alert('No se pudo eliminar.');
+    alert('No se pudo eliminar.' + (data.error ? '\n\n' + data.error : ''));
   }
 }
 

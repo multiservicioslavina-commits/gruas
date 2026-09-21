@@ -956,6 +956,11 @@ Deno.serve(async (req) => {
     // DELETE GRUERO
     if (action === 'delete') {
       const { id } = body
+      // Desvincular referencias antes de borrar (FKs de solicitudes/respuestas/push).
+      await sbClient.from('solicitudes').update({ gruero_asignado: null }).eq('gruero_asignado', id)
+      await sbClient.from('solicitudes').update({ gruero_id: null }).eq('gruero_id', id)
+      await sbClient.from('respuestas_grueros').delete().eq('gruero_id', id)
+      await sbClient.from('push_subscriptions').delete().eq('gruero_id', id)
       const { error } = await sbClient.from('grueros').delete().eq('id', id)
       if (error) {
         return new Response(JSON.stringify({ ok: false, error: error.message }), {
