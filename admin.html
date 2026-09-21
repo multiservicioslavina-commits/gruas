@@ -3677,6 +3677,8 @@ function renderAlmacenesTable() {
       </td>
       <td>
         <div class="actions-cell">
+          ${!a.aprobado ? `<button class="act-btn aprobar admin-only" onclick="doAprobarAlmacen('${jsq(a.id)}','${jsq(a.nombre || '')}',this)">✓ Aprobar</button>` : ''}
+          ${a.aprobado && a.email && a.email.includes('@') ? `<button class="act-btn admin-only" onclick="doReenviarAccesoAlmacen('${jsq(a.id)}','${jsq(a.nombre || '')}','${jsq(a.email || '')}',this)">✉ Reenviar acceso</button>` : ''}
           <button class="act-btn" onclick="openNotesModal('almacen','${jsq(a.id)}','${jsq(a.nombre || '')}')">📝 Notas</button>
           <button class="act-btn admin-only" onclick="openEditModalFor('almacenes','${jsq(a.id)}')">Modificar</button>
           <button class="act-btn del admin-only" onclick="deleteRecord('almacenes','${jsq(a.id)}',this)">🗑 Borrar</button>
@@ -3684,6 +3686,36 @@ function renderAlmacenesTable() {
       </td>
     </tr>`;
   }).join('');
+}
+
+async function doAprobarAlmacen(id, nombre, btn) {
+  btn.disabled = true;
+  const data = await callAdmin({ action: 'approve_almacen', id }).catch(() => ({ ok: false }));
+  if (data.ok) {
+    let msg = `"${nombre}" fue aprobado.`;
+    if (data.email_sent) msg += ' Se le notificó por correo/WhatsApp que ya puede entrar a su panel.';
+    else if (data.email_error) msg += ` (No se pudo enviar la notificación: ${data.email_error})`;
+    alert(msg);
+    sectionLoaded.almacenes = false;
+    loadAlmacenes();
+  } else {
+    btn.disabled = false;
+    alert('Error al aprobar: ' + (data.error || 'Desconocido'));
+  }
+}
+
+async function doReenviarAccesoAlmacen(id, nombre, email, btn) {
+  btn.disabled = true;
+  const orig = btn.textContent;
+  btn.textContent = 'Enviando…';
+  const data = await callAdmin({ action: 'resend_invite_almacen', id }).catch(() => ({ ok: false }));
+  btn.disabled = false;
+  btn.textContent = orig;
+  if (data.ok && data.email_sent) {
+    alert(`Se reenvió el acceso a ${email}.`);
+  } else {
+    alert('No se pudo reenviar: ' + (data.email_error || data.error || 'Desconocido'));
+  }
 }
 
 function renderChartGruasByMunicipio(data) {

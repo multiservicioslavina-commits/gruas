@@ -164,8 +164,15 @@ footer a{color:var(--orange);text-decoration:none}
         </div>
 
         <div id="authFields">
-          <div class="form-group">
-            <label>Email <span class="req">*</span> <span class="hint">— con esto inicias sesión</span></label>
+          <div class="form-group" id="authModeGroup">
+            <label>¿Cómo quieres iniciar sesión? <span class="req">*</span></label>
+            <div class="check-group">
+              <label class="check-chip checked"><input type="radio" name="authMode" value="email" checked> 📧 Con correo</label>
+              <label class="check-chip"><input type="radio" name="authMode" value="phone"> 📱 Con este WhatsApp</label>
+            </div>
+          </div>
+          <div class="form-group" id="a-email-group">
+            <label>Email <span class="req" id="a-email-req">*</span> <span class="hint">— opcional si te registras con celular</span></label>
             <input type="email" id="a-email" placeholder="tu@almacen.com">
             <span class="hint">¿Ya tienes cuenta en Ridera (Pasaporte, Talleres, etc.)? <a href="/login-almacen" style="color:var(--orange)">Inicia sesión primero</a> y vuelve aquí para completar tu almacén.</span>
           </div>
@@ -398,6 +405,34 @@ window.removeImage = function (evt, key) {
   if (input) input.value = '';
 };
 
+function normalizePhone(raw) {
+  let d = (raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  d = d.replace(/^0+/, '');
+  if (d.startsWith('57') && d.length >= 12) return d;
+  if (d.length === 10) return '57' + d;
+  return d;
+}
+function phoneToSyntheticEmail(phone) {
+  return `tel${phone}@telefono.gruas.ridera.com.co`;
+}
+function getRadioAuthMode() {
+  const el = document.querySelector('input[name="authMode"]:checked');
+  return el ? el.value : 'email';
+}
+
+document.querySelectorAll('#authModeGroup .check-chip').forEach(function (chip) {
+  const input = chip.querySelector('input');
+  chip.addEventListener('click', function () {
+    setTimeout(function () {
+      document.querySelectorAll('#authModeGroup .check-chip').forEach(function (c) { c.classList.remove('checked'); });
+      chip.classList.add('checked');
+      const mode = getRadioAuthMode();
+      document.getElementById('a-email-req').style.display = mode === 'phone' ? 'none' : '';
+    }, 0);
+  });
+});
+
 let sessionUser = null; // usuario ya logueado (si viene de "Iniciar sesión" sin almacén todavía)
 
 async function checkSession() {
@@ -414,7 +449,8 @@ async function checkSession() {
   sessionUser = user;
   document.getElementById('authFields').style.display = 'none';
   document.getElementById('sessionNotice').style.display = 'block';
-  document.getElementById('sessionEmail').textContent = user.email;
+  document.getElementById('sessionEmail').textContent =
+    user.email && user.email.endsWith('@telefono.gruas.ridera.com.co') ? 'tu número de WhatsApp' : user.email;
 }
 
 window.cerrarSesionRegistro = async function () {
@@ -483,16 +519,18 @@ async function handleSubmit(e) {
   const nombre = document.getElementById('a-nombre').value.trim();
   const ciudad = document.getElementById('a-ciudad').value.trim();
   const tel = document.getElementById('a-tel').value.trim();
+  const telNormalizado = normalizePhone(tel);
   const email = document.getElementById('a-email').value.trim();
   const password = document.getElementById('a-password').value;
   const passwordConfirm = document.getElementById('a-password-confirm').value;
+  const authMode = sessionUser ? null : getRadioAuthMode();
 
-  if (!nombre || !ciudad || !tel) {
+  if (!nombre || !ciudad || telNormalizado.length < 12) {
     setStatus('error', 'Completa los campos obligatorios.');
     return;
   }
   if (!sessionUser) {
-    if (!email) {
+    if (authMode === 'email' && !email) {
       setStatus('error', 'Completa los campos obligatorios.');
       return;
     }
@@ -517,12 +555,15 @@ async function handleSubmit(e) {
     if (sessionUser) {
       userId = sessionUser.id;
     } else {
-      const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email, password });
+      const authEmail = authMode === 'phone' ? phoneToSyntheticEmail(telNormalizado) : email;
+      const { data: signUpData, error: signUpError } = await sb.auth.signUp({ email: authEmail, password });
 
       if (signUpError) {
         const yaExiste = /already registered|already exists/i.test(signUpError.message || '');
         if (yaExiste) {
-          setStatus('error', 'Ese correo ya tiene una cuenta en Ridera (Pasaporte, Talleres u otra sección). Inicia sesión primero y vuelve a esta página para completar tu almacén.');
+          setStatus('error', authMode === 'phone'
+            ? 'Ese número de WhatsApp ya tiene una cuenta en Ridera. Inicia sesión primero y vuelve a esta página para completar tu almacén.'
+            : 'Ese correo ya tiene una cuenta en Ridera (Pasaporte, Talleres u otra sección). Inicia sesión primero y vuelve a esta página para completar tu almacén.');
           btn.disabled = false;
           return;
         }
@@ -567,8 +608,10 @@ async function handleSubmit(e) {
       auth_id: userId,
       nombre: nombre,
       ciudad: ciudad,
-      telefono: tel,
-      email: sessionUser ? sessionUser.email : email,
+      telefono: telNormalizado,
+      email: sessionUser
+        ? (sessionUser.email && sessionUser.email.endsWith('@telefono.gruas.ridera.com.co') ? null : sessionUser.email)
+        : (authMode === 'phone' ? null : (email || null)),
       direccion: document.getElementById('a-direccion').value.trim(),
       barrio: document.getElementById('a-barrio').value.trim(),
       ubicacion: document.getElementById('a-direccion').value.trim(),
