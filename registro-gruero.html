@@ -753,13 +753,13 @@ async function submitGrua() {
   try {
     const data = collectData();
     const sb = await initSupabase();
+    const telNormalizado = normalizePhone(data.telefono);
 
     let userId;
     if (sessionUser) {
       userId = sessionUser.id;
     } else {
       const authMode = getRadio('authMode');
-      const telNormalizado = normalizePhone(data.telefono);
       const authEmail = authMode === 'phone' ? phoneToSyntheticEmail(telNormalizado) : data.email;
       const { data: signUpData, error: signUpError } = await sb.auth.signUp({
         email: authEmail,
@@ -802,7 +802,7 @@ async function submitGrua() {
     const { error: insertError } = await sb.from('grueros').insert([{
       auth_id: userId,
       nombre: data.nombre,
-      telefono: data.telefono,
+      telefono: telNormalizado,
       ciudad: data.ciudad,
       email: sessionUser ? (sessionUser.email.endsWith('@telefono.gruas.ridera.com.co') ? null : sessionUser.email) : (data.email || null),
       municipios: municipios.length ? municipios : null,
