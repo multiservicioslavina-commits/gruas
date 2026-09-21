@@ -39,6 +39,16 @@ input:focus{outline:none;border-color:rgba(232,93,32,0.5)}
 .link-row{text-align:right;margin-top:-8px;margin-bottom:16px}
 .link-row a{font-size:0.8rem;color:var(--text-dim);text-decoration:none;cursor:pointer}
 .link-row a:hover{color:var(--orange)}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:1rem;z-index:100}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--carbon3);border:0.5px solid var(--border-hi);border-radius:16px;padding:1.75rem;width:100%;max-width:360px}
+.modal-box h2{font-size:1.1rem;color:#fff;margin-bottom:0.5rem}
+.modal-box p.hint{color:var(--text-dim);font-size:0.82rem;line-height:1.4;margin-bottom:1rem}
+.modal-close{float:right;background:none;border:none;color:var(--text-dim);font-size:1.2rem;cursor:pointer}
+.modal-msg{display:none;border-radius:8px;padding:0.65rem 0.85rem;font-size:0.82rem;margin-top:0.9rem}
+.modal-msg.ok{display:block;background:rgba(74,222,128,0.1);border:1px solid #4ade80;color:#86efac}
+.modal-msg.err{display:block;background:rgba(248,113,113,0.1);border:1px solid #f87171;color:#fca5a5}
+.link-btn{background:none;border:none;color:var(--orange);font-size:0.82rem;cursor:pointer;margin-top:0.75rem;display:block;text-align:center;width:100%}
 </style>
 </head>
 <body>
@@ -51,8 +61,8 @@ input:focus{outline:none;border-color:rgba(232,93,32,0.5)}
 
   <form id="loginForm" onsubmit="handleLogin(event)">
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="email" required placeholder="tu@almacen.com">
+      <label>Correo o número de WhatsApp</label>
+      <input type="text" id="email" required placeholder="tu@correo.com o +57 300 000 0000">
     </div>
     <div class="form-group">
       <label>Contraseña</label>
@@ -67,14 +77,45 @@ input:focus{outline:none;border-color:rgba(232,93,32,0.5)}
 
   <form id="forgotForm" style="display:none" onsubmit="handleForgot(event)">
     <div class="form-group">
-      <label>Email</label>
-      <input type="email" id="forgotEmail" required placeholder="tu@almacen.com">
+      <label>Correo o número de WhatsApp</label>
+      <input type="text" id="forgotEmail" required placeholder="tu@correo.com o +57 300 000 0000">
     </div>
     <button type="submit" class="btn" id="btnForgot">Enviar enlace de recuperación</button>
     <div class="link-row" style="text-align:center;margin-top:12px"><a onclick="showLogin()">← Volver a iniciar sesión</a></div>
   </form>
 
   <p class="foot" id="footLink">¿No tienes cuenta? <a href="/registro-almacen">Registra tu almacén</a></p>
+</div>
+
+<div class="modal-overlay" id="phoneResetModal">
+  <div class="modal-box">
+    <button class="modal-close" id="phoneResetClose">✕</button>
+    <div id="phoneResetStep1">
+      <h2>Recuperar contraseña</h2>
+      <p class="hint">Te enviaremos un código de 6 dígitos por WhatsApp al número con el que te registraste.</p>
+      <div class="form-group">
+        <label>Número de WhatsApp</label>
+        <input type="text" id="resetPhone" placeholder="+57 300 000 0000">
+      </div>
+      <button class="btn" id="resetSendBtn" type="button">Enviar código</button>
+      <div class="modal-msg" id="resetMsg1"></div>
+    </div>
+    <div id="phoneResetStep2" style="display:none">
+      <h2>Escribe el código</h2>
+      <p class="hint">Te llegó un mensaje de WhatsApp con un código de 6 dígitos.</p>
+      <div class="form-group">
+        <label>Código</label>
+        <input type="text" id="resetCode" placeholder="123456" maxlength="6" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label>Nueva contraseña</label>
+        <input type="password" id="resetNewPass" placeholder="Mínimo 8 caracteres">
+      </div>
+      <button class="btn" id="resetConfirmBtn" type="button">Cambiar contraseña</button>
+      <button class="link-btn" id="resetAgainBtn" type="button">No recibí el código, enviar de nuevo</button>
+      <div class="modal-msg" id="resetMsg2"></div>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -125,10 +166,25 @@ function showLogin() {
   document.getElementById('formSub').textContent = 'Administra tu catálogo de productos y tus datos de contacto.';
 }
 
+function normalizePhone(raw) {
+  let d = (raw || '').replace(/\D/g, '');
+  if (!d) return '';
+  d = d.replace(/^0+/, '');
+  if (d.startsWith('57') && d.length >= 12) return d;
+  if (d.length === 10) return '57' + d;
+  return d;
+}
+function resolveIdentifier(raw) {
+  const val = (raw || '').trim();
+  if (val.includes('@')) return { email: val, isPhone: false };
+  const tel = normalizePhone(val);
+  return { email: `tel${tel}@telefono.gruas.ridera.com.co`, isPhone: true };
+}
+
 async function handleLogin(e) {
   e.preventDefault();
   const btn = document.getElementById('btnLogin');
-  const email = document.getElementById('email').value.trim();
+  const { email } = resolveIdentifier(document.getElementById('email').value);
   const password = document.getElementById('password').value;
 
   btn.disabled = true;
@@ -142,16 +198,20 @@ async function handleLogin(e) {
     const { data: almacen } = await sb.from('almacenes').select('id').eq('auth_id', data.user.id).maybeSingle();
     window.location.href = almacen ? '/mi-almacen.html' : '/registro-almacen.html';
   } catch (err) {
-    setStatus('error', err.message === 'Invalid login credentials' ? 'Email o contraseña incorrectos.' : (err.message || 'Error al iniciar sesión.'));
+    setStatus('error', err.message === 'Invalid login credentials' ? 'Correo/celular o contraseña incorrectos.' : (err.message || 'Error al iniciar sesión.'));
     btn.disabled = false;
   }
 }
 
 async function handleForgot(e) {
   e.preventDefault();
+  const raw = document.getElementById('forgotEmail').value.trim();
+  const { email, isPhone } = resolveIdentifier(raw);
+  if (isPhone) {
+    openPhoneModal(raw);
+    return;
+  }
   const btn = document.getElementById('btnForgot');
-  const email = document.getElementById('forgotEmail').value.trim();
-
   btn.disabled = true;
   setStatus('loading', 'Enviando enlace...');
 
@@ -168,6 +228,112 @@ async function handleForgot(e) {
     btn.disabled = false;
   }
 }
+
+const REGISTRAR_ALMACEN_URL = `${SB_URL}/functions/v1/registrar-almacen`;
+
+const phoneModal   = document.getElementById('phoneResetModal');
+const step1        = document.getElementById('phoneResetStep1');
+const step2        = document.getElementById('phoneResetStep2');
+const resetPhoneEl = document.getElementById('resetPhone');
+const resetCodeEl  = document.getElementById('resetCode');
+const resetPassEl  = document.getElementById('resetNewPass');
+const resetMsg1    = document.getElementById('resetMsg1');
+const resetMsg2    = document.getElementById('resetMsg2');
+let resetPhoneNormalized = '';
+
+function showModalMsg(el, text, ok) {
+  el.textContent = text;
+  el.className = 'modal-msg ' + (ok ? 'ok' : 'err');
+}
+function openPhoneModal(prefill) {
+  step1.style.display = '';
+  step2.style.display = 'none';
+  resetMsg1.className = 'modal-msg';
+  resetMsg2.className = 'modal-msg';
+  resetCodeEl.value = '';
+  resetPassEl.value = '';
+  resetPhoneEl.value = prefill || '';
+  phoneModal.classList.add('open');
+}
+function closePhoneModal() { phoneModal.classList.remove('open'); }
+
+document.getElementById('phoneResetClose').addEventListener('click', closePhoneModal);
+phoneModal.addEventListener('click', (e) => { if (e.target === phoneModal) closePhoneModal(); });
+
+async function sendResetCode() {
+  const tel = normalizePhone(resetPhoneEl.value);
+  if (tel.length < 12) {
+    showModalMsg(resetMsg1, 'Escribe un número de WhatsApp válido.', false);
+    return;
+  }
+  resetPhoneNormalized = tel;
+  const sendBtn = document.getElementById('resetSendBtn');
+  sendBtn.disabled = true;
+  sendBtn.textContent = 'Enviando…';
+  try {
+    await fetch(REGISTRAR_ALMACEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'recuperar_clave_telefono', telefono: tel }),
+    });
+  } catch (_) { /* seguimos igual, no revelamos errores de red */ }
+  sendBtn.disabled = false;
+  sendBtn.textContent = 'Enviar código';
+  step1.style.display = 'none';
+  step2.style.display = '';
+}
+
+document.getElementById('resetSendBtn').addEventListener('click', sendResetCode);
+document.getElementById('resetAgainBtn').addEventListener('click', async () => {
+  resetMsg2.className = 'modal-msg';
+  await sendResetCode();
+  showModalMsg(resetMsg2, 'Te enviamos un nuevo código por WhatsApp.', true);
+});
+
+document.getElementById('resetConfirmBtn').addEventListener('click', async () => {
+  const code = resetCodeEl.value.trim();
+  const newPassword = resetPassEl.value;
+  if (!/^\d{6}$/.test(code)) {
+    showModalMsg(resetMsg2, 'El código debe tener 6 dígitos.', false);
+    return;
+  }
+  if (newPassword.length < 8) {
+    showModalMsg(resetMsg2, 'La contraseña debe tener al menos 8 caracteres.', false);
+    return;
+  }
+  const confirmBtn = document.getElementById('resetConfirmBtn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Guardando…';
+  try {
+    const res = await fetch(REGISTRAR_ALMACEN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'confirmar_reset_telefono',
+        telefono: resetPhoneNormalized,
+        code,
+        new_password: newPassword,
+      }),
+    });
+    const out = await res.json().catch(() => ({}));
+    if (out.ok) {
+      showModalMsg(resetMsg2, '¡Listo! Ya puedes iniciar sesión con tu nueva contraseña.', true);
+      setTimeout(() => {
+        closePhoneModal();
+        showLogin();
+        document.getElementById('email').value = resetPhoneEl.value;
+        document.getElementById('password').value = '';
+        document.getElementById('password').focus();
+      }, 1800);
+    } else {
+      showModalMsg(resetMsg2, out.error || 'No pudimos confirmar el código.', false);
+    }
+  } catch (_) {
+    showModalMsg(resetMsg2, 'Error de conexión. Intenta de nuevo.', false);
+  }
+  confirmBtn.disabled = false;
+  confirmBtn.textContent = 'Cambiar contraseña';
+});
 </script>
 </body>
 </html>

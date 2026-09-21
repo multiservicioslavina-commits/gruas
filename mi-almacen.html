@@ -128,6 +128,11 @@ textarea { resize: vertical; min-height: 80px; }
 
 <div id="app" style="display:none">
   <div class="container">
+    <!-- Pendiente de aprobación -->
+    <div id="pendingBanner" style="display:none;background:#2a1a0a;border:1px solid #6b4c1e;color:#f5b942;border-radius:10px;padding:0.9rem 1.1rem;margin-bottom:1.25rem;font-size:0.85rem;line-height:1.55">
+      ⏳ Tu perfil está en revisión. Puedes completar tu catálogo ya mismo, pero no aparecerás en el directorio público hasta que el equipo de Ridera lo apruebe (normalmente en menos de 48 horas).
+    </div>
+
     <!-- Header -->
     <div class="header-card">
       <div class="header-info">
@@ -438,6 +443,7 @@ async function init() {
     document.getElementById('navName').textContent = currentAlmacen.nombre;
     document.getElementById('almacenNombre').textContent = currentAlmacen.nombre;
     document.getElementById('almacenCiudad').textContent = currentAlmacen.ciudad;
+    document.getElementById('pendingBanner').style.display = currentAlmacen.aprobado ? 'none' : 'block';
     document.getElementById('linkPublico').href = `/almacen/${currentAlmacen.slug || currentAlmacen.nombre.toLowerCase().replace(/\s+/g, '-')}`;
 
     loadProductos();
