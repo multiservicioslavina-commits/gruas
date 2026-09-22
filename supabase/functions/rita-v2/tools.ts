@@ -692,6 +692,14 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       .from("rita_rutas")
       .select("titulo, destino, departamento, km, duracion, dificultad, superficie, mejor_epoca, moto_recomendada, resumen, tips, gasolina_tip, hospedaje, gastronomia, wp_link")
       .or(`destino_norm.like.%${q}%,titulo_norm.like.%${q}%`)
+      // Excluye loops/planes de varios dias: su columna "destino" guarda
+      // varios pueblos separados (ej. "Jardin - Jerico - Andes"), asi que
+      // un LIKE por un solo pueblo los hace calzar aunque el rider pidio
+      // un destino puntual -- eso fue justo lo que reporto un rider real
+      // (buscar_ruta("Jardin") devolvia de regalo un loop de 3 dias sin
+      // relacion con lo que pidio). buscar_ruta es solo para punto a punto;
+      // los loops los debe traer buscar_en_ridera, no esta tabla.
+      .not("titulo_norm", "like", "%loop%")
       .limit(3);
     if (!data?.length) return { ok: false, data: `No hay rutas verificadas para "${destino}" en la base de Ridera.` };
     return { ok: true, data };
