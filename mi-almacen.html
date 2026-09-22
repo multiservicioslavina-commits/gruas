@@ -494,11 +494,11 @@ async function loadProductos() {
 
   list.innerHTML = data.map(p => `
     <div class="product-card">
-      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
-      <div class="cat">${p.categoria}</div>
-      <h4>${p.nombre}</h4>
+      ${p.imagen_url ? `<img src="${escapeHtml(p.imagen_url)}" alt="${escapeHtml(p.nombre)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
+      <div class="cat">${escapeHtml(p.categoria)}</div>
+      <h4>${escapeHtml(p.nombre)}</h4>
       <div class="price">$${parseFloat(p.precio).toLocaleString('es-CO')}</div>
-      <div class="desc">${p.descripcion || 'Sin descripción'}</div>
+      <div class="desc">${escapeHtml(p.descripcion || 'Sin descripción')}</div>
       ${p.stock !== null ? `<div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem;">Stock: ${p.stock}</div>` : ''}
       <div class="product-actions">
         <button class="btn secondary" onclick="openModalEditar(${p.id})">Editar</button>
@@ -868,16 +868,19 @@ async function loadPromociones() {
 
   list.innerHTML = data.map(p => `
     <div class="product-card">
-      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.titulo}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
-      <h4>${p.titulo}</h4>
-      <div class="desc">${p.descripcion || 'Sin descripción'}</div>
+      ${p.imagen_url ? `<img src="${escapeHtml(p.imagen_url)}" alt="${escapeHtml(p.titulo)}" style="width: 100%; height: 140px; object-fit: cover; border-radius: 8px; margin-bottom: 0.75rem;">` : ''}
+      <h4>${escapeHtml(p.titulo)}</h4>
+      <div class="desc">${escapeHtml(p.descripcion || 'Sin descripción')}</div>
       ${p.fecha_fin ? `<div style="font-size: 0.8rem; color: var(--muted); margin-bottom: 0.75rem;">Válida hasta ${new Date(p.fecha_fin + 'T00:00:00').toLocaleDateString('es-CO')}</div>` : ''}
       <div class="product-actions">
-        <button class="btn secondary" onclick="compartirPromo('${p.id}', '${(p.titulo || '').replace(/'/g, "\\'")}')">🔗 Compartir</button>
+        <button class="btn secondary" data-compartir-id="${p.id}" data-compartir-titulo="${escapeHtml(p.titulo || '')}">🔗 Compartir</button>
         <button class="btn danger" onclick="eliminarPromo('${p.id}')">Borrar</button>
       </div>
     </div>
   `).join('');
+  list.querySelectorAll('[data-compartir-id]').forEach(btn => {
+    btn.addEventListener('click', () => compartirPromo(btn.dataset.compartirId, btn.dataset.compartirTitulo));
+  });
 }
 
 function compartirPromo(id, titulo) {
