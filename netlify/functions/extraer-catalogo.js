@@ -5,16 +5,24 @@
 // lista estructurada de productos. El dueño del almacén revisa/confirma
 // el resultado en el navegador antes de que se guarde nada.
 //
+// Solo accesible por un almacén con sesión activa (Authorization: Bearer
+// <access_token de Supabase>) para evitar que cualquiera use este endpoint
+// como proxy gratuito hacia la API de Anthropic.
+//
 // Variables de entorno requeridas:
 //   ANTHROPIC_API_KEY
+//   SUPABASE_URL
+//   SUPABASE_SERVICE_KEY
 
 const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY;
+const SUPABASE_URL = process.env.SUPABASE_URL || "https://vzzxsdtsaahhzyctvmhx.supabase.co";
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
 const MAX_INPUT_CHARS = 18000; // limite razonable de contenido a mandarle a Claude
 
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Headers": "Content-Type, Authorization",
 };
 
 exports.handler = async (event) => {
@@ -24,6 +32,17 @@ exports.handler = async (event) => {
 
   if (event.httpMethod !== "POST") {
     return { statusCode: 405, headers: CORS_HEADERS, body: "Method not allowed" };
+  }
+
+  const authHeader = event.headers.authorization || event.headers.Authorization || "";
+  const accessToken = authHeader.replace(/^Bearer\s+/i, "").trim();
+  if (!accessToken) {
+    return json(401, { error: "Debes iniciar sesión para usar esta herramienta." });
+  }
+
+  const isAlmacenOwner = await verifyAlmacenSession(accessToken);
+  if (!isAlmacenOwner) {
+    return json(401, { error: "Sesión inválida o no corresponde a un almacén registrado." });
   }
 
   let body;
@@ -64,6 +83,42 @@ exports.handler = async (event) => {
     return json(500, { error: err.message || "No se pudo procesar el catálogo." });
   }
 };
+
+// Valida el access_token de Supabase y confirma que pertenece a una
+// cuenta con un almacén registrado (auth_id en la tabla almacenes).
+async function verifyAlmacenSession(accessToken) {
+  if (!SUPABASE_SERVICE_KEY) {
+    console.error("extraer-catalogo: falta SUPABASE_SERVICE_KEY");
+    return false;
+  }
+  try {
+    const userRes = await fetch(`${SUPABASE_URL}/auth/v1/user`, {
+      headers: {
+        apikey: SUPABASE_SERVICE_KEY,
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    if (!userRes.ok) return false;
+    const user = await userRes.json();
+    if (!user || !user.id) return false;
+
+    const almacenRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/almacenes?auth_id=eq.${encodeURIComponent(user.id)}&select=id&limit=1`,
+      {
+        headers: {
+          apikey: SUPABASE_SERVICE_KEY,
+          Authorization: `Bearer ${SUPABASE_SERVICE_KEY}`,
+        },
+      },
+    );
+    if (!almacenRes.ok) return false;
+    const rows = await almacenRes.json();
+    return Array.isArray(rows) && rows.length > 0;
+  } catch (err) {
+    console.error("verifyAlmacenSession error:", err);
+    return false;
+  }
+}
 
 function json(statusCode, obj) {
   return {
