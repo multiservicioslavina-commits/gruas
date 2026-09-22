@@ -297,7 +297,11 @@
   function renderPhoto(slotId, url) {
     const el = document.getElementById(slotId);
     if (url) {
-      el.innerHTML = '<img src="' + url + '" alt="">';
+      el.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = '';
+      el.appendChild(img);
     }
   }
 
@@ -311,7 +315,11 @@
 
     const logoEl = document.getElementById('headerLogo');
     if (t.logo_url) {
-      logoEl.innerHTML = '<img src="' + t.logo_url + '" alt="logo">';
+      logoEl.innerHTML = '';
+      const logoImg = document.createElement('img');
+      logoImg.src = t.logo_url;
+      logoImg.alt = 'logo';
+      logoEl.appendChild(logoImg);
     }
 
     document.getElementById('fNombre').value = t.nombre || '';
