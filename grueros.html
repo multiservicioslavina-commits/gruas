@@ -278,6 +278,12 @@ let allGrueros = [];
 let activeCity = 'all';
 let searchTerm = '';
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 async function loadGrueros() {
   const url = `${SB_URL}/rest/v1/grueros?aprobado=eq.SI&select=id,nombre,slug,ciudad,datos,disponible,municipios&order=disponible.desc,nombre.asc`;
   const res = await fetch(url, {
@@ -293,15 +299,15 @@ function initials(nombre) {
 
 function avatar(datos, nombre) {
   const foto = datos?.foto_url || datos?.foto || datos?.avatar_url || '';
-  if (foto) return `<img class="card-avatar" src="${foto}" alt="${nombre}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-    <div class="card-avatar-ph" style="display:none">${initials(nombre)}</div>`;
-  return `<div class="card-avatar-ph">${initials(nombre)}</div>`;
+  if (foto) return `<img class="card-avatar" src="${escapeHtml(foto)}" alt="${escapeHtml(nombre)}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+    <div class="card-avatar-ph" style="display:none">${escapeHtml(initials(nombre))}</div>`;
+  return `<div class="card-avatar-ph">${escapeHtml(initials(nombre))}</div>`;
 }
 
 function serviciosChips(datos) {
   const srvs = datos?.servicios || datos?.tipos_servicio || [];
   if (!srvs.length) return '';
-  return `<div class="chip-row">${srvs.slice(0,4).map(s => `<span class="chip">${s}</span>`).join('')}${srvs.length > 4 ? `<span class="chip">+${srvs.length-4}</span>` : ''}</div>`;
+  return `<div class="chip-row">${srvs.slice(0,4).map(s => `<span class="chip">${escapeHtml(s)}</span>`).join('')}${srvs.length > 4 ? `<span class="chip">+${srvs.length-4}</span>` : ''}</div>`;
 }
 
 function cardLink(slug) {
@@ -320,8 +326,8 @@ function buildCard(g) {
     <div class="card-header">
       ${avatar(datos, g.nombre)}
       <div>
-        <div class="card-name">${g.nombre || 'Gruero'}</div>
-        <div class="card-city">${ciudad}${munis ? ` · ${munis}` : ''}</div>
+        <div class="card-name">${escapeHtml(g.nombre || 'Gruero')}</div>
+        <div class="card-city">${escapeHtml(ciudad)}${munis ? ` · ${escapeHtml(munis)}` : ''}</div>
         <span class="badge-disp ${disp ? 'badge-on' : 'badge-off'}">
           <span class="dot ${disp ? 'dot-on' : 'dot-off'}"></span>
           ${disp ? 'Disponible' : 'No disponible'}
@@ -329,13 +335,13 @@ function buildCard(g) {
       </div>
     </div>
     ${serviciosChips(datos)}
-    ${desc ? `<div class="card-desc">${desc}</div>` : ''}
+    ${desc ? `<div class="card-desc">${escapeHtml(desc)}</div>` : ''}
     <div class="card-footer">
-      ${link ? `<a class="btn-ver" href="${link}">Ver perfil →</a>` : `<span></span>`}
+      ${link ? `<a class="btn-ver" href="${escapeHtml(link)}">Ver perfil →</a>` : `<span></span>`}
     </div>`;
 
   if (link) {
-    return `<a class="card${disp ? '' : ' unavailable'}" href="${link}">${inner}</a>`;
+    return `<a class="card${disp ? '' : ' unavailable'}" href="${escapeHtml(link)}">${inner}</a>`;
   }
   return `<div class="card${disp ? '' : ' unavailable'}">${inner}</div>`;
 }

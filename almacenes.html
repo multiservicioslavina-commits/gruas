@@ -208,6 +208,12 @@ let allAlmacenes = [];
 let activeCity = 'all';
 let searchTerm = '';
 
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : String(str);
+  return div.innerHTML;
+}
+
 async function loadAlmacenes() {
   const url = `${SB_URL}/rest/v1/almacenes?status=eq.activo&select=id,nombre,slug,ciudad,telefono,email,categorias`;
   const res = await fetch(url, {
@@ -229,14 +235,14 @@ async function getProductCount(almacenId) {
 
 function buildCard(a, productCount) {
   const categorias = (typeof a.categorias === 'string' ? a.categorias.split(',').map(c => c.trim()) : a.categorias || []).filter(Boolean);
-  const catalogLink = `/almacen/${a.slug || (a.nombre || '').replace(/\s+/g, '-').toLowerCase()}`;
+  const catalogLink = escapeHtml(`/almacen/${a.slug || (a.nombre || '').replace(/\s+/g, '-').toLowerCase()}`);
 
   const inner = `
     <div class="card-header">
       <div class="card-icon">📦</div>
       <div style="flex: 1;">
-        <div class="card-name">${a.nombre || 'Almacén'}</div>
-        <div class="card-city">${a.ciudad || ''}</div>
+        <div class="card-name">${escapeHtml(a.nombre || 'Almacén')}</div>
+        <div class="card-city">${escapeHtml(a.ciudad || '')}</div>
       </div>
     </div>
     <div class="card-info">
@@ -249,7 +255,7 @@ function buildCard(a, productCount) {
         <span class="info-value">${a.telefono ? '✓' : '–'}</span>
       </div>
     </div>
-    ${categorias.length ? `<div class="chip-row">${categorias.slice(0,4).map(c => `<span class="chip">${c}</span>`).join('')}${categorias.length > 4 ? `<span class="chip">+${categorias.length-4}</span>` : ''}</div>` : ''}
+    ${categorias.length ? `<div class="chip-row">${categorias.slice(0,4).map(c => `<span class="chip">${escapeHtml(c)}</span>`).join('')}${categorias.length > 4 ? `<span class="chip">+${categorias.length-4}</span>` : ''}</div>` : ''}
     <div class="card-footer">
       <a class="btn-ver" href="${catalogLink}">Ver catálogo →</a>
     </div>`;
