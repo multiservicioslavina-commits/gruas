@@ -816,10 +816,10 @@ function renderDrawerRooms() {
     return `
     <div class="drawer-room ${state.currentRoom?.id === r.id ? 'active' : ''}"
          onclick="switchRoom('${r.id}'); toggleDrawer();">
-      <div class="r-icon">${r.icono}</div>
+      <div class="r-icon">${escapeHtml(r.icono)}</div>
       <div>
-        <div class="r-name">${r.nombre}</div>
-        <div class="r-desc">${r.descripcion || ''}</div>
+        <div class="r-name">${escapeHtml(r.nombre)}</div>
+        <div class="r-desc">${escapeHtml(r.descripcion || '')}</div>
       </div>
       ${count > 0 ? `<div class="unread-badge">${count}</div>` : ''}
     </div>
@@ -1503,10 +1503,10 @@ async function showDirectory() {
   const members = await sb('connect_members?select=club_id');
   members.forEach(m => { counts[m.club_id] = (counts[m.club_id] || 0) + 1; });
   list.innerHTML = clubs.map(c => `
-    <a class="dir-card" href="/${c.codigo || c.id}">
+    <a class="dir-card" href="/${escapeHtml(c.codigo || c.id)}">
       <div class="dir-card-icon">🏍️</div>
       <div class="dir-card-info">
-        <div class="dir-card-name">${c.nombre}</div>
+        <div class="dir-card-name">${escapeHtml(c.nombre)}</div>
         <div class="dir-card-members">${counts[c.id] || 0} miembros</div>
       </div>
       <div class="dir-card-arrow">›</div>
