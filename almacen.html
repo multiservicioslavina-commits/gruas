@@ -338,19 +338,22 @@ async function enviarResena() {
 
 function renderFilters(categories) {
   const bar = document.getElementById('filterBar');
-  bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory(null)">Todos (${allProductos.length})</button>` +
+  bar.innerHTML = `<button class="filter-btn active" onclick="filterCategory(null, event)">Todos (${allProductos.length})</button>` +
     categories.map(cat => {
       const count = allProductos.filter(p => p.categoria === cat).length;
-      return `<button class="filter-btn" onclick="filterCategory('${cat}')">${cat} (${count})</button>`;
+      return `<button class="filter-btn" data-cat="${escapeHtmlLocal(cat)}">${escapeHtmlLocal(cat)} (${count})</button>`;
     }).join('');
+  bar.querySelectorAll('.filter-btn[data-cat]').forEach(btn => {
+    btn.addEventListener('click', (e) => filterCategory(btn.dataset.cat, e));
+  });
 }
 
-function filterCategory(cat) {
+function filterCategory(cat, e) {
   selectedCategory = cat;
   const filtered = cat ? allProductos.filter(p => p.categoria === cat) : allProductos;
   renderProducts(filtered);
   document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-  event.target.classList.add('active');
+  if (e && e.target) e.target.classList.add('active');
 }
 
 function renderProducts(products) {
@@ -363,10 +366,10 @@ function renderProducts(products) {
     const stockClass = p.stock === 0 ? 'out' : p.stock && p.stock < 5 ? 'low' : '';
     const stockText = p.stock === null ? 'Disponible' : p.stock === 0 ? 'Agotado' : `${p.stock} en stock`;
     return `<div class="product-card">
-      ${p.imagen_url ? `<img src="${p.imagen_url}" alt="${p.nombre}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">` : ''}
-      <div class="cat">${p.categoria}</div>
-      <h3>${p.nombre}</h3>
-      ${p.descripcion ? `<p class="desc">${p.descripcion}</p>` : ''}
+      ${p.imagen_url ? `<img src="${escapeHtmlLocal(p.imagen_url)}" alt="${escapeHtmlLocal(p.nombre)}" style="width: 100%; height: 150px; object-fit: cover; border-radius: 8px; margin-bottom: 1rem;">` : ''}
+      <div class="cat">${escapeHtmlLocal(p.categoria)}</div>
+      <h3>${escapeHtmlLocal(p.nombre)}</h3>
+      ${p.descripcion ? `<p class="desc">${escapeHtmlLocal(p.descripcion)}</p>` : ''}
       <div class="price">$${parseFloat(p.precio).toLocaleString('es-CO')}</div>
       <div class="stock ${stockClass}">${stockText}</div>
     </div>`;
