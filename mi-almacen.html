@@ -663,9 +663,14 @@ async function handleAnalizarCatalogo() {
   setCatalogoStatus('loading', 'Rita está leyendo tu catálogo, un momento...');
 
   try {
+    const sb = await initSupabase();
+    const { data: { session } } = await sb.auth.getSession();
     const res = await fetch(EXTRAER_CATALOGO_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(session ? { 'Authorization': 'Bearer ' + session.access_token } : {}),
+      },
       body: JSON.stringify(usandoUrl ? { url } : { texto }),
     });
     const data = await res.json();
