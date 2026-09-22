@@ -219,6 +219,7 @@ Deno.serve(async (req) => {
       'update_error', 'export_contacts', 'broadcast', 'import_contacts',
       'email_send', 'email_test', 'campana_enviar_nombre', 'campana_enviar_email',
       'update_sello', 'cancel_dispatch', 'create_template', 'delete_template',
+      'graph_get', 'list_templates',
       'admin_users_list', 'admin_users_create', 'admin_users_delete', 'admin_audit_log',
       'campaign_create', 'campaign_list', 'campaign_cancel', 'telegram_broadcast', 'meta_broadcast',
       'survey_create', 'survey_list', 'survey_results', 'set_tags',
@@ -888,6 +889,7 @@ Deno.serve(async (req) => {
       }
 
       await sbClient.from('grueros').update({ aprobado: 'SI', disponible: true, slug, auth_id: auth_id ?? null }).eq('id', gruero.id)
+      logAudit(auth.username!, 'approve', { gruero_id: gruero.id, auth_created, email_sent })
 
       return new Response(JSON.stringify({ ok: true, auth_created, email_sent, email_error, slug }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
