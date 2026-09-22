@@ -26,6 +26,8 @@ https://club.ridera.com.co/reset-club   /reset-club.html      200!
 /mi-cuenta                  /mi-cuenta.html                    301
 /mi-almacen                 /mi-almacen.html                   301
 /login-almacen              /login-almacen.html                301
+/mi-taller                  /mi-cuenta-taller.html              301
+/login-taller                /login-taller.html                 301
 /reset-password              /reset-password.html               200
 /reset-gruero               /reset-gruero.html                 200
 /reset-club                 /reset-club.html                   200
@@ -34,6 +36,8 @@ https://club.ridera.com.co/reset-club   /reset-club.html      200!
 /registro                   /registro-gruero.html              301
 /registro-almacen           /registro-almacen.html             200
 /registrar-almacen          /registro-almacen.html             200
+/registro-taller            /registro-taller.html              200
+/registrar-taller            /registro-taller.html              200
 /admin                      /admin.html                        301
 /connect-admin              /connect-admin.html                200
 /connect-admin/*            /connect-admin.html                200
