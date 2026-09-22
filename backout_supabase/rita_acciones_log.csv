@@ -1,0 +1,276 @@
+id,telefono,herramienta,parametros,ok,error,created_at
+021b2571-26f3-4172-a3c7-52f1b98a4574,573104717982,referencias_motos,{'marca': 'CF Moto'},False,query.like is not a function,2026-08-05 18:11:07.41824+00
+02802f87-072d-410a-a2b4-fb631f2d5e9d,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-14T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.41663+00
+03eb3548-6dd6-4d45-821d-82e6e3767486,573217831355,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-20 22:05:44.687232+00
+0400caa7-74f0-4699-8f76-330b9790dd58,573023457470,buscar_ruta,{'destino': 'Guatapé'},True,,2026-08-02 03:44:06.521902+00
+067f6ae1-4004-4c04-97ee-6fde2b20f6d3,573104717982,buscar_ruta,{'destino': 'Uramita'},False,"No hay rutas verificadas para ""Uramita"" en la base de Ridera.",2026-08-12 16:28:55.236948+00
+0785c80b-9a92-45dd-ae34-e63a3a9faed8,573104717982,emergencia_telefonos,"{'ciudad': 'Medellin', 'servicio': 'grua'}",True,,2026-09-08 03:44:07.626979+00
+07a46a1a-8c58-4e5d-8d3a-d6c2ea0a6bdd,573007213701,buscar_ruta,{'destino': 'Termales de Santa Rosa de Cabal'},False,"No hay rutas verificadas para ""Termales de Santa Rosa de Cabal"" en la base de Ridera.",2026-09-17 02:55:36.496825+00
+07d7a681-3c67-41ee-9e68-5706ff3701d4,573104717982,buscar_ruta,{'destino': 'Riosucio'},False,"No hay rutas verificadas para ""Riosucio"" en la base de Ridera.",2026-08-23 02:46:37.50736+00
+08490d78-8b2c-469d-b7b8-73822fb71257,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23E'}",True,,2026-08-12 15:18:27.677025+00
+0a24eca8-d9ce-42be-a9bc-f22875f01890,573185962182,diagnostico_moto,"{'sintomas': 'Moto inundada de gasolina, sale gasolina por el tubo de desfogue del carburador o tanque'}",True,,2026-07-30 13:16:31.942362+00
+0a5675cb-10d4-48cb-9702-a342c4da4138,573104717982,consultar_clima,{'lugar': 'Sonsón'},True,,2026-09-06 01:47:10.970771+00
+0a57f35e-80fc-47c3-826a-b92380fedb0d,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Hoy es domingo, Samuel, es día de que salgas a rodar y te invito para que vayas a San Carlos', 'fecha_hora': '2026-08-16T12:35:00-05:00', 'descripcion': 'Recordatorio para salir a rodar a San Carlos'}",True,,2026-08-16 17:29:15.587753+00
+0baa2257-e73a-4bd3-95e6-1da5aa6cd0db,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23E', 'ciudad': 'Medellin'}",True,,2026-08-05 12:18:28.213372+00
+0d94827f-0a1f-4c06-90f0-d0e92ed07370,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ciénaga de Ayapel'},True,,2026-09-09 01:34:14.675551+00
+0ed4acdc-bed3-4c65-ac6a-8e5e121b611c,573999777001,consultar_clima,{'lugar': 'Jardin'},True,,2026-07-27 12:32:34.728374+00
+0f878b0c-f500-4d96-a209-121d4656b1e4,573007213701,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-05 22:14:39.14997+00
+10705bbf-7e01-4306-977d-7ac71edc3c7e,573104717982,buscar_en_ridera,{'consulta': 'Medellín Caicedo Urrao ruta'},True,,2026-08-12 03:22:43.739406+00
+10e9f4dd-066f-41b0-b93c-82c1456f62ea,573104717982,buscar_en_ridera,"{'consulta': 'Medellín a Yapel, Córdoba'}",True,,2026-09-09 01:31:33.173829+00
+120024b2-303d-49e6-8d75-00f4530d4c5b,573104717982,buscar_ruta,{'destino': 'nordeste'},True,,2026-09-18 17:00:56.417373+00
+13e34112-5294-4f7a-9dd1-ccdf465c0945,573104717982,buscar_en_ridera,{'consulta': 'Medellín Tatacoa ruta'},True,,2026-08-10 19:02:28.503921+00
+166f8ba2-ee81-4c11-bcfb-20caeae24515,573000000001,buscar_aliados_directorio,"{'tipo': 'fondas', 'municipio': 'Abejorral'}",False,No encontre aliados registrados en Abejorral (fondas).,2026-09-09 13:13:35.729473+00
+172d1bb3-ed02-4919-afb9-7d1a62ca93d5,573000000201,orquestador_claude_fallo,{},False,"Anthropic 400: {""type"":""error"",""error"":{""type"":""invalid_request_error"",""message"":""Your credit balance is too low to access the Anthropic API. Please go to Plans & Billing to upgrade or purchase credits.""},""request_id"":""req_011Cdy9rb8mdYPTfh2weaAa5""}",2026-08-12 16:15:54.088512+00
+18dadfc6-a278-4407-aa54-25cb78b400b0,573046712998,buscar_en_ridera,{'consulta': 'Nevado del Ruiz ruta moto'},True,,2026-08-04 20:04:24.962466+00
+194707fb-cd1a-4fad-a301-e0043fc95530,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ayapel ruta'},True,,2026-09-07 21:45:02.974245+00
+1adc55ab-72ce-4a57-aecc-62a6108336b1,573104717982,buscar_ruta,{'destino': 'Carolina del Príncipe'},True,,2026-07-27 23:09:48.077879+00
+1b63348d-fa38-40db-81aa-7b53ef113291,573046712998,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'talleres', 'consejos_motociclistas', 'promociones', 'novedades']}",True,,2026-08-04 20:05:49.657948+00
+1bedeb01-9184-4e10-90dd-c66444cc9b05,573104717982,buscar_ruta,{'destino': 'Guatapé'},True,,2026-08-12 11:08:56.015346+00
+1e0ef2e5-440c-41c5-83cc-ff63bae290d1,573208499832,buscar_ruta,{'destino': 'Guatapé'},True,,2026-08-20 19:00:50.247225+00
+1e359997-0b55-4866-882b-2e4cc1608159,573104717982,consultar_manual_taller,"{'consulta': 'holgura de válvulas', 'modelo_moto': 'Vstrom xt650 2014'}",True,,2026-09-08 03:45:48.129671+00
+1e96b2db-06e5-4c2a-a589-5c2998b4a724,573128831242,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-20 22:19:16.478842+00
+1f60ce0a-5848-4c6a-b596-5da01a0ff520,573104717982,buscar_ruta,{'destino': 'La Ceja La Unión Sonsón'},False,"No hay rutas verificadas para ""La Ceja La Unión Sonsón"" en la base de Ridera.",2026-09-06 01:50:31.007059+00
+1f95f096-7059-49f3-8d34-78c1ae3364de,573012281865,buscar_en_ridera,{'consulta': 'Santa Elena Medellín ruta moto charco agua'},False,"Sin resultados en ridera.com.co para ""Santa Elena Medellín ruta moto charco agua"".",2026-08-06 21:39:15.960293+00
+201689e3-f46b-4085-98c5-bea197220106,573104717982,buscar_ruta,{'destino': 'Puerto Boyacá'},False,"No hay rutas verificadas para ""Puerto Boyacá"" en la base de Ridera.",2026-08-03 20:26:01.872368+00
+209bf472-7584-4904-a6e0-3b3dc45f7367,573168729967,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-07-28 01:06:53.036294+00
+2142cf22-df49-48a2-9a17-b5713fa7ebf3,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Recuerda desayunar', 'fecha_hora': '2026-08-17T08:05:00-05:00'}",True,,2026-08-17 13:00:24.49947+00
+22cd1c1d-e66e-4e65-9ae4-7788c6e88224,573006871654,mi_perfil,{},False,Este rider no esta registrado todavia. Invitalo a registrarse escribiendo 'quiero registrarme'.,2026-08-20 22:33:14.032954+00
+23a4c66d-1e82-466d-9fc2-6ed199701ee2,573226857835,buscar_ruta,{'destino': 'Occidente Antioquia'},False,"No hay rutas verificadas para ""Occidente Antioquia"" en la base de Ridera.",2026-08-26 18:15:49.911127+00
+24972ade-c8ca-4af4-a3d9-c85576d513e6,573114265437,buscar_ruta,{'destino': 'nevado'},False,"No hay rutas verificadas para ""nevado"" en la base de Ridera.",2026-08-05 21:01:34.664362+00
+24e54ae7-cbe3-488e-8889-2cea770c9a5d,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Hoy es domingo, Samuel, es día de que salgas a rodar y te invito para que vayas a San Carlos', 'fecha_hora': '2026-08-16T13:00:00-05:00'}",True,,2026-08-16 18:36:00.315994+00
+252b379f-c494-482d-8efd-0804eceb2d3c,573168729967,buscar_ruta,{'destino': 'occidente antioqueño'},False,"No hay rutas verificadas para ""occidente antioqueño"" en la base de Ridera.",2026-07-28 01:07:25.806242+00
+274f5bca-f95c-412d-addd-92ba83c73b14,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23E'}",True,,2026-09-07 19:51:45.534387+00
+277bda1e-15d2-4798-b67d-d4fad1b824c9,573104717982,buscar_ruta,{'destino': 'norte de Antioquia'},False,"No hay rutas verificadas para ""norte de Antioquia"" en la base de Ridera.",2026-09-19 02:41:11.562035+00
+2782468c-219b-482b-a2d8-45e1d8639564,573104717982,buscar_en_ridera,{'consulta': 'San Roque ruta viaje'},True,,2026-08-19 19:58:43.934732+00
+289138f3-9bc2-4405-91b8-e791aaaabf25,573104717982,buscar_ruta,{'destino': 'Medellín 500 km'},False,"No hay rutas verificadas para ""Medellín 500 km"" en la base de Ridera.",2026-08-23 02:44:31.319593+00
+2b282f71-9133-4a5f-8a7c-18e2486af886,573104717982,estado_vias,{'destino': 'Medellín-Bogotá Río Negro'},True,,2026-08-03 20:21:36.795532+00
+2bddf516-e8de-43ea-adb4-23a8c71b859b,573104717982,buscar_ruta,{'destino': 'nordeste'},True,,2026-09-18 17:02:08.328351+00
+2d5382dc-292c-4ab8-96ee-4a32cdc9d427,573104717982,diagnostico_moto,"{'marca': 'BMW', 'modelo': '1200', 'sintomas': 'Moto se apagó de repente y no quiere prender'}",True,,2026-07-28 04:37:19.483974+00
+2e3fdd3a-e9a5-47f5-b889-a4f79631e63b,573232827822,solicitar_grua,"{'nota': 'FZ 150 con falla mecánica. Prende pero no arranca cuando mete primera. Posible problema con embrague o cable de embrague.', 'nombre': 'Pedro Godoy', 'municipio': 'Medellín', 'ubicacion': 'Edificio Formacol, El Poblado, Medellín. Trayecto hacia Droguería El Rosario'}",True,,2026-07-30 23:12:49.772101+00
+2ea8bea5-3305-465a-afb7-faa8971dc030,573104717982,consultar_clima,{'lugar': 'Yondó'},True,,2026-08-22 23:06:14.187558+00
+2fc08443-2c1e-4470-b12d-65d98acc54e5,573104717982,consultar_clima,{'lugar': 'Sonsón'},True,,2026-09-06 01:50:41.534659+00
+326d17db-95c7-4705-9597-0c80257387d1,573185962182,registrar_consentimiento,"{'acepta': True, 'categorias': ['rodadas', 'noticias', 'consejos_motociclistas', 'mantenimiento', 'marketplace', 'talleres', 'eventos']}",True,,2026-07-29 16:43:05.555695+00
+32a2d14c-594b-432c-879f-df1ee845bf49,573114131087,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-06 21:34:53.586016+00
+33886fcc-a62f-4b1f-ba60-d6d4e4351369,573104717982,buscar_municipio,{'nombre': 'San Carlos'},True,,2026-08-16 17:21:49.596928+00
+33aed20a-bb58-4163-97ac-64e72b27fffc,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-15T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.430177+00
+348f8783-c322-445e-ba7a-07c0313ed51c,573226857835,buscar_en_ridera,{'consulta': 'rutas occidente antioquia'},True,,2026-08-26 18:15:52.617887+00
+34e503d0-142f-465f-8885-28633c24f0c7,573104717982,buscar_en_ridera,{'consulta': 'Medellín Caicedo Urrao'},True,,2026-08-12 03:20:38.098518+00
+36046554-9434-43f4-b077-0e0f9e85b313,573104717982,buscar_en_ridera,{'consulta': 'Aventura Ridera'},True,,2026-09-19 01:25:05.18706+00
+365ad446-2c38-4981-8529-4370535d37e1,573135355211,estado_vias,{'destino': 'Medellín Yolombó'},True,,2026-09-07 15:53:50.772985+00
+37696903-0881-420d-8229-a3579fb92fbe,573104717982,buscar_aliados_directorio,"{'tipo': 'Hotel', 'municipio': 'Ayapel'}",False,No encontre aliados registrados en Ayapel (Hotel). Puede que ese municipio no tenga aliados en el directorio todavia.,2026-09-12 02:35:09.006938+00
+3798aa5a-ba3f-49a7-8013-8795e69a9708,573012281865,buscar_ruta,{'destino': 'Santa Elena'},False,"No hay rutas verificadas para ""Santa Elena"" en la base de Ridera.",2026-08-06 21:39:13.25906+00
+37c0c485-923b-4640-b643-622ba0ff521c,573104717982,buscar_ruta,{'destino': 'Medellín-Caicedo-Urrao'},False,"No hay rutas verificadas para ""Medellín-Caicedo-Urrao"" en la base de Ridera.",2026-08-12 03:20:37.614102+00
+37d9bf20-0810-4d0d-b129-08367010ffc7,573208499832,buscar_municipio,{'nombre': 'Guatapé'},True,,2026-08-20 19:00:49.960883+00
+39942a5c-2f25-45be-bfeb-07512a24c85c,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23E'}",True,,2026-09-07 19:50:58.71408+00
+3ad3dc04-85f7-4afa-9ad8-47217db5d6ce,573044123939,buscar_ruta,{'destino': 'Guatapé'},True,,2026-07-29 01:17:40.961555+00
+3ae60967-8b46-44b2-af07-9e55baee23dd,573104717982,buscar_ruta,{'destino': 'Coveñas'},False,"No hay rutas verificadas para ""Coveñas"" en la base de Ridera.",2026-09-08 03:46:58.633896+00
+3ca4f27d-2225-4b01-9d05-ca49405ad938,573104717982,consultar_clima,{'lugar': 'Guarne'},True,,2026-08-17 17:31:33.135709+00
+3cdf4d4b-afb4-462d-b047-a69af177a597,573000000001,buscar_aliados_directorio,"{'tipo': 'restaurantes', 'municipio': 'Abejorral'}",False,No encontre aliados registrados en Abejorral (restaurantes).,2026-09-09 13:13:22.356533+00
+3da5ee18-fccc-4d2b-9269-694f2a00e732,573104717982,referencias_motos,"{'marca': 'Benelli', 'modelo': '502 TRK'}",False,query.like is not a function,2026-08-06 03:15:24.411254+00
+3dceea60-4121-436a-a189-a53b5ec4eb20,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ciénaga de Ayapel Córdoba ruta'},True,,2026-09-07 21:24:09.423189+00
+3df152e9-e4bb-4c79-bcfd-17e8e6477e5a,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Hoy es el mejor día para rodar a San Carlos', 'fecha_hora': '2026-08-16T14:00:00-05:00', 'descripcion': 'Recordatorio para rodar a San Carlos. Enviar en audio.'}",True,,2026-08-16 18:45:05.159483+00
+3ea5fb28-a2ff-4e64-90a6-539d1270222e,573042845581,consultar_clubes_moteros,{},True,,2026-09-15 23:37:25.234656+00
+3f27fe22-4e69-48fb-b5a4-9774431e6d5c,573012281865,buscar_en_ridera,{'consulta': 'ruta Arví Medellín día charcos agua nadar'},False,"Sin resultados en ridera.com.co para ""ruta Arví Medellín día charcos agua nadar"".",2026-08-06 21:38:05.295055+00
+3f7cba38-0f6a-4856-8207-60b85ecd2c36,573103736281,consultar_clima,{'lugar': 'Desierto de la Tatacoa'},True,,2026-08-06 21:32:23.187933+00
+40b88498-53ba-44fc-8365-0c9c06f361f4,573104717982,consultar_clima,{'lugar': 'Sonsón'},True,,2026-09-06 01:47:44.028362+00
+41b0979f-f632-4a89-805f-0329bcbe097d,573103736281,buscar_ruta,{'destino': 'Mompox'},True,,2026-09-09 01:36:45.567681+00
+4219e8aa-d041-47ba-9f60-fbfea1e67a80,573104717982,buscar_en_ridera,{'consulta': 'Carmen de Viboral ruta'},True,,2026-08-12 20:24:08.684601+00
+422df182-9385-4953-a10c-3466d0de44a8,573007213701,buscar_en_ridera,{'consulta': 'Termales de Santa Rosa de Cabal'},True,,2026-09-17 02:55:39.903676+00
+449fbd22-5608-4e39-bc85-c6cbdbe3c76b,573104717982,consultar_clima,{'lugar': 'Medellin'},True,,2026-08-17 17:31:33.091987+00
+45ac430b-9823-42bf-ba48-8b806beb93b8,573104717982,buscar_ruta,{'destino': 'Jardín'},True,,2026-08-03 20:06:56.197644+00
+46874882-afed-4867-93ab-5198b2a700de,573007213701,buscar_ruta,{'destino': 'Cisneros'},True,,2026-08-05 22:12:25.254563+00
+47e928d9-5ed6-4637-b859-5741def6edfc,573104717982,primeros_auxilios,{'tipo_lesion': 'otro'},True,,2026-08-17 17:30:16.407965+00
+48bcb9e0-a020-4a3f-bbca-2c03c0efc780,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Jardín Bolombolo'},True,,2026-08-03 20:08:24.846495+00
+4934ccb5-a510-4243-8bbc-832ce0e8cbc1,573103736281,estado_vias,{'destino': 'Puerto Berrío a Desierto de la Tatacoa'},True,,2026-08-06 21:32:23.055312+00
+49775311-4ff1-4c3c-b32c-131cb53d572c,573208499832,buscar_ruta,{'destino': 'Guatapé'},True,,2026-08-20 19:00:24.928676+00
+4a0e46c1-1810-4c0d-b4ac-f3691038ba64,573042845581,consultar_clubes_moteros,{'ciudad': 'Colombia'},False,No encontre clubes moteros en Colombia.,2026-09-15 23:37:32.271812+00
+4aaca6c8-20aa-4f33-a430-219e1b751a1f,573185962182,crear_recordatorio,"{'nota': 'Dale la placa completa de la moto a Rita para checarte el pico y placa', 'tipo': 'otro', 'fecha': '2025-07-28'}",True,,2026-07-28 21:48:55.919839+00
+4cbccfaa-0905-4e6e-92ca-e28026229d2f,573104717982,estado_vias,{'destino': 'Sonsón'},True,,2026-09-06 01:47:11.490838+00
+4d083724-135f-4b67-960f-cc5830d2b6f7,573104717982,buscar_aliados_directorio,"{'tipo': 'Restaurante', 'municipio': 'Jericó'}",True,,2026-09-08 03:43:26.350824+00
+4d6177bd-48b5-4867-9c44-bd672a746639,573135355211,buscar_en_ridera,{'consulta': 'Rincón del Mar'},True,,2026-09-08 00:42:34.5631+00
+4ee31f5e-fcaa-45e5-826f-8f88af3a2ba4,573104717982,buscar_ruta,{'destino': 'Carmen de Viboral'},True,,2026-08-12 20:23:11.196518+00
+4f292776-9bc7-4909-b450-520bf6bf6c6e,573114265437,buscar_en_ridera,{'consulta': 'ruta nevado'},True,,2026-08-05 21:01:37.189415+00
+4fdf53b7-4c24-418a-ac94-55e5ef54cc56,573012281865,datos_tecnicos_moto,"{'marca': 'Bajaj', 'modelo': 'Pulsar 180'}",False,El Garage Tecnico no tiene datos de Bajaj Pulsar 180. No inventes especificaciones.,2026-08-01 18:34:01.92296+00
+5008402c-23c0-4f4d-9937-b2079e6dc1c8,573104717982,consultar_clima,{'lugar': 'Medellin'},True,,2026-08-05 13:03:57.710629+00
+54b45ca9-d294-4925-bedf-f4a68c5dad3c,573104717982,consultar_preferencias,{},False,Todavia no hay preferencias guardadas de este rider.,2026-09-18 16:59:23.446763+00
+56c0f4bf-f81f-4148-8f70-b6c619b737d4,573104717982,buscar_ruta,{'destino': 'Medellín-Tatacoa'},False,"No hay rutas verificadas para ""Medellín-Tatacoa"" en la base de Ridera.",2026-08-10 19:02:21.603097+00
+5717496f-a1a3-4d54-95af-ab022696f852,573000000201,emergencia_telefonos,"{'ciudad': 'Medellin', 'servicio': 'ambulancia'}",True,,2026-08-12 16:15:56.713492+00
+57f5d65a-1e51-41b5-a9e4-1cd291ac7124,573104717982,buscar_en_ridera,{'consulta': 'Aventura.ridera.com.co'},True,,2026-09-19 01:26:42.557024+00
+58e5ba24-b655-4ec5-a695-ff75b1e307a4,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Jardín Bolombolo'},True,,2026-08-03 20:08:46.435428+00
+59cd1a3c-50b3-41d3-a834-29e061ea9420,573226857835,estado_vias,{'destino': 'Medellín Puerto Berrío'},True,,2026-08-08 15:19:51.969074+00
+5a681d33-3f7f-42f1-96fa-cc8e7c99f165,573128831242,consultar_clima,{'lugar': 'medellin'},True,,2026-08-20 21:32:14.222545+00
+5b13252d-1d75-4c32-9bf4-b3a712724c06,573104717982,buscar_ruta,{'destino': 'Ciénaga de Ayapel'},False,"No hay rutas verificadas para ""Ciénaga de Ayapel"" en la base de Ridera.",2026-09-07 21:41:27.385814+00
+5b92b867-dcd0-4a1e-a388-f9fc997109a3,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Hoy es domingo, Samuel, es día de que salgas a rodar', 'fecha_hora': '2026-08-16T13:00:00-05:00', 'descripcion': 'Invitación a rodar a San Carlos, Antioquia. Día perfecto para la moto.'}",True,,2026-08-16 17:48:18.89135+00
+5baba722-0610-44e5-b766-a83b4ef3411e,573000000301,primeros_auxilios,{'tipo_lesion': 'otro'},True,,2026-08-12 16:27:12.145756+00
+5d4e553d-32bc-4c09-baaf-b5dacf8efcb4,573104717982,datos_tecnicos_moto,"{'marca': 'BMW', 'modelo': '1200 GS'}",True,,2026-07-29 22:58:47.302225+00
+5f536532-f54a-4cdc-9f4e-a74b83885262,573104717982,estado_vias,{'destino': 'Medellín Yondó'},True,,2026-08-22 23:06:15.164599+00
+6090e65e-e61c-4fa9-b567-b0a7222af656,573104717982,datos_tecnicos_moto,"{'marca': 'BMW', 'modelo': '1200 GS'}",True,,2026-07-29 23:07:40.196209+00
+60b86d4e-80a2-47ee-ac14-88bb040d1961,573168268677,buscar_ruta,{'destino': 'Jardín'},True,,2026-09-16 00:13:26.575668+00
+60d1ccdc-03be-43fb-8235-99269a0caf07,573104717982,buscar_ruta,{'destino': 'Sonsón'},True,,2026-09-06 01:47:33.999562+00
+612a081f-3fbb-400d-b63c-e8a33c3e7d15,573104717982,buscar_ruta,{'destino': 'Sonsón La Ceja La Unión'},False,"No hay rutas verificadas para ""Sonsón La Ceja La Unión"" en la base de Ridera.",2026-09-06 01:51:27.371114+00
+61c192f5-5361-4e62-8ab3-96987eea3e53,573000000301,primeros_auxilios,{'tipo_lesion': 'general'},True,,2026-08-12 16:27:30.462732+00
+63725972-5a60-4682-8427-8620075fa7ea,573135355211,buscar_ruta,{'destino': 'Guatapé'},True,,2026-08-12 20:41:19.217007+00
+63bf91a3-a703-43bc-8a43-19b63b10da65,573135355211,buscar_en_ridera,{'consulta': 'Guatape ruta moto'},True,,2026-08-12 12:03:17.023165+00
+63c01e66-6454-4416-a84b-9b1374b67bca,573007213701,buscar_en_ridera,{'consulta': 'termales Antioquia'},True,,2026-09-17 18:59:48.966647+00
+641f181c-a85f-475b-9fbf-601c287d8288,573012281865,buscar_ruta,{'destino': 'Arví'},False,"No hay rutas verificadas para ""Arví"" en la base de Ridera.",2026-08-06 21:38:02.171649+00
+651adcc1-b40e-4a22-ab11-497942ce6dfe,573104717982,buscar_ruta,"{'destino': 'Yapel, Córdoba'}",False,"No hay rutas verificadas para ""Yapel, Córdoba"" en la base de Ridera.",2026-09-09 01:31:29.169547+00
+65c7a2d4-cfab-4018-af18-403833385180,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Tatacoa Villaveja túneles ferri'},False,"Sin resultados en ridera.com.co para ""ruta Medellín Tatacoa Villaveja túneles ferri"".",2026-08-10 18:48:34.520645+00
+65d4ef90-2a1b-4e89-8c3d-13437fdf5f37,573104717982,buscar_ruta,{'destino': 'nordeste'},True,,2026-09-18 17:02:41.054223+00
+684675b8-5f5d-4ee5-a91b-f5fc1b139726,573104717982,buscar_en_ridera,{'consulta': 'Carolina del Príncipe ruta'},True,,2026-07-27 23:09:48.849183+00
+6863e9d8-4314-4fee-ac01-961ee22796d5,573168729967,buscar_ruta,{'destino': 'Jardín'},True,,2026-07-28 01:08:28.30317+00
+68883604-08d7-4a2e-a53d-d5dc3fcf22bc,573000000301,emergencia_telefonos,{'servicio': 'todos'},True,,2026-08-12 16:27:12.141376+00
+68be377a-b13e-4b74-bfb2-185b0c50833d,573104717982,buscar_en_ridera,{'consulta': 'Carmen de Viboral ruta'},True,,2026-08-12 20:24:10.618253+00
+68e09ae8-5866-4a86-a5b5-4d88a4670f4a,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-11T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.415716+00
+68e26dc1-3011-409b-b991-eb8a1b14a710,573104717982,buscar_ruta,{'destino': 'Ayapel'},False,"No hay rutas verificadas para ""Ayapel"" en la base de Ridera.",2026-09-07 21:45:00.019265+00
+6a1d8329-b7fe-40d6-a898-46670932d5b6,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Yondó'},True,,2026-08-22 23:05:49.639109+00
+6a7ea3bf-944b-45ed-aed1-9ca07704be0b,573104717982,buscar_ruta,{'destino': 'Ayapel'},False,"No hay rutas verificadas para ""Ayapel"" en la base de Ridera.",2026-09-17 01:05:25.979766+00
+6aa7d61a-1974-4f3f-bd88-4ab34156c1fa,573104717982,primeros_auxilios,{'tipo_lesion': 'hemorragia'},True,,2026-08-17 13:12:45.247657+00
+6b87cb83-ef77-43d3-bb5e-bcca74d34b86,573168729967,buscar_ruta,{'destino': 'Jardín Riosucio'},False,"No hay rutas verificadas para ""Jardín Riosucio"" en la base de Ridera.",2026-07-28 01:08:26.574505+00
+6cc90bd1-94c8-4e12-98b6-7dbb6f8619a9,573226857835,buscar_ruta,{'destino': 'Frontino'},True,,2026-08-26 18:16:40.906516+00
+6d296fa7-b5f2-4d15-909b-9327c9c221db,573104717982,referencias_motos,"{'marca': 'BMW', 'modelo': '1200'}",False,query.like is not a function,2026-08-23 00:28:49.779378+00
+6e8adf3e-c824-4924-b865-99691a604850,573104717982,buscar_en_ridera,{'consulta': 'Medellín Urrao'},True,,2026-08-12 03:20:23.062161+00
+7072f6d3-5fab-4f28-979b-bb2819ce523b,573104717982,buscar_municipio,{'nombre': 'San Carlos'},True,,2026-08-16 17:22:09.279814+00
+70e357fd-ba82-4a02-80c1-2c32aac998e7,573999777002,consultar_clima,{'lugar': 'Guatapé'},True,,2026-07-27 12:31:52.034045+00
+713802c0-42f3-48d4-9932-e8a0761a40ba,573012281865,buscar_municipio,{'nombre': 'Marinilla'},True,,2026-08-01 18:34:33.138818+00
+71955061-2789-4674-985c-4917a840dce7,573104717982,buscar_ruta,{'destino': 'Ciénaga de Ayapel'},False,"No hay rutas verificadas para ""Ciénaga de Ayapel"" en la base de Ridera.",2026-09-07 21:24:07.955014+00
+72b79f7b-8956-4277-80a9-592e0578bbc0,573104717982,emergencia_telefonos,{'servicio': 'todos'},True,,2026-08-17 13:12:34.818446+00
+7372595a-3cdc-40a8-8251-f5341e4d01fa,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-10T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.497241+00
+783ea115-f48b-4470-a169-8b5dc6ae6ad0,573104717982,buscar_ruta,{'destino': 'Nordeste'},True,,2026-09-18 16:59:23.477666+00
+79cfa3a9-e5a0-459d-82d3-2767599c6f74,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ciénaga de Ayapel Córdoba ruta'},False,"Sin resultados en ridera.com.co para ""Medellín Ciénaga de Ayapel Córdoba ruta"".",2026-09-07 21:41:36.037643+00
+7a3fd713-4b11-411f-aaa6-e37fc8ac2421,573104717982,transcripcion_debug,{},False,"ElevenLabs STT 401: {""detail"":{""type"":""authentication_error"",""code"":""unauthorized"",""message"":""The API key you used is missing the permission speech_to_text to execute this operation."",""status"":""missing_permissions"",""requ",2026-07-27 21:59:34.429818+00
+7b77d49a-2800-4191-81ac-9bc64f5da5b0,573135355211,buscar_ruta,{'destino': 'Yolombó'},True,,2026-09-07 15:53:50.055378+00
+7cb39772-3009-42bd-af9b-429b7d5065b7,573104717982,buscar_ruta,{'destino': 'Jardin'},True,,2026-09-13 11:38:08.396371+00
+7e3e7103-ebff-460b-9397-8bcd8de687cf,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ciénaga de Ayapel Córdoba'},True,,2026-09-07 17:44:11.114379+00
+8031006a-4d1b-45b4-a25b-17af7fbb7a4b,573104717982,buscar_municipio,{'nombre': 'Peque'},True,,2026-08-12 15:16:10.854852+00
+80665056-d43b-45b5-9845-e521fa10b57f,573104717982,consultar_clima,{'lugar': 'Granada'},True,,2026-08-16 21:15:28.645379+00
+824291fe-0703-4a9f-a1b9-fe76b647eeca,573135355211,buscar_ruta,{'destino': 'Rincón del Mar'},False,"No hay rutas verificadas para ""Rincón del Mar"" en la base de Ridera.",2026-09-08 00:42:31.96593+00
+831c56ac-b9a8-456f-87dc-142ced5e6fec,573135355211,datos_tecnicos_moto,"{'marca': 'BMW', 'modelo': '310'}",False,"El Garage Tecnico de Ridera no tiene datos verificados de BMW 310. Si conoces las especificaciones generales de este modelo (capacidad de aceite, tipo de aceite, intervalos de mantenimiento) por ser informacion tecnica publica y ampliamente documentada, puedes darlas, pero SIEMPRE aclarando en la misma respuesta que no estan verificadas por el Garage Tecnico de Ridera y que se recomienda confirmar con el manual del propietario o un taller de la marca. Si no estas seguro del dato, no lo inventes.",2026-08-03 22:37:57.892546+00
+8335f80d-f063-4d97-86aa-9ef25279b02a,573013956742,emergencia_telefonos,"{'ciudad': 'Medellin', 'servicio': 'grua'}",True,,2026-09-18 23:43:56.298203+00
+836da2b9-a7d7-4baf-b307-98e536b7fa3e,573023457470,buscar_ruta,{'destino': 'Rionegro'},True,,2026-08-02 03:44:06.384405+00
+837361cc-9802-435d-9ed3-f27a7e9d5d16,573104717982,buscar_municipio,{'nombre': 'Riosucio'},False,"No encontre el municipio ""Riosucio"" en la base del Pasaporte 125.",2026-08-23 02:46:37.684486+00
+87009e52-2d72-416a-bd43-daf4e6a3e28a,573104717982,buscar_ruta,{'destino': 'Jardín'},True,,2026-08-03 20:08:16.100535+00
+87ca3d3f-b422-48d0-9f13-58ccad1ad6cb,573104717982,consultar_preferencias,{},False,Todavia no hay preferencias guardadas de este rider.,2026-08-12 20:38:06.47198+00
+886965bd-a327-4e93-9bf7-b9c9428d2079,573135355211,buscar_ruta,{'destino': 'Guatape'},True,,2026-08-12 11:07:37.828442+00
+89649f05-c0f8-49f3-8c1e-1f827c6820d2,573104717982,buscar_web_verificado,"{'consulta': 'BMW R 1200 GS 2016 RPM ralentí neutral revoluciones por minuto especificaciones', 'tipo_fuente': 'general'}",False,"No pude verificar info de ""BMW R 1200 GS 2016 RPM ralentí neutral revoluciones por minuto especificaciones"" en fuentes confiables. Mejor pregunta algo mas especifico o consulta en ridera.com.co",2026-08-23 00:30:31.395656+00
+8993aaff-9780-4998-ab9c-a3bf16e85046,573104717982,buscar_ruta,{'destino': 'Yondó'},False,"No hay rutas verificadas para ""Yondó"" en la base de Ridera.",2026-09-07 21:21:09.841472+00
+8a15e32a-b251-47af-bd26-4a08e4d60507,573104717982,datos_tecnicos_moto,"{'marca': 'Suzuki', 'modelo': 'DL 650 ABS'}",False,El Garage Tecnico no tiene datos de Suzuki DL 650 ABS. No inventes especificaciones.,2026-08-03 22:13:06.054635+00
+8a3ffe68-6553-4771-aa7c-1ff17e08c8b1,573104717982,buscar_en_ridera,{'consulta': 'Aventura.Ridera com.co'},True,,2026-09-19 01:26:12.679938+00
+8e0b738b-a7bc-448d-a229-1bfb35b66fc1,573104717982,primeros_auxilios,{'tipo_lesion': 'herida'},True,,2026-08-17 17:30:21.459083+00
+8fc496e5-30e1-453c-b918-1db391da8d5d,573104717982,buscar_en_ridera,{'consulta': 'ruta Sonsón La Ceja La Unión'},True,,2026-09-06 01:51:28.868878+00
+915d5b95-32ef-4fa8-8323-d1ce3a97552e,573999777002,buscar_ruta,{'destino': 'Guatapé'},True,,2026-07-27 12:31:51.070384+00
+928fe35c-24cb-452e-9fef-9270e2ba5ab1,573104717982,consultar_clima,{'lugar': 'Medellin'},True,,2026-08-16 21:15:28.395105+00
+92ff8728-9c0b-4bc5-a0c5-837fad882c68,573135355211,buscar_ruta,{'destino': 'Sincelejo'},False,"No hay rutas verificadas para ""Sincelejo"" en la base de Ridera.",2026-09-08 00:56:03.824369+00
+933fae32-e6f7-401e-b4f3-7ec8a92a929c,573044123939,consultar_preferencias,{},False,Todavia no hay preferencias guardadas de este rider.,2026-07-29 01:17:40.893423+00
+94c1809f-6046-4eb9-903a-fb2a2eea00c9,573104717982,buscar_en_ridera,{'consulta': 'ruta 500 km Medellín Antioquia touring'},True,,2026-08-23 02:44:39.717509+00
+95f0735a-a00d-47dd-b8ef-4ab19242a760,573104717982,estado_vias,{'destino': 'Medellín Sonsón'},True,,2026-09-06 01:47:34.654023+00
+96c94149-324f-41ed-a8bf-ce6fb590dbb0,573104717982,buscar_en_ridera,{'consulta': 'Medellín Yondó ruta'},True,,2026-09-07 21:21:17.056976+00
+984b885b-0a74-4b99-ae1b-a0fba7bf9e3d,573023457470,consultar_clima,{'lugar': 'Rionegro'},True,,2026-08-02 03:41:38.473142+00
+9983fe78-d233-4765-82aa-71f103e57d6f,573104717982,buscar_ruta,{'destino': 'Jardín'},True,,2026-08-23 02:46:37.529415+00
+999d63ec-2075-4a24-a00b-cece546ed686,573145825490,referencias_motos,"{'marca': 'Honda', 'modelo': 'NX190'}",False,query.like is not a function,2026-08-06 21:33:40.629863+00
+99e826ed-f021-44ce-be74-e2a9e79928d3,573012281865,buscar_municipio,{'nombre': 'Marinilla'},True,,2026-08-01 18:34:51.95872+00
+99fa4677-950a-4c00-ba8d-7211f40a1c21,573226857835,buscar_ruta,{'destino': 'Santa Fe de Antioquia'},True,,2026-08-26 18:16:41.110078+00
+9b186ece-a128-46f0-b24c-a709952414e3,573104717982,consultar_consentimiento,{},True,,2026-08-01 12:18:03.365635+00
+9d9b42d2-d302-4efa-824a-1e7b30006862,573103736281,buscar_en_ridera,{'consulta': 'Medellín a Mompox'},True,,2026-09-09 01:36:46.855554+00
+9db4fe22-277d-4fe6-9287-afaef619e945,573104717982,buscar_ruta,{'destino': 'Tatacoa'},True,,2026-08-10 19:04:13.457119+00
+9e8ff9ac-1078-4df9-a287-de2797d663ea,573104717982,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-07-28 00:11:09.505066+00
+a042e699-a2c6-4545-a212-6f7d37550718,573104717982,buscar_ruta,{'destino': 'Ciénaga de Ayapel Córdoba'},False,"No hay rutas verificadas para ""Ciénaga de Ayapel Córdoba"" en la base de Ridera.",2026-09-07 17:44:08.597675+00
+a20f4cb1-af85-40d2-856d-e707b1368211,573135355211,buscar_en_ridera,{'consulta': 'ruta de Medellín a Rincón del Mar'},True,,2026-09-08 00:56:38.498811+00
+a389ee60-cb2b-4e31-943f-219838d9dac8,573135355211,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'talleres', 'consejos_motociclistas', 'promociones', 'novedades']}",True,,2026-07-30 23:29:41.523155+00
+a39286e7-42fb-4341-946f-5cc34b748767,573226857835,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-08 16:33:18.288459+00
+a40418ba-8ac5-4ecc-96d0-61dcc7642092,573104717982,buscar_ruta,{'destino': 'Ciénaga de Ayapel'},False,"No hay rutas verificadas para ""Ciénaga de Ayapel"" en la base de Ridera.",2026-09-09 01:33:46.420741+00
+a4afef8e-589a-4e72-863e-e9b53830a8ea,573023457470,buscar_en_ridera,{'consulta': 'rutas oriente antioqueño'},True,,2026-08-02 03:41:41.754531+00
+a62eb666-1802-4be9-84cb-1bf16bf1e5de,573104717982,buscar_en_ridera,{'consulta': 'Ayapel'},True,,2026-09-17 01:05:29.673556+00
+a6ffa972-0f46-46b5-addd-48e5f5d76cf2,573104717982,buscar_taller,{'ciudad': 'Medellin'},True,,2026-07-29 23:00:33.368543+00
+a7cc174b-1c72-448f-8d30-cbee1ed87ba8,573185962182,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'talleres', 'consejos_motociclistas', 'promociones', 'novedades']}",True,,2026-07-29 16:42:23.878587+00
+a88d8f54-596d-4844-87d1-3e432dcc84ff,573135355211,buscar_ruta,"{'destino': 'Rincón del Mar, Sucre'}",False,"No hay rutas verificadas para ""Rincón del Mar, Sucre"" en la base de Ridera.",2026-09-08 00:42:55.143654+00
+a89d4e71-215e-4a1c-b030-7cf67b456e90,573135355211,buscar_ruta,{'destino': 'Rincón del Mar'},False,"No hay rutas verificadas para ""Rincón del Mar"" en la base de Ridera.",2026-09-08 02:26:22.279484+00
+acfcdd58-d2a1-4a96-bab0-ddcf3a3f2bdd,573168729967,buscar_en_ridera,{'consulta': 'ruta occidente antioqueño'},True,,2026-07-28 01:07:32.701309+00
+aeae848f-0e5d-45af-a812-ec510c6934b6,573104717982,buscar_en_ridera,{'consulta': 'Medellín Ciénaga de Ayapel'},True,,2026-09-09 01:33:21.290279+00
+aefc487e-3891-4458-8d8a-67cc658f5750,573104717982,buscar_ruta,{'destino': 'Medellín Tatacoa Villaveja'},False,"No hay rutas verificadas para ""Medellín Tatacoa Villaveja"" en la base de Ridera.",2026-08-10 18:48:33.629313+00
+b02db0bb-5f79-4346-8b21-3c24160b3813,573104717982,buscar_ruta,{'destino': 'Tatacoa'},True,,2026-08-10 18:45:57.207629+00
+b039e2c3-3f6f-4e7d-aff7-ab467fd4156d,573104717982,buscar_ruta,{'destino': 'Yondó'},False,"No hay rutas verificadas para ""Yondó"" en la base de Ridera.",2026-08-22 23:05:44.996081+00
+b14e0845-9637-4871-82e8-570f4f4ab8e9,573104717982,referencias_motos,"{'marca': 'CF Moto', 'modelo': '700'}",False,query.like is not a function,2026-08-05 18:11:07.21191+00
+b263a38a-83aa-491e-9ea6-d68d51eadcd9,573104717982,emergencia_telefonos,"{'ciudad': 'Barbosa', 'servicio': 'grua'}",True,,2026-09-08 03:44:07.449723+00
+b31a2e06-a809-4241-947b-3c3588711146,573000000301,asesoria_legal,{'tema': 'accidente'},True,,2026-08-12 16:27:12.14752+00
+b32a0ec6-bb8e-466b-bbbe-bf13f953034a,573104717982,datos_tecnicos_moto,"{'marca': 'Zontes', 'modelo': '800 MT'}",False,"El Garage Tecnico de Ridera no tiene datos verificados de Zontes 800 MT. Si conoces las especificaciones generales de este modelo (capacidad de aceite, tipo de aceite, intervalos de mantenimiento) por ser informacion tecnica publica y ampliamente documentada, puedes darlas, pero SIEMPRE aclarando en la misma respuesta que no estan verificadas por el Garage Tecnico de Ridera y que se recomienda confirmar con el manual del propietario o un taller de la marca. Si no estas seguro del dato, no lo inv",2026-08-05 13:14:25.401842+00
+b4243cb2-b12c-4a83-966e-c5f912bc4932,573168268677,buscar_ruta,{'destino': 'Guatapé'},True,,2026-09-16 00:06:58.620623+00
+b437bc1f-78c2-4322-a75c-247c94e4f406,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-12T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.264574+00
+b5b18960-313a-46e3-ba6c-d0cb5867e9ac,573104717982,buscar_en_ridera,{'consulta': 'Medellín Villa de Leyva ruta'},True,,2026-07-28 15:42:50.446923+00
+b65ba92e-3dc3-497a-be09-f5ccf682d686,573168729967,buscar_ruta,{'destino': 'Riosucio'},False,"No hay rutas verificadas para ""Riosucio"" en la base de Ridera.",2026-07-28 01:08:28.284024+00
+b7565a6b-5277-474d-b7dc-ffe02bb75367,573104717982,buscar_ruta,{'destino': 'Murillo'},False,"No hay rutas verificadas para ""Murillo"" en la base de Ridera.",2026-07-27 22:40:26.997256+00
+b83b3a0e-1b65-44ff-a0ad-39742a9b596f,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Río Negro autopista Bogotá'},False,"Sin resultados en ridera.com.co para ""ruta Medellín Río Negro autopista Bogotá"".",2026-08-03 20:20:50.237708+00
+b8b11ef7-ae0c-4af6-ba89-d875d19fe970,573104717982,buscar_ruta,{'destino': 'Briceño'},False,"No hay rutas verificadas para ""Briceño"" en la base de Ridera.",2026-07-27 22:19:03.286391+00
+bae94ee6-8fb3-4b89-89ad-08ac065516ec,573135355211,consultar_clima,{'lugar': 'Yolombó'},True,,2026-09-07 15:53:56.062905+00
+baeaa9f5-9bbc-4898-836e-111ce3b3c51a,573104717982,consultar_clima,{'lugar': 'Medellín'},True,,2026-08-22 23:06:14.195096+00
+bb6b42aa-dc51-4810-9b27-0c81f211542a,573044123939,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'talleres', 'consejos_motociclistas', 'promociones', 'novedades']}",True,,2026-07-29 00:56:23.656953+00
+bc869771-f678-456b-9bbf-348945c1dbd7,573000000001,datos_tecnicos_moto,"{'marca': 'Suzuki', 'modelo': 'V-Strom'}",True,,2026-08-03 22:34:34.187505+00
+bdc74522-17ba-4a09-aa88-6f4b44e33339,573104717982,buscar_ruta,{'destino': 'Jardín'},True,,2026-07-27 22:35:06.374439+00
+bfa364a4-e3f0-42bb-95ff-7285cba71485,573104717982,buscar_ruta,{'destino': 'Urrao'},False,"No hay rutas verificadas para ""Urrao"" en la base de Ridera.",2026-08-12 03:18:17.753319+00
+c0590184-f865-414b-9433-951dfe442f62,573135355211,buscar_ruta,{'destino': 'Yolombó'},True,,2026-09-07 15:54:10.699991+00
+c0f0ecd7-4202-4a1a-b048-eb95a6510565,573185962182,mi_perfil,{},False,Este rider no esta registrado todavia. Invitalo a registrarse escribiendo 'quiero registrarme'.,2026-08-01 18:28:07.316564+00
+c1f3aa44-45df-45cc-9264-bc4c6908685e,573104717982,buscar_aliados_directorio,"{'tipo': 'Hotel', 'municipio': 'Ciénaga de Ayapel'}",False,No encontre aliados registrados en Ciénaga de Ayapel (Hotel). Puede que ese municipio no tenga aliados en el directorio todavia.,2026-09-12 02:35:29.823961+00
+c1f5880a-35ac-4292-8ec6-ee8776ac204f,573135355211,buscar_ruta,{'destino': 'Rincón del Mar'},False,"No hay rutas verificadas para ""Rincón del Mar"" en la base de Ridera.",2026-09-08 00:56:03.828183+00
+c2078608-1c2d-4a48-9b65-73fc852ba2fb,573104717982,buscar_ruta,{'destino': 'Jardin'},True,,2026-09-13 11:36:04.574269+00
+c26fbde6-7435-4acd-9f63-57aab83fb84e,573104717982,buscar_ruta,{'destino': 'Carmen de Viboral'},True,,2026-07-27 22:28:05.296903+00
+c3b16437-5394-4b69-a6fb-6735f27c0bee,573135355211,buscar_ruta,{'destino': 'Rincón del Mar'},False,"No hay rutas verificadas para ""Rincón del Mar"" en la base de Ridera.",2026-09-08 00:56:36.365472+00
+c475c383-b432-47ad-bd80-ee8b6e6a9d91,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Tatacoa'},True,,2026-08-10 18:46:04.153751+00
+c4e8f40d-e390-4a5a-95d1-997dc34149dc,573014253055,mi_perfil,{},False,Este rider no esta registrado todavia. Invitalo a registrarse escribiendo 'quiero registrarme'.,2026-08-10 17:39:30.64771+00
+c5488edc-72cc-49d0-8d72-fa267993a27b,573232827822,diagnostico_moto,"{'marca': 'Yamaha', 'modelo': 'FZ 150', 'sintomas': 'No arranca, le mete primera y no prende'}",True,,2026-07-30 23:06:04.522888+00
+c5d92177-67b7-4561-b8ae-9b9c1287b7db,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23A23E'}",True,,2026-09-07 19:51:02.447954+00
+c7687d2b-5bf9-4ebb-a5b5-49535a2471f3,573104717982,buscar_ruta,{'destino': 'Sonsón'},True,,2026-09-06 01:47:10.443213+00
+c7b75813-804d-41a9-a03a-910f56f88106,573104717982,consultar_pico_placa,"{'tipo': 'moto', 'placa': 'DAY23E'}",True,,2026-09-07 19:51:42.13865+00
+ca049210-6d93-442a-8d35-954573083ac0,573104717982,buscar_ruta,{'destino': 'Carmen de Viboral'},True,,2026-08-12 20:24:09.647977+00
+cc09347e-4a51-4be4-af4f-058dcae8c92b,573208499832,estado_vias,{'destino': 'El Peñol'},True,,2026-08-20 20:54:10.158512+00
+cc64c011-002d-4983-93e5-49f5a8816ccc,573135355211,consultar_clima,{'lugar': 'Yolombó'},True,,2026-09-07 15:54:11.4082+00
+cd8bd6f1-6daa-4dae-beb5-b3da0d411f38,573044123939,buscar_ruta,{'destino': 'Jardín'},True,,2026-07-29 01:17:41.103023+00
+cf09b1a7-25dc-478a-a8a4-ff6b953f7ecb,573135355211,buscar_en_ridera,{'consulta': 'BMW 310 especificaciones mantenimiento aceite'},False,"Sin resultados en ridera.com.co para ""BMW 310 especificaciones mantenimiento aceite"".",2026-08-04 00:20:34.959936+00
+cf123090-357d-4001-ada3-60cd5e7597d9,573168729967,programar_recordatorio_avanzado,"{'asunto': 'Rodada - Buenos días Paula', 'fecha_hora': '2026-08-13T07:00:00-05:00', 'descripcion': 'Hora de salir de ruta'}",True,,2026-08-09 19:32:04.406169+00
+d03f7732-200c-46bd-8d89-518692cf9457,573104717982,consultar_manual_taller,"{'consulta': 'capacidad de aceite', 'modelo_moto': 'Vstrom xt650 2014'}",True,,2026-09-08 03:45:47.634757+00
+d0498260-325f-4fdf-ab25-f97d79b35189,573023457470,buscar_ruta,{'destino': 'oriente antioqueño'},False,"No hay rutas verificadas para ""oriente antioqueño"" en la base de Ridera.",2026-08-02 03:41:38.369935+00
+d338957f-564a-4da7-a094-0066d0b6ff60,573000000099,primeros_auxilios,{'tipo_lesion': 'general'},True,,2026-08-12 15:53:21.873444+00
+d38e0499-1b5e-4bf1-b910-b82a2d5a9629,573104717982,buscar_ruta,{'destino': 'Guatapé'},True,,2026-07-27 22:18:33.012084+00
+d3d4f634-9fbd-446f-b695-d7e1f70584a7,573000000102,emergencia_telefonos,"{'ciudad': 'Medellin', 'servicio': 'ambulancia'}",True,,2026-08-12 15:58:04.012975+00
+d4aa0fe5-4f47-46c6-a8a0-70f022eaa06f,573135355211,datos_tecnicos_moto,"{'marca': 'BMW', 'modelo': '310'}",False,"El Garage Tecnico de Ridera no tiene datos verificados de BMW 310. Si conoces las especificaciones generales de este modelo (capacidad de aceite, tipo de aceite, intervalos de mantenimiento) por ser informacion tecnica publica y ampliamente documentada, puedes darlas, pero SIEMPRE aclarando en la misma respuesta que no estan verificadas por el Garage Tecnico de Ridera y que se recomienda confirmar con el manual del propietario o un taller de la marca. Si no estas seguro del dato, no lo inventes.",2026-08-03 23:26:21.440272+00
+d4f6bc12-10e2-4952-a992-74e36751b6e7,573117324007,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-09-06 22:40:43.106237+00
+d61cf0ff-3834-4c7e-a0a2-36d1ec07367b,573104717982,buscar_ruta,{'destino': 'San Roque'},False,"No hay rutas verificadas para ""San Roque"" en la base de Ridera.",2026-08-19 19:58:37.686014+00
+d65657b7-ead1-4b0f-80aa-dc8487c11292,573104494949,registrar_consentimiento,"{'acepta': True, 'categorias': ['noticias', 'rodadas', 'marketplace', 'eventos', 'mantenimiento', 'seguridad_vial', 'promociones', 'novedades']}",True,,2026-08-21 00:14:45.065559+00
+d7241aea-c917-4554-b3b7-ee5fe96a27d2,573104717982,buscar_municipio,{'nombre': 'Jardín'},True,,2026-08-23 02:46:37.697411+00
+d88924fd-6155-4cbf-8807-1ca64c29c424,573104717982,buscar_ruta,{'destino': 'Medellín-Tatacoa'},False,"No hay rutas verificadas para ""Medellín-Tatacoa"" en la base de Ridera.",2026-08-10 19:04:13.439445+00
+d8e5f453-2c38-4d64-aad0-f23364283e4f,573104717982,datos_tecnicos_moto,"{'marca': 'Benelli', 'modelo': 'TRK 502'}",False,"El Garage Tecnico de Ridera no tiene datos verificados de Benelli TRK 502. Si conoces las especificaciones generales de este modelo (capacidad de aceite, tipo de aceite, intervalos de mantenimiento) por ser informacion tecnica publica y ampliamente documentada, puedes darlas, pero SIEMPRE aclarando en la misma respuesta que no estan verificadas por el Garage Tecnico de Ridera y que se recomienda confirmar con el manual del propietario o un taller de la marca. Si no estas seguro del dato, no lo i",2026-08-05 17:00:19.865452+00
+d8fd3ea6-8c58-458b-9f8d-388554f52c2b,573104717982,buscar_ruta,{'destino': 'Carolina del Príncipe'},True,,2026-07-27 23:10:15.432582+00
+d9a502e9-868e-463b-9220-29b2181065c8,573104717982,buscar_en_ridera,{'consulta': 'Uramita ruta moto'},True,,2026-08-12 16:28:58.500147+00
+d9c4bc50-1edd-4b1d-8964-cae492cf1638,573104717982,emergencia_telefonos,{'servicio': 'todos'},True,,2026-08-17 17:30:16.396037+00
+dae3917a-4123-4b6d-b4f7-e56fb29f7b5e,573104717982,buscar_en_ridera,{'consulta': 'ruta Medellín Puerto Boyacá'},True,,2026-08-03 20:26:04.037348+00
+dbecee18-3f76-4560-aa15-ecf5d89a7ce8,573046712998,buscar_ruta,{'destino': 'Nevado del Ruiz'},False,"No hay rutas verificadas para ""Nevado del Ruiz"" en la base de Ridera.",2026-08-04 20:04:22.513535+00
+dc620051-1c6d-4ea3-9958-cc9613a4e642,573999777001,mi_perfil,{},True,,2026-07-27 12:31:51.041129+00
+dcbcfe43-1bb5-46c5-b42c-2f1611bc1c11,573104717982,buscar_ruta,{'destino': 'nordeste'},True,,2026-09-18 17:00:22.166435+00
+def5ba7a-5af9-487b-be01-6311f455f5bd,573104717982,consultar_clima,{'lugar': 'Peque'},True,,2026-08-12 15:16:11.436088+00
+e0d7f19c-c292-4acc-b965-0543c9277efa,573226857835,buscar_ruta,{'destino': 'Puerto Berrío'},True,,2026-08-08 15:19:19.155664+00
+e38e572e-4b8f-4f21-bfd2-8f03f43112e8,573104717982,sintesis_debug,{},False,"ElevenLabs TTS 402: {""detail"":{""type"":""payment_required"",""code"":""paid_plan_required"",""message"":""Free users cannot use library voices via the API. Please upgrade your subscription to use this voice."",""status"":""payment_req",2026-07-27 22:28:08.436059+00
+e515be80-0cfa-4a3b-8408-b3d7db202eb4,573104717982,consultar_preferencias,{},False,Todavia no hay preferencias guardadas de este rider.,2026-08-12 20:23:21.938369+00
+e5536912-036e-45de-b725-a978a4083194,573208499832,buscar_municipio,{'nombre': 'Guatapé'},True,,2026-08-20 19:00:24.713525+00
+e5cdc6e6-6e20-4b5d-b271-d1badca58d6b,573104717982,buscar_ruta,{'destino': 'Ciénaga de Ayapel'},False,"No hay rutas verificadas para ""Ciénaga de Ayapel"" en la base de Ridera.",2026-09-09 01:34:12.539269+00
+e8422bef-f3dd-41bc-bc53-6c8dbd3c080f,573128831242,estado_vias,{'destino': 'sur de medellin'},True,,2026-08-20 21:32:14.353971+00
+e9e783d3-8aa5-496a-93e6-3fd3fb432017,573104717982,buscar_ruta,{'destino': 'Carmen de Viboral'},True,,2026-08-12 20:24:06.783352+00
+eb4803b4-b7ed-411f-bbe4-ea5a07902bc7,573000000999,buscar_ruta,{'destino': 'Carolina del Príncipe'},True,,2026-07-27 23:09:23.455724+00
+eb50682a-a1e5-4046-86b1-bbac47eaa753,573104717982,buscar_ruta,{'destino': 'Urrao'},False,"No hay rutas verificadas para ""Urrao"" en la base de Ridera.",2026-08-12 03:20:22.260026+00
+ed13dd2e-0660-4ea3-b1d7-858ebfa18ce3,573999777001,mi_perfil,{},True,,2026-07-27 12:32:34.114637+00
+f1554b66-ea8c-40eb-aaae-6483514c082f,573226857835,buscar_ruta,{'destino': 'Occidente Antioquia'},False,"No hay rutas verificadas para ""Occidente Antioquia"" en la base de Ridera.",2026-08-26 18:16:41.133552+00
+f2b281e5-b8cb-4442-a7f4-44017ea7d896,573000000101,buscar_en_ridera,{'consulta': 'rutas cerca de Medellin'},True,,2026-08-12 15:57:39.175897+00
+f3c2976a-52ee-4040-85d7-3577745de8e0,573104717982,primeros_auxilios,{'tipo_lesion': 'hemorragia'},True,,2026-08-17 13:12:34.844038+00
+f40c263e-ddcc-4eb4-9a06-1b93e55caef6,573226857835,consultar_clima,{'lugar': 'Puerto Berrío'},True,,2026-08-08 15:19:51.774865+00
+f44579ce-a25f-482f-85bb-2c9247e08771,573104717982,referencias_motos,"{'marca': 'CF Moto', 'modelo': '450'}",False,query.like is not a function,2026-08-05 18:11:07.431267+00
+f58a6f5d-aef7-4934-bb00-7b7178859ac2,573135355211,buscar_ruta,{'destino': 'Guatape'},True,,2026-08-12 12:03:14.653109+00
+f59c673f-73cd-4a29-b3d1-cbfbc36fe415,573104717982,buscar_en_ridera,{'consulta': 'ruta La Ceja La Unión Sonsón'},True,,2026-09-06 01:50:33.56288+00
+f5df59c6-48aa-4e37-aa50-1350aacf6df0,573104717982,buscar_ruta,{'destino': 'Nariño'},True,,2026-09-06 01:52:13.135443+00
+f6bdb1e1-b108-49cd-93e0-5db98d68015c,573232827822,registrar_consentimiento,"{'acepta': False, 'categorias': []}",True,,2026-07-30 23:27:19.309523+00
+f7132475-1030-4462-9626-5022126d25e3,573137937801,datos_tecnicos_moto,"{'marca': 'Suzuki', 'modelo': 'V-Strom 1000'}",True,,2026-09-10 00:37:17.337204+00
+f7b2ea04-10b9-4b18-9a7b-c9d0f7df5401,573104717982,datos_tecnicos_moto,"{'marca': 'BMW', 'modelo': '1200'}",True,,2026-08-23 00:28:49.845266+00
+f9067e73-98ed-48eb-adcb-23ae66e71fc6,573104717982,estado_vias,{'destino': 'La Ceja La Unión Sonsón'},True,,2026-09-06 01:50:33.896083+00
+f90aa511-7353-4b59-aeb7-f1285dc799e4,573226857835,buscar_en_ridera,{'consulta': 'ruta Puerto Berrío'},True,,2026-08-08 15:19:21.81328+00
+fa250416-ea96-4eae-bdc5-b8a6544f143b,573104717982,buscar_en_ridera,{'consulta': 'norte de Antioquia'},True,,2026-09-19 02:41:13.27528+00
+fadda57a-fc24-4077-85fd-f988d2e6cd92,573145825490,datos_tecnicos_moto,"{'marca': 'Honda', 'modelo': 'NX190'}",False,"El Garage Tecnico no tiene datos de Honda NX190. IMPORTANTE: llama ahora a referencias_motos con la misma marca y modelo para buscar en fuentes externas (Wikipedia, WordPress). No le digas al rider que la marca no existe.",2026-08-06 21:33:43.34649+00
+fc02d006-d1a3-43a2-a5a8-d5af0f36c84d,573104717982,buscar_ruta,{'destino': 'Jardín'},True,,2026-09-13 11:38:46.079813+00
+fd376416-c0c4-49e9-8212-b312641ea29c,573245716669,consultar_manual_taller,"{'consulta': 'referencia filtro aceite', 'modelo_moto': 'BMW GS 310'}",True,,2026-09-18 13:36:30.117626+00
+fe1a9afe-31ec-4ad2-991b-9f45f82a0940,573104717982,programar_recordatorio_avanzado,"{'asunto': 'Hoy es el mejor día para rodar a San Carlos', 'fecha_hora': '2026-08-16T14:00:00-05:00'}",True,,2026-08-16 18:45:16.981813+00
+ff237e22-6897-4a7d-a27d-ae146cf43189,573104717982,buscar_ruta,{'destino': 'Barrancabermeja'},False,"No hay rutas verificadas para ""Barrancabermeja"" en la base de Ridera.",2026-09-07 17:45:19.811651+00

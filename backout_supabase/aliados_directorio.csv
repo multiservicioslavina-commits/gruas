@@ -1,0 +1,1508 @@
+id,municipio,tipo,establecimiento,telefono,subregion,created_at
+1,Amagá,Hotel,Hospedaje Amagá 2,3218640943,,2026-09-07 22:46:08.780756+00
+2,Amagá,Hotel,Hospedaje Amagá 2,3125141157,,2026-09-07 22:46:08.780756+00
+3,Amagá,Hotel,Hospedaje Amagá 3,32096277,,2026-09-07 22:46:08.780756+00
+4,Amagá,Hotel,Hospedaje Amagá 3,31238722,,2026-09-07 22:46:08.780756+00
+5,Amagá,Hotel,Hospedaje Amagá 4,3112386043,,2026-09-07 22:46:08.780756+00
+6,Amagá,Hotel,Hospedaje Amagá 4,3116146021,,2026-09-07 22:46:08.780756+00
+7,Amagá,Hotel,Hotel Principal Amagá 1,30128859,,2026-09-07 22:46:08.780756+00
+8,Amagá,Hotel,Hotel Principal Amagá 1,3119151081,,2026-09-07 22:46:08.780756+00
+9,Amagá,Restaurante,Restaurante Típico Amagá 1,3016984035,,2026-09-07 22:46:08.780756+00
+10,Amagá,Restaurante,Restaurante Típico Amagá 1,32165546,,2026-09-07 22:46:08.780756+00
+11,Amagá,Restaurante,Restaurante Típico Amagá 2,31257206,,2026-09-07 22:46:08.780756+00
+12,Amagá,Restaurante,Restaurante Típico Amagá 2,3133128567,,2026-09-07 22:46:08.780756+00
+13,Amagá,Restaurante,Restaurante Típico Amagá 3,3218526654,,2026-09-07 22:46:08.780756+00
+14,Amagá,Restaurante,Restaurante Típico Amagá 3,3135582088,,2026-09-07 22:46:08.780756+00
+15,Andes,Hotel,Hospedaje Andes 2,3119050557,,2026-09-07 22:46:08.780756+00
+16,Andes,Hotel,Hospedaje Andes 2,3204355774,,2026-09-07 22:46:08.780756+00
+17,Andes,Hotel,Hospedaje Andes 3,3125822209,,2026-09-07 22:46:08.780756+00
+18,Andes,Hotel,Hospedaje Andes 3,3121513804,,2026-09-07 22:46:08.780756+00
+19,Andes,Hotel,Hospedaje Andes 4,3144675371,,2026-09-07 22:46:08.780756+00
+20,Andes,Hotel,Hospedaje Andes 4,3133352189,,2026-09-07 22:46:08.780756+00
+21,Andes,Hotel,Hotel Principal Andes 1,3144840735,,2026-09-07 22:46:08.780756+00
+22,Andes,Hotel,Hotel Principal Andes 1,3018370886,,2026-09-07 22:46:08.780756+00
+23,Andes,Hotel,Hotel San Juan,3117456624,,2026-09-07 22:46:08.780756+00
+24,Andes,Restaurante,Restaurante Típico Andes 1,3014200222,,2026-09-07 22:46:08.780756+00
+25,Andes,Restaurante,Restaurante Típico Andes 1,3135227171,,2026-09-07 22:46:08.780756+00
+26,Andes,Restaurante,Restaurante Típico Andes 2,3014203774,,2026-09-07 22:46:08.780756+00
+27,Andes,Restaurante,Restaurante Típico Andes 2,3122034855,,2026-09-07 22:46:08.780756+00
+28,Andes,Restaurante,Restaurante Típico Andes 3,3121007201,,2026-09-07 22:46:08.780756+00
+29,Andes,Restaurante,Restaurante Típico Andes 3,3113369988,,2026-09-07 22:46:08.780756+00
+30,,,,,,2026-09-07 22:46:08.780756+00
+31,Angelópolis,Hotel,Hospedaje Angelópolis 2,3125315689,,2026-09-07 22:46:08.780756+00
+32,Angelópolis,Hotel,Hospedaje Angelópolis 2,31133339,,2026-09-07 22:46:08.780756+00
+33,Angelópolis,Hotel,Hospedaje Angelópolis 3,3208119178,,2026-09-07 22:46:08.780756+00
+34,Angelópolis,Hotel,Hospedaje Angelópolis 3,3206728755,,2026-09-07 22:46:08.780756+00
+35,Angelópolis,Hotel,Hospedaje Angelópolis 4,3131961721,,2026-09-07 22:46:08.780756+00
+36,Angelópolis,Hotel,Hospedaje Angelópolis 4,31391608,,2026-09-07 22:46:08.780756+00
+37,Angelópolis,Hotel,Hotel Principal Angelópolis 1,3119324461,,2026-09-07 22:46:08.780756+00
+38,Angelópolis,Hotel,Hotel Principal Angelópolis 1,3001289528,,2026-09-07 22:46:08.780756+00
+39,Angelópolis,Restaurante,Restaurante Típico Angelópolis 1,3217275086,,2026-09-07 22:46:08.780756+00
+40,Angelópolis,Restaurante,Restaurante Típico Angelópolis 1,31479255,,2026-09-07 22:46:08.780756+00
+41,Angelópolis,Restaurante,Restaurante Típico Angelópolis 2,3133490532,,2026-09-07 22:46:08.780756+00
+42,Angelópolis,Restaurante,Restaurante Típico Angelópolis 2,3135287355,,2026-09-07 22:46:08.780756+00
+43,Angelópolis,Restaurante,Restaurante Típico Angelópolis 3,3129030251,,2026-09-07 22:46:08.780756+00
+44,Angelópolis,Restaurante,Restaurante Típico Angelópolis 3,3008277807,,2026-09-07 22:46:08.780756+00
+45,,,,,,2026-09-07 22:46:08.780756+00
+46,Betania,Hotel,Hospedaje Betania 2,3016598664,,2026-09-07 22:46:08.780756+00
+47,Betania,Hotel,Hospedaje Betania 2,3142544501,,2026-09-07 22:46:08.780756+00
+48,Betania,Hotel,Hospedaje Betania 3,3119153312,,2026-09-07 22:46:08.780756+00
+49,Betania,Hotel,Hospedaje Betania 3,3011739219,,2026-09-07 22:46:08.780756+00
+50,Betania,Hotel,Hospedaje Betania 4,3205484258,,2026-09-07 22:46:08.780756+00
+51,Betania,Hotel,Hospedaje Betania 4,3126874618,,2026-09-07 22:46:08.780756+00
+52,Betania,Hotel,Hotel Principal Betania 1,3142536862,,2026-09-07 22:46:08.780756+00
+53,Betania,Hotel,Hotel Principal Betania 1,3012862384,,2026-09-07 22:46:08.780756+00
+54,Betania,Restaurante,Restaurante Típico Betania 1,3201623884,,2026-09-07 22:46:08.780756+00
+55,Betania,Restaurante,Restaurante Típico Betania 1,3136808649,,2026-09-07 22:46:08.780756+00
+56,Betania,Restaurante,Restaurante Típico Betania 2,3141459438,,2026-09-07 22:46:08.780756+00
+57,Betania,Restaurante,Restaurante Típico Betania 2,3117561219,,2026-09-07 22:46:08.780756+00
+58,Betania,Restaurante,Restaurante Típico Betania 3,3118125163,,2026-09-07 22:46:08.780756+00
+59,Betania,Restaurante,Restaurante Típico Betania 3,3019186035,,2026-09-07 22:46:08.780756+00
+60,,,,,,2026-09-07 22:46:08.780756+00
+61,Betulia,Hotel,Hospedaje Betulia 2,3101498756,,2026-09-07 22:46:08.780756+00
+62,Betulia,Hotel,Hospedaje Betulia 2,3137277812,,2026-09-07 22:46:08.780756+00
+63,Betulia,Hotel,Hospedaje Betulia 3,3216192149,,2026-09-07 22:46:08.780756+00
+64,Betulia,Hotel,Hospedaje Betulia 3,31084989,,2026-09-07 22:46:08.780756+00
+65,Betulia,Hotel,Hospedaje Betulia 4,3106393716,,2026-09-07 22:46:08.780756+00
+66,Betulia,Hotel,Hospedaje Betulia 4,3117009858,,2026-09-07 22:46:08.780756+00
+67,Betulia,Hotel,Hotel Principal Betulia 1,31126307,,2026-09-07 22:46:08.780756+00
+68,Betulia,Hotel,Hotel Principal Betulia 1,3116004177,,2026-09-07 22:46:08.780756+00
+69,Betulia,Restaurante,Restaurante Típico Betulia 1,30130620,,2026-09-07 22:46:08.780756+00
+70,Betulia,Restaurante,Restaurante Típico Betulia 1,3218497632,,2026-09-07 22:46:08.780756+00
+71,Betulia,Restaurante,Restaurante Típico Betulia 2,32023157,,2026-09-07 22:46:08.780756+00
+72,Betulia,Restaurante,Restaurante Típico Betulia 2,3204627755,,2026-09-07 22:46:08.780756+00
+73,Betulia,Restaurante,Restaurante Típico Betulia 3,3201821212,,2026-09-07 22:46:08.780756+00
+74,Betulia,Restaurante,Restaurante Típico Betulia 3,3216770808,,2026-09-07 22:46:08.780756+00
+75,,,,,,2026-09-07 22:46:08.780756+00
+76,Caramanta,Hotel,Hospedaje Caramanta 2,3206635291,,2026-09-07 22:46:08.780756+00
+77,Caramanta,Hotel,Hospedaje Caramanta 2,3136238932,,2026-09-07 22:46:08.780756+00
+78,Caramanta,Hotel,Hospedaje Caramanta 3,3148506632,,2026-09-07 22:46:08.780756+00
+79,Caramanta,Hotel,Hospedaje Caramanta 3,3101969534,,2026-09-07 22:46:08.780756+00
+80,Caramanta,Hotel,Hospedaje Caramanta 4,3006280068,,2026-09-07 22:46:08.780756+00
+81,Caramanta,Hotel,Hospedaje Caramanta 4,3206814221,,2026-09-07 22:46:08.780756+00
+82,Caramanta,Hotel,Hotel Principal Caramanta 1,3118744355,,2026-09-07 22:46:08.780756+00
+83,Caramanta,Hotel,Hotel Principal Caramanta 1,3015906733,,2026-09-07 22:46:08.780756+00
+84,Caramanta,Restaurante,Restaurante Típico Caramanta 1,3144769394,,2026-09-07 22:46:08.780756+00
+85,Caramanta,Restaurante,Restaurante Típico Caramanta 1,3145459666,,2026-09-07 22:46:08.780756+00
+86,Caramanta,Restaurante,Restaurante Típico Caramanta 2,3019261224,,2026-09-07 22:46:08.780756+00
+87,Caramanta,Restaurante,Restaurante Típico Caramanta 2,3139581764,,2026-09-07 22:46:08.780756+00
+88,Caramanta,Restaurante,Restaurante Típico Caramanta 3,3141432389,,2026-09-07 22:46:08.780756+00
+89,Caramanta,Restaurante,Restaurante Típico Caramanta 3,32064860,,2026-09-07 22:46:08.780756+00
+90,,,,,,2026-09-07 22:46:08.780756+00
+91,Ciudad Bolívar,Hotel,Finca Hotel Lagos del Citará,31229892,,2026-09-07 22:46:08.780756+00
+92,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 2,31026639,,2026-09-07 22:46:08.780756+00
+93,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 2,3018178952,,2026-09-07 22:46:08.780756+00
+94,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 3,3109219724,,2026-09-07 22:46:08.780756+00
+95,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 3,3108357239,,2026-09-07 22:46:08.780756+00
+96,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 4,3122284693,,2026-09-07 22:46:08.780756+00
+97,Ciudad Bolívar,Hotel,Hospedaje Ciudad Bolívar 4,3106926426,,2026-09-07 22:46:08.780756+00
+98,Ciudad Bolívar,Hotel,Hotel Principal Ciudad Bolívar 1,3213009904,,2026-09-07 22:46:08.780756+00
+99,Ciudad Bolívar,Hotel,Hotel Principal Ciudad Bolívar 1,3201690333,,2026-09-07 22:46:08.780756+00
+100,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 1,3108718517,,2026-09-07 22:46:08.780756+00
+101,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 1,3107229098,,2026-09-07 22:46:08.780756+00
+102,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 2,3218985291,,2026-09-07 22:46:08.780756+00
+103,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 2,3101440541,,2026-09-07 22:46:08.780756+00
+104,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 3,3011229058,,2026-09-07 22:46:08.780756+00
+105,Ciudad Bolívar,Restaurante,Restaurante Típico Ciudad Bolívar 3,31422184,,2026-09-07 22:46:08.780756+00
+106,,,,,,2026-09-07 22:46:08.780756+00
+107,Concordia,Hotel,Hospedaje Concordia 2,3112582297,,2026-09-07 22:46:08.780756+00
+108,Concordia,Hotel,Hospedaje Concordia 2,3123513026,,2026-09-07 22:46:08.780756+00
+109,Concordia,Hotel,Hospedaje Concordia 3,3122214556,,2026-09-07 22:46:08.780756+00
+110,Concordia,Hotel,Hospedaje Concordia 3,3216907427,,2026-09-07 22:46:08.780756+00
+111,Concordia,Hotel,Hospedaje Concordia 4,3015368665,,2026-09-07 22:46:08.780756+00
+112,Concordia,Hotel,Hospedaje Concordia 4,3105029799,,2026-09-07 22:46:08.780756+00
+113,Concordia,Hotel,Hotel Monteverde,3104265128,,2026-09-07 22:46:08.780756+00
+114,Concordia,Hotel,Hotel Principal Concordia 1,3015605512,,2026-09-07 22:46:08.780756+00
+115,Concordia,Hotel,Hotel Principal Concordia 1,3111390675,,2026-09-07 22:46:08.780756+00
+116,Concordia,Restaurante,Restaurante Típico Concordia 1,3215319883,,2026-09-07 22:46:08.780756+00
+117,Concordia,Restaurante,Restaurante Típico Concordia 1,3122045194,,2026-09-07 22:46:08.780756+00
+118,Concordia,Restaurante,Restaurante Típico Concordia 2,3138883434,,2026-09-07 22:46:08.780756+00
+119,Concordia,Restaurante,Restaurante Típico Concordia 2,3016511052,,2026-09-07 22:46:08.780756+00
+120,Concordia,Restaurante,Restaurante Típico Concordia 3,3134533426,,2026-09-07 22:46:08.780756+00
+121,Concordia,Restaurante,Restaurante Típico Concordia 3,3113190773,,2026-09-07 22:46:08.780756+00
+122,,,,,,2026-09-07 22:46:08.780756+00
+123,Fredonia,Hotel,Hospedaje Fredonia 2,3001399789,,2026-09-07 22:46:08.780756+00
+124,Fredonia,Hotel,Hospedaje Fredonia 2,3122447277,,2026-09-07 22:46:08.780756+00
+125,Fredonia,Hotel,Hospedaje Fredonia 3,3013234198,,2026-09-07 22:46:08.780756+00
+126,Fredonia,Hotel,Hospedaje Fredonia 3,3009713801,,2026-09-07 22:46:08.780756+00
+127,Fredonia,Hotel,Hospedaje Fredonia 4,3134546992,,2026-09-07 22:46:08.780756+00
+128,Fredonia,Hotel,Hospedaje Fredonia 4,3005596923,,2026-09-07 22:46:08.780756+00
+129,Fredonia,Hotel,Hotel Principal Fredonia 1,3142409962,,2026-09-07 22:46:08.780756+00
+130,Fredonia,Hotel,Hotel Principal Fredonia 1,3015272691,,2026-09-07 22:46:08.780756+00
+131,Fredonia,Hotel,Hotel Quinta del Café,31151848,,2026-09-07 22:46:08.780756+00
+132,Fredonia,Restaurante,Restaurante Típico Fredonia 1,3136835497,,2026-09-07 22:46:08.780756+00
+133,Fredonia,Restaurante,Restaurante Típico Fredonia 1,3006853854,,2026-09-07 22:46:08.780756+00
+134,Fredonia,Restaurante,Restaurante Típico Fredonia 2,3013651705,,2026-09-07 22:46:08.780756+00
+135,Fredonia,Restaurante,Restaurante Típico Fredonia 2,3131226373,,2026-09-07 22:46:08.780756+00
+136,Fredonia,Restaurante,Restaurante Típico Fredonia 3,3128860636,,2026-09-07 22:46:08.780756+00
+137,Fredonia,Restaurante,Restaurante Típico Fredonia 3,3117360697,,2026-09-07 22:46:08.780756+00
+138,,,,,,2026-09-07 22:46:08.780756+00
+139,Hispania,Hotel,Hospedaje Hispania 2,3214871335,,2026-09-07 22:46:08.780756+00
+140,Hispania,Hotel,Hospedaje Hispania 2,3131839689,,2026-09-07 22:46:08.780756+00
+141,Hispania,Hotel,Hospedaje Hispania 3,3009694918,,2026-09-07 22:46:08.780756+00
+142,Hispania,Hotel,Hospedaje Hispania 3,3119470182,,2026-09-07 22:46:08.780756+00
+143,Hispania,Hotel,Hospedaje Hispania 4,32090393,,2026-09-07 22:46:08.780756+00
+144,Hispania,Hotel,Hospedaje Hispania 4,3004823649,,2026-09-07 22:46:08.780756+00
+145,Hispania,Hotel,Hotel Principal Hispania 1,3125262097,,2026-09-07 22:46:08.780756+00
+146,Hispania,Hotel,Hotel Principal Hispania 1,3017002334,,2026-09-07 22:46:08.780756+00
+147,Hispania,Restaurante,Restaurante Típico Hispania 1,3018723494,,2026-09-07 22:46:08.780756+00
+148,Hispania,Restaurante,Restaurante Típico Hispania 1,3148826354,,2026-09-07 22:46:08.780756+00
+149,Hispania,Restaurante,Restaurante Típico Hispania 2,3013272794,,2026-09-07 22:46:08.780756+00
+150,Hispania,Restaurante,Restaurante Típico Hispania 2,3217228967,,2026-09-07 22:46:08.780756+00
+151,Hispania,Restaurante,Restaurante Típico Hispania 3,3107767834,,2026-09-07 22:46:08.780756+00
+152,Hispania,Restaurante,Restaurante Típico Hispania 3,3138454793,,2026-09-07 22:46:08.780756+00
+153,,,,,,2026-09-07 22:46:08.780756+00
+154,Jardín,Hotel,Casa Passiflora Hotel Boutique,31824210,,2026-09-07 22:46:08.780756+00
+155,Jardín,Hotel,Hotel Boutique Jardín,3206903621,,2026-09-07 22:46:08.780756+00
+156,Jardín,Hotel,Hotel Boutique Jardín,32088759,,2026-09-07 22:46:08.780756+00
+157,Jardín,Hotel,Hotel Casa Passiflora,31041285,,2026-09-07 22:46:08.780756+00
+158,Jardín,Hotel,Hotel Colonial Jardín,31395689,,2026-09-07 22:46:08.780756+00
+159,Jardín,Hotel,Hotel Colonial Jardín,3002530545,,2026-09-07 22:46:08.780756+00
+160,Jardín,Hotel,Hotel Hacienda Balandú,60444471,,2026-09-07 22:46:08.780756+00
+161,Jardín,Hotel,Hotel Plantación,3127896543,,2026-09-07 22:46:08.780756+00
+162,Jardín,Hotel,Hotel Plaza Jardín,3005396934,,2026-09-07 22:46:08.780756+00
+163,Jardín,Hotel,Hotel Plaza Jardín,3145933475,,2026-09-07 22:46:08.780756+00
+164,Jardín,Hotel,Hotel Real Jardín,3014518135,,2026-09-07 22:46:08.780756+00
+165,Jardín,Hotel,Hotel Real Jardín,3211678691,,2026-09-07 22:46:08.780756+00
+166,Jardín,Hotel,Hotel Valeriana,3102223344,,2026-09-07 22:46:08.780756+00
+167,Jardín,Restaurante,Café Macanas,3113456789,,2026-09-07 22:46:08.780756+00
+168,Jardín,Restaurante,La Palapa,31245678,,2026-09-07 22:46:08.780756+00
+169,Jardín,Restaurante,Restaurante El Arriero,3135678901,,2026-09-07 22:46:08.780756+00
+170,Jardín,Restaurante,Restaurante El Mirador de Jardín,3114634773,,2026-09-07 22:46:08.780756+00
+171,Jardín,Restaurante,Restaurante El Mirador de Jardín,3112459877,,2026-09-07 22:46:08.780756+00
+172,Jardín,Restaurante,Restaurante La Casona de Jardín,30194877,,2026-09-07 22:46:08.780756+00
+173,Jardín,Restaurante,Restaurante La Casona de Jardín,3105720429,,2026-09-07 22:46:08.780756+00
+174,Jardín,Restaurante,Restaurante Tradición de Jardín,3145024096,,2026-09-07 22:46:08.780756+00
+175,Jardín,Restaurante,Restaurante Tradición de Jardín,3016615868,,2026-09-07 22:46:08.780756+00
+176,,,,,,2026-09-07 22:46:08.780756+00
+177,Jericó,Hotel,El Despertar Hotel,3123261134,,2026-09-07 22:46:08.780756+00
+178,Jericó,Hotel,Hostería Las Cabañas,3134567123,,2026-09-07 22:46:08.780756+00
+179,Jericó,Hotel,Hotel Boutique Jericó,3206904697,,2026-09-07 22:46:08.780756+00
+180,Jericó,Hotel,Hotel Boutique Jericó,3104787232,,2026-09-07 22:46:08.780756+00
+181,Jericó,Hotel,Hotel Casa del Fundador,3145678901,,2026-09-07 22:46:08.780756+00
+182,Jericó,Hotel,Hotel Colonial Jericó,31117053,,2026-09-07 22:46:08.780756+00
+183,Jericó,Hotel,Hotel Colonial Jericó,3145653431,,2026-09-07 22:46:08.780756+00
+184,Jericó,Hotel,Hotel El Solar,31045678,,2026-09-07 22:46:08.780756+00
+185,Jericó,Hotel,Hotel Piedras,3126789012,,2026-09-07 22:46:08.780756+00
+186,Jericó,Hotel,Hotel Plaza Jericó,3016076457,,2026-09-07 22:46:08.780756+00
+187,Jericó,Hotel,Hotel Plaza Jericó,3102472741,,2026-09-07 22:46:08.780756+00
+188,Jericó,Hotel,Hotel Real Jericó,3137123723,,2026-09-07 22:46:08.780756+00
+189,Jericó,Hotel,Hotel Real Jericó,3003915013,,2026-09-07 22:46:08.780756+00
+190,Jericó,Restaurante,Don Rafa,3101234567,,2026-09-07 22:46:08.780756+00
+191,Jericó,Restaurante,El Balcón del Café,3129012345,,2026-09-07 22:46:08.780756+00
+192,Jericó,Restaurante,Restaurante El Mirador de Jericó,3139145671,,2026-09-07 22:46:08.780756+00
+193,Jericó,Restaurante,Restaurante El Mirador de Jericó,3013011758,,2026-09-07 22:46:08.780756+00
+194,Jericó,Restaurante,Restaurante La Casona,3118901234,,2026-09-07 22:46:08.780756+00
+195,Jericó,Restaurante,Restaurante La Casona de Jericó,3206601282,,2026-09-07 22:46:08.780756+00
+196,Jericó,Restaurante,Restaurante La Casona de Jericó,3107389478,,2026-09-07 22:46:08.780756+00
+197,Jericó,Restaurante,Restaurante Tradición de Jericó,31192193,,2026-09-07 22:46:08.780756+00
+198,Jericó,Restaurante,Restaurante Tradición de Jericó,3123491507,,2026-09-07 22:46:08.780756+00
+199,,,,,,2026-09-07 22:46:08.780756+00
+200,La Pintada,Hotel,Hospedaje La Pintada 2,3129300318,,2026-09-07 22:46:08.780756+00
+201,La Pintada,Hotel,Hospedaje La Pintada 2,3005703531,,2026-09-07 22:46:08.780756+00
+202,La Pintada,Hotel,Hospedaje La Pintada 3,3016388465,,2026-09-07 22:46:08.780756+00
+203,La Pintada,Hotel,Hospedaje La Pintada 3,3002899767,,2026-09-07 22:46:08.780756+00
+204,La Pintada,Hotel,Hospedaje La Pintada 4,3113591817,,2026-09-07 22:46:08.780756+00
+205,La Pintada,Hotel,Hospedaje La Pintada 4,3141926691,,2026-09-07 22:46:08.780756+00
+206,La Pintada,Hotel,Hotel El Amigo,3215086785,,2026-09-07 22:46:08.780756+00
+207,La Pintada,Hotel,Hotel Principal La Pintada 1,3147749372,,2026-09-07 22:46:08.780756+00
+208,La Pintada,Hotel,Hotel Principal La Pintada 1,31310208,,2026-09-07 22:46:08.780756+00
+209,La Pintada,Restaurante,Restaurante Típico La Pintada 1,3112547179,,2026-09-07 22:46:08.780756+00
+210,La Pintada,Restaurante,Restaurante Típico La Pintada 1,3127446395,,2026-09-07 22:46:08.780756+00
+211,La Pintada,Restaurante,Restaurante Típico La Pintada 2,3101202273,,2026-09-07 22:46:08.780756+00
+212,La Pintada,Restaurante,Restaurante Típico La Pintada 2,3136048603,,2026-09-07 22:46:08.780756+00
+213,La Pintada,Restaurante,Restaurante Típico La Pintada 3,3139433465,,2026-09-07 22:46:08.780756+00
+214,La Pintada,Restaurante,Restaurante Típico La Pintada 3,3114135029,,2026-09-07 22:46:08.780756+00
+215,,,,,,2026-09-07 22:46:08.780756+00
+216,Montebello,Hotel,Hospedaje Montebello 2,3149534402,,2026-09-07 22:46:08.780756+00
+217,Montebello,Hotel,Hospedaje Montebello 2,3112136318,,2026-09-07 22:46:08.780756+00
+218,Montebello,Hotel,Hospedaje Montebello 3,3148077042,,2026-09-07 22:46:08.780756+00
+219,Montebello,Hotel,Hospedaje Montebello 3,3009113717,,2026-09-07 22:46:08.780756+00
+220,Montebello,Hotel,Hospedaje Montebello 4,3216346109,,2026-09-07 22:46:08.780756+00
+221,Montebello,Hotel,Hospedaje Montebello 4,3136321114,,2026-09-07 22:46:08.780756+00
+222,Montebello,Hotel,Hotel Principal Montebello 1,3012423732,,2026-09-07 22:46:08.780756+00
+223,Montebello,Hotel,Hotel Principal Montebello 1,3016880095,,2026-09-07 22:46:08.780756+00
+224,Montebello,Restaurante,Restaurante Típico Montebello 1,3132810009,,2026-09-07 22:46:08.780756+00
+225,Montebello,Restaurante,Restaurante Típico Montebello 1,3003551564,,2026-09-07 22:46:08.780756+00
+226,Montebello,Restaurante,Restaurante Típico Montebello 2,3014526568,,2026-09-07 22:46:08.780756+00
+227,Montebello,Restaurante,Restaurante Típico Montebello 2,3208460426,,2026-09-07 22:46:08.780756+00
+228,Montebello,Restaurante,Restaurante Típico Montebello 3,30179027,,2026-09-07 22:46:08.780756+00
+229,Montebello,Restaurante,Restaurante Típico Montebello 3,3106500918,,2026-09-07 22:46:08.780756+00
+230,,,,,,2026-09-07 22:46:08.780756+00
+231,Pueblorrico,Hotel,Hospedaje Pueblorrico 2,3002338594,,2026-09-07 22:46:08.780756+00
+232,Pueblorrico,Hotel,Hospedaje Pueblorrico 2,3129477035,,2026-09-07 22:46:08.780756+00
+233,Pueblorrico,Hotel,Hospedaje Pueblorrico 3,3104892382,,2026-09-07 22:46:08.780756+00
+234,Pueblorrico,Hotel,Hospedaje Pueblorrico 3,3107263948,,2026-09-07 22:46:08.780756+00
+235,Pueblorrico,Hotel,Hospedaje Pueblorrico 4,3015093127,,2026-09-07 22:46:08.780756+00
+236,Pueblorrico,Hotel,Hospedaje Pueblorrico 4,3113484013,,2026-09-07 22:46:08.780756+00
+237,Pueblorrico,Hotel,Hotel Principal Pueblorrico 1,3009322871,,2026-09-07 22:46:08.780756+00
+238,Pueblorrico,Hotel,Hotel Principal Pueblorrico 1,31255667,,2026-09-07 22:46:08.780756+00
+239,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 1,30192290,,2026-09-07 22:46:08.780756+00
+240,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 1,3203728969,,2026-09-07 22:46:08.780756+00
+241,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 2,31360660,,2026-09-07 22:46:08.780756+00
+242,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 2,30178376,,2026-09-07 22:46:08.780756+00
+243,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 3,3016337969,,2026-09-07 22:46:08.780756+00
+244,Pueblorrico,Restaurante,Restaurante Típico Pueblorrico 3,3011507308,,2026-09-07 22:46:08.780756+00
+245,,,,,,2026-09-07 22:46:08.780756+00
+246,Salgar,Hotel,Finca Boutique El Diamante,3506428602,,2026-09-07 22:46:08.780756+00
+247,Salgar,Hotel,Hospedaje Salgar 2,3138862153,,2026-09-07 22:46:08.780756+00
+248,Salgar,Hotel,Hospedaje Salgar 2,31177538,,2026-09-07 22:46:08.780756+00
+249,Salgar,Hotel,Hospedaje Salgar 3,3202925733,,2026-09-07 22:46:08.780756+00
+250,Salgar,Hotel,Hospedaje Salgar 3,30170002,,2026-09-07 22:46:08.780756+00
+251,Salgar,Hotel,Hospedaje Salgar 4,3214097867,,2026-09-07 22:46:08.780756+00
+252,Salgar,Hotel,Hospedaje Salgar 4,3013165885,,2026-09-07 22:46:08.780756+00
+253,Salgar,Hotel,Hotel Principal Salgar 1,31336082,,2026-09-07 22:46:08.780756+00
+254,Salgar,Hotel,Hotel Principal Salgar 1,3014216122,,2026-09-07 22:46:08.780756+00
+255,Salgar,Restaurante,Restaurante Típico Salgar 1,3017177191,,2026-09-07 22:46:08.780756+00
+256,Salgar,Restaurante,Restaurante Típico Salgar 1,3118350595,,2026-09-07 22:46:08.780756+00
+257,Salgar,Restaurante,Restaurante Típico Salgar 2,3208770049,,2026-09-07 22:46:08.780756+00
+258,Salgar,Restaurante,Restaurante Típico Salgar 2,3101208575,,2026-09-07 22:46:08.780756+00
+259,Salgar,Restaurante,Restaurante Típico Salgar 3,3106445704,,2026-09-07 22:46:08.780756+00
+260,Salgar,Restaurante,Restaurante Típico Salgar 3,3005992329,,2026-09-07 22:46:08.780756+00
+261,,,,,,2026-09-07 22:46:08.780756+00
+262,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 2,3148303879,,2026-09-07 22:46:08.780756+00
+263,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 2,3216683757,,2026-09-07 22:46:08.780756+00
+264,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 3,3015295043,,2026-09-07 22:46:08.780756+00
+265,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 3,3129582415,,2026-09-07 22:46:08.780756+00
+266,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 4,3107147572,,2026-09-07 22:46:08.780756+00
+267,Santa Bárbara,Hotel,Hospedaje Santa Bárbara 4,3102494306,,2026-09-07 22:46:08.780756+00
+268,Santa Bárbara,Hotel,Hotel Galeria Plaza,3160973094,,2026-09-07 22:46:08.780756+00
+269,Santa Bárbara,Hotel,Hotel Principal Santa Bárbara 1,3016650944,,2026-09-07 22:46:08.780756+00
+270,Santa Bárbara,Hotel,Hotel Principal Santa Bárbara 1,3103245153,,2026-09-07 22:46:08.780756+00
+271,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 1,30134814,,2026-09-07 22:46:08.780756+00
+272,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 1,3109059049,,2026-09-07 22:46:08.780756+00
+273,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 2,3209441968,,2026-09-07 22:46:08.780756+00
+274,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 2,3215330443,,2026-09-07 22:46:08.780756+00
+275,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 3,3004007249,,2026-09-07 22:46:08.780756+00
+276,Santa Bárbara,Restaurante,Restaurante Típico Santa Bárbara 3,3014840997,,2026-09-07 22:46:08.780756+00
+277,,,,,,2026-09-07 22:46:08.780756+00
+278,Tarso,Hotel,Hospedaje Tarso 2,3104907451,,2026-09-07 22:46:08.780756+00
+279,Tarso,Hotel,Hospedaje Tarso 2,3146781586,,2026-09-07 22:46:08.780756+00
+280,Tarso,Hotel,Hospedaje Tarso 3,3018693016,,2026-09-07 22:46:08.780756+00
+281,Tarso,Hotel,Hospedaje Tarso 3,3207455334,,2026-09-07 22:46:08.780756+00
+282,Tarso,Hotel,Hospedaje Tarso 4,3127947351,,2026-09-07 22:46:08.780756+00
+283,Tarso,Hotel,Hospedaje Tarso 4,3106268578,,2026-09-07 22:46:08.780756+00
+284,Tarso,Hotel,Hotel Principal Tarso 1,3211973791,,2026-09-07 22:46:08.780756+00
+285,Tarso,Hotel,Hotel Principal Tarso 1,3122717985,,2026-09-07 22:46:08.780756+00
+286,Tarso,Restaurante,Restaurante Típico Tarso 1,3137011952,,2026-09-07 22:46:08.780756+00
+287,Tarso,Restaurante,Restaurante Típico Tarso 1,3116850052,,2026-09-07 22:46:08.780756+00
+288,Tarso,Restaurante,Restaurante Típico Tarso 2,3131425306,,2026-09-07 22:46:08.780756+00
+289,Tarso,Restaurante,Restaurante Típico Tarso 2,3146099899,,2026-09-07 22:46:08.780756+00
+290,Tarso,Restaurante,Restaurante Típico Tarso 3,3202507253,,2026-09-07 22:46:08.780756+00
+291,Tarso,Restaurante,Restaurante Típico Tarso 3,3205187626,,2026-09-07 22:46:08.780756+00
+292,,,,,,2026-09-07 22:46:08.780756+00
+293,Titiribí,Hotel,Hospedaje Titiribí 2,3013947573,,2026-09-07 22:46:08.780756+00
+294,Titiribí,Hotel,Hospedaje Titiribí 2,3138642616,,2026-09-07 22:46:08.780756+00
+295,Titiribí,Hotel,Hospedaje Titiribí 3,3113790789,,2026-09-07 22:46:08.780756+00
+296,Titiribí,Hotel,Hospedaje Titiribí 3,3217818425,,2026-09-07 22:46:08.780756+00
+297,Titiribí,Hotel,Hospedaje Titiribí 4,3118573156,,2026-09-07 22:46:08.780756+00
+298,Titiribí,Hotel,Hospedaje Titiribí 4,3127126671,,2026-09-07 22:46:08.780756+00
+299,Titiribí,Hotel,Hotel Principal Titiribí 1,3133549622,,2026-09-07 22:46:08.780756+00
+300,Titiribí,Hotel,Hotel Principal Titiribí 1,3142693402,,2026-09-07 22:46:08.780756+00
+301,Titiribí,Restaurante,Restaurante Típico Titiribí 1,3213950586,,2026-09-07 22:46:08.780756+00
+302,Titiribí,Restaurante,Restaurante Típico Titiribí 1,3007265913,,2026-09-07 22:46:08.780756+00
+303,Titiribí,Restaurante,Restaurante Típico Titiribí 2,3138250683,,2026-09-07 22:46:08.780756+00
+304,Titiribí,Restaurante,Restaurante Típico Titiribí 2,3138989312,,2026-09-07 22:46:08.780756+00
+305,Titiribí,Restaurante,Restaurante Típico Titiribí 3,3207793059,,2026-09-07 22:46:08.780756+00
+306,Titiribí,Restaurante,Restaurante Típico Titiribí 3,31388839,,2026-09-07 22:46:08.780756+00
+307,,,,,,2026-09-07 22:46:08.780756+00
+308,Támesis,Hotel,Hospedaje Támesis 2,3019455655,,2026-09-07 22:46:08.780756+00
+309,Támesis,Hotel,Hospedaje Támesis 2,3201031861,,2026-09-07 22:46:08.780756+00
+310,Támesis,Hotel,Hospedaje Támesis 3,3122208866,,2026-09-07 22:46:08.780756+00
+311,Támesis,Hotel,Hospedaje Támesis 3,3019461349,,2026-09-07 22:46:08.780756+00
+312,Támesis,Hotel,Hospedaje Támesis 4,3139070417,,2026-09-07 22:46:08.780756+00
+313,Támesis,Hotel,Hospedaje Támesis 4,3113320098,,2026-09-07 22:46:08.780756+00
+314,Támesis,Hotel,Hotel Balcon Tamesino,3193746626,,2026-09-07 22:46:08.780756+00
+315,Támesis,Hotel,Hotel Principal Támesis 1,3145267104,,2026-09-07 22:46:08.780756+00
+316,Támesis,Hotel,Hotel Principal Támesis 1,3128244457,,2026-09-07 22:46:08.780756+00
+317,Támesis,Restaurante,Restaurante Típico Támesis 1,3116810376,,2026-09-07 22:46:08.780756+00
+318,Támesis,Restaurante,Restaurante Típico Támesis 1,3126065843,,2026-09-07 22:46:08.780756+00
+319,Támesis,Restaurante,Restaurante Típico Támesis 2,3216253918,,2026-09-07 22:46:08.780756+00
+320,Támesis,Restaurante,Restaurante Típico Támesis 2,3145916307,,2026-09-07 22:46:08.780756+00
+321,Támesis,Restaurante,Restaurante Típico Támesis 3,3119279383,,2026-09-07 22:46:08.780756+00
+322,Támesis,Restaurante,Restaurante Típico Támesis 3,3005336638,,2026-09-07 22:46:08.780756+00
+323,,,,,,2026-09-07 22:46:08.780756+00
+324,Urrao,Hotel,Hospedaje Urrao 2,3137329416,,2026-09-07 22:46:08.780756+00
+325,Urrao,Hotel,Hospedaje Urrao 2,3107488424,,2026-09-07 22:46:08.780756+00
+326,Urrao,Hotel,Hospedaje Urrao 3,3006735451,,2026-09-07 22:46:08.780756+00
+327,Urrao,Hotel,Hospedaje Urrao 3,3137779739,,2026-09-07 22:46:08.780756+00
+328,Urrao,Hotel,Hospedaje Urrao 4,3138192118,,2026-09-07 22:46:08.780756+00
+329,Urrao,Hotel,Hospedaje Urrao 4,3017589832,,2026-09-07 22:46:08.780756+00
+330,Urrao,Hotel,Hotel Principal Urrao 1,3116412486,,2026-09-07 22:46:08.780756+00
+331,Urrao,Hotel,Hotel Principal Urrao 1,3218684497,,2026-09-07 22:46:08.780756+00
+332,Urrao,Restaurante,Restaurante Típico Urrao 1,3134493258,,2026-09-07 22:46:08.780756+00
+333,Urrao,Restaurante,Restaurante Típico Urrao 1,31293292,,2026-09-07 22:46:08.780756+00
+334,Urrao,Restaurante,Restaurante Típico Urrao 2,3007637014,,2026-09-07 22:46:08.780756+00
+335,Urrao,Restaurante,Restaurante Típico Urrao 2,3136006858,,2026-09-07 22:46:08.780756+00
+336,Urrao,Restaurante,Restaurante Típico Urrao 3,3105020084,,2026-09-07 22:46:08.780756+00
+337,Urrao,Restaurante,Restaurante Típico Urrao 3,3101679527,,2026-09-07 22:46:08.780756+00
+338,,,,,,2026-09-07 22:46:08.780756+00
+339,Valparaíso,Hotel,Hospedaje Valparaíso 2,3103413517,,2026-09-07 22:46:08.780756+00
+340,Valparaíso,Hotel,Hospedaje Valparaíso 2,3207777273,,2026-09-07 22:46:08.780756+00
+341,Valparaíso,Hotel,Hospedaje Valparaíso 3,3132531894,,2026-09-07 22:46:08.780756+00
+342,Valparaíso,Hotel,Hospedaje Valparaíso 3,3013476238,,2026-09-07 22:46:08.780756+00
+343,Valparaíso,Hotel,Hospedaje Valparaíso 4,3206349336,,2026-09-07 22:46:08.780756+00
+344,Valparaíso,Hotel,Hospedaje Valparaíso 4,3201957772,,2026-09-07 22:46:08.780756+00
+345,Valparaíso,Hotel,Hotel Principal Valparaíso 1,3123237645,,2026-09-07 22:46:08.780756+00
+346,Valparaíso,Hotel,Hotel Principal Valparaíso 1,3219603018,,2026-09-07 22:46:08.780756+00
+347,Valparaíso,Restaurante,Restaurante Típico Valparaíso 1,3004960078,,2026-09-07 22:46:08.780756+00
+348,Valparaíso,Restaurante,Restaurante Típico Valparaíso 1,3102709438,,2026-09-07 22:46:08.780756+00
+349,Valparaíso,Restaurante,Restaurante Típico Valparaíso 2,3209277332,,2026-09-07 22:46:08.780756+00
+350,Valparaíso,Restaurante,Restaurante Típico Valparaíso 2,3211811508,,2026-09-07 22:46:08.780756+00
+351,Valparaíso,Restaurante,Restaurante Típico Valparaíso 3,3143993655,,2026-09-07 22:46:08.780756+00
+352,Valparaíso,Restaurante,Restaurante Típico Valparaíso 3,32134757,,2026-09-07 22:46:08.780756+00
+353,,,,,,2026-09-07 22:46:08.780756+00
+354,Venecia,Hotel,Alttum Venecia Hotel Boutique,31933735,,2026-09-07 22:46:08.780756+00
+355,Venecia,Hotel,Cerro Tusa Springs,3217039846,,2026-09-07 22:46:08.780756+00
+356,Venecia,Hotel,Finca Hotel El Edén,3119998877,,2026-09-07 22:46:08.780756+00
+357,Venecia,Hotel,Hostería Los Farallones,3128654321,,2026-09-07 22:46:08.780756+00
+358,Venecia,Hotel,Hotel Boutique Venecia,3207544083,,2026-09-07 22:46:08.780756+00
+359,Venecia,Hotel,Hotel Boutique Venecia,3208389157,,2026-09-07 22:46:08.780756+00
+360,Venecia,Hotel,Hotel Colonial Venecia,3145773373,,2026-09-07 22:46:08.780756+00
+361,Venecia,Hotel,Hotel Colonial Venecia,3206799936,,2026-09-07 22:46:08.780756+00
+362,Venecia,Hotel,Hotel Plaza Venecia,3131739929,,2026-09-07 22:46:08.780756+00
+363,Venecia,Hotel,Hotel Plaza Venecia,3204758421,,2026-09-07 22:46:08.780756+00
+364,Venecia,Hotel,Hotel Real Venecia,3119174099,,2026-09-07 22:46:08.780756+00
+365,Venecia,Hotel,Hotel Real Venecia,3124955795,,2026-09-07 22:46:08.780756+00
+366,Venecia,Hotel,Hotel Venecia Real,3105554433,,2026-09-07 22:46:08.780756+00
+367,Venecia,Restaurante,Asados El Cerro,3123456789,,2026-09-07 22:46:08.780756+00
+368,Venecia,Restaurante,Café del Parque,3116667788,,2026-09-07 22:46:08.780756+00
+369,Venecia,Restaurante,Restaurante El Mirador de Venecia,3203557693,,2026-09-07 22:46:08.780756+00
+370,Venecia,Restaurante,Restaurante El Mirador de Venecia,3122524059,,2026-09-07 22:46:08.780756+00
+371,Venecia,Restaurante,Restaurante La Casona de Venecia,3013933265,,2026-09-07 22:46:08.780756+00
+372,Venecia,Restaurante,Restaurante La Casona de Venecia,3111379189,,2026-09-07 22:46:08.780756+00
+373,Venecia,Restaurante,Restaurante La Montaña,3134445566,,2026-09-07 22:46:08.780756+00
+374,Venecia,Restaurante,Restaurante Tradición de Venecia,31487063,,2026-09-07 22:46:08.780756+00
+375,Venecia,Restaurante,Restaurante Tradición de Venecia,3011767137,,2026-09-07 22:46:08.780756+00
+376,,,,,,2026-09-07 22:46:08.780756+00
+377,Abejorral,Hotel,Bombus House,3207472022,,2026-09-07 22:46:08.780756+00
+378,Abejorral,Hotel,Hospedaje Abejorral 2,3146904652,,2026-09-07 22:46:08.780756+00
+379,Abejorral,Hotel,Hospedaje Abejorral 3,3133125913,,2026-09-07 22:46:08.780756+00
+380,Abejorral,Hotel,Hospedaje Abejorral 4,3018889332,,2026-09-07 22:46:08.780756+00
+381,Abejorral,Hotel,Hotel Principal Abejorral 1,3111623663,,2026-09-07 22:46:08.780756+00
+382,Abejorral,Restaurante,Restaurante Típico Abejorral 1,3117325578,,2026-09-07 22:46:08.780756+00
+383,Abejorral,Restaurante,Restaurante Típico Abejorral 2,3101607224,,2026-09-07 22:46:08.780756+00
+384,Abejorral,Restaurante,Restaurante Típico Abejorral 3,3011233884,,2026-09-07 22:46:08.780756+00
+385,,,,,,2026-09-07 22:46:08.780756+00
+386,Alejandría,Hotel,Hospedaje Alejandría 2,31125598,,2026-09-07 22:46:08.780756+00
+387,Alejandría,Hotel,Hospedaje Alejandría 3,3007947041,,2026-09-07 22:46:08.780756+00
+388,Alejandría,Hotel,Hospedaje Alejandría 4,3143121333,,2026-09-07 22:46:08.780756+00
+389,Alejandría,Hotel,Hotel Principal Alejandría 1,31482162,,2026-09-07 22:46:08.780756+00
+390,Alejandría,Hotel,Hotel Real Alejandría A.M.,3103522111,,2026-09-07 22:46:08.780756+00
+391,Alejandría,Restaurante,Restaurante Típico Alejandría 1,3149080243,,2026-09-07 22:46:08.780756+00
+392,Alejandría,Restaurante,Restaurante Típico Alejandría 2,32067063,,2026-09-07 22:46:08.780756+00
+393,Alejandría,Restaurante,Restaurante Típico Alejandría 3,3137765868,,2026-09-07 22:46:08.780756+00
+394,,,,,,2026-09-07 22:46:08.780756+00
+395,Argelia,Hotel,Hospedaje Argelia 2,3001215397,,2026-09-07 22:46:08.780756+00
+396,Argelia,Hotel,Hospedaje Argelia 3,3211235083,,2026-09-07 22:46:08.780756+00
+397,Argelia,Hotel,Hospedaje Argelia 4,3212362544,,2026-09-07 22:46:08.780756+00
+398,Argelia,Hotel,Hotel Principal Argelia 1,3219809492,,2026-09-07 22:46:08.780756+00
+399,Argelia,Restaurante,Restaurante Típico Argelia 1,3018398551,,2026-09-07 22:46:08.780756+00
+400,Argelia,Restaurante,Restaurante Típico Argelia 2,30026520,,2026-09-07 22:46:08.780756+00
+401,Argelia,Restaurante,Restaurante Típico Argelia 3,3207783861,,2026-09-07 22:46:08.780756+00
+402,,,,,,2026-09-07 22:46:08.780756+00
+403,Cocorná,Hotel,Ecohotel Tierra de Agua,3017414199,,2026-09-07 22:46:08.780756+00
+404,Cocorná,Hotel,Hospedaje Cocorná 2,3016132717,,2026-09-07 22:46:08.780756+00
+405,Cocorná,Hotel,Hospedaje Cocorná 3,3126161588,,2026-09-07 22:46:08.780756+00
+406,Cocorná,Hotel,Hospedaje Cocorná 4,3105291115,,2026-09-07 22:46:08.780756+00
+407,Cocorná,Hotel,Hotel Principal Cocorná 1,3015576633,,2026-09-07 22:46:08.780756+00
+408,Cocorná,Restaurante,Restaurante Típico Cocorná 1,31414403,,2026-09-07 22:46:08.780756+00
+409,Cocorná,Restaurante,Restaurante Típico Cocorná 2,3005483583,,2026-09-07 22:46:08.780756+00
+410,Cocorná,Restaurante,Restaurante Típico Cocorná 3,3134994824,,2026-09-07 22:46:08.780756+00
+411,,,,,,2026-09-07 22:46:08.780756+00
+412,Concepción,Hotel,Hospedaje Concepción 2,32025641,,2026-09-07 22:46:08.780756+00
+413,Concepción,Hotel,Hospedaje Concepción 3,3108016144,,2026-09-07 22:46:08.780756+00
+414,Concepción,Hotel,Hospedaje Concepción 4,3113177381,,2026-09-07 22:46:08.780756+00
+415,Concepción,Hotel,Hotel Principal Concepción 1,3104286761,,2026-09-07 22:46:08.780756+00
+416,Concepción,Restaurante,Restaurante Típico Concepción 1,3001475259,,2026-09-07 22:46:08.780756+00
+417,Concepción,Restaurante,Restaurante Típico Concepción 2,3217509347,,2026-09-07 22:46:08.780756+00
+418,Concepción,Restaurante,Restaurante Típico Concepción 3,3006189329,,2026-09-07 22:46:08.780756+00
+419,,,,,,2026-09-07 22:46:08.780756+00
+420,El Carmen de Viboral,Hotel,Hospedaje El Carmen de Viboral 2,3017102766,,2026-09-07 22:46:08.780756+00
+421,El Carmen de Viboral,Hotel,Hospedaje El Carmen de Viboral 3,3118089563,,2026-09-07 22:46:08.780756+00
+422,El Carmen de Viboral,Hotel,Hospedaje El Carmen de Viboral 4,3004091289,,2026-09-07 22:46:08.780756+00
+423,El Carmen de Viboral,Hotel,Hotel Principal El Carmen de Viboral 1,3122638592,,2026-09-07 22:46:08.780756+00
+424,El Carmen de Viboral,Restaurante,Restaurante Típico El Carmen de Viboral 1,3209712854,,2026-09-07 22:46:08.780756+00
+425,El Carmen de Viboral,Restaurante,Restaurante Típico El Carmen de Viboral 2,3142428397,,2026-09-07 22:46:08.780756+00
+426,El Carmen de Viboral,Restaurante,Restaurante Típico El Carmen de Viboral 3,3212842257,,2026-09-07 22:46:08.780756+00
+427,,,,,,2026-09-07 22:46:08.780756+00
+428,El Peñol,Hotel,Finca Hotel El Descanso,3145678901,,2026-09-07 22:46:08.780756+00
+429,El Peñol,Hotel,Hostería La Casona,3102345678,,2026-09-07 22:46:08.780756+00
+430,El Peñol,Hotel,Hotel Bahía,31145678,,2026-09-07 22:46:08.780756+00
+431,El Peñol,Hotel,Hotel Boutique El Peñol,3134564073,,2026-09-07 22:46:08.780756+00
+432,El Peñol,Hotel,Hotel Colonial El Peñol,3128400523,,2026-09-07 22:46:08.780756+00
+433,El Peñol,Hotel,Hotel El Peñol Real,3123456789,,2026-09-07 22:46:08.780756+00
+434,El Peñol,Hotel,Hotel Plaza El Peñol,30114952,,2026-09-07 22:46:08.780756+00
+435,El Peñol,Hotel,Hotel Real El Peñol,31179032,,2026-09-07 22:46:08.780756+00
+436,El Peñol,Restaurante,Asados Típicos,3109876543,,2026-09-07 22:46:08.780756+00
+437,El Peñol,Restaurante,La Montaña,3135678901,,2026-09-07 22:46:08.780756+00
+438,El Peñol,Restaurante,Restaurante El Embalse,31245678,,2026-09-07 22:46:08.780756+00
+439,El Peñol,Restaurante,Restaurante El Mirador de El Peñol,3203531805,,2026-09-07 22:46:08.780756+00
+440,El Peñol,Restaurante,Restaurante La Casona de El Peñol,3123152597,,2026-09-07 22:46:08.780756+00
+441,El Peñol,Restaurante,Restaurante Tradición de El Peñol,3216394029,,2026-09-07 22:46:08.780756+00
+442,,,,,,2026-09-07 22:46:08.780756+00
+443,El Retiro,Hotel,Hospedaje El Retiro 2,3145735889,,2026-09-07 22:46:08.780756+00
+444,El Retiro,Hotel,Hospedaje El Retiro 3,3108832081,,2026-09-07 22:46:08.780756+00
+445,El Retiro,Hotel,Hospedaje El Retiro 4,31058271,,2026-09-07 22:46:08.780756+00
+446,El Retiro,Hotel,Hotel Principal El Retiro 1,3127616785,,2026-09-07 22:46:08.780756+00
+447,El Retiro,Restaurante,Restaurante Típico El Retiro 1,3121828179,,2026-09-07 22:46:08.780756+00
+448,El Retiro,Restaurante,Restaurante Típico El Retiro 2,3101335824,,2026-09-07 22:46:08.780756+00
+449,El Retiro,Restaurante,Restaurante Típico El Retiro 3,3111658656,,2026-09-07 22:46:08.780756+00
+450,,,,,,2026-09-07 22:46:08.780756+00
+451,Granada,Hotel,Hospedaje Granada 2,3219683076,,2026-09-07 22:46:08.780756+00
+452,Granada,Hotel,Hospedaje Granada 3,3206603817,,2026-09-07 22:46:08.780756+00
+453,Granada,Hotel,Hospedaje Granada 4,3142280986,,2026-09-07 22:46:08.780756+00
+454,Granada,Hotel,Hotel Principal Granada 1,3109109621,,2026-09-07 22:46:08.780756+00
+455,Granada,Restaurante,Restaurante Típico Granada 1,3145890746,,2026-09-07 22:46:08.780756+00
+456,Granada,Restaurante,Restaurante Típico Granada 2,3213854268,,2026-09-07 22:46:08.780756+00
+457,Granada,Restaurante,Restaurante Típico Granada 3,3117773653,,2026-09-07 22:46:08.780756+00
+458,,,,,,2026-09-07 22:46:08.780756+00
+459,Guarne,Hotel,Hospedaje Guarne 2,3127562995,,2026-09-07 22:46:08.780756+00
+460,Guarne,Hotel,Hospedaje Guarne 3,31037446,,2026-09-07 22:46:08.780756+00
+461,Guarne,Hotel,Hospedaje Guarne 4,3127851383,,2026-09-07 22:46:08.780756+00
+462,Guarne,Hotel,Hotel Principal Guarne 1,3004658932,,2026-09-07 22:46:08.780756+00
+463,Guarne,Restaurante,Restaurante Típico Guarne 1,3143373325,,2026-09-07 22:46:08.780756+00
+464,Guarne,Restaurante,Restaurante Típico Guarne 2,3116635459,,2026-09-07 22:46:08.780756+00
+465,Guarne,Restaurante,Restaurante Típico Guarne 3,32127140,,2026-09-07 22:46:08.780756+00
+466,,,,,,2026-09-07 22:46:08.780756+00
+467,Guatapé,Hotel,Hotel Boutique Guatapé,3131025287,,2026-09-07 22:46:08.780756+00
+468,Guatapé,Hotel,Hotel Colonial Guatapé,3104979585,,2026-09-07 22:46:08.780756+00
+469,Guatapé,Hotel,Hotel Guatapé Plaza,3112345678,,2026-09-07 22:46:08.780756+00
+470,Guatapé,Hotel,Hotel Lake View,30145678,,2026-09-07 22:46:08.780756+00
+471,Guatapé,Hotel,Hotel Los Recuerdos,60456100,,2026-09-07 22:46:08.780756+00
+472,Guatapé,Hotel,Hotel Plaza Guatapé,3123017936,,2026-09-07 22:46:08.780756+00
+473,Guatapé,Hotel,Hotel Real Guatapé,3146178994,,2026-09-07 22:46:08.780756+00
+474,Guatapé,Hotel,Hotel Zócalos,3104567891,,2026-09-07 22:46:08.780756+00
+475,Guatapé,Restaurante,Donde Franco,3001234567,,2026-09-07 22:46:08.780756+00
+476,Guatapé,Restaurante,La Fogata,3123456789,,2026-09-07 22:46:08.780756+00
+477,Guatapé,Restaurante,Restaurante El Mirador de Guatapé,3135769302,,2026-09-07 22:46:08.780756+00
+478,Guatapé,Restaurante,Restaurante El Roble,31345678,,2026-09-07 22:46:08.780756+00
+479,Guatapé,Restaurante,Restaurante La Casona de Guatapé,3141048008,,2026-09-07 22:46:08.780756+00
+480,Guatapé,Restaurante,Restaurante Tradición de Guatapé,3208937285,,2026-09-07 22:46:08.780756+00
+481,,,,,,2026-09-07 22:46:08.780756+00
+482,La Ceja,Hotel,Hospedaje La Ceja 2,3137904749,,2026-09-07 22:46:08.780756+00
+483,La Ceja,Hotel,Hospedaje La Ceja 3,3101731027,,2026-09-07 22:46:08.780756+00
+484,La Ceja,Hotel,Hospedaje La Ceja 4,3218322888,,2026-09-07 22:46:08.780756+00
+485,La Ceja,Hotel,Hotel Principal La Ceja 1,30141152,,2026-09-07 22:46:08.780756+00
+486,La Ceja,Restaurante,Restaurante Típico La Ceja 1,3216903456,,2026-09-07 22:46:08.780756+00
+487,La Ceja,Restaurante,Restaurante Típico La Ceja 2,31094726,,2026-09-07 22:46:08.780756+00
+488,La Ceja,Restaurante,Restaurante Típico La Ceja 3,3201005429,,2026-09-07 22:46:08.780756+00
+489,,,,,,2026-09-07 22:46:08.780756+00
+490,La Unión,Hotel,Hospedaje La Unión 2,3138255338,,2026-09-07 22:46:08.780756+00
+491,La Unión,Hotel,Hospedaje La Unión 3,3104275235,,2026-09-07 22:46:08.780756+00
+492,La Unión,Hotel,Hospedaje La Unión 4,31157474,,2026-09-07 22:46:08.780756+00
+493,La Unión,Hotel,Hotel Principal La Unión 1,3118085238,,2026-09-07 22:46:08.780756+00
+494,La Unión,Hotel,Hotel-La Casa en el Pueblo,31059664,,2026-09-07 22:46:08.780756+00
+495,La Unión,Restaurante,Restaurante Típico La Unión 1,3122577908,,2026-09-07 22:46:08.780756+00
+496,La Unión,Restaurante,Restaurante Típico La Unión 2,3208134932,,2026-09-07 22:46:08.780756+00
+497,La Unión,Restaurante,Restaurante Típico La Unión 3,3137288427,,2026-09-07 22:46:08.780756+00
+498,,,,,,2026-09-07 22:46:08.780756+00
+499,Marinilla,Hotel,Hospedaje Marinilla 2,3112226482,,2026-09-07 22:46:08.780756+00
+500,Marinilla,Hotel,Hospedaje Marinilla 3,3001383063,,2026-09-07 22:46:08.780756+00
+501,Marinilla,Hotel,Hospedaje Marinilla 4,3125358337,,2026-09-07 22:46:08.780756+00
+502,Marinilla,Hotel,Hotel Principal Marinilla 1,3018679628,,2026-09-07 22:46:08.780756+00
+503,Marinilla,Restaurante,Restaurante Típico Marinilla 1,3211301286,,2026-09-07 22:46:08.780756+00
+504,Marinilla,Restaurante,Restaurante Típico Marinilla 2,3204448158,,2026-09-07 22:46:08.780756+00
+505,Marinilla,Restaurante,Restaurante Típico Marinilla 3,3018516215,,2026-09-07 22:46:08.780756+00
+506,,,,,,2026-09-07 22:46:08.780756+00
+507,Nariño,Hotel,Hospedaje Nariño 2,3014142433,,2026-09-07 22:46:08.780756+00
+508,Nariño,Hotel,Hospedaje Nariño 3,3125122729,,2026-09-07 22:46:08.780756+00
+509,Nariño,Hotel,Hospedaje Nariño 4,3002996047,,2026-09-07 22:46:08.780756+00
+510,Nariño,Hotel,Hotel Principal Nariño 1,3124269462,,2026-09-07 22:46:08.780756+00
+511,Nariño,Restaurante,Restaurante Típico Nariño 1,3127978642,,2026-09-07 22:46:08.780756+00
+512,Nariño,Restaurante,Restaurante Típico Nariño 2,3144543775,,2026-09-07 22:46:08.780756+00
+513,Nariño,Restaurante,Restaurante Típico Nariño 3,32160595,,2026-09-07 22:46:08.780756+00
+514,,,,,,2026-09-07 22:46:08.780756+00
+515,Rionegro,Hotel,Hotel Boutique Rionegro,32038740,,2026-09-07 22:46:08.780756+00
+516,Rionegro,Hotel,Hotel Colonial Rionegro,3015388652,,2026-09-07 22:46:08.780756+00
+517,Rionegro,Hotel,Hotel Movich Las Lomas,60456200,,2026-09-07 22:46:08.780756+00
+518,Rionegro,Hotel,Hotel Oasis,3112345678,,2026-09-07 22:46:08.780756+00
+519,Rionegro,Hotel,Hotel Plaza Rionegro,3147563989,,2026-09-07 22:46:08.780756+00
+520,Rionegro,Hotel,Hotel Real Rionegro,3134574793,,2026-09-07 22:46:08.780756+00
+521,Rionegro,Hotel,Hotel Santiago de Arma,60453145,,2026-09-07 22:46:08.780756+00
+522,Rionegro,Hotel,Hotel York,60444400,,2026-09-07 22:46:08.780756+00
+523,Rionegro,Restaurante,La Gloria,3123456789,,2026-09-07 22:46:08.780756+00
+524,Rionegro,Restaurante,Pampa Parrilla,6045612345,,2026-09-07 22:46:08.780756+00
+525,Rionegro,Restaurante,Restaurante El Mirador de Rionegro,3106240502,,2026-09-07 22:46:08.780756+00
+526,Rionegro,Restaurante,Restaurante El Palo,31045678,,2026-09-07 22:46:08.780756+00
+527,Rionegro,Restaurante,Restaurante La Casona de Rionegro,3124969229,,2026-09-07 22:46:08.780756+00
+528,Rionegro,Restaurante,Restaurante Tradición de Rionegro,31328156,,2026-09-07 22:46:08.780756+00
+529,,,,,,2026-09-07 22:46:08.780756+00
+530,San Carlos,Hotel,Hospedaje San Carlos 2,3012430869,,2026-09-07 22:46:08.780756+00
+531,San Carlos,Hotel,Hospedaje San Carlos 3,3113525068,,2026-09-07 22:46:08.780756+00
+532,San Carlos,Hotel,Hospedaje San Carlos 4,3012328281,,2026-09-07 22:46:08.780756+00
+533,San Carlos,Hotel,Hotel Principal San Carlos 1,3106740543,,2026-09-07 22:46:08.780756+00
+534,San Carlos,Restaurante,Restaurante Típico San Carlos 1,31445391,,2026-09-07 22:46:08.780756+00
+535,San Carlos,Restaurante,Restaurante Típico San Carlos 2,3138390595,,2026-09-07 22:46:08.780756+00
+536,San Carlos,Restaurante,Restaurante Típico San Carlos 3,3103471152,,2026-09-07 22:46:08.780756+00
+537,,,,,,2026-09-07 22:46:08.780756+00
+538,San Francisco,Hotel,Hospedaje San Francisco 2,3003114263,,2026-09-07 22:46:08.780756+00
+539,San Francisco,Hotel,Hospedaje San Francisco 3,3214773687,,2026-09-07 22:46:08.780756+00
+540,San Francisco,Hotel,Hospedaje San Francisco 4,3132236118,,2026-09-07 22:46:08.780756+00
+541,San Francisco,Hotel,Hotel Principal San Francisco 1,3139969013,,2026-09-07 22:46:08.780756+00
+542,San Francisco,Restaurante,Restaurante Típico San Francisco 1,3002559475,,2026-09-07 22:46:08.780756+00
+543,San Francisco,Restaurante,Restaurante Típico San Francisco 2,3216174079,,2026-09-07 22:46:08.780756+00
+544,San Francisco,Restaurante,Restaurante Típico San Francisco 3,3117444725,,2026-09-07 22:46:08.780756+00
+545,,,,,,2026-09-07 22:46:08.780756+00
+546,San Luis,Hotel,Hospedaje San Luis 2,3101688082,,2026-09-07 22:46:08.780756+00
+547,San Luis,Hotel,Hospedaje San Luis 3,3218484401,,2026-09-07 22:46:08.780756+00
+548,San Luis,Hotel,Hospedaje San Luis 4,3006529919,,2026-09-07 22:46:08.780756+00
+549,San Luis,Hotel,Hotel La Casona,31274329,,2026-09-07 22:46:08.780756+00
+550,San Luis,Hotel,Hotel Principal San Luis 1,3144757626,,2026-09-07 22:46:08.780756+00
+551,San Luis,Restaurante,Restaurante Típico San Luis 1,3105810171,,2026-09-07 22:46:08.780756+00
+552,San Luis,Restaurante,Restaurante Típico San Luis 2,3114355641,,2026-09-07 22:46:08.780756+00
+553,San Luis,Restaurante,Restaurante Típico San Luis 3,3208045537,,2026-09-07 22:46:08.780756+00
+554,,,,,,2026-09-07 22:46:08.780756+00
+555,San Rafael,Hotel,Hospedaje San Rafael 2,3126811235,,2026-09-07 22:46:08.780756+00
+556,San Rafael,Hotel,Hospedaje San Rafael 3,3117954775,,2026-09-07 22:46:08.780756+00
+557,San Rafael,Hotel,Hospedaje San Rafael 4,3015547494,,2026-09-07 22:46:08.780756+00
+558,San Rafael,Hotel,Hotel Principal San Rafael 1,3124148872,,2026-09-07 22:46:08.780756+00
+559,San Rafael,Restaurante,Restaurante Típico San Rafael 1,3014258358,,2026-09-07 22:46:08.780756+00
+560,San Rafael,Restaurante,Restaurante Típico San Rafael 2,3134956748,,2026-09-07 22:46:08.780756+00
+561,San Rafael,Restaurante,Restaurante Típico San Rafael 3,3131569115,,2026-09-07 22:46:08.780756+00
+562,,,,,,2026-09-07 22:46:08.780756+00
+563,San Vicente,Hotel,Hospedaje San Vicente 2,3003224269,,2026-09-07 22:46:08.780756+00
+564,San Vicente,Hotel,Hospedaje San Vicente 3,3206020922,,2026-09-07 22:46:08.780756+00
+565,San Vicente,Hotel,Hospedaje San Vicente 4,31167865,,2026-09-07 22:46:08.780756+00
+566,San Vicente,Hotel,Hotel Principal San Vicente 1,3215119817,,2026-09-07 22:46:08.780756+00
+567,San Vicente,Restaurante,Restaurante Típico San Vicente 1,3214800212,,2026-09-07 22:46:08.780756+00
+568,San Vicente,Restaurante,Restaurante Típico San Vicente 2,3014489893,,2026-09-07 22:46:08.780756+00
+569,San Vicente,Restaurante,Restaurante Típico San Vicente 3,3002969211,,2026-09-07 22:46:08.780756+00
+570,,,,,,2026-09-07 22:46:08.780756+00
+571,Santuario,Hotel,Hospedaje Santuario 2,3211660474,,2026-09-07 22:46:08.780756+00
+572,Santuario,Hotel,Hospedaje Santuario 3,3144213206,,2026-09-07 22:46:08.780756+00
+573,Santuario,Hotel,Hospedaje Santuario 4,3201953649,,2026-09-07 22:46:08.780756+00
+574,Santuario,Hotel,Hotel Principal Santuario 1,3138806786,,2026-09-07 22:46:08.780756+00
+575,Santuario,Restaurante,Restaurante Típico Santuario 1,3146516605,,2026-09-07 22:46:08.780756+00
+576,Santuario,Restaurante,Restaurante Típico Santuario 2,31263778,,2026-09-07 22:46:08.780756+00
+577,Santuario,Restaurante,Restaurante Típico Santuario 3,3133277908,,2026-09-07 22:46:08.780756+00
+578,,,,,,2026-09-07 22:46:08.780756+00
+579,Sonsón,Hotel,Hospedaje Sonsón 2,3001705378,,2026-09-07 22:46:08.780756+00
+580,Sonsón,Hotel,Hospedaje Sonsón 3,3129722297,,2026-09-07 22:46:08.780756+00
+581,Sonsón,Hotel,Hospedaje Sonsón 4,3017106216,,2026-09-07 22:46:08.780756+00
+582,Sonsón,Hotel,Hotel Principal Sonsón 1,32122071,,2026-09-07 22:46:08.780756+00
+583,Sonsón,Hotel,Hotel Tahamí,6048691151,,2026-09-07 22:46:08.780756+00
+584,Sonsón,Restaurante,Restaurante Típico Sonsón 1,3012555278,,2026-09-07 22:46:08.780756+00
+585,Sonsón,Restaurante,Restaurante Típico Sonsón 2,3012257908,,2026-09-07 22:46:08.780756+00
+586,Sonsón,Restaurante,Restaurante Típico Sonsón 3,3001115297,,2026-09-07 22:46:08.780756+00
+587,,,,,,2026-09-07 22:46:08.780756+00
+588,Abriaquí,Hotel,Hospedaje Abriaquí 2,3102631537,,2026-09-07 22:46:08.780756+00
+589,Abriaquí,Hotel,Hospedaje Abriaquí 3,3202784627,,2026-09-07 22:46:08.780756+00
+590,Abriaquí,Hotel,Hospedaje Abriaquí 4,3144662138,,2026-09-07 22:46:08.780756+00
+591,Abriaquí,Hotel,Hotel Principal Abriaquí 1,3212093456,,2026-09-07 22:46:08.780756+00
+592,Abriaquí,Restaurante,Restaurante Típico Abriaquí 1,3135149231,,2026-09-07 22:46:08.780756+00
+593,Abriaquí,Restaurante,Restaurante Típico Abriaquí 2,3126328719,,2026-09-07 22:46:08.780756+00
+594,Abriaquí,Restaurante,Restaurante Típico Abriaquí 3,3112949351,,2026-09-07 22:46:08.780756+00
+595,,,,,,2026-09-07 22:46:08.780756+00
+596,Anzá,Hotel,Hospedaje Anzá 2,3015668668,,2026-09-07 22:46:08.780756+00
+597,Anzá,Hotel,Hospedaje Anzá 3,3112318284,,2026-09-07 22:46:08.780756+00
+598,Anzá,Hotel,Hospedaje Anzá 4,3003022849,,2026-09-07 22:46:08.780756+00
+599,Anzá,Hotel,Hotel Principal Anzá 1,3125205833,,2026-09-07 22:46:08.780756+00
+600,Anzá,Restaurante,Restaurante Típico Anzá 1,3214649676,,2026-09-07 22:46:08.780756+00
+601,Anzá,Restaurante,Restaurante Típico Anzá 2,3012157912,,2026-09-07 22:46:08.780756+00
+602,Anzá,Restaurante,Restaurante Típico Anzá 3,3008660844,,2026-09-07 22:46:08.780756+00
+603,,,,,,2026-09-07 22:46:08.780756+00
+604,Armenia,Hotel,Hospedaje Armenia 2,3108213524,,2026-09-07 22:46:08.780756+00
+605,Armenia,Hotel,Hospedaje Armenia 3,3201739611,,2026-09-07 22:46:08.780756+00
+606,Armenia,Hotel,Hospedaje Armenia 4,3134502199,,2026-09-07 22:46:08.780756+00
+607,Armenia,Hotel,Hotel Principal Armenia 1,3121191795,,2026-09-07 22:46:08.780756+00
+608,Armenia,Restaurante,Restaurante Típico Armenia 1,3146227325,,2026-09-07 22:46:08.780756+00
+609,Armenia,Restaurante,Restaurante Típico Armenia 2,3101877246,,2026-09-07 22:46:08.780756+00
+610,Armenia,Restaurante,Restaurante Típico Armenia 3,3208199662,,2026-09-07 22:46:08.780756+00
+611,,,,,,2026-09-07 22:46:08.780756+00
+612,Buriticá,Hotel,Hospedaje Buriticá 2,3123243807,,2026-09-07 22:46:08.780756+00
+613,Buriticá,Hotel,Hospedaje Buriticá 3,3011259044,,2026-09-07 22:46:08.780756+00
+614,Buriticá,Hotel,Hospedaje Buriticá 4,3001401218,,2026-09-07 22:46:08.780756+00
+615,Buriticá,Hotel,Hotel Principal Buriticá 1,3141649769,,2026-09-07 22:46:08.780756+00
+616,Buriticá,Restaurante,Restaurante Típico Buriticá 1,3017280472,,2026-09-07 22:46:08.780756+00
+617,Buriticá,Restaurante,Restaurante Típico Buriticá 2,3117481098,,2026-09-07 22:46:08.780756+00
+618,Buriticá,Restaurante,Restaurante Típico Buriticá 3,3204288104,,2026-09-07 22:46:08.780756+00
+619,,,,,,2026-09-07 22:46:08.780756+00
+620,Cañasgordas,Hotel,Hospedaje Cañasgordas 2,3204296774,,2026-09-07 22:46:08.780756+00
+621,Cañasgordas,Hotel,Hospedaje Cañasgordas 3,31156149,,2026-09-07 22:46:08.780756+00
+622,Cañasgordas,Hotel,Hospedaje Cañasgordas 4,3001904827,,2026-09-07 22:46:08.780756+00
+623,Cañasgordas,Hotel,Hotel Principal Cañasgordas 1,3008162574,,2026-09-07 22:46:08.780756+00
+624,Cañasgordas,Restaurante,Restaurante Típico Cañasgordas 1,3135677448,,2026-09-07 22:46:08.780756+00
+625,Cañasgordas,Restaurante,Restaurante Típico Cañasgordas 2,3008980846,,2026-09-07 22:46:08.780756+00
+626,Cañasgordas,Restaurante,Restaurante Típico Cañasgordas 3,3017151021,,2026-09-07 22:46:08.780756+00
+627,,,,,,2026-09-07 22:46:08.780756+00
+628,Dabeiba,Hotel,Hospedaje Dabeiba 2,3127374807,,2026-09-07 22:46:08.780756+00
+629,Dabeiba,Hotel,Hospedaje Dabeiba 3,3105472214,,2026-09-07 22:46:08.780756+00
+630,Dabeiba,Hotel,Hospedaje Dabeiba 4,30123970,,2026-09-07 22:46:08.780756+00
+631,Dabeiba,Hotel,Hotel Principal Dabeiba 1,3123826803,,2026-09-07 22:46:08.780756+00
+632,Dabeiba,Restaurante,Restaurante Típico Dabeiba 1,3105393912,,2026-09-07 22:46:08.780756+00
+633,Dabeiba,Restaurante,Restaurante Típico Dabeiba 2,32053246,,2026-09-07 22:46:08.780756+00
+634,Dabeiba,Restaurante,Restaurante Típico Dabeiba 3,3135307008,,2026-09-07 22:46:08.780756+00
+635,,,,,,2026-09-07 22:46:08.780756+00
+636,Ebéjico,Hotel,Hospedaje Ebéjico 2,3207919617,,2026-09-07 22:46:08.780756+00
+637,Ebéjico,Hotel,Hospedaje Ebéjico 3,3148639284,,2026-09-07 22:46:08.780756+00
+638,Ebéjico,Hotel,Hospedaje Ebéjico 4,3001771775,,2026-09-07 22:46:08.780756+00
+639,Ebéjico,Hotel,Hotel Principal Ebéjico 1,3013604938,,2026-09-07 22:46:08.780756+00
+640,Ebéjico,Restaurante,Restaurante Típico Ebéjico 1,3128250406,,2026-09-07 22:46:08.780756+00
+641,Ebéjico,Restaurante,Restaurante Típico Ebéjico 2,3129804776,,2026-09-07 22:46:08.780756+00
+642,Ebéjico,Restaurante,Restaurante Típico Ebéjico 3,3133730752,,2026-09-07 22:46:08.780756+00
+643,,,,,,2026-09-07 22:46:08.780756+00
+644,Frontino,Hotel,Hospedaje Frontino 2,3112262916,,2026-09-07 22:46:08.780756+00
+645,Frontino,Hotel,Hospedaje Frontino 3,3118499959,,2026-09-07 22:46:08.780756+00
+646,Frontino,Hotel,Hospedaje Frontino 4,3109393671,,2026-09-07 22:46:08.780756+00
+647,Frontino,Hotel,Hotel Principal Frontino 1,3102928907,,2026-09-07 22:46:08.780756+00
+648,Frontino,Restaurante,Restaurante Típico Frontino 1,3113816007,,2026-09-07 22:46:08.780756+00
+649,Frontino,Restaurante,Restaurante Típico Frontino 2,31468014,,2026-09-07 22:46:08.780756+00
+650,Frontino,Restaurante,Restaurante Típico Frontino 3,3134377519,,2026-09-07 22:46:08.780756+00
+651,,,,,,2026-09-07 22:46:08.780756+00
+652,Giraldo,Hotel,Hospedaje Giraldo 2,3118378956,,2026-09-07 22:46:08.780756+00
+653,Giraldo,Hotel,Hospedaje Giraldo 3,3139375215,,2026-09-07 22:46:08.780756+00
+654,Giraldo,Hotel,Hospedaje Giraldo 4,3002617491,,2026-09-07 22:46:08.780756+00
+655,Giraldo,Hotel,Hotel Principal Giraldo 1,3219105372,,2026-09-07 22:46:08.780756+00
+656,Giraldo,Restaurante,Restaurante Típico Giraldo 1,3007461552,,2026-09-07 22:46:08.780756+00
+657,Giraldo,Restaurante,Restaurante Típico Giraldo 2,3131808591,,2026-09-07 22:46:08.780756+00
+658,Giraldo,Restaurante,Restaurante Típico Giraldo 3,3019534913,,2026-09-07 22:46:08.780756+00
+659,,,,,,2026-09-07 22:46:08.780756+00
+660,Heliconia,Hotel,Hospedaje Heliconia 2,3145762483,,2026-09-07 22:46:08.780756+00
+661,Heliconia,Hotel,Hospedaje Heliconia 3,3143137303,,2026-09-07 22:46:08.780756+00
+662,Heliconia,Hotel,Hospedaje Heliconia 4,3202714625,,2026-09-07 22:46:08.780756+00
+663,Heliconia,Hotel,Hotel Principal Heliconia 1,3123877303,,2026-09-07 22:46:08.780756+00
+664,Heliconia,Restaurante,Restaurante Típico Heliconia 1,3103772205,,2026-09-07 22:46:08.780756+00
+665,Heliconia,Restaurante,Restaurante Típico Heliconia 2,3126953613,,2026-09-07 22:46:08.780756+00
+666,Heliconia,Restaurante,Restaurante Típico Heliconia 3,3105979997,,2026-09-07 22:46:08.780756+00
+667,,,,,,2026-09-07 22:46:08.780756+00
+668,Liborina,Hotel,Hospedaje Liborina 2,3144412021,,2026-09-07 22:46:08.780756+00
+669,Liborina,Hotel,Hospedaje Liborina 3,3127750106,,2026-09-07 22:46:08.780756+00
+670,Liborina,Hotel,Hospedaje Liborina 4,3101485775,,2026-09-07 22:46:08.780756+00
+671,Liborina,Hotel,Hotel Principal Liborina 1,3101484313,,2026-09-07 22:46:08.780756+00
+672,Liborina,Restaurante,Restaurante Típico Liborina 1,3003133287,,2026-09-07 22:46:08.780756+00
+673,Liborina,Restaurante,Restaurante Típico Liborina 2,3121460864,,2026-09-07 22:46:08.780756+00
+674,Liborina,Restaurante,Restaurante Típico Liborina 3,3145855859,,2026-09-07 22:46:08.780756+00
+675,,,,,,2026-09-07 22:46:08.780756+00
+676,Olaya,Hotel,Hospedaje Olaya 2,3106142137,,2026-09-07 22:46:08.780756+00
+677,Olaya,Hotel,Hospedaje Olaya 3,3214905727,,2026-09-07 22:46:08.780756+00
+678,Olaya,Hotel,Hospedaje Olaya 4,3135969253,,2026-09-07 22:46:08.780756+00
+679,Olaya,Hotel,Hotel Principal Olaya 1,3149008273,,2026-09-07 22:46:08.780756+00
+680,Olaya,Restaurante,Restaurante Típico Olaya 1,3118603061,,2026-09-07 22:46:08.780756+00
+681,Olaya,Restaurante,Restaurante Típico Olaya 2,3112011169,,2026-09-07 22:46:08.780756+00
+682,Olaya,Restaurante,Restaurante Típico Olaya 3,31310121,,2026-09-07 22:46:08.780756+00
+683,,,,,,2026-09-07 22:46:08.780756+00
+684,Peque,Hotel,Hospedaje Peque 2,3141675188,,2026-09-07 22:46:08.780756+00
+685,Peque,Hotel,Hospedaje Peque 3,31398735,,2026-09-07 22:46:08.780756+00
+686,Peque,Hotel,Hospedaje Peque 4,3208565517,,2026-09-07 22:46:08.780756+00
+687,Peque,Hotel,Hotel Principal Peque 1,3203849301,,2026-09-07 22:46:08.780756+00
+688,Peque,Restaurante,Restaurante Típico Peque 1,3126216248,,2026-09-07 22:46:08.780756+00
+689,Peque,Restaurante,Restaurante Típico Peque 2,31158120,,2026-09-07 22:46:08.780756+00
+690,Peque,Restaurante,Restaurante Típico Peque 3,3136618883,,2026-09-07 22:46:08.780756+00
+691,,,,,,2026-09-07 22:46:08.780756+00
+692,Sabanalarga,Hotel,Hospedaje Sabanalarga 2,3136647532,,2026-09-07 22:46:08.780756+00
+693,Sabanalarga,Hotel,Hospedaje Sabanalarga 3,3113372797,,2026-09-07 22:46:08.780756+00
+694,Sabanalarga,Hotel,Hospedaje Sabanalarga 4,3106998638,,2026-09-07 22:46:08.780756+00
+695,Sabanalarga,Hotel,Hotel Principal Sabanalarga 1,3148802354,,2026-09-07 22:46:08.780756+00
+696,Sabanalarga,Restaurante,Restaurante Típico Sabanalarga 1,3115535834,,2026-09-07 22:46:08.780756+00
+697,Sabanalarga,Restaurante,Restaurante Típico Sabanalarga 2,3132710782,,2026-09-07 22:46:08.780756+00
+698,Sabanalarga,Restaurante,Restaurante Típico Sabanalarga 3,3017202788,,2026-09-07 22:46:08.780756+00
+699,,,,,,2026-09-07 22:46:08.780756+00
+700,San Jerónimo,Hotel,Hostería El Faro,6048582233,,2026-09-07 22:46:08.780756+00
+701,San Jerónimo,Hotel,Hostería Florida Tropical,6048581818,,2026-09-07 22:46:08.780756+00
+702,San Jerónimo,Hotel,Hostería Los Recuerdos,6048581234,,2026-09-07 22:46:08.780756+00
+703,San Jerónimo,Hotel,Hotel Boutique San Jerónimo,3011617556,,2026-09-07 22:46:08.780756+00
+704,San Jerónimo,Hotel,Hotel Colonial San Jerónimo,3112345678,,2026-09-07 22:46:08.780756+00
+705,San Jerónimo,Hotel,Hotel Colonial San Jerónimo,31441632,,2026-09-07 22:46:08.780756+00
+706,San Jerónimo,Hotel,Hotel Plaza San Jerónimo,3143672343,,2026-09-07 22:46:08.780756+00
+707,San Jerónimo,Hotel,Hotel Real San Jerónimo,3207955802,,2026-09-07 22:46:08.780756+00
+708,San Jerónimo,Restaurante,Asados Donde Pacho,3125678901,,2026-09-07 22:46:08.780756+00
+709,San Jerónimo,Restaurante,Café del Parque,3005678901,,2026-09-07 22:46:08.780756+00
+710,San Jerónimo,Restaurante,Restaurante El Mirador de San Jerónimo,3117314288,,2026-09-07 22:46:08.780756+00
+711,San Jerónimo,Restaurante,Restaurante El Pueblito,3109876543,,2026-09-07 22:46:08.780756+00
+712,San Jerónimo,Restaurante,Restaurante La Casona de San Jerónimo,3213725537,,2026-09-07 22:46:08.780756+00
+713,San Jerónimo,Restaurante,Restaurante Tradición de San Jerónimo,3213593985,,2026-09-07 22:46:08.780756+00
+714,,,,,,2026-09-07 22:46:08.780756+00
+715,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 2,3107845888,,2026-09-07 22:46:08.780756+00
+716,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 3,3126524629,,2026-09-07 22:46:08.780756+00
+717,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 4,3149858897,,2026-09-07 22:46:08.780756+00
+718,San Juan de Urabá,Hotel,Hotel Principal San Juan de Urabá 1,3007937979,,2026-09-07 22:46:08.780756+00
+719,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 1,3209790222,,2026-09-07 22:46:08.780756+00
+720,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 2,31041576,,2026-09-07 22:46:08.780756+00
+721,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 3,3149859574,,2026-09-07 22:46:08.780756+00
+722,,,,,,2026-09-07 22:46:08.780756+00
+723,Santa Fe de Antioquia,Hotel,Hostería El Cortijo,6048531333,,2026-09-07 22:46:08.780756+00
+724,Santa Fe de Antioquia,Hotel,Hostería Tonusco Campestre,6048531402,,2026-09-07 22:46:08.780756+00
+725,Santa Fe de Antioquia,Hotel,Hotel Boutique Santa Fe de Antioquia,3007630504,,2026-09-07 22:46:08.780756+00
+726,Santa Fe de Antioquia,Hotel,Hotel Casablanca,6048532456,,2026-09-07 22:46:08.780756+00
+727,Santa Fe de Antioquia,Hotel,Hotel Colonial Santa Fe de Antioquia,3129588458,,2026-09-07 22:46:08.780756+00
+728,Santa Fe de Antioquia,Hotel,Hotel Mariscal Robledo,6048531111,,2026-09-07 22:46:08.780756+00
+729,Santa Fe de Antioquia,Hotel,Hotel Plaza Santa Fe de Antioquia,30182936,,2026-09-07 22:46:08.780756+00
+730,Santa Fe de Antioquia,Hotel,Hotel Real Santa Fe de Antioquia,32199588,,2026-09-07 22:46:08.780756+00
+731,Santa Fe de Antioquia,Restaurante,Asados Santa Fe,3001234567,,2026-09-07 22:46:08.780756+00
+732,Santa Fe de Antioquia,Restaurante,Restaurante El Mirador de Santa Fe de Antioquia,31172565,,2026-09-07 22:46:08.780756+00
+733,Santa Fe de Antioquia,Restaurante,Restaurante La Casona de Santa Fe de Antioquia,31072517,,2026-09-07 22:46:08.780756+00
+734,Santa Fe de Antioquia,Restaurante,Restaurante La Comadre,31045678,,2026-09-07 22:46:08.780756+00
+735,Santa Fe de Antioquia,Restaurante,Restaurante La Cuadra,3123456789,,2026-09-07 22:46:08.780756+00
+736,Santa Fe de Antioquia,Restaurante,Restaurante Tradición de Santa Fe de Antioquia,3215860246,,2026-09-07 22:46:08.780756+00
+737,,,,,,2026-09-07 22:46:08.780756+00
+738,Sopetrán,Hotel,Hostería La Estancia,6048541234,,2026-09-07 22:46:08.780756+00
+739,Sopetrán,Hotel,Hostería Santa Fe Real,31045678,,2026-09-07 22:46:08.780756+00
+740,Sopetrán,Hotel,Hotel Boutique Sopetrán,3213470444,,2026-09-07 22:46:08.780756+00
+741,Sopetrán,Hotel,Hotel Campestre El Jardín,3123456789,,2026-09-07 22:46:08.780756+00
+742,Sopetrán,Hotel,Hotel Colonial Sopetrán,31214048,,2026-09-07 22:46:08.780756+00
+743,Sopetrán,Hotel,Hotel El Virrey,3112345678,,2026-09-07 22:46:08.780756+00
+744,Sopetrán,Hotel,Hotel Plaza Sopetrán,3114804226,,2026-09-07 22:46:08.780756+00
+745,Sopetrán,Hotel,Hotel Real Sopetrán,3144703051,,2026-09-07 22:46:08.780756+00
+746,Sopetrán,Restaurante,Asados del Valle,31345678,,2026-09-07 22:46:08.780756+00
+747,Sopetrán,Restaurante,Restaurante El Mirador de Sopetrán,3136134649,,2026-09-07 22:46:08.780756+00
+748,Sopetrán,Restaurante,Restaurante El Rincón,3119876543,,2026-09-07 22:46:08.780756+00
+749,Sopetrán,Restaurante,Restaurante La Casona de Sopetrán,3203128711,,2026-09-07 22:46:08.780756+00
+750,Sopetrán,Restaurante,Restaurante Tradición de Sopetrán,3014509492,,2026-09-07 22:46:08.780756+00
+751,Sopetrán,Restaurante,Restaurante Típico Sopetrán,30045678,,2026-09-07 22:46:08.780756+00
+752,,,,,,2026-09-07 22:46:08.780756+00
+753,Uramita,Hotel,Hospedaje Uramita 2,3131972406,,2026-09-07 22:46:08.780756+00
+754,Uramita,Hotel,Hospedaje Uramita 3,3213398564,,2026-09-07 22:46:08.780756+00
+755,Uramita,Hotel,Hospedaje Uramita 4,3132446878,,2026-09-07 22:46:08.780756+00
+756,Uramita,Hotel,Hotel Principal Uramita 1,30063066,,2026-09-07 22:46:08.780756+00
+757,Uramita,Restaurante,Restaurante Típico Uramita 1,32087150,,2026-09-07 22:46:08.780756+00
+758,Uramita,Restaurante,Restaurante Típico Uramita 2,3139986225,,2026-09-07 22:46:08.780756+00
+759,Uramita,Restaurante,Restaurante Típico Uramita 3,3141677427,,2026-09-07 22:46:08.780756+00
+760,,,,,,2026-09-07 22:46:08.780756+00
+761,Barbosa,Hotel,Hospedaje Barbosa 2,3119800206,,2026-09-07 22:46:08.780756+00
+762,Barbosa,Hotel,Hospedaje Barbosa 3,31279584,,2026-09-07 22:46:08.780756+00
+763,Barbosa,Hotel,Hospedaje Barbosa 4,31329909,,2026-09-07 22:46:08.780756+00
+764,Barbosa,Hotel,Hotel Barbosa Real,60400000,,2026-09-07 22:46:08.780756+00
+765,Barbosa,Hotel,Hotel Principal Barbosa 1,3008167283,,2026-09-07 22:46:08.780756+00
+766,Barbosa,Restaurante,Restaurante Típico Barbosa,30000000,,2026-09-07 22:46:08.780756+00
+767,Barbosa,Restaurante,Restaurante Típico Barbosa 1,3132351211,,2026-09-07 22:46:08.780756+00
+768,Barbosa,Restaurante,Restaurante Típico Barbosa 2,3131245953,,2026-09-07 22:46:08.780756+00
+769,Barbosa,Restaurante,Restaurante Típico Barbosa 3,3133870248,,2026-09-07 22:46:08.780756+00
+770,,,,,,2026-09-07 22:46:08.780756+00
+771,Bello,Hotel,Hospedaje Bello 2,3141201434,,2026-09-07 22:46:08.780756+00
+772,Bello,Hotel,Hospedaje Bello 3,3118236563,,2026-09-07 22:46:08.780756+00
+773,Bello,Hotel,Hospedaje Bello 4,3001367788,,2026-09-07 22:46:08.780756+00
+774,Bello,Hotel,Hotel Bello Real,60400000,,2026-09-07 22:46:08.780756+00
+775,Bello,Hotel,Hotel Perlatto,3142535815,,2026-09-07 22:46:08.780756+00
+776,Bello,Hotel,Hotel Principal Bello 1,3146599537,,2026-09-07 22:46:08.780756+00
+777,Bello,Restaurante,Restaurante Típico Bello,30000000,,2026-09-07 22:46:08.780756+00
+778,Bello,Restaurante,Restaurante Típico Bello 1,3121476191,,2026-09-07 22:46:08.780756+00
+779,Bello,Restaurante,Restaurante Típico Bello 2,31339493,,2026-09-07 22:46:08.780756+00
+780,Bello,Restaurante,Restaurante Típico Bello 3,3205602689,,2026-09-07 22:46:08.780756+00
+781,,,,,,2026-09-07 22:46:08.780756+00
+782,Caldas,Hotel,Hospedaje Caldas 2,3102604685,,2026-09-07 22:46:08.780756+00
+783,Caldas,Hotel,Hospedaje Caldas 3,3114197285,,2026-09-07 22:46:08.780756+00
+784,Caldas,Hotel,Hospedaje Caldas 4,3113529481,,2026-09-07 22:46:08.780756+00
+785,Caldas,Hotel,Hotel Caldas Real,60400000,,2026-09-07 22:46:08.780756+00
+786,Caldas,Hotel,Hotel Principal Caldas 1,3112223559,,2026-09-07 22:46:08.780756+00
+787,Caldas,Restaurante,Restaurante Típico Caldas,30000000,,2026-09-07 22:46:08.780756+00
+788,Caldas,Restaurante,Restaurante Típico Caldas 1,3018048904,,2026-09-07 22:46:08.780756+00
+789,Caldas,Restaurante,Restaurante Típico Caldas 2,3213567844,,2026-09-07 22:46:08.780756+00
+790,Caldas,Restaurante,Restaurante Típico Caldas 3,3218921317,,2026-09-07 22:46:08.780756+00
+791,,,,,,2026-09-07 22:46:08.780756+00
+792,Copacabana,Hotel,Hospedaje Copacabana 2,3204981073,,2026-09-07 22:46:08.780756+00
+793,Copacabana,Hotel,Hospedaje Copacabana 3,3008597955,,2026-09-07 22:46:08.780756+00
+794,Copacabana,Hotel,Hospedaje Copacabana 4,3002339273,,2026-09-07 22:46:08.780756+00
+795,Copacabana,Hotel,Hotel Copacabana Real,60400000,,2026-09-07 22:46:08.780756+00
+796,Copacabana,Hotel,Hotel Principal Copacabana 1,3206040443,,2026-09-07 22:46:08.780756+00
+797,Copacabana,Restaurante,Restaurante Típico Copacabana,30000000,,2026-09-07 22:46:08.780756+00
+798,Copacabana,Restaurante,Restaurante Típico Copacabana 1,3145117366,,2026-09-07 22:46:08.780756+00
+799,Copacabana,Restaurante,Restaurante Típico Copacabana 2,3115776891,,2026-09-07 22:46:08.780756+00
+800,Copacabana,Restaurante,Restaurante Típico Copacabana 3,3217189397,,2026-09-07 22:46:08.780756+00
+801,,,,,,2026-09-07 22:46:08.780756+00
+802,Envigado,Hotel,Arame Hotel Envigado,60448062,,2026-09-07 22:46:08.780756+00
+803,Envigado,Hotel,Hostería El Tambo,3113456789,,2026-09-07 22:46:08.780756+00
+804,Envigado,Hotel,Hotel Ayenda Portón,6043324545,,2026-09-07 22:46:08.780756+00
+805,Envigado,Hotel,Hotel Boutique Envigado,3211099593,,2026-09-07 22:46:08.780756+00
+806,Envigado,Hotel,Hotel City Express,6046045151,,2026-09-07 22:46:08.780756+00
+807,Envigado,Hotel,Hotel Colonial Envigado,3126675145,,2026-09-07 22:46:08.780756+00
+808,Envigado,Hotel,Hotel Plaza Envigado,3206349714,,2026-09-07 22:46:08.780756+00
+809,Envigado,Hotel,Hotel Real Envigado,31224920,,2026-09-07 22:46:08.780756+00
+810,Envigado,Hotel,Hotel Zafiro,60430130,,2026-09-07 22:46:08.780756+00
+811,Envigado,Restaurante,Mistura,6044485088,,2026-09-07 22:46:08.780756+00
+812,Envigado,Restaurante,Restaurante El Hatillo,6043314567,,2026-09-07 22:46:08.780756+00
+813,Envigado,Restaurante,Restaurante El Mirador de Envigado,3108535224,,2026-09-07 22:46:08.780756+00
+814,Envigado,Restaurante,Restaurante La Casona de Envigado,3005823407,,2026-09-07 22:46:08.780756+00
+815,Envigado,Restaurante,Restaurante La Doctora,6043321234,,2026-09-07 22:46:08.780756+00
+816,Envigado,Restaurante,Restaurante Tradición de Envigado,3013282402,,2026-09-07 22:46:08.780756+00
+817,,,,,,2026-09-07 22:46:08.780756+00
+818,Girardota,Hotel,Hospedaje Girardota 2,3126780607,,2026-09-07 22:46:08.780756+00
+819,Girardota,Hotel,Hospedaje Girardota 3,3005450537,,2026-09-07 22:46:08.780756+00
+820,Girardota,Hotel,Hospedaje Girardota 4,3126867989,,2026-09-07 22:46:08.780756+00
+821,Girardota,Hotel,Hotel Girardota Real,60400000,,2026-09-07 22:46:08.780756+00
+822,Girardota,Hotel,Hotel Principal Girardota 1,3141515269,,2026-09-07 22:46:08.780756+00
+823,Girardota,Restaurante,Restaurante Típico Girardota,30000000,,2026-09-07 22:46:08.780756+00
+824,Girardota,Restaurante,Restaurante Típico Girardota 1,3014992243,,2026-09-07 22:46:08.780756+00
+825,Girardota,Restaurante,Restaurante Típico Girardota 2,3128093634,,2026-09-07 22:46:08.780756+00
+826,Girardota,Restaurante,Restaurante Típico Girardota 3,3146937423,,2026-09-07 22:46:08.780756+00
+827,,,,,,2026-09-07 22:46:08.780756+00
+828,Itagüí,Hotel,Hospedaje Itagüí 2,3011418417,,2026-09-07 22:46:08.780756+00
+829,Itagüí,Hotel,Hospedaje Itagüí 3,3116316743,,2026-09-07 22:46:08.780756+00
+830,Itagüí,Hotel,Hospedaje Itagüí 4,3103776822,,2026-09-07 22:46:08.780756+00
+831,Itagüí,Hotel,Hotel Itagüí Real,60400000,,2026-09-07 22:46:08.780756+00
+832,Itagüí,Hotel,Hotel Principal Itagüí 1,3138200857,,2026-09-07 22:46:08.780756+00
+833,Itagüí,Restaurante,Restaurante Típico Itagüí,30000000,,2026-09-07 22:46:08.780756+00
+834,Itagüí,Restaurante,Restaurante Típico Itagüí 1,3007831689,,2026-09-07 22:46:08.780756+00
+835,Itagüí,Restaurante,Restaurante Típico Itagüí 2,3108257718,,2026-09-07 22:46:08.780756+00
+836,Itagüí,Restaurante,Restaurante Típico Itagüí 3,3144888089,,2026-09-07 22:46:08.780756+00
+837,,,,,,2026-09-07 22:46:08.780756+00
+838,La Estrella,Hotel,Hospedaje La Estrella 2,3141235183,,2026-09-07 22:46:08.780756+00
+839,La Estrella,Hotel,Hospedaje La Estrella 3,3104044925,,2026-09-07 22:46:08.780756+00
+840,La Estrella,Hotel,Hospedaje La Estrella 4,3005457286,,2026-09-07 22:46:08.780756+00
+841,La Estrella,Hotel,Hotel La Estrella Real,60400000,,2026-09-07 22:46:08.780756+00
+842,La Estrella,Hotel,Hotel Principal La Estrella 1,3102334174,,2026-09-07 22:46:08.780756+00
+843,La Estrella,Restaurante,Restaurante Típico La Estrella,30000000,,2026-09-07 22:46:08.780756+00
+844,La Estrella,Restaurante,Restaurante Típico La Estrella 1,3109933076,,2026-09-07 22:46:08.780756+00
+845,La Estrella,Restaurante,Restaurante Típico La Estrella 2,3218875617,,2026-09-07 22:46:08.780756+00
+846,La Estrella,Restaurante,Restaurante Típico La Estrella 3,3114355886,,2026-09-07 22:46:08.780756+00
+847,,,,,,2026-09-07 22:46:08.780756+00
+848,Medellín,Hotel,El Poblado Park,6044482525,,2026-09-07 22:46:08.780756+00
+849,Medellín,Hotel,Hotel Boutique Medellín,3205465802,,2026-09-07 22:46:08.780756+00
+850,Medellín,Hotel,Hotel Colonial Medellín,3119267533,,2026-09-07 22:46:08.780756+00
+851,Medellín,Hotel,Hotel Dann Carlton,6044445555,,2026-09-07 22:46:08.780756+00
+852,Medellín,Hotel,Hotel Dann Carlton Medellin,6044445151,,2026-09-07 22:46:08.780756+00
+853,Medellín,Hotel,Hotel Diez,60431980,,2026-09-07 22:46:08.780756+00
+854,Medellín,Hotel,Hotel InterContinental,60431944,,2026-09-07 22:46:08.780756+00
+855,Medellín,Hotel,Hotel Plaza Medellín,3212721476,,2026-09-07 22:46:08.780756+00
+856,Medellín,Hotel,Hotel Real Medellín,3011774607,,2026-09-07 22:46:08.780756+00
+857,Medellín,Hotel,ibis Medellin,3502138586,,2026-09-07 22:46:08.780756+00
+858,Medellín,Restaurante,Alambique,3006612294,,2026-09-07 22:46:08.780756+00
+859,Medellín,Restaurante,El Cielo,3004838615,,2026-09-07 22:46:08.780756+00
+860,Medellín,Restaurante,Oci.Mde,3004561234,,2026-09-07 22:46:08.780756+00
+861,Medellín,Restaurante,Restaurante El Mirador de Medellín,3142834408,,2026-09-07 22:46:08.780756+00
+862,Medellín,Restaurante,Restaurante La Casona de Medellín,3121906307,,2026-09-07 22:46:08.780756+00
+863,Medellín,Restaurante,Restaurante Tradición de Medellín,3107988434,,2026-09-07 22:46:08.780756+00
+864,,,,,,2026-09-07 22:46:08.780756+00
+865,Sabaneta,Hotel,Hostería Campestre Sabaneta,30045678,,2026-09-07 22:46:08.780756+00
+866,Sabaneta,Hotel,Hotel Ayenda 1243,3123456789,,2026-09-07 22:46:08.780756+00
+867,Sabaneta,Hotel,Hotel Boutique Sabaneta,3214687589,,2026-09-07 22:46:08.780756+00
+868,Sabaneta,Hotel,Hotel Casa Blanca,31145678,,2026-09-07 22:46:08.780756+00
+869,Sabaneta,Hotel,Hotel Colonial Sabaneta,3202045282,,2026-09-07 22:46:08.780756+00
+870,Sabaneta,Hotel,Hotel Plaza Sabaneta,3134175018,,2026-09-07 22:46:08.780756+00
+871,Sabaneta,Hotel,Hotel Portón Sabaneta,6044481138,,2026-09-07 22:46:08.780756+00
+872,Sabaneta,Hotel,Hotel Real Sabaneta,3136861744,,2026-09-07 22:46:08.780756+00
+873,Sabaneta,Hotel,Hotel Sabaneta Plaza,6043015566,,2026-09-07 22:46:08.780756+00
+874,Sabaneta,Restaurante,La Vaquita,6043014567,,2026-09-07 22:46:08.780756+00
+875,Sabaneta,Restaurante,Restaurante Donde El Indio,3119876543,,2026-09-07 22:46:08.780756+00
+876,Sabaneta,Restaurante,Restaurante El Mirador de Sabaneta,3203449035,,2026-09-07 22:46:08.780756+00
+877,Sabaneta,Restaurante,Restaurante El Viejo Mango,31345678,,2026-09-07 22:46:08.780756+00
+878,Sabaneta,Restaurante,Restaurante La Casona de Sabaneta,3111966183,,2026-09-07 22:46:08.780756+00
+879,Sabaneta,Restaurante,Restaurante Tradición de Sabaneta,3122156388,,2026-09-07 22:46:08.780756+00
+880,,,,,,2026-09-07 22:46:08.780756+00
+881,Apartadó,Hotel,Hospedaje Apartadó 2,3004986688,,2026-09-07 22:46:08.780756+00
+882,Apartadó,Hotel,Hospedaje Apartadó 3,3202910931,,2026-09-07 22:46:08.780756+00
+883,Apartadó,Hotel,Hospedaje Apartadó 4,3134079922,,2026-09-07 22:46:08.780756+00
+884,Apartadó,Hotel,Hotel Apartadó Local,60400000,,2026-09-07 22:46:08.780756+00
+885,Apartadó,Hotel,Hotel La Martina Plaza,3244564747,,2026-09-07 22:46:08.780756+00
+886,Apartadó,Hotel,Hotel Principal Apartadó 1,3201821902,,2026-09-07 22:46:08.780756+00
+887,Apartadó,Hotel,ibis Apartadó,3208899593,,2026-09-07 22:46:08.780756+00
+888,Apartadó,Restaurante,Restaurante Apartadó,30000000,,2026-09-07 22:46:08.780756+00
+889,Apartadó,Restaurante,Restaurante Típico Apartadó 1,3109130895,,2026-09-07 22:46:08.780756+00
+890,Apartadó,Restaurante,Restaurante Típico Apartadó 2,3127137177,,2026-09-07 22:46:08.780756+00
+891,Apartadó,Restaurante,Restaurante Típico Apartadó 3,3216272658,,2026-09-07 22:46:08.780756+00
+892,,,,,,2026-09-07 22:46:08.780756+00
+893,Arboletes,Hotel,Hostal La Playa,31245678,,2026-09-07 22:46:08.780756+00
+894,Arboletes,Hotel,Hotel Arboletes Plaza,6048201234,,2026-09-07 22:46:08.780756+00
+895,Arboletes,Hotel,Hotel Boutique Arboletes,3147001231,,2026-09-07 22:46:08.780756+00
+896,Arboletes,Hotel,Hotel Brisas del Mar,3112345678,,2026-09-07 22:46:08.780756+00
+897,Arboletes,Hotel,Hotel Colonial Arboletes,3013764998,,2026-09-07 22:46:08.780756+00
+898,Arboletes,Hotel,Hotel El Volcán,3109876543,,2026-09-07 22:46:08.780756+00
+899,Arboletes,Hotel,Hotel Plaza Arboletes,3111002758,,2026-09-07 22:46:08.780756+00
+900,Arboletes,Hotel,Hotel Real Arboletes,3108810068,,2026-09-07 22:46:08.780756+00
+901,Arboletes,Hotel,Hotel Riviera Del Sol,3164183134,,2026-09-07 22:46:08.780756+00
+902,Arboletes,Restaurante,Asados de Arboletes,3118901234,,2026-09-07 22:46:08.780756+00
+903,Arboletes,Restaurante,Restaurante El Mirador de Arboletes,3146585292,,2026-09-07 22:46:08.780756+00
+904,Arboletes,Restaurante,Restaurante El Pescador,3135678901,,2026-09-07 22:46:08.780756+00
+905,Arboletes,Restaurante,Restaurante La Casona de Arboletes,3134249741,,2026-09-07 22:46:08.780756+00
+906,Arboletes,Restaurante,Restaurante Tradición de Arboletes,3014913247,,2026-09-07 22:46:08.780756+00
+907,Arboletes,Restaurante,Sabor Caribeño,3005678901,,2026-09-07 22:46:08.780756+00
+908,,,,,,2026-09-07 22:46:08.780756+00
+909,Carepa,Hotel,Hospedaje Carepa 2,30142334,,2026-09-07 22:46:08.780756+00
+910,Carepa,Hotel,Hospedaje Carepa 3,3218920004,,2026-09-07 22:46:08.780756+00
+911,Carepa,Hotel,Hospedaje Carepa 4,3201989088,,2026-09-07 22:46:08.780756+00
+912,Carepa,Hotel,Hotel Carepa Local,60400000,,2026-09-07 22:46:08.780756+00
+913,Carepa,Hotel,Hotel Cedros Plaza,31163081,,2026-09-07 22:46:08.780756+00
+914,Carepa,Hotel,Hotel Principal Carepa 1,3205096644,,2026-09-07 22:46:08.780756+00
+915,Carepa,Restaurante,Restaurante Carepa,30000000,,2026-09-07 22:46:08.780756+00
+916,Carepa,Restaurante,Restaurante Típico Carepa 1,3215719244,,2026-09-07 22:46:08.780756+00
+917,Carepa,Restaurante,Restaurante Típico Carepa 2,3139959572,,2026-09-07 22:46:08.780756+00
+918,Carepa,Restaurante,Restaurante Típico Carepa 3,3217173303,,2026-09-07 22:46:08.780756+00
+919,,,,,,2026-09-07 22:46:08.780756+00
+920,Chigorodó,Hotel,Hospedaje Chigorodó 2,3134819605,,2026-09-07 22:46:08.780756+00
+921,Chigorodó,Hotel,Hospedaje Chigorodó 3,3106317142,,2026-09-07 22:46:08.780756+00
+922,Chigorodó,Hotel,Hospedaje Chigorodó 4,3018586228,,2026-09-07 22:46:08.780756+00
+923,Chigorodó,Hotel,Hotel Chigorodó Local,60400000,,2026-09-07 22:46:08.780756+00
+924,Chigorodó,Hotel,Hotel Principal Chigorodó 1,3119991839,,2026-09-07 22:46:08.780756+00
+925,Chigorodó,Hotel,Hotel Vincci Chigorodó,3245796291,,2026-09-07 22:46:08.780756+00
+926,Chigorodó,Restaurante,Restaurante Chigorodó,30000000,,2026-09-07 22:46:08.780756+00
+927,Chigorodó,Restaurante,Restaurante Típico Chigorodó 1,3125579484,,2026-09-07 22:46:08.780756+00
+928,Chigorodó,Restaurante,Restaurante Típico Chigorodó 2,3109831231,,2026-09-07 22:46:08.780756+00
+929,Chigorodó,Restaurante,Restaurante Típico Chigorodó 3,3002483608,,2026-09-07 22:46:08.780756+00
+930,,,,,,2026-09-07 22:46:08.780756+00
+931,Murindó,Hotel,Hospedaje Murindó 2,3112566216,,2026-09-07 22:46:08.780756+00
+932,Murindó,Hotel,Hospedaje Murindó 3,3117986834,,2026-09-07 22:46:08.780756+00
+933,Murindó,Hotel,Hospedaje Murindó 4,3116954198,,2026-09-07 22:46:08.780756+00
+934,Murindó,Hotel,Hotel Murindó Local,60400000,,2026-09-07 22:46:08.780756+00
+935,Murindó,Hotel,Hotel Principal Murindó 1,3111242325,,2026-09-07 22:46:08.780756+00
+936,Murindó,Restaurante,Restaurante Murindó,30000000,,2026-09-07 22:46:08.780756+00
+937,Murindó,Restaurante,Restaurante Típico Murindó 1,3006009235,,2026-09-07 22:46:08.780756+00
+938,Murindó,Restaurante,Restaurante Típico Murindó 2,3109788804,,2026-09-07 22:46:08.780756+00
+939,Murindó,Restaurante,Restaurante Típico Murindó 3,3218607364,,2026-09-07 22:46:08.780756+00
+940,,,,,,2026-09-07 22:46:08.780756+00
+941,Mutatá,Hotel,Hospedaje Mutatá 2,3145826494,,2026-09-07 22:46:08.780756+00
+942,Mutatá,Hotel,Hospedaje Mutatá 3,3125073052,,2026-09-07 22:46:08.780756+00
+943,Mutatá,Hotel,Hospedaje Mutatá 4,30114189,,2026-09-07 22:46:08.780756+00
+944,Mutatá,Hotel,Hotel Los Corales,3007621084,,2026-09-07 22:46:08.780756+00
+945,Mutatá,Hotel,Hotel Mutatá Local,60400000,,2026-09-07 22:46:08.780756+00
+946,Mutatá,Hotel,Hotel Principal Mutatá 1,3217456386,,2026-09-07 22:46:08.780756+00
+947,Mutatá,Restaurante,Restaurante Mutatá,30000000,,2026-09-07 22:46:08.780756+00
+948,Mutatá,Restaurante,Restaurante Típico Mutatá 1,3137660172,,2026-09-07 22:46:08.780756+00
+949,Mutatá,Restaurante,Restaurante Típico Mutatá 2,3141002231,,2026-09-07 22:46:08.780756+00
+950,Mutatá,Restaurante,Restaurante Típico Mutatá 3,3209153422,,2026-09-07 22:46:08.780756+00
+951,,,,,,2026-09-07 22:46:08.780756+00
+952,Necoclí,Hotel,Hostería El Caribe,6048215566,,2026-09-07 22:46:08.780756+00
+953,Necoclí,Hotel,Hotel Boutique Necoclí,3122910035,,2026-09-07 22:46:08.780756+00
+954,Necoclí,Hotel,Hotel Colonial Necoclí,3001242311,,2026-09-07 22:46:08.780756+00
+955,Necoclí,Hotel,Hotel El Mirador,31045678,,2026-09-07 22:46:08.780756+00
+956,Necoclí,Hotel,Hotel Los Delfines,3112345678,,2026-09-07 22:46:08.780756+00
+957,Necoclí,Hotel,Hotel Necoclí Real,3123456789,,2026-09-07 22:46:08.780756+00
+958,Necoclí,Hotel,Hotel Panther Resort,3104079172,,2026-09-07 22:46:08.780756+00
+959,Necoclí,Hotel,Hotel Plaza Necoclí,3015029082,,2026-09-07 22:46:08.780756+00
+960,Necoclí,Hotel,Hotel Real Necoclí,3111019987,,2026-09-07 22:46:08.780756+00
+961,Necoclí,Restaurante,La Terraza del Mar,3119876543,,2026-09-07 22:46:08.780756+00
+962,Necoclí,Restaurante,Mar y Tierra,30045678,,2026-09-07 22:46:08.780756+00
+963,Necoclí,Restaurante,Restaurante Donde Pacho,31345678,,2026-09-07 22:46:08.780756+00
+964,Necoclí,Restaurante,Restaurante El Mirador de Necoclí,3207962229,,2026-09-07 22:46:08.780756+00
+965,Necoclí,Restaurante,Restaurante La Casona de Necoclí,3013920234,,2026-09-07 22:46:08.780756+00
+966,Necoclí,Restaurante,Restaurante Tradición de Necoclí,3149862045,,2026-09-07 22:46:08.780756+00
+967,,,,,,2026-09-07 22:46:08.780756+00
+968,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 2,3138494897,,2026-09-07 22:46:08.780756+00
+969,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 3,3001482583,,2026-09-07 22:46:08.780756+00
+970,San Juan de Urabá,Hotel,Hospedaje San Juan de Urabá 4,3007866119,,2026-09-07 22:46:08.780756+00
+971,San Juan de Urabá,Hotel,Hotel Principal San Juan de Urabá 1,3002841369,,2026-09-07 22:46:08.780756+00
+972,San Juan de Urabá,Hotel,Hotel San Juan de Urabá Local,60400000,,2026-09-07 22:46:08.780756+00
+973,San Juan de Urabá,Hotel,Punta Antioquia Hotel,3207599696,,2026-09-07 22:46:08.780756+00
+974,San Juan de Urabá,Restaurante,Restaurante San Juan de Urabá,30000000,,2026-09-07 22:46:08.780756+00
+975,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 1,3212173906,,2026-09-07 22:46:08.780756+00
+976,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 2,3109120175,,2026-09-07 22:46:08.780756+00
+977,San Juan de Urabá,Restaurante,Restaurante Típico San Juan de Urabá 3,3123000752,,2026-09-07 22:46:08.780756+00
+978,,,,,,2026-09-07 22:46:08.780756+00
+979,San Pedro de Urabá,Hotel,Hospedaje San Pedro de Urabá 2,3122333793,,2026-09-07 22:46:08.780756+00
+980,San Pedro de Urabá,Hotel,Hospedaje San Pedro de Urabá 3,31320525,,2026-09-07 22:46:08.780756+00
+981,San Pedro de Urabá,Hotel,Hospedaje San Pedro de Urabá 4,3144699573,,2026-09-07 22:46:08.780756+00
+982,San Pedro de Urabá,Hotel,Hotel La Gran Manzana,3116511016,,2026-09-07 22:46:08.780756+00
+983,San Pedro de Urabá,Hotel,Hotel Principal San Pedro de Urabá 1,3207574566,,2026-09-07 22:46:08.780756+00
+984,San Pedro de Urabá,Hotel,Hotel San Pedro de Urabá Local,60400000,,2026-09-07 22:46:08.780756+00
+985,San Pedro de Urabá,Restaurante,Restaurante San Pedro de Urabá,30000000,,2026-09-07 22:46:08.780756+00
+986,San Pedro de Urabá,Restaurante,Restaurante Típico San Pedro de Urabá 1,3206676326,,2026-09-07 22:46:08.780756+00
+987,San Pedro de Urabá,Restaurante,Restaurante Típico San Pedro de Urabá 2,3013611823,,2026-09-07 22:46:08.780756+00
+988,San Pedro de Urabá,Restaurante,Restaurante Típico San Pedro de Urabá 3,3208213504,,2026-09-07 22:46:08.780756+00
+989,,,,,,2026-09-07 22:46:08.780756+00
+990,Turbo,Hotel,Hostería El Puerto,3112345678,,2026-09-07 22:46:08.780756+00
+991,Turbo,Hotel,Hotel Boutique Turbo,3214429311,,2026-09-07 22:46:08.780756+00
+992,Turbo,Hotel,Hotel Colonial Turbo,3218759527,,2026-09-07 22:46:08.780756+00
+993,Turbo,Hotel,Hotel Oasis,3123456789,,2026-09-07 22:46:08.780756+00
+994,Turbo,Hotel,Hotel Plataneras Turbo,3145561821,,2026-09-07 22:46:08.780756+00
+995,Turbo,Hotel,Hotel Playa Dulce,31045678,,2026-09-07 22:46:08.780756+00
+996,Turbo,Hotel,Hotel Plaza Turbo,3147108763,,2026-09-07 22:46:08.780756+00
+997,Turbo,Hotel,Hotel Real Turbo,3111981318,,2026-09-07 22:46:08.780756+00
+998,Turbo,Hotel,Hotel Turbo Real,6048223344,,2026-09-07 22:46:08.780756+00
+999,Turbo,Restaurante,Asados del Puerto,3119876543,,2026-09-07 22:46:08.780756+00
+1000,Turbo,Restaurante,El Rincón del Sabor,30045678,,2026-09-07 22:46:08.780756+00
+1001,Turbo,Restaurante,Restaurante El Mirador de Turbo,3147263947,,2026-09-07 22:46:08.780756+00
+1002,Turbo,Restaurante,Restaurante La Bahía,31345678,,2026-09-07 22:46:08.780756+00
+1003,Turbo,Restaurante,Restaurante La Casona de Turbo,3115339097,,2026-09-07 22:46:08.780756+00
+1004,Turbo,Restaurante,Restaurante Tradición de Turbo,3015173547,,2026-09-07 22:46:08.780756+00
+1005,,,,,,2026-09-07 22:46:08.780756+00
+1006,Vigía del Fuerte,Hotel,Hospedaje Vigía del Fuerte 2,3123782963,,2026-09-07 22:46:08.780756+00
+1007,Vigía del Fuerte,Hotel,Hospedaje Vigía del Fuerte 3,3148891356,,2026-09-07 22:46:08.780756+00
+1008,Vigía del Fuerte,Hotel,Hospedaje Vigía del Fuerte 4,3219688991,,2026-09-07 22:46:08.780756+00
+1009,Vigía del Fuerte,Hotel,Hotel Principal Vigía del Fuerte 1,3121674243,,2026-09-07 22:46:08.780756+00
+1010,Vigía del Fuerte,Hotel,Hotel Vigía del Fuerte Local,60400000,,2026-09-07 22:46:08.780756+00
+1011,Vigía del Fuerte,Restaurante,Restaurante Típico Vigía del Fuerte 1,3016998815,,2026-09-07 22:46:08.780756+00
+1012,Vigía del Fuerte,Restaurante,Restaurante Típico Vigía del Fuerte 2,30193973,,2026-09-07 22:46:08.780756+00
+1013,Vigía del Fuerte,Restaurante,Restaurante Típico Vigía del Fuerte 3,3009188277,,2026-09-07 22:46:08.780756+00
+1014,Vigía del Fuerte,Restaurante,Restaurante Vigía del Fuerte,30000000,,2026-09-07 22:46:08.780756+00
+1015,,,,,,2026-09-07 22:46:08.780756+00
+1016,Angostura,Hotel,Hospedaje Angostura 2,3002993794,,2026-09-07 22:46:08.780756+00
+1017,Angostura,Hotel,Hospedaje Angostura 3,3011196964,,2026-09-07 22:46:08.780756+00
+1018,Angostura,Hotel,Hospedaje Angostura 4,3218910426,,2026-09-07 22:46:08.780756+00
+1019,Angostura,Hotel,Hotel Angostura Local,60400000,,2026-09-07 22:46:08.780756+00
+1020,Angostura,Hotel,Hotel Principal Angostura 1,3011017991,,2026-09-07 22:46:08.780756+00
+1021,Angostura,Restaurante,Restaurante Angostura,30000000,,2026-09-07 22:46:08.780756+00
+1022,Angostura,Restaurante,Restaurante Típico Angostura 1,3117665309,,2026-09-07 22:46:08.780756+00
+1023,Angostura,Restaurante,Restaurante Típico Angostura 2,3002701781,,2026-09-07 22:46:08.780756+00
+1024,Angostura,Restaurante,Restaurante Típico Angostura 3,3116887256,,2026-09-07 22:46:08.780756+00
+1025,,,,,,2026-09-07 22:46:08.780756+00
+1026,Belmira,Hotel,Hotel Belmira Local,60400000,,2026-09-07 22:46:08.780756+00
+1027,Belmira,Hotel,Hotel Boutique Belmira,3104356883,,2026-09-07 22:46:08.780756+00
+1028,Belmira,Hotel,Hotel Colonial Belmira,3101438039,,2026-09-07 22:46:08.780756+00
+1029,Belmira,Hotel,Hotel Plaza Belmira,31469197,,2026-09-07 22:46:08.780756+00
+1030,Belmira,Hotel,Hotel Real Belmira,3001850327,,2026-09-07 22:46:08.780756+00
+1031,Belmira,Hotel,Posada Turística Santa Inés,3003677292,,2026-09-07 22:46:08.780756+00
+1032,Belmira,Restaurante,Restaurante Belmira,30000000,,2026-09-07 22:46:08.780756+00
+1033,Belmira,Restaurante,Restaurante El Mirador de Belmira,3145942816,,2026-09-07 22:46:08.780756+00
+1034,Belmira,Restaurante,Restaurante La Casona de Belmira,32123748,,2026-09-07 22:46:08.780756+00
+1035,Belmira,Restaurante,Restaurante Tradición de Belmira,3014272613,,2026-09-07 22:46:08.780756+00
+1036,,,,,,2026-09-07 22:46:08.780756+00
+1037,Briceño,Hotel,Hospedaje Briceño 2,3211583742,,2026-09-07 22:46:08.780756+00
+1038,Briceño,Hotel,Hospedaje Briceño 3,31412165,,2026-09-07 22:46:08.780756+00
+1039,Briceño,Hotel,Hospedaje Briceño 4,3125877784,,2026-09-07 22:46:08.780756+00
+1040,Briceño,Hotel,Hotel Briceño Local,60400000,,2026-09-07 22:46:08.780756+00
+1041,Briceño,Hotel,Hotel Horizontes Briceño,3147948294,,2026-09-07 22:46:08.780756+00
+1042,Briceño,Hotel,Hotel Principal Briceño 1,3216545364,,2026-09-07 22:46:08.780756+00
+1043,Briceño,Restaurante,Restaurante Briceño,30000000,,2026-09-07 22:46:08.780756+00
+1044,Briceño,Restaurante,Restaurante Típico Briceño 1,3203603417,,2026-09-07 22:46:08.780756+00
+1045,Briceño,Restaurante,Restaurante Típico Briceño 2,3009284865,,2026-09-07 22:46:08.780756+00
+1046,Briceño,Restaurante,Restaurante Típico Briceño 3,3122907371,,2026-09-07 22:46:08.780756+00
+1047,,,,,,2026-09-07 22:46:08.780756+00
+1048,Campamento,Hotel,Hospedaje Campamento 2,3139812985,,2026-09-07 22:46:08.780756+00
+1049,Campamento,Hotel,Hospedaje Campamento 3,3009384348,,2026-09-07 22:46:08.780756+00
+1050,Campamento,Hotel,Hospedaje Campamento 4,3212063759,,2026-09-07 22:46:08.780756+00
+1051,Campamento,Hotel,Hotel Campamento Local,60400000,,2026-09-07 22:46:08.780756+00
+1052,Campamento,Hotel,Hotel Principal Campamento 1,3219507858,,2026-09-07 22:46:08.780756+00
+1053,Campamento,Hotel,Oasis Suite Hotel,3206625982,,2026-09-07 22:46:08.780756+00
+1054,Campamento,Restaurante,Restaurante Campamento,30000000,,2026-09-07 22:46:08.780756+00
+1055,Campamento,Restaurante,Restaurante Típico Campamento 1,3101298377,,2026-09-07 22:46:08.780756+00
+1056,Campamento,Restaurante,Restaurante Típico Campamento 2,3137184468,,2026-09-07 22:46:08.780756+00
+1057,Campamento,Restaurante,Restaurante Típico Campamento 3,3219088665,,2026-09-07 22:46:08.780756+00
+1058,,,,,,2026-09-07 22:46:08.780756+00
+1059,Carolina del Príncipe,Hotel,Hospedaje Carolina del Príncipe 2,3003301729,,2026-09-07 22:46:08.780756+00
+1060,Carolina del Príncipe,Hotel,Hospedaje Carolina del Príncipe 3,3107368096,,2026-09-07 22:46:08.780756+00
+1061,Carolina del Príncipe,Hotel,Hospedaje Carolina del Príncipe 4,3007343829,,2026-09-07 22:46:08.780756+00
+1062,Carolina del Príncipe,Hotel,Hotel Carolina Plaza,3017209236,,2026-09-07 22:46:08.780756+00
+1063,Carolina del Príncipe,Hotel,Hotel Carolina del Príncipe Local,60400000,,2026-09-07 22:46:08.780756+00
+1064,Carolina del Príncipe,Hotel,Hotel Principal Carolina del Príncipe 1,31463348,,2026-09-07 22:46:08.780756+00
+1065,Carolina del Príncipe,Restaurante,Restaurante Carolina del Príncipe,30000000,,2026-09-07 22:46:08.780756+00
+1066,Carolina del Príncipe,Restaurante,Restaurante Típico Carolina del Príncipe 1,31421242,,2026-09-07 22:46:08.780756+00
+1067,Carolina del Príncipe,Restaurante,Restaurante Típico Carolina del Príncipe 2,3016762647,,2026-09-07 22:46:08.780756+00
+1068,Carolina del Príncipe,Restaurante,Restaurante Típico Carolina del Príncipe 3,3118532236,,2026-09-07 22:46:08.780756+00
+1069,,,,,,2026-09-07 22:46:08.780756+00
+1070,Donmatías,Hotel,Hospedaje Donmatías 2,3211846754,,2026-09-07 22:46:08.780756+00
+1071,Donmatías,Hotel,Hospedaje Donmatías 3,3109103961,,2026-09-07 22:46:08.780756+00
+1072,Donmatías,Hotel,Hospedaje Donmatías 4,3004603206,,2026-09-07 22:46:08.780756+00
+1073,Donmatías,Hotel,Hotel Don Matías,3148908465,,2026-09-07 22:46:08.780756+00
+1074,Donmatías,Hotel,Hotel Donmatías Local,60400000,,2026-09-07 22:46:08.780756+00
+1075,Donmatías,Hotel,Hotel Park Plaza,30159180,,2026-09-07 22:46:08.780756+00
+1076,Donmatías,Hotel,Hotel Principal Donmatías 1,3211320995,,2026-09-07 22:46:08.780756+00
+1077,Donmatías,Restaurante,Restaurante Donmatías,30000000,,2026-09-07 22:46:08.780756+00
+1078,Donmatías,Restaurante,Restaurante Típico Donmatías 1,3144432932,,2026-09-07 22:46:08.780756+00
+1079,Donmatías,Restaurante,Restaurante Típico Donmatías 2,3129836289,,2026-09-07 22:46:08.780756+00
+1080,Donmatías,Restaurante,Restaurante Típico Donmatías 3,31267146,,2026-09-07 22:46:08.780756+00
+1081,,,,,,2026-09-07 22:46:08.780756+00
+1082,Entrerríos,Hotel,Hospedaje Entrerríos 2,3015823229,,2026-09-07 22:46:08.780756+00
+1083,Entrerríos,Hotel,Hospedaje Entrerríos 3,3135719122,,2026-09-07 22:46:08.780756+00
+1084,Entrerríos,Hotel,Hospedaje Entrerríos 4,3126359309,,2026-09-07 22:46:08.780756+00
+1085,Entrerríos,Hotel,Hotel Entrerríos Local,60400000,,2026-09-07 22:46:08.780756+00
+1086,Entrerríos,Hotel,Hotel Principal Entrerríos 1,3205231125,,2026-09-07 22:46:08.780756+00
+1087,Entrerríos,Hotel,Hotel Villalobos,31173299,,2026-09-07 22:46:08.780756+00
+1088,Entrerríos,Hotel,Hotel y Restaurante Capilla del Río,3116095168,,2026-09-07 22:46:08.780756+00
+1089,Entrerríos,Restaurante,Restaurante Entrerríos,30000000,,2026-09-07 22:46:08.780756+00
+1090,Entrerríos,Restaurante,Restaurante Típico Entrerríos 1,3217083067,,2026-09-07 22:46:08.780756+00
+1091,Entrerríos,Restaurante,Restaurante Típico Entrerríos 2,3145983411,,2026-09-07 22:46:08.780756+00
+1092,Entrerríos,Restaurante,Restaurante Típico Entrerríos 3,3116679341,,2026-09-07 22:46:08.780756+00
+1093,,,,,,2026-09-07 22:46:08.780756+00
+1094,Guadalupe,Hotel,Hospedaje Guadalupe 2,3134038999,,2026-09-07 22:46:08.780756+00
+1095,Guadalupe,Hotel,Hospedaje Guadalupe 3,3219556787,,2026-09-07 22:46:08.780756+00
+1096,Guadalupe,Hotel,Hospedaje Guadalupe 4,32057245,,2026-09-07 22:46:08.780756+00
+1097,Guadalupe,Hotel,Hotel Guadalupe Local,60400000,,2026-09-07 22:46:08.780756+00
+1098,Guadalupe,Hotel,Hotel Principal Guadalupe 1,3017568118,,2026-09-07 22:46:08.780756+00
+1099,Guadalupe,Hotel,Hotel Real,3246643086,,2026-09-07 22:46:08.780756+00
+1100,Guadalupe,Restaurante,Restaurante Guadalupe,30000000,,2026-09-07 22:46:08.780756+00
+1101,Guadalupe,Restaurante,Restaurante Típico Guadalupe 1,3006688438,,2026-09-07 22:46:08.780756+00
+1102,Guadalupe,Restaurante,Restaurante Típico Guadalupe 2,3019423816,,2026-09-07 22:46:08.780756+00
+1103,Guadalupe,Restaurante,Restaurante Típico Guadalupe 3,3105318481,,2026-09-07 22:46:08.780756+00
+1104,,,,,,2026-09-07 22:46:08.780756+00
+1105,Gómez Plata,Hotel,Hospedaje Gómez Plata 2,3103105704,,2026-09-07 22:46:08.780756+00
+1106,Gómez Plata,Hotel,Hospedaje Gómez Plata 3,3104617245,,2026-09-07 22:46:08.780756+00
+1107,Gómez Plata,Hotel,Hospedaje Gómez Plata 4,3121531709,,2026-09-07 22:46:08.780756+00
+1108,Gómez Plata,Hotel,Hotel Gómez Plata Local,60400000,,2026-09-07 22:46:08.780756+00
+1109,Gómez Plata,Hotel,Hotel Principal Gómez Plata 1,3015872236,,2026-09-07 22:46:08.780756+00
+1110,Gómez Plata,Hotel,eMeGé Glamping & E-coworking,3134242858,,2026-09-07 22:46:08.780756+00
+1111,Gómez Plata,Restaurante,Restaurante Gómez Plata,30000000,,2026-09-07 22:46:08.780756+00
+1112,Gómez Plata,Restaurante,Restaurante Típico Gómez Plata 1,3149751065,,2026-09-07 22:46:08.780756+00
+1113,Gómez Plata,Restaurante,Restaurante Típico Gómez Plata 2,3202097087,,2026-09-07 22:46:08.780756+00
+1114,Gómez Plata,Restaurante,Restaurante Típico Gómez Plata 3,3143242347,,2026-09-07 22:46:08.780756+00
+1115,,,,,,2026-09-07 22:46:08.780756+00
+1116,Ituango,Hotel,Hospedaje Ituango 2,3013111817,,2026-09-07 22:46:08.780756+00
+1117,Ituango,Hotel,Hospedaje Ituango 3,3216646127,,2026-09-07 22:46:08.780756+00
+1118,Ituango,Hotel,Hospedaje Ituango 4,3218248009,,2026-09-07 22:46:08.780756+00
+1119,Ituango,Hotel,Hostal Ituango Colonial,3123456789,,2026-09-07 22:46:08.780756+00
+1120,Ituango,Hotel,Hotel El Viajero,3112345678,,2026-09-07 22:46:08.780756+00
+1121,Ituango,Hotel,Hotel Principal Ituango 1,3141593848,,2026-09-07 22:46:08.780756+00
+1122,Ituango,Hotel,Hotel Turístico Ituango,31045678,,2026-09-07 22:46:08.780756+00
+1123,Ituango,Hotel,Panorama Suites Hotel,3226436683,,2026-09-07 22:46:08.780756+00
+1124,Ituango,Restaurante,Asados La Montaña,30045678,,2026-09-07 22:46:08.780756+00
+1125,Ituango,Restaurante,Comedor Típico Ituango,3119876543,,2026-09-07 22:46:08.780756+00
+1126,Ituango,Restaurante,Restaurante El Rinconcito,31345678,,2026-09-07 22:46:08.780756+00
+1127,Ituango,Restaurante,Restaurante Típico Ituango 1,3129335562,,2026-09-07 22:46:08.780756+00
+1128,Ituango,Restaurante,Restaurante Típico Ituango 2,3009477811,,2026-09-07 22:46:08.780756+00
+1129,Ituango,Restaurante,Restaurante Típico Ituango 3,3121674612,,2026-09-07 22:46:08.780756+00
+1130,,,,,,2026-09-07 22:46:08.780756+00
+1131,San Andrés de Cuerquia,Hotel,Hospedaje San Andrés de Cuerquia 2,3005520995,,2026-09-07 22:46:08.780756+00
+1132,San Andrés de Cuerquia,Hotel,Hospedaje San Andrés de Cuerquia 3,3117351175,,2026-09-07 22:46:08.780756+00
+1133,San Andrés de Cuerquia,Hotel,Hospedaje San Andrés de Cuerquia 4,3209316777,,2026-09-07 22:46:08.780756+00
+1134,San Andrés de Cuerquia,Hotel,Hotel Luz Del Norte,3214282876,,2026-09-07 22:46:08.780756+00
+1135,San Andrés de Cuerquia,Hotel,Hotel Principal San Andrés de Cuerquia 1,3117943435,,2026-09-07 22:46:08.780756+00
+1136,San Andrés de Cuerquia,Restaurante,Restaurante Típico San Andrés de Cuerquia 1,3018214797,,2026-09-07 22:46:08.780756+00
+1137,San Andrés de Cuerquia,Restaurante,Restaurante Típico San Andrés de Cuerquia 2,3204855419,,2026-09-07 22:46:08.780756+00
+1138,San Andrés de Cuerquia,Restaurante,Restaurante Típico San Andrés de Cuerquia 3,31239384,,2026-09-07 22:46:08.780756+00
+1139,,,,,,2026-09-07 22:46:08.780756+00
+1140,San José de la Montaña,Hotel,Hospedaje San José de la Montaña 2,3212185987,,2026-09-07 22:46:08.780756+00
+1141,San José de la Montaña,Hotel,Hospedaje San José de la Montaña 3,3215780785,,2026-09-07 22:46:08.780756+00
+1142,San José de la Montaña,Hotel,Hospedaje San José de la Montaña 4,3127138932,,2026-09-07 22:46:08.780756+00
+1143,San José de la Montaña,Hotel,Hotel Principal San José de la Montaña 1,3129831084,,2026-09-07 22:46:08.780756+00
+1144,San José de la Montaña,Restaurante,Restaurante Típico San José de la Montaña 1,3112959228,,2026-09-07 22:46:08.780756+00
+1145,San José de la Montaña,Restaurante,Restaurante Típico San José de la Montaña 2,3019780112,,2026-09-07 22:46:08.780756+00
+1146,San José de la Montaña,Restaurante,Restaurante Típico San José de la Montaña 3,3017759094,,2026-09-07 22:46:08.780756+00
+1147,,,,,,2026-09-07 22:46:08.780756+00
+1148,San Pedro de los Milagros,Hotel,Hostal La Campiña,3112345678,,2026-09-07 22:46:08.780756+00
+1149,San Pedro de los Milagros,Hotel,Hotel Boutique San Pedro de los Milagros,3015005523,,2026-09-07 22:46:08.780756+00
+1150,San Pedro de los Milagros,Hotel,Hotel Colonial San Pedro de los Milagros,3144228785,,2026-09-07 22:46:08.780756+00
+1151,San Pedro de los Milagros,Hotel,Hotel El Faro San Pedro,3137163504,,2026-09-07 22:46:08.780756+00
+1152,San Pedro de los Milagros,Hotel,Hotel El Peregrino,6048662233,,2026-09-07 22:46:08.780756+00
+1153,San Pedro de los Milagros,Hotel,Hotel Milagros Real,3109876543,,2026-09-07 22:46:08.780756+00
+1154,San Pedro de los Milagros,Hotel,Hotel Plaza San Pedro de los Milagros,3141532623,,2026-09-07 22:46:08.780756+00
+1155,San Pedro de los Milagros,Hotel,Hotel Real San Pedro de los Milagros,3123834994,,2026-09-07 22:46:08.780756+00
+1156,San Pedro de los Milagros,Restaurante,Asados San Pedro,3005678901,,2026-09-07 22:46:08.780756+00
+1157,San Pedro de los Milagros,Restaurante,Punto Clave Lácteos,3135678901,,2026-09-07 22:46:08.780756+00
+1158,San Pedro de los Milagros,Restaurante,Restaurante El Mirador de San Pedro de los Milagros,3013563479,,2026-09-07 22:46:08.780756+00
+1159,San Pedro de los Milagros,Restaurante,Restaurante El Sesteo,31245678,,2026-09-07 22:46:08.780756+00
+1160,San Pedro de los Milagros,Restaurante,Restaurante La Casona de San Pedro de los Milagros,3207968765,,2026-09-07 22:46:08.780756+00
+1161,San Pedro de los Milagros,Restaurante,Restaurante Tradición de San Pedro de los Milagros,3005683804,,2026-09-07 22:46:08.780756+00
+1162,,,,,,2026-09-07 22:46:08.780756+00
+1163,Santa Rosa de Osos,Hotel,Hostería San Antonio,31045678,,2026-09-07 22:46:08.780756+00
+1164,Santa Rosa de Osos,Hotel,Hotel Boutique Santa Rosa de Osos,3008476061,,2026-09-07 22:46:08.780756+00
+1165,Santa Rosa de Osos,Hotel,Hotel Colonial Santa Rosa,6048601122,,2026-09-07 22:46:08.780756+00
+1166,Santa Rosa de Osos,Hotel,Hotel Colonial Santa Rosa de Osos,3007091239,,2026-09-07 22:46:08.780756+00
+1167,Santa Rosa de Osos,Hotel,Hotel El Libertador,3113456789,,2026-09-07 22:46:08.780756+00
+1168,Santa Rosa de Osos,Hotel,Hotel La Circasia,3108411864,,2026-09-07 22:46:08.780756+00
+1169,Santa Rosa de Osos,Hotel,Hotel Plaza Santa Rosa de Osos,3001650834,,2026-09-07 22:46:08.780756+00
+1170,Santa Rosa de Osos,Hotel,Hotel Real Santa Rosa de Osos,3202002737,,2026-09-07 22:46:08.780756+00
+1171,Santa Rosa de Osos,Hotel,Hotel Universal Santa Rosa de Osos,3116334987,,2026-09-07 22:46:08.780756+00
+1172,Santa Rosa de Osos,Restaurante,Asados Doña Rosa,31345678,,2026-09-07 22:46:08.780756+00
+1173,Santa Rosa de Osos,Restaurante,Café Central,30045678,,2026-09-07 22:46:08.780756+00
+1174,Santa Rosa de Osos,Restaurante,Restaurante El Mirador de Santa Rosa de Osos,3009765636,,2026-09-07 22:46:08.780756+00
+1175,Santa Rosa de Osos,Restaurante,Restaurante La Casona,3123456789,,2026-09-07 22:46:08.780756+00
+1176,Santa Rosa de Osos,Restaurante,Restaurante La Casona de Santa Rosa de Osos,32045947,,2026-09-07 22:46:08.780756+00
+1177,Santa Rosa de Osos,Restaurante,Restaurante Tradición de Santa Rosa de Osos,3003530147,,2026-09-07 22:46:08.780756+00
+1178,,,,,,2026-09-07 22:46:08.780756+00
+1179,Toledo,Hotel,Hospedaje Toledo 2,3143380428,,2026-09-07 22:46:08.780756+00
+1180,Toledo,Hotel,Hospedaje Toledo 3,3117091549,,2026-09-07 22:46:08.780756+00
+1181,Toledo,Hotel,Hospedaje Toledo 4,3139917861,,2026-09-07 22:46:08.780756+00
+1182,Toledo,Hotel,Hotel Principal Toledo 1,3205447061,,2026-09-07 22:46:08.780756+00
+1183,Toledo,Restaurante,Restaurante Típico Toledo 1,3104554683,,2026-09-07 22:46:08.780756+00
+1184,Toledo,Restaurante,Restaurante Típico Toledo 2,3108718334,,2026-09-07 22:46:08.780756+00
+1185,Toledo,Restaurante,Restaurante Típico Toledo 3,3108649681,,2026-09-07 22:46:08.780756+00
+1186,,,,,,2026-09-07 22:46:08.780756+00
+1187,Valdivia,Hotel,Hospedaje Valdivia 2,3019924262,,2026-09-07 22:46:08.780756+00
+1188,Valdivia,Hotel,Hospedaje Valdivia 3,3147125428,,2026-09-07 22:46:08.780756+00
+1189,Valdivia,Hotel,Hospedaje Valdivia 4,3212681962,,2026-09-07 22:46:08.780756+00
+1190,Valdivia,Hotel,Hotel Diocelina,3205742399,,2026-09-07 22:46:08.780756+00
+1191,Valdivia,Hotel,Hotel Principal Valdivia 1,3141029437,,2026-09-07 22:46:08.780756+00
+1192,Valdivia,Hotel,Hotel Valdivia Local,60400000,,2026-09-07 22:46:08.780756+00
+1193,Valdivia,Restaurante,Restaurante Típico Valdivia 1,3119371786,,2026-09-07 22:46:08.780756+00
+1194,Valdivia,Restaurante,Restaurante Típico Valdivia 2,3104689168,,2026-09-07 22:46:08.780756+00
+1195,Valdivia,Restaurante,Restaurante Típico Valdivia 3,3006934395,,2026-09-07 22:46:08.780756+00
+1196,Valdivia,Restaurante,Restaurante Valdivia,30000000,,2026-09-07 22:46:08.780756+00
+1197,,,,,,2026-09-07 22:46:08.780756+00
+1198,Yarumal,Hotel,Gran Hotel Yarumal,3136092506,,2026-09-07 22:46:08.780756+00
+1199,Yarumal,Hotel,Hospedaje Yarumal 2,3147560903,,2026-09-07 22:46:08.780756+00
+1200,Yarumal,Hotel,Hospedaje Yarumal 3,3142390427,,2026-09-07 22:46:08.780756+00
+1201,Yarumal,Hotel,Hospedaje Yarumal 4,3144421744,,2026-09-07 22:46:08.780756+00
+1202,Yarumal,Hotel,Hotel Principal Yarumal 1,3139019257,,2026-09-07 22:46:08.780756+00
+1203,Yarumal,Hotel,Hotel Yarumal Local,60400000,,2026-09-07 22:46:08.780756+00
+1204,Yarumal,Restaurante,Restaurante Típico Yarumal 1,3131650388,,2026-09-07 22:46:08.780756+00
+1205,Yarumal,Restaurante,Restaurante Típico Yarumal 2,3219077989,,2026-09-07 22:46:08.780756+00
+1206,Yarumal,Restaurante,Restaurante Típico Yarumal 3,3203607358,,2026-09-07 22:46:08.780756+00
+1207,Yarumal,Restaurante,Restaurante Yarumal,30000000,,2026-09-07 22:46:08.780756+00
+1208,,,,,,2026-09-07 22:46:08.780756+00
+1209,Alejandría,Hotel,Hotel Alejandría Local,60400000,,2026-09-07 22:46:08.780756+00
+1210,Alejandría,Restaurante,Restaurante Alejandría,30000000,,2026-09-07 22:46:08.780756+00
+1211,,,,,,2026-09-07 22:46:08.780756+00
+1212,Amalfi,Hotel,Hostería La Cascada,3123456789,,2026-09-07 22:46:08.780756+00
+1213,Amalfi,Hotel,Hotel Amalfi,31133018,,2026-09-07 22:46:08.780756+00
+1214,Amalfi,Hotel,Hotel Boutique Amalfi,3104139932,,2026-09-07 22:46:08.780756+00
+1215,Amalfi,Hotel,Hotel Colonial Amalfi,31045678,,2026-09-07 22:46:08.780756+00
+1216,Amalfi,Hotel,Hotel Colonial Amalfi,3218790489,,2026-09-07 22:46:08.780756+00
+1217,Amalfi,Hotel,Hotel El Palatino,3112345678,,2026-09-07 22:46:08.780756+00
+1218,Amalfi,Hotel,Hotel Fuente de Oro,3122598244,,2026-09-07 22:46:08.780756+00
+1219,Amalfi,Hotel,Hotel Plaza Amalfi,3201981063,,2026-09-07 22:46:08.780756+00
+1220,Amalfi,Hotel,Hotel Preciado,3146204134,,2026-09-07 22:46:08.780756+00
+1221,Amalfi,Hotel,Hotel Real Amalfi,3211434863,,2026-09-07 22:46:08.780756+00
+1222,Amalfi,Restaurante,Asados Doña Inés,30045678,,2026-09-07 22:46:08.780756+00
+1223,Amalfi,Restaurante,Café Bar La Estación,3119876543,,2026-09-07 22:46:08.780756+00
+1224,Amalfi,Restaurante,Restaurante El Mirador de Amalfi,3139430566,,2026-09-07 22:46:08.780756+00
+1225,Amalfi,Restaurante,Restaurante El Sabor Paisa,31345678,,2026-09-07 22:46:08.780756+00
+1226,Amalfi,Restaurante,Restaurante La Casona de Amalfi,3133492828,,2026-09-07 22:46:08.780756+00
+1227,Amalfi,Restaurante,Restaurante Tradición de Amalfi,3133286015,,2026-09-07 22:46:08.780756+00
+1228,,,,,,2026-09-07 22:46:08.780756+00
+1229,Anorí,Hotel,Hospedaje Anorí 2,3009837866,,2026-09-07 22:46:08.780756+00
+1230,Anorí,Hotel,Hospedaje Anorí 3,3217190107,,2026-09-07 22:46:08.780756+00
+1231,Anorí,Hotel,Hospedaje Anorí 4,32014581,,2026-09-07 22:46:08.780756+00
+1232,Anorí,Hotel,Hotel Anorí Local,60400000,,2026-09-07 22:46:08.780756+00
+1233,Anorí,Hotel,Hotel Ktapio,3146141354,,2026-09-07 22:46:08.780756+00
+1234,Anorí,Hotel,Hotel Los Arrayanes,3113536929,,2026-09-07 22:46:08.780756+00
+1235,Anorí,Hotel,Hotel Principal Anorí 1,3142243006,,2026-09-07 22:46:08.780756+00
+1236,Anorí,Restaurante,Restaurante Anorí,30000000,,2026-09-07 22:46:08.780756+00
+1237,Anorí,Restaurante,Restaurante Típico Anorí 1,3115521244,,2026-09-07 22:46:08.780756+00
+1238,Anorí,Restaurante,Restaurante Típico Anorí 2,3215042431,,2026-09-07 22:46:08.780756+00
+1239,Anorí,Restaurante,Restaurante Típico Anorí 3,3145503033,,2026-09-07 22:46:08.780756+00
+1240,,,,,,2026-09-07 22:46:08.780756+00
+1241,Barbosa,Hotel,Hotel Barbosa_Nordeste Local,60400000,,2026-09-07 22:46:08.780756+00
+1242,Barbosa,Restaurante,Restaurante Barbosa_Nordeste,30000000,,2026-09-07 22:46:08.780756+00
+1243,,,,,,2026-09-07 22:46:08.780756+00
+1244,Cisneros,Hotel,Casa Hotel Lolita,31466281,,2026-09-07 22:46:08.780756+00
+1245,Cisneros,Hotel,Hospedaje Cisneros 2,3013698306,,2026-09-07 22:46:08.780756+00
+1246,Cisneros,Hotel,Hospedaje Cisneros 3,3144015387,,2026-09-07 22:46:08.780756+00
+1247,Cisneros,Hotel,Hospedaje Cisneros 4,3116601627,,2026-09-07 22:46:08.780756+00
+1248,Cisneros,Hotel,Hostería Puerta del Nus,3187364754,,2026-09-07 22:46:08.780756+00
+1249,Cisneros,Hotel,Hotel Cisneros,3217479542,,2026-09-07 22:46:08.780756+00
+1250,Cisneros,Hotel,Hotel Cisneros Local,60400000,,2026-09-07 22:46:08.780756+00
+1251,Cisneros,Hotel,Hotel Principal Cisneros 1,3143626418,,2026-09-07 22:46:08.780756+00
+1252,Cisneros,Hotel,Parador Finca Hotel Rancho Alegre,3113500191,,2026-09-07 22:46:08.780756+00
+1253,Cisneros,Hotel,Trébol Hotel Cisneros,3012048655,,2026-09-07 22:46:08.780756+00
+1254,Cisneros,Restaurante,Restaurante Cisneros,30000000,,2026-09-07 22:46:08.780756+00
+1255,Cisneros,Restaurante,Restaurante Típico Cisneros 1,3127678964,,2026-09-07 22:46:08.780756+00
+1256,Cisneros,Restaurante,Restaurante Típico Cisneros 2,3124449338,,2026-09-07 22:46:08.780756+00
+1257,Cisneros,Restaurante,Restaurante Típico Cisneros 3,3201233096,,2026-09-07 22:46:08.780756+00
+1258,,,,,,2026-09-07 22:46:08.780756+00
+1259,El Bagre,Hotel,Hotel El_Bagre Local,60400000,,2026-09-07 22:46:08.780756+00
+1260,El Bagre,Restaurante,Restaurante El_Bagre,30000000,,2026-09-07 22:46:08.780756+00
+1261,,,,,,2026-09-07 22:46:08.780756+00
+1262,Guarne,Hotel,Hotel Guarne Local,60400000,,2026-09-07 22:46:08.780756+00
+1263,Guarne,Restaurante,Restaurante Guarne,30000000,,2026-09-07 22:46:08.780756+00
+1264,,,,,,2026-09-07 22:46:08.780756+00
+1265,Maceo,Hotel,Hospedaje Maceo 2,3005669758,,2026-09-07 22:46:08.780756+00
+1266,Maceo,Hotel,Hospedaje Maceo 3,3125233726,,2026-09-07 22:46:08.780756+00
+1267,Maceo,Hotel,Hospedaje Maceo 4,3208844845,,2026-09-07 22:46:08.780756+00
+1268,Maceo,Hotel,Hotel Principal Maceo 1,3115298276,,2026-09-07 22:46:08.780756+00
+1269,Maceo,Restaurante,Restaurante Típico Maceo 1,3009529808,,2026-09-07 22:46:08.780756+00
+1270,Maceo,Restaurante,Restaurante Típico Maceo 2,3132913675,,2026-09-07 22:46:08.780756+00
+1271,Maceo,Restaurante,Restaurante Típico Maceo 3,3121294104,,2026-09-07 22:46:08.780756+00
+1272,,,,,,2026-09-07 22:46:08.780756+00
+1273,Remedios,Hotel,Hospedaje Remedios 2,30126644,,2026-09-07 22:46:08.780756+00
+1274,Remedios,Hotel,Hospedaje Remedios 3,3204138597,,2026-09-07 22:46:08.780756+00
+1275,Remedios,Hotel,Hospedaje Remedios 4,3121123363,,2026-09-07 22:46:08.780756+00
+1276,Remedios,Hotel,Hotel Colonial Remedios,31045678,,2026-09-07 22:46:08.780756+00
+1277,Remedios,Hotel,Hotel Las Orquídeas,3123456789,,2026-09-07 22:46:08.780756+00
+1278,Remedios,Hotel,Hotel Principal Remedios 1,3012683709,,2026-09-07 22:46:08.780756+00
+1279,Remedios,Hotel,Hotel Real de Minas,3112345678,,2026-09-07 22:46:08.780756+00
+1280,Remedios,Hotel,Hotel Terrasol,3106461356,,2026-09-07 22:46:08.780756+00
+1281,Remedios,Hotel,Hotel Torres de Angola,3128330265,,2026-09-07 22:46:08.780756+00
+1282,Remedios,Restaurante,Asados El Indio,30045678,,2026-09-07 22:46:08.780756+00
+1283,Remedios,Restaurante,Café Real,3119876543,,2026-09-07 22:46:08.780756+00
+1284,Remedios,Restaurante,Restaurante Típico Remediano,31345678,,2026-09-07 22:46:08.780756+00
+1285,Remedios,Restaurante,Restaurante Típico Remedios 1,3137270743,,2026-09-07 22:46:08.780756+00
+1286,Remedios,Restaurante,Restaurante Típico Remedios 2,32170819,,2026-09-07 22:46:08.780756+00
+1287,Remedios,Restaurante,Restaurante Típico Remedios 3,3102351569,,2026-09-07 22:46:08.780756+00
+1288,,,,,,2026-09-07 22:46:08.780756+00
+1289,San Roque,Hotel,Hotel Boutique San Roque,3134026699,,2026-09-07 22:46:08.780756+00
+1290,San Roque,Hotel,Hotel Colonial San Roque,30018992,,2026-09-07 22:46:08.780756+00
+1291,San Roque,Hotel,Hotel Plaza San Roque,3113514292,,2026-09-07 22:46:08.780756+00
+1292,San Roque,Hotel,Hotel Real San Roque,3203006817,,2026-09-07 22:46:08.780756+00
+1293,San Roque,Hotel,Hotel San_Roque Local,60400000,,2026-09-07 22:46:08.780756+00
+1294,San Roque,Hotel,Hotel Super Nus,3206260193,,2026-09-07 22:46:08.780756+00
+1295,San Roque,Restaurante,Restaurante El Mirador de San Roque,3116315904,,2026-09-07 22:46:08.780756+00
+1296,San Roque,Restaurante,Restaurante La Casona de San Roque,3128334522,,2026-09-07 22:46:08.780756+00
+1297,San Roque,Restaurante,Restaurante San_Roque,30000000,,2026-09-07 22:46:08.780756+00
+1298,San Roque,Restaurante,Restaurante Tradición de San Roque,31360017,,2026-09-07 22:46:08.780756+00
+1299,,,,,,2026-09-07 22:46:08.780756+00
+1300,Santo Domingo,Hotel,Hospedaje Santo Domingo 2,3129277638,,2026-09-07 22:46:08.780756+00
+1301,Santo Domingo,Hotel,Hospedaje Santo Domingo 3,3107874793,,2026-09-07 22:46:08.780756+00
+1302,Santo Domingo,Hotel,Hospedaje Santo Domingo 4,3012073058,,2026-09-07 22:46:08.780756+00
+1303,Santo Domingo,Hotel,Hotel Principal Santo Domingo 1,3124906695,,2026-09-07 22:46:08.780756+00
+1304,Santo Domingo,Hotel,Hotel Santo Domingo Antioquia,31223674,,2026-09-07 22:46:08.780756+00
+1305,Santo Domingo,Hotel,Hotel Santo_Domingo Local,60400000,,2026-09-07 22:46:08.780756+00
+1306,Santo Domingo,Restaurante,Restaurante Santo_Domingo,30000000,,2026-09-07 22:46:08.780756+00
+1307,Santo Domingo,Restaurante,Restaurante Típico Santo Domingo 1,3215794597,,2026-09-07 22:46:08.780756+00
+1308,Santo Domingo,Restaurante,Restaurante Típico Santo Domingo 2,3002373981,,2026-09-07 22:46:08.780756+00
+1309,Santo Domingo,Restaurante,Restaurante Típico Santo Domingo 3,3116766213,,2026-09-07 22:46:08.780756+00
+1310,,,,,,2026-09-07 22:46:08.780756+00
+1311,Segovia,Hotel,Hospedaje Oasis 2,3122956852,,2026-09-07 22:46:08.780756+00
+1312,Segovia,Hotel,Hotel Boutique Segovia,3122776546,,2026-09-07 22:46:08.780756+00
+1313,Segovia,Hotel,Hotel Campestre El Descanso,3112345678,,2026-09-07 22:46:08.780756+00
+1314,Segovia,Hotel,Hotel Central Segovia,6048391234,,2026-09-07 22:46:08.780756+00
+1315,Segovia,Hotel,Hotel Colonial Segovia,3206745796,,2026-09-07 22:46:08.780756+00
+1316,Segovia,Hotel,Hotel Minero Real,3109876543,,2026-09-07 22:46:08.780756+00
+1317,Segovia,Hotel,Hotel Plaza Segovia,31199343,,2026-09-07 22:46:08.780756+00
+1318,Segovia,Hotel,Hotel Real Segovia,3119336838,,2026-09-07 22:46:08.780756+00
+1319,Segovia,Restaurante,Asados al Carbón,3135678901,,2026-09-07 22:46:08.780756+00
+1320,Segovia,Restaurante,Restaurante El Mirador de Segovia,3218387748,,2026-09-07 22:46:08.780756+00
+1321,Segovia,Restaurante,Restaurante El Portal,31245678,,2026-09-07 22:46:08.780756+00
+1322,Segovia,Restaurante,Restaurante La Casona de Segovia,3202733475,,2026-09-07 22:46:08.780756+00
+1323,Segovia,Restaurante,Restaurante Tradición de Segovia,3017230113,,2026-09-07 22:46:08.780756+00
+1324,Segovia,Restaurante,Sabor Minero,3005678901,,2026-09-07 22:46:08.780756+00
+1325,,,,,,2026-09-07 22:46:08.780756+00
+1326,Vegachí,Hotel,Hospedaje Vegachí 2,3107218128,,2026-09-07 22:46:08.780756+00
+1327,Vegachí,Hotel,Hospedaje Vegachí 3,31044592,,2026-09-07 22:46:08.780756+00
+1328,Vegachí,Hotel,Hospedaje Vegachí 4,3216573363,,2026-09-07 22:46:08.780756+00
+1329,Vegachí,Hotel,Hotel Guayacanes,3053228536,,2026-09-07 22:46:08.780756+00
+1330,Vegachí,Hotel,Hotel Principal Vegachí 1,3105669629,,2026-09-07 22:46:08.780756+00
+1331,Vegachí,Hotel,Hotel Vegachí Local,60400000,,2026-09-07 22:46:08.780756+00
+1332,Vegachí,Restaurante,Restaurante Típico Vegachí 1,3129133089,,2026-09-07 22:46:08.780756+00
+1333,Vegachí,Restaurante,Restaurante Típico Vegachí 2,3122705951,,2026-09-07 22:46:08.780756+00
+1334,Vegachí,Restaurante,Restaurante Típico Vegachí 3,3015327428,,2026-09-07 22:46:08.780756+00
+1335,Vegachí,Restaurante,Restaurante Vegachí,30000000,,2026-09-07 22:46:08.780756+00
+1336,,,,,,2026-09-07 22:46:08.780756+00
+1337,Yalí,Hotel,Hospedaje El Doral,3122197869,,2026-09-07 22:46:08.780756+00
+1338,Yalí,Hotel,Hospedaje Yalí 2,3017911684,,2026-09-07 22:46:08.780756+00
+1339,Yalí,Hotel,Hospedaje Yalí 3,3007697786,,2026-09-07 22:46:08.780756+00
+1340,Yalí,Hotel,Hospedaje Yalí 4,3134435555,,2026-09-07 22:46:08.780756+00
+1341,Yalí,Hotel,Hotel Principal Yalí 1,3144198695,,2026-09-07 22:46:08.780756+00
+1342,Yalí,Restaurante,Restaurante Típico Yalí 1,3137098622,,2026-09-07 22:46:08.780756+00
+1343,Yalí,Restaurante,Restaurante Típico Yalí 2,3206347759,,2026-09-07 22:46:08.780756+00
+1344,Yalí,Restaurante,Restaurante Típico Yalí 3,3002423324,,2026-09-07 22:46:08.780756+00
+1345,,,,,,2026-09-07 22:46:08.780756+00
+1346,Yolombó,Hotel,Finca Hotel Isla Escondida,3218153462,,2026-09-07 22:46:08.780756+00
+1347,Yolombó,Hotel,Hospedaje Yolombó 2,3144620435,,2026-09-07 22:46:08.780756+00
+1348,Yolombó,Hotel,Hospedaje Yolombó 3,3208615919,,2026-09-07 22:46:08.780756+00
+1349,Yolombó,Hotel,Hospedaje Yolombó 4,3018979982,,2026-09-07 22:46:08.780756+00
+1350,Yolombó,Hotel,Hotel Principal Yolombó 1,3102588488,,2026-09-07 22:46:08.780756+00
+1351,Yolombó,Hotel,Hotel Yolombó Local,60400000,,2026-09-07 22:46:08.780756+00
+1352,Yolombó,Hotel,Hotel Yolombó Real,3008339972,,2026-09-07 22:46:08.780756+00
+1353,Yolombó,Restaurante,Restaurante Típico Yolombó 1,3012510753,,2026-09-07 22:46:08.780756+00
+1354,Yolombó,Restaurante,Restaurante Típico Yolombó 2,32081299,,2026-09-07 22:46:08.780756+00
+1355,Yolombó,Restaurante,Restaurante Típico Yolombó 3,3208987922,,2026-09-07 22:46:08.780756+00
+1356,Yolombó,Restaurante,Restaurante Yolombó,30000000,,2026-09-07 22:46:08.780756+00
+1357,,,,,,2026-09-07 22:46:08.780756+00
+1358,Zaragoza,Hotel,Hotel Zaragoza Local,60400000,,2026-09-07 22:46:08.780756+00
+1359,Zaragoza,Restaurante,Restaurante Zaragoza,30000000,,2026-09-07 22:46:08.780756+00
+1360,,,,,,2026-09-07 22:46:08.780756+00
+1361,Caucasia,Hotel,Hotel Boutique Caucasia,3132753722,,2026-09-07 22:46:08.780756+00
+1362,Caucasia,Hotel,Hotel Colonial Caucasia,3011030602,,2026-09-07 22:46:08.780756+00
+1363,Caucasia,Hotel,Hotel Confamiliar,6048393322,,2026-09-07 22:46:08.780756+00
+1364,Caucasia,Hotel,Hotel Plaza Caucasia,3113867464,,2026-09-07 22:46:08.780756+00
+1365,Caucasia,Hotel,Hotel Plaza Real,31045678,,2026-09-07 22:46:08.780756+00
+1366,Caucasia,Hotel,Hotel Real Caucasia,3204445154,,2026-09-07 22:46:08.780756+00
+1367,Caucasia,Hotel,Hotel Sindamanoy,6048392233,,2026-09-07 22:46:08.780756+00
+1368,Caucasia,Restaurante,Asados Doña Julia,3123456789,,2026-09-07 22:46:08.780756+00
+1369,Caucasia,Restaurante,Punto Rojo,31345678,,2026-09-07 22:46:08.780756+00
+1370,Caucasia,Restaurante,Restaurante El Mirador de Caucasia,3201356452,,2026-09-07 22:46:08.780756+00
+1371,Caucasia,Restaurante,Restaurante El Pescador,3112345678,,2026-09-07 22:46:08.780756+00
+1372,Caucasia,Restaurante,Restaurante La Casona de Caucasia,3203267983,,2026-09-07 22:46:08.780756+00
+1373,Caucasia,Restaurante,Restaurante Tradición de Caucasia,3142047088,,2026-09-07 22:46:08.780756+00
+1374,,,,,,2026-09-07 22:46:08.780756+00
+1375,Cáceres,Hotel,Hospedaje Cáceres 2,3116171098,,2026-09-07 22:46:08.780756+00
+1376,Cáceres,Hotel,Hospedaje Cáceres 3,3104574969,,2026-09-07 22:46:08.780756+00
+1377,Cáceres,Hotel,Hospedaje Cáceres 4,3115166653,,2026-09-07 22:46:08.780756+00
+1378,Cáceres,Hotel,Hotel Cáceres Local,60400000,,2026-09-07 22:46:08.780756+00
+1379,Cáceres,Hotel,Hotel Principal Cáceres 1,3219658814,,2026-09-07 22:46:08.780756+00
+1380,Cáceres,Restaurante,Restaurante Cáceres,30000000,,2026-09-07 22:46:08.780756+00
+1381,Cáceres,Restaurante,Restaurante Típico Cáceres 1,3004158664,,2026-09-07 22:46:08.780756+00
+1382,Cáceres,Restaurante,Restaurante Típico Cáceres 2,3005787477,,2026-09-07 22:46:08.780756+00
+1383,Cáceres,Restaurante,Restaurante Típico Cáceres 3,3116091739,,2026-09-07 22:46:08.780756+00
+1384,,,,,,2026-09-07 22:46:08.780756+00
+1385,El Bagre,Hotel,Hostal Las Palmas,3112345678,,2026-09-07 22:46:08.780756+00
+1386,El Bagre,Hotel,Hotel Boutique El Bagre,31090567,,2026-09-07 22:46:08.780756+00
+1387,El Bagre,Hotel,Hotel Colonial El Bagre,3005786883,,2026-09-07 22:46:08.780756+00
+1388,El Bagre,Hotel,Hotel El Bagre Real,3109876543,,2026-09-07 22:46:08.780756+00
+1389,El Bagre,Hotel,Hotel Plaza El Bagre,3113964493,,2026-09-07 22:46:08.780756+00
+1390,El Bagre,Hotel,Hotel Real El Bagre,31083226,,2026-09-07 22:46:08.780756+00
+1391,El Bagre,Restaurante,Asados El Paisa,3135678901,,2026-09-07 22:46:08.780756+00
+1392,El Bagre,Restaurante,Restaurante El Mirador de El Bagre,3019830076,,2026-09-07 22:46:08.780756+00
+1393,El Bagre,Restaurante,Restaurante La Casona de El Bagre,3019773607,,2026-09-07 22:46:08.780756+00
+1394,El Bagre,Restaurante,Restaurante Sabor Minero,31245678,,2026-09-07 22:46:08.780756+00
+1395,El Bagre,Restaurante,Restaurante Tradición de El Bagre,3213868195,,2026-09-07 22:46:08.780756+00
+1396,,,,,,2026-09-07 22:46:08.780756+00
+1397,Nechí,Hotel,Hospedaje Nechí 2,3206334619,,2026-09-07 22:46:08.780756+00
+1398,Nechí,Hotel,Hospedaje Nechí 3,3147987337,,2026-09-07 22:46:08.780756+00
+1399,Nechí,Hotel,Hospedaje Nechí 4,3125306085,,2026-09-07 22:46:08.780756+00
+1400,Nechí,Hotel,Hotel Nechí Local,60400000,,2026-09-07 22:46:08.780756+00
+1401,Nechí,Hotel,Hotel Principal Nechí 1,3019348306,,2026-09-07 22:46:08.780756+00
+1402,Nechí,Restaurante,Restaurante Nechí,30000000,,2026-09-07 22:46:08.780756+00
+1403,Nechí,Restaurante,Restaurante Típico Nechí 1,3134359451,,2026-09-07 22:46:08.780756+00
+1404,Nechí,Restaurante,Restaurante Típico Nechí 2,3212086672,,2026-09-07 22:46:08.780756+00
+1405,Nechí,Restaurante,Restaurante Típico Nechí 3,3203424008,,2026-09-07 22:46:08.780756+00
+1406,,,,,,2026-09-07 22:46:08.780756+00
+1407,Tarazá,Hotel,Hospedaje Tarazá 2,3129000727,,2026-09-07 22:46:08.780756+00
+1408,Tarazá,Hotel,Hospedaje Tarazá 3,3127351947,,2026-09-07 22:46:08.780756+00
+1409,Tarazá,Hotel,Hospedaje Tarazá 4,3131260862,,2026-09-07 22:46:08.780756+00
+1410,Tarazá,Hotel,Hotel Principal Tarazá 1,3016281483,,2026-09-07 22:46:08.780756+00
+1411,Tarazá,Hotel,Hotel Tarazá Local,60400000,,2026-09-07 22:46:08.780756+00
+1412,Tarazá,Restaurante,Restaurante Tarazá,30000000,,2026-09-07 22:46:08.780756+00
+1413,Tarazá,Restaurante,Restaurante Típico Tarazá 1,3214254538,,2026-09-07 22:46:08.780756+00
+1414,Tarazá,Restaurante,Restaurante Típico Tarazá 2,3005915572,,2026-09-07 22:46:08.780756+00
+1415,Tarazá,Restaurante,Restaurante Típico Tarazá 3,3141057625,,2026-09-07 22:46:08.780756+00
+1416,,,,,,2026-09-07 22:46:08.780756+00
+1417,Zaragoza,Hotel,Hotel Boutique Zaragoza,3123485768,,2026-09-07 22:46:08.780756+00
+1418,Zaragoza,Hotel,Hotel Colonial Zaragoza,31045678,,2026-09-07 22:46:08.780756+00
+1419,Zaragoza,Hotel,Hotel Colonial Zaragoza,3144244434,,2026-09-07 22:46:08.780756+00
+1420,Zaragoza,Hotel,Hotel Plaza Zaragoza,3003621983,,2026-09-07 22:46:08.780756+00
+1421,Zaragoza,Hotel,Hotel Real,3112345678,,2026-09-07 22:46:08.780756+00
+1422,Zaragoza,Hotel,Hotel Real Zaragoza,3137265753,,2026-09-07 22:46:08.780756+00
+1423,Zaragoza,Restaurante,Asados Típicos,31345678,,2026-09-07 22:46:08.780756+00
+1424,Zaragoza,Restaurante,Restaurante El Mirador de Zaragoza,31299718,,2026-09-07 22:46:08.780756+00
+1425,Zaragoza,Restaurante,Restaurante El Rincón,3123456789,,2026-09-07 22:46:08.780756+00
+1426,Zaragoza,Restaurante,Restaurante La Casona de Zaragoza,3108875772,,2026-09-07 22:46:08.780756+00
+1427,Zaragoza,Restaurante,Restaurante Tradición de Zaragoza,3007793627,,2026-09-07 22:46:08.780756+00
+1428,,,,,,2026-09-07 22:46:08.780756+00
+1429,Caracolí,Hotel,Hospedaje Caracolí 2,31464694,,2026-09-07 22:46:08.780756+00
+1430,Caracolí,Hotel,Hospedaje Caracolí 3,3116216716,,2026-09-07 22:46:08.780756+00
+1431,Caracolí,Hotel,Hospedaje Caracolí 4,32192649,,2026-09-07 22:46:08.780756+00
+1432,Caracolí,Hotel,Hotel Caracolí Local,60400000,,2026-09-07 22:46:08.780756+00
+1433,Caracolí,Hotel,Hotel Caracolí Plaza,3126157048,,2026-09-07 22:46:08.780756+00
+1434,Caracolí,Hotel,Hotel Principal Caracolí 1,3006336062,,2026-09-07 22:46:08.780756+00
+1435,Caracolí,Restaurante,Restaurante Caracolí,30000000,,2026-09-07 22:46:08.780756+00
+1436,Caracolí,Restaurante,Restaurante Típico Caracolí 1,3135422596,,2026-09-07 22:46:08.780756+00
+1437,Caracolí,Restaurante,Restaurante Típico Caracolí 2,3019333788,,2026-09-07 22:46:08.780756+00
+1438,Caracolí,Restaurante,Restaurante Típico Caracolí 3,31039806,,2026-09-07 22:46:08.780756+00
+1439,,,,,,2026-09-07 22:46:08.780756+00
+1440,Maceo,Hotel,Hotel Boutique Maceo,3137422902,,2026-09-07 22:46:08.780756+00
+1441,Maceo,Hotel,Hotel Colonial Maceo,3131951733,,2026-09-07 22:46:08.780756+00
+1442,Maceo,Hotel,Hotel El Encanto Maceo,3127835421,,2026-09-07 22:46:08.780756+00
+1443,Maceo,Hotel,Hotel Maceo Local,60400000,,2026-09-07 22:46:08.780756+00
+1444,Maceo,Hotel,Hotel Plaza Maceo,3115745079,,2026-09-07 22:46:08.780756+00
+1445,Maceo,Hotel,Hotel Real Maceo,3219282938,,2026-09-07 22:46:08.780756+00
+1446,Maceo,Restaurante,Restaurante El Mirador de Maceo,3122305535,,2026-09-07 22:46:08.780756+00
+1447,Maceo,Restaurante,Restaurante La Casona de Maceo,3211520257,,2026-09-07 22:46:08.780756+00
+1448,Maceo,Restaurante,Restaurante Maceo,30000000,,2026-09-07 22:46:08.780756+00
+1449,Maceo,Restaurante,Restaurante Tradición de Maceo,3019696212,,2026-09-07 22:46:08.780756+00
+1450,,,,,,2026-09-07 22:46:08.780756+00
+1451,Puerto Berrío,Hotel,Casa Hotel La Mansión,3114602723,,2026-09-07 22:46:08.780756+00
+1452,Puerto Berrío,Hotel,Hotel Boutique Puerto Berrío,3101803383,,2026-09-07 22:46:08.780756+00
+1453,Puerto Berrío,Hotel,Hotel Caribe,3112345678,,2026-09-07 22:46:08.780756+00
+1454,Puerto Berrío,Hotel,Hotel Colonial Puerto Berrío,3115381659,,2026-09-07 22:46:08.780756+00
+1455,Puerto Berrío,Hotel,Hotel Magdalena,6048321122,,2026-09-07 22:46:08.780756+00
+1456,Puerto Berrío,Hotel,Hotel Plaza Puerto Berrío,3142095813,,2026-09-07 22:46:08.780756+00
+1457,Puerto Berrío,Hotel,Hotel Puerto Berrío,3147787061,,2026-09-07 22:46:08.780756+00
+1458,Puerto Berrío,Hotel,Hotel Real Puerto Berrío,3104740432,,2026-09-07 22:46:08.780756+00
+1459,Puerto Berrío,Hotel,Hotel Río Tour's,3137900492,,2026-09-07 22:46:08.780756+00
+1460,Puerto Berrío,Hotel,Hotel Semillas de Paz,3109876543,,2026-09-07 22:46:08.780756+00
+1461,Puerto Berrío,Restaurante,Asados de la Estación,3135678901,,2026-09-07 22:46:08.780756+00
+1462,Puerto Berrío,Restaurante,Restaurante El Mirador de Puerto Berrío,3012338597,,2026-09-07 22:46:08.780756+00
+1463,Puerto Berrío,Restaurante,Restaurante El Pescador,31245678,,2026-09-07 22:46:08.780756+00
+1464,Puerto Berrío,Restaurante,Restaurante La Casona de Puerto Berrío,3204249438,,2026-09-07 22:46:08.780756+00
+1465,Puerto Berrío,Restaurante,Restaurante Tradición de Puerto Berrío,3214320051,,2026-09-07 22:46:08.780756+00
+1466,Puerto Berrío,Restaurante,Sabor Ribereño,3005678901,,2026-09-07 22:46:08.780756+00
+1467,,,,,,2026-09-07 22:46:08.780756+00
+1468,Puerto Nare,Hotel,Hospedaje Puerto Nare 2,3208881895,,2026-09-07 22:46:08.780756+00
+1469,Puerto Nare,Hotel,Hospedaje Puerto Nare 3,3205839755,,2026-09-07 22:46:08.780756+00
+1470,Puerto Nare,Hotel,Hospedaje Puerto Nare 4,3128431896,,2026-09-07 22:46:08.780756+00
+1471,Puerto Nare,Hotel,Hostal del Río,3112345678,,2026-09-07 22:46:08.780756+00
+1472,Puerto Nare,Hotel,Hotel Dianne,3108357622,,2026-09-07 22:46:08.780756+00
+1473,Puerto Nare,Hotel,Hotel Nare Real,31045678,,2026-09-07 22:46:08.780756+00
+1474,Puerto Nare,Hotel,Hotel Plaza Nare,3136025602,,2026-09-07 22:46:08.780756+00
+1475,Puerto Nare,Hotel,Hotel Principal Puerto Nare 1,3142569022,,2026-09-07 22:46:08.780756+00
+1476,Puerto Nare,Restaurante,Asados Nare,31345678,,2026-09-07 22:46:08.780756+00
+1477,Puerto Nare,Restaurante,Restaurante El Saborcito,3123456789,,2026-09-07 22:46:08.780756+00
+1478,Puerto Nare,Restaurante,Restaurante Típico Puerto Nare 1,3111908871,,2026-09-07 22:46:08.780756+00
+1479,Puerto Nare,Restaurante,Restaurante Típico Puerto Nare 2,3127396609,,2026-09-07 22:46:08.780756+00
+1480,Puerto Nare,Restaurante,Restaurante Típico Puerto Nare 3,3207614738,,2026-09-07 22:46:08.780756+00
+1481,,,,,,2026-09-07 22:46:08.780756+00
+1482,Puerto Triunfo,Hotel,Hotel Aldea Plaza (Doradal),6048351234,,2026-09-07 22:46:08.780756+00
+1483,Puerto Triunfo,Hotel,Hotel Boutique Puerto Triunfo,3002916068,,2026-09-07 22:46:08.780756+00
+1484,Puerto Triunfo,Hotel,Hotel Colonial Puerto Triunfo,3128742438,,2026-09-07 22:46:08.780756+00
+1485,Puerto Triunfo,Hotel,Hotel Doradal Real,3112345678,,2026-09-07 22:46:08.780756+00
+1486,Puerto Triunfo,Hotel,Hotel Las Heliconias,31045678,,2026-09-07 22:46:08.780756+00
+1487,Puerto Triunfo,Hotel,Hotel Mónaco Real,32185524,,2026-09-07 22:46:08.780756+00
+1488,Puerto Triunfo,Hotel,Hotel Plaza Puerto Triunfo,3116258949,,2026-09-07 22:46:08.780756+00
+1489,Puerto Triunfo,Hotel,Hotel Real Puerto Triunfo,3104462745,,2026-09-07 22:46:08.780756+00
+1490,Puerto Triunfo,Hotel,Hotel Sensación Doradal,3105014565,,2026-09-07 22:46:08.780756+00
+1491,Puerto Triunfo,Restaurante,Asados del Río,31345678,,2026-09-07 22:46:08.780756+00
+1492,Puerto Triunfo,Restaurante,Café Santorini (Doradal),30045678,,2026-09-07 22:46:08.780756+00
+1493,Puerto Triunfo,Restaurante,Restaurante El Mirador de Puerto Triunfo,3217936138,,2026-09-07 22:46:08.780756+00
+1494,Puerto Triunfo,Restaurante,Restaurante La Cabaña,3123456789,,2026-09-07 22:46:08.780756+00
+1495,Puerto Triunfo,Restaurante,Restaurante La Casona de Puerto Triunfo,3201819016,,2026-09-07 22:46:08.780756+00
+1496,Puerto Triunfo,Restaurante,Restaurante Tradición de Puerto Triunfo,3017894537,,2026-09-07 22:46:08.780756+00
+1497,,,,,,2026-09-07 22:46:08.780756+00
+1498,Yondó,Hotel,Hospedaje Yondó 2,3219406902,,2026-09-07 22:46:08.780756+00
+1499,Yondó,Hotel,Hospedaje Yondó 3,3015315862,,2026-09-07 22:46:08.780756+00
+1500,Yondó,Hotel,Hospedaje Yondó 4,3011911491,,2026-09-07 22:46:08.780756+00
+1501,Yondó,Hotel,Hotel Principal Yondó 1,3013691839,,2026-09-07 22:46:08.780756+00
+1502,Yondó,Hotel,Hotel Puerto del Sol,3135472864,,2026-09-07 22:46:08.780756+00
+1503,Yondó,Hotel,Hotel Yondó Local,60400000,,2026-09-07 22:46:08.780756+00
+1504,Yondó,Restaurante,Restaurante Típico Yondó 1,3114257565,,2026-09-07 22:46:08.780756+00
+1505,Yondó,Restaurante,Restaurante Típico Yondó 2,3133585303,,2026-09-07 22:46:08.780756+00
+1506,Yondó,Restaurante,Restaurante Típico Yondó 3,3148750886,,2026-09-07 22:46:08.780756+00
+1507,Yondó,Restaurante,Restaurante Yondó,30000000,,2026-09-07 22:46:08.780756+00
