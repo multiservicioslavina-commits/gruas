@@ -36,14 +36,20 @@ const supabase = createClient(SB_URL, SB_KEY);
 const FUERA_DE_VENTANA = 131047;
 
 // Primer dígito de la placa restringido por día, Valle de Aburrá (motos).
+// La rotación cambia cada semestre (mismo corte que rita-v2/tools.ts,
+// funcion consultar_pico_placa: 3 de agosto de 2026). Antes esta tabla
+// estaba fija con los valores del segundo semestre de 2026 — coincide hoy
+// por casualidad, pero en cuanto pase el proximo corte de semestre esta
+// alerta automatica se pondria a avisar el dia equivocado sin que nada lo
+// señale (el cron sigue disparando "succeeded" igual). Se calcula en
+// funcion de la fecha para que no vuelva a quedar desactualizada.
 // getDay(): 0=domingo ... 6=sábado. Sábado/domingo no tienen entrada -> no aplica.
-const DIGITOS_POR_DIA: Record<number, number[]> = {
-  1: [5, 8], // lunes
-  2: [1, 4], // martes
-  3: [0, 2], // miércoles
-  4: [3, 6], // jueves
-  5: [7, 9], // viernes
-};
+function digitosPorDia(ahora: Date): Record<number, number[]> {
+  const esSegundoSemestre = ahora >= new Date("2026-08-03T00:00:00-05:00");
+  return esSegundoSemestre
+    ? { 1: [5, 8], 2: [1, 4], 3: [0, 2], 4: [3, 6], 5: [7, 9] }
+    : { 1: [1, 7], 2: [0, 3], 3: [4, 6], 4: [5, 9], 5: [2, 8] };
+}
 
 // ─── Fecha y día de la semana en hora Colombia (sin depender de la TZ del runtime) ───
 function hoyEnBogota(): { fecha: string; weekday: number } {
@@ -202,7 +208,7 @@ Deno.serve(async (req: Request) => {
 
   try {
     const { fecha, weekday } = hoyEnBogota();
-    const digitosHoy = DIGITOS_POR_DIA[weekday];
+    const digitosHoy = digitosPorDia(new Date())[weekday];
 
     if (!digitosHoy) {
       return new Response(JSON.stringify({ ok: true, fecha, motivo: "fin de semana, no aplica pico y placa" }), {
