@@ -814,7 +814,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
 
   // Tabla exacta: se resuelve en codigo, no en el modelo. Una respuesta
   // equivocada aqui le cuesta un comparendo al rider.
-  async consultar_pico_placa(input) {
+  async consultar_pico_placa(input, phone) {
     const placa = String(input.placa ?? "").toUpperCase().replace(/[^A-Z0-9]/g, "");
     const digitos = placa.replace(/\D/g, "");
     if (!digitos) {
@@ -832,6 +832,44 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
 
     const dia = Object.entries(tabla).find(([, ds]) => ds.includes(digito))?.[0] ?? null;
 
+    // La alerta automatica diaria de pico y placa (alerta-pico-placa) solo
+    // le escribe a riders cuya moto activa ya tiene placa guardada en
+    // rider_motorcycles. Como ninguna pantalla de registro pide la placa
+    // (solo la edicion de perfil, que casi nadie visita), la inmensa
+    // mayoria de las motos activas quedaban con placa=null y por lo tanto
+    // nunca entraban en la lista de candidatos de esa alerta, sin que
+    // ningun log ni el cron mostraran error. Guardar la placa aqui, en el
+    // momento mas natural en que un rider la menciona, cierra ese hueco
+    // para riders ya existentes sin que tengan que ir a "Mi cuenta".
+    // Solo se completa un dato vacio: nunca se sobreescribe una placa que
+    // el rider ya tenia guardada, para no correr el riesgo de reemplazarla
+    // por la de un tercero (ej. si pregunta por la placa de un amigo).
+    let placaGuardada = false;
+    if (tipo === "moto") {
+      try {
+        const rider = await riderIdPorTelefono(phone);
+        if (rider) {
+          const { data: moto } = await supabase
+            .from("rider_motorcycles")
+            .select("id, placa")
+            .eq("rider_id", rider.id)
+            .eq("esta_activa", true)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          if (moto && !moto.placa) {
+            const { error } = await supabase
+              .from("rider_motorcycles")
+              .update({ placa })
+              .eq("id", moto.id);
+            placaGuardada = !error;
+          }
+        }
+      } catch (e) {
+        console.error("Error guardando placa desde consultar_pico_placa:", e);
+      }
+    }
+
     return {
       ok: true,
       data: {
@@ -846,6 +884,9 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
           ? "Rotacion del segundo semestre de 2026"
           : "Rotacion vigente hasta el 31 de julio de 2026; cambia el 3 de agosto",
         nota: `Este es el UNICO dia restringido para esta placa. Los demas dias puede circular.`,
+        ...(placaGuardada
+          ? { placa_guardada_en_perfil: "Si, quedo guardada para que Rita le avise automaticamente cada dia que le aplique pico y placa. Mencionaselo al rider." }
+          : {}),
       },
     };
   },
