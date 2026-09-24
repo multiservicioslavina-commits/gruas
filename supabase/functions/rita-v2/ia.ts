@@ -300,16 +300,27 @@ async function auditarRespuesta(
 pregunta del rider, la respuesta que Rita esta a punto de enviarle, y la evidencia real que
 devolvieron las herramientas consultadas (vacia si no se uso ninguna).
 
-Tu unico trabajo es detectar si la respuesta afirma algo que la evidencia NO respalda. Revisa:
+Tu unico trabajo es detectar si la respuesta afirma algo que la evidencia NO respalda, o si
+presenta un dato con MAS confianza de la que realmente tiene. Cada dato cae en uno de estos
+niveles -- tu trabajo es que la respuesta no confunda uno con otro:
+  VERIFICADO POR RIDERA (vino de una herramienta de la base de Ridera) < VERIFICADO EXTERNO
+  (vino de una herramienta externa real, ej. clima/vias/Wikipedia) < CALCULADO (Rita lo derivo
+  ella misma de un dato verificado) < CONOCIMIENTO GENERAL (memoria del modelo, sin herramienta)
+  < DATO DEL RIDER (lo dijo el mismo en la conversacion) -- y DESCONOCIDO cuando no hay nada de
+  lo anterior.
+
+Revisa especificamente:
 - ¿Inventa un dato (km, precio, horario, clima, estado de una via) que no aparece en la evidencia?
 - ¿Presenta un calculo (ej. ida y vuelta) como si fuera un dato de Ridera, en vez de decir que lo calculo ella misma?
 - ¿Afirma haber consultado algo (clima, estado de vias, trafico) sin evidencia de esa herramienta?
+- ¿Presenta conocimiento general suyo (historia, cultura, "es conocido por...") como si una herramienta lo hubiera verificado?
+- ¿Oculta que un resultado vino marcado como debil/no verificado (ej. "verificado": false en la evidencia) y lo presenta como confirmado?
 - ¿Recomienda un destino que la evidencia marca como excluido explicitamente por el rider?
 - ¿Contradice lo que dice la evidencia?
 - ¿Usa "actualmente", "hoy", "ahora" para un dato que cambia con el tiempo sin evidencia fresca?
 
-NO marques error por tono, estilo, brevedad, ni conocimiento general de cultura motera que no
-necesita evidencia.
+NO marques error por tono, estilo, brevedad, ni conocimiento general de cultura motera que la
+respuesta ya presenta como tal (sin fingir que vino de una herramienta).
 
 Responde SOLO con JSON, nada de texto antes ni despues, con esta forma exacta:
 {"valid": true, "issues": [], "severity": "none", "requires_revision": false}
