@@ -298,6 +298,28 @@ export const TOOL_SCHEMAS = [
     },
   },
   {
+    name: "planificar_ruta",
+    description:
+      "Busca rutas de Ridera que cumplan restricciones de planificacion (distancia maxima, destinos que el rider no quiere). Usala en vez de buscar_ruta cuando el rider da restricciones especificas para elegir entre varias opciones (\"maximo 300 km\", \"no Guatape ni Jardin\", \"algo con curvas\") en lugar de pedir un destino puntual. Las restricciones que pases aqui se filtran de verdad contra la base de datos -- no dependen de que tu las recuerdes al armar la respuesta. distancia_max_km es SIEMPRE solo ida (igual que el km que devuelve buscar_ruta): si el rider da un limite de ida y vuelta, divide entre 2 antes de pasarlo aqui.",
+    input_schema: {
+      type: "object",
+      properties: {
+        distancia_max_km: { type: "number", description: "Distancia maxima SOLO IDA, en km. Si el rider dio el limite como ida y vuelta, divide entre 2 primero." },
+        destinos_excluidos: {
+          type: "array",
+          items: { type: "string" },
+          description: "Destinos o pueblos que el rider dijo explicitamente que NO quiere. Tal cual los menciono (ej: 'Guatape', 'Jardin').",
+        },
+        preferencias: {
+          type: "array",
+          items: { type: "string" },
+          description: "Preferencias blandas del rider (ej: 'curvas', 'paisaje', 'poco trafico'). No son obligatorias -- uselas para ordenar/describir las opciones que ya cumplieron las restricciones duras, nunca para descartar una opcion valida.",
+        },
+      },
+      required: [],
+    },
+  },
+  {
     name: "buscar_municipio",
     description:
       "Consulta informacion de un municipio del Pasaporte Motero (125 municipios de Antioquia): historia, atractivos, gastronomia, festividades, altitud, temperatura, distancia desde Medellin, tipo de via, dificultad para moto y tips. Usala cuando pregunten que hay en un pueblo, que visitar o info de un municipio.",
@@ -670,6 +692,14 @@ export const TOOL_SCHEMAS = [
 // ─── Ejecutores ─────────────────────────────────────────────────
 type ToolResult = { ok: boolean; data: unknown };
 
+// Compartida entre buscar_ruta y planificar_ruta: el km/duracion de
+// rita_rutas siempre es de un solo sentido, y nada en el dato de origen lo
+// distinguia -- duplicar o no la distancia quedaba a puro criterio del
+// modelo. Se marca explicito en cada fila que devuelve una herramienta, no
+// solo en el system prompt.
+const NOTA_DISTANCIA_SOLO_IDA =
+  "km y duracion son SOLO IDA (un sentido). No los dupliques ni asumas ida y vuelta. Si el rider pregunta cuanto es ida y vuelta, calcula tu mismo km_ida x 2 y dilo como calculo tuyo, no como dato de Ridera -- ej: 'unos 276 km ida y vuelta, calculados a partir de los 138 km de ida que tiene registrados Ridera'.";
+
 async function riderIdPorTelefono(phone: string): Promise<{ id: string; nombre: string } | null> {
   const tel = phone.replace(/^57/, "");
   // .limit(1) antes de .maybeSingle(): igual que en index.ts, un telefono
@@ -707,12 +737,69 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     // quedaba a puro criterio del modelo. Se marca explicito en cada fila,
     // no solo en el system prompt, para que la regla no dependa de que el
     // modelo se acuerde de leer las instrucciones generales.
-    const conNota = data.map(r => ({
-      ...r,
-      km_ida: r.km,
-      nota_distancia: "km y duracion son SOLO IDA (un sentido). No los dupliques ni asumas ida y vuelta. Si el rider pregunta cuanto es ida y vuelta, calcula tu mismo km_ida x 2 y dilo como calculo tuyo, no como dato de Ridera -- ej: 'unos 276 km ida y vuelta, calculados a partir de los 138 km de ida que tiene registrados Ridera'.",
-    }));
+    const conNota = data.map(r => ({ ...r, km_ida: r.km, nota_distancia: NOTA_DISTANCIA_SOLO_IDA }));
     return { ok: true, data: conNota };
+  },
+
+  // Restricciones de planificacion (distancia maxima, destinos excluidos)
+  // filtradas de verdad contra la base -- una ruta excluida no llega ni
+  // siquiera como candidata, no depende de que el modelo se acuerde de
+  // descartarla al redactar. Las preferencias blandas (curvas, paisaje) NO
+  // se filtran aqui: el rider las pidio como gusto, no como condicion, y
+  // filtrarlas podria dejar cero resultados por un dato que ni siquiera
+  // esta en rita_rutas hoy.
+  async planificar_ruta(input) {
+    const distanciaMax = input.distancia_max_km != null ? Number(input.distancia_max_km) : null;
+    const excluidosRaw = Array.isArray(input.destinos_excluidos) ? input.destinos_excluidos.map(String) : [];
+    const excluidosNorm = excluidosRaw.map(norm);
+
+    let query = supabase
+      .from("rita_rutas")
+      .select("titulo, destino, departamento, km, duracion, dificultad, superficie, mejor_epoca, moto_recomendada, resumen, tips, gasolina_tip, hospedaje, gastronomia, wp_link, destino_norm, titulo_norm")
+      .not("titulo_norm", "like", "%loop%");
+    if (distanciaMax != null && Number.isFinite(distanciaMax)) query = query.lte("km", distanciaMax);
+
+    const { data, error } = await query.order("km", { ascending: true }).limit(20);
+    if (error) return { ok: false, data: `Error consultando rutas: ${error.message}` };
+    if (!data?.length) {
+      return {
+        ok: false,
+        data: distanciaMax != null
+          ? `No hay rutas verificadas en Ridera de ${distanciaMax} km o menos (ida). No inventes una que "probablemente" cumpla.`
+          : "No hay rutas verificadas en Ridera todavia.",
+      };
+    }
+
+    const candidatas: Record<string, unknown>[] = [];
+    const excluidasPorPeticion: string[] = [];
+    for (const r of data as Record<string, unknown>[]) {
+      const destinoNorm = String(r.destino_norm ?? "");
+      const tituloNorm = String(r.titulo_norm ?? "");
+      const coincideExcluido = excluidosNorm.some(ex => destinoNorm.includes(ex) || tituloNorm.includes(ex));
+      if (coincideExcluido) {
+        excluidasPorPeticion.push(String(r.titulo));
+        continue;
+      }
+      const { destino_norm: _dn, titulo_norm: _tn, ...limpio } = r;
+      candidatas.push({ ...limpio, km_ida: r.km, nota_distancia: NOTA_DISTANCIA_SOLO_IDA });
+    }
+
+    if (!candidatas.length) {
+      return {
+        ok: false,
+        data: `Las ${data.length} rutas que cumplian la distancia quedaron todas excluidas por los destinos que el rider no quiere (${excluidasPorPeticion.join(", ")}). No ofrezcas ninguna de esas como alternativa disfrazada; dile con naturalidad que no tienes una opcion que cumpla ambas condiciones a la vez.`,
+      };
+    }
+
+    return {
+      ok: true,
+      data: {
+        candidatas: candidatas.slice(0, 5),
+        excluidas_por_peticion_explicita: excluidasPorPeticion,
+        restricciones_aplicadas: { distancia_max_km: distanciaMax, destinos_excluidos: excluidosRaw },
+        nota: "candidatas ya cumple las restricciones obligatorias (distancia, exclusiones) -- son un hecho, no las vuelvas a filtrar. Las preferencias blandas del rider (curvas, paisaje, etc.) usalas solo para elegir/ordenar entre estas opciones o para describirlas, nunca para descartar una que ya califico.",
+      },
+    };
   },
 
   async buscar_municipio(input) {

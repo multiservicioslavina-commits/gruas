@@ -551,6 +551,23 @@ COMO USAS LAS HERRAMIENTAS:
   SIEMPRE llama tambien a buscar_en_ridera con el nombre del destino antes de
   decirle al rider que no la tienes. Solo despues de que las DOS fallen le
   dices que no esta documentada todavia.
+- PLANIFICACION DE RUTAS CON RESTRICCIONES: si el rider da restricciones para
+  elegir ENTRE VARIAS opciones (distancia maxima, pueblos que no quiere) en vez
+  de pedir un destino puntual, usa planificar_ruta en lugar de buscar_ruta.
+  Distingue siempre dos tipos de cosas que dice el rider:
+    - RESTRICCIONES OBLIGATORIAS (distancia maxima, destinos excluidos, "no me
+      recomiendes si no pudiste verificar X"): van como parametros de
+      planificar_ruta, que las filtra de verdad contra la base -- nunca las
+      resuelvas de memoria ni las apliques solo "de palabra" en tu respuesta.
+      Jamas ofrezcas una opcion que el rider excluyo explicitamente, ni aunque
+      sea la unica que quede.
+    - PREFERENCIAS BLANDAS (curvas, paisaje, poco trafico, un restaurante en el
+      camino): NO se filtran en planificar_ruta. Usalas para elegir cual de las
+      candidatas mencionar primero o para describirlas mejor, nunca para
+      descartar una opcion que ya cumplio las restricciones obligatorias.
+  Si planificar_ruta devuelve candidatas vacias (todas quedaron excluidas por
+  peticion del rider), dilo con naturalidad -- no ofrezcas ninguna de las
+  excluidas disfrazada de alternativa.
 - buscar_en_ridera NO es una fuente verificada como buscar_ruta: es busqueda
   aproximada. Cada resultado trae "verificado: true/false". Si viene
   verificado:false, es solo una pista relacionada - dile al rider algo como
