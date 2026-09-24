@@ -12,6 +12,7 @@ import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
+import { logError, logWarn } from "../_shared/log.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -70,7 +71,7 @@ async function escalarAAdmin(phone: string, nombre: string | null, motivo: strin
       `⚠️ *Escalamiento Rita*\nNúmero: ${phone}\nNombre: ${nombre || "—"}\nMotivo: ${motivo}\nResumen: ${resumen}`
     );
   } catch (err) {
-    console.error("No se pudo alertar al admin:", err);
+    logError("rita-v2", "No se pudo alertar al admin del escalamiento", err, { telefono: phone });
   }
 }
 
@@ -81,7 +82,7 @@ async function escalarAAdmin(phone: string, nombre: string | null, motivo: strin
 // en Supabase, la validacion queda activa de forma automatica.
 async function validarSignatura(body: string, signature: string): Promise<boolean> {
   if (!APP_SECRET) {
-    console.warn("WHATSAPP_APP_SECRET no configurado: validacion de firma deshabilitada");
+    logWarn("rita-v2", "WHATSAPP_APP_SECRET no configurado: validacion de firma HMAC deshabilitada");
     return true;
   }
   if (!signature) return false;
@@ -106,7 +107,7 @@ async function validarSignatura(body: string, signature: string): Promise<boolea
     }
     return diff === 0;
   } catch (e) {
-    console.error("Error validando HMAC:", e);
+    logError("rita-v2", "Error validando la firma HMAC del webhook", e);
     return false;
   }
 }
@@ -123,7 +124,7 @@ function verificarRateLimit(phone: string): boolean {
   }
 
   if (limite.count >= 5) {
-    console.warn(`Rate limit exceeded para ${phone}`);
+    logWarn("rita-v2", "Rate limit excedido", { telefono: phone });
     return false;
   }
 
@@ -939,7 +940,7 @@ async function entregar(to: string, texto: string, conVoz: boolean): Promise<voi
       await enviarAudio(to, await sintetizar(textoParaVoz(texto)));
       return;
     } catch (e) {
-      console.error("Fallo el envio por voz, cae a texto:", e);
+      logError("rita-v2", "Fallo el envio de voz, cae a texto", e, { telefono: to });
       await supabase.from("rita_acciones_log").insert({
         telefono: to,
         herramienta: "sintesis_debug",
@@ -977,7 +978,7 @@ async function registrarSOSLog(
       detalle,
     });
   } catch (e) {
-    console.error("No se pudo registrar el log de SOS:", e);
+    logError("rita-v2", "No se pudo registrar el log de SOS", e, { telefono: phone });
   }
 }
 
@@ -996,14 +997,14 @@ function notificarSOSHubspotAsync(
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${SB_KEY}` },
     body: JSON.stringify({ tipo: "sos", telefono: phone, lat, lon, aliados }),
-  }).catch((e) => console.error("No se pudo notificar el SOS a HubSpot:", e));
+  }).catch((e) => logError("rita-v2", "No se pudo notificar el SOS a HubSpot", e, { telefono: phone }));
 }
 
 async function manejarUbicacionSOS(phone: string, lat: number, lon: number): Promise<void> {
   const { data: aliados, error } = await supabase.rpc("buscar_auxilio_cercano", {
     lat, lon, radio_km: 15, limite: 3,
   });
-  if (error) console.error("buscar_auxilio_cercano fallo:", error);
+  if (error) logError("rita-v2", "buscar_auxilio_cercano fallo", error, { telefono: phone });
 
   const lista = (aliados ?? []) as { nombre: string; telefono: string; distancia_km: number; tipo_servicio: string }[];
 
@@ -1064,7 +1065,7 @@ Deno.serve(async (req: Request) => {
     // Validar que el webhook viene realmente de Meta (no en modo prueba)
     if (!/"test"\s*:\s*true/.test(rawBody)) {
       if (!await validarSignatura(rawBody, signature)) {
-        console.warn("Firma HMAC invalida:", signature.slice(0, 20) + "...");
+        logWarn("rita-v2", "Firma HMAC invalida en el webhook", { firma: signature.slice(0, 20) + "..." });
         return json({ ok: false, error: "invalid_signature" }, 401);
       }
     }
@@ -1146,7 +1147,7 @@ Deno.serve(async (req: Request) => {
         );
         conVoz = true;
       } catch (e) {
-        console.error("Transcripcion fallo:", e);
+        logError("rita-v2", "Transcripcion de audio fallo", e, { telefono: from });
         await supabase.from("rita_acciones_log").insert({
           telefono: from,
           herramienta: "transcripcion_debug",
@@ -1254,7 +1255,7 @@ Deno.serve(async (req: Request) => {
         ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
         : await responder(message, history, from, consentimiento, conVoz, nombreRider);
     } catch (e) {
-      console.error("El motor fallo:", e);
+      logError("rita-v2", "El motor de respuesta (orquestador/Claude) fallo", e, { telefono: from });
     }
     if (!reply.trim()) reply = "Uy parce, algo se cruzo por aca. Me lo repites?";
     if (reply.length > 1600) reply = reply.slice(0, 1580) + ".\n.\nMas en ridera.com.co";
@@ -1264,7 +1265,7 @@ Deno.serve(async (req: Request) => {
 
     return json({ ok: true });
   } catch (e) {
-    console.error("Rita v2 error:", e);
+    logError("rita-v2", "Error no manejado en el webhook de Rita", e);
     // Devolvemos 200 para que Meta no reintente en bucle.
     return json({ ok: false, error: String(e) });
   }

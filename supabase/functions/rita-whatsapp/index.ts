@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { jwtVerify } from "https://esm.sh/jose@5";
+import { logError } from "../_shared/log.ts";
 
 const WA_TOKEN     = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE   = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
@@ -51,7 +52,7 @@ async function escalateToAdmin(phone: string, nombre: string | null, motivo: str
       `⚠️ *Escalamiento Rita*\nNúmero: ${phone}\nNombre: ${nombre || "—"}\nMotivo: ${motivo}\nResumen: ${resumen}`
     );
   } catch (err) {
-    console.error("No se pudo alertar al admin:", err);
+    logError("rita-whatsapp", "No se pudo alertar al admin del escalamiento", err, { telefono: phone });
   }
 }
 
@@ -155,7 +156,7 @@ async function fetchClimaOpenMeteo(lat: number, lon: number, lugar: string): Pro
     const riesgo = riesgoMoto(c.weathercode, c.rain || 0);
     return `CLIMA EN ${lugar.toUpperCase()} (tiempo real):\n${desc} | ${c.temperature_2m}C | Lluvia: ${c.rain || 0}mm | Humedad: ${c.relative_humidity_2m}% | Viento: ${c.windspeed_10m}km/h | Prob lluvia: ${probLluvia}%\nRiesgo motero: ${riesgo}`;
   } catch (e) {
-    console.error("OpenMeteo error:", e);
+    logError("rita-whatsapp", "OpenMeteo error consultando clima", e, { lugar });
     return null;
   }
 }
@@ -393,7 +394,7 @@ async function fetchRideraSemantic(message: string): Promise<any[]> {
       match_count: 4,
       match_threshold: 0.3,
     });
-    if (error) { console.error("match_ridera_content error:", error); return []; }
+    if (error) { logError("rita-whatsapp", "match_ridera_content error", error); return []; }
     return (data || []).map((r: any) => ({
       tipo: r.categoria,
       fuente: "ridera.com.co",
@@ -402,7 +403,7 @@ async function fetchRideraSemantic(message: string): Promise<any[]> {
       link: r.url,
     }));
   } catch (e) {
-    console.error("fetchRideraSemantic error:", e);
+    logError("rita-whatsapp", "fetchRideraSemantic error", e);
     return [];
   }
 }
@@ -674,7 +675,7 @@ async function askClaude(message: string, history: { role: string; content: stri
     const data = await res.json();
     return data?.content?.[0]?.text || "";
   } catch (e) {
-    console.error("Claude error:", e);
+    logError("rita-whatsapp", "Claude error generando respuesta", e);
     return "";
   }
 }
@@ -1144,7 +1145,7 @@ Deno.serve(async (req: Request) => {
 
       return new Response(JSON.stringify({ ok: true }), { status: 200, headers: { "Content-Type": "application/json" } });
     } catch (e) {
-      console.error("Rita error:", e);
+      logError("rita-whatsapp", "Error no manejado en el webhook", e);
       return new Response(JSON.stringify({ ok: false, error: String(e) }), { status: 200, headers: { "Content-Type": "application/json" } });
     }
   }

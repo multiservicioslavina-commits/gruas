@@ -23,6 +23,7 @@ const PLANTILLA_PICO_PLACA = "pico_placa_am"; // crear y aprobar en Meta Busines
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
+import { logError } from "../_shared/log.ts";
 
 const WA_TOKEN    = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE  = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
@@ -195,7 +196,10 @@ async function enviarPlantilla(to: string, nombre: string, digito: string): Prom
       signal: AbortSignal.timeout(8000),
     });
     return r.ok;
-  } catch { return false; }
+  } catch (e) {
+    logError("alerta-pico-placa", "enviarPlantilla fallo (excepcion de red/fetch)", e, { telefono: to });
+    return false;
+  }
 }
 
 Deno.serve(async (req: Request) => {
@@ -280,6 +284,7 @@ Deno.serve(async (req: Request) => {
       ok: true, fecha, digitosHoy, candidatos: candidatos.length, enviados, detalle,
     }, null, 2), { headers: { "Content-Type": "application/json" } });
   } catch (e) {
+    logError("alerta-pico-placa", "Corrida de la alerta diaria fallo por completo", e);
     return new Response(JSON.stringify({ ok: false, error: String(e) }), {
       status: 500, headers: { "Content-Type": "application/json" },
     });

@@ -24,6 +24,7 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, extraerUrls, sanitizarUrls } from "./tools.ts";
+import { logError, logWarn } from "../_shared/log.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -68,7 +69,7 @@ export async function verificarPresupuesto(): Promise<{ ok: boolean; gastoHoy: n
     const gastoHoy = (data || []).reduce((sum: number, r: Record<string, number>) => sum + (r.costo_usd || 0), 0);
     return { ok: gastoHoy < DAILY_CAP_USD, gastoHoy, tope: DAILY_CAP_USD };
   } catch (e) {
-    console.error("Error verificando presupuesto:", e);
+    logError("rita-v2/ia", "Error verificando el presupuesto diario de IA", e);
     return { ok: true, gastoHoy: 0, tope: DAILY_CAP_USD };
   }
 }
@@ -113,7 +114,7 @@ async function auditarIA(
       gano_comparacion: ganoComparacion,
     });
   } catch (e) {
-    console.error("No se pudo auditar IA:", e);
+    logError("rita-v2/ia", "No se pudo registrar el uso de IA en rita_ai_logs", e, { telefono: phone });
   }
 }
 
@@ -354,7 +355,7 @@ imperfecciones de redaccion.`;
       requires_revision: Boolean(parsed.requires_revision),
     };
   } catch (e) {
-    console.error("Auditor fallo, se deja pasar la respuesta sin auditar:", e);
+    logError("rita-v2/ia", "Auditor fallo, se deja pasar la respuesta sin auditar", e, { telefono: phone });
     return SIN_PROBLEMAS;
   }
 }
@@ -384,7 +385,7 @@ async function corregirConAuditoria(
     const texto = textoDe(bloques);
     return texto || respuestaPrevia;
   } catch (e) {
-    console.error("Correccion post-auditoria fallo, se deja la respuesta original:", e);
+    logError("rita-v2/ia", "Correccion post-auditoria fallo, se deja la respuesta original", e, { telefono: phone });
     return respuestaPrevia;
   }
 }
@@ -404,7 +405,7 @@ export async function responderConOrquestador(
     resultado = await ejecutarConversacion("openai", system, messages, phone, "normal");
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
-    console.error("OpenAI fallo en el orquestador, cae a Claude:", mensaje);
+    logError("rita-v2/ia", "OpenAI fallo en el orquestador, cae a Claude", e, { telefono: phone });
     try {
       await supabase.from("rita_acciones_log").insert({
         telefono: phone,
@@ -442,13 +443,13 @@ export async function responderConOrquestador(
     for (let intento = 0; intento < MAX_REVISIONES_AUDITOR; intento++) {
       const auditoria = await auditarRespuesta(extraerPreguntaRider(messages), textoFinal, resultado.evidencia, phone);
       if (!auditoria.requires_revision) break;
-      console.warn("Auditor encontro problemas, corrigiendo:", JSON.stringify(auditoria.issues));
+      logWarn("rita-v2/ia", "Auditor encontro problemas, corrigiendo", { telefono: phone, issues: auditoria.issues });
       textoFinal = await corregirConAuditoria(
         proveedorPrimario, system, messages, textoFinal, resultado.evidencia, auditoria.issues, phone,
       );
     }
   } catch (e) {
-    console.error("Auditoria omitida por fallo:", e);
+    logError("rita-v2/ia", "Auditoria omitida por fallo", e, { telefono: phone });
   }
 
   return sanitizarUrls(textoFinal, urlsConfirmadas);
