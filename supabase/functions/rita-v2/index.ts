@@ -11,7 +11,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
-import { describirFoto, mensajeDesdeFoto, puedeVer } from "./vision.ts";
+import { describirDocumento, describirFoto, mensajeDesdeDocumento, mensajeDesdeFoto, MIME_PDF, puedeVer } from "./vision.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 import { logError, logWarn } from "../_shared/log.ts";
 
@@ -506,15 +506,18 @@ obvio, nunca presentes uno como si fuera otro:
 - DESCONOCIDO: ninguna herramienta trajo el dato y no es algo que sepas de
   memoria con certeza. Dilo derecho: "eso no lo tengo verificado" o "no lo se,
   parce" -- es una respuesta correcta, no una falla.
-- DESCRIPCION DE FOTO (Gemini): si el mensaje trae "[Foto adjunta -- descripcion
-  generada por IA de vision (Gemini), puede tener errores: ...]", eso NO es un
-  dato verificado ni las palabras del rider -- es la interpretacion de un modelo
-  de vision sobre una imagen, que puede confundir piezas o leer mal un texto
-  borroso. Usala para entender de que habla el rider, pero si vas a mencionar
-  algo especifico que viste ahi (un numero de placa, una fecha de vencimiento,
-  el estado de una pieza), aclara que es lo que se alcanza a ver en la foto, no
-  un hecho confirmado. Nunca des un diagnostico mecanico definitivo basado solo
-  en la foto: sugiere que un mecanico o taller lo confirme.
+- DESCRIPCION DE FOTO O DOCUMENTO (Gemini): si el mensaje trae "[Foto adjunta --
+  descripcion generada por IA de vision (Gemini)...]" o "[Documento adjunto (PDF)
+  -- lectura generada por IA de vision (Gemini)...]", eso NO es un dato verificado
+  ni las palabras del rider -- es la interpretacion de un modelo de vision sobre
+  una imagen o un PDF, que puede confundir piezas o leer mal un texto borroso.
+  Usala para entender de que habla el rider, pero si vas a mencionar algo
+  especifico que se leyo ahi (un numero de placa, una fecha de vencimiento, un
+  valor en pesos, el estado de una pieza), aclara que es lo que se alcanza a ver
+  o leer en el archivo, no un hecho confirmado. Nunca des un diagnostico mecanico
+  definitivo basado solo en la foto, ni des por buena una fecha o placa de un
+  documento que Gemini marco como borrosa o incompleta -- sugiere que un mecanico,
+  taller o la fuente oficial (RUNT/SIMIT) lo confirme.
 
 REGLA DURA DE URLs - CERO EXCEPCIONES:
 - NUNCA armes ni adivines una URL concatenando palabras (ej. "ridera.com.co/rutas/
@@ -1145,6 +1148,15 @@ Deno.serve(async (req: Request) => {
     let message = "";
     let conVoz = false;
 
+    // Una foto puede llegar como msg.type "image" (comprimida, el caso normal)
+    // o como "document" con mime_type de imagen (cuando el rider la manda
+    // como archivo) -- mismo tratamiento en ambos casos.
+    const imagenAdjunta = msg.type === "image" && msg.image
+      ? { id: msg.image.id, mime_type: msg.image.mime_type || "image/jpeg", caption: msg.image.caption }
+      : msg.type === "document" && msg.document && (msg.document.mime_type || "").startsWith("image/")
+      ? { id: msg.document.id, mime_type: msg.document.mime_type, caption: msg.document.caption }
+      : null;
+
     if (msg.type === "audio" && msg.audio) {
       if (!puedeEscuchar()) {
         await enviarTexto(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?");
@@ -1172,18 +1184,18 @@ Deno.serve(async (req: Request) => {
         await enviarTexto(from, "Uy, no pille que dijiste. Me lo repites?");
         return json({ ok: true, skip: "audio vacio" });
       }
-    } else if (msg.type === "image" && msg.image) {
+    } else if (imagenAdjunta) {
       if (!puedeVer()) {
         await enviarTexto(from, "Parce, por ahora no puedo ver fotos. Contame que se ve o descríbemela?");
         return json({ ok: true, skip: "sin proveedor de vision" });
       }
       try {
         const descripcion = await describirFoto(
-          await descargarMedia(msg.image.id),
-          msg.image.mime_type || "image/jpeg",
-          msg.image.caption,
+          await descargarMedia(imagenAdjunta.id),
+          imagenAdjunta.mime_type,
+          imagenAdjunta.caption,
         );
-        message = mensajeDesdeFoto(descripcion, msg.image.caption);
+        message = mensajeDesdeFoto(descripcion, imagenAdjunta.caption);
       } catch (e) {
         logError("rita-v2", "Descripcion de foto fallo", e, { telefono: from });
         await supabase.from("rita_acciones_log").insert({
@@ -1196,6 +1208,33 @@ Deno.serve(async (req: Request) => {
         await enviarTexto(from, "No pude ver bien esa foto. Me cuentas que es o me la vuelves a mandar?");
         return json({ ok: true, error: "vision" });
       }
+    } else if (msg.type === "document" && msg.document?.mime_type === MIME_PDF) {
+      if (!puedeVer()) {
+        await enviarTexto(from, "Parce, por ahora no puedo leer PDFs. Si me mandas una foto de lo que necesitas (SOAT, tecnomecanica, etc.) si te ayudo.");
+        return json({ ok: true, skip: "sin proveedor de vision" });
+      }
+      try {
+        const lectura = await describirDocumento(
+          await descargarMedia(msg.document.id),
+          MIME_PDF,
+          msg.document.caption,
+        );
+        message = mensajeDesdeDocumento(lectura, msg.document.caption);
+      } catch (e) {
+        logError("rita-v2", "Lectura de documento fallo", e, { telefono: from });
+        await supabase.from("rita_acciones_log").insert({
+          telefono: from,
+          herramienta: "vision_debug",
+          parametros: {},
+          ok: false,
+          error: String(e instanceof Error ? e.message : e).slice(0, 500),
+        });
+        await enviarTexto(from, "No pude leer bien ese PDF. Me lo vuelves a mandar o me cuentas que necesitas?");
+        return json({ ok: true, error: "vision" });
+      }
+    } else if (msg.type === "document" && msg.document) {
+      await enviarTexto(from, "Por ahora solo puedo leer fotos y PDFs, parce. Si es otro tipo de archivo, cuéntame qué necesitas por texto.");
+      return json({ ok: true, skip: "tipo de documento no soportado" });
     } else if (msg.text?.body) {
       message = msg.text.body;
     } else {
