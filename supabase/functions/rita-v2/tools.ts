@@ -702,7 +702,17 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       .not("titulo_norm", "like", "%loop%")
       .limit(3);
     if (!data?.length) return { ok: false, data: `No hay rutas verificadas para "${destino}" en la base de Ridera.` };
-    return { ok: true, data };
+    // km y duracion en rita_rutas son SOLO IDA (un sentido) -- nada en el
+    // dato de origen lo distinguia, asi que duplicar o no la distancia
+    // quedaba a puro criterio del modelo. Se marca explicito en cada fila,
+    // no solo en el system prompt, para que la regla no dependa de que el
+    // modelo se acuerde de leer las instrucciones generales.
+    const conNota = data.map(r => ({
+      ...r,
+      km_ida: r.km,
+      nota_distancia: "km y duracion son SOLO IDA (un sentido). No los dupliques ni asumas ida y vuelta. Si el rider pregunta cuanto es ida y vuelta, calcula tu mismo km_ida x 2 y dilo como calculo tuyo, no como dato de Ridera -- ej: 'unos 276 km ida y vuelta, calculados a partir de los 138 km de ida que tiene registrados Ridera'.",
+    }));
+    return { ok: true, data: conNota };
   },
 
   async buscar_municipio(input) {
