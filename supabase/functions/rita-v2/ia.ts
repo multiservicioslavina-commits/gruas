@@ -8,13 +8,15 @@
 //      Lee OPENAI_API_KEY desde los secretos de Supabase.
 //   2. FALLBACK: Claude solo entra si OpenAI falla (error de red,
 //      timeout, respuesta no-ok).
-//   3. COMPARACION: cuando la respuesta primaria uso una herramienta
-//      critica (emergencia, legal, pico y placa), se genera una
-//      segunda respuesta con Claude y un revisor elige o funde la
-//      mejor antes de contestar.
+//   3. AUDITORIA: cuando la respuesta uso alguna herramienta, o el tema
+//      es sensible por texto (seguridad, legal, multas), Claude Haiku
+//      audita la respuesta contra la evidencia real de las herramientas
+//      -- no contra un segundo borrador -- buscando afirmaciones que esa
+//      evidencia no respalda. Si encuentra algo que le puede costar caro
+//      al rider, el mismo proveedor que respondio corrige, con un tope
+//      de reintentos para no entrar en ciclos.
 //   4. Cada llamada queda auditada en rita_ai_logs: proveedor, modelo,
-//      tokens, costo estimado, tipo de consulta y quien gano la
-//      comparacion (cuando aplica).
+//      tokens, costo estimado y tipo de consulta.
 //
 // Ambas claves (ANTHROPIC_API_KEY, OPENAI_API_KEY) viven solo en los
 // secretos de Supabase; nunca llegan al cliente/APK.
@@ -71,16 +73,9 @@ export async function verificarPresupuesto(): Promise<{ ok: boolean; gastoHoy: n
   }
 }
 
-const HERRAMIENTAS_CRITICAS = new Set([
-  "primeros_auxilios",
-  "emergencia_telefonos",
-  "asesoria_legal",
-  "codigo_transito",
-  "consultar_pico_placa",
-]);
-
 export type Bloque = { type: string; [k: string]: unknown };
 export type Mensaje = { role: string; content: string | Bloque[] };
+type Evidencia = { herramienta: string; input: unknown; resultado: unknown };
 
 const PALABRAS_CRITICAS =
   /accidente|herid[oa]|sangr|primeros auxilios|choqu|me ca[ií]|atropell|ambulanc|emergencia|bomberos|polic[ií]a|codigo de transito|comparendo|multa|infracci[oó]n|abogado|demanda|denuncia|responsabilidad civil|pico y placa|restricci[oó]n vehicular/i;
@@ -91,13 +86,19 @@ function esTemaCriticoPorTexto(messages: Mensaje[]): boolean {
   return PALABRAS_CRITICAS.test(ultimo.content);
 }
 
+function extraerPreguntaRider(messages: Mensaje[]): string {
+  const ultimo = messages[messages.length - 1];
+  if (!ultimo) return "";
+  return typeof ultimo.content === "string" ? ultimo.content : "";
+}
+
 async function auditarIA(
   phone: string,
   proveedor: string,
   modelo: string,
   tokensEntrada: number,
   tokensSalida: number,
-  tipo: "normal" | "fallback" | "comparacion",
+  tipo: "normal" | "fallback" | "auditor" | "correccion",
   ganoComparacion: string | null,
 ) {
   try {
@@ -224,12 +225,12 @@ async function ejecutarConversacion(
   system: string,
   messagesIniciales: Mensaje[],
   phone: string,
-  tipoAuditoria: "normal" | "fallback" | "comparacion",
-): Promise<{ texto: string; herramientasUsadas: string[]; urlsHerramientas: string[] }> {
+  tipoAuditoria: "normal" | "fallback",
+): Promise<{ texto: string; herramientasUsadas: string[]; urlsHerramientas: string[]; evidencia: Evidencia[] }> {
   const messages: Mensaje[] = [...messagesIniciales];
   const herramientasUsadas: string[] = [];
   const urlsHerramientas = new Set<string>();
-  let huboHerramientas = false;
+  const evidencia: Evidencia[] = [];
   let tokensEntrada = 0;
   let tokensSalida = 0;
   const modelo = proveedor === "claude" ? CLAUDE_MODEL : OPENAI_MODEL;
@@ -246,20 +247,19 @@ async function ejecutarConversacion(
 
     if (stop_reason !== "tool_use") {
       await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
-      return { texto: textoDe(bloques), herramientasUsadas, urlsHerramientas: [...urlsHerramientas] };
+      return { texto: textoDe(bloques), herramientasUsadas, urlsHerramientas: [...urlsHerramientas], evidencia };
     }
 
-    huboHerramientas = true;
     const llamadas = bloques.filter(b => b.type === "tool_use");
     llamadas.forEach(b => herramientasUsadas.push(String(b.name)));
     messages.push({ role: "assistant", content: bloques });
 
     const resultados = await Promise.all(
-      llamadas.map(async (llamada) => ({
-        type: "tool_result",
-        tool_use_id: String(llamada.id),
-        content: await ejecutarHerramienta(String(llamada.name), (llamada.input ?? {}) as Record<string, never>, phone),
-      })),
+      llamadas.map(async (llamada) => {
+        const resultado = await ejecutarHerramienta(String(llamada.name), (llamada.input ?? {}) as Record<string, never>, phone);
+        evidencia.push({ herramienta: String(llamada.name), input: llamada.input ?? {}, resultado });
+        return { type: "tool_result", tool_use_id: String(llamada.id), content: resultado };
+      }),
     );
     for (const r of resultados) {
       for (const url of extraerUrls(r.content)) urlsHerramientas.add(url);
@@ -268,42 +268,110 @@ async function ejecutarConversacion(
   }
 
   await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
-  return { texto: "", herramientasUsadas, urlsHerramientas: [...urlsHerramientas] };
+  return { texto: "", herramientasUsadas, urlsHerramientas: [...urlsHerramientas], evidencia };
 }
 
-// ─── Revisor ────────────────────────────────────────────────────
-async function revisarYFundir(
-  borradorA: string,
-  borradorB: string,
+// ─── Auditor (Claude Haiku) ───────────────────────────────────────
+// Revisa la respuesta contra la EVIDENCIA REAL de las herramientas que se
+// consultaron -- no contra un segundo borrador de otro modelo. Reemplaza
+// el mecanismo anterior de "dos borradores, elige el mejor" (comparaba
+// estilo/completitud, no hechos) por una verificacion puntual: ¿la
+// respuesta afirma algo que esa evidencia no respalda?
+type Auditoria = {
+  valid: boolean;
+  issues: { type: string; description: string }[];
+  severity: "none" | "low" | "medium" | "high";
+  requires_revision: boolean;
+};
+
+const MAX_REVISIONES_AUDITOR = 2;
+
+const SIN_PROBLEMAS: Auditoria = { valid: true, issues: [], severity: "none", requires_revision: false };
+
+async function auditarRespuesta(
+  pregunta: string,
+  respuesta: string,
+  evidencia: Evidencia[],
   phone: string,
-): Promise<{ texto: string; ganador: string | null }> {
-  if (!ANTHROPIC_KEY) return { texto: borradorA, ganador: "A" };
+): Promise<Auditoria> {
+  if (!ANTHROPIC_KEY) return SIN_PROBLEMAS;
 
-  const system = `Sos un revisor tecnico de Rita, asistente motera de Ridera. Te paso dos borradores de
-respuesta para el mismo mensaje de un rider sobre un tema critico (seguridad, salud, legal
-o multas). Elegi el mas correcto y completo, o fundi lo mejor de ambos en una sola respuesta.
+  const system = `Sos el auditor de calidad de Rita, la asistente motera de Ridera. Te paso la
+pregunta del rider, la respuesta que Rita esta a punto de enviarle, y la evidencia real que
+devolvieron las herramientas consultadas (vacia si no se uso ninguna).
 
-Antes de la respuesta final, en la primera linea escribi exactamente una de estas opciones:
-"GANADOR: A", "GANADOR: B" o "GANADOR: FUSION". Despues deja una linea en blanco y escribi
-SOLO la respuesta final para el rider, en el mismo tono de WhatsApp corto y con emojis si
-corresponde. No menciones que hubo dos borradores ni que sos un revisor.`;
+Tu unico trabajo es detectar si la respuesta afirma algo que la evidencia NO respalda. Revisa:
+- ¿Inventa un dato (km, precio, horario, clima, estado de una via) que no aparece en la evidencia?
+- ¿Presenta un calculo (ej. ida y vuelta) como si fuera un dato de Ridera, en vez de decir que lo calculo ella misma?
+- ¿Afirma haber consultado algo (clima, estado de vias, trafico) sin evidencia de esa herramienta?
+- ¿Recomienda un destino que la evidencia marca como excluido explicitamente por el rider?
+- ¿Contradice lo que dice la evidencia?
+- ¿Usa "actualmente", "hoy", "ahora" para un dato que cambia con el tiempo sin evidencia fresca?
 
-  const messages: Mensaje[] = [
-    { role: "user", content: `Borrador A:\n${borradorA}\n\nBorrador B:\n${borradorB}` },
-  ];
+NO marques error por tono, estilo, brevedad, ni conocimiento general de cultura motera que no
+necesita evidencia.
+
+Responde SOLO con JSON, nada de texto antes ni despues, con esta forma exacta:
+{"valid": true, "issues": [], "severity": "none", "requires_revision": false}
+o si encontras problemas:
+{"valid": false, "issues": [{"type": "unsupported_claim", "description": "..."}], "severity": "low", "requires_revision": true}
+
+severity es "low", "medium" o "high". Marca requires_revision true SOLO si el problema le puede
+costar algo real al rider (una multa, un viaje mal planeado, una decision de seguridad) -- no por
+imperfecciones de redaccion.`;
+
+  const contenido = `PREGUNTA DEL RIDER:\n${pregunta}\n\nRESPUESTA DE RITA:\n${respuesta}\n\nEVIDENCIA DE HERRAMIENTAS:\n${
+    evidencia.length ? JSON.stringify(evidencia).slice(0, 6000) : "(ninguna herramienta fue consultada para esta respuesta)"
+  }`;
 
   try {
-    const dataCruda = await llamarClaudeRaw(system, messages);
+    const dataCruda = await llamarClaudeRaw(system, [{ role: "user", content: contenido }]);
     const { bloques, usage } = normalizarClaude(dataCruda);
-    await auditarIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "comparacion", null);
+    await auditarIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "auditor", null);
 
     const texto = textoDe(bloques);
-    const match = texto.match(/^GANADOR:\s*(A|B|FUSION)\s*\n+([\s\S]*)$/i);
-    if (!match) return { texto: texto || borradorA, ganador: null };
-    return { texto: match[2].trim(), ganador: match[1].toUpperCase() };
+    const match = texto.match(/\{[\s\S]*\}/);
+    if (!match) return SIN_PROBLEMAS;
+    const parsed = JSON.parse(match[0]);
+    return {
+      valid: parsed.valid !== false,
+      issues: Array.isArray(parsed.issues) ? parsed.issues : [],
+      severity: ["low", "medium", "high"].includes(parsed.severity) ? parsed.severity : "none",
+      requires_revision: Boolean(parsed.requires_revision),
+    };
   } catch (e) {
-    console.error("Revisor fallo:", e);
-    return { texto: borradorA, ganador: null };
+    console.error("Auditor fallo, se deja pasar la respuesta sin auditar:", e);
+    return SIN_PROBLEMAS;
+  }
+}
+
+// Le pide al mismo proveedor que genero la respuesta que la corrija segun
+// lo que encontro el auditor, usando SOLO la evidencia que ya existia --
+// nunca inventando una nueva.
+async function corregirConAuditoria(
+  proveedor: "claude" | "openai",
+  system: string,
+  messagesOriginales: Mensaje[],
+  respuestaPrevia: string,
+  evidencia: Evidencia[],
+  issues: { type: string; description: string }[],
+  phone: string,
+): Promise<string> {
+  const instruccion = `Tu respuesta anterior fue:\n"""${respuestaPrevia}"""\n\nEsta es la evidencia real que tenias disponible de las herramientas:\n${
+    evidencia.length ? JSON.stringify(evidencia).slice(0, 6000) : "(ninguna)"
+  }\n\nUn auditor encontro estos problemas en tu respuesta -- corrigela usando SOLO esta evidencia, sin inventar nada nuevo. No menciones que hubo una auditoria, entrega directamente la respuesta corregida lista para el rider:\n${
+    issues.map(i => `- ${i.description}`).join("\n")
+  }`;
+  const messages: Mensaje[] = [...messagesOriginales, { role: "user", content: instruccion }];
+  try {
+    const dataCruda = proveedor === "claude" ? await llamarClaudeRaw(system, messages) : await llamarOpenAIRaw(system, messages);
+    const { bloques, usage } = proveedor === "claude" ? normalizarClaude(dataCruda) : normalizarOpenAI(dataCruda);
+    await auditarIA(phone, proveedor, proveedor === "claude" ? CLAUDE_MODEL : OPENAI_MODEL, usage.input_tokens, usage.output_tokens, "correccion", null);
+    const texto = textoDe(bloques);
+    return texto || respuestaPrevia;
+  } catch (e) {
+    console.error("Correccion post-auditoria fallo, se deja la respuesta original:", e);
+    return respuestaPrevia;
   }
 }
 
@@ -313,7 +381,7 @@ export async function responderConOrquestador(
   messages: Mensaje[],
   phone: string,
 ): Promise<string> {
-  let resultado: { texto: string; herramientasUsadas: string[]; urlsHerramientas: string[] };
+  let resultado: { texto: string; herramientasUsadas: string[]; urlsHerramientas: string[]; evidencia: Evidencia[] };
   let proveedorPrimario: "claude" | "openai" = "openai";
 
   // 1) Intento primario: OpenAI (gpt-4o-mini con Function Calling).
@@ -346,29 +414,28 @@ export async function responderConOrquestador(
   // se reemplaza por el dominio raiz antes de que salga por WhatsApp.
   const urlsConfirmadas = new Set(resultado.urlsHerramientas);
 
-  const esCritico = resultado.herramientasUsadas.some(h => HERRAMIENTAS_CRITICAS.has(h))
-    || esTemaCriticoPorTexto(messages);
-  // Para comparacion critica se necesita Claude como segundo revisor
-  if (!esCritico || !ANTHROPIC_KEY) return sanitizarUrls(resultado.texto, urlsConfirmadas);
+  // 2) Auditoria: solo cuando hay evidencia real que auditar (se uso al
+  // menos una herramienta) o el tema es sensible por texto (seguridad,
+  // legal, multas) aunque no haya llamado ninguna -- ahi el riesgo es que
+  // responda de memoria algo que deberia decir "no lo se". Saludos y charla
+  // general sin herramientas ni tema critico no pagan el costo/latencia
+  // extra: no hay nada que auditar.
+  const necesitaAuditoria = resultado.herramientasUsadas.length > 0 || esTemaCriticoPorTexto(messages);
+  if (!necesitaAuditoria || !ANTHROPIC_KEY) return sanitizarUrls(resultado.texto, urlsConfirmadas);
 
-  // 2) Comparacion: solo para temas criticos. Generamos una segunda
-  // respuesta con Claude y dejamos que un revisor elija o funda la
-  // mejor antes de contestar.
+  let textoFinal = resultado.texto;
   try {
-    const proveedorSecundario: "claude" | "openai" = proveedorPrimario === "openai" ? "claude" : "openai";
-    const segundo = await ejecutarConversacion(proveedorSecundario, system, messages, phone, "comparacion");
-    if (!segundo.texto) return sanitizarUrls(resultado.texto, urlsConfirmadas);
-    for (const url of segundo.urlsHerramientas) urlsConfirmadas.add(url);
-
-    // borrador A = Claude (para que el revisor (Claude) no se favorezca a si mismo)
-    const [borradorA, borradorB] = proveedorSecundario === "claude"
-      ? [segundo.texto, resultado.texto]
-      : [resultado.texto, segundo.texto];
-
-    const revision = await revisarYFundir(borradorA, borradorB, phone);
-    return sanitizarUrls(revision.texto || resultado.texto, urlsConfirmadas);
+    for (let intento = 0; intento < MAX_REVISIONES_AUDITOR; intento++) {
+      const auditoria = await auditarRespuesta(extraerPreguntaRider(messages), textoFinal, resultado.evidencia, phone);
+      if (!auditoria.requires_revision) break;
+      console.warn("Auditor encontro problemas, corrigiendo:", JSON.stringify(auditoria.issues));
+      textoFinal = await corregirConAuditoria(
+        proveedorPrimario, system, messages, textoFinal, resultado.evidencia, auditoria.issues, phone,
+      );
+    }
   } catch (e) {
-    console.error("Comparacion omitida por fallo en Claude:", e);
-    return sanitizarUrls(resultado.texto, urlsConfirmadas);
+    console.error("Auditoria omitida por fallo:", e);
   }
+
+  return sanitizarUrls(textoFinal, urlsConfirmadas);
 }
