@@ -1193,6 +1193,7 @@ Deno.serve(async (req: Request) => {
         const descripcion = await describirFoto(
           await descargarMedia(imagenAdjunta.id),
           imagenAdjunta.mime_type,
+          from,
           imagenAdjunta.caption,
         );
         message = mensajeDesdeFoto(descripcion, imagenAdjunta.caption);
@@ -1217,6 +1218,7 @@ Deno.serve(async (req: Request) => {
         const lectura = await describirDocumento(
           await descargarMedia(msg.document.id),
           MIME_PDF,
+          from,
           msg.document.caption,
         );
         message = mensajeDesdeDocumento(lectura, msg.document.caption);

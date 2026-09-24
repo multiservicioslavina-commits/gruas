@@ -16,7 +16,10 @@
 //      al rider, el mismo proveedor que respondio corrige, con un tope
 //      de reintentos para no entrar en ciclos.
 //   4. Cada llamada queda auditada en rita_ai_logs: proveedor, modelo,
-//      tokens, costo estimado y tipo de consulta.
+//      tokens, costo estimado y tipo de consulta -- via uso_ia.ts, que
+//      tambien usan tools.ts (buscar_web_verificado) y vision.ts
+//      (describirFoto/describirDocumento) para que Gemini quede en la
+//      misma tabla y cuente para el mismo tope de gasto diario.
 //
 // Ambas claves (ANTHROPIC_API_KEY, OPENAI_API_KEY) viven solo en los
 // secretos de Supabase; nunca llegan al cliente/APK.
@@ -25,6 +28,7 @@
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { logError, logWarn } from "../_shared/log.ts";
+import { registrarUsoIA } from "./uso_ia.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -36,16 +40,6 @@ const OPENAI_MODEL = "gpt-4o-mini";
 const MAX_TOOL_ROUNDS = 4;
 
 const supabase: SupabaseClient = createClient(SB_URL, SB_KEY);
-
-const PRECIOS: Record<string, { entrada: number; salida: number }> = {
-  claude: { entrada: 1.0, salida: 5.0 },
-  openai: { entrada: 0.15, salida: 0.6 },
-};
-
-function estimarCosto(proveedor: "claude" | "openai", tokensEntrada: number, tokensSalida: number): number {
-  const p = PRECIOS[proveedor];
-  return (tokensEntrada / 1_000_000) * p.entrada + (tokensSalida / 1_000_000) * p.salida;
-}
 
 // ─── Tope de gasto diario ───────────────────────────────────────
 const DAILY_CAP_USD = parseFloat(Deno.env.get("RITA_DAILY_CAP_USD") ?? "5");
@@ -91,31 +85,6 @@ function extraerPreguntaRider(messages: Mensaje[]): string {
   const ultimo = messages[messages.length - 1];
   if (!ultimo) return "";
   return typeof ultimo.content === "string" ? ultimo.content : "";
-}
-
-async function auditarIA(
-  phone: string,
-  proveedor: string,
-  modelo: string,
-  tokensEntrada: number,
-  tokensSalida: number,
-  tipo: "normal" | "fallback" | "auditor" | "correccion",
-  ganoComparacion: string | null,
-) {
-  try {
-    await supabase.from("rita_ai_logs").insert({
-      telefono: phone,
-      proveedor,
-      modelo,
-      tokens_entrada: tokensEntrada,
-      tokens_salida: tokensSalida,
-      costo_usd: estimarCosto(proveedor as "claude" | "openai", tokensEntrada, tokensSalida),
-      tipo_consulta: tipo,
-      gano_comparacion: ganoComparacion,
-    });
-  } catch (e) {
-    logError("rita-v2/ia", "No se pudo registrar el uso de IA en rita_ai_logs", e, { telefono: phone });
-  }
 }
 
 // ─── Motor Claude ────────────────────────────────────────────────
@@ -247,7 +216,7 @@ async function ejecutarConversacion(
     tokensSalida += usage.output_tokens;
 
     if (stop_reason !== "tool_use") {
-      await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
+      await registrarUsoIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
       return { texto: textoDe(bloques), herramientasUsadas, urlsHerramientas: [...urlsHerramientas], evidencia };
     }
 
@@ -268,7 +237,7 @@ async function ejecutarConversacion(
     messages.push({ role: "user", content: resultados as Bloque[] });
   }
 
-  await auditarIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
+  await registrarUsoIA(phone, proveedor, modelo, tokensEntrada, tokensSalida, tipoAuditoria, null);
   return { texto: "", herramientasUsadas, urlsHerramientas: [...urlsHerramientas], evidencia };
 }
 
@@ -348,7 +317,7 @@ imperfecciones de redaccion.`;
   try {
     const dataCruda = await llamarClaudeRaw(system, [{ role: "user", content: contenido }]);
     const { bloques, usage } = normalizarClaude(dataCruda);
-    await auditarIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "auditor", null);
+    await registrarUsoIA(phone, "claude", CLAUDE_MODEL, usage.input_tokens, usage.output_tokens, "auditor", null);
 
     const texto = textoDe(bloques);
     const match = texto.match(/\{[\s\S]*\}/);
@@ -387,7 +356,7 @@ async function corregirConAuditoria(
   try {
     const dataCruda = proveedor === "claude" ? await llamarClaudeRaw(system, messages) : await llamarOpenAIRaw(system, messages);
     const { bloques, usage } = proveedor === "claude" ? normalizarClaude(dataCruda) : normalizarOpenAI(dataCruda);
-    await auditarIA(phone, proveedor, proveedor === "claude" ? CLAUDE_MODEL : OPENAI_MODEL, usage.input_tokens, usage.output_tokens, "correccion", null);
+    await registrarUsoIA(phone, proveedor, proveedor === "claude" ? CLAUDE_MODEL : OPENAI_MODEL, usage.input_tokens, usage.output_tokens, "correccion", null);
     const texto = textoDe(bloques);
     return texto || respuestaPrevia;
   } catch (e) {

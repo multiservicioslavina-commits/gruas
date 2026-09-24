@@ -22,9 +22,17 @@
 // explicitamente al entrar al resto del pipeline (ver los mensajeDesdeX
 // de abajo -- lo consume buildSystemPrompt en index.ts) para que Rita
 // nunca lo presente como un diagnostico o un dato confirmado.
+//
+// Cada llamada a Gemini queda registrada en rita_ai_logs via uso_ia.ts
+// (tokens, costo estimado, tipo "vision_foto"/"vision_documento") -- antes
+// de esto Gemini no dejaba ningun rastro de costo, y el tope de gasto
+// diario de IA (verificarPresupuesto en ia.ts) no lo veia.
 // ─────────────────────────────────────────────────────────────────
 
+import { registrarUsoIA } from "./uso_ia.ts";
+
 const GEMINI_KEY = (Deno.env.get("GEMINI_API_KEY") ?? "").trim();
+const MODELO = "gemini-2.5-flash";
 
 export const puedeVer = () => Boolean(GEMINI_KEY);
 
@@ -71,8 +79,13 @@ function aBase64(bytes: Uint8Array): string {
 }
 
 // Llamada compartida a Gemini: misma forma para una foto o un PDF, solo
-// cambia la instruccion y el mime_type del inline_data.
-async function llamarGeminiConArchivo(instruccion: string, datos: Uint8Array, mimeType: string, caption?: string): Promise<string> {
+// cambia la instruccion y el mime_type del inline_data. Registra el uso
+// (tokens/costo) en rita_ai_logs via uso_ia.ts -- antes de esto Gemini no
+// dejaba ningun rastro de costo ahi, y verificarPresupuesto() (el tope de
+// gasto diario en ia.ts) suma exactamente esa tabla.
+async function llamarGeminiConArchivo(
+  instruccion: string, datos: Uint8Array, mimeType: string, phone: string, tipo: string, caption?: string,
+): Promise<string> {
   if (!GEMINI_KEY) throw new Error("GEMINI_API_KEY no configurada");
 
   const base64 = aBase64(datos);
@@ -82,7 +95,7 @@ async function llamarGeminiConArchivo(instruccion: string, datos: Uint8Array, mi
   ];
 
   const res = await fetch(
-    "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent",
+    `https://generativelanguage.googleapis.com/v1beta/models/${MODELO}:generateContent`,
     {
       method: "POST",
       headers: { "x-goog-api-key": GEMINI_KEY, "Content-Type": "application/json" },
@@ -96,6 +109,13 @@ async function llamarGeminiConArchivo(instruccion: string, datos: Uint8Array, mi
   }
 
   const data = await res.json();
+
+  // Se registra el uso antes de validar el texto: Gemini ya cobro la
+  // llamada aunque el resultado venga vacio, y si el texto vacio hace
+  // que las lineas de abajo lancen, el registro ya quedo guardado.
+  const usage = data.usageMetadata ?? {};
+  await registrarUsoIA(phone, "gemini", MODELO, usage.promptTokenCount ?? 0, usage.candidatesTokenCount ?? 0, tipo);
+
   const texto = ((data.candidates?.[0]?.content?.parts ?? []) as { text?: string }[])
     .map(p => p.text ?? "")
     .join("")
@@ -104,12 +124,12 @@ async function llamarGeminiConArchivo(instruccion: string, datos: Uint8Array, mi
   return texto;
 }
 
-export async function describirFoto(imagen: Uint8Array, mimeType: string, caption?: string): Promise<string> {
-  return await llamarGeminiConArchivo(INSTRUCCION_FOTO, imagen, mimeType, caption);
+export async function describirFoto(imagen: Uint8Array, mimeType: string, phone: string, caption?: string): Promise<string> {
+  return await llamarGeminiConArchivo(INSTRUCCION_FOTO, imagen, mimeType, phone, "vision_foto", caption);
 }
 
-export async function describirDocumento(pdf: Uint8Array, mimeType: string, caption?: string): Promise<string> {
-  return await llamarGeminiConArchivo(INSTRUCCION_DOCUMENTO, pdf, mimeType, caption);
+export async function describirDocumento(pdf: Uint8Array, mimeType: string, phone: string, caption?: string): Promise<string> {
+  return await llamarGeminiConArchivo(INSTRUCCION_DOCUMENTO, pdf, mimeType, phone, "vision_documento", caption);
 }
 
 // Arma el mensaje que entra al resto del pipeline exactamente como si el
