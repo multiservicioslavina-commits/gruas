@@ -19,7 +19,7 @@ const corsHeaders = {
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? 'rid3ra_cron_2026'
+const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
 const sbClient = createClient(supabaseUrl, supabaseServiceKey)
 
 const WP_BASE = 'https://ridera.com.co'
@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
 
   const secreto = req.headers.get('x-ridera-cron') ?? new URL(req.url).searchParams.get('secret') ?? ''
-  if (secreto !== CRON_SECRET) {
+  if (!CRON_SECRET || secreto !== CRON_SECRET) {
     return json({ ok: false, error: 'no autorizado' }, 401)
   }
 

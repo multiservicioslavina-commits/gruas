@@ -22,7 +22,7 @@ import { logError } from "../_shared/log.ts";
 
 const WA_TOKEN    = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE  = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "rid3ra_cron_2026";
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const SB_URL      = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY      = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 const GRAPH       = "https://graph.facebook.com/v25.0";
@@ -244,7 +244,7 @@ Deno.serve(async (req: Request) => {
   const secreto = req.headers.get("x-ridera-cron")
     ?? new URL(req.url).searchParams.get("secret")
     ?? "";
-  if (secreto !== CRON_SECRET) {
+  if (!CRON_SECRET || secreto !== CRON_SECRET) {
     return new Response("no autorizado", { status: 401 });
   }
 
