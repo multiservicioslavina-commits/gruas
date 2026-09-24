@@ -44,7 +44,7 @@ const FUERA_DE_VENTANA = 131047;
 // señale (el cron sigue disparando "succeeded" igual). Se calcula en
 // funcion de la fecha para que no vuelva a quedar desactualizada.
 // getDay(): 0=domingo ... 6=sábado. Sábado/domingo no tienen entrada -> no aplica.
-function digitosPorDia(ahora: Date): Record<number, number[]> {
+export function digitosPorDia(ahora: Date): Record<number, number[]> {
   const esSegundoSemestre = ahora >= new Date("2026-08-03T00:00:00-05:00");
   return esSegundoSemestre
     ? { 1: [5, 8], 2: [1, 4], 3: [0, 2], 4: [3, 6], 5: [7, 9] }
