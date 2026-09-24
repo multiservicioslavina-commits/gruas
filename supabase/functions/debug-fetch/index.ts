@@ -1,13 +1,16 @@
-Deno.serve(async (req: Request) => {
-  const u = new URL(req.url).searchParams.get("u");
-  if (!u || !u.startsWith("https://") || !/(ridera\.com\.co|pasaporteridera\.netlify\.app)/.test(u)) {
-    return new Response("bad url", { status: 400 });
-  }
-  try {
-    const r = await fetch(u, { headers: { "User-Agent": "Mozilla/5.0" } });
-    const body = await r.text();
-    return new Response(JSON.stringify({ status: r.status, headers: Object.fromEntries(r.headers.entries()), body: body.slice(0, 60000) }), { headers: { "Content-Type": "application/json" } });
-  } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 200 });
-  }
-});
+// Desactivada (auditoría de seguridad, septiembre 2026).
+//
+// Era un proxy de fetch para depuración. Intentaba limitarse a dominios
+// propios, pero la comprobación usaba una expresión regular sin anclar sobre
+// la URL completa, así que bastaba con que la cadena permitida apareciera en
+// cualquier parte —el path, el query, o como subdominio de un atacante— para
+// pasar el filtro. En la práctica: un SSRF que permitía pedir cualquier URL
+// desde el servidor.
+//
+// No la llamaba nada en el código (verificado con grep en todo el repo: sólo
+// aparecía en supabase/config.toml). Se desactiva igual que debug-proxy.
+//
+// Si vuelve a hacer falta, comparar contra `new URL(u).hostname` con igualdad
+// exacta o sufijo (`host === 'ridera.com.co' || host.endsWith('.ridera.com.co')`),
+// nunca con una regex sobre la URL entera.
+Deno.serve(async () => new Response('disabled', { status: 410 }))
