@@ -322,6 +322,9 @@ Revisa especificamente:
 - ¿Recomienda un destino que la evidencia marca como excluido explicitamente por el rider?
 - ¿Contradice lo que dice la evidencia?
 - ¿Usa "actualmente", "hoy", "ahora" para un dato que cambia con el tiempo sin evidencia fresca?
+- ¿Convierte la descripcion de una foto (marcada en la pregunta como "[Foto adjunta -- descripcion
+  generada por IA de vision (Gemini)...]") en un diagnostico mecanico definitivo o en un dato
+  verificado por Ridera, en vez de dejarla como lo que parece verse en la imagen?
 
 NO marques error por tono, estilo, brevedad, ni conocimiento general de cultura motera que la
 respuesta ya presenta como tal (sin fingir que vino de una herramienta).
