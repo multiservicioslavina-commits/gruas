@@ -11,6 +11,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerUrls, sanitizarUrls } from "./tools.ts";
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
+import { describirFoto, mensajeDesdeFoto, puedeVer } from "./vision.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 import { logError, logWarn } from "../_shared/log.ts";
 
@@ -505,6 +506,15 @@ obvio, nunca presentes uno como si fuera otro:
 - DESCONOCIDO: ninguna herramienta trajo el dato y no es algo que sepas de
   memoria con certeza. Dilo derecho: "eso no lo tengo verificado" o "no lo se,
   parce" -- es una respuesta correcta, no una falla.
+- DESCRIPCION DE FOTO (Gemini): si el mensaje trae "[Foto adjunta -- descripcion
+  generada por IA de vision (Gemini), puede tener errores: ...]", eso NO es un
+  dato verificado ni las palabras del rider -- es la interpretacion de un modelo
+  de vision sobre una imagen, que puede confundir piezas o leer mal un texto
+  borroso. Usala para entender de que habla el rider, pero si vas a mencionar
+  algo especifico que viste ahi (un numero de placa, una fecha de vencimiento,
+  el estado de una pieza), aclara que es lo que se alcanza a ver en la foto, no
+  un hecho confirmado. Nunca des un diagnostico mecanico definitivo basado solo
+  en la foto: sugiere que un mecanico o taller lo confirme.
 
 REGLA DURA DE URLs - CERO EXCEPCIONES:
 - NUNCA armes ni adivines una URL concatenando palabras (ej. "ridera.com.co/rutas/
@@ -1161,6 +1171,30 @@ Deno.serve(async (req: Request) => {
       if (!message.trim()) {
         await enviarTexto(from, "Uy, no pille que dijiste. Me lo repites?");
         return json({ ok: true, skip: "audio vacio" });
+      }
+    } else if (msg.type === "image" && msg.image) {
+      if (!puedeVer()) {
+        await enviarTexto(from, "Parce, por ahora no puedo ver fotos. Contame que se ve o descríbemela?");
+        return json({ ok: true, skip: "sin proveedor de vision" });
+      }
+      try {
+        const descripcion = await describirFoto(
+          await descargarMedia(msg.image.id),
+          msg.image.mime_type || "image/jpeg",
+          msg.image.caption,
+        );
+        message = mensajeDesdeFoto(descripcion, msg.image.caption);
+      } catch (e) {
+        logError("rita-v2", "Descripcion de foto fallo", e, { telefono: from });
+        await supabase.from("rita_acciones_log").insert({
+          telefono: from,
+          herramienta: "vision_debug",
+          parametros: {},
+          ok: false,
+          error: String(e instanceof Error ? e.message : e).slice(0, 500),
+        });
+        await enviarTexto(from, "No pude ver bien esa foto. Me cuentas que es o me la vuelves a mandar?");
+        return json({ ok: true, error: "vision" });
       }
     } else if (msg.text?.body) {
       message = msg.text.body;
