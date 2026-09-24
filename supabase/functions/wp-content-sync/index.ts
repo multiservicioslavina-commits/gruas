@@ -10,6 +10,7 @@
 // (manual o por pg_cron) hasta que "pendientes" llegue a 0.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.38.2'
+import { logError, logWarn } from '../_shared/log.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -220,6 +221,10 @@ Deno.serve(async (req) => {
       perType.push({ type, wp_total: wpItems.length, sincronizados: synced, embebidos: embedded, sin_cambios: skipped })
     }
 
+    if (errores.length) {
+      logWarn('wp-content-sync', `${errores.length} item(s) fallaron en esta corrida`, { errores: errores.slice(0, 10) })
+    }
+
     return json({
       ok: true,
       total_wp: totalWp,
@@ -230,6 +235,7 @@ Deno.serve(async (req) => {
       errores: errores.slice(0, 10),
     })
   } catch (e) {
+    logError('wp-content-sync', 'Sincronizacion fallo por completo', e)
     return json({ ok: false, error: (e as Error).message }, 500)
   }
 })

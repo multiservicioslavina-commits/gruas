@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jwtVerify, SignJWT } from 'https://esm.sh/jose@5';
+import { log, logError, logWarn } from '../_shared/log.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -113,12 +114,12 @@ async function avisarAprobado(sb: Sb, clubId: string, miembro: { nombre: string;
 // sin ventana de 24h, siempre que la plantilla este aprobada para este WABA.
 async function enviarPlantilla(telefono: string, nombrePlantilla: string, parametros: string[]): Promise<boolean> {
   if (!WA_TOKEN || !telefono) {
-    console.error('enviarPlantilla: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
+    logWarn('club-members', 'enviarPlantilla: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
     return false;
   }
   try {
     const url = `${GRAPH}/${RITA_PHONE}/messages`;
-    console.log('enviarPlantilla: enviando a', { url, telefono, nombrePlantilla });
+    log('club-members', 'enviarPlantilla: enviando', { telefono, nombrePlantilla });
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
@@ -134,10 +135,10 @@ async function enviarPlantilla(telefono: string, nombrePlantilla: string, parame
       }),
     });
     const out = await res.json();
-    console.log('enviarPlantilla: respuesta de Meta', { status: res.status, data: out });
+    log('club-members', 'enviarPlantilla: respuesta de Meta', { telefono, status: res.status, data: out });
     return !!out?.messages?.length;
   } catch (e) {
-    console.error('enviarPlantilla: error', e);
+    logError('club-members', 'enviarPlantilla fallo', e, { telefono });
     return false;
   }
 }
@@ -150,22 +151,22 @@ async function enviarPlantilla(telefono: string, nombrePlantilla: string, parame
 // plantilla aprobada.
 async function notificarLider(telefono: string, texto: string): Promise<boolean> {
   if (!WA_TOKEN || !telefono) {
-    console.error('notificarLider: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
+    logWarn('club-members', 'notificarLider: falta WA_TOKEN o telefono', { WA_TOKEN: !!WA_TOKEN, telefono });
     return false;
   }
   try {
     const url = `${GRAPH}/${RITA_PHONE}/messages`;
-    console.log('notificarLider: enviando a', { url, telefono, RITA_PHONE });
+    log('club-members', 'notificarLider: enviando', { telefono });
     const res = await fetch(url, {
       method: 'POST',
       headers: { 'Authorization': `Bearer ${WA_TOKEN}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ messaging_product: 'whatsapp', to: telefono, type: 'text', text: { body: texto } }),
     });
     const out = await res.json();
-    console.log('notificarLider: respuesta de Meta', { status: res.status, data: out });
+    log('club-members', 'notificarLider: respuesta de Meta', { telefono, status: res.status, data: out });
     return !!out?.messages?.length;
   } catch (e) {
-    console.error('notificarLider: error', e);
+    logError('club-members', 'notificarLider fallo', e, { telefono });
     return false;
   }
 }
@@ -193,7 +194,7 @@ async function enviarCorreoPostulacion(
     });
     return resp.ok;
   } catch (e) {
-    console.error('enviarCorreoPostulacion: error', e);
+    logError('club-members', 'enviarCorreoPostulacion fallo', e, { correo: to });
     return false;
   }
 }

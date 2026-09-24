@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { jwtVerify, SignJWT } from 'https://esm.sh/jose@5';
+import { logError } from '../_shared/log.ts';
 
 const cors = {
   'Access-Control-Allow-Origin': '*',
@@ -30,7 +31,8 @@ async function notificarNuevoDueno(telefono: string, texto: string): Promise<boo
     });
     const out = await res.json();
     return !!out?.messages?.length;
-  } catch {
+  } catch (e) {
+    logError('hoja-vida', 'notificarNuevoDueno fallo (no bloquea el traspaso ya realizado)', e, { telefono });
     return false;
   }
 }

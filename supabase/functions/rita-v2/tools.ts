@@ -7,6 +7,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
+import { logError } from "../_shared/log.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -776,7 +777,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         };
       }
     } catch (e) {
-      console.error("No se pudo leer la memoria de planificacion, se sigue sin ella:", e);
+      logError("rita-v2/tools", "No se pudo leer la memoria de planificacion, se sigue sin ella", e, { telefono: phone });
     }
 
     const excluidosRaw = [...new Set([...recordadoDeAntes.destinos_excluidos, ...excluidosInputRaw])];
@@ -792,7 +793,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         updated_at: new Date().toISOString(),
       }, { onConflict: "telefono" });
     } catch (e) {
-      console.error("No se pudo guardar la memoria de planificacion:", e);
+      logError("rita-v2/tools", "No se pudo guardar la memoria de planificacion", e, { telefono: phone });
     }
 
     let query = supabase
@@ -1010,7 +1011,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
           }
         }
       } catch (e) {
-        console.error("Error guardando placa desde consultar_pico_placa:", e);
+        logError("rita-v2/tools", "Error guardando placa desde consultar_pico_placa", e, { telefono: phone });
       }
     }
 
@@ -1169,7 +1170,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       completado: false,
     });
     if (error) {
-      console.error("Error guardando recordatorio:", error);
+      logError("rita-v2/tools", "Error guardando recordatorio (crear_recordatorio)", error, { telefono: phone });
       return { ok: false, data: "No se pudo guardar el recordatorio. Intenta de nuevo." };
     }
     return { ok: true, data: `Recordatorio guardado para el ${fecha}.` };
@@ -1183,7 +1184,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       updated_at: new Date().toISOString(),
     }, { onConflict: "telefono,clave" });
     if (error) {
-      console.error("Error guardando preferencia:", error);
+      logError("rita-v2/tools", "Error guardando preferencia", error, { telefono: phone });
       return { ok: false, data: "No se pudo guardar tus preferencias. Intenta de nuevo." };
     }
     return { ok: true, data: `Guardado: ${String(input.clave)} = ${String(input.valor)}` };
@@ -1212,7 +1213,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       updated_at: ahora,
     }, { onConflict: "telefono" });
     if (error) {
-      console.error("Error registrando consentimiento:", error);
+      logError("rita-v2/tools", "Error registrando consentimiento", error, { telefono: phone });
       return { ok: false, data: "No se pudo registrar tu preferencia. Intenta de nuevo." };
     }
     return {
@@ -1878,7 +1879,7 @@ CONTACTO: Abogado especializado en responsabilidad civil`
     });
 
     if (error) {
-      console.error("Error guardando recordatorio:", error);
+      logError("rita-v2/tools", "Error guardando recordatorio (programar_recordatorio_avanzado)", error, { telefono: phone });
       return { ok: false, data: "No se pudo guardar el recordatorio. Intenta de nuevo." };
     }
 
@@ -1963,7 +1964,7 @@ export async function ejecutarHerramienta(
     return typeof data === "string" ? data : JSON.stringify(data);
   } catch (e) {
     const mensaje = e instanceof Error ? e.message : String(e);
-    console.error(`Herramienta ${nombre} fallo:`, mensaje);
+    logError("rita-v2/tools", `Herramienta ${nombre} fallo`, e, { telefono: phone });
     await auditar(phone, nombre, input, false, mensaje);
     return `Error consultando ${nombre}: ${mensaje}. No inventes el dato, dile al rider que no lo tienes.`;
   }
@@ -1985,7 +1986,7 @@ async function auditar(
       error: error?.slice(0, 500) ?? null,
     });
   } catch (e) {
-    console.error("No se pudo auditar la accion:", e);
+    logError("rita-v2/tools", "No se pudo auditar la accion", e, { telefono: phone, herramienta });
   }
 }
 
