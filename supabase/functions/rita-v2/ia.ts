@@ -20,6 +20,13 @@
 //      tambien usan tools.ts (buscar_web_verificado) y vision.ts
 //      (describirFoto/describirDocumento) para que Gemini quede en la
 //      misma tabla y cuente para el mismo tope de gasto diario.
+//   5. Cada respuesta de responderConOrquestador arma y loguea un
+//      TurnoIA (intent/constraints/evidence/decision/validation): no es
+//      una maquina de estados nueva ni una llamada extra al modelo --
+//      es la misma informacion que ya se calculaba dispersa (evidencia
+//      de herramientas, la auditoria, el texto final) empaquetada en un
+//      solo objeto consultable, para que un turno se pueda reconstruir
+//      completo desde los logs en vez de adivinarlo entre varias tablas.
 //
 // Ambas claves (ANTHROPIC_API_KEY, OPENAI_API_KEY) viven solo en los
 // secretos de Supabase; nunca llegan al cliente/APK.
@@ -27,7 +34,7 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { TOOL_SCHEMAS, ejecutarHerramienta, extraerUrls, sanitizarUrls } from "./tools.ts";
-import { logError, logWarn } from "../_shared/log.ts";
+import { log, logError, logWarn } from "../_shared/log.ts";
 import { registrarUsoIA } from "./uso_ia.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
@@ -261,6 +268,49 @@ const MAX_REVISIONES_AUDITOR = 2;
 
 const SIN_PROBLEMAS: Auditoria = { valid: true, issues: [], severity: "none", requires_revision: false };
 
+// ─── Registro del turno completo (intent/constraints/evidence/decision/validation) ───
+// No es una maquina de estados nueva: intent y constraints se derivan de lo
+// que ya se calculo (que herramientas se usaron, que devolvieron), sin
+// ninguna llamada extra a un modelo -- clasificar el intent con IA hubiera
+// sido pagar costo/latencia por algo que ya se puede leer de herramientasUsadas.
+export type TurnoIA = {
+  intent: string;
+  constraints: Record<string, unknown> | null;
+  evidence: Evidencia[];
+  decision: string;
+  validation: Auditoria | null; // null si el turno no paso por el auditor
+};
+
+// Clasificacion barata (sin IA) a partir de que herramienta se uso -- sirve
+// para poder filtrar/agrupar turnos en los logs (ej. "cuantos turnos de
+// planificacion_ruta tuvieron requires_revision=true"), no para que Rita
+// decida nada: esa decision ya la tomo el modelo al elegir la herramienta.
+export function clasificarIntent(herramientasUsadas: string[], esCritico: boolean): string {
+  if (esCritico) return "tema_critico";
+  if (herramientasUsadas.includes("planificar_ruta") || herramientasUsadas.includes("buscar_ruta")) return "planificacion_ruta";
+  if (herramientasUsadas.includes("consultar_pico_placa")) return "pico_placa";
+  if (herramientasUsadas.length > 0) return "consulta_con_herramientas";
+  return "conversacional";
+}
+
+// planificar_ruta es hoy la unica herramienta que acumula restricciones
+// explicitas (distancia_max_km, destinos_excluidos) -- ver
+// rita_planificacion_contexto en tools.ts. Se extraen del resultado ya
+// obtenido (Evidencia.resultado es el JSON que devolvio ejecutarHerramienta),
+// no se vuelve a consultar nada.
+export function extraerConstraints(evidencia: Evidencia[]): Record<string, unknown> | null {
+  for (const e of evidencia) {
+    if (e.herramienta !== "planificar_ruta" || typeof e.resultado !== "string") continue;
+    try {
+      const parsed = JSON.parse(e.resultado);
+      if (parsed && typeof parsed === "object" && parsed.restricciones_aplicadas) {
+        return parsed.restricciones_aplicadas as Record<string, unknown>;
+      }
+    } catch { /* resultado no era JSON (ej. un mensaje de error de la herramienta) */ }
+  }
+  return null;
+}
+
 export async function auditarRespuesta(
   pregunta: string,
   respuesta: string,
@@ -403,6 +453,7 @@ export async function responderConOrquestador(
   // unicas que la respuesta final puede citar tal cual; cualquier otra URL
   // se reemplaza por el dominio raiz antes de que salga por WhatsApp.
   const urlsConfirmadas = new Set(resultado.urlsHerramientas);
+  const esCritico = esTemaCriticoPorTexto(messages);
 
   // 2) Auditoria: solo cuando hay evidencia real que auditar (se uso al
   // menos una herramienta) o el tema es sensible por texto (seguridad,
@@ -410,22 +461,41 @@ export async function responderConOrquestador(
   // responda de memoria algo que deberia decir "no lo se". Saludos y charla
   // general sin herramientas ni tema critico no pagan el costo/latencia
   // extra: no hay nada que auditar.
-  const necesitaAuditoria = resultado.herramientasUsadas.length > 0 || esTemaCriticoPorTexto(messages);
-  if (!necesitaAuditoria || !ANTHROPIC_KEY) return sanitizarUrls(resultado.texto, urlsConfirmadas);
+  const necesitaAuditoria = resultado.herramientasUsadas.length > 0 || esCritico;
 
   let textoFinal = resultado.texto;
-  try {
-    for (let intento = 0; intento < MAX_REVISIONES_AUDITOR; intento++) {
-      const auditoria = await auditarRespuesta(extraerPreguntaRider(messages), textoFinal, resultado.evidencia, phone);
-      if (!auditoria.requires_revision) break;
-      logWarn("rita-v2/ia", "Auditor encontro problemas, corrigiendo", { telefono: phone, issues: auditoria.issues });
-      textoFinal = await corregirConAuditoria(
-        proveedorPrimario, system, messages, textoFinal, resultado.evidencia, auditoria.issues, phone,
-      );
+  let ultimaAuditoria: Auditoria | null = null;
+
+  if (necesitaAuditoria && ANTHROPIC_KEY) {
+    try {
+      for (let intento = 0; intento < MAX_REVISIONES_AUDITOR; intento++) {
+        ultimaAuditoria = await auditarRespuesta(extraerPreguntaRider(messages), textoFinal, resultado.evidencia, phone);
+        if (!ultimaAuditoria.requires_revision) break;
+        logWarn("rita-v2/ia", "Auditor encontro problemas, corrigiendo", { telefono: phone, issues: ultimaAuditoria.issues });
+        textoFinal = await corregirConAuditoria(
+          proveedorPrimario, system, messages, textoFinal, resultado.evidencia, ultimaAuditoria.issues, phone,
+        );
+      }
+    } catch (e) {
+      logError("rita-v2/ia", "Auditoria omitida por fallo", e, { telefono: phone });
     }
-  } catch (e) {
-    logError("rita-v2/ia", "Auditoria omitida por fallo", e, { telefono: phone });
   }
 
-  return sanitizarUrls(textoFinal, urlsConfirmadas);
+  const decision = sanitizarUrls(textoFinal, urlsConfirmadas);
+
+  // Un solo punto de logging para todo el turno -- antes esta informacion
+  // quedaba dispersa (evidencia por un lado, auditoria por otro, nada que
+  // las juntara), asi que reconstruir "que paso en este turno" significaba
+  // cruzar varias tablas a mano. Este TurnoIA no agrega ninguna llamada
+  // nueva a un modelo: son los mismos datos que ya se calcularon arriba.
+  const turno: TurnoIA = {
+    intent: clasificarIntent(resultado.herramientasUsadas, esCritico),
+    constraints: extraerConstraints(resultado.evidencia),
+    evidence: resultado.evidencia,
+    decision,
+    validation: ultimaAuditoria,
+  };
+  log("rita-v2/ia", "Turno completado", { telefono: phone, turno });
+
+  return decision;
 }
