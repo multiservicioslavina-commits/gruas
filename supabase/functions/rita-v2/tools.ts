@@ -8,6 +8,7 @@
 
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { logError } from "../_shared/log.ts";
+import { registrarUsoIA } from "./uso_ia.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -1224,7 +1225,7 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     };
   },
 
-  async buscar_web_verificado(input) {
+  async buscar_web_verificado(input, phone) {
     const consulta = String(input.consulta ?? "");
     const tipoFuente = String(input.tipo_fuente ?? "general");
 
@@ -1298,6 +1299,17 @@ Si no encuentras informacion confiable y verificable, dilo explicitamente en vez
         .map(p => p.text ?? "")
         .join("")
         .trim();
+
+      // usageMetadata viene siempre que Gemini responda ok, tenga o no
+      // texto util -- se registra en ambos casos para que el costo real
+      // (Gemini SI cobra la llamada aunque no encuentre nada confiable)
+      // quede completo en las metricas y en el tope de gasto diario.
+      const usage = data.usageMetadata ?? {};
+      await registrarUsoIA(
+        phone, "gemini", "gemini-2.5-flash",
+        usage.promptTokenCount ?? 0, usage.candidatesTokenCount ?? 0,
+        "busqueda_web",
+      );
 
       if (!texto) {
         return {
