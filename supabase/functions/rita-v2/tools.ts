@@ -300,7 +300,7 @@ export const TOOL_SCHEMAS = [
   {
     name: "planificar_ruta",
     description:
-      "Busca rutas de Ridera que cumplan restricciones de planificacion (distancia maxima, destinos que el rider no quiere). Usala en vez de buscar_ruta cuando el rider da restricciones especificas para elegir entre varias opciones (\"maximo 300 km\", \"no Guatape ni Jardin\", \"algo con curvas\") en lugar de pedir un destino puntual. Las restricciones que pases aqui se filtran de verdad contra la base de datos -- no dependen de que tu las recuerdes al armar la respuesta. distancia_max_km es SIEMPRE solo ida (igual que el km que devuelve buscar_ruta): si el rider da un limite de ida y vuelta, divide entre 2 antes de pasarlo aqui.",
+      "Busca rutas de Ridera que cumplan restricciones de planificacion (distancia maxima, destinos que el rider no quiere). Usala en vez de buscar_ruta cuando el rider da restricciones especificas para elegir entre varias opciones (\"maximo 300 km\", \"no Guatape ni Jardin\", \"algo con curvas\") en lugar de pedir un destino puntual. Las restricciones que pases aqui se filtran de verdad contra la base de datos -- no dependen de que tu las recuerdes al armar la respuesta. distancia_max_km es SIEMPRE solo ida (igual que el km que devuelve buscar_ruta): si el rider da un limite de ida y vuelta, divide entre 2 antes de pasarlo aqui. La herramienta RECUERDA sola las exclusiones y el limite que el rider ya menciono antes en esta misma conversacion (aunque hayan quedado fuera de tu historial reciente) y los sigue aplicando -- no hace falta que se los vuelvas a pasar en cada llamada, pero si el rider agrega uno nuevo, pasalo y se suma a lo ya recordado.",
     input_schema: {
       type: "object",
       properties: {
@@ -748,10 +748,52 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
   // se filtran aqui: el rider las pidio como gusto, no como condicion, y
   // filtrarlas podria dejar cero resultados por un dato que ni siquiera
   // esta en rita_rutas hoy.
-  async planificar_ruta(input) {
-    const distanciaMax = input.distancia_max_km != null ? Number(input.distancia_max_km) : null;
-    const excluidosRaw = Array.isArray(input.destinos_excluidos) ? input.destinos_excluidos.map(String) : [];
+  //
+  // Ademas acumula memoria de restricciones por telefono (rita_planificacion_contexto):
+  // los ultimos 10 mensajes que se le reenvian al modelo (getHistory en
+  // index.ts) no bastan para que una exclusion dicha varios turnos atras
+  // siga viva -- se pierde en cuanto la conversacion avanza lo suficiente.
+  // Se guarda y se expira sola tras SESION_VIGENCIA_HORAS de inactividad:
+  // no es una lista negra permanente, solo memoria de esta planificacion.
+  async planificar_ruta(input, phone) {
+    const SESION_VIGENCIA_HORAS = 6;
+
+    const distanciaMaxInput = input.distancia_max_km != null ? Number(input.distancia_max_km) : null;
+    const excluidosInputRaw = Array.isArray(input.destinos_excluidos) ? input.destinos_excluidos.map(String) : [];
+    const preferenciasInput = Array.isArray(input.preferencias) ? input.preferencias.map(String) : [];
+
+    let recordadoDeAntes = { destinos_excluidos: [] as string[], distancia_max_km: null as number | null };
+    try {
+      const { data: filaPrevia } = await supabase
+        .from("rita_planificacion_contexto")
+        .select("destinos_excluidos, distancia_max_km, updated_at")
+        .eq("telefono", phone)
+        .maybeSingle();
+      if (filaPrevia && Date.now() - new Date(filaPrevia.updated_at).getTime() < SESION_VIGENCIA_HORAS * 3600 * 1000) {
+        recordadoDeAntes = {
+          destinos_excluidos: (filaPrevia.destinos_excluidos as string[]) ?? [],
+          distancia_max_km: (filaPrevia.distancia_max_km as number | null) ?? null,
+        };
+      }
+    } catch (e) {
+      console.error("No se pudo leer la memoria de planificacion, se sigue sin ella:", e);
+    }
+
+    const excluidosRaw = [...new Set([...recordadoDeAntes.destinos_excluidos, ...excluidosInputRaw])];
+    const distanciaMax = distanciaMaxInput ?? recordadoDeAntes.distancia_max_km;
     const excluidosNorm = excluidosRaw.map(norm);
+
+    try {
+      await supabase.from("rita_planificacion_contexto").upsert({
+        telefono: phone,
+        destinos_excluidos: excluidosRaw,
+        distancia_max_km: distanciaMax,
+        preferencias: preferenciasInput,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: "telefono" });
+    } catch (e) {
+      console.error("No se pudo guardar la memoria de planificacion:", e);
+    }
 
     let query = supabase
       .from("rita_rutas")
@@ -791,12 +833,17 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
       };
     }
 
+    const huboMemoria = recordadoDeAntes.destinos_excluidos.length > 0 || recordadoDeAntes.distancia_max_km != null;
+
     return {
       ok: true,
       data: {
         candidatas: candidatas.slice(0, 5),
         excluidas_por_peticion_explicita: excluidasPorPeticion,
         restricciones_aplicadas: { distancia_max_km: distanciaMax, destinos_excluidos: excluidosRaw },
+        ...(huboMemoria
+          ? { restricciones_recordadas_de_antes: "Se incluyeron restricciones que el rider menciono antes en esta conversacion aunque no las repitiera ahora -- no se lo agradezcas ni lo menciones como algo especial, solo respetalas." }
+          : {}),
         nota: "candidatas ya cumple las restricciones obligatorias (distancia, exclusiones) -- son un hecho, no las vuelvas a filtrar. Las preferencias blandas del rider (curvas, paisaje, etc.) usalas solo para elegir/ordenar entre estas opciones o para describirlas, nunca para descartar una que ya califico.",
       },
     };
