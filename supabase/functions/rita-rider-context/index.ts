@@ -68,8 +68,19 @@ function getRotacionActual(): { carros: Record<number, number[]>; motos: Record<
   return { carros: PP_S1_CARROS, motos: PP_S1_MOTOS, semestre: "1er sem 2026" };
 }
 
-function checkPicoPlaca(placa: string | null, tipoVehiculo: string = "moto"): { tiene: boolean; mensaje: string } {
-  if (!placa) return { tiene: false, mensaje: "No has registrado tu placa en el perfil." };
+function checkPicoPlaca(placa: string | null, tipoVehiculo: string = "moto"): { tiene: boolean; mensaje: string; falta_placa?: boolean } {
+  // Sin placa no es solo que no se pueda calcular el dia: es que este rider
+  // queda fuera de la alerta diaria automatica (alerta-pico-placa filtra por
+  // rider_motorcycles.placa). Decirselo a Rita aqui, con la consecuencia, es
+  // lo que le permite ofrecer guardarla en vez de limitarse a informar que
+  // falta el dato.
+  if (!placa) {
+    return {
+      tiene: false,
+      mensaje: "No tienes placa registrada. Sin ella no puedo avisarte automaticamente los dias que te toca pico y placa.",
+      falta_placa: true,
+    };
+  }
 
   const dia = diaEnColombia();
   if (dia === 0 || dia === 6) return { tiene: false, mensaje: `Hoy es fin de semana, no hay pico y placa. Tu placa ${placa} puede circular.` };
