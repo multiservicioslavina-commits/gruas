@@ -17,9 +17,10 @@
 // libre (fuera de esa ventana) lo rechaza Meta con el código 131047. Para
 // que esta alerta llegue de verdad hace falta una PLANTILLA aprobada por
 // Meta (igual que "recordatorio_soat_v2", que ya usa rita-recordatorios).
-// Sin esa plantilla creada y aprobada, esta función queda funcionando pero
-// la mayoría de los envíos van a quedar registrados como "no entregado".
-const PLANTILLA_PICO_PLACA = "pico_placa_am"; // crear y aprobar en Meta Business Manager
+// "pico_placa_am" ya quedó aprobada y Activa en Meta Business Manager
+// (24 sep 2026, categoría Marketing) -- el envío por plantilla ya es real,
+// no solo el fallback de texto libre dentro de la ventana de 24h.
+const PLANTILLA_PICO_PLACA = "pico_placa_am";
 
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
@@ -195,6 +196,14 @@ async function enviarPlantilla(to: string, nombre: string, digito: string): Prom
       }),
       signal: AbortSignal.timeout(8000),
     });
+    if (!r.ok) {
+      // Meta respondio pero rechazo el envio (parametros invalidos, numero sin
+      // opt-in, rate limit, etc.) -- se loguea el cuerpo real para poder
+      // diagnosticar la causa, ahora que la plantilla ya esta aprobada y
+      // cualquier fallo de aca en adelante es algo especifico, no "falta
+      // aprobarla".
+      logError("alerta-pico-placa", "enviarPlantilla rechazado por Meta", await r.text(), { telefono: to, status: r.status });
+    }
     return r.ok;
   } catch (e) {
     logError("alerta-pico-placa", "enviarPlantilla fallo (excepcion de red/fetch)", e, { telefono: to });
@@ -264,14 +273,14 @@ Deno.serve(async (req: Request) => {
         detalle.push({ telefono: c.telefono, estado: "enviado", digito: c.digito });
       } else if (envio.codigo === FUERA_DE_VENTANA) {
         const plantillaOk = await enviarPlantilla(c.telefono, c.nombre, String(c.digito));
-        await registrarLog(fecha, c.telefono, c.digito, plantillaOk, plantillaOk ? "enviado via plantilla" : "fuera de ventana 24h y sin plantilla aprobada");
+        await registrarLog(fecha, c.telefono, c.digito, plantillaOk, plantillaOk ? "enviado via plantilla" : "fuera de ventana 24h y el envio por plantilla fallo");
         if (plantillaOk) {
           enviados++;
           detalle.push({ telefono: c.telefono, estado: "enviado via plantilla", digito: c.digito });
         } else {
           detalle.push({
             telefono: c.telefono, estado: "no entregado",
-            motivo: `fuera de ventana 24h; crea y aprueba la plantilla "${PLANTILLA_PICO_PLACA}" en Meta Business Manager`,
+            motivo: `fuera de ventana 24h y el envio por la plantilla "${PLANTILLA_PICO_PLACA}" fallo -- ver logs de enviarPlantilla para la causa exacta`,
           });
         }
       } else {
