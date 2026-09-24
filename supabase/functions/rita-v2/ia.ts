@@ -75,7 +75,7 @@ export async function verificarPresupuesto(): Promise<{ ok: boolean; gastoHoy: n
 
 export type Bloque = { type: string; [k: string]: unknown };
 export type Mensaje = { role: string; content: string | Bloque[] };
-type Evidencia = { herramienta: string; input: unknown; resultado: unknown };
+export type Evidencia = { herramienta: string; input: unknown; resultado: unknown };
 
 const PALABRAS_CRITICAS =
   /accidente|herid[oa]|sangr|primeros auxilios|choqu|me ca[ií]|atropell|ambulanc|emergencia|bomberos|polic[ií]a|codigo de transito|comparendo|multa|infracci[oó]n|abogado|demanda|denuncia|responsabilidad civil|pico y placa|restricci[oó]n vehicular/i;
@@ -277,7 +277,10 @@ async function ejecutarConversacion(
 // el mecanismo anterior de "dos borradores, elige el mejor" (comparaba
 // estilo/completitud, no hechos) por una verificacion puntual: ¿la
 // respuesta afirma algo que esa evidencia no respalda?
-type Auditoria = {
+// Exportado para poder probarlo directamente (ver ia.test.ts, TEST 10 de la
+// especificacion de Rita orquestador: "la respuesta de OpenAI contiene un
+// dato falso/no sustentado -- Claude debe detectarlo").
+export type Auditoria = {
   valid: boolean;
   issues: { type: string; description: string }[];
   severity: "none" | "low" | "medium" | "high";
@@ -288,7 +291,7 @@ const MAX_REVISIONES_AUDITOR = 2;
 
 const SIN_PROBLEMAS: Auditoria = { valid: true, issues: [], severity: "none", requires_revision: false };
 
-async function auditarRespuesta(
+export async function auditarRespuesta(
   pregunta: string,
   respuesta: string,
   evidencia: Evidencia[],
