@@ -104,14 +104,16 @@ verify_jwt = false
 [functions.rita-broadcast]
 verify_jwt = false
 
+# Desactivada por seguridad (ver supabase/functions/debug-fetch/index.ts).
 [functions.debug-fetch]
-verify_jwt = false
+verify_jwt = true
 
 [functions.rita-set-profile]
 verify_jwt = false
 
+# Desactivada por seguridad (ver supabase/functions/s3-read/index.ts).
 [functions.s3-read]
-verify_jwt = false
+verify_jwt = true
 
 [functions.check-env]
 verify_jwt = false
