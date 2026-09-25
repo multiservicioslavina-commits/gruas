@@ -153,3 +153,54 @@ test('desactivar un código no borra las facturas que ya lo usaron', async () =>
   const res = await client.post(`/api/work-orders/${otra.id}/invoice-normal`, {});
   assert.notEqual(res.body.document_type_code, '10');
 });
+
+// ── Lo que necesita la factura impresa ────────────────────────────────────
+// La plantilla de impresión (public/js/factura.js) arma el documento con lo
+// que devuelve la API. Si un campo deja de venir, la factura no falla: sale
+// mal -- sin la línea de IVA, o sin el descuento. Eso no lo nota nadie hasta
+// que un cliente reclama, así que se fija aquí.
+
+test('la orden devuelve todo lo que lleva la factura impresa', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await ordenFacturable(client);
+  await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+
+  const [factura] = (await client.get(`/api/work-orders/${order.id}`)).body.invoices;
+
+  for (const campo of ['document_type_code', 'document_type_name', 'doc_number',
+                       'subtotal', 'tax_total', 'total', 'kind', 'issued_at']) {
+    assert.ok(factura[campo] !== undefined, `falta ${campo} en la factura de la orden`);
+  }
+});
+
+test('la venta devuelve todo lo que lleva la factura impresa', async () => {
+  const { client } = await createWorkshop(server.url);
+  const parte = (await client.post('/api/parts',
+    { name: 'Filtro', sale_price: 30000, stock: 5 })).body;
+  const venta = (await client.post('/api/sales',
+    { items: [{ part_id: parte.id, quantity: 1 }] })).body;
+  await client.post(`/api/sales/${venta.id}/invoice-normal`, {});
+
+  const [factura] = (await client.get(`/api/sales/${venta.id}`)).body.invoices;
+
+  for (const campo of ['document_type_code', 'document_type_name', 'doc_number',
+                       'subtotal', 'tax_total', 'total', 'kind', 'issued_at']) {
+    assert.ok(factura[campo] !== undefined, `falta ${campo} en la factura de la venta`);
+  }
+});
+
+test('el descuento de la orden se puede deducir de lo que devuelve la API', async () => {
+  const { client } = await createWorkshop(server.url);
+  const order = await ordenFacturable(client);
+  await client.patch(`/api/work-orders/${order.id}`, { discount: 10000 });
+  await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
+
+  const releida = await client.get(`/api/work-orders/${order.id}`);
+  const [factura] = releida.body.invoices;
+  const bruto = releida.body.services.reduce(
+    (suma, s) => suma + Number(s.total ?? s.quantity * s.unit_price), 0);
+
+  // Es la cuenta exacta que hace la plantilla impresa: la tabla `invoices`
+  // no guarda el descuento aparte, se deduce del subtotal.
+  assert.equal(Math.max(0, Math.round(bruto - Number(factura.subtotal))), 10000);
+});

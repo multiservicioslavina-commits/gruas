@@ -5,6 +5,7 @@ import {
 } from '../ui.js';
 import { onMount, go } from '../app.js';
 import { selectorDeCodigo, textoFactura, conectarDescargaPdf } from '../documentos.js';
+import { imprimirFactura } from '../factura.js';
 
 // ── Listado ──────────────────────────────────────────────────────────
 export async function salesView() {
@@ -155,10 +156,14 @@ export async function saleDetailView(id) {
                   : '—'}</span></div>
               <div class="kv"><span class="k">Número de factura</span>
                 <span class="v">${issued ? `<b>${esc(issued.doc_number)}</b>` : 'Sin facturar'}</span></div>
-              ${issued && issued.kind === 'electronic' ? `
-                <div class="kv"><span class="k">Documento DIAN</span><span class="v">
-                  <button class="btn btn-default btn-sm" data-invoice-pdf="${esc(issued.id)}">
-                    Descargar PDF</button></span></div>` : ''}
+              ${issued ? `
+                <div class="kv"><span class="k">Documento</span><span class="v">
+                  <button class="btn btn-default btn-sm" data-print-invoice="${esc(issued.id)}">
+                    Imprimir factura</button>
+                  ${issued.kind === 'electronic' ? `
+                    <button class="btn btn-default btn-sm" data-invoice-pdf="${esc(issued.id)}">
+                      Descargar PDF</button>` : ''}
+                </span></div>` : ''}
               <div class="kv"><span class="k">Registró</span><span class="v">${esc(sale.created_by_name || '—')}</span></div>
             </div>
           </div>
@@ -258,6 +263,31 @@ export async function saleDetailView(id) {
     });
 
     conectarDescargaPdf();
+
+    // Misma factura que en la orden de trabajo -- el documento es el mismo,
+    // sólo cambia de dónde salen los renglones.
+    document.querySelectorAll('[data-print-invoice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const invoice = sale.invoices.find((i) => i.id === button.dataset.printInvoice);
+        if (!invoice) return;
+        const ok = imprimirFactura({
+          workshop: session.workshop || {},
+          invoice,
+          cliente: {
+            nombre: sale.customer_name_saved || sale.customer_name,
+            telefono: sale.customer_phone
+          },
+          lineas: sale.items.map((i) => ({
+            descripcion: i.description,
+            cantidad: i.quantity,
+            precio: i.unit_price,
+            total: Number(i.quantity) * Number(i.unit_price)
+          })),
+          referencia: `Venta de mostrador #${sale.number}`
+        });
+        if (!ok) toast('El navegador bloqueó la ventana de impresión. Permítela e inténtalo de nuevo.', true);
+      });
+    });
 
     document.getElementById('btn-print-sale')?.addEventListener('click', () => {
       const w = session.workshop || {};

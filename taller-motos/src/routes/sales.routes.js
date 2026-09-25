@@ -27,8 +27,8 @@ export async function loadFullSale(client, workshopId, id) {
   const { rows: items } = await client.query(
     'SELECT * FROM sale_items WHERE sale_id = $1 ORDER BY id', [id]);
   const { rows: invoices } = await client.query(
-    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status, total,
-            external_id, cufe, issued_at, created_at
+    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status,
+            subtotal, tax_total, total, external_id, cufe, issued_at, created_at
      FROM invoices WHERE sale_id = $1 ORDER BY created_at DESC`, [id]);
   return { ...sale, items, invoices: invoices.map(decorateInvoice) };
 }

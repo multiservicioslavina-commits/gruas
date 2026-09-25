@@ -228,8 +228,8 @@ export async function loadFullWorkOrder(client, workshopId, id) {
     `SELECT id, number, status, total, public_token, sent_at, responded_at, valid_until
      FROM quotes WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
   const invoices = await client.query(
-    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status, total,
-            external_id, cufe, issued_at, created_at
+    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status,
+            subtotal, tax_total, total, external_id, cufe, issued_at, created_at
      FROM invoices WHERE work_order_id = $1 ORDER BY created_at DESC`, [id]);
   invoices.rows = invoices.rows.map(decorateInvoice);
   const files = await client.query(

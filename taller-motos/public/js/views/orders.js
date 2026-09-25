@@ -7,6 +7,7 @@ import {
 } from '../ui.js';
 import { onMount, refresh, go } from '../app.js';
 import { selectorDeCodigo, etiquetaFactura, textoFactura, conectarDescargaPdf } from '../documentos.js';
+import { imprimirFactura } from '../factura.js';
 
 const FILTERS = [
   ['open', 'En el taller'], ['received', 'Recibidas'], ['diagnosing', 'En diagnóstico'],
@@ -766,6 +767,43 @@ export async function orderDetailView(id) {
     });
 
     conectarDescargaPdf();
+
+    // La factura impresa. Los renglones salen de la orden, no de la factura:
+    // la tabla `invoices` guarda totales, no líneas. Se filtran igual que al
+    // emitirla -- sólo lo aprobado -- para que el papel y el documento
+    // coincidan.
+    document.querySelectorAll('[data-print-invoice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const invoice = order.invoices.find((i) => i.id === button.dataset.printInvoice);
+        if (!invoice) return;
+        const lineas = [
+          ...order.services.filter((s) => s.approved !== false),
+          ...order.parts.filter((p) => p.approved !== false)
+        ].map((l) => ({
+          descripcion: l.description,
+          cantidad: l.quantity,
+          precio: l.unit_price,
+          total: l.total ?? Number(l.quantity) * Number(l.unit_price)
+        }));
+
+        const ok = imprimirFactura({
+          workshop: session.workshop || {},
+          invoice,
+          cliente: {
+            nombre: order.customer?.name,
+            documento: order.customer?.document_number,
+            direccion: order.customer?.address,
+            telefono: order.customer?.phone,
+            email: order.customer?.email
+          },
+          lineas,
+          referencia: `Orden de trabajo #${order.number}`,
+          moto: [order.motorcycle?.plate, motorcycleName(order.motorcycle)]
+            .filter(Boolean).join(' · ')
+        });
+        if (!ok) toast('El navegador bloqueó la ventana de impresión. Permítela e inténtalo de nuevo.', true);
+      });
+    });
   });
 
   const lineRow = (line, kind) => `
@@ -935,9 +973,13 @@ export async function orderDetailView(id) {
                   <div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
                     ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>
                 </div>
-                ${invoice.kind === 'electronic'
-                  ? `<button class="btn btn-default btn-sm no-print" data-invoice-pdf="${esc(invoice.id)}">
-                       Descargar PDF</button>` : ''}
+                <div class="btn-group no-print">
+                  <button class="btn btn-default btn-sm" data-print-invoice="${esc(invoice.id)}">
+                    Imprimir</button>
+                  ${invoice.kind === 'electronic'
+                    ? `<button class="btn btn-default btn-sm" data-invoice-pdf="${esc(invoice.id)}">
+                         Descargar PDF</button>` : ''}
+                </div>
               </div>`).join('')}
           </div>
         </div>` : ''}
