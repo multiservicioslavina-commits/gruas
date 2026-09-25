@@ -373,10 +373,10 @@ FROM parts p
 JOIN warehouses wh ON wh.workshop_id = p.workshop_id AND wh.is_default
 WHERE NOT EXISTS (SELECT 1 FROM part_stock ps WHERE ps.part_id = p.id AND ps.warehouse_id = wh.id);
 
-ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE purchases ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE sales ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+-- NOTA: las columnas warehouse_id de inventory_movements, purchases,
+-- inventory_adjustments y sales NO se pueden anadir aqui: esas cuatro tablas
+-- se crean mas abajo en este mismo archivo. Estan al final, en el bloque
+-- "Bodega por defecto en los movimientos".
 
 -- Traslado de existencia entre dos sucursales del mismo taller.
 CREATE TABLE IF NOT EXISTS stock_transfers (
@@ -700,6 +700,19 @@ CREATE TABLE IF NOT EXISTS sale_items (
 );
 
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id);
+
+-- ── Bodega por defecto en los movimientos ─────────────────────────────────
+-- Va aqui, y no junto a la creacion de warehouses, porque las cuatro tablas
+-- que se alteran se crean despues de aquella. Como schema.sql se aplica en
+-- una sola sentencia, Postgres lo envuelve en una transaccion: un ALTER sobre
+-- una tabla que todavia no existe no fallaba solo, revertia el archivo entero
+-- y dejaba la base vacia. En una base ya poblada el error no se veia (las
+-- tablas ya existian), asi que solo rompia las instalaciones nuevas -- y con
+-- ellas la suite de tests, que empieza creando la base desde cero.
+ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
 
 -- ── Pagos y facturación ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS payments (
