@@ -968,18 +968,29 @@ export async function orderDetailView(id) {
                 <div class="grow">
                   <div class="t">${etiquetaFactura(invoice)}
                     · ${money(invoice.total)}
-                    <span class="tag ${invoice.kind === 'electronic' ? 'tag-green' : 'tag-grey'}"
-                      style="margin-left:6px">${invoice.kind === 'electronic' ? 'Electrónica DIAN' : 'Venta'}</span></div>
-                  <div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
-                    ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>
+                    <span class="tag ${invoice.status === 'draft' ? 'tag-amber'
+                      : invoice.kind === 'electronic' ? 'tag-green' : 'tag-grey'}"
+                      style="margin-left:6px">${invoice.status === 'draft' ? 'Sin confirmar'
+                        : invoice.kind === 'electronic' ? 'Electrónica DIAN' : 'Venta'}</span></div>
+                  ${invoice.status === 'draft' ? `
+                    <div class="s" style="color:var(--amber)">
+                      ${invoice.external_id
+                        ? `Se creó ante la DIAN (documento ${esc(invoice.external_id)}) pero no se pudo
+                           guardar aquí. No la vuelvas a facturar: sería un documento duplicado.
+                           Contacta a quien te entregó el software con ese número.`
+                        : 'Facturación en curso. Recarga en unos segundos.'}
+                    </div>`
+                    : `<div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
+                        ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>`}
                 </div>
+                ${invoice.status === 'draft' ? '' : `
                 <div class="btn-group no-print">
                   <button class="btn btn-default btn-sm" data-print-invoice="${esc(invoice.id)}">
                     Imprimir</button>
                   ${invoice.kind === 'electronic'
                     ? `<button class="btn btn-default btn-sm" data-invoice-pdf="${esc(invoice.id)}">
                          Descargar PDF</button>` : ''}
-                </div>
+                </div>`}
               </div>`).join('')}
           </div>
         </div>` : ''}

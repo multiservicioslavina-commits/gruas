@@ -69,3 +69,45 @@ export async function pickDocumentType(client, workshopId, code, debeIrALaDian) 
   }
   throw badRequest(`El código de facturación ${code} no existe en este taller. Revísalo en Ajustes → Facturación.`);
 }
+
+// ── Reserva contra la doble factura ante la DIAN ──────────────────────────
+//
+// La llamada a Factus es irreversible: cuando vuelve, el documento ya existe
+// ante la DIAN y deshacerlo requiere una nota crédito. Comprobar "¿ya está
+// facturada?" con una lectura antes de llamar no sirve: dos peticiones
+// simultáneas leen las dos que no hay fila, las dos llaman a Factus, y
+// quedan dos documentos reales.
+//
+// Así que se reserva la fila ANTES de llamar, en estado 'draft'. El índice
+// único parcial (que ahora cubre draft e issued) hace que de dos clics
+// simultáneos sólo uno consiga la reserva; el otro choca aquí, sin haber
+// tocado la DIAN.
+export async function reservarFactura(client, { workshopId, workOrderId, saleId, tipo, number, totales }) {
+  const { rows: [row] } = await client.query(
+    `INSERT INTO invoices (workshop_id, work_order_id, sale_id, number, kind, status,
+                           subtotal, tax_total, total,
+                           document_type_code, document_type_name, prefix)
+     VALUES ($1,$2,$3,$4,'electronic','draft',$5,$6,$7,$8,$9,$10) RETURNING *`,
+    [workshopId, workOrderId || null, saleId || null, number,
+     totales.subtotal, totales.tax_total, totales.total,
+     tipo.code, tipo.name, tipo.prefix]
+  );
+  return row;
+}
+
+// Postgres devuelve 23505 para cualquier índice único, y en esta tabla hay
+// dos con significados muy distintos:
+//
+//   invoices_wo_activa_key / invoices_sale_activa_key
+//       ya hay una factura o una reserva para esta orden o venta
+//       -> "alguien se te adelantó", que es lo que esta función detecta
+//
+//   invoices_type_number_key
+//       el consecutivo de ese tipo de documento ya está usado
+//       -> eso NO es una carrera, es que la numeración quedó descuadrada,
+//          y merece tratarse como el error que es en vez de decirle al
+//          cajero que espere unos segundos
+const INDICES_DE_RESERVA = ['invoices_wo_activa_key', 'invoices_sale_activa_key'];
+
+export const esChoqueDeReserva = (err) =>
+  err?.code === '23505' && INDICES_DE_RESERVA.includes(err?.constraint);

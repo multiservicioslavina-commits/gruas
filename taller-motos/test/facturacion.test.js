@@ -54,7 +54,7 @@ function mockFactusOk(onBill) {
       return { ok: true, status: 200, json: async () => ({ access_token: 'tok', refresh_token: 'r', expires_in: 3600 }) };
     }
     if (url.endsWith('/v2/bills/validate')) {
-      if (onBill) onBill(JSON.parse(options.body));
+      if (onBill) await onBill(JSON.parse(options.body));
       n += 1;
       return { ok: true, status: 200, json: async () => ({
         status: 'OK', data: { number: `SETP99000${n}`, cufe: `cufe-${n}` }
@@ -236,39 +236,104 @@ test('el descuento de la orden se reparte proporcionalmente entre los ítems', a
   assert.equal(cuerpoEnviado.items[0].discount_rate, 25);
 });
 
-test('si la factura ya validada en la DIAN no se puede guardar localmente, el error lo dice claro y no la pierde', async () => {
-  // Simula el peor caso: Factus ya aceptó y numeró el documento (algo real
-  // e irreversible), pero guardarlo en este sistema falla. No debe verse
-  // como un error cualquiera -- si lo fuera, alguien reintentaría
-  // "Facturar" y generaría una SEGUNDA factura electrónica para la misma
-  // orden, que sólo se corrige con una nota crédito en Factus.
-  const { client, workshop } = await createWorkshop(server.url);
+test('si la factura ya validada en la DIAN no se puede guardar localmente, el error lo dice claro', async () => {
+  // El peor caso: Factus ya aceptó y numeró el documento (algo real e
+  // irreversible) pero confirmarlo aquí falla. No debe verse como un error
+  // cualquiera -- si lo fuera, alguien reintentaría "Facturar" y generaría
+  // una SEGUNDA factura electrónica, que sólo se corrige con nota crédito.
+  const { client } = await createWorkshop(server.url);
   const order = await orderConServicio(client);
   await conectarFactus(client);
 
-  // Otra orden del mismo taller, con una factura ya guardada en el número 1
-  // del mismo tipo de documento: fuerza a que la próxima (la de `order`, que
-  // usará ese mismo consecutivo por ser el primero de ese tipo para este
-  // taller) choque de verdad contra el índice único
-  // (workshop_id, document_type_code, number) al intentar guardarse -- un
-  // fallo real de Postgres, no uno simulado.
-  const otraOrden = await orderConServicio(client);
-  await pool.query(
-    `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total,
-                           issued_at, external_id, payload, document_type_code)
-     VALUES ($1, $2, 1, 'issued', 0, 0, 0, NOW(), 'YA-EXISTE', '{}', '1030')`,
-    [workshop.id, otraOrden.id]);
+  // Se borra la reserva justo cuando Factus responde: es exactamente el
+  // hueco entre "el documento ya existe ante la DIAN" y "quedó guardado".
+  mockFactusOk(async () => {
+    await pool.query(
+      `DELETE FROM invoices WHERE work_order_id = $1 AND status = 'draft'`, [order.id]);
+  });
 
-  mockFactusOk();
   const res = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
 
   assert.equal(res.status, 500, JSON.stringify(res.body));
   assert.match(res.body.error, /SÍ se creó ante la DIAN/i);
   assert.match(res.body.error, /no la vuelvas a generar/i);
+});
 
-  // Y de verdad no quedó guardada: no hay que fingir que sí.
+test('la reserva se toma ANTES de llamar a Factus', async () => {
+  // Es el orden lo que evita el duplicado: si la fila se creara después, dos
+  // peticiones simultáneas llamarían las dos a la DIAN antes de que ninguna
+  // hubiera dejado rastro.
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  let habiaReserva = null;
+  mockFactusOk(async () => {
+    const { rows } = await pool.query(
+      `SELECT status FROM invoices WHERE work_order_id = $1`, [order.id]);
+    habiaReserva = rows.map((r) => r.status);
+  });
+
+  const res = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.deepEqual(habiaReserva, ['draft'],
+    'cuando Factus responde ya tiene que existir la reserva en borrador');
+});
+
+test('dos "Facturar" a la vez crean UN solo documento ante la DIAN', async () => {
+  // El fallo que esto cierra: `assertSinFacturar` era una lectura, así que
+  // dos clics simultáneos pasaban los dos (todavía no había fila), los dos
+  // llamaban a Factus, y quedaban DOS facturas reales ante la DIAN. Sólo la
+  // segunda fallaba al guardarse -- el documento duplicado ya existía.
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  let llamadasAFactus = 0;
+  mockFactusOk(() => { llamadasAFactus += 1; });
+
+  const [a, b] = await Promise.all([
+    client.post(`/api/work-orders/${order.id}/invoice`, datosDian),
+    client.post(`/api/work-orders/${order.id}/invoice`, datosDian)
+  ]);
+
+  const estados = [a.status, b.status].sort();
+  assert.deepEqual(estados, [201, 409], `${a.status}/${b.status}: ${JSON.stringify([a.body, b.body])}`);
+
+  // Lo que de verdad importa: la DIAN recibió una sola petición.
+  assert.equal(llamadasAFactus, 1, 'Factus no puede haberse llamado dos veces');
+
   const releida = await client.get(`/api/work-orders/${order.id}`);
-  assert.equal(releida.body.invoices.length, 0);
+  assert.equal(releida.body.invoices.length, 1);
+  assert.equal(releida.body.invoices[0].status, 'issued');
+});
+
+test('si Factus rechaza, la reserva se suelta y se puede volver a intentar', async () => {
+  // La reserva no puede dejar la orden bloqueada para siempre por un intento
+  // que no llegó a crear ningún documento.
+  const { client } = await createWorkshop(server.url);
+  const order = await orderConServicio(client);
+  await conectarFactus(client);
+
+  withFactusMock(async (url) => {
+    if (url.endsWith('/oauth/token')) {
+      return { ok: true, status: 200, json: async () => ({ access_token: 'tok', refresh_token: 'r', expires_in: 3600 }) };
+    }
+    return { ok: false, status: 422, text: async () => '{"message":"municipio invalido"}',
+             json: async () => ({ message: 'municipio invalido' }) };
+  });
+
+  const fallido = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.ok(fallido.status >= 400, JSON.stringify(fallido.body));
+
+  const { rows } = await pool.query(
+    `SELECT status FROM invoices WHERE work_order_id = $1`, [order.id]);
+  assert.equal(rows.length, 0, 'la reserva tiene que haberse soltado');
+
+  // Y ahora sí se puede facturar.
+  mockFactusOk();
+  const segundo = await client.post(`/api/work-orders/${order.id}/invoice`, datosDian);
+  assert.equal(segundo.status, 201, JSON.stringify(segundo.body));
 });
 
 test('factura de venta normal: no necesita Factus ni datos de la DIAN', async () => {

@@ -838,6 +838,29 @@ DROP INDEX IF EXISTS invoices_number_key;
 CREATE UNIQUE INDEX IF NOT EXISTS invoices_type_number_key
   ON invoices (workshop_id, document_type_code, number);
 
+-- ── Reserva contra la doble factura ante la DIAN ──────────────────────────
+-- Los indices de arriba impiden dos filas EMITIDAS, y su comentario decia
+-- proteger del doble clic. Protegen la fila local, no el documento: en la
+-- factura electronica la llamada irreversible a Factus ocurre ANTES del
+-- insert, asi que dos peticiones simultaneas pasaban ambas la comprobacion
+-- (todavia no habia fila), ambas creaban una factura real ante la DIAN, y
+-- solo la segunda fallaba al guardar. Un duplicado asi solo se corrige con
+-- una nota credito.
+--
+-- La solucion es reservar la fila ANTES de llamar a Factus, en estado
+-- 'draft'. Para que la reserva bloquee de verdad, los indices unicos tienen
+-- que cubrirla: pasan de "solo issued" a "draft o issued".
+--
+-- 'draft' ya estaba permitido por el CHECK de la columna y hasta ahora no lo
+-- usaba nadie (todas las filas se insertaban como 'issued'), asi que el
+-- cambio no reinterpreta ningun dato existente.
+DROP INDEX IF EXISTS invoices_wo_issued_key;
+DROP INDEX IF EXISTS invoices_sale_issued_key;
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_wo_activa_key
+  ON invoices (work_order_id) WHERE status IN ('draft', 'issued');
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_sale_activa_key
+  ON invoices (sale_id) WHERE status IN ('draft', 'issued');
+
 -- ── Adjuntos, notificaciones y reglas de mantenimiento ────────────────────
 CREATE TABLE IF NOT EXISTS attachments (
   id           UUID PRIMARY KEY DEFAULT gen_random_uuid(),

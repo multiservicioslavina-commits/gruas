@@ -127,16 +127,36 @@ export async function saleDetailView(id) {
     if (!target) return;
 
     const issued = sale.invoices.find((i) => i.status === 'issued');
+    // Una reserva sin confirmar significa que hay una facturación en curso, o
+    // una que llegó a la DIAN y no se pudo guardar. En los dos casos hay que
+    // decirlo y esconder los botones de facturar: volver a intentarlo es lo
+    // peor que se puede hacer.
+    const sinConfirmar = sale.invoices.find((i) => i.status === 'draft');
 
     target.innerHTML = `
+      ${sinConfirmar ? `
+      <div class="card" style="margin-bottom:18px;border-color:var(--amber)">
+        <div class="card-body">
+          <p class="small" style="color:var(--amber);margin:0">
+            ${sinConfirmar.external_id
+              ? `Esta venta tiene una factura creada ante la DIAN (documento
+                 ${esc(sinConfirmar.external_id)}) que no se pudo guardar aquí.
+                 <b>No la vuelvas a facturar</b>: sería un documento duplicado, y eso
+                 sólo se corrige con una nota crédito. Contacta a quien te entregó el
+                 software con ese número.`
+              : 'Se está facturando en este momento. Recarga en unos segundos.'}
+          </p>
+        </div>
+      </div>` : ''}
+
       <div class="card" style="margin-bottom:18px">
         <div class="card-head">
           <h2>Datos de la venta</h2>
           <div style="display:flex;gap:8px">
             <button class="btn btn-default btn-sm" id="btn-print-sale" type="button">Imprimir</button>
-            ${!issued && session.can('cashier')
+            ${!issued && !sinConfirmar && session.can('cashier')
               ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Factura de venta</button>` : ''}
-            ${!issued && session.can('cashier') && session.hasPlan('premium')
+            ${!issued && !sinConfirmar && session.can('cashier') && session.hasPlan('premium')
               ? `<button class="btn btn-default btn-sm" id="btn-facturar-dian">Facturar electrónicamente</button>` : ''}
           </div>
         </div>
