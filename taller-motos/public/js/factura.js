@@ -9,7 +9,36 @@
 // Esto es esa factura, y sirve para los dos orígenes -- orden de trabajo y
 // venta de mostrador -- porque el documento es el mismo: lo único que
 // cambia son los renglones.
+//
+// Dos formatos, mismo documento: hoja carta y tirilla térmica. Cuál se usa
+// lo decide el EQUIPO, no el taller: un taller puede tener una láser en la
+// oficina y una térmica en el mostrador, y lo que manda es dónde está
+// parado quien pulsa "Imprimir". Por eso vive en localStorage y no en la
+// ficha del taller.
 import { esc } from './ui.js';
+
+const CLAVE_FORMATO = 'ridera.impresora';
+export const FORMATOS = {
+  carta: 'Hoja carta',
+  '80':  'Tirilla 80 mm',
+  '58':  'Tirilla 58 mm'
+};
+
+// localStorage puede lanzar (modo privado, cookies bloqueadas) o venir con
+// basura de una versión anterior. Ante cualquier duda, hoja carta: es el
+// formato que funciona en cualquier impresora.
+export function formatoImpresora() {
+  try {
+    const guardado = localStorage.getItem(CLAVE_FORMATO);
+    return FORMATOS[guardado] ? guardado : 'carta';
+  } catch { return 'carta'; }
+}
+
+export function guardarFormatoImpresora(valor) {
+  try {
+    if (FORMATOS[valor]) localStorage.setItem(CLAVE_FORMATO, valor);
+  } catch { /* sin almacenamiento: se queda en carta y ya */ }
+}
 
 function dinero(monto, moneda) {
   return Number(monto || 0).toLocaleString('es-CO', {
@@ -36,7 +65,7 @@ function renglones(lineas, moneda) {
     </tr>`).join('');
 }
 
-export function imprimirFactura({ workshop, invoice, cliente, lineas, referencia, moto }) {
+function facturaCartaHtml({ workshop, invoice, cliente, lineas, referencia, moto }) {
   const moneda = workshop.currency;
   const electronica = invoice.kind === 'electronic';
 
@@ -162,6 +191,125 @@ ${!electronica ? `
 
 <script>window.print()<\/script>
 </body></html>`;
+
+  return html;
+}
+
+// ── Tirilla térmica ───────────────────────────────────────────────────────
+//
+// Mismo documento, otra hoja. Aquí no caben columnas: en 58 mm entran unos
+// 32 caracteres. Cada renglón va en dos líneas -- descripción arriba,
+// "cantidad × precio" y total abajo -- en vez de apretar cuatro columnas
+// hasta que no se lea nada.
+//
+// Sin logo: en una térmica de 203 ppp una imagen sale sucia y lenta, y el
+// nombre en negrita cumple la misma función.
+function facturaTirillaHtml({ workshop, invoice, cliente, lineas, referencia, moto }, mm) {
+  const moneda = workshop.currency;
+  const electronica = invoice.kind === 'electronic';
+  const bruto = lineas.reduce((suma, l) => suma + Number(l.total), 0);
+  const descuento = Math.max(0, Math.round(bruto - Number(invoice.subtotal)));
+
+  // Ancho imprimible real: el papel siempre trae unos milímetros muertos a
+  // cada lado. 72 de 80, y 48 de 58, son los valores que usan las térmicas
+  // habituales.
+  const ancho = mm === '58' ? 48 : 72;
+  const cuerpo = mm === '58' ? 10 : 11.5;
+
+  const fila = (etiqueta, valor, fuerte) => `
+    <div class="fila${fuerte ? ' fuerte' : ''}"><span>${esc(etiqueta)}</span><span>${valor}</span></div>`;
+
+  const html = `<!doctype html><html lang="es"><head><meta charset="utf-8">
+<title>${esc(invoice.document_type_name || 'Factura')} ${esc(invoice.doc_number || '')}</title>
+<style>
+  @page { size: ${ancho}mm auto; margin: 0 }
+  *{box-sizing:border-box}
+  body{width:${ancho}mm;margin:0;padding:3mm 2mm;
+       font-family:"Courier New",ui-monospace,monospace;
+       font-size:${cuerpo}px;line-height:1.35;color:#000;-webkit-font-smoothing:none}
+  .centro{text-align:center}
+  .nombre{font-weight:700;font-size:${cuerpo + 2}px;text-transform:uppercase}
+  .sep{border-top:1px dashed #000;margin:5px 0}
+  .fila{display:flex;justify-content:space-between;gap:6px}
+  .fila span:last-child{white-space:nowrap}
+  .fuerte{font-weight:700;font-size:${cuerpo + 2}px}
+  .item{margin-bottom:3px}
+  .item .desc{word-break:break-word}
+  .chico{font-size:${cuerpo - 1}px}
+  .cufe{word-break:break-all}
+  /* Un margen final: muchas térmicas cortan justo donde termina el papel y
+     se comen la última línea. */
+  .cola{height:12mm}
+</style></head><body>
+
+<div class="centro">
+  <div class="nombre">${esc(workshop.legal_name || workshop.name || '')}</div>
+  ${workshop.tax_id ? `<div class="chico">NIT ${esc(workshop.tax_id)}</div>` : ''}
+  ${workshop.address ? `<div class="chico">${esc(workshop.address)}</div>` : ''}
+  <div class="chico">${[workshop.city, workshop.phone].filter(Boolean).map(esc).join(' · ')}</div>
+</div>
+
+<div class="sep"></div>
+
+<div class="centro nombre" style="font-size:${cuerpo + 1}px">
+  ${esc(invoice.document_type_name || 'Factura de venta')}</div>
+${fila('Código', esc(invoice.document_type_code || '—'))}
+${fila('Número', `<b>${esc(invoice.doc_number || '')}</b>`)}
+${fila('Fecha', esc(fechaLarga(invoice.issued_at || invoice.created_at)))}
+
+<div class="sep"></div>
+
+<div class="chico">
+  <div><b>Cliente:</b> ${esc(cliente?.nombre || 'Consumidor final')}</div>
+  ${cliente?.documento ? `<div>${esc(cliente.documento)}</div>` : ''}
+  ${cliente?.telefono ? `<div>${esc(cliente.telefono)}</div>` : ''}
+  ${referencia ? `<div>${esc(referencia)}</div>` : ''}
+  ${moto ? `<div>${esc(moto)}</div>` : ''}
+</div>
+
+<div class="sep"></div>
+
+${lineas.map((l) => `
+  <div class="item">
+    <div class="desc">${esc(l.descripcion)}</div>
+    <div class="fila chico">
+      <span>${Number(l.cantidad)} × ${dinero(l.precio, moneda)}</span>
+      <span>${dinero(l.total, moneda)}</span>
+    </div>
+  </div>`).join('')}
+
+<div class="sep"></div>
+
+${fila('Subtotal', dinero(bruto, moneda))}
+${descuento ? fila('Descuento', `− ${dinero(descuento, moneda)}`) : ''}
+${Number(invoice.tax_total) ? fila('IVA', dinero(invoice.tax_total, moneda)) : ''}
+<div class="sep"></div>
+${fila('TOTAL', dinero(invoice.total, moneda), true)}
+
+${electronica && invoice.cufe ? `
+<div class="sep"></div>
+<div class="chico cufe"><b>CUFE</b><br>${esc(invoice.cufe)}</div>
+<div class="chico centro" style="margin-top:4px">Documento validado por la DIAN</div>` : ''}
+
+${!electronica ? `
+<div class="sep"></div>
+<div class="chico centro">No constituye factura electrónica<br>de venta ante la DIAN.</div>` : ''}
+
+<div class="cola"></div>
+<script>window.print()<\/script>
+</body></html>`;
+
+  return html;
+}
+
+// Abre la ventana de impresión con el formato que tenga configurado este
+// equipo. `forzar` deja pedir uno concreto sin tocar la preferencia, para
+// el botón de prueba de Ajustes.
+export function imprimirFactura(datos, forzar) {
+  const formato = forzar || formatoImpresora();
+  const html = formato === 'carta'
+    ? facturaCartaHtml(datos)
+    : facturaTirillaHtml(datos, formato);
 
   const ventana = window.open('', '_blank');
   // Un bloqueador de ventanas emergentes devuelve null. Decirlo vale más que
