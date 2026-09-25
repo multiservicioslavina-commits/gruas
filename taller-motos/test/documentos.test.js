@@ -4,6 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { startServer, createWorkshop, addUser, closePool } from './helpers.js';
+import { pool } from '../src/db.js';
 
 const server = await startServer();
 test.after(async () => { await server.close(); await closePool(); });
@@ -203,4 +204,50 @@ test('el descuento de la orden se puede deducir de lo que devuelve la API', asyn
   // Es la cuenta exacta que hace la plantilla impresa: la tabla `invoices`
   // no guarda el descuento aparte, se deduce del subtotal.
   assert.equal(Math.max(0, Math.round(bruto - Number(factura.subtotal))), 10000);
+});
+
+// ── El camino de actualización ────────────────────────────────────────────
+// Los tests de arriba corren sobre una base limpia. Producción no: ya tiene
+// facturas numeradas con el consecutivo único de antes. Si las secuencias por
+// tipo arrancaran en 1, la PRIMERA factura emitida tras actualizar pediría un
+// número ya usado y chocaría contra invoices_type_number_key.
+//
+// Esto fija la sentencia de siembra del esquema (db/schema.sql). No se ve en
+// una base limpia, que es justo por lo que casi se va sin arreglar.
+test('al actualizar, cada consecutivo arranca donde quedó la numeración vieja', async () => {
+  const { client } = await createWorkshop(server.url);
+  const workshopId = (await client.get('/api/workshop')).body.id;
+
+  // Tres facturas ya emitidas, como las que hay hoy en producción.
+  for (const [n, code] of [[1, '10'], [2, '1030'], [3, '10']]) {
+    const order = await ordenFacturable(client);
+    await pool.query(
+      `INSERT INTO invoices (workshop_id, work_order_id, number, kind, status,
+                             subtotal, tax_total, total, issued_at, document_type_code)
+       VALUES ($1,$2,$3,$4,'issued',0,0,0,NOW(),$5)`,
+      [workshopId, order.id, n, code === '1030' ? 'electronic' : 'normal', code]);
+  }
+  // Y las secuencias por tipo sin sembrar, como quedarían sin la migración.
+  await pool.query(
+    `DELETE FROM sequences WHERE workshop_id = $1 AND name LIKE 'invoices:%'`, [workshopId]);
+
+  // La sentencia de siembra, tal cual está en db/schema.sql.
+  await pool.query(
+    `INSERT INTO sequences (workshop_id, name, value)
+     SELECT workshop_id, 'invoices:' || document_type_code, MAX(number)
+       FROM invoices WHERE document_type_code IS NOT NULL
+      GROUP BY workshop_id, document_type_code
+     ON CONFLICT (workshop_id, name) DO UPDATE
+        SET value = GREATEST(sequences.value, EXCLUDED.value)`);
+
+  const { rows } = await pool.query(
+    `SELECT name, value FROM sequences WHERE workshop_id = $1 AND name LIKE 'invoices:%' ORDER BY name`,
+    [workshopId]);
+  assert.deepEqual(rows, [{ name: 'invoices:10', value: 3 }, { name: 'invoices:1030', value: 2 }]);
+
+  // Y la siguiente factura de verdad no choca.
+  const otra = await ordenFacturable(client);
+  const res = await client.post(`/api/work-orders/${otra.id}/invoice-normal`, {});
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(res.body.number, 4);
 });

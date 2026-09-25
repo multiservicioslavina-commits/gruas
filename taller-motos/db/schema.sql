@@ -829,6 +829,21 @@ UPDATE invoices SET document_type_name = CASE WHEN kind = 'electronic'
          THEN 'Factura electronica de venta' ELSE 'Factura de venta' END
  WHERE document_type_name IS NULL;
 
+-- Las secuencias por tipo tienen que arrancar donde quedo la numeracion que
+-- ya existe. Sin esto, la PRIMERA factura emitida despues de actualizar pide
+-- el numero 1 -- que en cualquier taller con facturas ya esta usado -- y
+-- choca contra el indice unico de mas abajo. No se ve en una base limpia:
+-- solo al actualizar una que ya tiene datos, que es justo produccion.
+INSERT INTO sequences (workshop_id, name, value)
+SELECT workshop_id, 'invoices:' || document_type_code, MAX(number)
+  FROM invoices
+ WHERE document_type_code IS NOT NULL
+ GROUP BY workshop_id, document_type_code
+ON CONFLICT (workshop_id, name) DO UPDATE
+   -- GREATEST y no EXCLUDED a secas: volver a aplicar el esquema nunca puede
+   -- hacer RETROCEDER un consecutivo, que reemitiria numeros ya usados.
+   SET value = GREATEST(sequences.value, EXCLUDED.value);
+
 -- El consecutivo pasa a ser por tipo de documento, no uno solo para todo el
 -- taller. El indice viejo (invoices_number_key, unico por workshop+number)
 -- lo impedia: dos documentos de tipos distintos pueden -- y deben -- empezar
