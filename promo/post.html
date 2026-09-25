@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ridera — Post registro de talleres</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .pieza{width:1080px;height:1080px}
+
+  .contenido{
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;
+    padding:62px 64px 0;
+    position:relative;z-index:2;
+  }
+
+  /* resplandor naranja de fondo */
+  .pieza::before{
+    content:'';position:absolute;z-index:1;
+    width:900px;height:900px;right:-340px;top:-320px;
+    background:radial-gradient(circle,rgba(232,93,32,.26) 0%,rgba(232,93,32,0) 68%);
+  }
+
+  .cabecera{display:flex;align-items:center;justify-content:space-between}
+
+  .marca{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:900;font-size:34px;letter-spacing:.14em;text-transform:uppercase;
+  }
+  .marca span{color:var(--orange)}
+
+  .eyebrow{--eyebrow:16px;--eyebrow-rule:28px}
+
+  .titular{font-size:124px;margin:40px 0 22px}
+
+  .bajada{font-size:27px;max-width:830px;margin-bottom:46px}
+  .bajada b{color:#fff;font-weight:700}
+
+  .tarjetas{flex:1;min-height:0;display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+
+  .tarjeta{
+    background:var(--carbon2);
+    border:1px solid var(--border);
+    border-top:4px solid var(--orange);
+    border-radius:14px;
+    padding:30px 26px 32px;
+    display:flex;flex-direction:column;
+  }
+  .num{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:900;font-size:30px;color:var(--orange);
+    letter-spacing:.06em;line-height:1;margin-bottom:22px;
+  }
+  .tarjeta h3{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:800;font-size:34px;text-transform:uppercase;
+    letter-spacing:.01em;line-height:1;margin-bottom:14px;
+  }
+  .tarjeta p{font-size:21px;line-height:1.45;color:var(--text-muted);margin-top:auto}
+
+  .nota{font-size:21px;padding:30px 0 28px;flex:none}
+
+  .franja{height:112px;font-size:44px;flex:none}
+</style>
+</head>
+<body>
+<div class="pieza">
+  <div class="contenido">
+    <div class="cabecera">
+      <div class="marca">RIDER<span>A</span></div>
+      <div class="eyebrow">Talleres de motos</div>
+    </div>
+
+    <h1 class="titular">Deja el cuaderno.<br><em>Ordena tu taller.</em></h1>
+
+    <p class="bajada">Registra tu taller y recibe el <b>software de administración</b> de Ridera.</p>
+
+    <div class="tarjetas">
+      <div class="tarjeta">
+        <div class="num">01</div>
+        <h3>Órdenes de trabajo</h3>
+        <p>Controla cada moto que entra y quién la está atendiendo.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="num">02</div>
+        <h3>Cotizaciones</h3>
+        <p>El cliente aprueba desde su celular antes de que trabajes.</p>
+      </div>
+      <div class="tarjeta">
+        <div class="num">03</div>
+        <h3>Inventario</h3>
+        <p>Repuestos, pagos e historial siempre al día.</p>
+      </div>
+    </div>
+
+    <p class="nota">Sin instalar nada · Computador, tablet y celular</p>
+  </div>
+
+  <div class="franja">taller.ridera.com.co</div>
+</div>
+</body>
+</html>
