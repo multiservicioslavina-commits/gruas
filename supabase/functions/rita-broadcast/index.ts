@@ -251,8 +251,15 @@ async function doCommunityMatch() {
 Deno.serve(async (req: Request) => {
   const url    = new URL(req.url);
   const secret = url.searchParams.get("secret") || req.headers.get("x-broadcast-secret");
-  const expectedSecret = Deno.env.get("BROADCAST_SECRET");
-  if (expectedSecret && secret !== expectedSecret) {
+  // Acepta BROADCAST_SECRET si esta configurada; si no, el secreto de cron, que
+  // es el que manda el job rita-broadcast-daily desde el Vault.
+  //
+  // Antes esto era `if (expectedSecret && ...)`: sin BROADCAST_SECRET configurada
+  // —que es como estuvo siempre— la condicion era falsa y la funcion atendia a
+  // cualquiera SIN autenticacion. Es la que hace envio masivo por WhatsApp.
+  // Ahora falla cerrado: sin ninguno de los dos secretos no atiende nada.
+  const expectedSecret = Deno.env.get("BROADCAST_SECRET") ?? Deno.env.get("CRON_SECRET") ?? "";
+  if (!expectedSecret || secret !== expectedSecret) {
     return new Response("Unauthorized", { status: 401 });
   }
 

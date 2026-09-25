@@ -10,7 +10,7 @@ const TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKE
 const PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "1162210376978137";
 const WABA_ID = Deno.env.get("WHATSAPP_WABA_ID") ?? "1406061330395268";
 const GRAPH = "https://graph.facebook.com/v21.0";
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "rid3ra_cron_2026";
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const SUPA_URL = Deno.env.get("SUPABASE_URL")!;
 
 function normalizePhone(raw: string): string {
@@ -143,7 +143,7 @@ async function reNotificarGrueros(solicitud: any) {
 Deno.serve(async (req: Request) => {
   try {
     const secret = req.headers.get("x-ridera-cron") ?? new URL(req.url).searchParams.get("secret") ?? "";
-    if (secret !== CRON_SECRET) return new Response("no autorizado", { status: 401 });
+    if (!CRON_SECRET || secret !== CRON_SECRET) return new Response("no autorizado", { status: 401 });
 
     const url = new URL(req.url);
     const minAceptar  = parseInt(url.searchParams.get("min_aceptar")  ?? "4",  10);

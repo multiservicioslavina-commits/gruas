@@ -8,7 +8,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const TOKEN = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
 const PHONE_ID = Deno.env.get("WHATSAPP_PHONE_ID") ?? "1162210376978137";
 const GRAPH = "https://graph.facebook.com/v21.0";
-const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "rid3ra_cron_2026";
+const CRON_SECRET = Deno.env.get("CRON_SECRET") ?? "";
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") ?? "";
 const RESEND_FROM = Deno.env.get("RESEND_FROM") ?? "Ridera <onboarding@resend.dev>";
 const DIAS_AVISO = 15;          // avisar cuando falten 15 días o menos
@@ -75,7 +75,7 @@ async function enviarEmail(to: string, cliente: string, placa: string, tipo: str
 Deno.serve(async (req: Request) => {
   try {
     const secret = req.headers.get("x-ridera-cron") ?? new URL(req.url).searchParams.get("secret") ?? "";
-    if (secret !== CRON_SECRET) return new Response("no autorizado", { status: 401 });
+    if (!CRON_SECRET || secret !== CRON_SECRET) return new Response("no autorizado", { status: 401 });
 
     const supabase = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
     const hoy = isoDays(0);
