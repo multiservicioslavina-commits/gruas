@@ -19,8 +19,25 @@ const registerLimiter = rateLimit({ windowMs: 60 * 60_000, max: 5,
 // comparten motor por dentro: una cuenta de taller no debe poder entrar ni
 // registrarse en el dominio de almacén, y viceversa. El dominio por el que
 // entra decide el tipo -- no un selector que alguien pueda marcar mal.
+// Devuelve 'almacen', 'taller', o null si el host no identifica ninguna de
+// las dos plataformas.
+//
+// El null importa: antes esta funcion devolvia 'taller' para CUALQUIER host
+// que no empezara por "almacen.", y eso rompia dos casos reales:
+//
+//   - www.almacen.ridera.com.co, la URL de Railway, un preview de PR o
+//     localhost -> un duenio de almacen con un codigo de almacen recibia
+//     "este codigo es de almacen" y no podia registrarse.
+//   - el mismo caso con un codigo emitido SIN tipo (que sirve para las dos
+//     plataformas) -> se le creaba un TALLER en silencio, sin un solo aviso.
+//     Producto equivocado y sin vuelta atras salvo borrar la cuenta.
+//
+// Reconoce el subdominio en cualquier posicion (almacen.x, www.almacen.x).
 function businessTypeForHost(req) {
-  return req.hostname?.startsWith('almacen.') ? 'almacen' : 'taller';
+  const host = String(req.hostname || '').toLowerCase();
+  if (/(^|\.)almacen\./.test(host)) return 'almacen';
+  if (/(^|\.)taller\./.test(host))  return 'taller';
+  return null;
 }
 
 authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
@@ -39,7 +56,13 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
   });
   // El dominio decide, no lo que mande el cliente: así no hay forma de que
   // un registro por almacen.ridera.com.co cree un taller, ni al revés.
-  data.business_type = businessTypeForHost(req);
+  //
+  // Si el host no identifica plataforma (Railway, preview, localhost), se
+  // resuelve más abajo con el tipo que traiga el código de activación —que
+  // también es dato del servidor, no del cliente, así que la garantía se
+  // mantiene—. Sólo si tampoco lo trae se queda en 'taller'.
+  const tipoPorDominio = businessTypeForHost(req);
+  data.business_type = tipoPorDominio ?? 'taller';
 
   // Código de activación: sin él no se abre un taller nuevo en esta
   // instalación. Se comprueba antes de tocar nada.
@@ -66,8 +89,12 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
       }
       // Un código puede quedar amarrado a taller o almacén al emitirlo; si
       // lo está, tiene que coincidir con el dominio por el que entraron.
-      if (codigoCorto.business_type && codigoCorto.business_type !== data.business_type) {
-        throw badRequest(MOTIVOS[`tipo_${codigoCorto.business_type}`]);
+      if (codigoCorto.business_type) {
+        if (tipoPorDominio === null) {
+          data.business_type = codigoCorto.business_type;   // el host no decide; el código sí
+        } else if (codigoCorto.business_type !== tipoPorDominio) {
+          throw badRequest(MOTIVOS[`tipo_${codigoCorto.business_type}`]);
+        }
       }
       licencia = {
         t: codigoCorto.holder,
@@ -79,8 +106,12 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
       if (!revision.valido) throw badRequest(MOTIVOS[revision.motivo] || MOTIVOS.firma);
       licencia = revision.datos;
 
-      if (licencia.bt && licencia.bt !== data.business_type) {
-        throw badRequest(MOTIVOS[`tipo_${licencia.bt}`]);
+      if (licencia.bt) {
+        if (tipoPorDominio === null) {
+          data.business_type = licencia.bt;                 // el host no decide; el código sí
+        } else if (licencia.bt !== tipoPorDominio) {
+          throw badRequest(MOTIVOS[`tipo_${licencia.bt}`]);
+        }
       }
 
       const yaUsado = await queryOne('SELECT id FROM workshops WHERE license_id = $1', [licencia.id]);
@@ -183,7 +214,14 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
   if (!user.active) throw unauthorized('Tu usuario está desactivado. Habla con el administrador del taller.');
   // Almacén y taller son dominios aparte: una cuenta de taller no entra por
   // el dominio de almacén, ni al revés, aunque la contraseña sea correcta.
-  if (user.business_type !== businessTypeForHost(req)) {
+  //
+  // Sólo se exige cuando el host identifica una plataforma. Si no la
+  // identifica (URL de Railway, preview de un PR, localhost), no hay nada
+  // que separar y la cuenta entra con el tipo que tenga: antes ese caso
+  // resolvía a 'taller' por defecto, así que NINGÚN usuario de almacén podía
+  // iniciar sesión fuera de almacen.ridera.com.co -- ni siquiera para probar.
+  const tipoPorDominio = businessTypeForHost(req);
+  if (tipoPorDominio !== null && user.business_type !== tipoPorDominio) {
     throw unauthorized(user.business_type === 'almacen'
       ? 'Esta cuenta es de un almacén de repuestos. Entra por almacen.ridera.com.co'
       : 'Esta cuenta es de un taller. Entra por el dominio de tu taller.');

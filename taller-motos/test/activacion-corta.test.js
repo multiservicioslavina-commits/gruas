@@ -312,7 +312,8 @@ test('emitir con un tipo desconocido se rechaza', async () => {
 
 test('un código amarrado a almacén no registra un taller', async () => {
   const codigo = await emitir({ tipo: 'almacen' });
-  const res = await pedir('POST', '/api/auth/register', datosTaller({ license_code: codigo.body.code }));
+  const res = await pedirEnHost('taller.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: codigo.body.code }));
   assert.equal(res.status, 400);
   assert.match(res.body.error, /almacén/i);
 });
@@ -346,7 +347,8 @@ test('un código sin tipo (--tipo omitido) sirve para cualquiera de las dos plat
 
 test('un código largo (TM1....) amarrado a almacén tampoco activa un taller', async () => {
   const codigoLargo = emitirCodigoLargo({ privateKeyPem: PRIV, tipo: 'almacen' }).codigo;
-  const res = await pedir('POST', '/api/auth/register', datosTaller({ license_code: codigoLargo }));
+  const res = await pedirEnHost('taller.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: codigoLargo }));
   assert.equal(res.status, 400);
   assert.match(res.body.error, /almacén/i);
 });
@@ -359,4 +361,47 @@ test('un código amarrado a almacén tampoco sirve para cambiar de plan en un ta
   const res = await pedir('POST', '/api/workshop/license', { license_code: paraAlmacen.body.code }, alta.body.token);
   assert.equal(res.status, 400);
   assert.match(res.body.error, /almacén/i);
+});
+
+// ── El host que no identifica plataforma ──────────────────────────────────
+// businessTypeForHost devolvía 'taller' para CUALQUIER host que no empezara
+// por "almacen.". Eso rompía a los almacenes que entraran por la URL de
+// Railway, un preview, localhost o www.almacen.ridera.com.co: con un código
+// de almacén se les rechazaba, y con un código sin tipo se les creaba un
+// taller en silencio.
+
+test('www.almacen.… se reconoce como almacén, no como taller', async () => {
+  const emitido = await emitir({ taller: 'Repuestos WWW', tipo: 'almacen' });
+  const res = await pedirEnHost('www.almacen.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: emitido.body.code }));
+
+  assert.equal(res.status, 201);
+  assert.equal(res.body.workshop.business_type, 'almacen');
+});
+
+test('en un host sin plataforma, un código de almacén crea un almacén', async () => {
+  const emitido = await emitir({ taller: 'Repuestos Railway', tipo: 'almacen' });
+  const res = await pedirEnHost('taller-motos-production.up.railway.app', 'POST',
+    '/api/auth/register', datosTaller({ license_code: emitido.body.code }));
+
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(res.body.workshop.business_type, 'almacen');
+});
+
+test('en un host sin plataforma, un código de taller sigue creando un taller', async () => {
+  const emitido = await emitir({ taller: 'Motos Railway', tipo: 'taller' });
+  const res = await pedirEnHost('taller-motos-production.up.railway.app', 'POST',
+    '/api/auth/register', datosTaller({ license_code: emitido.body.code }));
+
+  assert.equal(res.status, 201, JSON.stringify(res.body));
+  assert.equal(res.body.workshop.business_type, 'taller');
+});
+
+test('el dominio sigue mandando sobre el código cuando el host sí es una plataforma', async () => {
+  const emitido = await emitir({ taller: 'Repuestos del Sur', tipo: 'almacen' });
+  const res = await pedirEnHost('taller.ridera.com.co', 'POST', '/api/auth/register',
+    datosTaller({ license_code: emitido.body.code }));
+
+  assert.equal(res.status, 400);
+  assert.match(res.body.error, /almac[eé]n/i);
 });

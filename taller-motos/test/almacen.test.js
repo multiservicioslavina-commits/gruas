@@ -52,8 +52,22 @@ test('una cuenta de taller no puede iniciar sesión por el dominio de almacén',
 
 test('una cuenta de almacén no puede iniciar sesión por el dominio de taller', async () => {
   const { email, password } = await createWorkshop(server.url, { business_type: 'almacen' });
-  const res = await makeClient(server.url).post('/api/auth/login', { email, password });
+  // Con el Host puesto de verdad: antes esta prueba no mandaba ninguno y se
+  // apoyaba en que un host desconocido resolvía a 'taller' por defecto, así
+  // que en realidad nunca comprobó el dominio que su nombre promete.
+  const res = await makeClient(server.url).post('/api/auth/login',
+    { email, password }, { Host: 'taller.ridera.com.co' });
   assert.equal(res.status, 401);
+});
+
+test('una cuenta de almacén sí entra por un host que no identifica plataforma', async () => {
+  // La URL de Railway, un preview de PR o localhost no separan nada: no hay
+  // dominio de almacén ni de taller que respetar. Antes resolvían a 'taller'
+  // y dejaban a los almacenes sin poder entrar ni para probar.
+  const { email, password } = await createWorkshop(server.url, { business_type: 'almacen' });
+  const res = await makeClient(server.url).post('/api/auth/login', { email, password });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.workshop.business_type, 'almacen');
 });
 
 test('cada cuenta sí puede iniciar sesión por su propio dominio', async () => {
