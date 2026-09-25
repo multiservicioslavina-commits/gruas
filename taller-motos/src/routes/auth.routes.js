@@ -265,27 +265,25 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
   // Devolver también el taller evita que el frontend arranque sin saber su
   // moneda, su IVA ni su nombre hasta la siguiente recarga.
   const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [user.workshop_id]);
-  res.json({ token: signToken(user), user: publicUser(user), workshop });
+  // Va también aquí, no sólo en /auth/me: la pantalla arranca con lo que
+  // devuelve el login, así que sin esto el botón para saltar a la otra
+  // plataforma no aparecía hasta recargar la página.
+  res.json({
+    token: signToken(user),
+    user: publicUser(user),
+    workshop,
+    otra_plataforma: await otraPlataforma(user)
+  });
 }));
 
 authRouter.get('/me', requireAuth, wrap(async (req, res) => {
   const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.auth.userId]);
   const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
 
-  // ¿El mismo correo tiene cuenta en la otra plataforma? Con eso la interfaz
-  // pone un botón para saltar, en vez de obligar a recordar el otro dominio.
-  // Es dato del propio usuario sobre sí mismo, no se filtra nada de nadie.
-  const otra = await queryOne(
-    `SELECT w.name FROM users u JOIN workshops w ON w.id = u.workshop_id
-      WHERE lower(u.email) = lower($1) AND u.business_type <> $2 AND u.active`,
-    [user.email, user.business_type]);
-
   res.json({
     user: publicUser(user),
     workshop,
-    otra_plataforma: otra
-      ? { business_type: user.business_type === 'taller' ? 'almacen' : 'taller', name: otra.name }
-      : null
+    otra_plataforma: await otraPlataforma(user)
   });
 }));
 
@@ -302,6 +300,21 @@ authRouter.post('/change-password', requireAuth, wrap(async (req, res) => {
     [await hashPassword(data.new_password), user.id]);
   res.json({ ok: true });
 }));
+
+// ¿El mismo correo tiene cuenta en la otra plataforma? Con eso la interfaz
+// pone un botón para saltar, en vez de obligar a recordar el otro dominio.
+// Es dato del propio usuario sobre sí mismo: no se filtra nada de nadie.
+async function otraPlataforma(user) {
+  const otra = await queryOne(
+    `SELECT w.name FROM users u JOIN workshops w ON w.id = u.workshop_id
+      WHERE lower(u.email) = lower($1) AND u.business_type <> $2 AND u.active`,
+    [user.email, user.business_type]);
+  if (!otra) return null;
+  return {
+    business_type: user.business_type === 'taller' ? 'almacen' : 'taller',
+    name: otra.name
+  };
+}
 
 export function publicUser(user) {
   if (!user) return null;
