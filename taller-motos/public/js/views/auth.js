@@ -15,6 +15,10 @@ function afterLogin(result) {
   session.token = result.token;
   session.user = result.user;
   session.workshop = result.workshop || null;
+  // Sin esto el botón para saltar a la otra plataforma no aparecía hasta
+  // recargar la página: entrar por el formulario no vuelve a pedir
+  // /auth/me, así que la sesión quedaba sin ese dato.
+  session.otraPlataforma = result.otra_plataforma || null;
   const next = sessionStorage.getItem('taller_motos_next');
   sessionStorage.removeItem('taller_motos_next');
   location.hash = `#${next && next !== '/entrar' ? next : '/'}`;
@@ -112,6 +116,13 @@ export async function loginView() {
             <a href="#/registrar">Crea uno</a></div>
           <div class="auth-links">¿Eres cliente y quieres ver tu moto?
             <a href="#/orden/">Consulta con tu código</a></div>
+          <!-- Taller y almacén son cuentas y dominios distintos. Quien tiene
+               los dos llega a la pantalla equivocada a diario, y hasta ahora
+               el único camino de vuelta era acordarse del otro dominio y
+               escribirlo. El enlace va siempre, no sólo tras fallar. -->
+          <div class="auth-links">¿Buscas tu ${almacen ? 'taller' : 'almacén'}?
+            <a href="https://${almacen ? 'taller' : 'almacen'}.ridera.com.co/">
+              Entra por ${almacen ? 'taller' : 'almacen'}.ridera.com.co</a></div>
         </div>
       </div>
     </div>`;

@@ -174,3 +174,20 @@ test('el 401 por dominio equivocado dice a dónde ir, no sólo que no', async ()
   // Sin esto la pantalla sólo puede escribir el dominio; con esto pone botón.
   assert.equal(res.body.details.ir_a, 'almacen');
 });
+
+test('el login también devuelve la otra plataforma, no sólo /auth/me', async () => {
+  // La pantalla arranca con lo que devuelve el login: entrar por el
+  // formulario no vuelve a pedir /auth/me, así que sin esto el botón para
+  // saltar no aparecía hasta recargar la página.
+  const correo = `login-otra-${randomUUID()}@prueba.test`;
+  const clave = 'clave-segura-123';
+  await createWorkshop(server.url, { email: correo, password: clave, workshop_name: 'Mi Taller' });
+  await createWorkshop(server.url,
+    { email: correo, password: clave, workshop_name: 'Mi Almacén', business_type: 'almacen' });
+
+  const res = await makeClient(server.url).post('/api/auth/login',
+    { email: correo, password: clave }, { Host: 'taller.ridera.com.co' });
+  assert.equal(res.status, 200, JSON.stringify(res.body));
+  assert.equal(res.body.otra_plataforma.business_type, 'almacen');
+  assert.equal(res.body.otra_plataforma.name, 'Mi Almacén');
+});
