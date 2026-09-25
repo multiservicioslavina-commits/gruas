@@ -1,7 +1,7 @@
 import { api, session } from '../api.js';
 import {
   esc, money, number, date, empty, toast, field, modal, clean,
-  errorBox, PAYMENT_METHODS, normalizeSearch, confirmDialog
+  errorBox, PAYMENT_METHODS, normalizeSearch
 } from '../ui.js';
 import { onMount, go } from '../app.js';
 
@@ -728,25 +728,17 @@ export async function newSaleView() {
         items
       };
 
-      // Si no alcanzan las existencias, el servidor responde 409 y aquí se
-      // pregunta en vez de bloquear: el repuesto puede estar en el mostrador
-      // sin que se haya registrado la entrada todavía. Al confirmar se repite
-      // la venta con allow_negative_stock y el inventario queda en negativo,
-      // marcado en rojo. Se pregunta (en vez de mandarlo siempre) para que el
-      // caso accidental -- agregar dos veces el mismo artículo en vez de subir
-      // la cantidad -- siga avisando.
-      let result;
-      try {
-        result = await api.post('/sales', cuerpo);
-      } catch (err) {
-        if (err.status !== 409) throw err;
-        const seguir = await confirmDialog(
-          `${err.message}\n\n¿Vender de todos modos? El inventario quedará en negativo ` +
-          'hasta que registres la entrada.',
-          { title: 'No hay existencias suficientes', confirmText: 'Vender igual' });
-        if (!seguir) { submitBtn.disabled = false; return; }
-        result = await api.post('/sales', { ...cuerpo, allow_negative_stock: true });
-      }
+      // El mostrador vende sin preguntar por las existencias: el repuesto
+      // puede estar ahí sin que se haya registrado la entrada todavía, y
+      // parar la venta por eso cuesta más que el descuadre. El inventario
+      // queda en negativo, en rojo y marcado "pendiente de entrada".
+      //
+      // La contrapartida, a sabiendas: agregar dos veces el mismo artículo
+      // (en vez de subir la cantidad) ya no avisa en el momento. Se ve
+      // después, en el inventario. El servidor mantiene la comprobación por
+      // defecto -- es esta pantalla la que decide saltársela--, así que la
+      // API sigue protegida para cualquier otro que la use.
+      const result = await api.post('/sales', { ...cuerpo, allow_negative_stock: true });
 
       toast(`Venta #${result.number} registrada`);
       go(`/ventas/${result.id}`);
