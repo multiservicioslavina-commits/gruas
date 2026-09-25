@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { query, queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
+import { decorateInvoice } from '../lib/invoices.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { computeTotals } from '../lib/money.js';
@@ -26,13 +27,10 @@ export async function loadFullSale(client, workshopId, id) {
   const { rows: items } = await client.query(
     'SELECT * FROM sale_items WHERE sale_id = $1 ORDER BY id', [id]);
   const { rows: invoices } = await client.query(
-    'SELECT id, number, kind, status, total, external_id, cufe, issued_at, created_at FROM invoices WHERE sale_id = $1 ORDER BY created_at DESC',
-    [id]);
-  for (const invoice of invoices) {
-    invoice.doc_code = invoice.kind === 'electronic'
-      ? invoice.external_id : `10-${String(invoice.number).padStart(6, '0')}`;
-  }
-  return { ...sale, items, invoices };
+    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status,
+            subtotal, tax_total, total, external_id, cufe, issued_at, created_at
+     FROM invoices WHERE sale_id = $1 ORDER BY created_at DESC`, [id]);
+  return { ...sale, items, invoices: invoices.map(decorateInvoice) };
 }
 
 salesRouter.get('/', wrap(async (req, res) => {
@@ -70,6 +68,14 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     tax_rate:        { type: 'number', min: 0, max: 100, default: 0 },
     payment_method:  { type: 'string', enum: METHODS, default: 'cash' },
     warehouse_id:    { type: 'string', max: 40 },
+    // Vender sin existencias: el repuesto llegó pero todavía no se registró
+    // la entrada. El mostrador no puede parar por eso, así que se permite
+    // dejar el stock en negativo -- igual que ya hacían las órdenes de
+    // trabajo con esta misma bandera. Va apagada por defecto a propósito:
+    // así el caso accidental (agregar dos veces el mismo artículo en vez de
+    // subir la cantidad) sigue avisando, y el deliberado sólo necesita
+    // confirmar. El negativo queda visible en rojo en el inventario.
+    allow_negative_stock: { type: 'boolean', default: false },
     items:           { type: 'array', required: true }
   });
   if (!data.items.length) throw badRequest('La venta no tiene ítems');
@@ -85,6 +91,7 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
 
     const items = [];
+    const pedidoPorRepuesto = new Map();
     let partsTotal = 0;
     for (const raw of data.items) {
       const item = validate(raw, {
@@ -106,9 +113,17 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
         const disponible = data.warehouse_id
           ? await warehouseStock(client, part.id, data.warehouse_id)
           : Number(part.stock);
-        if (disponible < item.quantity) {
+        // Se compara contra lo que lleva pedido ESTA venta, no contra esta
+        // linea sola: un mismo repuesto puede venir en varias lineas (pasa
+        // solo, cuando en el mostrador se agrega el articulo otra vez en vez
+        // de subir la cantidad). Comprobando linea a linea, 6 + 6 unidades
+        // con 10 en existencia pasaban las dos comprobaciones y el stock
+        // terminaba en -2, con la venta aceptada.
+        const yaPedido = (pedidoPorRepuesto.get(item.part_id) ?? 0) + item.quantity;
+        if (!data.allow_negative_stock && disponible < yaPedido) {
           throw conflict(`Sólo quedan ${disponible} unidades de "${part.name}".`);
         }
+        pedidoPorRepuesto.set(item.part_id, yaPedido);
         description = description || part.name;
         // Cliente mayorista y el repuesto tiene precio mayorista: ese; si
         // no, el de siempre. La línea siempre se puede escribir a mano.

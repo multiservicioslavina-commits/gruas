@@ -6,6 +6,8 @@ import {
   FUEL_LEVELS, clean, forInput, normalizeSearch
 } from '../ui.js';
 import { onMount, refresh, go } from '../app.js';
+import { selectorDeCodigo, etiquetaFactura, textoFactura, conectarDescargaPdf } from '../documentos.js';
+import { imprimirFactura } from '../factura.js';
 
 const FILTERS = [
   ['open', 'En el taller'], ['received', 'Recibidas'], ['diagnosing', 'En diagnóstico'],
@@ -480,6 +482,47 @@ export async function orderDetailView(id) {
 
     document.getElementById('btn-print')?.addEventListener('click', () => window.print());
 
+    // Enviar la orden de servicio al cliente. Es lo mismo que se imprime,
+    // pero llegándole a él. Al cerrar la orden esto se dispara solo; el
+    // botón está para reenviarla, o para mandarla a otro correo.
+    document.getElementById('btn-send-order')?.addEventListener('click', async () => {
+      const correo = order.customer?.email || '';
+      const telefono = order.customer?.phone || '';
+      const correoListo = session.workshop?.email_configured;
+
+      const result = await modal({
+        title: 'Enviar la orden al cliente',
+        body: `
+          ${correoListo ? '' : `<p class="small" style="color:var(--amber);margin-bottom:12px">
+            Este sistema todavía no tiene configurado el envío de correos. Puedes
+            mandarla por WhatsApp, o pedir que lo activen.</p>`}
+          ${field('canal', 'Cómo enviarla', {
+            value: correoListo && correo ? 'email' : 'whatsapp',
+            options: [['email', 'Por correo'], ['whatsapp', 'Por WhatsApp']] })}
+          ${field('destino', 'A dónde', {
+            value: correoListo && correo ? correo : telefono,
+            hint: 'Por defecto, lo que tenga la ficha del cliente.' })}`,
+        confirmText: 'Enviar',
+        onSubmit: (data) => api.post(`/work-orders/${id}/send`, clean(data))
+      });
+      if (!result) return;
+
+      if (result.sent) { toast(`Orden enviada a ${result.destino}`); return; }
+
+      // WhatsApp no deja mandar plantillas sin aprobación de Meta. Cuando
+      // falta, el enlace de wa.me sí funciona: lo manda el propio taller
+      // desde su teléfono, que es lo que la mayoría hace igual.
+      if (result.canal === 'whatsapp' && result.texto && telefono) {
+        const numero = String(telefono).replace(/\D/g, '').replace(/^0+/, '').replace(/^(?!57)/, '57');
+        window.open(`https://wa.me/${numero}?text=${encodeURIComponent(result.texto)}`,
+          '_blank', 'noopener');
+        return;
+      }
+      toast(result.reason === 'sin_correo'
+        ? 'Este cliente no tiene correo registrado.'
+        : 'No se pudo enviar. Revisa los datos del cliente.', true);
+    });
+
     // Guardar diagnóstico, trabajo realizado y próximos servicios.
     document.getElementById('work-form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
@@ -666,11 +709,12 @@ export async function orderDetailView(id) {
         body: `<p class="small muted" style="margin-bottom:14px">
                  Es un comprobante de venta normal, no electrónico ante la DIAN.
                  Para eso está "Facturar electrónicamente" (plan Premium).</p>
+               ${await selectorDeCodigo(false)}
                ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
         confirmText: 'Generar factura',
         onSubmit: (data) => api.post(`/work-orders/${id}/invoice-normal`, clean(data))
       });
-      if (result) { toast(`Factura ${result.doc_code} generada`); refresh(); }
+      if (result) { toast(`Factura ${textoFactura(result)} generada`); refresh(); }
     });
 
     // Facturación electrónica DIAN (plan Premium).
@@ -683,6 +727,7 @@ export async function orderDetailView(id) {
                  Estos datos son los que exige la DIAN y no viven en la ficha del
                  cliente. Se completan aquí cada vez porque cambian según a nombre
                  de quién se factura.</p>
+               ${await selectorDeCodigo(true)}
                <div class="row">
                  ${field('identification_document_code', 'Tipo de documento', { value: '13', options: [
                    ['13', 'Cédula de ciudadanía'], ['31', 'NIT'], ['22', 'Cédula de extranjería'],
@@ -718,29 +763,45 @@ export async function orderDetailView(id) {
         confirmText: 'Facturar',
         onSubmit: (data) => api.post(`/work-orders/${id}/invoice`, data)
       });
-      if (result) { toast(`Factura ${result.external_id} emitida`); refresh(); }
+      if (result) { toast(`Factura ${textoFactura(result)} emitida`); refresh(); }
     });
 
-    document.querySelectorAll('[data-invoice-pdf]').forEach((button) => {
-      button.addEventListener('click', async () => {
-        const original = button.textContent;
-        button.disabled = true;
-        button.textContent = 'Preparando…';
-        try {
-          const res = await fetch(`/api/invoices/${button.dataset.invoicePdf}/pdf`, {
-            headers: { Authorization: `Bearer ${session.token}` }
-          });
-          if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'No se pudo descargar');
-          const cabecera = res.headers.get('Content-Disposition') || '';
-          const nombre = (cabecera.match(/filename="([^"]+)"/) || [])[1] || 'factura.pdf';
-          const url = URL.createObjectURL(await res.blob());
-          const enlace = document.createElement('a');
-          enlace.href = url; enlace.download = nombre;
-          document.body.appendChild(enlace); enlace.click(); enlace.remove();
-          URL.revokeObjectURL(url);
-        } catch (err) { toast(err.message, true); }
-        button.disabled = false;
-        button.textContent = original;
+    conectarDescargaPdf();
+
+    // La factura impresa. Los renglones salen de la orden, no de la factura:
+    // la tabla `invoices` guarda totales, no líneas. Se filtran igual que al
+    // emitirla -- sólo lo aprobado -- para que el papel y el documento
+    // coincidan.
+    document.querySelectorAll('[data-print-invoice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const invoice = order.invoices.find((i) => i.id === button.dataset.printInvoice);
+        if (!invoice) return;
+        const lineas = [
+          ...order.services.filter((s) => s.approved !== false),
+          ...order.parts.filter((p) => p.approved !== false)
+        ].map((l) => ({
+          descripcion: l.description,
+          cantidad: l.quantity,
+          precio: l.unit_price,
+          total: l.total ?? Number(l.quantity) * Number(l.unit_price)
+        }));
+
+        const ok = imprimirFactura({
+          workshop: session.workshop || {},
+          invoice,
+          cliente: {
+            nombre: order.customer?.name,
+            documento: order.customer?.document_number,
+            direccion: order.customer?.address,
+            telefono: order.customer?.phone,
+            email: order.customer?.email
+          },
+          lineas,
+          referencia: `Orden de trabajo #${order.number}`,
+          moto: [order.motorcycle?.plate, motorcycleName(order.motorcycle)]
+            .filter(Boolean).join(' · ')
+        });
+        if (!ok) toast('El navegador bloqueó la ventana de impresión. Permítela e inténtalo de nuevo.', true);
       });
     });
   });
@@ -805,6 +866,7 @@ export async function orderDetailView(id) {
                 data-status="${esc(status)}">→ ${esc(ORDER_STATUS[status]?.label || status)}</button>`).join('')}
       <button class="btn btn-default btn-sm" id="btn-copy">Copiar seguimiento</button>
       <button class="btn btn-default btn-sm" id="btn-print">Imprimir</button>
+      <button class="btn btn-default btn-sm" id="btn-send-order">Enviar al cliente</button>
       ${order.customer?.phone ? `<a class="btn btn-default btn-sm" target="_blank" rel="noopener"
         href="https://wa.me/${esc(String(order.customer.phone).replace(/\D/g, '').replace(/^0+/, '').replace(/^(?!57)/, '57'))}?text=${encodeURIComponent(
           `Hola ${(order.customer.name || '').split(' ')[0]}, te escribo de ${session.workshop?.name || 'el taller'}. Tu moto ${order.motorcycle?.plate || ''} (orden #${order.number}) está en estado: ${ORDER_STATUS[order.status]?.label}. Puedes seguirla aquí: ${trackUrl}`)}">
@@ -904,16 +966,31 @@ export async function orderDetailView(id) {
             ${order.invoices.map((invoice) => `
               <div class="list-item" style="cursor:default">
                 <div class="grow">
-                  <div class="t">${esc(invoice.doc_code)}
+                  <div class="t">${etiquetaFactura(invoice)}
                     · ${money(invoice.total)}
-                    <span class="tag ${invoice.kind === 'electronic' ? 'tag-green' : 'tag-grey'}"
-                      style="margin-left:6px">${invoice.kind === 'electronic' ? 'Electrónica DIAN' : 'Venta'}</span></div>
-                  <div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
-                    ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>
+                    <span class="tag ${invoice.status === 'draft' ? 'tag-amber'
+                      : invoice.kind === 'electronic' ? 'tag-green' : 'tag-grey'}"
+                      style="margin-left:6px">${invoice.status === 'draft' ? 'Sin confirmar'
+                        : invoice.kind === 'electronic' ? 'Electrónica DIAN' : 'Venta'}</span></div>
+                  ${invoice.status === 'draft' ? `
+                    <div class="s" style="color:var(--amber)">
+                      ${invoice.external_id
+                        ? `Se creó ante la DIAN (documento ${esc(invoice.external_id)}) pero no se pudo
+                           guardar aquí. No la vuelvas a facturar: sería un documento duplicado.
+                           Contacta a quien te entregó el software con ese número.`
+                        : 'Facturación en curso. Recarga en unos segundos.'}
+                    </div>`
+                    : `<div class="s">Emitida ${date(invoice.issued_at || invoice.created_at, true)}
+                        ${invoice.cufe ? ` · CUFE ${esc(invoice.cufe.slice(0, 12))}…` : ''}</div>`}
                 </div>
-                ${invoice.kind === 'electronic'
-                  ? `<button class="btn btn-default btn-sm no-print" data-invoice-pdf="${esc(invoice.id)}">
-                       Descargar PDF</button>` : ''}
+                ${invoice.status === 'draft' ? '' : `
+                <div class="btn-group no-print">
+                  <button class="btn btn-default btn-sm" data-print-invoice="${esc(invoice.id)}">
+                    Imprimir</button>
+                  ${invoice.kind === 'electronic'
+                    ? `<button class="btn btn-default btn-sm" data-invoice-pdf="${esc(invoice.id)}">
+                         Descargar PDF</button>` : ''}
+                </div>`}
               </div>`).join('')}
           </div>
         </div>` : ''}

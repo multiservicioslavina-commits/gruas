@@ -373,10 +373,10 @@ FROM parts p
 JOIN warehouses wh ON wh.workshop_id = p.workshop_id AND wh.is_default
 WHERE NOT EXISTS (SELECT 1 FROM part_stock ps WHERE ps.part_id = p.id AND ps.warehouse_id = wh.id);
 
-ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE purchases ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
-ALTER TABLE sales ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+-- NOTA: las columnas warehouse_id de inventory_movements, purchases,
+-- inventory_adjustments y sales NO se pueden anadir aqui: esas cuatro tablas
+-- se crean mas abajo en este mismo archivo. Estan al final, en el bloque
+-- "Bodega por defecto en los movimientos".
 
 -- Traslado de existencia entre dos sucursales del mismo taller.
 CREATE TABLE IF NOT EXISTS stock_transfers (
@@ -701,6 +701,19 @@ CREATE TABLE IF NOT EXISTS sale_items (
 
 CREATE INDEX IF NOT EXISTS sale_items_sale_idx ON sale_items (sale_id);
 
+-- ── Bodega por defecto en los movimientos ─────────────────────────────────
+-- Va aqui, y no junto a la creacion de warehouses, porque las cuatro tablas
+-- que se alteran se crean despues de aquella. Como schema.sql se aplica en
+-- una sola sentencia, Postgres lo envuelve en una transaccion: un ALTER sobre
+-- una tabla que todavia no existe no fallaba solo, revertia el archivo entero
+-- y dejaba la base vacia. En una base ya poblada el error no se veia (las
+-- tablas ya existian), asi que solo rompia las instalaciones nuevas -- y con
+-- ellas la suite de tests, que empieza creando la base desde cero.
+ALTER TABLE inventory_movements ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE purchases ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE inventory_adjustments ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+ALTER TABLE sales ADD COLUMN IF NOT EXISTS warehouse_id UUID REFERENCES warehouses(id) ON DELETE SET NULL;
+
 -- ── Pagos y facturación ───────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS payments (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -737,7 +750,6 @@ CREATE TABLE IF NOT EXISTS invoices (
   created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
-CREATE UNIQUE INDEX IF NOT EXISTS invoices_number_key ON invoices (workshop_id, number);
 CREATE INDEX IF NOT EXISTS invoices_wo_idx ON invoices (work_order_id);
 
 -- La tabla ya existía (preparada desde antes para facturación); estas dos
@@ -771,6 +783,98 @@ ALTER TABLE invoices ADD COLUMN IF NOT EXISTS sale_id UUID REFERENCES sales(id) 
 CREATE INDEX IF NOT EXISTS invoices_sale_idx ON invoices (sale_id);
 CREATE UNIQUE INDEX IF NOT EXISTS invoices_sale_issued_key
   ON invoices (sale_id) WHERE status = 'issued';
+
+-- ── Tipos de documento de facturacion ─────────────────────────────────────
+-- El codigo de facturacion y el numero de factura son dos cosas distintas y
+-- hasta aqui estaban pegadas en una sola cadena ("10-000123"). El codigo dice
+-- QUE documento es (10 factura de venta, 1030 factura electronica, los que
+-- use el taller); el numero es el consecutivo de ESE documento. En
+-- contabilidad cada tipo lleva su propia numeracion, asi que se separan.
+CREATE TABLE IF NOT EXISTS document_types (
+  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  workshop_id   UUID NOT NULL REFERENCES workshops(id) ON DELETE CASCADE,
+  code          TEXT NOT NULL,
+  name          TEXT NOT NULL,
+  prefix        TEXT,                 -- prefijo de la numeracion (resolucion DIAN)
+  sends_to_dian BOOLEAN NOT NULL DEFAULT FALSE,
+  active        BOOLEAN NOT NULL DEFAULT TRUE,
+  sort_order    INTEGER NOT NULL DEFAULT 0,
+  created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS document_types_code_key
+  ON document_types (workshop_id, code);
+
+-- Cada taller arranca con los dos de siempre. Son filas suyas: puede
+-- cambiarles el codigo, el nombre y el prefijo desde Ajustes, porque los
+-- numeros exactos dependen de su resolucion de la DIAN y de como los tenga
+-- en su contabilidad.
+INSERT INTO document_types (workshop_id, code, name, sends_to_dian, sort_order)
+SELECT w.id, '10', 'Factura de venta', FALSE, 1 FROM workshops w
+ON CONFLICT (workshop_id, code) DO NOTHING;
+INSERT INTO document_types (workshop_id, code, name, sends_to_dian, sort_order)
+SELECT w.id, '1030', 'Factura electronica de venta', TRUE, 2 FROM workshops w
+ON CONFLICT (workshop_id, code) DO NOTHING;
+
+-- Que documento es esta factura, y con que prefijo se numero. Se guardan en
+-- la fila (no se leen del catalogo al mostrarla) porque el taller puede
+-- renombrar o desactivar un tipo despues, y una factura ya emitida no puede
+-- cambiar de nombre retroactivamente.
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS document_type_code TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS document_type_name TEXT;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS prefix             TEXT;
+
+UPDATE invoices SET document_type_code = CASE WHEN kind = 'electronic' THEN '1030' ELSE '10' END
+ WHERE document_type_code IS NULL;
+UPDATE invoices SET document_type_name = CASE WHEN kind = 'electronic'
+         THEN 'Factura electronica de venta' ELSE 'Factura de venta' END
+ WHERE document_type_name IS NULL;
+
+-- Las secuencias por tipo tienen que arrancar donde quedo la numeracion que
+-- ya existe. Sin esto, la PRIMERA factura emitida despues de actualizar pide
+-- el numero 1 -- que en cualquier taller con facturas ya esta usado -- y
+-- choca contra el indice unico de mas abajo. No se ve en una base limpia:
+-- solo al actualizar una que ya tiene datos, que es justo produccion.
+INSERT INTO sequences (workshop_id, name, value)
+SELECT workshop_id, 'invoices:' || document_type_code, MAX(number)
+  FROM invoices
+ WHERE document_type_code IS NOT NULL
+ GROUP BY workshop_id, document_type_code
+ON CONFLICT (workshop_id, name) DO UPDATE
+   -- GREATEST y no EXCLUDED a secas: volver a aplicar el esquema nunca puede
+   -- hacer RETROCEDER un consecutivo, que reemitiria numeros ya usados.
+   SET value = GREATEST(sequences.value, EXCLUDED.value);
+
+-- El consecutivo pasa a ser por tipo de documento, no uno solo para todo el
+-- taller. El indice viejo (invoices_number_key, unico por workshop+number)
+-- lo impedia: dos documentos de tipos distintos pueden -- y deben -- empezar
+-- ambos en 1. Se elimina aqui y ya no se crea mas arriba, porque volver a
+-- crearlo en una base que ya tiene numeracion por tipo falla.
+DROP INDEX IF EXISTS invoices_number_key;
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_type_number_key
+  ON invoices (workshop_id, document_type_code, number);
+
+-- ── Reserva contra la doble factura ante la DIAN ──────────────────────────
+-- Los indices de arriba impiden dos filas EMITIDAS, y su comentario decia
+-- proteger del doble clic. Protegen la fila local, no el documento: en la
+-- factura electronica la llamada irreversible a Factus ocurre ANTES del
+-- insert, asi que dos peticiones simultaneas pasaban ambas la comprobacion
+-- (todavia no habia fila), ambas creaban una factura real ante la DIAN, y
+-- solo la segunda fallaba al guardar. Un duplicado asi solo se corrige con
+-- una nota credito.
+--
+-- La solucion es reservar la fila ANTES de llamar a Factus, en estado
+-- 'draft'. Para que la reserva bloquee de verdad, los indices unicos tienen
+-- que cubrirla: pasan de "solo issued" a "draft o issued".
+--
+-- 'draft' ya estaba permitido por el CHECK de la columna y hasta ahora no lo
+-- usaba nadie (todas las filas se insertaban como 'issued'), asi que el
+-- cambio no reinterpreta ningun dato existente.
+DROP INDEX IF EXISTS invoices_wo_issued_key;
+DROP INDEX IF EXISTS invoices_sale_issued_key;
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_wo_activa_key
+  ON invoices (work_order_id) WHERE status IN ('draft', 'issued');
+CREATE UNIQUE INDEX IF NOT EXISTS invoices_sale_activa_key
+  ON invoices (sale_id) WHERE status IN ('draft', 'issued');
 
 -- ── Adjuntos, notificaciones y reglas de mantenimiento ────────────────────
 CREATE TABLE IF NOT EXISTS attachments (

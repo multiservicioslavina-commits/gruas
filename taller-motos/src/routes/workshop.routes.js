@@ -3,13 +3,14 @@ import { Router } from 'express';
 import multer from 'multer';
 import { mkdirSync, readdirSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join, extname, resolve } from 'node:path';
-import { queryOne, transaction } from '../db.js';
-import { validate } from '../lib/validate.js';
-import { wrap, badRequest, conflict } from '../lib/errors.js';
+import { query, queryOne, transaction } from '../db.js';
+import { validate, assertUuid } from '../lib/validate.js';
+import { wrap, badRequest, conflict, notFound } from '../lib/errors.js';
 import { requireRole, requirePlan } from '../middleware/auth.js';
 import { listNumberingRanges } from '../lib/factus.js';
 import { tipoCodigo, revisar, MOTIVOS, venceEl } from '../lib/licencia.js';
 import { config } from '../config.js';
+import { emailConfigurado } from '../lib/email.js';
 
 export const workshopRouter = Router();
 
@@ -32,7 +33,10 @@ function redact(workshop) {
   return {
     ...rest,
     whatsapp_configured: Boolean(whatsapp_access_token),
-    factus_configured: Boolean(factus_client_secret && factus_password)
+    factus_configured: Boolean(factus_client_secret && factus_password),
+    // El correo no se configura por taller sino en el servidor. La interfaz
+    // necesita saberlo para no ofrecer un botón que siempre va a fallar.
+    email_configured: emailConfigurado()
   };
 }
 
@@ -197,4 +201,97 @@ workshopRouter.get('/factus/numbering-ranges', requireRole(), requirePlan('premi
   const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
   const ranges = await listNumberingRanges(workshop);
   res.json(ranges.data?.data || ranges.data || []);
+}));
+
+// ── Tipos de documento de facturación ─────────────────────────────────────
+// El código de facturación (10, 1030, los que el taller tenga en su
+// contabilidad) es un dato suyo, no una constante del software: cada
+// resolución de la DIAN y cada plan contable usa los suyos. Por eso es un
+// catálogo editable y no una lista fija en el código.
+//
+// Lo lee cualquiera con sesión, porque la pantalla de facturar necesita
+// mostrar las opciones; sólo el administrador lo modifica.
+workshopRouter.get('/document-types', wrap(async (req, res) => {
+  const { rows } = await query(
+    `SELECT * FROM document_types WHERE workshop_id = $1 ORDER BY sort_order, code`,
+    [req.auth.workshopId]);
+  res.json(rows);
+}));
+
+const DOCUMENT_TYPE_SCHEMA = {
+  code:          { type: 'string', required: true, max: 10 },
+  name:          { type: 'string', required: true, max: 80 },
+  prefix:        { type: 'string', max: 10 },
+  sends_to_dian: { type: 'boolean', default: false },
+  active:        { type: 'boolean', default: true },
+  sort_order:    { type: 'number', min: 0, max: 999 }
+};
+
+workshopRouter.post('/document-types', requireRole(), wrap(async (req, res) => {
+  const data = validate(req.body, DOCUMENT_TYPE_SCHEMA);
+  const yaExiste = await queryOne(
+    'SELECT code FROM document_types WHERE workshop_id = $1 AND code = $2',
+    [req.auth.workshopId, data.code]);
+  if (yaExiste) throw conflict(`Ya tienes un tipo de documento con el código ${data.code}.`);
+
+  // Sin posición explícita, el código nuevo va al final. Importa: cuando el
+  // taller tiene varios y el cajero no elige, se factura con el primero de
+  // la lista -- así que un código recién creado no puede colarse delante y
+  // cambiar en silencio con qué se factura por defecto.
+  const orden = data.sort_order ?? Number((await queryOne(
+    'SELECT COALESCE(MAX(sort_order), 0) + 1 AS siguiente FROM document_types WHERE workshop_id = $1',
+    [req.auth.workshopId])).siguiente);
+
+  const row = await queryOne(
+    `INSERT INTO document_types (workshop_id, code, name, prefix, sends_to_dian, active, sort_order)
+     VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
+    [req.auth.workshopId, data.code, data.name, data.prefix || null,
+     data.sends_to_dian, data.active, orden]);
+  res.status(201).json(row);
+}));
+
+// El código no se puede cambiar una vez usado: es lo que amarra cada factura
+// emitida a su consecutivo (`invoices:<código>`). Cambiarlo haría que el
+// próximo documento reiniciara la numeración o continuara la de otro, y
+// dejaría las facturas viejas apuntando a un tipo que ya no existe.
+workshopRouter.patch('/document-types/:id', requireRole(), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, {
+    name:       { type: 'string', max: 80 },
+    prefix:     { type: 'string', max: 10 },
+    active:     { type: 'boolean' },
+    sort_order: { type: 'number', min: 0, max: 999 }
+  });
+
+  const tipo = await queryOne(
+    'SELECT * FROM document_types WHERE id = $1 AND workshop_id = $2',
+    [req.params.id, req.auth.workshopId]);
+  if (!tipo) throw notFound('Ese tipo de documento no existe');
+
+  const campos = [];
+  const valores = [req.params.id, req.auth.workshopId];
+  for (const campo of ['name', 'prefix', 'active', 'sort_order']) {
+    if (data[campo] === undefined) continue;
+    valores.push(data[campo] === '' ? null : data[campo]);
+    campos.push(`${campo} = $${valores.length}`);
+  }
+  if (!campos.length) return res.json(tipo);
+
+  const row = await queryOne(
+    `UPDATE document_types SET ${campos.join(', ')} WHERE id = $1 AND workshop_id = $2 RETURNING *`,
+    valores);
+  res.json(row);
+}));
+
+// No se borra: se desactiva. Una factura emitida guarda su código, así que
+// borrar la fila no la rompe -- pero sí haría desaparecer el nombre del
+// catálogo y, sobre todo, dejaría libre el código para que alguien lo
+// reutilice con otro significado y con la numeración ya corrida.
+workshopRouter.delete('/document-types/:id', requireRole(), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const row = await queryOne(
+    'UPDATE document_types SET active = FALSE WHERE id = $1 AND workshop_id = $2 RETURNING *',
+    [req.params.id, req.auth.workshopId]);
+  if (!row) throw notFound('Ese tipo de documento no existe');
+  res.json(row);
 }));

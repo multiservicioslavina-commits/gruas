@@ -88,7 +88,8 @@ test('una venta se puede facturar como factura de venta normal', async () => {
   const factura = await client.post(`/api/sales/${venta.id}/invoice-normal`, {});
   assert.equal(factura.status, 201, JSON.stringify(factura.body));
   assert.equal(factura.body.kind, 'normal');
-  assert.match(factura.body.doc_code, /^10-\d{6}$/);
+  assert.equal(factura.body.document_type_code, '10');
+  assert.match(factura.body.doc_number, /^\d{6}$/);
   assert.equal(Number(factura.body.total), Number(venta.total));
 
   const releida = await client.get(`/api/sales/${venta.id}`);
@@ -134,4 +135,74 @@ test('una venta facturada aparece en el balance de caja y en Operaciones', async
   assert.ok(fila, 'la factura de la venta debe aparecer en Operaciones');
   assert.equal(fila.direction, 'income');
   assert.equal(Number(fila.amount), 100000);
+});
+
+// ── Un mismo repuesto en varias líneas de la misma venta ──────────────────
+// Pasa solo en el mostrador: se agrega el artículo y luego se vuelve a
+// agregar en vez de subir la cantidad. La comprobación de existencias era
+// línea a línea contra el mismo stock sin descontar, así que 6 + 6 unidades
+// con 10 en inventario pasaban las dos y la venta se aceptaba dejando el
+// stock en -2.
+test('el mismo repuesto repetido en varias líneas no puede pasarse del stock', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 10 });
+
+  const venta = await w.client.post('/api/sales', {
+    items: [
+      { part_id: parte.id, quantity: 6, unit_price: 10000 },
+      { part_id: parte.id, quantity: 6, unit_price: 10000 }
+    ]
+  });
+  assert.equal(venta.status, 409);
+  assert.match(venta.body.error, /quedan 10/i);
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), 10, 'no se debió descontar nada');
+});
+
+test('un mismo repuesto en varias líneas sí se vende si la suma cabe en el stock', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 10 });
+
+  const venta = await w.client.post('/api/sales', {
+    items: [
+      { part_id: parte.id, quantity: 4, unit_price: 10000 },
+      { part_id: parte.id, quantity: 6, unit_price: 10000 }
+    ]
+  });
+  assert.equal(venta.status, 201, JSON.stringify(venta.body));
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), 0);
+});
+
+// ── Vender sin existencias ────────────────────────────────────────────────
+// El repuesto llegó al mostrador pero todavía no se registró la entrada: la
+// venta no puede parar por eso. Con allow_negative_stock el stock queda en
+// negativo a propósito, y el inventario lo muestra en rojo.
+test('con allow_negative_stock se puede vender un repuesto en cero', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 0 });
+
+  const venta = await w.client.post('/api/sales', {
+    allow_negative_stock: true,
+    items: [{ part_id: parte.id, quantity: 1, unit_price: 10000 }]
+  });
+  assert.equal(venta.status, 201, JSON.stringify(venta.body));
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), -1);
+});
+
+test('sin la bandera, vender un repuesto en cero sigue rechazándose', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 0 });
+
+  const venta = await w.client.post('/api/sales', {
+    items: [{ part_id: parte.id, quantity: 1, unit_price: 10000 }]
+  });
+  assert.equal(venta.status, 409);
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), 0, 'no se debió tocar el stock');
 });

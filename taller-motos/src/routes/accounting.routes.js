@@ -134,9 +134,17 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
   const { rows } = await query(
     `SELECT *, count(*) OVER() AS full_count FROM (
        SELECT i.id, 'invoice' AS source,
-         CASE WHEN i.kind = 'electronic' THEN 'Factura electrónica' ELSE 'Factura de venta' END AS doc_type,
-         CASE WHEN i.kind = 'electronic' THEN i.external_id
-              ELSE '10-' || lpad(i.number::text, 6, '0') END AS doc_code,
+         -- El nombre y el código del documento salen de la propia factura, no
+         -- de su columna kind: el taller define sus tipos (10, 1030, los que
+         -- tenga) y una factura emitida conserva el nombre con que se emitió.
+         COALESCE(i.document_type_name,
+                  CASE WHEN i.kind = 'electronic' THEN 'Factura electrónica' ELSE 'Factura de venta' END)
+           AS doc_type,
+         i.document_type_code AS doc_type_code,
+         -- El número, aparte del código: la electrónica lleva el que le
+         -- asignó la DIAN; la normal, su consecutivo con el prefijo del tipo.
+         CASE WHEN i.kind = 'electronic' AND i.external_id IS NOT NULL THEN i.external_id
+              ELSE COALESCE(i.prefix, '') || lpad(i.number::text, 6, '0') END AS doc_code,
          COALESCE(i.issued_at, i.created_at)::date AS doc_date,
          COALESCE(cu.name, sc.name, sa.customer_name) AS counterparty,
          COALESCE('Orden ' || wo.public_code, 'Venta de mostrador #' || sa.number::text) AS detail,
@@ -150,7 +158,7 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
 
        UNION ALL
 
-       SELECT p.id, 'purchase' AS source, 'Compra' AS doc_type,
+       SELECT p.id, 'purchase' AS source, 'Compra' AS doc_type, NULL AS doc_type_code,
          COALESCE(p.reference, 'C-' || substring(p.id::text, 1, 8)) AS doc_code,
          p.purchased_at::date AS doc_date,
          s.name AS counterparty, COALESCE(p.notes, '') AS detail,
@@ -161,7 +169,7 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
 
        UNION ALL
 
-       SELECT e.id, 'cash_entry' AS source, 'Movimiento contable' AS doc_type,
+       SELECT e.id, 'cash_entry' AS source, 'Movimiento contable' AS doc_type, NULL AS doc_type_code,
          'M-' || substring(e.id::text, 1, 8) AS doc_code,
          e.entry_date AS doc_date,
          COALESCE(c.name, 'Sin categoría') AS counterparty, e.description AS detail,
@@ -172,7 +180,7 @@ accountingRouter.get('/operations', wrap(async (req, res) => {
 
        UNION ALL
 
-       SELECT pp.id, 'payroll' AS source, 'Nómina' AS doc_type,
+       SELECT pp.id, 'payroll' AS source, 'Nómina' AS doc_type, NULL AS doc_type_code,
          pp.period AS doc_code,
          pp.paid_at AS doc_date,
          emp.name AS counterparty, ('Pago de nómina ' || pp.period) AS detail,

@@ -1,0 +1,79 @@
+name: Tests de taller-motos
+
+# Corre la suite de taller-motos (el software de taller.ridera.com.co y
+# almacen.ridera.com.co) en cada cambio que la toque.
+#
+# Por que existe: hasta ahora nadie ejecutaba estos tests. Eso permitio que
+# db/schema.sql quedara con cuatro ALTER TABLE sobre tablas que se crean mas
+# abajo en el mismo archivo -- en produccion no se notaba porque las tablas ya
+# existian, pero una base limpia terminaba vacia y la suite entera no arrancaba.
+# El fallo no daba la cara en ningun sitio. Con esto, cualquier cambio que
+# rompa el esquema o una prueba se ve en el PR, no meses despues.
+#
+# La base se levanta como servicio y setup-db.js la crea desde cero en cada
+# corrida, que es justo el camino que estaba roto.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "taller-motos/**"
+      - ".github/workflows/test-taller-motos.yml"
+  pull_request:
+    paths:
+      - "taller-motos/**"
+      - ".github/workflows/test-taller-motos.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: test-taller-motos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taller_motos
+        ports:
+          - 5432:5432
+        # Sin esto el job puede arrancar antes de que Postgres acepte conexiones.
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgres://postgres:postgres@127.0.0.1:5432/taller_motos
+      JWT_SECRET: secreto-solo-para-la-suite-de-pruebas
+      NODE_ENV: test
+
+    defaults:
+      run:
+        working-directory: taller-motos
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: taller-motos/package-lock.json
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      # npm test ya corre setup-db.js primero, pero hacerlo aparte deja claro
+      # en los logs si lo que fallo fue crear la base o una prueba.
+      - name: Crear el esquema desde cero
+        run: node scripts/setup-db.js
+
+      - name: Correr la suite
+        run: node --test test/*.test.js

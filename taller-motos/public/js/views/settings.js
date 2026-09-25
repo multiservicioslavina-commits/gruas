@@ -4,16 +4,18 @@ import {
   esc, money, number, date, empty, toast, field, modal, confirmDialog, clean, ROLES
 } from '../ui.js';
 import { onMount, refresh } from '../app.js';
+import { invalidarDocumentTypes } from '../documentos.js';
 
 const PLAN_LABEL = { basico: 'Básico', completo: 'Completo', premium: 'Premium' };
 
 export async function settingsView() {
   const isAdmin = session.role === 'admin';
-  const [workshop, users, services, keys] = await Promise.all([
+  const [workshop, users, services, keys, docTypes] = await Promise.all([
     api.get('/workshop'),
     api.get('/users').then((r) => r.data).catch(() => []),
     api.get('/services?limit=300').then((r) => r.data).catch(() => []),
-    isAdmin ? api.get('/api-keys').then((r) => r.data).catch(() => []) : Promise.resolve([])
+    isAdmin ? api.get('/api-keys').then((r) => r.data).catch(() => []) : Promise.resolve([]),
+    api.get('/workshop/document-types').catch(() => [])
   ]);
 
   // idPrefix 'user-': este modal convive con el formulario "Datos del
@@ -35,6 +37,72 @@ export async function settingsView() {
     field('specialty', 'Especialidad (mecánicos)', { value: user.specialty || '', idPrefix: 'user-' });
 
   onMount(() => {
+    // ── Códigos de facturación ────────────────────────────────────────
+    const guardarDocType = async (result) => {
+      if (!result) return;
+      // El desplegable de facturar cachea el catálogo: si no se tira, el
+      // cajero sigue viendo los códigos viejos hasta recargar la página.
+      invalidarDocumentTypes();
+      refresh();
+    };
+
+    document.getElementById('btn-nuevo-doctype')?.addEventListener('click', async () => {
+      guardarDocType(await modal({
+        title: 'Nuevo código de facturación',
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 El código es el que uses en tu contabilidad. El número de cada
+                 factura se cuenta aparte por cada código.</p>
+               <div class="row">
+                 ${field('code', 'Código', { required: true, placeholder: '10' })}
+                 ${field('prefix', 'Prefijo del número', { placeholder: 'FV',
+                   hint: 'Opcional. El de tu resolución, si tiene.' })}
+               </div>
+               ${field('name', 'Nombre', { required: true, placeholder: 'Factura de venta' })}
+               ${field('sends_to_dian', '¿Se envía a la DIAN?', {
+                 value: 'false',
+                 options: [['false', 'No — comprobante interno'], ['true', 'Sí — factura electrónica']],
+                 hint: 'Esto decide con qué botón se emite. No se puede cambiar después.' })}`,
+        confirmText: 'Crear',
+        onSubmit: (data) => api.post('/workshop/document-types', {
+          ...clean(data), sends_to_dian: data.sends_to_dian === 'true'
+        })
+      }));
+    });
+
+    document.querySelectorAll('[data-edit-doctype]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const tipo = docTypes.find((t) => t.id === button.dataset.editDoctype);
+        if (!tipo) return;
+        guardarDocType(await modal({
+          title: `Código ${tipo.code}`,
+          body: `<p class="small muted" style="margin-bottom:14px">
+                   El código no se puede cambiar: es lo que amarra cada factura ya
+                   emitida a su numeración. Si necesitas otro, crea uno nuevo.</p>
+                 ${field('name', 'Nombre', { required: true, value: tipo.name })}
+                 ${field('prefix', 'Prefijo del número', { value: tipo.prefix || '' })}`,
+          confirmText: 'Guardar',
+          onSubmit: (data) => api.patch(`/workshop/document-types/${tipo.id}`, clean(data))
+        }));
+      });
+    });
+
+    document.querySelectorAll('[data-off-doctype]').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const ok = await confirmDialog({
+          title: `Desactivar "${button.dataset.nombre}"`,
+          message: 'Dejará de aparecer al facturar. Las facturas ya emitidas con ' +
+            'este código no cambian: conservan su código, su nombre y su número.',
+          confirmText: 'Desactivar'
+        });
+        if (!ok) return;
+        try {
+          await api.delete(`/workshop/document-types/${button.dataset.offDoctype}`);
+          invalidarDocumentTypes();
+          refresh();
+        } catch (err) { toast(err.message, true); }
+      });
+    });
+
     // Logo del taller.
     document.getElementById('btn-logo')?.addEventListener('click', () =>
       document.getElementById('logo-input').click());
@@ -487,6 +555,39 @@ export async function settingsView() {
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
         </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <h2>Facturación</h2>
+        ${isAdmin ? '<button class="btn btn-default btn-sm" id="btn-nuevo-doctype">+ Código</button>' : ''}
+      </div>
+      <div class="card-body">
+        <p class="small muted" style="margin-bottom:14px">
+          El <b>código de facturación</b> dice qué documento es (10 factura de venta,
+          1030 factura electrónica, o los que uses en tu contabilidad). El
+          <b>número</b> es el consecutivo de ese documento, y cada código lleva el
+          suyo: si el 10 va por el 340, el 1030 sigue su propia cuenta.</p>
+
+        ${docTypes.length ? `<div class="table-wrap"><table>
+          <thead><tr><th>Código</th><th>Nombre</th><th>Prefijo</th><th>DIAN</th>
+            <th></th></tr></thead>
+          <tbody>${docTypes.map((t) => `
+            <tr style="${t.active ? '' : 'opacity:.5'}">
+              <td class="mono strong">${esc(t.code)}</td>
+              <td>${esc(t.name)}${t.active ? '' : ' <span class="tag tag-grey">Inactivo</span>'}</td>
+              <td class="mono small muted">${esc(t.prefix || '—')}</td>
+              <td>${t.sends_to_dian
+                ? '<span class="tag tag-green">Electrónica</span>'
+                : '<span class="tag tag-grey">Sin DIAN</span>'}</td>
+              <td class="num">${isAdmin ? `
+                <button class="btn btn-quiet btn-sm" data-edit-doctype="${esc(t.id)}">Editar</button>
+                ${t.active ? `<button class="btn btn-quiet btn-sm"
+                  data-off-doctype="${esc(t.id)}" data-nombre="${esc(t.name)}">Desactivar</button>` : ''}
+              ` : ''}</td>
+            </tr>`).join('')}</tbody>
+        </table></div>` : empty('Sin códigos de facturación.', '🧾')}
       </div>
     </div>
 

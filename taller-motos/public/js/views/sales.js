@@ -4,6 +4,8 @@ import {
   errorBox, PAYMENT_METHODS, normalizeSearch
 } from '../ui.js';
 import { onMount, go } from '../app.js';
+import { selectorDeCodigo, textoFactura, conectarDescargaPdf } from '../documentos.js';
+import { imprimirFactura } from '../factura.js';
 
 // ── Listado ──────────────────────────────────────────────────────────
 export async function salesView() {
@@ -59,7 +61,7 @@ export async function salesView() {
       const full = await api.get(`/sales/${sale.id}`);
       const issued = full.invoices.find((i) => i.status === 'issued');
       if (issued) {
-        cell.textContent = issued.doc_code;
+        cell.textContent = textoFactura(issued);
         actionCell.innerHTML = '';
       } else {
         cell.textContent = 'Sin facturar';
@@ -71,8 +73,8 @@ export async function salesView() {
           button.disabled = true;
           try {
             const result = await api.post(`/sales/${sale.id}/invoice-normal`, {});
-            toast(`Factura ${result.doc_code} generada`);
-            cell.textContent = result.doc_code;
+            toast(`Factura ${textoFactura(result)} generada`);
+            cell.textContent = textoFactura(result);
             actionCell.innerHTML = '';
           } catch (err) { toast(err.message, true); button.disabled = false; }
         });
@@ -125,15 +127,37 @@ export async function saleDetailView(id) {
     if (!target) return;
 
     const issued = sale.invoices.find((i) => i.status === 'issued');
+    // Una reserva sin confirmar significa que hay una facturación en curso, o
+    // una que llegó a la DIAN y no se pudo guardar. En los dos casos hay que
+    // decirlo y esconder los botones de facturar: volver a intentarlo es lo
+    // peor que se puede hacer.
+    const sinConfirmar = sale.invoices.find((i) => i.status === 'draft');
 
     target.innerHTML = `
+      ${sinConfirmar ? `
+      <div class="card" style="margin-bottom:18px;border-color:var(--amber)">
+        <div class="card-body">
+          <p class="small" style="color:var(--amber);margin:0">
+            ${sinConfirmar.external_id
+              ? `Esta venta tiene una factura creada ante la DIAN (documento
+                 ${esc(sinConfirmar.external_id)}) que no se pudo guardar aquí.
+                 <b>No la vuelvas a facturar</b>: sería un documento duplicado, y eso
+                 sólo se corrige con una nota crédito. Contacta a quien te entregó el
+                 software con ese número.`
+              : 'Se está facturando en este momento. Recarga en unos segundos.'}
+          </p>
+        </div>
+      </div>` : ''}
+
       <div class="card" style="margin-bottom:18px">
         <div class="card-head">
           <h2>Datos de la venta</h2>
           <div style="display:flex;gap:8px">
             <button class="btn btn-default btn-sm" id="btn-print-sale" type="button">Imprimir</button>
-            ${!issued && session.can('cashier')
-              ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Facturar</button>` : ''}
+            ${!issued && !sinConfirmar && session.can('cashier')
+              ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Factura de venta</button>` : ''}
+            ${!issued && !sinConfirmar && session.can('cashier') && session.hasPlan('premium')
+              ? `<button class="btn btn-default btn-sm" id="btn-facturar-dian">Facturar electrónicamente</button>` : ''}
           </div>
         </div>
         <div class="card-body">
@@ -146,7 +170,20 @@ export async function saleDetailView(id) {
               <div class="kv"><span class="k">Método de pago</span><span class="v">${esc(PAYMENT_METHODS[sale.payment_method] || sale.payment_method)}</span></div>
             </div>
             <div>
-              <div class="kv"><span class="k">Factura</span><span class="v">${issued ? esc(issued.doc_code) : 'Sin facturar'}</span></div>
+              <div class="kv"><span class="k">Código de facturación</span>
+                <span class="v">${issued && issued.document_type_code
+                  ? `${esc(issued.document_type_code)} · ${esc(issued.document_type_name || '')}`
+                  : '—'}</span></div>
+              <div class="kv"><span class="k">Número de factura</span>
+                <span class="v">${issued ? `<b>${esc(issued.doc_number)}</b>` : 'Sin facturar'}</span></div>
+              ${issued ? `
+                <div class="kv"><span class="k">Documento</span><span class="v">
+                  <button class="btn btn-default btn-sm" data-print-invoice="${esc(issued.id)}">
+                    Imprimir factura</button>
+                  ${issued.kind === 'electronic' ? `
+                    <button class="btn btn-default btn-sm" data-invoice-pdf="${esc(issued.id)}">
+                      Descargar PDF</button>` : ''}
+                </span></div>` : ''}
               <div class="kv"><span class="k">Registró</span><span class="v">${esc(sale.created_by_name || '—')}</span></div>
             </div>
           </div>
@@ -181,13 +218,95 @@ export async function saleDetailView(id) {
         </div>
       </div>`;
 
-    document.getElementById('btn-facturar-detail')?.addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      try {
-        const result = await api.post(`/sales/${id}/invoice-normal`, {});
-        toast(`Factura ${result.doc_code} generada`);
-        load();
-      } catch (err) { toast(err.message, true); e.target.disabled = false; }
+    document.getElementById('btn-facturar-detail')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Factura de venta',
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Es un comprobante de venta normal, no electrónico ante la DIAN.
+                 Para eso está "Facturar electrónicamente" (plan Premium).</p>
+               ${await selectorDeCodigo(false)}
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Generar factura',
+        onSubmit: (data) => api.post(`/sales/${id}/invoice-normal`, clean(data))
+      });
+      if (result) { toast(`Factura ${textoFactura(result)} generada`); load(); }
+    });
+
+    // Factura electrónica ante la DIAN (plan Premium). Los datos que pide
+    // no viven en la ficha del cliente: cambian según a nombre de quién se
+    // factura, así que se completan aquí cada vez.
+    document.getElementById('btn-facturar-dian')?.addEventListener('click', async () => {
+      const metodo = { cash: '10', transfer: '47', card: '48', nequi: 'ZZZ', daviplata: 'ZZZ' };
+      const result = await modal({
+        title: 'Facturar electrónicamente',
+        wide: true,
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Estos datos son los que exige la DIAN y no viven en la ficha del
+                 cliente. Se completan aquí cada vez porque cambian según a nombre
+                 de quién se factura.</p>
+               ${await selectorDeCodigo(true)}
+               <div class="row">
+                 ${field('identification_document_code', 'Tipo de documento', { value: '13', options: [
+                   ['13', 'Cédula de ciudadanía'], ['31', 'NIT'], ['22', 'Cédula de extranjería'],
+                   ['12', 'Tarjeta de identidad'], ['41', 'Pasaporte'], ['91', 'NUIP']
+                 ] })}
+                 ${field('identification', 'Número de documento', { required: true })}
+               </div>
+               <div class="row">
+                 ${field('legal_organization_code', 'Tipo de persona', { value: '2', options: [
+                   ['2', 'Persona natural'], ['1', 'Persona jurídica'] ] })}
+                 ${field('dv', 'DV (sólo NIT)', { placeholder: 'Dígito de verificación' })}
+               </div>
+               ${field('names', 'Nombre completo o razón social', { required: true,
+                 value: sale.customer_name_saved || sale.customer_name || '' })}
+               ${field('address', 'Dirección')}
+               <div class="row">
+                 ${field('email', 'Correo', { type: 'email' })}
+                 ${field('phone', 'Teléfono', { type: 'tel', value: sale.customer_phone || '' })}
+               </div>
+               <div class="row">
+                 ${field('municipality_code', 'Código DANE del municipio', { required: true,
+                   placeholder: '05001', hint: 'Medellín 05001 · Bogotá 11001 · Cali 76001' })}
+                 ${field('tribute_code', 'Responsabilidad de IVA', {
+                   value: Number(sale.tax_rate) > 0 ? '01' : 'ZZ',
+                   options: [['01', 'Responsable de IVA'], ['ZZ', 'No aplica']] })}
+               </div>
+               ${field('payment_method_code', 'Método de pago', {
+                 value: metodo[sale.payment_method] || '10',
+                 options: [['10', 'Efectivo'], ['47', 'Transferencia'], ['48', 'Tarjeta crédito'],
+                   ['49', 'Tarjeta débito'], ['42', 'Consignación bancaria'], ['ZZZ', 'Otro']] })}
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Facturar',
+        onSubmit: (data) => api.post(`/sales/${id}/invoice`, data)
+      });
+      if (result) { toast(`Factura ${textoFactura(result)} emitida`); load(); }
+    });
+
+    conectarDescargaPdf();
+
+    // Misma factura que en la orden de trabajo -- el documento es el mismo,
+    // sólo cambia de dónde salen los renglones.
+    document.querySelectorAll('[data-print-invoice]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const invoice = sale.invoices.find((i) => i.id === button.dataset.printInvoice);
+        if (!invoice) return;
+        const ok = imprimirFactura({
+          workshop: session.workshop || {},
+          invoice,
+          cliente: {
+            nombre: sale.customer_name_saved || sale.customer_name,
+            telefono: sale.customer_phone
+          },
+          lineas: sale.items.map((i) => ({
+            descripcion: i.description,
+            cantidad: i.quantity,
+            precio: i.unit_price,
+            total: Number(i.quantity) * Number(i.unit_price)
+          })),
+          referencia: `Venta de mostrador #${sale.number}`
+        });
+        if (!ok) toast('El navegador bloqueó la ventana de impresión. Permítela e inténtalo de nuevo.', true);
+      });
     });
 
     document.getElementById('btn-print-sale')?.addEventListener('click', () => {
@@ -667,7 +786,7 @@ export async function newSaleView() {
       const taxRate = Number(document.getElementById('f-tax_rate')?.value) || 0;
       const warehouseId = document.getElementById('f-warehouse_id')?.value || undefined;
 
-      const result = await api.post('/sales', {
+      const cuerpo = {
         customer_id: customerId,
         customer_name: !customerId ? customerName : undefined,
         payment_method: paymentMethod,
@@ -675,7 +794,19 @@ export async function newSaleView() {
         tax_rate: taxRate,
         warehouse_id: warehouseId,
         items
-      });
+      };
+
+      // El mostrador vende sin preguntar por las existencias: el repuesto
+      // puede estar ahí sin que se haya registrado la entrada todavía, y
+      // parar la venta por eso cuesta más que el descuadre. El inventario
+      // queda en negativo, en rojo y marcado "pendiente de entrada".
+      //
+      // La contrapartida, a sabiendas: agregar dos veces el mismo artículo
+      // (en vez de subir la cantidad) ya no avisa en el momento. Se ve
+      // después, en el inventario. El servidor mantiene la comprobación por
+      // defecto -- es esta pantalla la que decide saltársela--, así que la
+      // API sigue protegida para cualquier otro que la use.
+      const result = await api.post('/sales', { ...cuerpo, allow_negative_stock: true });
 
       toast(`Venta #${result.number} registrada`);
       go(`/ventas/${result.id}`);

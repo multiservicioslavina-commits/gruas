@@ -131,7 +131,20 @@ export function createApp() {
   app.use('/api', (_req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
 
   // El resto de rutas las resuelve el frontend (una sola página).
-  app.get('*', (_req, res) => res.sendFile(join(publicDir, 'index.html')));
+  //
+  // Excepto las que piden un archivo concreto: si llegan hasta aquí es que
+  // express.static no lo encontró, así que no existe. Devolver index.html con
+  // un 200 hacía que los escáneres registraran como "existe" cosas como
+  // /.git/config o /.env -- no se filtraba nada (lo que recibían era el HTML
+  // de la app), pero un 200 invita a seguir sondeando. Un 404 honesto dice la
+  // verdad y corta el ruido.
+  app.get('*', (req, res) => {
+    const ultimoTramo = req.path.split('/').pop() || '';
+    if (ultimoTramo.includes('.')) {
+      return res.status(404).type('txt').send('No encontrado');
+    }
+    res.sendFile(join(publicDir, 'index.html'));
+  });
 
   // Manejo de errores. Nunca se filtra el detalle interno en producción.
   app.use((err, _req, res, _next) => {

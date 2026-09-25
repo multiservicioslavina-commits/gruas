@@ -88,6 +88,11 @@ export async function inventoryView() {
         </tr></thead>
         <tbody>${rows.map((part) => {
           const low = Number(part.stock) <= Number(part.min_stock);
+          // Negativo no es lo mismo que "bajo mínimo": significa que se
+          // vendió algo que aún no se ha registrado como entrada. Se marca
+          // aparte para que no se confunda con un repuesto que simplemente
+          // está por agotarse.
+          const debe = Number(part.stock) < 0;
           return `<tr>
             <td>
               <div class="strong">${esc(part.name)}</div>
@@ -100,7 +105,9 @@ export async function inventoryView() {
             <td class="num strong">${money(part.price)}</td>
             <td class="num">
               <span class="tag ${low ? 'tag-red' : 'tag-grey'}">${number(part.stock)}</span>
-              ${low ? `<div class="faint">mín. ${number(part.min_stock)}</div>` : ''}
+              ${debe
+                ? '<div class="faint">pendiente de entrada</div>'
+                : (low ? `<div class="faint">mín. ${number(part.min_stock)}</div>` : '')}
             </td>
             <td class="num nowrap">
               <button class="btn btn-default btn-sm" data-move="${esc(part.id)}">Movimiento</button>
