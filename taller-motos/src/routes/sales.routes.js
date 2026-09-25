@@ -70,6 +70,14 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     tax_rate:        { type: 'number', min: 0, max: 100, default: 0 },
     payment_method:  { type: 'string', enum: METHODS, default: 'cash' },
     warehouse_id:    { type: 'string', max: 40 },
+    // Vender sin existencias: el repuesto llegó pero todavía no se registró
+    // la entrada. El mostrador no puede parar por eso, así que se permite
+    // dejar el stock en negativo -- igual que ya hacían las órdenes de
+    // trabajo con esta misma bandera. Va apagada por defecto a propósito:
+    // así el caso accidental (agregar dos veces el mismo artículo en vez de
+    // subir la cantidad) sigue avisando, y el deliberado sólo necesita
+    // confirmar. El negativo queda visible en rojo en el inventario.
+    allow_negative_stock: { type: 'boolean', default: false },
     items:           { type: 'array', required: true }
   });
   if (!data.items.length) throw badRequest('La venta no tiene ítems');
@@ -114,7 +122,7 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
         // con 10 en existencia pasaban las dos comprobaciones y el stock
         // terminaba en -2, con la venta aceptada.
         const yaPedido = (pedidoPorRepuesto.get(item.part_id) ?? 0) + item.quantity;
-        if (disponible < yaPedido) {
+        if (!data.allow_negative_stock && disponible < yaPedido) {
           throw conflict(`Sólo quedan ${disponible} unidades de "${part.name}".`);
         }
         pedidoPorRepuesto.set(item.part_id, yaPedido);

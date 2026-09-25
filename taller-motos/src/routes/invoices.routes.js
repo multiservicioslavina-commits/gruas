@@ -1,6 +1,6 @@
 // Facturación de una orden o de una venta de mostrador, de dos maneras:
 // factura de venta normal (todos los planes, sin la DIAN) o factura
-// electrónica (plan Premium, vía Factus; sólo para órdenes por ahora).
+// electrónica (plan Premium, vía Factus), tanto de órdenes como de ventas.
 //
 // Ninguna duplica la lógica de órdenes/ventas: arman la factura a partir de
 // lo que ya hay cargado (servicios, repuestos, total). La electrónica
@@ -209,6 +209,109 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
     // una nota crédito directamente en Factus, no se puede deshacer desde acá.
     console.error('Factura DIAN creada en Factus pero no se pudo guardar localmente:',
       { workOrderId: order.id, documentNumber: bill.number, cufe: bill.cufe, error: err });
+    throw new ApiError(500,
+      `La factura electrónica SÍ se creó ante la DIAN (documento ${bill.number}). ` +
+      'No se pudo guardar en este sistema por un error interno: no la vuelvas a generar, ' +
+      'eso crearía una segunda factura. Contacta a quien te entregó el software con ese ' +
+      'número de documento para que la registre a mano.');
+  }
+
+  res.status(201).json(invoice);
+}));
+
+// ── Factura electrónica de una venta de mostrador ─────────────────────────
+// Faltaba: sólo las órdenes de trabajo se podían facturar ante la DIAN. Para
+// un almacén de repuestos eso dejaba fuera su operación entera, porque ahí
+// casi todo se vende por mostrador y nunca pasa por una orden.
+//
+// Misma forma que la de órdenes, con dos diferencias propias de una venta:
+// se cobra en el momento (payment_form '1', de contado) y el descuento sale
+// del campo de la venta, no de la suma de líneas de una orden.
+invoicesRouter.post('/sales/:id/invoice', requirePlan('premium'), requireRole('cashier'), wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, CUSTOMER_SCHEMA);
+
+  const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
+  if (!credentialsFor(workshop)) {
+    throw badRequest('Este negocio no tiene configurada su cuenta de Factus. Configúrala en Ajustes → Facturación electrónica.');
+  }
+  if (!workshop.factus_numbering_range_id) {
+    throw badRequest('Configura primero tu rango de numeración de Factus, en Ajustes → Facturación electrónica.');
+  }
+
+  // Igual que en las órdenes: una venta ya facturada no se vuelve a facturar,
+  // porque un documento ante la DIAN no se deshace desde aquí.
+  await assertSinFacturar(req.auth.workshopId, { saleId: req.params.id });
+
+  const sale = await transaction((client) => loadFullSale(client, req.auth.workshopId, req.params.id));
+  if (!sale.items.length) throw badRequest('Esta venta no tiene ítems que facturar');
+
+  // El descuento de la venta es un monto global y Factus lo pide por ítem en
+  // porcentaje: se reparte proporcionalmente para que la suma de los ítems ya
+  // descontados cuadre con lo que de verdad se cobró. Sin esto, cualquier
+  // venta con descuento facturaría de más y la DIAN podría rechazarla.
+  const bruto = sale.items.reduce((suma, i) => suma + Number(i.quantity) * Number(i.unit_price), 0);
+  const discountRate = bruto > 0 ? Math.min(100, (Number(sale.discount) / bruto) * 100) : 0;
+
+  const items = sale.items.map((line, index) => ({
+    code_reference: `ITEM-${index + 1}`,
+    name: line.description,
+    quantity: Number(line.quantity),
+    price: Number(line.unit_price),
+    discount_rate: discountRate,
+    unit_measure_code: '94',
+    standard_code: '999',
+    taxes: [{ code: '01', rate: String(sale.tax_rate || 0) }]
+  }));
+
+  const referenceCode = `VTA-${sale.number}-${Date.now()}`;
+  const billInput = {
+    reference_code: referenceCode,
+    numbering_range_id: workshop.factus_numbering_range_id,
+    observation: data.observation || undefined,
+    payment_details: [{
+      payment_form: '1',   // De contado: una venta de mostrador se cobra al entregar.
+      payment_method_code: data.payment_method_code,
+      amount: String(sale.total)
+    }],
+    customer: {
+      identification_document_code: data.identification_document_code,
+      identification: data.identification,
+      dv: data.dv || undefined,
+      legal_organization_code: data.legal_organization_code,
+      names: data.names || sale.customer_name_saved || sale.customer_name || undefined,
+      address: data.address || undefined,
+      email: data.email || undefined,
+      phone: data.phone || sale.customer_phone || undefined,
+      municipality_code: data.municipality_code,
+      tribute_code: data.tribute_code
+    },
+    items
+  };
+
+  const result = await createBill(workshop, billInput);
+  const bill = result.data;
+
+  let invoice;
+  try {
+    invoice = await transaction(async (client) => {
+      const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+      const { rows: [row] } = await client.query(
+        `INSERT INTO invoices (workshop_id, sale_id, number, kind, status, subtotal, tax_total, total,
+                                issued_at, external_id, reference_code, cufe, payload)
+         VALUES ($1,$2,$3,'electronic','issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
+        [req.auth.workshopId, sale.id, num, Number(sale.subtotal) - Number(sale.discount),
+         sale.tax_total, sale.total, bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill)]
+      );
+      return row;
+    });
+  } catch (err) {
+    // Mismo caso irreversible que en las órdenes: Factus ya registró el
+    // documento ante la DIAN y lo que fallo fue guardarlo aqui. Si esto se
+    // tratara como un error cualquiera, alguien reintentaria "Facturar" y
+    // generaria una SEGUNDA factura electronica para la misma venta.
+    console.error('Factura DIAN creada en Factus pero no se pudo guardar localmente:',
+      { saleId: sale.id, documentNumber: bill.number, cufe: bill.cufe, error: err });
     throw new ApiError(500,
       `La factura electrónica SÍ se creó ante la DIAN (documento ${bill.number}). ` +
       'No se pudo guardar en este sistema por un error interno: no la vuelvas a generar, ' +

@@ -1,7 +1,7 @@
 import { api, session } from '../api.js';
 import {
   esc, money, number, date, empty, toast, field, modal, clean,
-  errorBox, PAYMENT_METHODS, normalizeSearch
+  errorBox, PAYMENT_METHODS, normalizeSearch, confirmDialog
 } from '../ui.js';
 import { onMount, go } from '../app.js';
 
@@ -133,7 +133,9 @@ export async function saleDetailView(id) {
           <div style="display:flex;gap:8px">
             <button class="btn btn-default btn-sm" id="btn-print-sale" type="button">Imprimir</button>
             ${!issued && session.can('cashier')
-              ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Facturar</button>` : ''}
+              ? `<button class="btn btn-default btn-sm" id="btn-facturar-detail">Factura de venta</button>` : ''}
+            ${!issued && session.can('cashier') && session.hasPlan('premium')
+              ? `<button class="btn btn-default btn-sm" id="btn-facturar-dian">Facturar electrónicamente</button>` : ''}
           </div>
         </div>
         <div class="card-body">
@@ -188,6 +190,55 @@ export async function saleDetailView(id) {
         toast(`Factura ${result.doc_code} generada`);
         load();
       } catch (err) { toast(err.message, true); e.target.disabled = false; }
+    });
+
+    // Factura electrónica ante la DIAN (plan Premium). Los datos que pide
+    // no viven en la ficha del cliente: cambian según a nombre de quién se
+    // factura, así que se completan aquí cada vez.
+    document.getElementById('btn-facturar-dian')?.addEventListener('click', async () => {
+      const metodo = { cash: '10', transfer: '47', card: '48', nequi: 'ZZZ', daviplata: 'ZZZ' };
+      const result = await modal({
+        title: 'Facturar electrónicamente',
+        wide: true,
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Estos datos son los que exige la DIAN y no viven en la ficha del
+                 cliente. Se completan aquí cada vez porque cambian según a nombre
+                 de quién se factura.</p>
+               <div class="row">
+                 ${field('identification_document_code', 'Tipo de documento', { value: '13', options: [
+                   ['13', 'Cédula de ciudadanía'], ['31', 'NIT'], ['22', 'Cédula de extranjería'],
+                   ['12', 'Tarjeta de identidad'], ['41', 'Pasaporte'], ['91', 'NUIP']
+                 ] })}
+                 ${field('identification', 'Número de documento', { required: true })}
+               </div>
+               <div class="row">
+                 ${field('legal_organization_code', 'Tipo de persona', { value: '2', options: [
+                   ['2', 'Persona natural'], ['1', 'Persona jurídica'] ] })}
+                 ${field('dv', 'DV (sólo NIT)', { placeholder: 'Dígito de verificación' })}
+               </div>
+               ${field('names', 'Nombre completo o razón social', { required: true,
+                 value: sale.customer_name_saved || sale.customer_name || '' })}
+               ${field('address', 'Dirección')}
+               <div class="row">
+                 ${field('email', 'Correo', { type: 'email' })}
+                 ${field('phone', 'Teléfono', { type: 'tel', value: sale.customer_phone || '' })}
+               </div>
+               <div class="row">
+                 ${field('municipality_code', 'Código DANE del municipio', { required: true,
+                   placeholder: '05001', hint: 'Medellín 05001 · Bogotá 11001 · Cali 76001' })}
+                 ${field('tribute_code', 'Responsabilidad de IVA', {
+                   value: Number(sale.tax_rate) > 0 ? '01' : 'ZZ',
+                   options: [['01', 'Responsable de IVA'], ['ZZ', 'No aplica']] })}
+               </div>
+               ${field('payment_method_code', 'Método de pago', {
+                 value: metodo[sale.payment_method] || '10',
+                 options: [['10', 'Efectivo'], ['47', 'Transferencia'], ['48', 'Tarjeta crédito'],
+                   ['49', 'Tarjeta débito'], ['42', 'Consignación bancaria'], ['ZZZ', 'Otro']] })}
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Facturar',
+        onSubmit: (data) => api.post(`/sales/${id}/invoice`, data)
+      });
+      if (result) { toast(`Factura ${result.external_id} emitida`); load(); }
     });
 
     document.getElementById('btn-print-sale')?.addEventListener('click', () => {
@@ -667,7 +718,7 @@ export async function newSaleView() {
       const taxRate = Number(document.getElementById('f-tax_rate')?.value) || 0;
       const warehouseId = document.getElementById('f-warehouse_id')?.value || undefined;
 
-      const result = await api.post('/sales', {
+      const cuerpo = {
         customer_id: customerId,
         customer_name: !customerId ? customerName : undefined,
         payment_method: paymentMethod,
@@ -675,7 +726,27 @@ export async function newSaleView() {
         tax_rate: taxRate,
         warehouse_id: warehouseId,
         items
-      });
+      };
+
+      // Si no alcanzan las existencias, el servidor responde 409 y aquí se
+      // pregunta en vez de bloquear: el repuesto puede estar en el mostrador
+      // sin que se haya registrado la entrada todavía. Al confirmar se repite
+      // la venta con allow_negative_stock y el inventario queda en negativo,
+      // marcado en rojo. Se pregunta (en vez de mandarlo siempre) para que el
+      // caso accidental -- agregar dos veces el mismo artículo en vez de subir
+      // la cantidad -- siga avisando.
+      let result;
+      try {
+        result = await api.post('/sales', cuerpo);
+      } catch (err) {
+        if (err.status !== 409) throw err;
+        const seguir = await confirmDialog(
+          `${err.message}\n\n¿Vender de todos modos? El inventario quedará en negativo ` +
+          'hasta que registres la entrada.',
+          { title: 'No hay existencias suficientes', confirmText: 'Vender igual' });
+        if (!seguir) { submitBtn.disabled = false; return; }
+        result = await api.post('/sales', { ...cuerpo, allow_negative_stock: true });
+      }
 
       toast(`Venta #${result.number} registrada`);
       go(`/ventas/${result.id}`);
