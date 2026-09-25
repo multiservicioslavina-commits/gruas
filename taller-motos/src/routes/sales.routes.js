@@ -85,6 +85,7 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
     if (data.warehouse_id) await assertDelTaller('warehouses', data.warehouse_id, req.auth.workshopId, client);
 
     const items = [];
+    const pedidoPorRepuesto = new Map();
     let partsTotal = 0;
     for (const raw of data.items) {
       const item = validate(raw, {
@@ -106,9 +107,17 @@ salesRouter.post('/', requireRole('cashier'), wrap(async (req, res) => {
         const disponible = data.warehouse_id
           ? await warehouseStock(client, part.id, data.warehouse_id)
           : Number(part.stock);
-        if (disponible < item.quantity) {
+        // Se compara contra lo que lleva pedido ESTA venta, no contra esta
+        // linea sola: un mismo repuesto puede venir en varias lineas (pasa
+        // solo, cuando en el mostrador se agrega el articulo otra vez en vez
+        // de subir la cantidad). Comprobando linea a linea, 6 + 6 unidades
+        // con 10 en existencia pasaban las dos comprobaciones y el stock
+        // terminaba en -2, con la venta aceptada.
+        const yaPedido = (pedidoPorRepuesto.get(item.part_id) ?? 0) + item.quantity;
+        if (disponible < yaPedido) {
           throw conflict(`Sólo quedan ${disponible} unidades de "${part.name}".`);
         }
+        pedidoPorRepuesto.set(item.part_id, yaPedido);
         description = description || part.name;
         // Cliente mayorista y el repuesto tiene precio mayorista: ese; si
         // no, el de siempre. La línea siempre se puede escribir a mano.

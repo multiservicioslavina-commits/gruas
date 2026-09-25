@@ -135,3 +135,42 @@ test('una venta facturada aparece en el balance de caja y en Operaciones', async
   assert.equal(fila.direction, 'income');
   assert.equal(Number(fila.amount), 100000);
 });
+
+// ── Un mismo repuesto en varias líneas de la misma venta ──────────────────
+// Pasa solo en el mostrador: se agrega el artículo y luego se vuelve a
+// agregar en vez de subir la cantidad. La comprobación de existencias era
+// línea a línea contra el mismo stock sin descontar, así que 6 + 6 unidades
+// con 10 en inventario pasaban las dos y la venta se aceptaba dejando el
+// stock en -2.
+test('el mismo repuesto repetido en varias líneas no puede pasarse del stock', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 10 });
+
+  const venta = await w.client.post('/api/sales', {
+    items: [
+      { part_id: parte.id, quantity: 6, unit_price: 10000 },
+      { part_id: parte.id, quantity: 6, unit_price: 10000 }
+    ]
+  });
+  assert.equal(venta.status, 409);
+  assert.match(venta.body.error, /quedan 10/i);
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), 10, 'no se debió descontar nada');
+});
+
+test('un mismo repuesto en varias líneas sí se vende si la suma cabe en el stock', async () => {
+  const w = await createWorkshop(server.url);
+  const parte = await repuesto(w.client, { stock: 10 });
+
+  const venta = await w.client.post('/api/sales', {
+    items: [
+      { part_id: parte.id, quantity: 4, unit_price: 10000 },
+      { part_id: parte.id, quantity: 6, unit_price: 10000 }
+    ]
+  });
+  assert.equal(venta.status, 201, JSON.stringify(venta.body));
+
+  const despues = await w.client.get(`/api/parts/${parte.id}`);
+  assert.equal(Number(despues.body.stock), 0);
+});
