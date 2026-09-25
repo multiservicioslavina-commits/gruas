@@ -702,13 +702,18 @@ type ToolResult = { ok: boolean; data: unknown };
 const NOTA_DISTANCIA_SOLO_IDA =
   "km y duracion son SOLO IDA (un sentido). No los dupliques ni asumas ida y vuelta. Si el rider pregunta cuanto es ida y vuelta, calcula tu mismo km_ida x 2 y dilo como calculo tuyo, no como dato de Ridera -- ej: 'unos 276 km ida y vuelta, calculados a partir de los 138 km de ida que tiene registrados Ridera'.";
 
-async function riderIdPorTelefono(phone: string): Promise<{ id: string; nombre: string } | null> {
+async function riderIdPorTelefono(
+  phone: string,
+): Promise<{ id: string; nombre: string; placa: string | null } | null> {
   const tel = phone.replace(/^57/, "");
   // .limit(1) antes de .maybeSingle(): igual que en index.ts, un telefono
   // con mas de un registro haria que maybeSingle() sola reviente.
+  //
+  // Se trae tambien placa: consultar_pico_placa la necesita para decidir si
+  // completar riders.placa, y es el mismo registro que ya se estaba leyendo.
   const { data } = await supabase
     .from("riders")
-    .select("id, nombre")
+    .select("id, nombre, placa")
     .or(`telefono.eq.${tel},telefono.eq.57${tel},telefono.eq.+57${tel}`)
     .order("created_at", { ascending: false })
     .limit(1)
@@ -979,14 +984,26 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     const dia = Object.entries(tabla).find(([, ds]) => ds.includes(digito))?.[0] ?? null;
 
     // La alerta automatica diaria de pico y placa (alerta-pico-placa) solo
-    // le escribe a riders cuya moto activa ya tiene placa guardada en
-    // rider_motorcycles. Como ninguna pantalla de registro pide la placa
-    // (solo la edicion de perfil, que casi nadie visita), la inmensa
-    // mayoria de las motos activas quedaban con placa=null y por lo tanto
-    // nunca entraban en la lista de candidatos de esa alerta, sin que
-    // ningun log ni el cron mostraran error. Guardar la placa aqui, en el
-    // momento mas natural en que un rider la menciona, cierra ese hueco
-    // para riders ya existentes sin que tengan que ir a "Mi cuenta".
+    // le escribe a riders cuya moto activa ya tiene placa en
+    // rider_motorcycles. Guardarla aqui, en el momento mas natural en que
+    // un rider la menciona, cierra ese hueco sin que tenga que ir a editar
+    // su perfil.
+    //
+    // Correccion de un comentario anterior: la placa SI se pide en una
+    // pantalla de registro -- hoja-de-vida.html, la unica que crea filas en
+    // rider_motorcycles. El problema no era que no se pidiera, sino que
+    // estaba marcada "(opcional)" sin explicar para que sirve: 11 de 12
+    // motos activas se registraron con placa vacia. Por eso el arreglo real
+    // va en el formulario (explicar el beneficio) y esto es el rescate de
+    // los riders que ya quedaron sin ella.
+    //
+    // Se escribe en LOS DOS sitios donde vive la placa:
+    //   - rider_motorcycles.placa -> es la que lee la alerta diaria
+    //   - riders.placa            -> es la que lee rita-rider-context, o sea
+    //                                lo que Rita ve al consultar mi_perfil
+    // Guardar solo en el primero dejaba a Rita diciendo "no tienes placa
+    // registrada" justo despues de haberla guardado ella misma.
+    //
     // Solo se completa un dato vacio: nunca se sobreescribe una placa que
     // el rider ya tenia guardada, para no correr el riesgo de reemplazarla
     // por la de un tercero (ej. si pregunta por la placa de un amigo).
@@ -1009,6 +1026,10 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
               .update({ placa })
               .eq("id", moto.id);
             placaGuardada = !error;
+          }
+          // Mismo criterio en riders.placa: completar solo si esta vacia.
+          if (!rider.placa) {
+            await supabase.from("riders").update({ placa }).eq("id", rider.id);
           }
         }
       } catch (e) {

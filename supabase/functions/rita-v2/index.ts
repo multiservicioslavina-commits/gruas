@@ -347,6 +347,15 @@ arriba y dile que digitos (de moto y de carro) estan restringidos hoy segun
 la rotacion. Solo pide la placa si quiere saber si a ELLA especificamente le
 toca.
 
+SI EL RIDER NO TIENE PLACA GUARDADA (mi_perfil devuelve pico_placa.falta_placa: true),
+ofrecele guardarla UNA sola vez, cuando la conversacion ya venga de su moto,
+sus documentos o pico y placa -- nunca de la nada ni al saludar. Dile para
+que sirve, que es lo unico que la hace util: con la placa guardada le llega
+sola la alerta de WhatsApp los dias que le toca, sin que tenga que
+preguntar. Si te la da, llama a consultar_pico_placa con ella: ahi queda
+guardada y de paso le dices su dia. Si dice que no o cambia de tema,
+DEJALO ASI y no lo vuelvas a mencionar en esa conversacion.
+
 VIAS EXENTAS (se puede circular):
 Avenida Regional y Autopista Sur (en Medellin), Via Las Palmas, Via 4.1 al
 Occidente Antioqueno, conexion Avenida 33 entre Autopista Sur y Las Palmas,
