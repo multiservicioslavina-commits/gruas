@@ -210,12 +210,29 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
     password: { type: 'string', required: true }
   });
 
-  const user = await queryOne(
+  const tipoPorDominio = businessTypeForHost(req);
+
+  // El mismo correo puede existir en las DOS plataformas: el índice único es
+  // (lower(email), business_type), no el correo a secas. Alguien con taller y
+  // almacén usa el mismo de los dos lados, que es lo natural.
+  //
+  // Por eso hay que traerlas todas y elegir según el dominio. Antes esto era
+  // un queryOne sin filtrar, o sea "la primera fila que devuelva Postgres":
+  // con el correo repetido, ganaba una al azar y el control de más abajo
+  // rebotaba al dueño de su propia cuenta -- sin forma de entrar a la otra.
+  const { rows: cuentas } = await query(
     `SELECT u.*, w.name AS workshop_name, w.business_type FROM users u
      JOIN workshops w ON w.id = u.workshop_id
      WHERE lower(u.email) = lower($1)`,
     [data.email]
   );
+
+  // Con dominio, manda el dominio. Si no hay cuenta de ese tipo se deja la
+  // que haya: el control de abajo dará el mensaje que explica por dónde
+  // entrar, que es más útil que un "correo o contraseña incorrectos".
+  const user = (tipoPorDominio && cuentas.find((c) => c.business_type === tipoPorDominio))
+    || cuentas[0];
+
   // Mismo mensaje para usuario inexistente y clave errada: no revelamos
   // qué correos están registrados.
   if (!user || !(await verifyPassword(data.password, user.password_hash))) {
@@ -230,11 +247,17 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
   // que separar y la cuenta entra con el tipo que tenga: antes ese caso
   // resolvía a 'taller' por defecto, así que NINGÚN usuario de almacén podía
   // iniciar sesión fuera de almacen.ridera.com.co -- ni siquiera para probar.
-  const tipoPorDominio = businessTypeForHost(req);
   if (tipoPorDominio !== null && user.business_type !== tipoPorDominio) {
-    throw unauthorized(user.business_type === 'almacen'
+    // `ir_a` es para que la pantalla pueda poner un botón en vez de dejar al
+    // usuario leyendo un dominio para escribirlo a mano.
+    // El dominio se queda en el texto además de en `ir_a`: el botón es una
+    // comodidad de esta pantalla, pero el mensaje tiene que valerse solo
+    // para quien llame la API, o si el botón no se llega a pintar.
+    const err = unauthorized(user.business_type === 'almacen'
       ? 'Esta cuenta es de un almacén de repuestos. Entra por almacen.ridera.com.co'
       : 'Esta cuenta es de un taller. Entra por el dominio de tu taller.');
+    err.details = { ir_a: user.business_type };
+    throw err;
   }
 
   await query('UPDATE users SET last_login_at = NOW() WHERE id = $1', [user.id]);
@@ -248,7 +271,22 @@ authRouter.post('/login', loginLimiter, wrap(async (req, res) => {
 authRouter.get('/me', requireAuth, wrap(async (req, res) => {
   const user = await queryOne('SELECT * FROM users WHERE id = $1', [req.auth.userId]);
   const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
-  res.json({ user: publicUser(user), workshop });
+
+  // ¿El mismo correo tiene cuenta en la otra plataforma? Con eso la interfaz
+  // pone un botón para saltar, en vez de obligar a recordar el otro dominio.
+  // Es dato del propio usuario sobre sí mismo, no se filtra nada de nadie.
+  const otra = await queryOne(
+    `SELECT w.name FROM users u JOIN workshops w ON w.id = u.workshop_id
+      WHERE lower(u.email) = lower($1) AND u.business_type <> $2 AND u.active`,
+    [user.email, user.business_type]);
+
+  res.json({
+    user: publicUser(user),
+    workshop,
+    otra_plataforma: otra
+      ? { business_type: user.business_type === 'taller' ? 'almacen' : 'taller', name: otra.name }
+      : null
+  });
 }));
 
 authRouter.post('/change-password', requireAuth, wrap(async (req, res) => {

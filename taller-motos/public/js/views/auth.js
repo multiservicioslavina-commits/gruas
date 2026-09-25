@@ -46,11 +46,38 @@ export async function loginView() {
         const data = Object.fromEntries(new FormData(form).entries());
         afterLogin(await api.post('/auth/login', data, { anonymous: true }));
       } catch (err) {
-        slot.innerHTML = errorBox(err.message);
+        // Cuenta correcta, dominio equivocado: quien tiene taller Y almacén
+        // se topa con esto a diario. Un mensaje que nombra el dominio lo deja
+        // escribiéndolo a mano; un botón lo lleva, con el correo puesto.
+        const irA = err.details?.ir_a;
+        if (irA) {
+          const correo = new FormData(form).get('email') || '';
+          const destino = `https://${irA === 'almacen' ? 'almacen' : 'taller'}.ridera.com.co/` +
+            `?email=${encodeURIComponent(correo)}`;
+          slot.innerHTML = `<div class="alert alert-info">
+            ${esc(err.message)}
+            <div style="margin-top:10px">
+              <a class="btn btn-primary btn-sm" href="${esc(destino)}">
+                Entrar a mi ${irA === 'almacen' ? 'almacén' : 'taller'}</a>
+            </div>
+          </div>`;
+        } else {
+          slot.innerHTML = errorBox(err.message);
+        }
         button.disabled = false;
         button.textContent = 'Entrar';
       }
     });
+
+    // El correo llega en la URL cuando venimos de la otra plataforma: se
+    // rellena para no volver a escribirlo, y el foco va a la contraseña.
+    const correoUrl = new URLSearchParams(location.search).get('email');
+    if (correoUrl) {
+      const campoCorreo = form.querySelector('[name=email]');
+      const campoClave = form.querySelector('[name=password]');
+      if (campoCorreo && !campoCorreo.value) campoCorreo.value = correoUrl;
+      campoClave?.focus();
+    }
   });
 
   return `

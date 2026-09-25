@@ -142,9 +142,23 @@ function workshopFooter() {
   if (w.license_plan) plan = `<div class="sw-plan">Plan ${esc(w.license_plan)}</div>`;
   let exp = '';
   if (w.license_expires_at) exp = `<div class="sw-exp">Vence ${esc(date(w.license_expires_at))}</div>`;
+  // Quien tiene taller Y almacén salta de uno a otro a diario. Son cuentas
+  // separadas en dominios distintos, así que esto es un enlace de verdad --
+  // no un cambio de contexto dentro de la misma sesión-- y lleva el correo
+  // puesto para no volver a escribirlo.
+  let otra = '';
+  const o = session.otraPlataforma;
+  if (o) {
+    const destino = `https://${o.business_type === 'almacen' ? 'almacen' : 'taller'}.ridera.com.co/` +
+      `?email=${encodeURIComponent(session.user?.email || '')}`;
+    otra = `<a class="sw-otra" href="${esc(destino)}"
+              title="${esc(o.name || '')}">
+              Ir a mi ${o.business_type === 'almacen' ? 'almacén' : 'taller'} →</a>`;
+  }
+
   return `<div class="sidebar-workshop">
     <div class="sw-name">${esc(w.name || 'Mi taller')}</div>
-    ${plan}${exp}
+    ${plan}${exp}${otra}
   </div>`;
 }
 
