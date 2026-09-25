@@ -134,7 +134,8 @@ test('operaciones: junta facturas, compras y movimientos manuales en un solo lis
 
   const factOp = ops.body.data.find((o) => o.source === 'invoice');
   assert.equal(factOp.doc_type, 'Factura de venta');
-  assert.equal(factOp.doc_code, factura.body.doc_code);
+  assert.equal(factOp.doc_type_code, factura.body.document_type_code);
+  assert.equal(factOp.doc_code, factura.body.doc_number);
   assert.equal(factOp.direction, 'income');
   assert.equal(Number(factOp.amount), Number(factura.body.total));
 

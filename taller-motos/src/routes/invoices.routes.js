@@ -9,14 +9,14 @@
 // `requirePlan(...)` va en cada ruta, no en el router entero: este archivo
 // se monta en '/api' junto a otros que no son de pago (ver src/app.js).
 import { Router } from 'express';
-import { queryOne, transaction, nextSequence } from '../db.js';
+import { pool, queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest, conflict, ApiError } from '../lib/errors.js';
 import { requirePlan, requireRole } from '../middleware/auth.js';
 import { loadFullWorkOrder } from '../services/workorders.js';
 import { loadFullSale } from './sales.routes.js';
 import { createBill, downloadPdf, credentialsFor } from '../lib/factus.js';
-import { docCode } from '../lib/invoices.js';
+import { decorateInvoice, invoiceLabel, pickDocumentType } from '../lib/invoices.js';
 
 export const invoicesRouter = Router();
 
@@ -29,11 +29,11 @@ async function assertSinFacturar(workshopId, { workOrderId, saleId }) {
   const columna = workOrderId ? 'work_order_id' : 'sale_id';
   const valor = workOrderId || saleId;
   const yaFacturada = await queryOne(
-    `SELECT id, kind, number, external_id FROM invoices
+    `SELECT id, kind, number, prefix, external_id, document_type_code FROM invoices
      WHERE ${columna} = $1 AND workshop_id = $2 AND status = 'issued'`,
     [valor, workshopId]);
   if (!yaFacturada) return;
-  throw conflict(`Esta ${workOrderId ? 'orden' : 'venta'} ya tiene una factura (${docCode(yaFacturada)}). ` +
+  throw conflict(`Esta ${workOrderId ? 'orden' : 'venta'} ya tiene una factura (${invoiceLabel(yaFacturada)}). ` +
     (yaFacturada.kind === 'electronic'
       ? 'Para corregirla hace falta una nota crédito, directamente en el panel de Factus.'
       : 'Para corregirla, contacta a quien te entregó el software.'));
@@ -41,7 +41,10 @@ async function assertSinFacturar(workshopId, { workOrderId, saleId }) {
 
 invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('basico'), requireRole('cashier'), wrap(async (req, res) => {
   assertUuid(req.params.id);
-  const data = validate(req.body, { observation: { type: 'string', max: 500 } });
+  const data = validate(req.body, {
+    observation:        { type: 'string', max: 500 },
+    document_type_code: { type: 'string', max: 10 }
+  });
 
   await assertSinFacturar(req.auth.workshopId, { workOrderId: req.params.id });
 
@@ -54,25 +57,32 @@ invoicesRouter.post('/work-orders/:id/invoice-normal', requirePlan('basico'), re
 
   const subtotal = Number(order.labor_total) + Number(order.parts_total) - Number(order.discount);
   const invoice = await transaction(async (client) => {
-    const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+    const tipo = await pickDocumentType(client, req.auth.workshopId, data.document_type_code, false);
+    // El consecutivo es por tipo de documento: el nombre de la secuencia
+    // lleva el código, así que el 10 y el 1030 corren cada uno por su lado.
+    const num = await nextSequence(client, req.auth.workshopId, `invoices:${tipo.code}`);
     const { rows: [row] } = await client.query(
       `INSERT INTO invoices (workshop_id, work_order_id, number, kind, status, subtotal, tax_total, total,
-                              issued_at, payload)
-       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7) RETURNING *`,
+                              issued_at, payload, document_type_code, document_type_name, prefix)
+       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
       [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
-       JSON.stringify({ observation: data.observation || null })]
+       JSON.stringify({ observation: data.observation || null }),
+       tipo.code, tipo.name, tipo.prefix]
     );
     return row;
   });
 
-  res.status(201).json({ ...invoice, doc_code: docCode(invoice) });
+  res.status(201).json(decorateInvoice(invoice));
 }));
 
 // Misma idea, para una venta de mostrador: ya está cobrada y con todos sus
 // totales calculados al crearla, así que aquí no hay nada que recomputar.
 invoicesRouter.post('/sales/:id/invoice-normal', requirePlan('basico'), requireRole('cashier'), wrap(async (req, res) => {
   assertUuid(req.params.id);
-  const data = validate(req.body, { observation: { type: 'string', max: 500 } });
+  const data = validate(req.body, {
+    observation:        { type: 'string', max: 500 },
+    document_type_code: { type: 'string', max: 10 }
+  });
 
   await assertSinFacturar(req.auth.workshopId, { saleId: req.params.id });
 
@@ -80,18 +90,20 @@ invoicesRouter.post('/sales/:id/invoice-normal', requirePlan('basico'), requireR
   if (!sale.items.length) throw badRequest('Esta venta no tiene ítems que facturar');
 
   const invoice = await transaction(async (client) => {
-    const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+    const tipo = await pickDocumentType(client, req.auth.workshopId, data.document_type_code, false);
+    const num = await nextSequence(client, req.auth.workshopId, `invoices:${tipo.code}`);
     const { rows: [row] } = await client.query(
       `INSERT INTO invoices (workshop_id, sale_id, number, kind, status, subtotal, tax_total, total,
-                              issued_at, payload)
-       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7) RETURNING *`,
+                              issued_at, payload, document_type_code, document_type_name, prefix)
+       VALUES ($1,$2,$3,'normal','issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
       [req.auth.workshopId, sale.id, num, sale.subtotal, sale.tax_total, sale.total,
-       JSON.stringify({ observation: data.observation || null })]
+       JSON.stringify({ observation: data.observation || null }),
+       tipo.code, tipo.name, tipo.prefix]
     );
     return row;
   });
 
-  res.status(201).json({ ...invoice, doc_code: docCode(invoice) });
+  res.status(201).json(decorateInvoice(invoice));
 }));
 
 // Únicos que Factus/la DIAN piden y que el taller no tiene ya guardados en
@@ -108,7 +120,10 @@ const CUSTOMER_SCHEMA = {
   municipality_code:              { type: 'string', required: true, max: 6 },
   tribute_code:                   { type: 'string', enum: ['01', 'ZZ'], default: 'ZZ' },
   payment_method_code:            { type: 'string', required: true, max: 4 },
-  observation:                    { type: 'string', max: 500 }
+  observation:                    { type: 'string', max: 500 },
+  // Cuál de los tipos electrónicos del taller se está emitiendo. Si no
+  // viene, se usa el primero configurado -- lo normal es que haya uno solo.
+  document_type_code:             { type: 'string', max: 10 }
 };
 
 invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireRole('cashier'), wrap(async (req, res) => {
@@ -129,6 +144,11 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   // reintento no debe generar dos documentos oficiales ante la DIAN, que no
   // se pueden deshacer desde aquí (haría falta una nota crédito en Factus).
   await assertSinFacturar(req.auth.workshopId, { workOrderId: req.params.id });
+
+  // El tipo de documento se resuelve ANTES de llamar a Factus: si el código
+  // elegido no existe o no es de los electrónicos, mejor fallar aquí que
+  // después de haber creado un documento irreversible ante la DIAN.
+  const tipo = await pickDocumentType(pool, req.auth.workshopId, data.document_type_code, true);
 
   const order = await transaction((client) => loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
 
@@ -189,13 +209,15 @@ invoicesRouter.post('/work-orders/:id/invoice', requirePlan('premium'), requireR
   let invoice;
   try {
     invoice = await transaction(async (client) => {
-      const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+      const num = await nextSequence(client, req.auth.workshopId, `invoices:${tipo.code}`);
       const { rows: [row] } = await client.query(
         `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total,
-                                issued_at, external_id, reference_code, cufe, payload)
-         VALUES ($1,$2,$3,'issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
+                                issued_at, external_id, reference_code, cufe, payload,
+                                document_type_code, document_type_name, prefix)
+         VALUES ($1,$2,$3,'issued',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [req.auth.workshopId, order.id, num, subtotal, order.tax_total, order.total,
-         bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill)]
+         bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill),
+         tipo.code, tipo.name, tipo.prefix]
       );
       return row;
     });
@@ -242,6 +264,11 @@ invoicesRouter.post('/sales/:id/invoice', requirePlan('premium'), requireRole('c
   // Igual que en las órdenes: una venta ya facturada no se vuelve a facturar,
   // porque un documento ante la DIAN no se deshace desde aquí.
   await assertSinFacturar(req.auth.workshopId, { saleId: req.params.id });
+
+  // El tipo de documento se resuelve ANTES de llamar a Factus: si el código
+  // elegido no existe o no es de los electrónicos, mejor fallar aquí que
+  // después de haber creado un documento irreversible ante la DIAN.
+  const tipo = await pickDocumentType(pool, req.auth.workshopId, data.document_type_code, true);
 
   const sale = await transaction((client) => loadFullSale(client, req.auth.workshopId, req.params.id));
   if (!sale.items.length) throw badRequest('Esta venta no tiene ítems que facturar');
@@ -295,13 +322,15 @@ invoicesRouter.post('/sales/:id/invoice', requirePlan('premium'), requireRole('c
   let invoice;
   try {
     invoice = await transaction(async (client) => {
-      const num = await nextSequence(client, req.auth.workshopId, 'invoices');
+      const num = await nextSequence(client, req.auth.workshopId, `invoices:${tipo.code}`);
       const { rows: [row] } = await client.query(
         `INSERT INTO invoices (workshop_id, sale_id, number, kind, status, subtotal, tax_total, total,
-                                issued_at, external_id, reference_code, cufe, payload)
-         VALUES ($1,$2,$3,'electronic','issued',$4,$5,$6,NOW(),$7,$8,$9,$10) RETURNING *`,
+                                issued_at, external_id, reference_code, cufe, payload,
+                                document_type_code, document_type_name, prefix)
+         VALUES ($1,$2,$3,'electronic','issued',$4,$5,$6,NOW(),$7,$8,$9,$10,$11,$12,$13) RETURNING *`,
         [req.auth.workshopId, sale.id, num, Number(sale.subtotal) - Number(sale.discount),
-         sale.tax_total, sale.total, bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill)]
+         sale.tax_total, sale.total, bill.number, referenceCode, bill.cufe || null, JSON.stringify(bill),
+         tipo.code, tipo.name, tipo.prefix]
       );
       return row;
     });

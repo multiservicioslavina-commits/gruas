@@ -88,7 +88,8 @@ test('una venta se puede facturar como factura de venta normal', async () => {
   const factura = await client.post(`/api/sales/${venta.id}/invoice-normal`, {});
   assert.equal(factura.status, 201, JSON.stringify(factura.body));
   assert.equal(factura.body.kind, 'normal');
-  assert.match(factura.body.doc_code, /^10-\d{6}$/);
+  assert.equal(factura.body.document_type_code, '10');
+  assert.match(factura.body.doc_number, /^\d{6}$/);
   assert.equal(Number(factura.body.total), Number(venta.total));
 
   const releida = await client.get(`/api/sales/${venta.id}`);

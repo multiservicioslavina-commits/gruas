@@ -4,6 +4,7 @@ import {
   errorBox, PAYMENT_METHODS, normalizeSearch
 } from '../ui.js';
 import { onMount, go } from '../app.js';
+import { selectorDeCodigo, textoFactura, conectarDescargaPdf } from '../documentos.js';
 
 // ── Listado ──────────────────────────────────────────────────────────
 export async function salesView() {
@@ -59,7 +60,7 @@ export async function salesView() {
       const full = await api.get(`/sales/${sale.id}`);
       const issued = full.invoices.find((i) => i.status === 'issued');
       if (issued) {
-        cell.textContent = issued.doc_code;
+        cell.textContent = textoFactura(issued);
         actionCell.innerHTML = '';
       } else {
         cell.textContent = 'Sin facturar';
@@ -71,8 +72,8 @@ export async function salesView() {
           button.disabled = true;
           try {
             const result = await api.post(`/sales/${sale.id}/invoice-normal`, {});
-            toast(`Factura ${result.doc_code} generada`);
-            cell.textContent = result.doc_code;
+            toast(`Factura ${textoFactura(result)} generada`);
+            cell.textContent = textoFactura(result);
             actionCell.innerHTML = '';
           } catch (err) { toast(err.message, true); button.disabled = false; }
         });
@@ -148,7 +149,16 @@ export async function saleDetailView(id) {
               <div class="kv"><span class="k">Método de pago</span><span class="v">${esc(PAYMENT_METHODS[sale.payment_method] || sale.payment_method)}</span></div>
             </div>
             <div>
-              <div class="kv"><span class="k">Factura</span><span class="v">${issued ? esc(issued.doc_code) : 'Sin facturar'}</span></div>
+              <div class="kv"><span class="k">Código de facturación</span>
+                <span class="v">${issued && issued.document_type_code
+                  ? `${esc(issued.document_type_code)} · ${esc(issued.document_type_name || '')}`
+                  : '—'}</span></div>
+              <div class="kv"><span class="k">Número de factura</span>
+                <span class="v">${issued ? `<b>${esc(issued.doc_number)}</b>` : 'Sin facturar'}</span></div>
+              ${issued && issued.kind === 'electronic' ? `
+                <div class="kv"><span class="k">Documento DIAN</span><span class="v">
+                  <button class="btn btn-default btn-sm" data-invoice-pdf="${esc(issued.id)}">
+                    Descargar PDF</button></span></div>` : ''}
               <div class="kv"><span class="k">Registró</span><span class="v">${esc(sale.created_by_name || '—')}</span></div>
             </div>
           </div>
@@ -183,13 +193,18 @@ export async function saleDetailView(id) {
         </div>
       </div>`;
 
-    document.getElementById('btn-facturar-detail')?.addEventListener('click', async (e) => {
-      e.target.disabled = true;
-      try {
-        const result = await api.post(`/sales/${id}/invoice-normal`, {});
-        toast(`Factura ${result.doc_code} generada`);
-        load();
-      } catch (err) { toast(err.message, true); e.target.disabled = false; }
+    document.getElementById('btn-facturar-detail')?.addEventListener('click', async () => {
+      const result = await modal({
+        title: 'Factura de venta',
+        body: `<p class="small muted" style="margin-bottom:14px">
+                 Es un comprobante de venta normal, no electrónico ante la DIAN.
+                 Para eso está "Facturar electrónicamente" (plan Premium).</p>
+               ${await selectorDeCodigo(false)}
+               ${field('observation', 'Observación (opcional)', { rows: 2 })}`,
+        confirmText: 'Generar factura',
+        onSubmit: (data) => api.post(`/sales/${id}/invoice-normal`, clean(data))
+      });
+      if (result) { toast(`Factura ${textoFactura(result)} generada`); load(); }
     });
 
     // Factura electrónica ante la DIAN (plan Premium). Los datos que pide
@@ -204,6 +219,7 @@ export async function saleDetailView(id) {
                  Estos datos son los que exige la DIAN y no viven en la ficha del
                  cliente. Se completan aquí cada vez porque cambian según a nombre
                  de quién se factura.</p>
+               ${await selectorDeCodigo(true)}
                <div class="row">
                  ${field('identification_document_code', 'Tipo de documento', { value: '13', options: [
                    ['13', 'Cédula de ciudadanía'], ['31', 'NIT'], ['22', 'Cédula de extranjería'],
@@ -238,8 +254,10 @@ export async function saleDetailView(id) {
         confirmText: 'Facturar',
         onSubmit: (data) => api.post(`/sales/${id}/invoice`, data)
       });
-      if (result) { toast(`Factura ${result.external_id} emitida`); load(); }
+      if (result) { toast(`Factura ${textoFactura(result)} emitida`); load(); }
     });
+
+    conectarDescargaPdf();
 
     document.getElementById('btn-print-sale')?.addEventListener('click', () => {
       const w = session.workshop || {};

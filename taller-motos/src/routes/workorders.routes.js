@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { config } from '../config.js';
 import { query, queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
@@ -9,7 +10,9 @@ import {
   recalcWorkOrder, changeStatus, loadFullWorkOrder, getWorkOrder,
   syncPartStock, moveStock, OPEN_STATUSES, STATUS_FLOW
 } from '../services/workorders.js';
-import { notifyMotoRecibida, notifyMotoLista } from '../lib/whatsapp.js';
+import { notifyMotoRecibida, notifyMotoLista, sendTemplate } from '../lib/whatsapp.js';
+import { enviarCorreo } from '../lib/email.js';
+import { ordenDeServicioHtml, ordenDeServicioTexto } from '../lib/plantillas.js';
 
 export const workOrdersRouter = Router();
 
@@ -276,6 +279,26 @@ workOrdersRouter.post('/:id/status', wrap(async (req, res) => {
       })
       .catch((err) => console.error('WhatsApp:', err.message));
   }
+
+  // Al cerrar la orden, el cliente recibe su orden de servicio. Va por los
+  // dos canales que tenga registrados, no por uno: quien deja correo suele
+  // querer el documento, y quien deja teléfono lo lee antes. Igual que los
+  // avisos de arriba, esto pasa DESPUÉS de responder y no puede tumbar el
+  // cambio de estado -- si el correo no está configurado o el cliente no
+  // dejó ninguno, queda en el registro y ya.
+  if (data.status === 'closed') {
+    queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId])
+      .then(async (workshop) => {
+        for (const canal of ['email', 'whatsapp']) {
+          const salida = await enviarOrden(workshop, order, canal)
+            .catch((err) => ({ sent: false, canal, reason: err.message }));
+          if (!salida.sent) {
+            console.log(`Orden #${order.number}: no se envió por ${canal} (${salida.reason})`);
+          }
+        }
+      })
+      .catch((err) => console.error('Envío de la orden al cerrar:', err.message));
+  }
 }));
 
 // ── Mano de obra ──────────────────────────────────────────────────────────
@@ -489,3 +512,74 @@ function assertEditable(order) {
   if (order.status === 'closed')    throw conflict('La orden está cerrada y ya no admite cambios');
   if (order.status === 'cancelled') throw conflict('La orden está anulada');
 }
+
+// ── Enviar la orden de servicio al cliente ────────────────────────────────
+// Por correo o por WhatsApp. Es lo mismo que el taller ya podía imprimir y
+// entregar en mano, pero llegando solo.
+//
+// Se puede llamar en cualquier momento (un cliente que pide de nuevo su
+// orden meses después), y además se dispara solo al cerrar la orden.
+workOrdersRouter.post('/:id/send', wrap(async (req, res) => {
+  assertUuid(req.params.id);
+  const data = validate(req.body, {
+    canal: { type: 'string', required: true, enum: ['email', 'whatsapp'] },
+    // A dónde mandarlo. Si no viene, se usa lo que tenga la ficha del
+    // cliente: casi siempre es eso, pero conviene poder corregirlo sin
+    // tener que editar al cliente sólo para reenviar una orden.
+    destino: { type: 'string', max: 160 }
+  });
+
+  const order = await transaction((client) =>
+    loadFullWorkOrder(client, req.auth.workshopId, req.params.id));
+  const workshop = await queryOne('SELECT * FROM workshops WHERE id = $1', [req.auth.workshopId]);
+
+  const resultado = await enviarOrden(workshop, order, data.canal, data.destino);
+  res.json(resultado);
+}));
+
+// Compartida por la ruta manual y por el envío automático al cerrar.
+// Devuelve qué pasó en vez de lanzar cuando el motivo es "no hay a dónde
+// mandarlo": quien la llama decide si eso es un error (envío manual) o algo
+// que sólo se registra (envío automático).
+async function enviarOrden(workshop, order, canal, destino) {
+  if (canal === 'email') {
+    const to = destino || order.customer?.email;
+    if (!to) return { sent: false, canal, reason: 'sin_correo' };
+    await enviarCorreo({
+      to,
+      subject: `Orden de servicio #${order.number} · ${workshop.name}`,
+      html: ordenDeServicioHtml(workshop, order),
+      replyTo: workshop.email || undefined
+    });
+    return { sent: true, canal, destino: to };
+  }
+
+  const to = destino || order.customer?.phone;
+  if (!to) return { sent: false, canal, reason: 'sin_telefono' };
+
+  // WhatsApp sólo deja mandar plantillas aprobadas por Meta fuera de las 24
+  // horas de conversación abierta. `orden_cerrada` tiene que existir y estar
+  // aprobada en la cuenta del taller; mientras no lo esté, este envío
+  // devuelve `sin_plantilla` y la interfaz ofrece el enlace de wa.me, que no
+  // necesita aprobación porque lo manda el propio taller desde su teléfono.
+  const moto = [order.motorcycle?.brand, order.motorcycle?.model].filter(Boolean).join(' ')
+    || `orden #${order.number}`;
+  const salida = await sendTemplate(workshop, 'orden_cerrada', to, [
+    order.customer?.name || 'cliente',
+    moto,
+    `${config.publicUrl}/orden/${order.public_code}`
+  ]);
+
+  // Cuando la plantilla no está aprobada, la interfaz ofrece el enlace de
+  // wa.me. El mensaje lo arma el servidor y viaja aquí: si lo escribiera
+  // también el navegador habría dos versiones del mismo texto, y la que ve
+  // el cliente dependería de por dónde salió.
+  return {
+    ...salida,
+    canal,
+    destino: to,
+    ...(salida.sent ? {} : { texto: ordenDeServicioTexto(workshop, order) })
+  };
+}
+
+export { enviarOrden };

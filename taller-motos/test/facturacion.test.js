@@ -246,15 +246,17 @@ test('si la factura ya validada en la DIAN no se puede guardar localmente, el er
   const order = await orderConServicio(client);
   await conectarFactus(client);
 
-  // Otra orden del mismo taller, con una factura ya guardada en el número 1:
-  // fuerza a que la próxima (la de `order`, que usará el mismo consecutivo
-  // por ser el primero para este taller) choque de verdad contra el índice
-  // único (workshop_id, number) al intentar guardarse -- un fallo real de
-  // Postgres, no uno simulado.
+  // Otra orden del mismo taller, con una factura ya guardada en el número 1
+  // del mismo tipo de documento: fuerza a que la próxima (la de `order`, que
+  // usará ese mismo consecutivo por ser el primero de ese tipo para este
+  // taller) choque de verdad contra el índice único
+  // (workshop_id, document_type_code, number) al intentar guardarse -- un
+  // fallo real de Postgres, no uno simulado.
   const otraOrden = await orderConServicio(client);
   await pool.query(
-    `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total, issued_at, external_id, payload)
-     VALUES ($1, $2, 1, 'issued', 0, 0, 0, NOW(), 'YA-EXISTE', '{}')`,
+    `INSERT INTO invoices (workshop_id, work_order_id, number, status, subtotal, tax_total, total,
+                           issued_at, external_id, payload, document_type_code)
+     VALUES ($1, $2, 1, 'issued', 0, 0, 0, NOW(), 'YA-EXISTE', '{}', '1030')`,
     [workshop.id, otraOrden.id]);
 
   mockFactusOk();
@@ -276,12 +278,18 @@ test('factura de venta normal: no necesita Factus ni datos de la DIAN', async ()
   const res = await client.post(`/api/work-orders/${order.id}/invoice-normal`, {});
   assert.equal(res.status, 201, JSON.stringify(res.body));
   assert.equal(res.body.kind, 'normal');
-  assert.match(res.body.doc_code, /^10-\d{6}$/);
+  // El código de facturación y el número son dos campos distintos, no una
+  // cadena pegada: el código dice qué documento es, el número es su
+  // consecutivo.
+  assert.equal(res.body.document_type_code, '10');
+  assert.equal(res.body.document_type_name, 'Factura de venta');
+  assert.match(res.body.doc_number, /^\d{6}$/);
   assert.equal(Number(res.body.total), Number(order.total));
 
   const releida = await client.get(`/api/work-orders/${order.id}`);
   assert.equal(releida.body.invoices.length, 1);
-  assert.equal(releida.body.invoices[0].doc_code, res.body.doc_code);
+  assert.equal(releida.body.invoices[0].document_type_code, '10');
+  assert.equal(releida.body.invoices[0].doc_number, res.body.doc_number);
 });
 
 test('un mecánico no puede emitir una factura de venta normal', async () => {

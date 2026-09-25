@@ -4,6 +4,7 @@
 import { Router } from 'express';
 import { query, queryOne, transaction, nextSequence } from '../db.js';
 import { validate, assertUuid } from '../lib/validate.js';
+import { decorateInvoice } from '../lib/invoices.js';
 import { wrap, notFound, badRequest, conflict } from '../lib/errors.js';
 import { requireRole } from '../middleware/auth.js';
 import { computeTotals } from '../lib/money.js';
@@ -26,13 +27,10 @@ export async function loadFullSale(client, workshopId, id) {
   const { rows: items } = await client.query(
     'SELECT * FROM sale_items WHERE sale_id = $1 ORDER BY id', [id]);
   const { rows: invoices } = await client.query(
-    'SELECT id, number, kind, status, total, external_id, cufe, issued_at, created_at FROM invoices WHERE sale_id = $1 ORDER BY created_at DESC',
-    [id]);
-  for (const invoice of invoices) {
-    invoice.doc_code = invoice.kind === 'electronic'
-      ? invoice.external_id : `10-${String(invoice.number).padStart(6, '0')}`;
-  }
-  return { ...sale, items, invoices };
+    `SELECT id, number, prefix, document_type_code, document_type_name, kind, status, total,
+            external_id, cufe, issued_at, created_at
+     FROM invoices WHERE sale_id = $1 ORDER BY created_at DESC`, [id]);
+  return { ...sale, items, invoices: invoices.map(decorateInvoice) };
 }
 
 salesRouter.get('/', wrap(async (req, res) => {

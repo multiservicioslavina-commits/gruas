@@ -150,6 +150,16 @@ authRouter.post('/register', registerLimiter, wrap(async (req, res) => {
         `INSERT INTO warehouses (workshop_id, name, is_default) VALUES ($1, 'Principal', TRUE)`,
         [workshop.id]);
 
+      // Y con los dos tipos de documento de siempre. Son filas suyas, no
+      // constantes del software: puede cambiarles el código, el nombre y el
+      // prefijo en Ajustes, porque los números exactos dependen de su
+      // resolución de la DIAN y de cómo los tenga en su contabilidad.
+      await client.query(
+        `INSERT INTO document_types (workshop_id, code, name, sends_to_dian, sort_order)
+         VALUES ($1,'10','Factura de venta',FALSE,1),
+                ($1,'1030','Factura electrónica de venta',TRUE,2)`,
+        [workshop.id]);
+
       // El código corto se marca usado dentro de la misma transacción, con
       // una condición en el UPDATE (no un SELECT previo) para que dos
       // registros a la vez con el mismo código no se lo lleven ambos.

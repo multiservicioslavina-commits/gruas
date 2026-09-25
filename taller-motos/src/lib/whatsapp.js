@@ -12,7 +12,12 @@ import { config } from '../config.js';
 const TEMPLATES = {
   moto_recibida:        3,
   cotizacion_pendiente: 4,
-  moto_lista:           3
+  moto_lista:           3,
+  // La orden de servicio al cerrarla: nombre, moto, enlace. Como las demás,
+  // hay que darla de alta y hacerla aprobar en Meta antes de que envíe algo;
+  // hasta entonces sendTemplate devuelve { sent: false } y quien llama
+  // ofrece el enlace de wa.me, que no necesita aprobación.
+  orden_cerrada:        3
 };
 
 function credentialsFor(workshop) {

@@ -65,6 +65,14 @@ export const config = {
       phoneNumberId: process.env.RIDERA_WHATSAPP_PHONE_NUMBER_ID || null,
       accessToken:   process.env.RIDERA_WHATSAPP_ACCESS_TOKEN || null
     }
+  },
+
+  // Correo saliente (Resend). Sin RESEND_API_KEY el software no manda
+  // correos y lo dice: el envío falla con un mensaje claro en vez de
+  // quedarse callado haciendo creer que el cliente lo recibió.
+  email: {
+    apiKey: process.env.RESEND_API_KEY || null,
+    from:   process.env.RESEND_FROM || 'Ridera <onboarding@resend.dev>'
   }
 };
 
