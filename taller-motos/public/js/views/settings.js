@@ -5,6 +5,7 @@ import {
 } from '../ui.js';
 import { onMount, refresh } from '../app.js';
 import { invalidarDocumentTypes } from '../documentos.js';
+import { FORMATOS, formatoImpresora, guardarFormatoImpresora, imprimirFactura } from '../factura.js';
 
 const PLAN_LABEL = { basico: 'Básico', completo: 'Completo', premium: 'Premium' };
 
@@ -37,6 +38,34 @@ export async function settingsView() {
     field('specialty', 'Especialidad (mecánicos)', { value: user.specialty || '', idPrefix: 'user-' });
 
   onMount(() => {
+    // ── Impresora de este equipo ──────────────────────────────────────
+    const selectorImpresora = document.getElementById('f-formato_impresora');
+    selectorImpresora?.addEventListener('change', (e) => {
+      guardarFormatoImpresora(e.target.value);
+      toast(`Se imprimirá en ${FORMATOS[e.target.value].toLowerCase()}`);
+    });
+
+    // Una factura de mentira con el taller de verdad: es la única forma de
+    // ver si la tirilla sale bien sin tener que facturar algo real.
+    document.getElementById('btn-probar-impresora')?.addEventListener('click', () => {
+      const ok = imprimirFactura({
+        workshop,
+        invoice: {
+          kind: 'normal', document_type_code: '10', document_type_name: 'Factura de venta',
+          doc_number: '000000', subtotal: 100000, tax_total: 19000, total: 119000,
+          issued_at: new Date().toISOString()
+        },
+        cliente: { nombre: 'PRUEBA DE IMPRESIÓN', documento: 'CC 00000000' },
+        lineas: [
+          { descripcion: 'Artículo de prueba', cantidad: 1, precio: 60000, total: 60000 },
+          { descripcion: 'Otro artículo, con un nombre largo para ver cómo parte la línea',
+            cantidad: 2, precio: 20000, total: 40000 }
+        ],
+        referencia: 'Prueba de impresión'
+      }, selectorImpresora?.value);
+      if (!ok) toast('El navegador bloqueó la ventana de impresión. Permítela e inténtalo de nuevo.', true);
+    });
+
     // ── Códigos de facturación ────────────────────────────────────────
     const guardarDocType = async (result) => {
       if (!result) return;
@@ -555,6 +584,27 @@ export async function settingsView() {
           </div>
           <button type="submit" class="btn btn-primary btn-sm">Guardar</button>
         </form>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head"><h2>Impresora de este equipo</h2></div>
+      <div class="card-body">
+        <p class="small muted" style="margin-bottom:14px">
+          Cómo se imprimen las facturas <b>desde este computador</b>. No es un ajuste
+          del taller: la oficina puede tener una láser y el mostrador una térmica, y
+          lo que manda es dónde está quien pulsa "Imprimir". Se guarda en este
+          navegador, así que hay que elegirlo una vez en cada equipo.</p>
+        <div class="row">
+          ${field('formato_impresora', 'Formato', {
+            value: formatoImpresora(),
+            options: Object.entries(FORMATOS)
+          })}
+          <div style="display:flex;align-items:flex-end;padding-bottom:2px">
+            <button class="btn btn-default btn-sm" id="btn-probar-impresora" type="button">
+              Imprimir una de prueba</button>
+          </div>
+        </div>
       </div>
     </div>
 
