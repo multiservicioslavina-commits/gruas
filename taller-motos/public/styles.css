@@ -708,3 +708,10 @@ td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
   main { max-width: 100%; padding: 0; }
   .print-only { display: flex !important; }
 }
+
+/* Salto entre taller y almacén, para quien tiene los dos. */
+.sw-otra {
+  display: block; margin-top: 8px; font-size: .8rem; font-weight: 600;
+  color: var(--accent); text-decoration: none;
+}
+.sw-otra:hover { text-decoration: underline; }

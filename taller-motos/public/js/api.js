@@ -81,6 +81,7 @@ export async function loadSession() {
     const me = await api.get('/auth/me');
     session.user = me.user;
     session.workshop = me.workshop;
+    session.otraPlataforma = me.otra_plataforma || null;
     return true;
   } catch {
     session.token = null;
@@ -92,5 +93,6 @@ export function logout() {
   session.token = null;
   session.user = null;
   session.workshop = null;
+  session.otraPlataforma = null;
   location.hash = '#/entrar';
 }
