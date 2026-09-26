@@ -925,6 +925,33 @@ async function enviarTexto(to: string, texto: string): Promise<unknown> {
   return res.json();
 }
 
+// Marca el mensaje del rider como leido y enciende el "escribiendo..." de
+// WhatsApp (se apaga solo al enviar la respuesta, o a los 25 s). Sin esto el
+// rider no veia ninguna senal durante los 6-16 s que puede tardar un turno
+// con herramientas y auditoria, y parecia que Rita se habia trabado. No se
+// espera el resultado: un fallo aca nunca debe frenar la respuesta real.
+function marcarLeidoEscribiendo(messageId: string): void {
+  fetch(`${GRAPH}/${RITA_PHONE}/messages`, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      messaging_product: "whatsapp",
+      status: "read",
+      message_id: messageId,
+      typing_indicator: { type: "text" },
+    }),
+    signal: AbortSignal.timeout(5000),
+  })
+    .then(async (r) => {
+      if (!r.ok) logWarn("rita-v2", "No se pudo activar el indicador de escribiendo", { status: r.status, detalle: (await r.text()).slice(0, 300) });
+    })
+    .catch((e) => logWarn("rita-v2", "No se pudo activar el indicador de escribiendo", { error: String(e) }));
+}
+
+// Solo los tipos que Rita de verdad contesta: una reaccion o un sticker no
+// deben dejar el "escribiendo..." prendido 25 s sin que llegue nada.
+const TIPOS_CON_RESPUESTA = new Set(["text", "audio", "image", "document", "location"]);
+
 async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
   const form = new FormData();
   form.append("messaging_product", "whatsapp");
@@ -1154,6 +1181,13 @@ Deno.serve(async (req: Request) => {
     if (!verificarRateLimit(from)) {
       return json({ ok: false, error: "rate_limit_exceeded" }, 429);
     }
+
+    // Se consulta aca (y no mas abajo) para no prender el "escribiendo..."
+    // cuando el admin tiene la conversacion y Rita no va a contestar.
+    const botPausado = await estaBotPausado(from);
+    if (!botPausado && msgId && TIPOS_CON_RESPUESTA.has(String(msg.type))) {
+      marcarLeidoEscribiendo(msgId);
+    }
     // SOS - ubicacion compartida: se maneja aparte del bucle de IA, antes
     // de todo lo demas. Es un flujo de seguridad, asi que va determinista
     // (consulta directa a PostGIS) en vez de depender de que el modelo
@@ -1269,7 +1303,7 @@ Deno.serve(async (req: Request) => {
 
     // Bot pausado (usuario ya derivado al admin) → no responder, deja que
     // el admin siga la conversacion directo desde su WhatsApp.
-    if (await estaBotPausado(from)) {
+    if (botPausado) {
       return json({ ok: true, flujo: "bot_pausado" });
     }
 
