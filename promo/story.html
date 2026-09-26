@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ridera — Story registro de talleres</title>
+<link rel="stylesheet" href="base.css">
+<style>
+  .pieza{width:1080px;height:1920px}
+
+  .foto{
+    position:absolute;inset:0 0 auto 0;height:980px;
+    background:url("img/taller.jpg") center 32% / cover no-repeat;
+  }
+  .foto::after{
+    content:'';position:absolute;inset:0;
+    background:linear-gradient(180deg,
+      rgba(17,19,22,.30) 0%,
+      rgba(17,19,22,.55) 45%,
+      rgba(17,19,22,.96) 86%,
+      #111316 100%);
+  }
+
+  .contenido{
+    position:relative;z-index:2;
+    flex:1;min-height:0;
+    display:flex;flex-direction:column;
+    padding:72px 78px 0;
+  }
+
+  .marca{
+    font-family:'Barlow Condensed',sans-serif;
+    font-weight:900;font-size:40px;letter-spacing:.14em;
+    text-transform:uppercase;
+  }
+  .marca span{color:var(--orange)}
+
+  .bloque{margin-top:auto;padding-bottom:40px}
+
+  .eyebrow{--eyebrow:21px;--eyebrow-rule:40px;margin-bottom:26px}
+
+  .titular{font-size:172px;margin-bottom:28px}
+
+  .bajada{font-size:34px;max-width:860px;margin-bottom:52px}
+  .bajada b{color:#fff;font-weight:700}
+
+  .beneficios{--gap:20px;--bullet:14px;font-size:31px;display:grid;gap:22px}
+
+  .franja{height:132px;font-size:52px;flex:none}
+
+  .nota{font-size:24px;padding-bottom:34px}
+</style>
+</head>
+<body>
+<div class="pieza">
+  <div class="foto"></div>
+
+  <div class="contenido">
+    <div class="marca">RIDER<span>A</span></div>
+
+    <div class="bloque">
+      <div class="eyebrow">Software para talleres de motos</div>
+
+      <h1 class="titular">Registra<br>tu <em>taller</em></h1>
+
+      <p class="bajada">Y recibe el <b>software de administración</b> que pone en orden todo tu trabajo.</p>
+
+      <ul class="beneficios">
+        <li>Órdenes de trabajo digitales</li>
+        <li>Cotizaciones que el cliente aprueba</li>
+        <li>Inventario de repuestos</li>
+        <li>Agenda y recepción digital</li>
+        <li>Historial completo de cada moto</li>
+      </ul>
+    </div>
+    <p class="nota">Sin instalar nada · Empieza hoy mismo</p>
+  </div>
+
+  <div class="franja">taller.ridera.com.co</div>
+</div>
+</body>
+</html>
