@@ -370,7 +370,15 @@ severity es "low", "medium" o "high". Marca requires_revision true SOLO si el pr
 costar algo real al rider (una multa, un viaje mal planeado, una decision de seguridad) -- no por
 imperfecciones de redaccion.`;
 
-  const contenido = `PREGUNTA DEL RIDER:\n${pregunta}\n\nRESPUESTA DE RITA:\n${respuesta}\n\nEVIDENCIA DE HERRAMIENTAS:\n${
+  // Rita recibe la fecha y hora actual en su system prompt, pero el auditor
+  // no ve ese prompt: en produccion marco como "no verificado" un "hoy es
+  // viernes 25 de septiembre" que era correcto, y forzo una correccion que
+  // empeoro la respuesta. La fecha es un dato del sistema, no una invencion.
+  const fechaSistema = new Intl.DateTimeFormat("es-CO", {
+    timeZone: "America/Bogota", weekday: "long", day: "numeric", month: "long", year: "numeric",
+    hour: "numeric", minute: "2-digit",
+  }).format(new Date());
+  const contenido = `DATO DEL SISTEMA (verificado, Rita lo recibe siempre): fecha y hora actual en Colombia: ${fechaSistema}.\n\nPREGUNTA DEL RIDER:\n${pregunta}\n\nRESPUESTA DE RITA:\n${respuesta}\n\nEVIDENCIA DE HERRAMIENTAS:\n${
     evidencia.length ? JSON.stringify(evidencia).slice(0, 6000) : "(ninguna herramienta fue consultada para esta respuesta)"
   }`;
 

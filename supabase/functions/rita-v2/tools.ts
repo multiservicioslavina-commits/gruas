@@ -9,6 +9,7 @@
 import { createClient, type SupabaseClient } from "jsr:@supabase/supabase-js@2";
 import { logError } from "../_shared/log.ts";
 import { registrarUsoIA } from "./uso_ia.ts";
+import { diaParaDigito, digitosPorDia, HORARIO_PICO_PLACA, hoyEnBogota, NOMBRE_DIA, vigenciaRotacion } from "../_shared/pico_placa.ts";
 
 const SB_URL = Deno.env.get("SUPABASE_URL")!;
 const SB_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -414,6 +415,12 @@ export const TOOL_SCHEMAS = [
       },
       required: ["placa", "tipo"],
     },
+  },
+  {
+    name: "pico_placa_hoy",
+    description:
+      "Dice si HOY hay pico y placa en Medellin y el Area Metropolitana y que digitos estan restringidos, sin necesitar la placa del rider. Tiene en cuenta fines de semana y festivos. Usala cuando pregunten 'que pico y placa hay hoy', 'hoy puedo sacar la moto' o parecido SIN dar una placa -- no le pidas la placa solo para eso. Si el rider da su placa, usa consultar_pico_placa.",
+    input_schema: { type: "object", properties: {}, required: [] },
   },
   {
     name: "mi_perfil",
@@ -977,12 +984,8 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
     // Moto: manda el primer numero. Carro: manda el ultimo.
     const digito = Number(tipo === "moto" ? digitos[0] : digitos[digitos.length - 1]);
 
-    const esSegundoSemestre = new Date() >= new Date("2026-08-03T00:00:00-05:00");
-    const tabla: Record<string, number[]> = esSegundoSemestre
-      ? { lunes: [5, 8], martes: [1, 4], miercoles: [0, 2], jueves: [3, 6], viernes: [7, 9] }
-      : { lunes: [1, 7], martes: [0, 3], miercoles: [4, 6], jueves: [5, 9], viernes: [2, 8] };
-
-    const dia = Object.entries(tabla).find(([, ds]) => ds.includes(digito))?.[0] ?? null;
+    const ahora = new Date();
+    const dia = diaParaDigito(digito, ahora);
 
     // La alerta automatica diaria de pico y placa (alerta-pico-placa) solo
     // le escribe a riders cuya moto activa ya tiene placa en
@@ -1046,15 +1049,54 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         digito_que_manda: digito,
         regla: tipo === "moto" ? "primer numero de la placa" : "ultimo numero de la placa",
         dia_restringido: dia,
-        horario: "5:00 a.m. a 8:00 p.m.",
-        fines_de_semana: "Sabados y domingos no aplica pico y placa",
-        vigencia: esSegundoSemestre
-          ? "Rotacion del segundo semestre de 2026"
-          : "Rotacion vigente hasta el 31 de julio de 2026; cambia el 3 de agosto",
+        horario: HORARIO_PICO_PLACA,
+        fines_de_semana: "Sabados, domingos y festivos no aplica pico y placa",
+        vigencia: vigenciaRotacion(ahora),
         nota: `Este es el UNICO dia restringido para esta placa. Los demas dias puede circular.`,
         ...(placaGuardada
           ? { placa_guardada_en_perfil: "Si, quedo guardada para que Rita le avise automaticamente cada dia que le aplique pico y placa. Mencionaselo al rider." }
           : {}),
+      },
+    };
+  },
+
+  // "Que pico y placa hay hoy?" sin placa. Antes esto se contestaba con la
+  // tabla del system prompt, pero el auditor no ve el prompt como evidencia:
+  // en una prueba real marco el dato (correcto) como inventado y forzo una
+  // correccion que terminaba pidiendo la placa. Ademas la tabla del prompt no
+  // sabe de festivos. Con esta herramienta el dato sale verificado.
+  async pico_placa_hoy() {
+    const ahora = new Date();
+    const { fecha, weekday } = hoyEnBogota(ahora);
+    const dia = NOMBRE_DIA[weekday];
+    const base = { fecha, dia, horario: HORARIO_PICO_PLACA, vigencia: vigenciaRotacion(ahora) };
+
+    if (weekday === 0 || weekday === 6) {
+      return { ok: true, data: { ...base, aplica_hoy: false, motivo: "Fin de semana: no hay pico y placa." } };
+    }
+
+    const anio = fecha.slice(0, 4);
+    const [{ data: festivo }, { data: festivosDelAnio }] = await Promise.all([
+      supabase.from("festivos_colombia").select("fecha").eq("fecha", fecha).maybeSingle(),
+      supabase.from("festivos_colombia").select("fecha").gte("fecha", `${anio}-01-01`).lte("fecha", `${anio}-12-31`).limit(1),
+    ]);
+    if (festivo) {
+      return { ok: true, data: { ...base, aplica_hoy: false, motivo: "Festivo: no hay pico y placa." } };
+    }
+
+    const digitos = digitosPorDia(ahora)[weekday] ?? [];
+    return {
+      ok: true,
+      data: {
+        ...base,
+        aplica_hoy: true,
+        digitos_restringidos: digitos,
+        como_leer_la_placa: "Motos: primer numero de la placa (TQK12F -> 1). Carros: ultimo numero (ABC123 -> 3).",
+        // Sin festivos cargados para este anio no se puede descartar que hoy
+        // lo sea: se dice, en vez de afirmar que aplica sin reservas.
+        ...(festivosDelAnio?.length
+          ? {}
+          : { advertencia: `No hay festivos cargados para ${anio}: no pude verificar si hoy es festivo. Si lo es, no aplica.` }),
       },
     };
   },
