@@ -83,15 +83,22 @@ const PALABRAS_CRITICAS =
   /accidente|herid[oa]|sangr|primeros auxilios|choqu|me ca[ií]|atropell|ambulanc|emergencia|bomberos|polic[ií]a|codigo de transito|comparendo|multa|infracci[oó]n|abogado|demanda|denuncia|responsabilidad civil|pico y placa|restricci[oó]n vehicular/i;
 
 function esTemaCriticoPorTexto(messages: Mensaje[]): boolean {
-  const ultimo = messages[messages.length - 1];
-  if (!ultimo || typeof ultimo.content !== "string") return false;
-  return PALABRAS_CRITICAS.test(ultimo.content);
+  return PALABRAS_CRITICAS.test(extraerPreguntaRider(messages));
 }
 
-function extraerPreguntaRider(messages: Mensaje[]): string {
-  const ultimo = messages[messages.length - 1];
-  if (!ultimo) return "";
-  return typeof ultimo.content === "string" ? ultimo.content : "";
+// Todos los mensajes seguidos del rider al final de la conversacion, no solo
+// el ultimo: con el debounce de rafagas, "se me varo la moto en Guarne" +
+// "tienen grua?" llegan como dos mensajes y contesta el ultimo turno. Si
+// solo se mirara el ultimo, el auditor no veria de que se trataba y el tema
+// critico ("se me varo") no se detectaria.
+export function extraerPreguntaRider(messages: Mensaje[]): string {
+  const partes: string[] = [];
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const m = messages[i];
+    if (m.role !== "user" || typeof m.content !== "string") break;
+    partes.unshift(m.content);
+  }
+  return partes.join("\n");
 }
 
 // Timeouts por llamada al modelo. Sin ellos, un proveedor colgado dejaba al

@@ -21,7 +21,7 @@
 // ─────────────────────────────────────────────────────────────────
 
 import { assert, assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { auditarRespuesta, clasificarIntent, extraerConstraints, type Evidencia } from "./ia.ts";
+import { auditarRespuesta, clasificarIntent, extraerConstraints, extraerPreguntaRider, type Evidencia } from "./ia.ts";
 
 const TELEFONO_PRUEBA = "573000000000";
 const tieneAnthropic = Boolean((Deno.env.get("ANTHROPIC_API_KEY") ?? "").trim());
@@ -140,5 +140,28 @@ Deno.test({
       extraerConstraints([{ herramienta: "planificar_ruta", input: {}, resultado: "Error: fallo la consulta" }]),
       null,
     );
+  },
+});
+
+Deno.test({
+  name: "extraerPreguntaRider() junta la rafaga de mensajes seguidos del rider, no solo el ultimo",
+  ignore: !tieneCredenciales,
+  fn() {
+    const mensajes = [
+      { role: "user", content: "hola" },
+      { role: "assistant", content: "Quiubo parce, en que te ayudo?" },
+      { role: "user", content: "se me varo la moto en Guarne" },
+      { role: "user", content: "tienen grua?" },
+    ];
+    assertEquals(extraerPreguntaRider(mensajes), "se me varo la moto en Guarne\ntienen grua?");
+  },
+});
+
+Deno.test({
+  name: "extraerPreguntaRider() devuelve vacio si el ultimo mensaje no es del rider",
+  ignore: !tieneCredenciales,
+  fn() {
+    assertEquals(extraerPreguntaRider([{ role: "user", content: "hola" }, { role: "assistant", content: "ey" }]), "");
+    assertEquals(extraerPreguntaRider([]), "");
   },
 });
