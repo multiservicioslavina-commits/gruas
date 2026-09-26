@@ -94,6 +94,14 @@ function extraerPreguntaRider(messages: Mensaje[]): string {
   return typeof ultimo.content === "string" ? ultimo.content : "";
 }
 
+// Timeouts por llamada al modelo. Sin ellos, un proveedor colgado dejaba al
+// rider esperando hasta que la plataforma matara la funcion, y el fallback a
+// Claude nunca saltaba: solo reaccionaba a un error, no a la lentitud. Un
+// AbortSignal.timeout lanza TimeoutError, que el catch de
+// responderConOrquestador ya trata como fallo de OpenAI -> cae a Claude.
+const TIMEOUT_OPENAI_MS = 15000;
+const TIMEOUT_CLAUDE_MS = 20000;
+
 // ─── Motor Claude ────────────────────────────────────────────────
 async function llamarClaudeRaw(system: string, messages: Mensaje[]): Promise<Record<string, unknown>> {
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -104,6 +112,7 @@ async function llamarClaudeRaw(system: string, messages: Mensaje[]): Promise<Rec
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ model: CLAUDE_MODEL, max_tokens: 1024, temperature: 0.1, system, tools: TOOL_SCHEMAS, messages }),
+    signal: AbortSignal.timeout(TIMEOUT_CLAUDE_MS),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return await res.json();
@@ -165,6 +174,7 @@ async function llamarOpenAIRaw(system: string, messages: Mensaje[]): Promise<Rec
       tool_choice: "auto",
       temperature: 0.1,
     }),
+    signal: AbortSignal.timeout(TIMEOUT_OPENAI_MS),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 300)}`);
   return await res.json();

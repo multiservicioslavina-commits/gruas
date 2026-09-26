@@ -16,6 +16,11 @@ const ELEVEN_KEY   = (Deno.env.get("ELEVENLABS_API_KEY") ?? "").trim();
 const ELEVEN_VOICE = (Deno.env.get("ELEVENLABS_VOICE_ID") ?? "").trim();
 const OPENAI_KEY   = (Deno.env.get("OPENAI_API_KEY") ?? "").trim();
 
+// Tope por llamada de voz. Si se pasa: la transcripcion le pide al rider que
+// repita, y la sintesis cae a texto (ver entregar() en index.ts) -- mejor eso
+// que dejarlo esperando sin respuesta.
+const TIMEOUT_VOZ_MS = 20000;
+
 // Voz por defecto de ElevenLabs si no configuran una propia.
 // "Sarah" — femenina, calida, sirve para espanol.
 const VOZ_POR_DEFECTO = "EXAVITQu4vr4xnSDxMaL";
@@ -46,6 +51,7 @@ export async function transcribir(audio: Uint8Array, mimeType: string): Promise<
       method: "POST",
       headers: { "xi-api-key": ELEVEN_KEY },
       body: form,
+      signal: AbortSignal.timeout(TIMEOUT_VOZ_MS),
     });
     if (!res.ok) {
       throw new Error(`ElevenLabs STT ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -63,6 +69,7 @@ export async function transcribir(audio: Uint8Array, mimeType: string): Promise<
       method: "POST",
       headers: { "Authorization": `Bearer ${OPENAI_KEY}` },
       body: form,
+      signal: AbortSignal.timeout(TIMEOUT_VOZ_MS),
     });
     if (!res.ok) {
       throw new Error(`OpenAI STT ${res.status}: ${(await res.text()).slice(0, 200)}`);
@@ -88,6 +95,7 @@ export async function sintetizar(texto: string): Promise<Uint8Array> {
           model_id: "eleven_multilingual_v2",
           voice_settings: { stability: 0.30, similarity_boost: 0.60, style: 0.45, use_speaker_boost: true },
         }),
+        signal: AbortSignal.timeout(TIMEOUT_VOZ_MS),
       },
     );
     if (!res.ok) {
@@ -106,6 +114,7 @@ export async function sintetizar(texto: string): Promise<Uint8Array> {
         input: texto,
         response_format: "opus",
       }),
+      signal: AbortSignal.timeout(TIMEOUT_VOZ_MS),
     });
     if (!res.ok) {
       throw new Error(`OpenAI TTS ${res.status}: ${(await res.text()).slice(0, 200)}`);
