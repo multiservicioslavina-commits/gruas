@@ -14,6 +14,7 @@ import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { describirDocumento, describirFoto, mensajeDesdeDocumento, mensajeDesdeFoto, MIME_PDF, puedeVer } from "./vision.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
 import { logError, logWarn } from "../_shared/log.ts";
+import { digitosPorDia, HORARIO_PICO_PLACA, NOMBRE_DIA, vigenciaRotacion } from "../_shared/pico_placa.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE    = Deno.env.get("RITA_PHONE_ID") ?? "1238785075974458";
@@ -318,24 +319,25 @@ function bloqueFechaHora(): string {
   return `FECHA Y HORA ACTUAL EN COLOMBIA:
 Hoy es ${fecha}. Son las ${hora}.
 Si te preguntan que dia es hoy o que hora es, responde directo con este dato, nunca digas que no sabes.
-Usalo tambien para: pico y placa de hoy sin que te den placa (identifica el dia de la
-semana aqui y busca esa fila en la tabla de rotacion), y para calcular fechas relativas
-("manana", "el viernes", "en 3 dias") al crear un recordatorio.`;
+Usalo tambien para calcular fechas relativas ("manana", "el viernes", "en 3 dias")
+al crear un recordatorio. Para el pico y placa de hoy NO resuelvas con esta fecha:
+llama a pico_placa_hoy, que ademas sabe de festivos.`;
 }
 
 // ─── Pico y placa: dato estatico, no necesita consulta ──────────
+// La tabla sale de _shared/pico_placa.ts, la misma que usan las herramientas
+// y la alerta automatica: antes habia tres copias que podian desincronizarse.
 function bloquePicoPlaca(): string {
-  const esSegundoSemestre = new Date() >= new Date("2026-08-03T00:00:00-05:00");
-  const rotacion = esSegundoSemestre
-    ? ["Lunes: 5 y 8", "Martes: 1 y 4", "Miercoles: 0 y 2", "Jueves: 3 y 6", "Viernes: 7 y 9"]
-    : ["Lunes: 1 y 7", "Martes: 0 y 3", "Miercoles: 4 y 6", "Jueves: 5 y 9", "Viernes: 2 y 8"];
-  const vigencia = esSegundoSemestre
-    ? "Rotacion vigente desde el 3 de agosto de 2026."
-    : "Rotacion vigente del 2 de febrero al 31 de julio de 2026. Cambia el 3 de agosto de 2026.";
+  const ahora = new Date();
+  const tabla = digitosPorDia(ahora);
+  const rotacion = [1, 2, 3, 4, 5].map((d) => {
+    const nombre = NOMBRE_DIA[d];
+    return `${nombre[0].toUpperCase()}${nombre.slice(1)}: ${tabla[d].join(" y ")}`;
+  });
 
   return `PICO Y PLACA - MEDELLIN Y AREA METROPOLITANA
-${vigencia}
-Horario: 5:00 a.m. a 8:00 p.m. Sabados y domingos NO aplica.
+${vigenciaRotacion(ahora)}.
+Horario: ${HORARIO_PICO_PLACA} Sabados, domingos y festivos NO aplica.
 
 COMO LEER LA PLACA (importante, las placas colombianas mezclan letras y numeros):
 - Moto: formato tres letras, dos numeros y una letra. Ej: TQK12F.
@@ -352,10 +354,10 @@ consultar_pico_placa y repite el dia que te devuelva, ese y ninguno mas.
 Esta tabla queda aqui solo para explicar la regla general.
 
 Si pregunta "que pico y placa es hoy" SIN darte una placa, no le pidas la
-placa de una: usa el dia de la semana del bloque FECHA Y HORA ACTUAL de
-arriba y dile que digitos (de moto y de carro) estan restringidos hoy segun
-la rotacion. Solo pide la placa si quiere saber si a ELLA especificamente le
-toca.
+placa de una: llama a pico_placa_hoy y dile que digitos estan restringidos
+hoy (o que hoy no aplica, si es fin de semana o festivo). No lo resuelvas con
+la tabla de arriba: esa tabla no sabe de festivos. Solo pide la placa si
+quiere saber si a SU moto especificamente le toca.
 
 SI EL RIDER NO TIENE PLACA GUARDADA (mi_perfil devuelve pico_placa.falta_placa: true),
 ofrecele guardarla UNA sola vez, cuando la conversacion ya venga de su moto,

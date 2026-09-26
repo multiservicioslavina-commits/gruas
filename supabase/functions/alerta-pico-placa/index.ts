@@ -25,6 +25,7 @@ const PLANTILLA_PICO_PLACA = "pico_placa_am";
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { logError } from "../_shared/log.ts";
+import { digitosPorDia, hoyEnBogota } from "../_shared/pico_placa.ts";
 
 const WA_TOKEN    = Deno.env.get("WHATSAPP_TOKEN") ?? Deno.env.get("META_WHATSAPP_TOKEN") ?? "";
 const RITA_PHONE  = Deno.env.get("RITA_PHONE_ID") ?? "1260857797114684";
@@ -37,36 +38,10 @@ const supabase = createClient(SB_URL, SB_KEY);
 
 const FUERA_DE_VENTANA = 131047;
 
-// Primer dígito de la placa restringido por día, Valle de Aburrá (motos).
-// La rotación cambia cada semestre (mismo corte que rita-v2/tools.ts,
-// funcion consultar_pico_placa: 3 de agosto de 2026). Antes esta tabla
-// estaba fija con los valores del segundo semestre de 2026 — coincide hoy
-// por casualidad, pero en cuanto pase el proximo corte de semestre esta
-// alerta automatica se pondria a avisar el dia equivocado sin que nada lo
-// señale (el cron sigue disparando "succeeded" igual). Se calcula en
-// funcion de la fecha para que no vuelva a quedar desactualizada.
-// getDay(): 0=domingo ... 6=sábado. Sábado/domingo no tienen entrada -> no aplica.
-export function digitosPorDia(ahora: Date): Record<number, number[]> {
-  const esSegundoSemestre = ahora >= new Date("2026-08-03T00:00:00-05:00");
-  return esSegundoSemestre
-    ? { 1: [5, 8], 2: [1, 4], 3: [0, 2], 4: [3, 6], 5: [7, 9] }
-    : { 1: [1, 7], 2: [0, 3], 3: [4, 6], 4: [5, 9], 5: [2, 8] };
-}
-
-// ─── Fecha y día de la semana en hora Colombia (sin depender de la TZ del runtime) ───
-function hoyEnBogota(): { fecha: string; weekday: number } {
-  const ahora = new Date();
-  const partes = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "America/Bogota",
-    year: "numeric", month: "2-digit", day: "2-digit", weekday: "short",
-  }).formatToParts(ahora);
-
-  const get = (tipo: string) => partes.find(p => p.type === tipo)?.value ?? "";
-  const fecha = `${get("year")}-${get("month")}-${get("day")}`; // YYYY-MM-DD
-  const DIAS: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
-  const weekday = DIAS[get("weekday")] ?? new Date(fecha).getDay();
-  return { fecha, weekday };
-}
+// Tabla de rotacion y "hoy en Bogota": vienen de _shared/pico_placa.ts, la
+// misma fuente que usa Rita (consultar_pico_placa, pico_placa_hoy y su system
+// prompt). Antes habia tres copias de la tabla y una desactualizada ya habia
+// hecho avisar el dia equivocado sin que nada lo senalara.
 
 // Primer carácter numérico de la placa, escaneando de izquierda a derecha
 // (ej. "ABC12D" -> 1). Placas sin ningún dígito (raro, pero posible en
