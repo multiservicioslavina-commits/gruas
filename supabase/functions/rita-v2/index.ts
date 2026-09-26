@@ -113,23 +113,33 @@ async function validarSignatura(body: string, signature: string): Promise<boolea
   }
 }
 
-// ─── Rate limiting: max 5 requests por minuto por telefono ───────
-const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
-function verificarRateLimit(phone: string): boolean {
-  const ahora = Date.now();
-  const limite = rateLimitMap.get(phone);
+// ─── Rate limiting por telefono (en la base) ─────────────────────
+// Antes era un Map() en memoria: en Supabase cada request puede caer en un
+// isolate distinto (y cada uno se apaga a los ~25 s), asi que el conteo casi
+// nunca se acumulaba y el limite no protegia de nada. Ahora cuenta
+// rita_check_rate_limit() con una sentencia atomica en la base (ver
+// migracion 20260926_rita_rate_limit.sql). 10/min deja pasar las rafagas
+// normales de WhatsApp ("hola" / "se me varo la moto" / "tienen grua?").
+const RATE_LIMIT_MAX = 10;
+const RATE_LIMIT_VENTANA_SEG = 60;
 
-  if (!limite || ahora > limite.resetAt) {
-    rateLimitMap.set(phone, { count: 1, resetAt: ahora + 60000 });
+async function verificarRateLimit(phone: string): Promise<boolean> {
+  const { data, error } = await supabase.rpc("rita_check_rate_limit", {
+    p_telefono: phone,
+    p_max: RATE_LIMIT_MAX,
+    p_ventana_segundos: RATE_LIMIT_VENTANA_SEG,
+  });
+  if (error) {
+    // Falla abierto: un problema de la base no puede dejar sin respuesta a
+    // un rider real. El tope de gasto diario (verificarPresupuesto) sigue
+    // acotando el costo aunque este control falle.
+    logError("rita-v2", "rita_check_rate_limit fallo, se deja pasar el mensaje", error, { telefono: phone });
     return true;
   }
-
-  if (limite.count >= 5) {
+  if (data === false) {
     logWarn("rita-v2", "Rate limit excedido", { telefono: phone });
     return false;
   }
-
-  limite.count++;
   return true;
 }
 
@@ -1124,18 +1134,26 @@ Deno.serve(async (req: Request) => {
     const rawBody = await req.text();
     const signature = req.headers.get("x-hub-signature-256") || "";
 
-    // Validar que el webhook viene realmente de Meta (no en modo prueba)
-    if (!/"test"\s*:\s*true/.test(rawBody)) {
-      if (!await validarSignatura(rawBody, signature)) {
-        logWarn("rita-v2", "Firma HMAC invalida en el webhook", { firma: signature.slice(0, 20) + "..." });
-        return json({ ok: false, error: "invalid_signature" }, 401);
-      }
+    // Antes bastaba con que el cuerpo contuviera "test": true EN CUALQUIER
+    // PARTE para saltarse la firma de Meta. Eso permitia dos cosas a
+    // cualquiera que conociera la URL: (1) gastar el presupuesto de IA con el
+    // modo prueba, sin rate limit, hasta agotar el tope diario y dejar a Rita
+    // callada para los riders reales; (2) meter "test": true anidado en un
+    // payload con forma de WhatsApp y hacerse pasar por cualquier numero
+    // (guardar preferencias, recordatorios o placas a nombre de otro, y hacer
+    // que Rita le escriba a numeros arbitrarios). Ahora el modo prueba exige
+    // la service role key, que solo tiene el backend.
+    const pruebaAutorizada = !!SB_KEY && req.headers.get("Authorization") === `Bearer ${SB_KEY}`;
+    if (!pruebaAutorizada && !await validarSignatura(rawBody, signature)) {
+      logWarn("rita-v2", "Firma HMAC invalida en el webhook", { firma: signature.slice(0, 20) + "..." });
+      return json({ ok: false, error: "invalid_signature" }, 401);
     }
 
     const body = JSON.parse(rawBody);
 
     // Modo prueba: permite ejercitar el motor sin pasar por WhatsApp.
     if (body?.test === true) {
+      if (!pruebaAutorizada) return json({ ok: false, error: "prueba_no_autorizada" }, 401);
       const phone = String(body.phone ?? "573000000000");
       const texto = String(body.message ?? "");
       const [history, consentimiento, nombreRider] = await Promise.all([
@@ -1178,8 +1196,10 @@ Deno.serve(async (req: Request) => {
     const from = String(msg.from ?? "");
 
     // Rate limiting
-    if (!verificarRateLimit(from)) {
-      return json({ ok: false, error: "rate_limit_exceeded" }, 429);
+    // 200 y no 429: con un 4xx Meta reintenta el webhook, y el reintento se
+    // descarta igual por rita_webhook_dedup -- solo generaba trafico de mas.
+    if (!await verificarRateLimit(from)) {
+      return json({ ok: true, skip: "rate_limit" });
     }
 
     // Se consulta aca (y no mas abajo) para no prender el "escribiendo..."
