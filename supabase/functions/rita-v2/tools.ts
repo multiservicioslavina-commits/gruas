@@ -43,6 +43,7 @@ async function embedQueryVoyage(query: string): Promise<number[] | null> {
       method: "POST",
       headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
       body: JSON.stringify({ input: [query], model: "voyage-3", input_type: "query" }),
+      signal: AbortSignal.timeout(8000),
     });
     if (!res.ok) return null;
     const data = await res.json();
@@ -1064,6 +1065,9 @@ const EJECUTORES: Record<string, (input: Record<string, never>, phone: string) =
         method: "POST",
         headers: { "Content-Type": "application/json", "Authorization": `Bearer ${SB_KEY}` },
         body: JSON.stringify({ telefono: phone }),
+        // rita-rider-context es otra edge function: si esta en arranque en
+        // frio o colgada, mi_perfil se queda con lo que ya trae riderIdPorTelefono.
+        signal: AbortSignal.timeout(6000),
       }).then(r => r.json()).catch(() => ({ encontrado: false })),
       riderIdPorTelefono(phone),
     ]);

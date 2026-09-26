@@ -794,6 +794,7 @@ async function llamarClaude(system: string, messages: Mensaje[]): Promise<Record
       tools: TOOL_SCHEMAS,
       messages,
     }),
+    signal: AbortSignal.timeout(20000),
   });
   if (!res.ok) {
     throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
@@ -897,12 +898,20 @@ async function responderOrquestado(
 }
 
 // ─── WhatsApp: entrada y salida ─────────────────────────────────
+// Tope para cualquier llamada a la Graph API de Meta: sin esto, una API de
+// Meta lenta dejaba colgado el turno completo sin respuesta ni error.
+const TIMEOUT_WHATSAPP_MS = 10000;
+
 async function descargarMedia(mediaId: string): Promise<Uint8Array> {
   const metaRes = await fetch(`${GRAPH}/${mediaId}`, {
     headers: { "Authorization": `Bearer ${WA_TOKEN}` },
+    signal: AbortSignal.timeout(TIMEOUT_WHATSAPP_MS),
   });
   const meta = await metaRes.json();
-  const audioRes = await fetch(meta.url, { headers: { "Authorization": `Bearer ${WA_TOKEN}` } });
+  const audioRes = await fetch(meta.url, {
+    headers: { "Authorization": `Bearer ${WA_TOKEN}` },
+    signal: AbortSignal.timeout(TIMEOUT_WHATSAPP_MS),
+  });
   return new Uint8Array(await audioRes.arrayBuffer());
 }
 
@@ -911,6 +920,7 @@ async function enviarTexto(to: string, texto: string): Promise<unknown> {
     method: "POST",
     headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", to, type: "text", text: { body: texto } }),
+    signal: AbortSignal.timeout(TIMEOUT_WHATSAPP_MS),
   });
   return res.json();
 }
@@ -925,6 +935,7 @@ async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
     method: "POST",
     headers: { "Authorization": `Bearer ${WA_TOKEN}` },
     body: form,
+    signal: AbortSignal.timeout(TIMEOUT_WHATSAPP_MS),
   });
   const { id: mediaId } = await upload.json();
   if (!mediaId) throw new Error("No se pudo subir el audio a WhatsApp");
@@ -933,6 +944,7 @@ async function enviarAudio(to: string, audio: Uint8Array): Promise<unknown> {
     method: "POST",
     headers: { "Authorization": `Bearer ${WA_TOKEN}`, "Content-Type": "application/json" },
     body: JSON.stringify({ messaging_product: "whatsapp", to, type: "audio", audio: { id: mediaId } }),
+    signal: AbortSignal.timeout(TIMEOUT_WHATSAPP_MS),
   });
   return res.json();
 }
@@ -1019,6 +1031,7 @@ function notificarSOSHubspotAsync(
     method: "POST",
     headers: { "Content-Type": "application/json", Authorization: `Bearer ${SB_KEY}` },
     body: JSON.stringify({ tipo: "sos", telefono: phone, lat, lon, aliados }),
+    signal: AbortSignal.timeout(8000),
   }).catch((e) => logError("rita-v2", "No se pudo notificar el SOS a HubSpot", e, { telefono: phone }));
 }
 
