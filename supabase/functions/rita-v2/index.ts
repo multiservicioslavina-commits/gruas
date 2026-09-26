@@ -13,7 +13,7 @@ import { TOOL_SCHEMAS, ejecutarHerramienta, estadoConsentimiento, norm, extraerU
 import { puedeEscuchar, puedeHablar, sintetizar, transcribir } from "./voz.ts";
 import { describirDocumento, describirFoto, mensajeDesdeDocumento, mensajeDesdeFoto, MIME_PDF, puedeVer } from "./vision.ts";
 import { responderConOrquestador, verificarPresupuesto } from "./ia.ts";
-import { logError, logWarn } from "../_shared/log.ts";
+import { log, logError, logWarn } from "../_shared/log.ts";
 import { digitosPorDia, HORARIO_PICO_PLACA, NOMBRE_DIA, vigenciaRotacion } from "../_shared/pico_placa.ts";
 
 const WA_TOKEN      = Deno.env.get("WHATSAPP_TOKEN") ?? "";
@@ -173,8 +173,19 @@ async function getHistory(phone: string, limit = 10): Promise<{ role: string; co
   return (data || []).reverse();
 }
 
-async function saveMessage(phone: string, role: "user" | "assistant", content: string) {
-  await supabase.from("rita_messages").insert({ phone, role, content });
+// Devuelve el created_at del mensaje guardado: lo usa el debounce de rafagas
+// para saber si despues de este llego otro mensaje del mismo rider.
+async function saveMessage(
+  phone: string,
+  role: "user" | "assistant",
+  content: string,
+): Promise<{ created_at: string } | null> {
+  const { data: guardado, error } = await supabase
+    .from("rita_messages")
+    .insert({ phone, role, content })
+    .select("created_at")
+    .single();
+  if (error) logError("rita-v2", "No se pudo guardar el mensaje en rita_messages", error, { telefono: phone, role });
   const { data: viejos } = await supabase
     .from("rita_messages")
     .select("id")
@@ -184,6 +195,21 @@ async function saveMessage(phone: string, role: "user" | "assistant", content: s
   if (viejos?.length) {
     await supabase.from("rita_messages").delete().in("id", viejos.map(r => r.id));
   }
+  return guardado ?? null;
+}
+
+// Arma los mensajes para el modelo. El mensaje actual ya se guardo en
+// rita_messages antes de leer el historial, asi que normalmente ya es el
+// ultimo del historial: antes se agregaba otra vez al final y el modelo veia
+// cada pregunta dos veces. Solo se agrega si no esta (modo prueba, o si el
+// guardado fallo).
+function armarMensajes(history: { role: string; content: string }[], message: string): Mensaje[] {
+  const mensajes: Mensaje[] = history.map(h => ({ role: h.role, content: h.content }));
+  const ultimo = mensajes[mensajes.length - 1];
+  if (!ultimo || ultimo.role !== "user" || ultimo.content !== message) {
+    mensajes.push({ role: "user", content: message });
+  }
+  return mensajes;
 }
 
 // ─── Registro guiado ────────────────────────────────────────────
@@ -831,10 +857,7 @@ async function responder(
   nombreRider: string | null = null,
 ): Promise<string> {
   const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
-  const messages: Mensaje[] = [
-    ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: "user", content: message },
-  ];
+  const messages = armarMensajes(history, message);
 
   let huboHerramientas = false;
   const urlsHerramientas = new Set<string>();
@@ -902,10 +925,7 @@ async function responderOrquestado(
   nombreRider: string | null = null,
 ): Promise<string> {
   const system = buildSystemPrompt(consentimiento, conVoz, nombreRider);
-  const messages: Mensaje[] = [
-    ...history.map(h => ({ role: h.role, content: h.content })),
-    { role: "user", content: message },
-  ];
+  const messages = armarMensajes(history, message);
   return await responderConOrquestador(system, messages, phone);
 }
 
@@ -1112,6 +1132,280 @@ const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { "Content-Type": "application/json" } });
 
 // ─── Handler ────────────────────────────────────────────────────
+// Supabase mantiene viva la funcion hasta que termine la promesa pasada a
+// EdgeRuntime.waitUntil, aunque ya se haya respondido. Fuera de Supabase
+// (pruebas locales) la promesa corre igual, solo que sin esa garantia.
+function enSegundoPlano(tarea: Promise<unknown>): void {
+  const conCaptura = tarea.catch((e) => logError("rita-v2", "Error no manejado procesando el mensaje", e));
+  // deno-lint-ignore no-explicit-any
+  const runtime = (globalThis as any).EdgeRuntime;
+  if (runtime?.waitUntil) runtime.waitUntil(conCaptura);
+}
+
+// Cuanto esperar a ver si el rider sigue escribiendo antes de contestar.
+// Corto a proposito: el "escribiendo..." ya esta prendido mientras tanto.
+const ESPERA_RAFAGA_MS = 2500;
+
+async function llegoMensajeMasNuevo(phone: string, desde: string): Promise<boolean> {
+  await new Promise((r) => setTimeout(r, ESPERA_RAFAGA_MS));
+  const { data, error } = await supabase
+    .from("rita_messages")
+    .select("created_at")
+    .eq("phone", phone)
+    .eq("role", "user")
+    .gt("created_at", desde)
+    .limit(1);
+  if (error) {
+    // Ante la duda se contesta: peor es dejar al rider sin respuesta.
+    logError("rita-v2", "No se pudo revisar si llego otro mensaje", error, { telefono: phone });
+    return false;
+  }
+  return (data?.length ?? 0) > 0;
+}
+
+// ─── Procesamiento de un mensaje entrante (en segundo plano) ─────
+// Corre despues de responderle 200 a Meta (ver enSegundoPlano en el
+// handler). Los "return json(...)" nombran el flujo que se tomo; ya nadie
+// lee esa respuesta, pero dejan claro en cada salida por que se corto ahi.
+// deno-lint-ignore no-explicit-any
+async function procesarMensaje(msg: any, msgId: string): Promise<Response> {
+  const from = String(msg.from ?? "");
+
+  // Rate limiting
+  // 200 y no 429: con un 4xx Meta reintenta el webhook, y el reintento se
+  // descarta igual por rita_webhook_dedup -- solo generaba trafico de mas.
+  if (!await verificarRateLimit(from)) {
+    return json({ ok: true, skip: "rate_limit" });
+  }
+
+  // Se consulta aca (y no mas abajo) para no prender el "escribiendo..."
+  // cuando el admin tiene la conversacion y Rita no va a contestar.
+  const botPausado = await estaBotPausado(from);
+  if (!botPausado && msgId && TIPOS_CON_RESPUESTA.has(String(msg.type))) {
+    marcarLeidoEscribiendo(msgId);
+  }
+  // SOS - ubicacion compartida: se maneja aparte del bucle de IA, antes
+  // de todo lo demas. Es un flujo de seguridad, asi que va determinista
+  // (consulta directa a PostGIS) en vez de depender de que el modelo
+  // decida llamar una herramienta -- mas rapido y mas confiable.
+  if (msg.type === "location" && msg.location) {
+    const lat = Number(msg.location.latitude);
+    const lon = Number(msg.location.longitude);
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      await manejarUbicacionSOS(from, lat, lon);
+      return json({ ok: true, flujo: "sos_ubicacion" });
+    }
+  }
+
+  let message = "";
+  let conVoz = false;
+
+  // Una foto puede llegar como msg.type "image" (comprimida, el caso normal)
+  // o como "document" con mime_type de imagen (cuando el rider la manda
+  // como archivo) -- mismo tratamiento en ambos casos.
+  const imagenAdjunta = msg.type === "image" && msg.image
+    ? { id: msg.image.id, mime_type: msg.image.mime_type || "image/jpeg", caption: msg.image.caption }
+    : msg.type === "document" && msg.document && (msg.document.mime_type || "").startsWith("image/")
+    ? { id: msg.document.id, mime_type: msg.document.mime_type, caption: msg.document.caption }
+    : null;
+
+  if (msg.type === "audio" && msg.audio) {
+    if (!puedeEscuchar()) {
+      await enviarTexto(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?");
+      return json({ ok: true, skip: "sin proveedor de voz" });
+    }
+    try {
+      message = await transcribir(
+        await descargarMedia(msg.audio.id),
+        msg.audio.mime_type || "audio/ogg",
+      );
+      conVoz = true;
+    } catch (e) {
+      logError("rita-v2", "Transcripcion de audio fallo", e, { telefono: from });
+      await supabase.from("rita_acciones_log").insert({
+        telefono: from,
+        herramienta: "transcripcion_debug",
+        parametros: {},
+        ok: false,
+        error: String(e instanceof Error ? e.message : e).slice(0, 500),
+      });
+      await enviarTexto(from, "No pude escuchar ese audio. Me lo repites?");
+      return json({ ok: true, error: "transcripcion" });
+    }
+    if (!message.trim()) {
+      await enviarTexto(from, "Uy, no pille que dijiste. Me lo repites?");
+      return json({ ok: true, skip: "audio vacio" });
+    }
+  } else if (imagenAdjunta) {
+    if (!puedeVer()) {
+      await enviarTexto(from, "Parce, por ahora no puedo ver fotos. Contame que se ve o descríbemela?");
+      return json({ ok: true, skip: "sin proveedor de vision" });
+    }
+    try {
+      const descripcion = await describirFoto(
+        await descargarMedia(imagenAdjunta.id),
+        imagenAdjunta.mime_type,
+        from,
+        imagenAdjunta.caption,
+      );
+      message = mensajeDesdeFoto(descripcion, imagenAdjunta.caption);
+    } catch (e) {
+      logError("rita-v2", "Descripcion de foto fallo", e, { telefono: from });
+      await supabase.from("rita_acciones_log").insert({
+        telefono: from,
+        herramienta: "vision_debug",
+        parametros: {},
+        ok: false,
+        error: String(e instanceof Error ? e.message : e).slice(0, 500),
+      });
+      await enviarTexto(from, "No pude ver bien esa foto. Me cuentas que es o me la vuelves a mandar?");
+      return json({ ok: true, error: "vision" });
+    }
+  } else if (msg.type === "document" && msg.document?.mime_type === MIME_PDF) {
+    if (!puedeVer()) {
+      await enviarTexto(from, "Parce, por ahora no puedo leer PDFs. Si me mandas una foto de lo que necesitas (SOAT, tecnomecanica, etc.) si te ayudo.");
+      return json({ ok: true, skip: "sin proveedor de vision" });
+    }
+    try {
+      const lectura = await describirDocumento(
+        await descargarMedia(msg.document.id),
+        MIME_PDF,
+        from,
+        msg.document.caption,
+      );
+      message = mensajeDesdeDocumento(lectura, msg.document.caption);
+    } catch (e) {
+      logError("rita-v2", "Lectura de documento fallo", e, { telefono: from });
+      await supabase.from("rita_acciones_log").insert({
+        telefono: from,
+        herramienta: "vision_debug",
+        parametros: {},
+        ok: false,
+        error: String(e instanceof Error ? e.message : e).slice(0, 500),
+      });
+      await enviarTexto(from, "No pude leer bien ese PDF. Me lo vuelves a mandar o me cuentas que necesitas?");
+      return json({ ok: true, error: "vision" });
+    }
+  } else if (msg.type === "document" && msg.document) {
+    await enviarTexto(from, "Por ahora solo puedo leer fotos y PDFs, parce. Si es otro tipo de archivo, cuéntame qué necesitas por texto.");
+    return json({ ok: true, skip: "tipo de documento no soportado" });
+  } else if (msg.text?.body) {
+    message = msg.text.body;
+  } else {
+    return json({ ok: true, skip: "tipo no soportado" });
+  }
+
+  const guardado = await saveMessage(from, "user", message);
+
+  // Bot pausado (usuario ya derivado al admin) → no responder, deja que
+  // el admin siga la conversacion directo desde su WhatsApp.
+  if (botPausado) {
+    return json({ ok: true, flujo: "bot_pausado" });
+  }
+
+  // Palabra clave de escalamiento a admin: determinista, no depende de
+  // que Claude decida usarla. Antes del SOS: si alguien pide un humano
+  // no queremos que quede atrapado en el flujo de emergencia.
+  if (ADMIN_KEYWORDS.test(message)) {
+    const nombreRow = await getRiderNombre(from).catch(() => null);
+    await escalarAAdmin(from, nombreRow, "Pidió hablar con el admin (palabra clave)", message);
+    return json({ ok: true, flujo: "escalado_keyword" });
+  }
+
+  // SOS - palabra clave sin ubicacion todavia: maxima prioridad, antes
+  // incluso del registro guiado. Funciona igual si vino por audio (ya
+  // transcrito arriba) que por texto.
+  if (esEmergenciaTexto(message)) {
+    const respuesta = "🆘 Te tengo, parcero. Para mandarte auxilio cercano YA necesito tu ubicación exacta: toca el clip 📎 en WhatsApp > Ubicación > Enviar tu ubicación actual. En cuanto la compartas te mando los aliados más cercanos.\n\nSi es una emergencia médica o de seguridad, llama primero al 123 o al 122 (ambulancia).";
+    await saveMessage(from, "assistant", respuesta);
+    await entregar(from, respuesta, conVoz);
+    await registrarSOSLog(from, null, null, null, "palabra_clave_sin_ubicacion");
+    return json({ ok: true, flujo: "sos_pide_ubicacion" });
+  }
+
+  // El registro guiado tiene prioridad sobre el bucle de herramientas.
+  const conv = await getConvState(from);
+  if (conv.state !== "idle") {
+    const respuestaRegistro = await handleRegistration(from, message, conv);
+    if (respuestaRegistro) {
+      await saveMessage(from, "assistant", respuestaRegistro);
+      await entregar(from, respuestaRegistro, conVoz);
+      return json({ ok: true, flujo: "registro" });
+    }
+  }
+
+  if (/quiero registrarme|registrarme|registrame|inscribirme/.test(norm(message))) {
+    const { data: yaExiste } = await supabase
+      .from("riders")
+      .select("id")
+      .or(`telefono.eq.${from.replace(/^57/, "")},telefono.eq.${from}`)
+      .limit(1)
+      .maybeSingle();
+    if (!yaExiste) {
+      await setConvState(from, "waiting_name", {});
+      const saludo = "Dale! Vamos a registrarte para darte info personalizada de tu moto. Como te llamas?";
+      await saveMessage(from, "assistant", saludo);
+      await entregar(from, saludo, conVoz);
+      return json({ ok: true, flujo: "inicio_registro" });
+    }
+  }
+
+  // Paso 5: mensajes triviales (emoji solo, risas) no gastan IA
+  if (esTrivial(message)) {
+    const ack = ACKS_TRIVIALES[Math.floor(Math.random() * ACKS_TRIVIALES.length)];
+    await saveMessage(from, "assistant", ack);
+    await entregar(from, ack, conVoz);
+    return json({ ok: true, flujo: "trivial" });
+  }
+
+  // Rafagas: en WhatsApp es comun mandar "hola" / "se me varo la moto" /
+  // "tienen grua?" en dos segundos. Antes cada mensaje disparaba su propio
+  // turno de IA en paralelo, con un historial que no veia los otros, y Rita
+  // contestaba tres veces y en desorden. Ahora, antes de gastar IA, se espera
+  // un momento: si en ese tiempo llego otro mensaje del mismo rider, este
+  // turno se retira y contesta el ultimo, que ya ve todo el grupo en su
+  // historial. Solo aplica al camino de IA: SOS, admin, registro y triviales
+  // ya respondieron arriba sin esperar.
+  if (guardado && await llegoMensajeMasNuevo(from, guardado.created_at)) {
+    log("rita-v2", "Rafaga: este turno se retira, contesta el mensaje mas nuevo", { telefono: from });
+    return json({ ok: true, flujo: "rafaga_consolidada" });
+  }
+
+  // Paso 3: tope de gasto diario de IA
+  const presupuesto = await verificarPresupuesto();
+  if (!presupuesto.ok) {
+    const capMsg = "Uy parce, hoy ya atend\u{ED} muchos riders y necesito un descanso. Ma\u{F1}ana vuelvo con toda! Si es urgente, entra a ridera.com.co \u{1F3CD}\u{FE0F}";
+    await saveMessage(from, "assistant", capMsg);
+    await entregar(from, capMsg, conVoz);
+    return json({ ok: true, flujo: "presupuesto_agotado", gasto: presupuesto.gastoHoy });
+  }
+
+  const [history, consentimiento, nombreRider] = await Promise.all([
+    getHistory(from, 10),
+    estadoConsentimiento(from),
+    getRiderNombre(from),
+  ]);
+
+  let reply = "";
+  try {
+    // Orquestador (Claude + OpenAI) activo por defecto. Kill switch:
+    // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
+    // camino directo de Claude sin necesidad de redeploy.
+    reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
+      ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
+      : await responder(message, history, from, consentimiento, conVoz, nombreRider);
+  } catch (e) {
+    logError("rita-v2", "El motor de respuesta (orquestador/Claude) fallo", e, { telefono: from });
+  }
+  if (!reply.trim()) reply = "Uy parce, algo se cruzo por aca. Me lo repites?";
+  if (reply.length > 1600) reply = reply.slice(0, 1580) + ".\n.\nMas en ridera.com.co";
+
+  await saveMessage(from, "assistant", reply);
+  await entregar(from, reply, conVoz);
+
+  return json({ ok: true });
+}
+
 Deno.serve(async (req: Request) => {
   const url = new URL(req.url);
 
@@ -1195,228 +1489,11 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    const from = String(msg.from ?? "");
-
-    // Rate limiting
-    // 200 y no 429: con un 4xx Meta reintenta el webhook, y el reintento se
-    // descarta igual por rita_webhook_dedup -- solo generaba trafico de mas.
-    if (!await verificarRateLimit(from)) {
-      return json({ ok: true, skip: "rate_limit" });
-    }
-
-    // Se consulta aca (y no mas abajo) para no prender el "escribiendo..."
-    // cuando el admin tiene la conversacion y Rita no va a contestar.
-    const botPausado = await estaBotPausado(from);
-    if (!botPausado && msgId && TIPOS_CON_RESPUESTA.has(String(msg.type))) {
-      marcarLeidoEscribiendo(msgId);
-    }
-    // SOS - ubicacion compartida: se maneja aparte del bucle de IA, antes
-    // de todo lo demas. Es un flujo de seguridad, asi que va determinista
-    // (consulta directa a PostGIS) en vez de depender de que el modelo
-    // decida llamar una herramienta -- mas rapido y mas confiable.
-    if (msg.type === "location" && msg.location) {
-      const lat = Number(msg.location.latitude);
-      const lon = Number(msg.location.longitude);
-      if (Number.isFinite(lat) && Number.isFinite(lon)) {
-        await manejarUbicacionSOS(from, lat, lon);
-        return json({ ok: true, flujo: "sos_ubicacion" });
-      }
-    }
-
-    let message = "";
-    let conVoz = false;
-
-    // Una foto puede llegar como msg.type "image" (comprimida, el caso normal)
-    // o como "document" con mime_type de imagen (cuando el rider la manda
-    // como archivo) -- mismo tratamiento en ambos casos.
-    const imagenAdjunta = msg.type === "image" && msg.image
-      ? { id: msg.image.id, mime_type: msg.image.mime_type || "image/jpeg", caption: msg.image.caption }
-      : msg.type === "document" && msg.document && (msg.document.mime_type || "").startsWith("image/")
-      ? { id: msg.document.id, mime_type: msg.document.mime_type, caption: msg.document.caption }
-      : null;
-
-    if (msg.type === "audio" && msg.audio) {
-      if (!puedeEscuchar()) {
-        await enviarTexto(from, "Parce, por ahora no puedo escuchar audios. Me lo escribes?");
-        return json({ ok: true, skip: "sin proveedor de voz" });
-      }
-      try {
-        message = await transcribir(
-          await descargarMedia(msg.audio.id),
-          msg.audio.mime_type || "audio/ogg",
-        );
-        conVoz = true;
-      } catch (e) {
-        logError("rita-v2", "Transcripcion de audio fallo", e, { telefono: from });
-        await supabase.from("rita_acciones_log").insert({
-          telefono: from,
-          herramienta: "transcripcion_debug",
-          parametros: {},
-          ok: false,
-          error: String(e instanceof Error ? e.message : e).slice(0, 500),
-        });
-        await enviarTexto(from, "No pude escuchar ese audio. Me lo repites?");
-        return json({ ok: true, error: "transcripcion" });
-      }
-      if (!message.trim()) {
-        await enviarTexto(from, "Uy, no pille que dijiste. Me lo repites?");
-        return json({ ok: true, skip: "audio vacio" });
-      }
-    } else if (imagenAdjunta) {
-      if (!puedeVer()) {
-        await enviarTexto(from, "Parce, por ahora no puedo ver fotos. Contame que se ve o descríbemela?");
-        return json({ ok: true, skip: "sin proveedor de vision" });
-      }
-      try {
-        const descripcion = await describirFoto(
-          await descargarMedia(imagenAdjunta.id),
-          imagenAdjunta.mime_type,
-          from,
-          imagenAdjunta.caption,
-        );
-        message = mensajeDesdeFoto(descripcion, imagenAdjunta.caption);
-      } catch (e) {
-        logError("rita-v2", "Descripcion de foto fallo", e, { telefono: from });
-        await supabase.from("rita_acciones_log").insert({
-          telefono: from,
-          herramienta: "vision_debug",
-          parametros: {},
-          ok: false,
-          error: String(e instanceof Error ? e.message : e).slice(0, 500),
-        });
-        await enviarTexto(from, "No pude ver bien esa foto. Me cuentas que es o me la vuelves a mandar?");
-        return json({ ok: true, error: "vision" });
-      }
-    } else if (msg.type === "document" && msg.document?.mime_type === MIME_PDF) {
-      if (!puedeVer()) {
-        await enviarTexto(from, "Parce, por ahora no puedo leer PDFs. Si me mandas una foto de lo que necesitas (SOAT, tecnomecanica, etc.) si te ayudo.");
-        return json({ ok: true, skip: "sin proveedor de vision" });
-      }
-      try {
-        const lectura = await describirDocumento(
-          await descargarMedia(msg.document.id),
-          MIME_PDF,
-          from,
-          msg.document.caption,
-        );
-        message = mensajeDesdeDocumento(lectura, msg.document.caption);
-      } catch (e) {
-        logError("rita-v2", "Lectura de documento fallo", e, { telefono: from });
-        await supabase.from("rita_acciones_log").insert({
-          telefono: from,
-          herramienta: "vision_debug",
-          parametros: {},
-          ok: false,
-          error: String(e instanceof Error ? e.message : e).slice(0, 500),
-        });
-        await enviarTexto(from, "No pude leer bien ese PDF. Me lo vuelves a mandar o me cuentas que necesitas?");
-        return json({ ok: true, error: "vision" });
-      }
-    } else if (msg.type === "document" && msg.document) {
-      await enviarTexto(from, "Por ahora solo puedo leer fotos y PDFs, parce. Si es otro tipo de archivo, cuéntame qué necesitas por texto.");
-      return json({ ok: true, skip: "tipo de documento no soportado" });
-    } else if (msg.text?.body) {
-      message = msg.text.body;
-    } else {
-      return json({ ok: true, skip: "tipo no soportado" });
-    }
-
-    await saveMessage(from, "user", message);
-
-    // Bot pausado (usuario ya derivado al admin) → no responder, deja que
-    // el admin siga la conversacion directo desde su WhatsApp.
-    if (botPausado) {
-      return json({ ok: true, flujo: "bot_pausado" });
-    }
-
-    // Palabra clave de escalamiento a admin: determinista, no depende de
-    // que Claude decida usarla. Antes del SOS: si alguien pide un humano
-    // no queremos que quede atrapado en el flujo de emergencia.
-    if (ADMIN_KEYWORDS.test(message)) {
-      const nombreRow = await getRiderNombre(from).catch(() => null);
-      await escalarAAdmin(from, nombreRow, "Pidió hablar con el admin (palabra clave)", message);
-      return json({ ok: true, flujo: "escalado_keyword" });
-    }
-
-    // SOS - palabra clave sin ubicacion todavia: maxima prioridad, antes
-    // incluso del registro guiado. Funciona igual si vino por audio (ya
-    // transcrito arriba) que por texto.
-    if (esEmergenciaTexto(message)) {
-      const respuesta = "🆘 Te tengo, parcero. Para mandarte auxilio cercano YA necesito tu ubicación exacta: toca el clip 📎 en WhatsApp > Ubicación > Enviar tu ubicación actual. En cuanto la compartas te mando los aliados más cercanos.\n\nSi es una emergencia médica o de seguridad, llama primero al 123 o al 122 (ambulancia).";
-      await saveMessage(from, "assistant", respuesta);
-      await entregar(from, respuesta, conVoz);
-      await registrarSOSLog(from, null, null, null, "palabra_clave_sin_ubicacion");
-      return json({ ok: true, flujo: "sos_pide_ubicacion" });
-    }
-
-    // El registro guiado tiene prioridad sobre el bucle de herramientas.
-    const conv = await getConvState(from);
-    if (conv.state !== "idle") {
-      const respuestaRegistro = await handleRegistration(from, message, conv);
-      if (respuestaRegistro) {
-        await saveMessage(from, "assistant", respuestaRegistro);
-        await entregar(from, respuestaRegistro, conVoz);
-        return json({ ok: true, flujo: "registro" });
-      }
-    }
-
-    if (/quiero registrarme|registrarme|registrame|inscribirme/.test(norm(message))) {
-      const { data: yaExiste } = await supabase
-        .from("riders")
-        .select("id")
-        .or(`telefono.eq.${from.replace(/^57/, "")},telefono.eq.${from}`)
-        .limit(1)
-        .maybeSingle();
-      if (!yaExiste) {
-        await setConvState(from, "waiting_name", {});
-        const saludo = "Dale! Vamos a registrarte para darte info personalizada de tu moto. Como te llamas?";
-        await saveMessage(from, "assistant", saludo);
-        await entregar(from, saludo, conVoz);
-        return json({ ok: true, flujo: "inicio_registro" });
-      }
-    }
-
-    // Paso 5: mensajes triviales (emoji solo, risas) no gastan IA
-    if (esTrivial(message)) {
-      const ack = ACKS_TRIVIALES[Math.floor(Math.random() * ACKS_TRIVIALES.length)];
-      await saveMessage(from, "assistant", ack);
-      await entregar(from, ack, conVoz);
-      return json({ ok: true, flujo: "trivial" });
-    }
-
-    // Paso 3: tope de gasto diario de IA
-    const presupuesto = await verificarPresupuesto();
-    if (!presupuesto.ok) {
-      const capMsg = "Uy parce, hoy ya atend\u{ED} muchos riders y necesito un descanso. Ma\u{F1}ana vuelvo con toda! Si es urgente, entra a ridera.com.co \u{1F3CD}\u{FE0F}";
-      await saveMessage(from, "assistant", capMsg);
-      await entregar(from, capMsg, conVoz);
-      return json({ ok: true, flujo: "presupuesto_agotado", gasto: presupuesto.gastoHoy });
-    }
-
-    const [history, consentimiento, nombreRider] = await Promise.all([
-      getHistory(from, 10),
-      estadoConsentimiento(from),
-      getRiderNombre(from),
-    ]);
-
-    let reply = "";
-    try {
-      // Orquestador (Claude + OpenAI) activo por defecto. Kill switch:
-      // setear el secreto RITA_ORQUESTADOR="false" en Supabase vuelve al
-      // camino directo de Claude sin necesidad de redeploy.
-      reply = Deno.env.get("RITA_ORQUESTADOR") !== "false"
-        ? await responderOrquestado(message, history, from, consentimiento, conVoz, nombreRider)
-        : await responder(message, history, from, consentimiento, conVoz, nombreRider);
-    } catch (e) {
-      logError("rita-v2", "El motor de respuesta (orquestador/Claude) fallo", e, { telefono: from });
-    }
-    if (!reply.trim()) reply = "Uy parce, algo se cruzo por aca. Me lo repites?";
-    if (reply.length > 1600) reply = reply.slice(0, 1580) + ".\n.\nMas en ridera.com.co";
-
-    await saveMessage(from, "assistant", reply);
-    await entregar(from, reply, conVoz);
-
-    return json({ ok: true });
+    // Todo lo demas corre en segundo plano: se le responde 200 a Meta de
+    // una. Antes el turno completo (IA, herramientas, auditoria, voz) corria
+    // antes de responder, tardaba 6-16 s, y Meta reintentaba el webhook.
+    enSegundoPlano(procesarMensaje(msg, msgId));
+    return json({ ok: true, flujo: "recibido" });
   } catch (e) {
     logError("rita-v2", "Error no manejado en el webhook de Rita", e);
     // Devolvemos 200 para que Meta no reintente en bucle.
